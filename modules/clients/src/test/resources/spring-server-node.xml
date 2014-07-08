@@ -166,6 +166,11 @@
                                                 <entry key="name" value="java.lang.String"/>
                                             </map>
                                         </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address</value>
+                                            </list>
+                                        </property>
                                     </bean>
                                     <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>

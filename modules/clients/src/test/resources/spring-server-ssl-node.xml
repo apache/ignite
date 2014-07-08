@@ -60,26 +60,6 @@
         <!-- Enable rest protocol. -->
         <property name="restEnabled" value="true"/>
 
-        <!-- Configure TCP+SSL rest protocol. -->
-        <property name="restTcpSslEnabled" value="true"/>
-
-        <!-- Sets flag indicating whether or not SSL client authentication is required. -->
-        <property name="restTcpSslClientAuth" value="true"/>
-
-        <property name="restTcpSslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
-                <property name="trustStorePassword" value="123456"/>
-            </bean>
-        </property>
-
-        <property name="restTcpPort" value="10443"/>
-
-        <!-- Configure HTTPs rest protocol. -->
-        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty-ssl.xml"/>
-
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
             <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
@@ -87,6 +67,23 @@
                 <property name="marshaller">
                     <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />
                 </property>
+
+                <!-- Configure TCP+SSL rest protocol. -->
+                <property name="restTcpSslEnabled" value="true"/>
+
+                <!-- Sets flag indicating whether or not SSL client authentication is required. -->
+                <property name="restTcpSslClientAuth" value="true"/>
+
+                <property name="restTcpSslContextFactory">
+                    <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                        <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
+                        <property name="keyStorePassword" value="123456"/>
+                        <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
+                        <property name="trustStorePassword" value="123456"/>
+                    </bean>
+                </property>
+
+                <property name="restTcpPort" value="10443"/>
             </bean>
         </property>
 

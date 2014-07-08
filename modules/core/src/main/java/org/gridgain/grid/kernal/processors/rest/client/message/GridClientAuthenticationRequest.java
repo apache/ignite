@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.portable.*;
 
 import java.io.*;
@@ -67,5 +68,10 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         GridPortableRawReader raw = reader.rawReader();
 
         cred = raw.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientAuthenticationRequest.class, this, super.toString());
     }
 }
