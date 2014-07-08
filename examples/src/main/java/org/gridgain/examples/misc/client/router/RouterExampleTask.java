@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.misc.client.api;
+package org.gridgain.examples.misc.client.router;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
@@ -19,9 +19,10 @@ import java.util.*;
  * This task will produce as many grid jobs as there are nodes in the grid.
  * Each produced job will yield an output with the given message.
  */
-public class ClientExampleTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class RouterExampleTask extends GridComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends GridComputeJob> split(int gridSize, final String arg) throws GridException {
+    @Override protected Collection<? extends GridComputeJob> split(int gridSize, final String arg)
+        throws GridException {
         Collection<GridComputeJob> res = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++) {

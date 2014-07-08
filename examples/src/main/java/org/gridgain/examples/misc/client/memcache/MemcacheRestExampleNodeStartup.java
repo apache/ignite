@@ -9,7 +9,6 @@
 
 package org.gridgain.examples.misc.client.memcache;
 
-import org.gridgain.examples.misc.client.interceptor.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -69,12 +68,6 @@ public class MemcacheRestExampleNodeStartup {
         indexSpi.setDefaultIndexFixedTyping(false);
 
         cfg.setIndexingSpi(indexSpi);
-
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
-
-        clientCfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
-
-        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
