@@ -577,6 +577,30 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      * @param job Job closure.
+     * @param arg Optional job argument.
+     * @param nodes Grid nodes.
+     * @return Grid future for execution result.
+     */
+    public <T, R> GridFuture<Collection<R>> broadcastNoFailover(GridClosure<T, R> job, @Nullable T arg,
+        @Nullable Collection<GridNode> nodes) {
+        enterBusy();
+
+        try {
+            if (F.isEmpty(nodes))
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+
+            ctx.task().setThreadContext(TC_SUBGRID, nodes);
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
+
+            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param job Job closure.
      * @param args Job arguments.
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
