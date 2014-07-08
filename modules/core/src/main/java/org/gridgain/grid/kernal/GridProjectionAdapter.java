@@ -14,7 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -27,35 +27,38 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 /**
  *
  */
-public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjectionEx, Externalizable {
+public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Kernal context. */
     protected transient GridKernalContext ctx;
 
-    /** */
+    /** Parent projection. */
     private transient GridProjection parent;
 
-    /** */
+    /** Compute. */
     private transient GridComputeImpl compute;
 
-    /** */
+    /** Messaging. */
     private transient GridMessagingImpl messaging;
 
-    /** */
+    /** Events. */
     private transient GridEvents evts;
 
-    /** */
+    /** Services. */
+    private transient GridServices svcs;
+
+    /** Grid name. */
     private String gridName;
 
-    /** */
+    /** Subject ID. */
     private UUID subjId;
 
-    /** */
-    private GridPredicate<GridNode> p;
+    /** Projection predicate. */
+    protected GridPredicate<GridNode> p;
 
-    /** */
+    /** Node IDs. */
     private Set<UUID> ids;
 
     /**
@@ -101,6 +104,27 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         this.ids = ids;
 
         p = F.nodeForNodeIds(ids);
+    }
+
+    /**
+     * @param parent Parent of this projection.
+     * @param ctx Grid kernal context.
+     * @param p Predicate.
+     * @param ids Node IDs.
+     */
+    private GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId, @Nullable GridPredicate<GridNode> p, Set<UUID> ids) {
+        this.parent = parent;
+
+        if (ctx != null)
+            setKernalContext(ctx);
+
+        this.subjId = subjId;
+        this.p = p;
+        this.ids = ids;
+
+        if (p == null && ids != null)
+            this.p = F.nodeForNodeIds(ids);
     }
 
     /**
@@ -195,6 +219,17 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices services() {
+        if (svcs == null) {
+            assert ctx != null;
+
+            svcs = new GridServicesImpl(ctx, this, subjId);
+        }
+
+        return svcs;
+    }
+
+    /** {@inheritDoc} */
     @Override public final GridProjectionMetrics metrics() throws GridException {
         guard();
 
@@ -210,7 +245,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final Collection<GridNode> nodes() {
+    @Override public Collection<GridNode> nodes() {
         guard();
 
         try {
@@ -496,6 +531,16 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        return new AgeProjection(this, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        return new AgeProjection(this, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridProjectionEx forSubjectId(UUID subjId) {
         if (subjId == null)
             return this;
@@ -707,6 +752,76 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return !nodeIds.contains(n.id());
+        }
+    }
+
+    /**
+     * Age-based projection.
+     */
+    private static class AgeProjection extends GridProjectionAdapter {
+        /** Serialization version. */
+        private static final long serialVersionUID = 0L;
+
+        /** Oldest flag. */
+        private boolean isOldest;
+
+        /** Selected node. */
+        private volatile GridNode node;
+
+        /** Last topology version. */
+        private volatile long lastTopVer;
+
+        /**
+         * Required for {@link Externalizable}.
+         */
+        public AgeProjection() {
+            // No-op.
+        }
+
+        /**
+         * @param prj Parent projection.
+         * @param isOldest Oldest flag.
+         */
+        private AgeProjection(GridProjectionAdapter prj, boolean isOldest) {
+            super(prj.parent, prj.ctx, prj.subjId, prj.p, prj.ids);
+
+            this.isOldest = isOldest;
+
+            reset();
+        }
+
+        /**
+         * Resets node.
+         */
+        private synchronized void reset() {
+            guard();
+
+            try {
+                lastTopVer = ctx.discovery().topologyVersion();
+
+                this.node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
+            }
+            finally {
+                unguard();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridNode node() {
+            if (ctx.discovery().topologyVersion() != lastTopVer)
+                reset();
+
+            return node;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridNode> nodes() {
+            if (ctx.discovery().topologyVersion() != lastTopVer)
+                reset();
+
+            GridNode node = this.node;
+
+            return node == null ? Collections.<GridNode>emptyList() : Collections.singletonList(node);
         }
     }
 }

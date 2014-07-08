@@ -26,6 +26,9 @@ import java.util.*;
 @GridInternal
 public class VisorLicenseCollectTask extends
     VisorMultiNodeTask<Void, Iterable<GridBiTuple<UUID, VisorLicense>>, VisorLicense> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorLicenseCollectJob job(Void arg) {
         return new VisorLicenseCollectJob(arg);

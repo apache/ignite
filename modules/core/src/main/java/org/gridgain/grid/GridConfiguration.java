@@ -16,6 +16,7 @@ import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
@@ -23,6 +24,7 @@ import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.checkpoint.*;
@@ -511,6 +513,12 @@ public class GridConfiguration {
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
+    /** Service configuration. */
+    private GridServiceConfiguration[] svcCfgs;
+
+    /** Hadoop configuration. */
+    private GridHadoopConfiguration hadoopCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -568,6 +576,7 @@ public class GridConfiguration {
         ggfsCfg = cfg.getGgfsConfiguration();
         ggfsSvc = cfg.getGgfsExecutorService();
         ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+        hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         jettyPath = cfg.getRestJettyPath();
@@ -2955,6 +2964,24 @@ public class GridConfiguration {
     }
 
     /**
+     * Gets hadoop configuration.
+     *
+     * @return Hadoop configuration.
+     */
+    public GridHadoopConfiguration getHadoopConfiguration() {
+        return hadoopCfg;
+    }
+
+    /**
+     * Sets hadoop configuration.
+     *
+     * @param hadoopCfg Hadoop configuration.
+     */
+    public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
+        this.hadoopCfg = hadoopCfg;
+    }
+
+    /**
      * Gets security credentials.
      *
      * @return Security credentials.
@@ -2970,6 +2997,24 @@ public class GridConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
         this.securityCred = securityCred;
+    }
+
+    /**
+     * Gets configurations for services to be deployed on the grid.
+     *
+     * @return Configurations for services to be deployed on the grid.
+     */
+    public GridServiceConfiguration[] getServiceConfiguration() {
+        return svcCfgs;
+    }
+
+    /**
+     * Sets configurations for services to be deployed on the grid.
+     *
+     * @param svcCfgs Configurations for services to be deployed on the grid.
+     */
+    public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
+        this.svcCfgs = svcCfgs;
     }
 
     /** {@inheritDoc} */

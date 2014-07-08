@@ -16,12 +16,11 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,8 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Cache projection.
  */
-public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
-    Externalizable {
+public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -199,25 +197,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * {@code Ands} two passed in filters.
      *
      * @param f1 First filter.
-     * @param f2 Second filter.
-     * @return {@code Anded} filter.
-     */
-    @SuppressWarnings({"unchecked"})
-    private GridBiPredicate<K, V>[] and(@Nullable final GridBiPredicate<K, V>[] f1,
-        @Nullable final GridBiPredicate<K, V>[] f2) {
-        GridBiPredicate<K, V> anded = new P2<K, V>() {
-            @Override public boolean apply(K k, V v) {
-                return F.isAll2(k, v, f1) && F.isAll2(k, v, f2);
-            }
-        };
-
-        return new GridBiPredicate[] {anded};
-    }
-
-    /**
-     * {@code Ands} two passed in filters.
-     *
-     * @param f1 First filter.
      * @param nonNulls Flag indicating whether nulls should be included.
      * @return {@code Anded} filter.
      */
@@ -342,25 +321,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
                 // If projection filter didn't pass, go to the next element.
                 // Otherwise, delegate to the visitor.
                 return !isAll(e, true) || vis.apply(e);
-            }
-        };
-    }
-
-    /**
-     * Entry projection-filter-aware reducer.
-     *
-     * @param rdc Reducer.
-     * @return Projection-filter-aware reducer.
-     */
-    private <R> GridReducer<GridCacheEntry<K, V>, R> reducer(
-        final GridReducer<GridCacheEntry<K, V>, R> rdc) {
-        return new GridReducer<GridCacheEntry<K, V>, R>() {
-            @Override public boolean collect(GridCacheEntry<K, V> e) {
-                return !isAll(e, true) || rdc.collect(e);
-            }
-
-            @Override public R reduce() {
-                return rdc.reduce();
             }
         };
     }
@@ -512,6 +472,16 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public int size() {
         return keySet().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return cache.globalSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return cache.globalPrimarySize();
     }
 
     /** {@inheritDoc} */
@@ -885,7 +855,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.entrySetx(filter);
+        return cache.entrySetx(F.and(filter, entryFilter(true)));
     }
 
     /** {@inheritDoc} */
@@ -1273,12 +1243,12 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
+    public static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Key filter. */
-        private GridBiPredicate<K, V> kvFilter;
+        private KeyValueFilter<K, V> kvFilter;
 
         /** Constant array to avoid recreation. */
         private GridPredicate<? super GridCacheEntry<K, V>> entryFilter;
@@ -1287,9 +1257,23 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
          * @param kvFilter Key-value filter.
          * @param entryFilter Entry filter.
          */
-        private FullFilter(GridBiPredicate<K, V> kvFilter, GridPredicate<? super GridCacheEntry<K, V>> entryFilter) {
+        private FullFilter(KeyValueFilter<K, V> kvFilter, GridPredicate<? super GridCacheEntry<K, V>> entryFilter) {
             this.kvFilter = kvFilter;
             this.entryFilter = entryFilter;
+        }
+
+        /**
+         * @return Key-value filter.
+         */
+        public KeyValueFilter<K, V> keyValueFilter() {
+            return kvFilter;
+        }
+
+        /**
+         * @return Entry filter.
+         */
+        public GridPredicate<? super GridCacheEntry<K, V>> entryFilter() {
+            return entryFilter;
         }
 
         /** {@inheritDoc} */
@@ -1307,7 +1291,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
+    public static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1324,6 +1308,13 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         private KeyValueFilter(GridBiPredicate<K, V> kvFilter, boolean noNulls) {
             this.kvFilter = kvFilter;
             this.noNulls = noNulls;
+        }
+
+        /**
+         * @return Key-value filter.
+         */
+        public GridBiPredicate<K, V> filter() {
+            return kvFilter;
         }
 
         /** {@inheritDoc} */

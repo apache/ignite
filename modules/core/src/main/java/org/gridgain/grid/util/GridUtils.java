@@ -7542,7 +7542,8 @@ public abstract class GridUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and null appender instances.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
+     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
      * @throws GridException In case of failure to add no-op logger for Log4j.
      */
     public static GridBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
@@ -7555,7 +7556,14 @@ public abstract class GridUtils {
 
             rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
 
-            nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            try {
+                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            }
+            catch (ClassNotFoundException ignore) {
+                // Can't found log4j no-op appender in classpath (for example, log4j was added through
+                // log4j-over-slf4j library. No-appender warning will not be suppressed.
+                return new GridBiTuple<>(rootLog, null);
+            }
 
             Class appCls = Class.forName("org.apache.log4j.Appender");
 
@@ -7577,6 +7585,9 @@ public abstract class GridUtils {
     public static void removeLog4jNoOpLogger(GridBiTuple<Object, Object> t) throws GridException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
+
+        if (nullApp == null)
+            return;
 
         try {
             Class appenderCls = Class.forName("org.apache.log4j.Appender");
@@ -8426,12 +8437,56 @@ public abstract class GridUtils {
      * @return An integer
      * @throws GridException Thrown if ch is an illegal hex character
      */
-    protected static int toDigit(char ch, int index) throws GridException {
+    public static int toDigit(char ch, int index) throws GridException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
             throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
 
         return digit;
+    }
+
+    /**
+     * Gets oldest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Oldest node.
+     */
+    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode oldest = null;
+
+        long minOrder = Long.MAX_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() < minOrder) {
+                oldest = n;
+
+                minOrder = n.order();
+            }
+        }
+
+        return oldest;
+    }
+
+    /**
+     * Gets youngest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Youngest node.
+     */
+    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode youngest = null;
+
+        long maxOrder = Long.MIN_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() > maxOrder) {
+                youngest = n;
+
+                maxOrder = n.order();
+            }
+        }
+
+        return youngest;
     }
 }

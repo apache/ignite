@@ -341,7 +341,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public GridProductVersion version() {
-            return VERSION_UNKNOWN;
+            return fromString("99.99.99");
         }
 
         /** {@inheritDoc} */

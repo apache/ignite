@@ -167,7 +167,7 @@ object visor extends VisorTag {
     private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("MM/dd/yy", LOC)
+    private final val dFmt = new SimpleDateFormat("dd MMM yyyy", LOC)
 
     private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
 
@@ -209,9 +209,6 @@ object visor extends VisorTag {
     /** Log started flag. */
     @volatile private var logStarted = false
 
-    /** Remote log disabled flag. */
-    @volatile private var rmtLogDisabled = false
-
     /** Internal thread pool. */
     @volatile var pool: ExecutorService = new GridThreadPoolExecutor()
 
@@ -243,7 +240,7 @@ object visor extends VisorTag {
         }
     }
 
-    // Asserts to make sure visor doesn't get peer deployed.
+    // Asserts to make sure Visor console doesn't get peer deployed.
     // Property '-DVISOR' is only set in ggvisor.{sh|bat} scripts.
     assert(System.getProperty("VISOR") != null, "Visor is instantiating on non-visor node.")
 
@@ -264,7 +261,7 @@ object visor extends VisorTag {
 
     addHelp(
         name = "mlist",
-        shortInfo = "Prints visor memory variables.",
+        shortInfo = "Prints Visor console memory variables.",
         spec = Seq(
             "mlist {arg}"
         ),
@@ -274,16 +271,16 @@ object visor extends VisorTag {
         ),
         examples = Seq(
             "mlist" ->
-                "Prints out all visor memory variables.",
+                "Prints out all Visor console memory variables.",
             "mlist ac" ->
-                "Lists variables that start with 'a' or 'c' from visor memory."
+                "Lists variables that start with 'a' or 'c' from Visor console memory."
         ),
         ref = VisorConsoleCommand(mlist, mlist)
     )
 
     addHelp(
         name = "mclear",
-        shortInfo = "Clears visor memory variables.",
+        shortInfo = "Clears Visor console memory variables.",
         spec = Seq(
             "mclear",
             "mclear <name>|-ev|-al|-ca|-no|-tn|-ex"
@@ -308,20 +305,20 @@ object visor extends VisorTag {
         ),
         examples = Seq(
             "mclear" ->
-                "Clears all visor variables.",
+                "Clears all Visor console variables.",
             "mclear -ca" ->
-                "Clears all visor cache variables.",
+                "Clears all Visor console cache variables.",
             "mclear n2" ->
-                "Clears 'n2' visor variable."
+                "Clears 'n2' Visor console variable."
         ),
         ref = VisorConsoleCommand(mclear, mclear)
     )
 
     addHelp(
         name = "mget",
-        shortInfo = "Gets visor memory variable.",
+        shortInfo = "Gets Visor console memory variable.",
         longInfo = Seq(
-            "Gets visor memory variable. Variable can be referenced with '@' prefix."
+            "Gets Visor console memory variable. Variable can be referenced with '@' prefix."
         ),
         spec = Seq(
             "mget <@v>"
@@ -332,14 +329,14 @@ object visor extends VisorTag {
         ),
         examples = Seq(
             "mget <@v>" ->
-                "Gets visor variable whose name is referenced by variable 'v'."
+                "Gets Visor console variable whose name is referenced by variable 'v'."
         ),
         ref = VisorConsoleCommand(mget, mget)
     )
 
     addHelp(
         name = "help",
-        shortInfo = "Prints visor help.",
+        shortInfo = "Prints Visor console help.",
         aliases = Seq("?"),
         spec = Seq(
             "help {c1 c2 ... ck}"
@@ -359,7 +356,7 @@ object visor extends VisorTag {
 
     addHelp(
         name = "status",
-        shortInfo = "Prints visor status.",
+        shortInfo = "Prints Visor console status.",
         aliases = Seq("!"),
         spec = Seq(
             "status {-q}"
@@ -370,70 +367,66 @@ object visor extends VisorTag {
         ),
         examples = Seq(
             "status" ->
-                "Prints visor status.",
+                "Prints Visor console status.",
             "status -q" ->
-                "Prints visor status in quiet mode."
+                "Prints Visor console status in quiet mode."
         ),
         ref = VisorConsoleCommand(status, status)
     )
 
     addHelp(
         name = "open",
-        shortInfo = "Connects visor to the grid.",
+        shortInfo = "Connects Visor console to the grid.",
         longInfo = Seq(
-            "Connects visor to the grid. Note that P2P class loading",
+            "Connects Visor console to the grid. Note that P2P class loading",
             "should be enabled on all nodes.",
             " ",
             "If neither '-cpath' or '-d' are provided, command will ask",
-            "user to select XML configuration file in interactive mode."
+            "user to select GridGain configuration file in interactive mode."
         ),
         spec = Seq(
-            "open -cpath=<path> {-dl}",
-            "open -d {-dl}",
-            "open {-dl}"
+            "open -cpath=<path>",
+            "open -d"
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
-                "Spring configuration path.",
-                "Can be absolute, relative to Gridgain home folder or any well formed URL."
+                "GridGain configuration path.",
+                "Can be absolute, relative to GridGain home folder or any well formed URL."
             ),
             "-d" -> Seq(
-                "Flag forces the command to connect to the default grid",
+                "Flag forces the command to connect to grid using default GridGain configuration file.",
                 "without interactive mode."
-            ),
-            "-dl" -> Seq(
-                "Flag disables remote log collection."
             )
         ),
         examples = Seq(
             "open" ->
-                "Prompts user to select XML Spring configuration file in interactive mode.",
+                "Prompts user to select GridGain configuration file in interactive mode.",
             "open -d" ->
-                "Connects visor using default XML configuration.",
+                "Connects Visor console to grid using default GridGain configuration file.",
             "open -cpath=/gg/config/mycfg.xml" ->
-                "Connects visor to grid using configuration from provided Spring file."
+                "Connects Visor console to grid using GridGain configuration from provided file."
         ),
         ref = VisorConsoleCommand(open, open)
     )
 
     addHelp(
         name = "close",
-        shortInfo = "Disconnects visor from the grid.",
+        shortInfo = "Disconnects Visor console from the grid.",
         spec = Seq("close"),
         examples = Seq(
             "close" ->
-                "Disconnects visor from the grid."
+                "Disconnects Visor console from the grid."
         ),
         ref = VisorConsoleCommand(close)
     )
 
     addHelp(
         name = "quit",
-        shortInfo = "Quit from visor console.",
+        shortInfo = "Quit from Visor console.",
         spec = Seq("quit"),
         examples = Seq(
             "quit" ->
-                "Quit from visor console."
+                "Quit from Visor console."
         ),
         aliases = Seq("exit"),
         ref = VisorConsoleCommand(quit)
@@ -447,7 +440,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into '<Gridgain home folder>/work/visor/visor-log'.",
+            "it will log into '<GridGain home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -466,7 +459,7 @@ object visor extends VisorTag {
         ),
         spec = Seq(
             "log",
-            "log -l {-f=<path>} {-p=<num>} {-t=<num>}",
+            "log -l {-f=<path>} {-p=<num>} {-t=<num>} {-dl}",
             "log -s"
         ),
         args = Seq(
@@ -476,7 +469,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path to the file can be absolute or relative to Gridgain home folder."
+                "Path to the file can be absolute or relative to GridGain home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -489,6 +482,10 @@ object visor extends VisorTag {
             "-s" -> Seq(
                 "Stops logging.",
                 "If logging is already stopped - it's no-op."
+            ),
+            "-dl" -> Seq(
+                "Disables collecting of job and task fail events, licence violation events, cache preloading events" +
+                    " from remote nodes."
             )
         ),
         examples = Seq(
@@ -497,11 +494,16 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at '<Gridgain home folder>/log'.",
-            "log -l -p=20" ->
-                "Starts logging with querying events period of 20 seconds.",
-            "log -l -t=30" ->
-                "Starts logging with topology snapshot logging period of 30 seconds.",
+                "Starts logging to file 'visor-log' located at '<GridGain home folder>/log'.",
+            ("log -l -p=20",
+                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "with querying events period of 20 seconds."),
+            ("log -l -t=30",
+                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "with topology snapshot logging period of 30 seconds."),
+            ("log -l -dl",
+                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "with disabled collection events from remote nodes."),
             "log -s" ->
                 "Stops logging."
         ),
@@ -519,14 +521,14 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Lists visor memory variables.
+     * Lists Visor console memory variables.
      *
      * ==Examples==
      * <ex>mlist ac</ex>
-     * Lists variables that start with `a` or `c` from visor memory.
+     * Lists variables that start with `a` or `c` from Visor console memory.
      *
      * <ex>mlist</ex>
-     * Lists all variables from visor memory.
+     * Lists all variables from Visor console memory.
      *
      * @param arg String that contains start characters of listed variables.
      *      If empty - all variables will be listed.
@@ -574,18 +576,18 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Lists all visor memory.
+     * Lists all Visor console memory.
      *
      * ==Examples==
      * <ex>mlist</ex>
-     * Lists all variables in visor memory.
+     * Lists all variables in Visor console memory.
      */
     def mlist() {
         mlist("")
     }
 
     /**
-     * Clears given visor variable or the whole namespace.
+     * Clears given Visor console variable or the whole namespace.
      *
      * @param arg Variable host or namespace mnemonic.
      */
@@ -625,7 +627,7 @@ object visor extends VisorTag {
     }
 
     /**
-     * Clears all visor memory.
+     * Clears all Visor console memory.
      */
     def mclear() {
         mem.clear()
@@ -640,7 +642,7 @@ object visor extends VisorTag {
         mem find(t => t._2 == v)
 
     /**
-     * Sets visor memory variable. Note that this method '''does not'''
+     * Sets Visor console memory variable. Note that this method '''does not'''
      * perform variable substitution on its parameters.
      *
      * @param n Name of the variable. Can't be `null`.
@@ -652,7 +654,7 @@ object visor extends VisorTag {
     }
 
     /**
-     * Sets visor memory variable. Note that this method '''does not'''
+     * Sets Visor console memory variable. Note that this method '''does not'''
      * perform variable substitution on its parameters.
      *
      * @param n Name of the variable. Can't be `null`.
@@ -672,12 +674,12 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Gets visor memory variable. Note that this method '''does not'''
+     * Gets Visor console memory variable. Note that this method '''does not'''
      * perform variable substitution on its parameters.
      *
      * ==Examples==
      * <ex>mget @a</ex>
-     * Gets the value for visor variable '@a'.
+     * Gets the value for Visor console variable '@a'.
      *
      * @param n Name of the variable.
      * @return Variable value or `null` if such variable doesn't exist or its value was set as `null`.
@@ -713,12 +715,12 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Gets visor memory variable. Note that this method '''does not'''
+     * Gets Visor console memory variable. Note that this method '''does not'''
      * perform variable substitution on its parameters.
      *
      * ==Examples==
      * <ex>mgetOpt a</ex>
-     * Gets the value as an option for visor variable 'a'.
+     * Gets the value as an option for Visor console variable 'a'.
      *
      * @param n Name of the variable.
      * @return Variable host as an option.
@@ -789,7 +791,7 @@ object visor extends VisorTag {
     }
 
     /**
-     * Adds command help to the visor. This will be printed as part of `help` command.
+     * Adds command help to the Visor console. This will be printed as part of `help` command.
      *
      * @param name Command name.
      * @param shortInfo Short command description.
@@ -908,7 +910,7 @@ object visor extends VisorTag {
 
             val sb = new StringBuilder()
 
-            for (i <- 0 until lst.size) {
+            for (i <- 0 until lst.size if lst(i).nonEmpty || sb.size != 0) {
                 val arg = sb.toString + lst(i)
 
                 arg match {
@@ -1193,18 +1195,17 @@ object visor extends VisorTag {
         nmFmt.format(n)
 
     /**
-     * Tests whether or not visor is connected.
+     * Tests whether or not Visor console is connected.
      *
-     * @return `True` if visor is connected.
+     * @return `True` if Visor console is connected.
      */
     def isConnected =
         isCon
 
     /**
-     * Gets timestamp of visor connection. Returns `0` if visor is not
-     * connected.
+     * Gets timestamp of Visor console connection. Returns `0` if Visor console is not connected.
      *
-     * @return Timestamp of visor connection.
+     * @return Timestamp of Visor console connection.
      */
     def connectTimestamp =
         conTs
@@ -1229,7 +1230,7 @@ object visor extends VisorTag {
     def adviseToConnect() {
         warn(
             "Visor is disconnected.",
-            "Type 'open' to connect visor or 'help open' to get help."
+            "Type 'open' to connect Visor console or 'help open' to get help."
         )
     }
 
@@ -1243,11 +1244,11 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Prints visor status.
+     * Prints Visor console status.
      *
      * ==Example==
      * <ex>status -q</ex>
-     * Prints visor status without ASCII logo.
+     * Prints Visor console status without ASCII logo.
      *
      * @param args Optional "-q" flag to disable ASCII logo printout.
      */
@@ -1285,11 +1286,11 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Prints visor status (with ASCII logo).
+     * Prints Visor console status (with ASCII logo).
      *
      * ==Example==
      * <ex>status</ex>
-     * Prints visor status.
+     * Prints Visor console status.
      */
     def status() {
         status("")
@@ -1313,6 +1314,10 @@ object visor extends VisorTag {
 
         if (!has(argLst)) {
             val t = VisorTextTable()
+
+            t.autoBorder = false
+
+            t.maxCellWidth = 55
 
             t #= ("Command", "Description")
 
@@ -1424,7 +1429,7 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Connects visor to default or named grid.
+     * Connects Visor console to default or named grid.
      *
      * ==Examples==
      * <ex>open -g=mygrid</ex>
@@ -1453,7 +1458,7 @@ object visor extends VisorTag {
                             val url = U.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new GE("Spring XML configuration path is invalid: " + path, e)
+                                throw new GE("GridGain configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1515,8 +1520,6 @@ object visor extends VisorTag {
             val path = argValue("cpath", argLst)
             val dflt = hasArgFlag("d", argLst)
 
-            rmtLogDisabled = hasArgFlag("dl", argLst)
-
             val (cfg, cfgPath) =
                 if (path.isDefined)
                     (configuration(path.get), path.get)
@@ -1545,11 +1548,13 @@ object visor extends VisorTag {
             case e: GE =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
+
+                status("q")
         }
     }
 
     /**
-     * Connects visor to configuration with path.
+     * Connects Visor console to configuration with path.
      *
      * @param cfg Configuration.
      * @param cfgPath Configuration path.
@@ -1557,7 +1562,7 @@ object visor extends VisorTag {
     def open(cfg: GridConfiguration, cfgPath: String) {
         val daemon = scalar.isDaemon
 
-        // Make sure visor starts as daemon node.
+        // Make sure Visor console starts as daemon node.
         scalar.daemon(true)
 
         val startedGridName = try {
@@ -1660,7 +1665,7 @@ object visor extends VisorTag {
                 e match {
                     case de: GridDiscoveryEvent =>
                         if (de.eventNode().id() == grid.localNode.id) {
-                            warn("Closing visor due to topology segmentation.")
+                            warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")
 
                             nl()
@@ -1678,7 +1683,7 @@ object visor extends VisorTag {
         nodeStopLsnr = new GridGainListener {
             def onStateChange(name: String, state: GridGainState) {
                 if (name == grid.name && state == GridGainState.STOPPED) {
-                    warn("Closing visor due to stopping of host grid instance.")
+                    warn("Closing Visor console due to stopping of host grid instance.")
 
                     nl()
 
@@ -1714,7 +1719,7 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * Connects visor to the default grid.
+     * Connects Visor console to the default grid.
      *
      * ==Example==
      * <ex>open</ex>
@@ -1804,7 +1809,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
+        t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
         val nodes = grid.nodes().toList
 
@@ -1839,7 +1844,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose node ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose node number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1868,7 +1873,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= (">", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
+        t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
         val neighborhood = U.neighborhood(grid.nodes()).values().toIndexedSeq
 
@@ -1922,7 +1927,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose host ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose host number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1955,7 +1960,7 @@ object visor extends VisorTag {
         else {
             val t = VisorTextTable()
 
-            t #= (">", "Configuration File")
+            t #= ("#", "Configuration File")
 
             (0 until files.size).foreach(i => t += (i, files(i)._1))
 
@@ -1963,7 +1968,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose configuration file ('c' to cancel) [0]: ", "0")
+            val a = ask("\nChoose configuration file number ('c' to cancel) [0]: ", "0")
 
             if (a.toLowerCase == "c")
                 None
@@ -2156,7 +2161,7 @@ object visor extends VisorTag {
                     case e: Exception => warn(e.getMessage)
                 }
 
-            // Fall through and treat visor as closed
+            // Fall through and treat Visor console as closed
             // even in case when grid didn't stop properly.
 
             logText("Visor left topology.")
@@ -2167,7 +2172,6 @@ object visor extends VisorTag {
                 nl()
             }
 
-            rmtLogDisabled = false
             isCon = false
             conOwner = false
             conTs = 0
@@ -2189,11 +2193,11 @@ object visor extends VisorTag {
 
     /**
      * ==Command==
-     * quit from visor.
+     * quit from Visor console.
      *
      * ==Examples==
      * <ex>quit</ex>
-     * Quit from visor.
+     * Quit from Visor console.
      */
     def quit() {
         System.exit(0)
@@ -2229,7 +2233,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at &lt`Gridgain home folder`&gt`/log`.
+     * Starts logging to file `visor-log` located at &lt`GridGain home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
@@ -2267,7 +2271,8 @@ object visor extends VisorTag {
                     scold("Logging is already started.")
                 else
                     try
-                        startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst))
+                        startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst),
+                            hasArgFlag("dl", argLst))
                     catch {
                         case e: Exception => scold(e.getMessage)
                     }
@@ -2308,8 +2313,11 @@ object visor extends VisorTag {
      *
      * @param pathOpt `Option` for log file path. If `None` - default is used.
      * @param freqOpt `Option` for events fetching frequency If `None` - default is used.
+     * @param topFreqOpt `Option` for topology refresh frequency.
+     * @param rmtLogDisabled `True` if no events collected from remote nodes.
      */
-    private def startLog(pathOpt: Option[String], freqOpt: Option[String], topFreqOpt: Option[String]) {
+    private def startLog(pathOpt: Option[String], freqOpt: Option[String], topFreqOpt: Option[String],
+        rmtLogDisabled: Boolean) {
         assert(pathOpt != null)
         assert(freqOpt != null)
         assert(!logStarted)
@@ -2364,7 +2372,7 @@ object visor extends VisorTag {
         logTimer = new Timer(true)
 
         logTimer.schedule(new TimerTask() {
-            /** Events to be logged by visor (additionally to discovery events). */
+            /** Events to be logged by Visor console (additionally to discovery events). */
             private final val LOG_EVTS = Array(
                 EVT_JOB_TIMEDOUT,
                 EVT_JOB_FAILED,
@@ -2552,7 +2560,7 @@ object visor extends VisorTag {
     }
 
     /**
-     * Prints out status and help in case someone calls `visor()` from REPL.
+     * Prints out status and help in case someone calls `visor()`.
      *
      */
     def apply() {

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.processors.continuous.GridContinuousProcessor.*;
 
 /**
  * Event consume test.
@@ -90,14 +91,17 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         assertEquals(GRID_CNT, grid(0).nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
+            GridKernal grid = (GridKernal)grid(i);
+
+            GridContinuousProcessor proc = grid.context().continuous();
 
             if (noAutoUnsubscribe) {
-                U.<Map>field(proc, "locInfos").clear();
+                localRoutines(proc).clear();
+
                 U.<Map>field(proc, "rmtInfos").clear();
             }
 
-            assertEquals(0, U.<Map>field(proc, "locInfos").size());
+            assertEquals(0, localRoutines(proc).size());
             assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
             assertEquals(0, U.<Map>field(proc, "startFuts").size());
             assertEquals(0, U.<Map>field(proc, "waitForStartAck").size());
@@ -105,6 +109,19 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(0, U.<Map>field(proc, "waitForStopAck").size());
             assertEquals(0, U.<Map>field(proc, "pending").size());
         }
+    }
+
+    /**
+     * @param proc Continuous processor.
+     * @return Local event routines.
+     */
+    private Collection<LocalRoutineInfo> localRoutines(GridContinuousProcessor proc) {
+        return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
+            new GridPredicate<LocalRoutineInfo>() {
+                @Override public boolean apply(LocalRoutineInfo info) {
+                    return info.handler().isForEvents();
+                }
+            });
     }
 
     /**
