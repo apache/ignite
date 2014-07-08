@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
-import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
@@ -238,11 +237,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         if (isRestEnabled()) {
-            GridClientMarshaller marsh = config().getMarshaller();
-
-            assertParameter(marsh != null, "cfg.getClientConnectionConfiguration().getMarshaller() != null");
-
-            ctx.portable().configureClientMarshaller(marsh);
+            ctx.portable().configureClientConnection(config());
 
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));

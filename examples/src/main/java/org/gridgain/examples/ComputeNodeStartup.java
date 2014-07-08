@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.services;
+package org.gridgain.examples;
 
 import org.gridgain.grid.*;
 
@@ -16,10 +16,10 @@ import org.gridgain.grid.*;
  */
 public class ComputeNodeStartup {
     /**
-     * Start up an empty node with specified cache configuration.
+     * Start up an empty node with example compute configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
         GridGain.start("examples/config/example-compute.xml");

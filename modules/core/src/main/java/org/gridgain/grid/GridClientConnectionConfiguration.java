@@ -104,7 +104,7 @@ public class GridClientConnectionConfiguration {
     private GridClientMessageInterceptor clientMsgInterceptor;
 
     /** Marshaller. */
-    private GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marsh;
 
     /**
      * Creates client connection configuration with all default values.

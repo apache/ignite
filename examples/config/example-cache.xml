@@ -68,7 +68,11 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <!-- Partitioned cache example configuration (portable objects enabled). -->
+                <!--
+                    Partitioned cache example configuration with portable objects enabled.
+                    Used in .NET, C++ and Java client examples that are available only in
+                    enterprise edition.
+                -->
                 <bean parent="cache-template">
                     <property name="name" value="partitioned_portable"/>
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -76,6 +80,33 @@
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
                     <property name="portableEnabled" value="true"/>
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <property name="typeMetadata">
+                                <list>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="Employee"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="address.zip" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                                <entry key="salary" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address.street</value>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
                 </bean>
 
                 <!-- Replicated cache example configuration (Atomic mode). -->

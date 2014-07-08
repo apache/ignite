@@ -9,7 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.portable.os;
 
-import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.optimized.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.portable.*;
@@ -33,8 +34,9 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void configureClientMarshaller(GridClientMarshaller marsh) {
-        // No-op.
+    @Override public void configureClientConnection(GridClientConnectionConfiguration cfg) {
+        if (cfg.getMarshaller() == null)
+            cfg.setMarshaller(new GridClientOptimizedMarshaller());
     }
 
     /** {@inheritDoc} */

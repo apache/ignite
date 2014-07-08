@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.portable;
 
-import org.gridgain.client.marshaller.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
@@ -26,11 +26,11 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean isPortableEnabled();
 
     /**
-     * Properly initializes configuration of portable marshaller for client connectivity.
+     * Properly initializes configuration for client connectivity.
      *
-     * @param marsh Marshaller.
+     * @param cfg Marshaller.
      */
-    public void configureClientMarshaller(GridClientMarshaller marsh);
+    public void configureClientConnection(GridClientConnectionConfiguration cfg);
 
     /**
      * @param typeName Type name.
