@@ -30,7 +30,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)((?!-\\bos\\bent)-([^-]+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-(rc\\d+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
     private byte major;
