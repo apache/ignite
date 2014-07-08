@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -244,6 +243,4 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
             // No-op.
         }
     }
-
-
 }

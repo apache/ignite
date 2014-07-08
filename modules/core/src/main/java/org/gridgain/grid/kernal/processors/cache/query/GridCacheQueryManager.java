@@ -903,8 +903,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         continue;
                     }
 
-                    Map.Entry<K, V> entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(F.t(key, val),
-                        qry.portableKeys(), qry.portableValues());
+                    Map.Entry<K, V> entry = F.t(key, val);
+
+                    // Unwrap entry for reducer or transformer only.
+                    if (rdc != null || trans != null)
+                        entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(entry,
+                            qry.portableKeys(), qry.portableValues());
 
                     // Reduce.
                     if (rdc != null) {
