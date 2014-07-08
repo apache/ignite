@@ -698,7 +698,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param parent Parent in case of embeddable.
      * @throws GridException In case of error.
      */
-    static void processAnnotationsInClass(boolean key, Class<?> cls, @Nullable TypeDescriptor type,
+    static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
         @Nullable ClassProperty parent) throws GridException {
         if (U.isJdk(cls))
             return;
@@ -737,7 +737,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
 
-                    type.addProperty(key, prop);
+                    type.addProperty(key, prop, true);
                 }
             }
 
@@ -756,7 +756,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                     processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
 
-                    type.addProperty(key, prop);
+                    type.addProperty(key, prop, true);
                 }
             }
         }
@@ -817,7 +817,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             String idxName = prop.name() + "_idx";
 
@@ -829,7 +829,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             String idxName = prop.name() + "_idx";
 
@@ -841,7 +841,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (String txtIdx : meta.getTextFields()) {
             ClassProperty prop = buildClassProperty(cls, txtIdx, String.class);
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             d.addFieldToTextIndex(prop.name());
         }
@@ -859,7 +859,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     ClassProperty prop = buildClassProperty(cls, idxField.getKey(), idxField.getValue().get1());
 
-                    d.addProperty(key, prop);
+                    d.addProperty(key, prop, false);
 
                     Boolean descending = idxField.getValue().get2();
 
@@ -873,8 +873,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
-            if (!d.props.containsKey(prop.name))
-                d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
         }
     }
 
@@ -890,7 +889,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             String idxName = prop.name() + "_idx";
 
@@ -902,7 +901,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             String idxName = prop.name() + "_idx";
 
@@ -914,7 +913,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         for (String txtIdx : meta.getTextFields()) {
             PortableProperty prop = buildPortableProperty(txtIdx, String.class);
 
-            d.addProperty(key, prop);
+            d.addProperty(key, prop, false);
 
             d.addFieldToTextIndex(prop.name());
         }
@@ -932,7 +931,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 for (Map.Entry<String, GridBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1());
 
-                    d.addProperty(key, prop);
+                    d.addProperty(key, prop, false);
 
                     Boolean descending = idxField.getValue().get2();
 
@@ -947,7 +946,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
             if (!d.props.containsKey(prop.name()))
-                d.addProperty(key, prop);
+                d.addProperty(key, prop, false);
         }
     }
 
@@ -1180,6 +1179,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
     }
 
+    /**
+     *
+     */
     private static class PortableProperty extends Property {
         /** Property name. */
         private String propName;
@@ -1440,10 +1442,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param prop Property.
          * @throws GridException In case of error.
          */
-        public void addProperty(boolean key, Property prop) throws GridException {
+        public void addProperty(boolean key, Property prop, boolean failOnDuplicate) throws GridException {
             String name = prop.name();
 
-            if (props.put(name, prop) != null)
+            if (props.put(name, prop) != null && failOnDuplicate)
                 throw new GridException("Property with name '" + name + "' already exists.");
 
             if (key)
