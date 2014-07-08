@@ -846,18 +846,20 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path newPath) {
         if (newPath == null) {
-            if (secondaryFs != null)
-                secondaryFs.setWorkingDirectory(toSecondary(getHomeDirectory()));
+            Path homeDir = getHomeDirectory();
 
-            workingDir.set(getHomeDirectory());
+            if (secondaryFs != null)
+                secondaryFs.setWorkingDirectory(toSecondary(homeDir));
+
+            workingDir.set(homeDir);
         }
         else {
-            String res = fixRelativePart(newPath).toUri().getPath();
+            Path fixedNewPath = fixRelativePart(newPath);
+
+            String res = fixedNewPath.toUri().getPath();
 
             if (!DFSUtil.isValidName(res))
                 throw new IllegalArgumentException("Invalid DFS directory name " + res);
-
-            Path fixedNewPath = fixRelativePart(newPath);
 
             if (secondaryFs != null)
                 secondaryFs.setWorkingDirectory(toSecondary(fixedNewPath));

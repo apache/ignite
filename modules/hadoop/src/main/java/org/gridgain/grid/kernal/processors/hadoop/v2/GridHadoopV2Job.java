@@ -434,7 +434,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             jobLdr.destroy();
 
         if (!external && rsrcMgr != null)
-            rsrcMgr.releaseJobEnvironment();
+            rsrcMgr.cleanupJobEnvironment();
     }
 
     /** {@inheritDoc} */
@@ -444,7 +444,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.releaseTaskEnvironment(info);
+        rsrcMgr.cleanupTaskEnvironment(info);
     }
 
     /** {@inheritDoc} */

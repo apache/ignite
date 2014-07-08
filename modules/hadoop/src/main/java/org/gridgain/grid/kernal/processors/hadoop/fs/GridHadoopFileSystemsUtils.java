@@ -19,7 +19,7 @@ import org.gridgain.grid.ggfs.hadoop.v1.*;
  */
 public class GridHadoopFileSystemsUtils {
     /** Name of the property for setting working directory on create new local FS instance. */
-    public static String LOCAL_FS_WORKDIR_PROPERTY = "fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".workDir";
+    public static String LOCAL_FS_WORK_DIR_PROPERTY = "fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".workDir";
 
     /**
      * Set user name and default working directory for current thread if it's supported by file system.
@@ -30,8 +30,7 @@ public class GridHadoopFileSystemsUtils {
     public static void setUser(FileSystem fs, String userName) {
         if (fs instanceof GridGgfsHadoopFileSystem)
             ((GridGgfsHadoopFileSystem)fs).setUser(userName);
-
-        if (fs instanceof GridHadoopDistributedFileSystem)
+        else if (fs instanceof GridHadoopDistributedFileSystem)
             ((GridHadoopDistributedFileSystem)fs).setUser(userName);
     }
 

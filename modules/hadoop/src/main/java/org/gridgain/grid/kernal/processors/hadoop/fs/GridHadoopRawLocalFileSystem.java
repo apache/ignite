@@ -22,20 +22,10 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
-
 /**
  * Local file system implementation for Hadoop.
  */
 public class GridHadoopRawLocalFileSystem extends FileSystem {
-    /** User name for each thread. */
-    private final ThreadLocal<String> userName = new ThreadLocal<String>() {
-        /** {@inheritDoc} */
-        @Override protected String initialValue() {
-            return DFLT_USER_NAME;
-        }
-    };
-
     /** Working directory for each thread. */
     private final ThreadLocal<Path> workDir = new ThreadLocal<Path>() {
         @Override protected Path initialValue() {
@@ -76,7 +66,7 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
         setConf(conf);
 
-        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY);
+        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY);
 
         if (initWorkDir != null)
             setWorkingDirectory(new Path(initWorkDir));

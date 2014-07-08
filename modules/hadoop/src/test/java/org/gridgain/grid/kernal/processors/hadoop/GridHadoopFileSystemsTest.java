@@ -13,10 +13,12 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
+import org.gridgain.testframework.GridTestUtils;
 
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Test file systems for the working directory multi-threading support.
@@ -56,7 +58,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
 
         setupFileSytems(cfg);
 
-        cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY,
+        cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY,
                 new Path(new Path(uri), "user/" + System.getProperty("user.name")).toString());
 
         final CountDownLatch changeUserPhase = new CountDownLatch(THREAD_COUNT);
@@ -69,49 +71,50 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
         final Path[] newAbsWorkDir = new Path[THREAD_COUNT];
         final Path[] newInstanceWorkDir = new Path[THREAD_COUNT];
 
-        for (int i = 0; i < THREAD_COUNT; i ++) {
-            final int threadNum = i;
+        final AtomicInteger threadNum = new AtomicInteger(0);
 
-            new Thread(){
-                @Override public void run() {
-                    try {
-                        FileSystem fs = FileSystem.get(uri, cfg);
+        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    int curThreadNum = threadNum.getAndIncrement();
 
-                        GridHadoopFileSystemsUtils.setUser(fs, "user" + threadNum);
+                    FileSystem fs = FileSystem.get(uri, cfg);
 
-                        if ("file".equals(uri.getScheme()))
-                            FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + threadNum));
+                    GridHadoopFileSystemsUtils.setUser(fs, "user" + curThreadNum);
 
-                        changeUserPhase.countDown();
-                        changeUserPhase.await();
+                    if ("file".equals(uri.getScheme()))
+                        FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + curThreadNum));
 
-                        newUserInitWorkDir[threadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                    changeUserPhase.countDown();
+                    changeUserPhase.await();
 
-                        FileSystem.get(uri, cfg).setWorkingDirectory(new Path("folder" + threadNum));
+                    newUserInitWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                        changeDirPhase.countDown();
-                        changeDirPhase.await();
+                    FileSystem.get(uri, cfg).setWorkingDirectory(new Path("folder" + curThreadNum));
 
-                        newWorkDir[threadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                    changeDirPhase.countDown();
+                    changeDirPhase.await();
 
-                        FileSystem.get(uri, cfg).setWorkingDirectory(new Path("/folder" + threadNum));
+                    newWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                        changeAbsDirPhase.countDown();
-                        changeAbsDirPhase.await();
+                    FileSystem.get(uri, cfg).setWorkingDirectory(new Path("/folder" + curThreadNum));
 
-                        newAbsWorkDir[threadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
+                    changeAbsDirPhase.countDown();
+                    changeAbsDirPhase.await();
 
-                        newInstanceWorkDir[threadNum] = FileSystem.newInstance(uri, cfg).getWorkingDirectory();
+                    newAbsWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
-                        finishPhase.countDown();
-                    }
-                    catch (InterruptedException | IOException e) {
-                        e.printStackTrace();
-                    }
+                    newInstanceWorkDir[curThreadNum] = FileSystem.newInstance(uri, cfg).getWorkingDirectory();
 
+                    finishPhase.countDown();
                 }
-            }.start();
-        }
+                catch (InterruptedException | IOException e) {
+                    error("Failed to execute test thread.", e);
+
+                    fail();
+                }
+            }
+        }, THREAD_COUNT, "filesystems-test");
 
         finishPhase.await();
 
@@ -120,7 +123,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
 
             Path workDir = new Path(new Path(uri), "user/user" + i);
 
-            cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORKDIR_PROPERTY, workDir.toString());
+            cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY, workDir.toString());
 
             assertEquals(workDir, FileSystem.newInstance(uri, cfg).getWorkingDirectory());
 
