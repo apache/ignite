@@ -65,6 +65,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** Portable IDs. */
     private Map<Integer, String> portableIds;
 
+    /** Type resolvers per space name. */
+    private Map<String, GridCacheQueryTypeResolver> typeResolvers = new HashMap<>();
+
     /** */
     private ExecutorService execSvc;
 
@@ -106,6 +109,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (qryCfg != null) {
                 for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
                     declaredTypes.put(new TypeId(ccfg.getName(), meta.getType()), meta);
+
+                if (qryCfg.getTypeResolver() != null)
+                    typeResolvers.put(ccfg.getName(), qryCfg.getTypeResolver());
             }
         }
 
@@ -292,20 +298,30 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             final Class<?> valCls = val.getClass();
             final Class<?> keyCls = key.getClass();
 
-            TypeId id;
+            TypeId id = null;
 
-            if (GridPortableObject.class.isAssignableFrom(valCls)) {
-                GridPortableObject portable = (GridPortableObject)val;
+            GridCacheQueryTypeResolver rslvr = typeResolvers.get(space);
 
-                String typeName = portableName(portable.typeId());
+            if (rslvr != null) {
+                String typeName = rslvr.resolveTypeName(key, val);
 
-                if (typeName == null)
-                    return;
-
-                id = new TypeId(space, typeName);
+                if (typeName != null)
+                    id = new TypeId(space, typeName);
             }
-            else
-                id = new TypeId(space, valCls);
+
+            if (id == null) {
+                if (GridPortableObject.class.isAssignableFrom(valCls)) {
+                    GridPortableObject portable = (GridPortableObject) val;
+
+                    String typeName = portableName(portable.typeId());
+
+                    if (typeName == null)
+                        return;
+
+                    id = new TypeId(space, typeName);
+                } else
+                    id = new TypeId(space, valCls);
+            }
 
             TypeDescriptor desc = types.get(id);
 
@@ -387,6 +403,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             if (!desc.registered())
                 return;
+
+            if (!desc.valueClass().equals(valCls))
+                throw new GridException("Failed to update index due to class name conflict" +
+                    "(multiple classes with same simple name are stored in the same cache) " +
+                    "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
             GridIndexingEntity<K> k = entry(key, keyBytes);
             GridIndexingEntity<V> v = entry(val, valBytes);
@@ -1569,7 +1590,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             this.space = space;
 
-            valTypeName = valType.getName();
+            valTypeName = valType.getSimpleName();
         }
 
         /**

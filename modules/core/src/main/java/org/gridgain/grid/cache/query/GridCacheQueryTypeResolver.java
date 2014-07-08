@@ -10,13 +10,18 @@
 package org.gridgain.grid.cache.query;
 
 /**
- * TODO: Add class description.
+ * Interface allowing to override table name for portable objects stored in cache.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCacheQueryTypeResolver {
+    /**
+     * Allows to override type name for portable objects being stored in cache.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @return Type name.
+     */
     public String resolveTypeName(Object key, Object val);
-
-    public Object valueOf(String field, Object key, Object val);
 }

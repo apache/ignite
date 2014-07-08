@@ -47,7 +47,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(clause, "clause");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getName(), clause, null, false,
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getSimpleName(), clause, null, false,
             prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
@@ -73,7 +73,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(search, "search");
 
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), U.box(cls).getName(), search, null, false,
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), U.box(cls).getSimpleName(), search, null, false,
             prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
