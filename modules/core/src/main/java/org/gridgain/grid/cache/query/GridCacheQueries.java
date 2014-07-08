@@ -107,6 +107,19 @@ public interface GridCacheQueries<K, V> {
     public GridFuture<?> rebuildIndexes(Class<?> cls);
 
     /**
+     * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
+     * may hold references to objects that have already been removed from cache. Although
+     * not affecting query results, these objects may consume extra memory. Rebuilding
+     * indexes will remove any redundant references that may have temporarily got stuck
+     * inside in-memory index.
+     *
+     * @param typeName Value type name to rebuild indexes for.
+     *
+     * @return Future that will be completed when rebuilding of all indexes is finished.
+     */
+    public GridFuture<?> rebuildIndexes(String typeName);
+
+    /**
      * Forces this cache to rebuild search indexes of all types. Sometimes indexes
      * may hold references to objects that have already been removed from cache. Although
      * not affecting query results, these objects may consume extra memory. Rebuilding

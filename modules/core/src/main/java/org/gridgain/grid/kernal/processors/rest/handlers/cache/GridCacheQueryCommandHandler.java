@@ -381,7 +381,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             if (clsName == null)
                 g.cache(cacheName).queries().rebuildAllIndexes();
             else
-                g.cache(cacheName).queries().rebuildIndexes(Class.forName(clsName));
+                g.cache(cacheName).queries().rebuildIndexes(clsName);
 
             return null;
         }

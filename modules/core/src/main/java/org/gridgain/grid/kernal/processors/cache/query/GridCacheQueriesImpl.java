@@ -106,6 +106,13 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+        A.notNull("typeName", typeName);
+
+        return ctx.queries().rebuildIndexes(typeName);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> rebuildAllIndexes() {
         return ctx.queries().rebuildAllIndexes();
     }

@@ -145,6 +145,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.rebuildIndexes(typeName);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> rebuildAllIndexes() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

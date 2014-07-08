@@ -184,11 +184,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public GridFuture<?> rebuildIndexes(Class<?> valType) {
+        return rebuildIndexes(valType.getName());
+    }
+
+    /**
+     * Rebuilds all search indexes of given value type.
+     *
+     * @param typeName Value type name.
+     * @return Future that will be completed when rebuilding of all indexes is finished.
+     */
+    public GridFuture<?> rebuildIndexes(String typeName) {
         if (!enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxMgr.rebuildIndexes(spi, space, valType.getName());
+            return idxMgr.rebuildIndexes(spi, space, typeName);
         }
         finally {
             leaveBusy();
