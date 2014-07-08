@@ -16,6 +16,9 @@ import org.jetbrains.annotations.*;
  * Client exception is a common super class of all client exceptions.
  */
 public class GridClientException extends Exception {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Constructs client exception.
      *

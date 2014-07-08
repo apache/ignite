@@ -155,7 +155,7 @@ public class GridCacheConfiguration {
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
-    /** Default value for 'swapEnabled' flag. */
+    /** Default value for 'queryIndexEnabled' flag. */
     public static final boolean DFLT_QUERY_INDEX_ENABLED = false;
 
     /** Default value for 'writeBehindEnabled' flag. */
@@ -1422,8 +1422,6 @@ public class GridCacheConfiguration {
      * stored in cache. If this property is {@code false}, then all indexing annotations
      * inside of any class will be ignored. By default query indexing is disabled and
      * defined via {@link #DFLT_QUERY_INDEX_ENABLED} constant.
-     * <p>
-     * Note that indexing is not supported when values are stored off-heap.
      *
      * @return {@code True} if query indexing is enabled.
      * @see #getMemoryMode()

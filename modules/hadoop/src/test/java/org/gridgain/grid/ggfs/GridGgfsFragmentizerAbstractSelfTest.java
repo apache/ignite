@@ -16,7 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -24,7 +23,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Fragmentizer abstract self test.
  */
-public class GridGgfsFragmentizerAbstractSelfTest extends GridCommonAbstractTest {
+public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 

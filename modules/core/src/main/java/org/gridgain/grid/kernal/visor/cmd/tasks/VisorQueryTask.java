@@ -34,6 +34,9 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
 @GridInternal
 public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryArg,
     GridBiTuple<? extends Exception, VisorQueryResultEx>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorQueryJob job(VisorQueryArg arg) {
         return new VisorQueryJob(arg);

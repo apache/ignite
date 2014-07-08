@@ -28,17 +28,9 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Development version. This version is larger than any other version. */
-    public static final GridProductVersion VERSION_DEV =
-        new GridProductVersion(Byte.MAX_VALUE, (byte)0, (byte)0, 0, null);
-
-    /** Unknown version. This version is less than any other version. */
-    public static final GridProductVersion VERSION_UNKNOWN =
-        new GridProductVersion((byte)-1, (byte)0, (byte)0, 0, null);
-
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-(os|ent))?(-(\\d+))?(-([0-9a-f]+))?");
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)((?!-\\bos\\bent)-([^-]+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
     private byte major;
@@ -48,6 +40,9 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Maintenance version number. */
     private byte maintenance;
+
+    /** Stage of development. */
+    private String stage;
 
     /** Revision timestamp. */
     private long revTs;
@@ -70,12 +65,25 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      * @param revHash Revision hash.
      */
     public GridProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash) {
+        this(major, minor, maintenance, "", revTs, revHash);
+    }
+
+    /**
+     * @param major Major version number.
+     * @param minor Minor version number.
+     * @param maintenance Maintenance version number.
+     * @param stage Stage of development.
+     * @param revTs Revision timestamp.
+     * @param revHash Revision hash.
+     */
+    public GridProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
         if (revHash != null && revHash.length != 20)
             throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
 
         this.major = major;
         this.minor = minor;
         this.maintenance = maintenance;
+        this.stage = stage;
         this.revTs = revTs;
         this.revHash = revHash != null ? revHash : new byte[20];
     }
@@ -108,6 +116,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     }
 
     /**
+     * @return Stage of development.
+     */
+    public String stage() {
+        return stage;
+    }
+
+    /**
      * Gets revision timestamp.
      *
      * @return Revision timestamp.
@@ -134,6 +149,24 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         return new Date(revTs);
     }
 
+    /**
+     * @param major Major version number.
+     * @param minor Minor version number.
+     * @param maintenance Maintenance version number.
+     * @return {@code True} if this version is greater or equal than the one passed in.
+     */
+    public boolean greaterThanEqual(int major, int minor, int maintenance) {
+        // NOTE: Unknown version is less than any other version.
+        if (major == this.major) {
+            if (minor == this.minor) {
+                return this.maintenance >= maintenance;
+            }
+            else
+                return this.minor > minor;
+        }
+        else
+            return this.major > major;
+    }
 
     /** {@inheritDoc} */
     @Override public int compareTo(GridProductVersion o) {
@@ -163,7 +196,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         GridProductVersion that = (GridProductVersion)o;
 
         return revTs == that.revTs && maintenance == that.maintenance && minor == that.minor && major == that.major;
-
     }
 
     /** {@inheritDoc} */
@@ -195,25 +227,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         revHash = U.readByteArray(in);
     }
 
-    /**
-     * @return Resolved object.
-     * @throws ObjectStreamException In case of error.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        if (major == -1)
-            return VERSION_UNKNOWN;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(GridProductVersion.class, this);
     }
 
     /**
-     * Tries to parse product version from it's string representation. Will return {@link #VERSION_UNKNOWN}
-     * if string does not conform to version format.
+     * Tries to parse product version from it's string representation.
      *
      * @param verStr String representation of version.
      * @return Product version.
@@ -222,8 +242,8 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     public static GridProductVersion fromString(String verStr) {
         assert verStr != null;
 
-        if (verStr.endsWith("-DEV"))
-            return VERSION_DEV;
+        if (verStr.endsWith("-DEV")) // Development version, just cut it out.
+            verStr = verStr.substring(0, verStr.length() - 4);
 
         Matcher match = VER_PATTERN.matcher(verStr);
 
@@ -233,27 +253,28 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
                 byte minor = Byte.parseByte(match.group(2));
                 byte maintenance = Byte.parseByte(match.group(3));
 
+                String stage = "";
+
+                if (match.group(4) != null)
+                    stage = match.group(5);
+
                 long revTs = 0;
 
-                if (match.group(6) != null)
-                    revTs = Long.parseLong(match.group(7));
+                if (match.group(8) != null)
+                    revTs = Long.parseLong(match.group(9));
 
                 byte[] revHash = null;
 
-                if (match.group(8) != null)
-                    revHash = U.decodeHex(match.group(9).toCharArray());
+                if (match.group(10) != null)
+                    revHash = U.decodeHex(match.group(11).toCharArray());
 
-                return new GridProductVersion(major, minor, maintenance, revTs, revHash);
+                return new GridProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
-            catch (IllegalStateException | IndexOutOfBoundsException ignored) {
-                return VERSION_UNKNOWN;
-            }
-            catch (NumberFormatException | GridException ignored) {
-                // Safety, should never happen.
-                return VERSION_UNKNOWN;
+            catch (IllegalStateException | IndexOutOfBoundsException | NumberFormatException | GridException e) {
+                throw new IllegalStateException("Failed to parse version: " + verStr, e);
             }
         }
         else
-            return VERSION_UNKNOWN;
+            throw new IllegalStateException("Failed to parse version: " + verStr);
     }
 }

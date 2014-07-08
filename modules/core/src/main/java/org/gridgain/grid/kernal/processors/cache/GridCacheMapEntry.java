@@ -1010,6 +1010,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked() : this.val;
 
+            GridCacheValueBytes oldBytes = valueBytesUnlocked();
+
             if (intercept) {
                 V interceptorVal = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
 
@@ -1056,7 +1058,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                 (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, false);
         }
@@ -1155,6 +1157,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         return new GridCacheUpdateTxResult<>(false, interceptRes.get2());
                 }
 
+                GridCacheValueBytes oldBytes = valueBytesUnlocked();
+
                 if (old == null)
                     old = saveValueForIndexUnlocked();
 
@@ -1194,7 +1198,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                     (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, null, null, false);
+                    cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes);
 
                 cctx.dataStructures().onEntryUpdated(key, true);
             }
@@ -1287,6 +1291,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // Possibly get old value form store.
             old = needVal ? rawGetOrUnmarshalUnlocked() : val;
 
+            GridCacheValueBytes oldBytes = valueBytesUnlocked();
+
             if (needVal && old == null) {
                 old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
 
@@ -1375,7 +1381,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (metrics)
                 cctx.cache().metrics0().onWrite();
 
-            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
 
@@ -1554,6 +1560,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // Possibly get old value form store.
             old = needVal ? rawGetOrUnmarshalUnlocked() : val;
 
+            GridCacheValueBytes oldBytes = valueBytesUnlocked();
+
             if (needVal && old == null) {
                 old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
 
@@ -1708,7 +1716,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             if (primary || cctx.isReplicated())
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
 
@@ -2647,7 +2655,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (!skipQryNtf) {
                     if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated())
-                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), null, null);
 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }
