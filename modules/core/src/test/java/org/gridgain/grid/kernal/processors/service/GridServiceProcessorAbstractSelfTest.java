@@ -408,7 +408,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public void cancel(GridServiceContext ctx) {
-            assert false;
+            // No-op.
         }
 
         /** {@inheritDoc} */

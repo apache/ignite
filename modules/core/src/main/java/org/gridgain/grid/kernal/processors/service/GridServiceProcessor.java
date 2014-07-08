@@ -167,6 +167,37 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             log.error("Failed to unsubscribe service assignment notifications.", e);
         }
 
+        Collection<GridServiceContextImpl> ctxs = new ArrayList<>();
+
+        synchronized (locSvcs) {
+            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values()) {
+                ctxs.addAll(ctxs0);
+            }
+        }
+
+        for (GridServiceContextImpl ctx : ctxs) {
+            ctx.setCancelled(true);
+            ctx.service().cancel(ctx);
+
+            ctx.executor().shutdownNow();
+        }
+
+        for (GridServiceContextImpl ctx : ctxs) {
+            try {
+                if (log.isInfoEnabled() && !ctxs.isEmpty())
+                    log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
+                            U.id8(ctx.executionId()) + ']');
+
+                ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+
+                U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
+                    ctx.name());
+            }
+        }
+
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         if (log.isDebugEnabled())
@@ -469,7 +500,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
                     int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                    if (perNodeCnt > maxPerNodeCnt) {
+                    if (perNodeCnt > maxPerNodeCnt && maxPerNodeCnt != 0) {
                         perNodeCnt = maxPerNodeCnt;
                         remainder = 0;
                     }
@@ -601,6 +632,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         @Override public void run() {
                             try {
                                 copy.execute(svcCtx);
+                            }
+                            catch (InterruptedException | GridInterruptedException ignore) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
+                                        svcCtx.executionId() + ']');
                             }
                             catch (Throwable e) {
                                 log.error("Service execution stopped with error [name=" + svcCtx.name() +
@@ -818,6 +854,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                     if (oldest.isLocal()) {
+                        U.debug(log, ">>>>>>>>>>>> Going to recalculate assignments [locNodeId=" +
+                            ctx.localNodeId() + ", oldest=" + oldest + ']');
+
                         final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
                         for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
