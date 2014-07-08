@@ -2398,7 +2398,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             GridDhtAtomicDeferredUpdateResponse<K, V> msg = new GridDhtAtomicDeferredUpdateResponse<>(respVers);
 
             try {
-                ctx.io().send(nodeId, msg);
+                ctx.gate().enter();
+
+                try {
+                    ctx.io().send(nodeId, msg);
+                }
+                finally {
+                    ctx.gate().leave();
+                }
+            }
+            catch (IllegalStateException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send deferred dht update response to remote node (grid is stopping) " +
+                        "[nodeId=" + nodeId + ", msg=" + msg + ']');
             }
             catch (GridTopologyException ignored) {
                 if (log.isDebugEnabled())

@@ -253,6 +253,10 @@
                                     <packages>org.gridgain.grid.security</packages>
                                 </group>
                                 <group>
+                                    <title>Distributed Services APIs</title>
+                                    <packages>org.gridgain.grid.service</packages>
+                                </group>
+                                <group>
                                     <title>JDBC Driver</title>
                                     <packages>org.gridgain.jdbc</packages>
                                 </group>
