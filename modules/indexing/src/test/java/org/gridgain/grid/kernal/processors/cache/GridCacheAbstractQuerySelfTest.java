@@ -1312,6 +1312,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     public static class Person implements Externalizable {
         /** */
         @GridToStringExclude
+        @GridCacheQuerySqlField
         private UUID id = UUID.randomUUID();
 
         /** */
