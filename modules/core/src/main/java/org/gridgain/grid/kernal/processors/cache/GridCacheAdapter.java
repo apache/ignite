@@ -3622,7 +3622,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 fut = ctx.closures().broadcastNoFailover(new GlobalSizeCallable(name(), primaryOnly), null, nodes);
             }
 
-            // Clear local cache synchronously.
+            // Get local value.
             int globalSize = primaryOnly ? primarySize() : size();
 
             if (fut != null) {
