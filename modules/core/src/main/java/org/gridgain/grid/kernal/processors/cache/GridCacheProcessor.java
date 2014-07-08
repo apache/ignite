@@ -290,7 +290,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
+        GridConfiguration cfg = ctx.config();
+
+        GridDeploymentMode depMode = cfg.getDeploymentMode();
+
+        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+            !CU.isSystemCache(cc.getName()))
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
@@ -369,8 +374,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+        boolean utilityCache = CU.isUtilityCache(cc.getName());
 
-        if (!ggfsCache && !cc.isQueryIndexEnabled())
+        if (!ggfsCache && !utilityCache && !cc.isQueryIndexEnabled())
             U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
@@ -626,8 +632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
-        if (U.securityEnabled(ctx.config()))
-            sysCaches.add(CU.SECURITY_SYS_CACHE_NAME);
+        sysCaches.add(CU.UTILITY_CACHE_NAME);
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
@@ -1668,6 +1673,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets utility cache.
+     *
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Projection over utility cache.
+     */
+    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
+        return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
+    }
+
+    /**
      * @param name Cache name.
      * @param <K> type of keys.
      * @param <V> type of values.
@@ -1724,6 +1740,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<GridCacheAdapter<?, ?>> internalCaches() {
         return caches.values();
+    }
+
+    /**
+     * @param name Cache name.
+     * @return {@code True} if specified cache is system, {@code false} otherwise.
+     */
+    public boolean systemCache(@Nullable String name) {
+        return sysCaches.contains(name);
     }
 
     /** {@inheritDoc} */

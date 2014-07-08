@@ -49,7 +49,7 @@ public class GridCacheUtils {
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Security system cache name. */
-    public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "gg-utility-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -807,17 +807,8 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
-        return new P2<K, V>() {
-            @Override public boolean apply(K k, V v) {
-                return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
-            }
-
-            @Override public String toString() {
-                return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
-            }
-        };
+    public static <K, V> GridBiPredicate<K, V> typeFilter(Class<?> keyType, Class<?> valType) {
+        return new TypeFilter<>(keyType, valType);
     }
 
     /**
@@ -1486,8 +1477,16 @@ public class GridCacheUtils {
      * @param cacheName Cache name.
      * @return {@code True} if this is security system cache.
      */
-    public static boolean isSecuritySystemCache(String cacheName) {
-        return SECURITY_SYS_CACHE_NAME.equals(cacheName);
+    public static boolean isUtilityCache(String cacheName) {
+        return UTILITY_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if system cache.
+     */
+    public static boolean isSystemCache(String cacheName) {
+        return isDrSystemCache(cacheName) || isUtilityCache(cacheName);
     }
 
     /**
@@ -1499,7 +1498,7 @@ public class GridCacheUtils {
     private static void validateExternalizable(GridLogger log, Object obj) {
         Class<?> cls = obj.getClass();
 
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable))
+        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
             LT.warn(log, null, "For best performance you should implement " +
                 "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }
@@ -1609,5 +1608,35 @@ public class GridCacheUtils {
      */
     public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
         return cache.clear(key);
+    }
+
+    /**
+     * Type filter.
+     */
+    public static class TypeFilter<K, V> implements GridBiPredicate<K, V> {
+        /** */
+        private final Class<?> keyType;
+
+        /** */
+        private final Class<?> valType;
+
+        /**
+         * @param keyType Key type.
+         * @param valType Value type.
+         */
+        public TypeFilter(Class<?> keyType, Class<?> valType) {
+            this.keyType = keyType;
+            this.valType = valType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(K k, V v) {
+            return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
+        }
     }
 }

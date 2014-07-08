@@ -41,6 +41,7 @@ import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -217,6 +218,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Closure processor.
      */
     public GridClosureProcessor closure();
+
+    /**
+     * Gets service processor.
+     *
+     * @return Service processor.
+     */
+    public GridServiceProcessor service();
 
     /**
      * Gets port processor.
