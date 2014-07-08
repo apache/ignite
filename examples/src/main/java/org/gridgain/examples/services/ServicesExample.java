@@ -24,9 +24,20 @@ import org.gridgain.grid.service.*;
  * @version @java.version
  */
 public class ServicesExample {
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            GridServices svcs = grid.services();
+            GridProjection rmts = grid.forRemotes();
+
+            if (rmts.nodes().isEmpty()) {
+                System.err.println(">>>");
+                System.err.println(">>> Must start at least one remote node using " +
+                    ComputeNodeStartup.class.getSimpleName() + '.');
+                System.err.println(">>>");
+
+                return;
+            }
+
+            GridServices svcs = rmts.services();
 
             // Deploy cluster singleton.
             svcs.deployClusterSingleton("myClusterSingletonService", new SimpleService()).get();

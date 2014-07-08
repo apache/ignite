@@ -167,6 +167,37 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             log.error("Failed to unsubscribe service assignment notifications.", e);
         }
 
+        Collection<GridServiceContextImpl> ctxs = new ArrayList<>();
+
+        synchronized (locSvcs) {
+            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values()) {
+                ctxs.addAll(ctxs0);
+            }
+        }
+
+        for (GridServiceContextImpl ctx : ctxs) {
+            ctx.setCancelled(true);
+            ctx.service().cancel(ctx);
+
+            ctx.executor().shutdownNow();
+        }
+
+        for (GridServiceContextImpl ctx : ctxs) {
+            try {
+                if (log.isInfoEnabled() && !ctxs.isEmpty())
+                    log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
+                            U.id8(ctx.executionId()) + ']');
+
+                ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+
+                U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
+                    ctx.name());
+            }
+        }
+
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         if (log.isDebugEnabled())
@@ -469,7 +500,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
                     int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                    if (perNodeCnt > maxPerNodeCnt) {
+                    if (perNodeCnt > maxPerNodeCnt && maxPerNodeCnt != 0) {
                         perNodeCnt = maxPerNodeCnt;
                         remainder = 0;
                     }
@@ -488,6 +519,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                             // Avoid redundant moving of services.
                             for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                // Do not assign services to left nodes.
+                                if (ctx.discovery().node(e.getKey()) == null)
+                                    continue;
+
                                 // If old count and new count match, then reuse the assignment.
                                 if (e.getValue() == cnt) {
                                     cnts.put(e.getKey(), cnt);
@@ -508,10 +543,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 for (Entry<UUID, Integer> e : entries) {
                                     // Assign only the ones that have not been reused from previous assignments.
                                     if (!used.contains(e.getKey())) {
-                                        e.setValue(e.getValue() + 1);
+                                        if (e.getValue() < maxPerNodeCnt) {
+                                            e.setValue(e.getValue() + 1);
 
-                                        if (--remainder == 0)
-                                            break;
+                                            if (--remainder == 0)
+                                                break;
+                                        }
                                     }
                                 }
                             }
@@ -601,6 +638,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         @Override public void run() {
                             try {
                                 copy.execute(svcCtx);
+                            }
+                            catch (InterruptedException | GridInterruptedException ignore) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
+                                        svcCtx.executionId() + ']');
                             }
                             catch (Throwable e) {
                                 log.error("Service execution stopped with error [name=" + svcCtx.name() +
