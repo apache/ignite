@@ -519,6 +519,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                             // Avoid redundant moving of services.
                             for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                // Do not assign services to left nodes.
+                                if (ctx.discovery().node(e.getKey()) == null)
+                                    continue;
+
                                 // If old count and new count match, then reuse the assignment.
                                 if (e.getValue() == cnt) {
                                     cnts.put(e.getKey(), cnt);
@@ -539,10 +543,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 for (Entry<UUID, Integer> e : entries) {
                                     // Assign only the ones that have not been reused from previous assignments.
                                     if (!used.contains(e.getKey())) {
-                                        e.setValue(e.getValue() + 1);
+                                        if (e.getValue() < maxPerNodeCnt) {
+                                            e.setValue(e.getValue() + 1);
 
-                                        if (--remainder == 0)
-                                            break;
+                                            if (--remainder == 0)
+                                                break;
+                                        }
                                     }
                                 }
                             }
@@ -854,9 +860,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
                     if (oldest.isLocal()) {
-                        U.debug(log, ">>>>>>>>>>>> Going to recalculate assignments [locNodeId=" +
-                            ctx.localNodeId() + ", oldest=" + oldest + ']');
-
                         final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
                         for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
