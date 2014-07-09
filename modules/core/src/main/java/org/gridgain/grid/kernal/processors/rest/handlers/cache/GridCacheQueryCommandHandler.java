@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheQueryRequest;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
@@ -285,6 +286,15 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
                 default:
                     throw new GridException("Unsupported query type: " + req.type());
+            }
+
+            boolean keepPortable = req.keepPortable();
+
+            if (!keepPortable) {
+                if (req.type() != GridClientCacheQueryRequest.GridQueryType.SCAN &&
+                    (req.remoteReducerClassName() == null && req.remoteTransformerClassName() == null))
+                    // Do not deserialize values on server if not needed.
+                    keepPortable = true;
             }
 
             ((GridCacheQueryAdapter)qry).keepPortable(req.keepPortable());
