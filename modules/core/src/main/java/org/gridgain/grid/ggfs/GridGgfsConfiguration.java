@@ -49,9 +49,6 @@ public class GridGgfsConfiguration {
     /** Fragmentizer enabled property. */
     public static final boolean DFLT_FRAGMENTIZER_ENABLED = false;
 
-    /** Default user's working directory. */
-    public static final GridGgfsPath DFLT_WORKING_DIR = new GridGgfsPath("/Users/" + DFLT_USER_NAME);
-
     /** Default batch size for logging. */
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
 

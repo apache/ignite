@@ -7495,16 +7495,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether a node is a Visor node.
-     *
-     * @param node Node to check.
-     * @return {@code True} if node is a Visor node, {@code false} otherwise.
-     */
-    public static boolean isVisorNode(GridNode node) {
-        return node.attributes().containsKey("VISOR");
-    }
-
-    /**
      * Checks whether property is one added by Visor when node is started via remote SSH session.
      *
      * @param name Property name to check.

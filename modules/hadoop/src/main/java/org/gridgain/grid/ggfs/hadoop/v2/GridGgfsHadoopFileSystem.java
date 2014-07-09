@@ -14,12 +14,12 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.permission.*;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -82,7 +82,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private GridGgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
-    private GridGgfsPath workingDir = DFLT_WORKING_DIR;
+    private GridGgfsPath workingDir;
 
     /** URI. */
     private URI uri;
@@ -138,6 +138,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             throw e;
         }
+
+        workingDir = new GridGgfsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
     }
 
     /** {@inheritDoc} */
