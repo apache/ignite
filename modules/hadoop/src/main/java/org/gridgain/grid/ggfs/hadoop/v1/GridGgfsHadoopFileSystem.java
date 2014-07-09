@@ -22,11 +22,13 @@ import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
@@ -79,6 +81,9 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
     /** Empty array of file statuses. */
     public static final FileStatus[] EMPTY_FILE_STATUS = new FileStatus[0];
+
+    /** Ensures that close routine is invoked at most once. */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Grid remote client. */
     private GridGgfsHadoopWrapper rmtClient;
@@ -136,6 +141,9 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Custom-provided sequential reads before prefetch. */
     private int seqReadsBeforePrefetch;
 
+    /** The cache was disabled when the instance was creating. */
+    private boolean cacheEnabled;
+
     /** {@inheritDoc} */
     @Override public URI getUri() {
         if (uri == null)
@@ -150,7 +158,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        // No-op.
+        if (closeGuard.get())
+            throw new IOException("File system is stopped.");
     }
 
     /**
@@ -184,6 +193,10 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             super.initialize(name, cfg);
 
             setConf(cfg);
+
+            String disableCacheName = String.format("fs.%s.impl.disable.cache", name.getScheme());
+
+            cacheEnabled = !cfg.getBoolean(disableCacheName, false);
 
             mgmt = cfg.getBoolean(GGFS_MANAGEMENT, false);
 
