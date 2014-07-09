@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hadoop1-integration</artifactId>
+            <artifactId>gridgain-hadoop2-integration</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
