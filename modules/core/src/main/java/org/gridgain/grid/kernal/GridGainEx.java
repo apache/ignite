@@ -74,6 +74,7 @@ import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
@@ -2017,6 +2018,7 @@ public class GridGainEx {
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
             cache.setQueryIndexEnabled(false);
+            cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
 
             return cache;
