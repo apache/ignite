@@ -66,12 +66,14 @@ public class GridHadoopDistributedFileSystem extends DistributedFileSystem {
 
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path dir) {
-        String res = fixRelativePart(dir).toUri().getPath();
+        Path fixedDir = fixRelativePart(dir);
+
+        String res = fixedDir.toUri().getPath();
 
         if (!DFSUtil.isValidName(res))
             throw new IllegalArgumentException("Invalid DFS directory name " + res);
 
-        workingDir.set(fixRelativePart(dir));
+        workingDir.set(fixedDir);
     }
 
     /** {@inheritDoc} */
