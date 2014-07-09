@@ -69,12 +69,18 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Set {@link #jobLocDir} as working directory in local file system.
+     * Set working directory in local file system.
      *
      * @throws IOException If fails.
+     * @param dir Working directory.
      */
-    private void setJobWorkingDirectory() throws IOException {
-        FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(jobLocDir.getAbsolutePath()));
+    private void setLocalFSWorkingDirectory(File dir) throws IOException {
+        JobConf cfg = ctx.getJobConf();
+
+        cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY, dir.getAbsolutePath());
+
+        if(!cfg.getBoolean("fs.file.impl.disable.cache", false))
+            FileSystem.getLocal(cfg).setWorkingDirectory(new Path(dir.getAbsolutePath()));
     }
 
     /**
@@ -122,7 +128,7 @@ public class GridHadoopV2JobResourceManager {
             else if (!jobLocDir.mkdirs())
                 throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
 
-            setJobWorkingDirectory();
+            setLocalFSWorkingDirectory(jobLocDir);
         }
         catch (URISyntaxException | IOException e) {
             throw new GridException(e);
@@ -217,9 +223,9 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Release resources allocated fot job execution.
+     * Removes temporary working directory is created for job execution.
      */
-    public void releaseJobEnvironment() {
+    public void cleanupJobEnvironment() {
         if (jobLocDir.exists())
             U.delete(jobLocDir);
     }
@@ -247,6 +253,8 @@ public class GridHadoopV2JobResourceManager {
      */
     public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         try {
+            JobConf cfg = ctx.getJobConf();
+
             switch(info.type()) {
                 case MAP:
                 case REDUCE:
@@ -276,13 +284,17 @@ public class GridHadoopV2JobResourceManager {
                         }
                     }
 
-                    FileSystem.getLocal(ctx.getJobConf()).setWorkingDirectory(new Path(locDir.getAbsolutePath()));
+                    setLocalFSWorkingDirectory(locDir);
 
                     break;
 
                 default:
-                    setJobWorkingDirectory();
+                    setLocalFSWorkingDirectory(jobLocDir);
             }
+
+            FileSystem fs = FileSystem.get(cfg);
+
+            GridHadoopFileSystemsUtils.setUser(fs, cfg.getUser());
         }
         catch (IOException e) {
             throw new GridException("Unable to prepare local working directory for the task " +
@@ -291,12 +303,13 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Releases resources allocated by {@link #prepareTaskEnvironment} and restores working directory to initial state.
+     * Removes temporary working directory is created by {@link #prepareTaskEnvironment} and restores working directory
+     * of local file system to initial state.
      *
      * @param info Task info.
      * @throws GridException If fails.
      */
-    public void releaseTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         GridHadoopRawLocalFileSystem fs;
 
         File locDir = taskLocalDir(info);

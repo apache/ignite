@@ -13,6 +13,8 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
+import org.apache.hadoop.hdfs.*;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
@@ -20,7 +22,6 @@ import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -86,8 +87,21 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Grid remote client. */
     private GridGgfsHadoopWrapper rmtClient;
 
-    /** Working directory. */
-    private GridGgfsPath workingDir = DFLT_WORKING_DIR;
+    /** User name for each thread. */
+    private final ThreadLocal<String> userName = new ThreadLocal<String>(){
+        /** {@inheritDoc} */
+        @Override protected String initialValue() {
+            return DFLT_USER_NAME;
+        }
+    };
+
+    /** Working directory for each thread. */
+    private final ThreadLocal<Path> workingDir = new ThreadLocal<Path>(){
+        /** {@inheritDoc} */
+        @Override protected Path initialValue() {
+            return getHomeDirectory();
+        }
+    };
 
     /** Default replication factor. */
     private short dfltReplication;
@@ -177,6 +191,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             super.initialize(name, cfg);
 
+            setConf(cfg);
+
             String disableCacheName = String.format("fs.%s.impl.disable.cache", name.getScheme());
 
             cacheEnabled = !cfg.getBoolean(disableCacheName, false);
@@ -190,6 +206,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             uri = name;
 
             uriAuthority = uri.getAuthority();
+
+            setUser(cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
 
             // Override sequential reads before prefetch if needed.
             seqReadsBeforePrefetch = parameter(cfg, PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH, uriAuthority, 0);
@@ -824,24 +842,51 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @Override public Path getHomeDirectory() {
+        Path path = new Path("/user/" + userName.get());
+
+        return path.makeQualified(getUri(), null);
+    }
+
+    /**
+     * Set user name and default working directory for current thread.
+     *
+     * @param userName User name.
+     */
+    public void setUser(String userName) {
+        this.userName.set(userName);
+
+        setWorkingDirectory(null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path newPath) {
         if (newPath == null) {
-            if (secondaryFs != null)
-                secondaryFs.setWorkingDirectory(toSecondary(convert(DFLT_WORKING_DIR)));
+            Path homeDir = getHomeDirectory();
 
-            workingDir = DFLT_WORKING_DIR;
+            if (secondaryFs != null)
+                secondaryFs.setWorkingDirectory(toSecondary(homeDir));
+
+            workingDir.set(homeDir);
         }
         else {
-            if (secondaryFs != null)
-                secondaryFs.setWorkingDirectory(toSecondary(newPath));
+            Path fixedNewPath = fixRelativePart(newPath);
 
-            workingDir = convert(newPath);
+            String res = fixedNewPath.toUri().getPath();
+
+            if (!DFSUtil.isValidName(res))
+                throw new IllegalArgumentException("Invalid DFS directory name " + res);
+
+            if (secondaryFs != null)
+                secondaryFs.setWorkingDirectory(toSecondary(fixedNewPath));
+
+            workingDir.set(fixedNewPath);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Path getWorkingDirectory() {
-        return convert(workingDir);
+        return workingDir.get();
     }
 
     /** {@inheritDoc} */
@@ -951,11 +996,11 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     @Override public BlockLocation[] getFileBlockLocations(FileStatus status, long start, long len) throws IOException {
         A.notNull(status, "status");
 
-        GridGgfsPath path = convert(status.getPath());
-
         enterBusy();
 
         try {
+            GridGgfsPath path = convert(status.getPath());
+
             if (mode(status.getPath()) == PROXY) {
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -1101,7 +1146,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             return null;
 
         return path.isAbsolute() ? new GridGgfsPath(path.toUri().getPath()) :
-            new GridGgfsPath(workingDir, path.toUri().getPath());
+            new GridGgfsPath(convert(workingDir.get()), path.toUri().getPath());
     }
 
     /**

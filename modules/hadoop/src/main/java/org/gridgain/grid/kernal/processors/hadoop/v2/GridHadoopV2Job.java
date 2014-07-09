@@ -39,12 +39,6 @@ import java.util.*;
  */
 public class GridHadoopV2Job implements GridHadoopJob {
     /** */
-    private static final String LOCAL_FS_V1 = "fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
-
-    /** */
-    private static final String LOCAL_FS_V2 = "fs.AbstractFileSystem." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
-
-    /** */
     private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
 
     /**
@@ -126,8 +120,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         ctx = new JobContextImpl(cfg, hadoopJobID);
 
-        cfg.set(LOCAL_FS_V1, GridHadoopLocalFileSystemV1.class.getName());
-        cfg.set(LOCAL_FS_V2, GridHadoopLocalFileSystemV2.class.getName());
+        GridHadoopFileSystemsUtils.setupFileSystems(cfg);
 
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
@@ -436,7 +429,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             jobLdr.destroy();
 
         if (!external && rsrcMgr != null)
-            rsrcMgr.releaseJobEnvironment();
+            rsrcMgr.cleanupJobEnvironment();
     }
 
     /** {@inheritDoc} */
@@ -446,7 +439,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.releaseTaskEnvironment(info);
+        rsrcMgr.cleanupTaskEnvironment(info);
     }
 
     /** {@inheritDoc} */
