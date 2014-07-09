@@ -5,7 +5,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -68,9 +67,6 @@ public class GridTcpRouterConfiguration {
 
     /** Credentials. */
     private GridSecurityCredentialsProvider credsProvider;
-
-    /** Portable configuration. */
-    private GridPortableConfiguration portableCfg;
 
     /**
      * Gets TCP host or IP address for router to bind to.
@@ -284,24 +280,6 @@ public class GridTcpRouterConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
         this.credsProvider = credsProvider;
-    }
-
-    /**
-     * Gets portable configuration.
-     *
-     * @return Portable configuration.
-     */
-    public GridPortableConfiguration getPortableConfiguration() {
-        return portableCfg;
-    }
-
-    /**
-     * Sets portable configuration.
-     *
-     * @param portableCfg Portable configuration.
-     */
-    public void setPortableConfiguration(@Nullable GridPortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
     }
 
     /** {@inheritDoc} */
