@@ -1891,7 +1891,7 @@ public class GridGainEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided or it is a Visor node.
+            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
