@@ -24,20 +24,37 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
     public void testFromString() throws Exception {
         GridProductVersion ver = GridProductVersion.fromString("1.2.3");
 
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-ent-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-os-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-RC1-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-ga1-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-M1-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-0-DEV"));
-        assertEquals(ver, GridProductVersion.fromString("1.2.3-DEV"));
+        assertEquals(1, ver.major());
+        assertEquals(2, ver.minor());
+        assertEquals(3, ver.maintenance());
+        assertEquals("", ver.stage());
+        assertEquals(0, ver.revisionTimestamp());
+        assertArrayEquals(new byte[20], ver.revisionHash());
 
-        ver = GridProductVersion.fromString("1.2.3");
+        ver = GridProductVersion.fromString("1.2.3-ent-0-DEV");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
         assertEquals(0, ver.revisionTimestamp());
+        assertArrayEquals(new byte[20], ver.revisionHash());
+
+        ver = GridProductVersion.fromString("1.2.3-rc1-os-4-DEV");
+
+        assertEquals(1, ver.major());
+        assertEquals(2, ver.minor());
+        assertEquals(3, ver.maintenance());
+        assertEquals("rc1", ver.stage());
+        assertEquals(4, ver.revisionTimestamp());
+        assertArrayEquals(new byte[20], ver.revisionHash());
+
+        ver = GridProductVersion.fromString("1.2.3-GA1-4-DEV");
+
+        assertEquals(1, ver.major());
+        assertEquals(2, ver.minor());
+        assertEquals(3, ver.maintenance());
+        assertEquals("GA1", ver.stage());
+        assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
         ver = GridProductVersion.fromString("1.2.3-ent");
@@ -45,14 +62,16 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
+        assertEquals("", ver.stage());
         assertEquals(0, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
-        ver = GridProductVersion.fromString("1.2.3-ent-4");
+        ver = GridProductVersion.fromString("1.2.3-os-4");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
+        assertEquals("", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
@@ -61,15 +80,17 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
+        assertEquals("", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
             ver.revisionHash());
 
-        ver = GridProductVersion.fromString("1.2.3-rc1-ent-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
+        ver = GridProductVersion.fromString("1.2.3-rc1-os-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
+        assertEquals("rc1", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[] {24,-27,-89,-20,-98,50,2,18,106,105,-68,35,26,107,-106,91,-63,-41,61,-18},
             ver.revisionHash());
