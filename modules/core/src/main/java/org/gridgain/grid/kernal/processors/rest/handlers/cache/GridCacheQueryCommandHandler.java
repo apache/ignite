@@ -124,7 +124,8 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).compute().broadcast(c);
+        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).
+            compute().withNoFailover().broadcast(c);
 
         return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
@@ -286,7 +287,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     throw new GridException("Unsupported query type: " + req.type());
             }
 
-            ((GridCacheQueryAdapter)qry).keepPortable(true);
+            ((GridCacheQueryAdapter)qry).keepPortable(req.keepPortable());
 
             if (req.pageSize() > 0)
                 qry = qry.pageSize(req.pageSize());

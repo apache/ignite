@@ -141,6 +141,8 @@
                         </bean>
                     </property>
 
+                    <property name="portableEnabled" value="true"/>
+
                     <!-- Enable queries for partitioned cache -->
                     <property name="queryIndexEnabled" value="true"/>
 
