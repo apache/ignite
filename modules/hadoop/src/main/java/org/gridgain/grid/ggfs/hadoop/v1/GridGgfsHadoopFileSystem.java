@@ -80,9 +80,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Empty array of file statuses. */
     public static final FileStatus[] EMPTY_FILE_STATUS = new FileStatus[0];
 
-    /** Busy lock. */
-    private final GridBusyLock busyLock = new GridBusyLock();
-
     /** Ensures that close routine is invoked at most once. */
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
@@ -146,7 +143,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        if (!busyLock.enterBusy())
+        if (closeGuard.get())
             throw new IOException("File system is stopped.");
     }
 
@@ -154,7 +151,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * Leave busy state.
      */
     private void leaveBusy() {
-        busyLock.leaveBusy();
+        // No-op.
     }
 
     /**
@@ -344,8 +341,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         if (closeGuard.compareAndSet(false, true)) {
             if (LOG.isDebugEnabled())
                 LOG.debug("File system closed [uri=" + uri + ", endpoint=" + uriAuthority + ']');
-
-            busyLock.block();
 
             if (rmtClient == null)
                 return;

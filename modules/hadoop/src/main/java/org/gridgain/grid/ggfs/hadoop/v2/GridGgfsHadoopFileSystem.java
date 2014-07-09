@@ -75,9 +75,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
 
-    /** Busy lock. */
-    private final GridBusyLock busyLock = new GridBusyLock();
-
     /** Ensures that close routine is invoked at most once. */
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
@@ -174,7 +171,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        if (!busyLock.enterBusy())
+        if (closeGuard.get())
             throw new IOException("File system is stopped.");
     }
 
@@ -182,7 +179,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * Leave busy state.
      */
     private void leaveBusy() {
-        busyLock.leaveBusy();
+        // No-op.
     }
 
     /**
@@ -308,8 +305,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         if (closeGuard.compareAndSet(false, true)) {
-            busyLock.block();
-
             if (rmtClient == null)
                 return;
 
