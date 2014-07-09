@@ -92,7 +92,9 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
         try {
             Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
 
-            Constructor<?> cons = cls.getConstructor(GridLogger.class, GridRouterClientImpl.class);
+            Constructor<?> cons = cls.getDeclaredConstructor(GridLogger.class, GridRouterClientImpl.class);
+
+            cons.setAccessible(true);
 
             lsnr = (GridNioServerListener<GridClientMessage>)cons.newInstance(log, client);
         }
