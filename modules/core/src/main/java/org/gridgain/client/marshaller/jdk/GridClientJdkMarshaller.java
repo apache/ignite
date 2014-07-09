@@ -19,6 +19,9 @@ import java.nio.*;
  * Simple marshaller that utilize JDK serialization features.
  */
 public class GridClientJdkMarshaller implements GridClientMarshaller {
+    /** ID. */
+    public static final byte ID = 2;
+
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         GridByteArrayOutputStream bOut = new GridByteArrayOutputStream();

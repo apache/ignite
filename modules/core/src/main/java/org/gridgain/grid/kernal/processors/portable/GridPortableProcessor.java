@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.portable;
 
-import org.gridgain.grid.*;
+import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
@@ -18,20 +18,6 @@ import org.jetbrains.annotations.*;
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
-    /**
-     * Whether portable marshaller is configured.
-     *
-     * @return Whether portable marshaller is configured.
-     */
-    public boolean isPortableEnabled();
-
-    /**
-     * Properly initializes configuration for client connectivity.
-     *
-     * @param cfg Marshaller.
-     */
-    public void configureClientConnection(GridClientConnectionConfiguration cfg);
-
     /**
      * @param typeName Type name.
      * @return Type ID.
@@ -44,4 +30,16 @@ public interface GridPortableProcessor extends GridProcessor {
      * @throws GridPortableException In case of error.
      */
     public Object marshalToPortable(@Nullable Object obj) throws GridPortableException;
+
+    /**
+     * @return Portable marshaller for client connectivity or {@code null} if it's not
+     *      supported (in case of OS edition).
+     */
+    @Nullable public GridClientMarshaller portableMarshaller();
+
+    /**
+     * @param marsh Client marshaller.
+     * @return Whether marshaller is portable.
+     */
+    public boolean isPortable(GridClientMarshaller marsh);
 }

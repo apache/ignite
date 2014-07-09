@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -28,23 +31,12 @@ import java.util.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
  */
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
-    /** Logger. */
-    private GridLogger log;
-
-    /** Protocol. */
-    private GridTcpRestProtocol proto;
-
-    /** Protocol handler. */
-    private GridRestProtocolHandler hnd;
-
-    /** Handler for all memcache requests */
-    private GridTcpMemcachedNioListener memcachedLsnr;
-
     /** Mapping of {@code GridCacheOperation} to {@code GridRestCommand}. */
     private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
@@ -71,6 +63,21 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         SUPP_VERS.add((short)1);
     }
 
+    /** Marshallers map. */
+    private final Map<Byte, GridClientMarshaller> marshMap;
+
+    /** Logger. */
+    private GridLogger log;
+
+    /** Protocol. */
+    private GridTcpRestProtocol proto;
+
+    /** Protocol handler. */
+    private GridRestProtocolHandler hnd;
+
+    /** Handler for all memcache requests */
+    private GridTcpMemcachedNioListener memcachedLsnr;
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
@@ -87,6 +94,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
+
+        marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+
+        marshMap.put((byte)0, ctx.portable().portableMarshaller());
     }
 
     /** {@inheritDoc} */
@@ -115,7 +129,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                short ver = U.bytesToShort(hs.versionBytes(), 0);
+                short ver = hs.version();
 
                 if (!SUPP_VERS.contains(ver)) {
                     U.error(log, "Client protocol version is not supported [ses=" + ses +
@@ -124,8 +138,23 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                     ses.close();
                 }
-                else
-                    ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
+                else {
+                    byte marshId = hs.marshallerId();
+
+                    GridClientMarshaller marsh = marshMap.get(marshId);
+
+                    if (marsh == null) {
+                        U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
+                            "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
+
+                        ses.close();
+                    }
+                    else {
+                        ses.addMeta(MARSHALLER.ordinal(), marsh);
+
+                        ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
+                    }
+                }
             }
             else {
                 final GridRestRequest req = createRestRequest(ses, msg);
@@ -166,7 +195,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             wrapper.clientId(msg.clientId());
 
                             try {
-                                ByteBuffer bytes = proto.marshaller().marshal(res, 0);
+                                ByteBuffer bytes = proto.marshaller(ses).marshal(res, 0);
 
                                 wrapper.message(bytes);
 
@@ -220,6 +249,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restCacheReq.key(req.key());
             restCacheReq.value(req.value());
             restCacheReq.value2(req.value2());
+            restCacheReq.portableMode(proto.portableMode(ses));
 
             Map vals = req.values();
             if (vals != null)
@@ -263,6 +293,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restTaskReq.taskName(req.taskName());
             restTaskReq.params(Arrays.asList(req.argument()));
             restTaskReq.keepPortables(req.keepPortables());
+            restTaskReq.portableMode(proto.portableMode(ses));
 
             restReq = restTaskReq;
         }

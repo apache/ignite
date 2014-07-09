@@ -237,8 +237,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         if (isRestEnabled()) {
-            ctx.portable().configureClientConnection(config());
-
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
             addHandler(new GridCacheQueryCommandHandler(ctx));

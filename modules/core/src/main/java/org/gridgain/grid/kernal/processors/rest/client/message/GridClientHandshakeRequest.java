@@ -10,19 +10,18 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
  * A client handshake request, containing version info and
- * a marshaller protocol ID.
+ * a marshaller ID.
  *
  * A handshake request structure is as follows:
  * <ol>
- *     <li>Message header (1 byte)</li>
- *     <li>Version info (4 bytes)</li>
- *     <li>Marshaller PROTOCOL_ID (1 byte)</li>
+ *     <li>Protocol version (2 bytes)</li>
+ *     <li>Marshaller ID (2 bits)</li>
+ *     <li>Reserved space (6 bits + 1 byte)</li>
  * </ol>
  */
 public class GridClientHandshakeRequest extends GridClientAbstractMessage {
@@ -30,40 +29,52 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Packet size. */
-    private static final int PACKET_SIZE = 5;
+    private static final int PACKET_SIZE = 4;
 
     /** Protocol version. */
     private static final short PROTO_VER = 1;
 
-    /** Signal char. */
-    public static final byte SIGNAL_CHAR = (byte)0x91;
+    /** Handshake byte array. */
+    private byte[] arr;
 
-    /** Version info byte array. */
-    private byte[] verArr;
+    /** Marshaller ID. */
+    private byte marshId;
 
     /**
-     * @return Copy of version bytes or {@code null}, if version
-     *         bytes were not set.
+     * @return Protocol version.
      */
-    @Nullable public byte[] versionBytes() {
-        if (verArr == null)
-            return null;
-
-        return Arrays.copyOf(verArr, verArr.length);
+    public short version() {
+        return U.bytesToShort(arr, 0);
     }
 
     /**
-     * Sets the version bytes from specified buffer to a given value.
+     * @return Marshaller ID.
+     */
+    public byte marshallerId() {
+        return (byte)((arr[2] & 0xff) >> 6);
+    }
+
+    /**
+     * @param marshId Marshaller ID.
+     */
+    public void marshallerId(byte marshId) {
+        assert marshId >= 0 && marshId <= 2;
+
+        this.marshId = marshId;
+    }
+
+    /**
+     * Sets bytes from specified buffer to a given value.
      *
      * @param buf Buffer.
      * @param off Offset.
      * @param len Length.
      */
-    public void putVersionBytes(byte[] buf, int off, int len) {
-        if (verArr == null)
-            verArr = new byte[PACKET_SIZE - 1];
+    public void putBytes(byte[] buf, int off, int len) {
+        if (arr == null)
+            arr = new byte[PACKET_SIZE];
 
-        U.arrayCopy(buf, 0, verArr, off, len);
+        U.arrayCopy(buf, 0, arr, off, len);
     }
 
     /**
@@ -72,26 +83,15 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     public byte[] rawBytes() {
         byte[] ret = new byte[PACKET_SIZE];
 
-        ret[0] = SIGNAL_CHAR;
-
-        U.shortToBytes(PROTO_VER, ret, 1);
-
-        return ret;
-    }
-
-    /**
-     * @return Raw representation of this packet.
-     */
-    public byte[] rawBytesNoHeader() {
-        byte[] ret = new byte[PACKET_SIZE - 1];
-
         U.shortToBytes(PROTO_VER, ret, 0);
+
+        ret[2] = (byte)(marshId << 6);
 
         return ret;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getSimpleName() + " [verArr=" + Arrays.toString(verArr) + ']';
+        return getClass().getSimpleName() + " [arr=" + Arrays.toString(arr) + ']';
     }
 }

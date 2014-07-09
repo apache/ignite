@@ -76,13 +76,21 @@ final class GridTestBinaryClient {
 
             input = sock.getInputStream();
 
+            GridClientHandshakeRequest req = new GridClientHandshakeRequest();
+
+            req.marshallerId(GridClientOptimizedMarshaller.ID);
+
             // Write handshake.
-            sock.getOutputStream().write(new GridClientHandshakeRequest().rawBytes());
+            sock.getOutputStream().write(GridClientHandshakeRequestWrapper.HANDSHAKE_HEADER);
+            sock.getOutputStream().write(req.rawBytes());
 
             byte[] buf = new byte[1];
 
             // Wait for handshake response.
-            assert input.read(buf) == 1;
+            int read = input.read(buf);
+
+            assert read == 1 : read;
+
             assert buf[0] == GridClientHandshakeResponse.OK.resultCode() :
                 "Client handshake failed [code=" + buf[0] + ']';
         }

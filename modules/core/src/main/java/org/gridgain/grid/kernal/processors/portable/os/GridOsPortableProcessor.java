@@ -9,8 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.portable.os;
 
-import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.grid.*;
+import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.portable.*;
@@ -29,17 +28,6 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configureClientConnection(GridClientConnectionConfiguration cfg) {
-        if (cfg.getMarshaller() == null)
-            cfg.setMarshaller(new GridClientOptimizedMarshaller());
-    }
-
-    /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         return 0;
     }
@@ -47,5 +35,15 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridClientMarshaller portableMarshaller() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortable(GridClientMarshaller marsh) {
+        return false;
     }
 }

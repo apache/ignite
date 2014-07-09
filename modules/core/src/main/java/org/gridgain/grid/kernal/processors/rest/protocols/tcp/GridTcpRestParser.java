@@ -36,16 +36,6 @@ public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Client marshaller. */
-    private final GridClientMarshaller marsh;
-
-    /**
-     * @param marsh Client marshaller..
-     */
-    public GridTcpRestParser(GridClientMarshaller marsh) {
-        this.marsh = marsh;
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
         GridException {
@@ -129,7 +119,7 @@ public class GridTcpRestParser implements GridNioParser {
                 ((GridClientHandshakeResponse)msg).resultCode()
             });
         else {
-            GridClientMarshaller marsh = marshaller();
+            GridClientMarshaller marsh = marshaller(ses);
 
             ByteBuffer res = marsh.marshal(msg, 45);
 
@@ -278,7 +268,7 @@ public class GridTcpRestParser implements GridNioParser {
             if (idx < 4) { // Need to read version bytes.
                 int len = Math.min(nRead, 4 - idx); // Number of version bytes available in buffer.
 
-                packet.putVersionBytes(bbuf, idx, len);
+                packet.putBytes(bbuf, idx, len);
 
                 idx += len;
                 state.index(idx);
@@ -355,7 +345,7 @@ public class GridTcpRestParser implements GridNioParser {
                         tmp.write(bodyBytes);
                     }
 
-                    return parseClientMessage(state);
+                    return parseClientMessage(ses, state);
                 }
                 else
                     copyRemaining(buf, tmp);
@@ -423,13 +413,14 @@ public class GridTcpRestParser implements GridNioParser {
     /**
      * Parses {@link GridClientMessage} from raw bytes.
      *
+     * @param ses Session.
      * @param state Parser state.
      * @return A parsed client message.
      * @throws IOException On marshaller error.
      * @throws GridException If no marshaller was defined for the session.
      */
-    protected GridClientMessage parseClientMessage(ParserState state) throws IOException, GridException {
-        GridClientMarshaller marsh = marshaller();
+    protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) throws IOException, GridException {
+        GridClientMarshaller marsh = marshaller(ses);
 
         GridClientMessage msg = marsh.unmarshal(state.buffer().toByteArray());
 
@@ -728,7 +719,11 @@ public class GridTcpRestParser implements GridNioParser {
      *
      * @return Marshaller.
      */
-    protected GridClientMarshaller marshaller() {
+    protected GridClientMarshaller marshaller(GridNioSession ses) {
+        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
+
+        assert marsh != null;
+
         return marsh;
     }
 

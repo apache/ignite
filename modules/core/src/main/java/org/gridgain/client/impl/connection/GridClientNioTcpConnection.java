@@ -11,6 +11,8 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
@@ -170,6 +172,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 sslHandshakeFut.get();
 
             GridClientHandshakeRequest req = new GridClientHandshakeRequest();
+
+            if (marsh instanceof GridClientOptimizedMarshaller)
+                req.marshallerId(GridClientOptimizedMarshaller.ID);
+            else if (marsh instanceof GridClientJdkMarshaller)
+                req.marshallerId(GridClientJdkMarshaller.ID);
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 
