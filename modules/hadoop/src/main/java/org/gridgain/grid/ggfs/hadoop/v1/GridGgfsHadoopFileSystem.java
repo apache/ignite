@@ -22,7 +22,6 @@ import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -337,14 +336,16 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IOException {
-        // No-op. Because FS instance can be cached and reused from other threads thinking that they are separate
-        // processes and that it is safe to close it.
+    @Override protected void finalize() throws Throwable {
+        super.finalize();
+
+        close0();
     }
 
     /** {@inheritDoc} */
-    @Override protected void finalize() throws Throwable {
-        super.finalize();
+    @Override public void close() throws IOException {
+        if (cacheEnabled && get(getUri(), getConf()) == this)
+            return;
 
         close0();
     }
@@ -355,25 +356,27 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @throws IOException If failed.
      */
     private void close0() throws IOException {
-        if (LOG.isDebugEnabled())
-            LOG.debug("File system closed [uri=" + uri + ", endpoint=" + uriAuthority + ']');
+        if (closeGuard.compareAndSet(false, true)) {
+            if (LOG.isDebugEnabled())
+                LOG.debug("File system closed [uri=" + uri + ", endpoint=" + uriAuthority + ']');
 
-        if (rmtClient == null)
-            return;
+            if (rmtClient == null)
+                return;
 
-        super.close();
+            super.close();
 
-        rmtClient.close(false);
+            rmtClient.close(false);
 
-        if (clientLog.isLogEnabled())
-            clientLog.close();
+            if (clientLog.isLogEnabled())
+                clientLog.close();
 
-        if (secondaryFs != null)
-            U.closeQuiet(secondaryFs);
+            if (secondaryFs != null)
+                U.closeQuiet(secondaryFs);
 
-        // Reset initialized resources.
-        uri = null;
-        rmtClient = null;
+            // Reset initialized resources.
+            uri = null;
+            rmtClient = null;
+        }
     }
 
     /** {@inheritDoc} */
