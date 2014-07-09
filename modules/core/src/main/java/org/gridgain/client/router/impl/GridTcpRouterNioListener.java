@@ -126,21 +126,9 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                 ses.close();
             }
             else {
-                byte marshId = hs.marshallerId();
+                ses.addMeta(MARSHALLER.ordinal(), marshMap.get(hs.marshallerId()));
 
-                GridClientMarshaller marsh = marshMap.get(marshId);
-
-                if (marsh == null) {
-                    U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
-                        "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
-
-                    ses.close();
-                }
-                else {
-                    ses.addMeta(MARSHALLER.ordinal(), marsh);
-
-                    ses.send(GridClientHandshakeResponse.OK);
-                }
+                ses.send(GridClientHandshakeResponse.OK);
             }
         }
         else if (msg instanceof GridClientPingPacket)
