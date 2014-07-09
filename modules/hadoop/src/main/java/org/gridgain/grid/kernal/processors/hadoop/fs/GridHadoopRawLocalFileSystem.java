@@ -26,7 +26,7 @@ import java.nio.file.*;
  * Local file system implementation for Hadoop.
  */
 public class GridHadoopRawLocalFileSystem extends FileSystem {
-    /** */
+    /** Working directory for each thread. */
     private final ThreadLocal<Path> workDir = new ThreadLocal<Path>() {
         @Override protected Path initialValue() {
             return getInitialWorkingDirectory();
@@ -49,6 +49,11 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @Override public Path getHomeDirectory() {
+        return makeQualified(new Path(System.getProperty("user.home")));
+    }
+
+    /** {@inheritDoc} */
     @Override public Path getInitialWorkingDirectory() {
         File f = new File(System.getProperty("user.dir"));
 
@@ -60,6 +65,11 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
         super.initialize(uri, conf);
 
         setConf(conf);
+
+        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY);
+
+        if (initWorkDir != null)
+            setWorkingDirectory(new Path(initWorkDir));
     }
 
     /** {@inheritDoc} */
@@ -116,7 +126,8 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path dir) {
-        workDir.set(dir);
+        workDir.set(fixRelativePart(dir));
+
         checkPath(dir);
     }
 

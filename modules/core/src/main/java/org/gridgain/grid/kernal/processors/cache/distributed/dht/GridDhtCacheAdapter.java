@@ -435,7 +435,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, filter);
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, forcePrimary, filter);
     }
 
     /** {@inheritDoc} */
@@ -456,7 +456,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, filter);
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, false, filter);
     }
 
     /**

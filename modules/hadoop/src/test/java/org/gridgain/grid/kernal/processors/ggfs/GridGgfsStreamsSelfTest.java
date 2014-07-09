@@ -106,6 +106,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
+        ggfsCfg.setFragmentizerEnabled(true);
 
         cfg.setGgfsConfiguration(ggfsCfg);
 

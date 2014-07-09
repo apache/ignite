@@ -7509,16 +7509,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether a node is a Visor node.
-     *
-     * @param node Node to check.
-     * @return {@code True} if node is a Visor node, {@code false} otherwise.
-     */
-    public static boolean isVisorNode(GridNode node) {
-        return node.attributes().containsKey("VISOR");
-    }
-
-    /**
      * Checks whether property is one added by Visor when node is started via remote SSH session.
      *
      * @param name Property name to check.
@@ -8437,12 +8427,56 @@ public abstract class GridUtils {
      * @return An integer
      * @throws GridException Thrown if ch is an illegal hex character
      */
-    protected static int toDigit(char ch, int index) throws GridException {
+    public static int toDigit(char ch, int index) throws GridException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
             throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
 
         return digit;
+    }
+
+    /**
+     * Gets oldest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Oldest node.
+     */
+    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode oldest = null;
+
+        long minOrder = Long.MAX_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() < minOrder) {
+                oldest = n;
+
+                minOrder = n.order();
+            }
+        }
+
+        return oldest;
+    }
+
+    /**
+     * Gets youngest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Youngest node.
+     */
+    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode youngest = null;
+
+        long maxOrder = Long.MIN_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() > maxOrder) {
+                youngest = n;
+
+                maxOrder = n.order();
+            }
+        }
+
+        return youngest;
     }
 }

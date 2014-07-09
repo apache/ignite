@@ -1334,7 +1334,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return getAllAsync(F.asList(key), /*force primary*/false, /*skip tx*/false, entry, null, filter).get().get(key);
+        return getAllAsync(F.asList(key), ctx.hasFlag(GET_PRIMARY), /*skip tx*/false, entry, null, filter).get().get(key);
     }
 
     /** {@inheritDoc} */
@@ -1359,12 +1359,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws GridException {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null).get();
+        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/true, null, null).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/true, null, null);
+        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/true, null, null);
     }
 
     /** {@inheritDoc} */
@@ -1726,12 +1726,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     ) {
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return getAllAsync(keys, entry, !skipTx, subjId, filter);
+        return getAllAsync(keys, entry, !skipTx, subjId, forcePrimary, filter);
     }
 
     /** {@inheritDoc} */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx, @Nullable final UUID subjId,
+        final boolean forcePrimary,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -1944,7 +1945,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                                 if (!redos.isEmpty())
                                     // Future recursion.
-                                    return getAllAsync(redos, /*force primary*/false, /*skip tx*/false,
+                                    return getAllAsync(redos, forcePrimary, /*skip tx*/false,
                                         /*entry*/null, subjId, filter);
 
                                 // There were no misses.
@@ -3373,6 +3374,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return globalSize(false);
+    }
+
+    /** {@inheritDoc} */
     @Override public int nearSize() {
         return 0;
     }
@@ -3380,6 +3386,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public int primarySize() {
         return map.publicSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return globalSize(true);
     }
 
     /** {@inheritDoc} */
@@ -3589,6 +3600,50 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             catch (GridException ignored) {
                 // No-op.
             }
+        }
+    }
+
+    /**
+     * Gets cache global size (with or without backups).
+     *
+     * @param primaryOnly {@code True} if only primary sizes should be included.
+     * @return Global size.
+     * @throws GridException If internal task execution failed.
+     */
+    private int globalSize(boolean primaryOnly) throws GridException {
+        try {
+            // Send job to remote nodes only.
+            Collection<GridNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+
+            GridFuture<Collection<Integer>> fut = null;
+
+            if (!nodes.isEmpty()) {
+                ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, gridCfg.getNetworkTimeout());
+
+                fut = ctx.closures().broadcastNoFailover(new GlobalSizeCallable(name(), primaryOnly), null, nodes);
+            }
+
+            // Get local value.
+            int globalSize = primaryOnly ? primarySize() : size();
+
+            if (fut != null) {
+                for (Integer i : fut.get())
+                    globalSize += i;
+            }
+
+            return globalSize;
+        }
+        catch (GridEmptyProjectionException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
+
+            return primaryOnly ? primarySize() : size();
+        }
+        catch (GridComputeTaskTimeoutException e) {
+            U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
+                "'networkTimeout' configuration property) [cacheName=" + name() + "]");
+
+            throw e;
         }
     }
 
@@ -4433,7 +4488,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
-        return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, null, filter);
+        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/false, null, null, filter);
     }
 
     /**
@@ -4839,6 +4894,61 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
+        }
+    }
+
+    /**
+     * Internal callable which performs {@link GridCacheProjection#size()} or {@link GridCacheProjection#primarySize()}
+     * operation on a cache with the given name.
+     */
+    @GridInternal
+    private static class GlobalSizeCallable implements GridClosure<Object, Integer>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Primary only flag. */
+        private boolean primaryOnly;
+
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalSizeCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param primaryOnly Primary only flag.
+         */
+        private GlobalSizeCallable(String cacheName, boolean primaryOnly) {
+            this.cacheName = cacheName;
+            this.primaryOnly = primaryOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer apply(Object o) {
+            GridCache<Object, Object> cache = ((GridEx)grid).cachex(cacheName);
+
+            return primaryOnly ? cache.primarySize() : cache.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            out.writeBoolean(primaryOnly);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            primaryOnly = in.readBoolean();
         }
     }
 

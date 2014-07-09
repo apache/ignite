@@ -136,78 +136,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
-        cache.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        cache.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMeta(String name, V1 val) {
-        return cache.addMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 putMetaIfAbsent(String name, V1 val) {
-        return cache.putMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
-        return cache.putMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
-        return cache.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
-        return cache.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"RedundantTypeArguments"})
-    @Override public <V1> V1 meta(String name) {
-        return cache.<V1>meta(name);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"RedundantTypeArguments"})
-    @Override public <V1> V1 removeMeta(String name) {
-        return cache.<V1>removeMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean removeMeta(String name, V1 val) {
-        return cache.removeMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> Map<String, V1> allMeta() {
-        return cache.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        return cache.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean hasMeta(String name, V1 val) {
-        return cache.hasMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
-        return cache.replaceMeta(name, curVal, newVal);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheConfiguration configuration() {
         return cache.configuration();
     }
@@ -1721,6 +1649,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.globalSize();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public int nearSize() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1738,6 +1678,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.primarySize();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.globalPrimarySize();
         }
         finally {
             gate.leave(prev);

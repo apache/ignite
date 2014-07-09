@@ -143,7 +143,7 @@ import java.util.concurrent.*;
  * all entries will be removed. This behavior is useful during development, but should not be
  * used in production.
  */
-public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>>, GridMetadataAware {
+public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>> {
     /**
      * Gets name of this cache ({@code null} for default cache).
      *
@@ -1144,20 +1144,22 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
         throws GridException;
 
     /**
-     * Set of cached keys. You can remove elements from this set, but you cannot add elements
+     * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
      * to this set. All removal operation will be reflected on the cache itself.
      * <p>
      * Iterator over this set will not fail if set was concurrently updated
      * by another thread. This means that iterator may or may not return latest
      * keys depending on whether they were added before or after current
      * iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the keys cached on this node.
      *
      * @return Key set for this cache projection.
      */
     public Set<K> keySet();
 
     /**
-     * Set of cached primary keys for which local node is the primary node.
+     * Set of keys for which this node is primary.
      * This set is dynamic and may change with grid topology changes.
      * Note that this set will contain mappings for all keys, even if their values are
      * {@code null} because they were invalidated. You can remove elements from
@@ -1168,56 +1170,54 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * by another thread. This means that iterator may or may not return latest
      * keys depending on whether they were added before or after current
      * iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the keys cached on this node.
      *
      * @return Primary key set for the current node.
      */
     public Set<K> primaryKeySet();
 
     /**
-     * Collection of cached values. Note that this collection will not contain
-     * values that are {@code null} because they were invalided. You can remove
+     * Collection of values cached on this node. You can remove
      * elements from this collection, but you cannot add elements to this collection.
      * All removal operation will be reflected on the cache itself.
-     * <p>
-     * If filter is provided, then only the values for the entries that pass
-     * provided filters are returned.
      * <p>
      * Iterator over this collection will not fail if collection was
      * concurrently updated by another thread. This means that iterator may or
      * may not return latest values depending on whether they were added before
      * or after current iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the values cached on this node.
      *
      * @return Collection of cached values.
      */
     public Collection<V> values();
 
     /**
-     * Collection of primary cached values.for which local node is the primary node.
+     * Collection of cached values for which this node is primary.
      * This collection is dynamic and may change with grid topology changes.
      * Note that this collection will not contain values that are {@code null}
      * because they were invalided. You can remove elements from this collection,
      * but you cannot add elements to this collection. All removal operation will be
      * reflected on the cache itself.
      * <p>
-     * If filter is provided, then only the values for the entries that pass
-     * provided filters are returned.
-     * <p>
      * Iterator over this collection will not fail if collection was
      * concurrently updated by another thread. This means that iterator may or
      * may not return latest values depending on whether they were added before
      * or after current iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the values cached on this node.
      *
      * @return Collection of primary cached values for the current node.
      */
     public Collection<V> primaryValues();
 
     /**
-     * Gets set containing all cache entries. You can remove
+     * Gets set of all entries cached on this node. You can remove
      * elements from this set, but you cannot add elements to this set.
      * All removal operation will be reflected on the cache itself.
      * <p>
-     * If optional filters are provided, then only entries that successfully
-     * pass the filters will be included in the resulting set.
+     * NOTE: this operation is not distributed and returns only the entries cached on this node.
      *
      * @return Entries that pass through key filter.
      */
@@ -1225,22 +1225,23 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Gets set containing cache entries that belong to provided partition or {@code null}
-     * if partition not found locally.
+     * if partition is not found locally.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the entries cached on this node.
      *
      * @param part Partition.
-     * @return Set containing partition's entries or {@code null} if partition
+     * @return Set containing partition's entries or {@code null} if partition is
      *      not found locally.
      */
     @Nullable public Set<GridCacheEntry<K, V>> entrySet(int part);
 
     /**
-     * Gets set containing cache entries for which local node is the primary node.
+     * Gets set of cache entries for which this node is primary.
      * This set is dynamic and may change with grid topology changes. You can remove
      * elements from this set, but you cannot add elements to this set.
      * All removal operation will be reflected on the cache itself.
      * <p>
-     * If optional filters are provided, then only entries that successfully
-     * pass the filters will be included in the resulting set.
+     * NOTE: this operation is not distributed and returns only the entries cached on this node.
      *
      * @return Primary cache entries that pass through key filter.
      */
@@ -1919,35 +1920,57 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public boolean isLockedByThread(K key);
 
     /**
-     * Gets size of cache key set. This method will return the count of
+     * Gets the number of all entries cached on this node. This method will return the count of
      * all cache entries and has O(1) complexity on base {@link GridCache} projection. It is essentially the
      * size of cache key set and is semantically identical to {{@code GridCache.keySet().size()}.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
      *
-     * @return Size of cache key set.
+     * @return Size of cache on this node.
      */
     public int size();
 
     /**
-     * Gets size of near cache key set. This method will return count of all entries in near
-     * cache including {@code null} values and has O(1) complexity on base cache projection.
+     * Gets the number of all entries cached across all nodes.
      * <p>
-     * Note that for {@code LOCAL} caches this method will always return {@code 0}
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @return Total cache size across all nodes.
+     */
+    public int globalSize() throws GridException;
+
+    /**
+     * Gets size of near cache key set. This method will return count of all entries in near
+     * cache and has O(1) complexity on base cache projection.
+     * <p>
+     * Note that for {@code LOCAL} non-distributed caches this method will always return {@code 0}
      *
      * @return Size of near cache key set or {@code 0} if cache is not {@link GridCacheMode#PARTITIONED}.
      */
     public int nearSize();
 
     /**
-     * Gets size of all primary keys for this cache. For {@link GridCacheMode#LOCAL} mode,
-     * this method is identical to {@link #size()}.
+     * Gets the number of all primary entries cached on this node. For {@link GridCacheMode#LOCAL} non-distributed
+     * cache mode, this method is identical to {@link #size()}.
      * <p>
      * For {@link GridCacheMode#PARTITIONED} and {@link GridCacheMode#REPLICATED} modes, this method will
-     * return number of primary entries in the cache (excluding any backups). The complexity of this method
-     * is O(P), where P is the total number of partitions.
+     * return number of primary entries cached on this node (excluding any backups). The complexity of
+     * this method is O(P), where P is the total number of partitions.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the number of primary entries cached on this node.
      *
      * @return Number of primary entries in cache.
      */
     public int primarySize();
+
+    /**
+     * Gets the number of all primary entries cached across all nodes (excluding backups).
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their primary cache sizes.
+     *
+     * @return Total primary cache size across all nodes.
+     */
+    public int globalPrimarySize() throws GridException;
 
     /**
      * This method promotes cache entry from offheap by given key, if any, from offheap or swap storage

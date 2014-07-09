@@ -24,6 +24,9 @@ import static org.gridgain.grid.product.GridProductVersion.*;
  */
 public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
     /** */
+    private static final GridProductVersion VERSION = fromString("99.99.99");
+
+    /** */
     private static final AtomicInteger consistentIdCtr = new AtomicInteger();
 
     /** */
@@ -179,7 +182,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
 
     /** {@inheritDoc} */
     @Override public GridProductVersion version() {
-        return VERSION_UNKNOWN;
+        return VERSION;
     }
 
     /**

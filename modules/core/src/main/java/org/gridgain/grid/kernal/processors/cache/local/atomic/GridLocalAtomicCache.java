@@ -623,7 +623,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, null, false, subjId, filter).get();
+        return getAllAsync(keys, null, false, subjId, false, filter).get();
     }
 
     /**

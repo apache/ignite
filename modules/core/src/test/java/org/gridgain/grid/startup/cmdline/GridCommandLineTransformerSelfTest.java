@@ -106,7 +106,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
             "\"INTERACTIVE=1\" \"QUIET=-DGRIDGAIN_QUIET=false\" \"NO_PAUSE=1\" " +
             "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
             "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
-            GridCommandLineTransformer.transform("-i", "-np", "-v", "-h1", "-J-Xmx1g", "-J-Xms1m",
+            GridCommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",
             "\"c:\\path to\\русский каталог\""));
     }
 }
