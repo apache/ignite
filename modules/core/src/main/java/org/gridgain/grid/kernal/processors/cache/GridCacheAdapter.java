@@ -3390,6 +3390,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return globalSize(false);
+    }
+
+    /** {@inheritDoc} */
     @Override public int nearSize() {
         return 0;
     }
@@ -3397,6 +3402,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public int primarySize() {
         return map.publicSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return globalSize(true);
     }
 
     /** {@inheritDoc} */
@@ -3606,6 +3616,50 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             catch (GridException ignored) {
                 // No-op.
             }
+        }
+    }
+
+    /**
+     * Gets cache global size (with or without backups).
+     *
+     * @param primaryOnly {@code True} if only primary sizes should be included.
+     * @return Global size.
+     * @throws GridException If internal task execution failed.
+     */
+    private int globalSize(boolean primaryOnly) throws GridException {
+        try {
+            // Send job to remote nodes only.
+            Collection<GridNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+
+            GridFuture<Collection<Integer>> fut = null;
+
+            if (!nodes.isEmpty()) {
+                ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, gridCfg.getNetworkTimeout());
+
+                fut = ctx.closures().broadcastNoFailover(new GlobalSizeCallable(name(), primaryOnly), null, nodes);
+            }
+
+            // Get local value.
+            int globalSize = primaryOnly ? primarySize() : size();
+
+            if (fut != null) {
+                for (Integer i : fut.get())
+                    globalSize += i;
+            }
+
+            return globalSize;
+        }
+        catch (GridEmptyProjectionException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
+
+            return primaryOnly ? primarySize() : size();
+        }
+        catch (GridComputeTaskTimeoutException e) {
+            U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
+                "'networkTimeout' configuration property) [cacheName=" + name() + "]");
+
+            throw e;
         }
     }
 
@@ -4866,6 +4920,61 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
+        }
+    }
+
+    /**
+     * Internal callable which performs {@link GridCacheProjection#size()} or {@link GridCacheProjection#primarySize()}
+     * operation on a cache with the given name.
+     */
+    @GridInternal
+    private static class GlobalSizeCallable implements GridClosure<Object, Integer>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Primary only flag. */
+        private boolean primaryOnly;
+
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalSizeCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param primaryOnly Primary only flag.
+         */
+        private GlobalSizeCallable(String cacheName, boolean primaryOnly) {
+            this.cacheName = cacheName;
+            this.primaryOnly = primaryOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer apply(Object o) {
+            GridCache<Object, Object> cache = ((GridEx)grid).cachex(cacheName);
+
+            return primaryOnly ? cache.primarySize() : cache.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            out.writeBoolean(primaryOnly);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            primaryOnly = in.readBoolean();
         }
     }
 
