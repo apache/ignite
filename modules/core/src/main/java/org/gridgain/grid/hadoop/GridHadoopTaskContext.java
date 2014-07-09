@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import java.util.*;
+
 /**
  * Task context.
  */
@@ -71,5 +73,24 @@ public class GridHadoopTaskContext {
      */
     public GridHadoopJob job() {
         return job;
+    }
+
+    /**
+     * Gets counter for the given name.
+     *
+     * @param name Name.
+     * @return Counter.
+     */
+    public GridHadoopCounter counter(String name) {
+        return null; // TODO
+    }
+
+    /**
+     * Gets all known counters.
+     *
+     * @return Collection of counters.
+     */
+    public Collection<GridHadoopCounter> counters() {
+        return null; // TODO
     }
 }
