@@ -1317,6 +1317,7 @@ public class GridGainEx {
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
+            myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
 
             String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1674,35 +1675,18 @@ public class GridGainEx {
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
-            // 1. Warn on potential configuration problem: grid is not configured to wait
-            // for correct segment after segmentation happens.
-            if (!F.isEmpty(cfg.getSegmentationResolvers()) && (segPlc == RESTART_JVM || segPlc == RECONNECT) &&
-                !cfg.isWaitForSegmentOnStart()) {
-                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
-                    "on start?) [segPlc=" + segPlc + ", wait=false]");
+            if (segPlc == RECONNECT) {
+                U.warn(log, "RECONNECT segmentation policy is not supported anymore and " +
+                    "will be removed in the next major release (will automatically switch to NOOP)");
+
+                segPlc = NOOP;
             }
 
-            // RECONNECT policy specific checks...
-            if (segPlc == RECONNECT) {
-                // 2. Does discovery SPI support reconnect?
-                GridDiscoverySpiReconnectSupport ann =
-                    U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiReconnectSupport.class);
-
-                if (ann == null || !ann.value()) {
-                    throw new GridException("Discovery SPI does not support reconnect (either change segmentation " +
-                        "policy or discovery SPI implementation to one that supports reconnect), " +
-                        "like GridTcpDiscoverySpi.");
-                }
-
-                // 3. Cannot use RECONNECT policy with in-memory data grid.
-                GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
-
-                if (cacheCfgs != null) {
-                    for (GridCacheConfiguration cc : cacheCfgs)
-                        if (cc.getCacheMode() == REPLICATED || cc.getCacheMode() == PARTITIONED)
-                            throw new GridException("RECONNECT segmentation policy is not supported " +
-                                "when running in-memory data grid.");
-                }
+            // 1. Warn on potential configuration problem: grid is not configured to wait
+            // for correct segment after segmentation happens.
+            if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
+                U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
+                    "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
             myCfg.setSegmentationResolvers(cfg.getSegmentationResolvers());
@@ -1766,6 +1750,8 @@ public class GridGainEx {
 
             boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
 
+            GridCacheConfiguration[] copies;
+
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
                     throw new GridException("Discovery SPI implementation does not support node ordering and " +
@@ -1784,50 +1770,43 @@ public class GridGainEx {
                     if (ccfg.getDrSenderConfiguration() != null)
                         drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
 
-                    if (CU.isSecuritySystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.SECURITY_SYS_CACHE_NAME +
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() +
-                    (hasHadoop ? 1 : 0) + (U.securityEnabled(cfg) ? 1 : 0)];
+                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
 
                 int cloneIdx = 0;
 
                 if (hasHadoop)
-                    clone[cloneIdx++] = CU.hadoopSystemCache();
+                    copies[cloneIdx++] = CU.hadoopSystemCache();
 
                 for (String drSysCache : drSysCaches)
-                    clone[cloneIdx++] = CU.drSystemCache(drSysCache);
-
-                if (U.securityEnabled(cfg))
-                    clone[cloneIdx++] = securitySystemCache();
+                    copies[cloneIdx++] = CU.drSystemCache(drSysCache);
 
                 for (GridCacheConfiguration ccfg : cacheCfgs)
-                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
-
-                myCfg.setCacheConfiguration(clone);
+                    copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
             }
-            else if (!drSysCaches.isEmpty() || hasHadoop || U.securityEnabled(cfg)) {
-                // Populate system caches/
-                GridCacheConfiguration[] ccfgs = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) +
-                    (U.securityEnabled(cfg) ? 1 : 0)];
+            else if (!drSysCaches.isEmpty() || hasHadoop) {
+                // Populate system caches
+                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
 
                 int idx = 0;
 
                 if (hasHadoop)
-                    ccfgs[idx++] = CU.hadoopSystemCache();
+                    copies[idx++] = CU.hadoopSystemCache();
 
                 for (String drSysCache : drSysCaches)
-                    ccfgs[idx++] = CU.drSystemCache(drSysCache);
-
-                if (U.securityEnabled(cfg))
-                    ccfgs[idx] = securitySystemCache();
-
-                myCfg.setCacheConfiguration(ccfgs);
+                    copies[idx++] = CU.drSystemCache(drSysCache);
             }
             else
-                myCfg.setCacheConfiguration(EMPTY_CACHE_CONFIGS);
+                copies = new GridCacheConfiguration[1];
+
+            // Always add utility cache.
+            copies[copies.length - 1] = utilitySystemCache();
+
+            myCfg.setCacheConfiguration(copies);
 
             myCfg.setCacheSanityCheckEnabled(cfg.isCacheSanityCheckEnabled());
 
@@ -1992,17 +1971,18 @@ public class GridGainEx {
         }
 
         /**
-         * Creates security system cache configuration.
+         * Creates utility system cache configuration.
          *
-         * @return Security system cache configuration.
+         * @return Utility system cache configuration.
          */
-        private GridCacheConfiguration securitySystemCache() {
+        private GridCacheConfiguration utilitySystemCache() {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
-            cache.setName(CU.SECURITY_SYS_CACHE_NAME);
+            cache.setName(CU.UTILITY_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
+            cache.setQueryIndexEnabled(false);
             cache.setWriteSynchronizationMode(FULL_SYNC);
 
             return cache;

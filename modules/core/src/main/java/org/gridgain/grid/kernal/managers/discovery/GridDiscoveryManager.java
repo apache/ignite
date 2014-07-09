@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.security.*;
@@ -333,10 +334,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             @Override public List<Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                List<Object> data = new LinkedList<>();
+                List<Object> data = new ArrayList<>();
 
-                for (GridComponent comp : ctx.components())
-                    data.add(comp.collectDiscoveryData(nodeId));
+                Object newCompData = null;
+
+                for (GridComponent comp : ctx.components()) {
+                    if (appendLast(comp)) {
+                        assert newCompData == null;
+
+                        newCompData = comp.collectDiscoveryData(nodeId);
+                    }
+                    else
+                        data.add(comp.collectDiscoveryData(nodeId));
+                }
+
+                // Process new grid component last for preserving backward compatibility.
+                if (newCompData != null)
+                    data.add(newCompData);
 
                 return data;
             }
@@ -346,11 +360,42 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
                 Iterator<Object> it = data.iterator();
 
-                for (GridComponent comp : ctx.components()) {
-                    assert it.hasNext();
+                GridComponent newComp = null;
+                Object newCompData = null;
 
-                    comp.onDiscoveryDataReceived(it.next());
+                for (GridComponent comp : ctx.components()) {
+                    if (!it.hasNext())
+                        break;
+
+                    if (appendLast(comp)) {
+                        assert newComp == null;
+                        assert newCompData == null;
+
+                        newComp = comp;
+                        newCompData = it.next();
+                    }
+                    else
+                        comp.onDiscoveryDataReceived(it.next());
                 }
+
+                // Process new grid component last for preserving backward compatibility.
+                if (newComp != null)
+                    newComp.onDiscoveryDataReceived(newCompData);
+            }
+
+            /**
+             * @param comp Grid component.
+             * @return {@code True} if specified component should collect data after all other components,
+             *      {@code false} otherwise.
+             * @deprecated We shouldn't rely on exact order and size of
+             *      {@link GridDiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
+             *      compatibility (for example, if we will add new grid component in the middle of components startup
+             *      routine). This method should be changed to return map (component id -> collected data)
+             *      in the next major release.
+             */
+            @Deprecated
+            private boolean appendLast(GridComponent comp) {
+                return comp instanceof GridServiceProcessor;
             }
         });
 
@@ -2005,7 +2050,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         /**
          * Gets all nodes that have cache with given name and should participate in affinity calculation. With
-         * partitioned cache nodes with near-only cache no not participate in affinity node calculation.
+         * partitioned cache nodes with near-only cache do not participate in affinity node calculation.
          *
          * @param cacheName Cache name.
          * @param topVer Topology version.
