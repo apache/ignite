@@ -996,11 +996,11 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     @Override public BlockLocation[] getFileBlockLocations(FileStatus status, long start, long len) throws IOException {
         A.notNull(status, "status");
 
-        GridGgfsPath path = convert(status.getPath());
-
         enterBusy();
 
         try {
+            GridGgfsPath path = convert(status.getPath());
+
             if (mode(status.getPath()) == PROXY) {
                 if (secondaryFs == null) {
                     assert mgmt;
