@@ -150,7 +150,7 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top);
+            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null);
 
             try {
                 // Init connection manager, it should cause topology update.
@@ -377,8 +377,8 @@ public class GridClientImpl implements GridClient {
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager() throws GridClientException {
-        return createConnectionManager(id, sslCtx, cfg, routers, top);
+    public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId) throws GridClientException {
+        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId);
     }
 
     /**
@@ -390,20 +390,21 @@ public class GridClientImpl implements GridClient {
      * @throws GridClientException In case of error.
      */
     private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
-        GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top)
+        GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
+        @Nullable Byte marshId)
         throws GridClientException {
         GridClientConnectionManager mgr;
 
         try {
             Class<?> cls = Class.forName(ENT_CONN_MGR_CLS);
 
-            Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class,
-                GridClientConfiguration.class, Collection.class, GridClientTopology.class);
+            Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
+                Collection.class, GridClientTopology.class, Byte.class);
 
-            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top);
+            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId);
         }
         catch (ClassNotFoundException ignored) {
-            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top);
+            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId);
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new GridClientException("Failed to create client connection manager.", e);

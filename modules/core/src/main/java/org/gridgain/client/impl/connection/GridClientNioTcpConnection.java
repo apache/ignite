@@ -129,13 +129,14 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         long pingTimeout,
         boolean tcpNoDelay,
         GridClientMarshaller marsh,
+        Byte marshId,
         GridClientTopology top,
         Object cred,
         ThreadLocal<Boolean> keepPortablesMode)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
-        assert marsh != null;
+        assert marsh != null || marshId != null;
 
         this.marsh = marsh;
         this.pingInterval = pingInterval;
@@ -173,10 +174,16 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             GridClientHandshakeRequest req = new GridClientHandshakeRequest();
 
-            if (marsh instanceof GridClientOptimizedMarshaller)
-                req.marshallerId(GridClientOptimizedMarshaller.ID);
-            else if (marsh instanceof GridClientJdkMarshaller)
-                req.marshallerId(GridClientJdkMarshaller.ID);
+            if (marshId != null)
+                req.marshallerId(marshId);
+            else {
+                assert marsh != null;
+
+                if (marsh instanceof GridClientOptimizedMarshaller)
+                    req.marshallerId(GridClientOptimizedMarshaller.ID);
+                else if (marsh instanceof GridClientJdkMarshaller)
+                    req.marshallerId(GridClientJdkMarshaller.ID);
+            }
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 

@@ -85,6 +85,9 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
     /** Service for ping requests, {@code null} if HTTP protocol is used. */
     private final ScheduledExecutorService pingExecutor;
 
+    /** Marshaller ID. */
+    private final Byte marshId;
+
     /** Message writer. */
     @SuppressWarnings("FieldCanBeLocal")
     private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
@@ -133,7 +136,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
      */
     @SuppressWarnings("unchecked")
     protected GridClientConnectionManagerAdapter(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top) throws GridClientException {
+        Collection<InetSocketAddress> routers, GridClientTopology top, @Nullable Byte marshId)
+        throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
         assert routers != null : "routers != null";
@@ -153,7 +157,9 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         pingExecutor = cfg.getProtocol() == GridClientProtocol.TCP ? Executors.newScheduledThreadPool(
             Runtime.getRuntime().availableProcessors(), new GridClientThreadFactory("exec", true)) : null;
 
-        if (cfg.getMarshaller() == null)
+        this.marshId = marshId;
+
+        if (marshId == null && cfg.getMarshaller() == null)
             throw new GridClientException("Failed to start client (marshaller is not configured).");
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
@@ -385,8 +391,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
      * @throws GridServerUnreachableException If none of the servers can be reached.
      * @throws InterruptedException If connection was interrupted.
      */
-    protected GridClientConnection connect(@Nullable UUID nodeId, Collection<InetSocketAddress> srvs) throws GridServerUnreachableException,
-        InterruptedException {
+    protected GridClientConnection connect(@Nullable UUID nodeId, Collection<InetSocketAddress> srvs)
+        throws GridServerUnreachableException, InterruptedException {
         if (srvs.isEmpty())
             throw new GridServerUnreachableException("Failed to establish connection to the grid node (address " +
                 "list is empty).");
@@ -462,7 +468,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
             if (cfg.getProtocol() == GridClientProtocol.TCP) {
                 conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                     cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                    cfg.isTcpNoDelay(), cfg.getMarshaller(), top, cred, keepPortablesThreadLocal());
+                    cfg.isTcpNoDelay(), cfg.getMarshaller(), marshId, top, cred, keepPortablesThreadLocal());
             }
             else
                 throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +

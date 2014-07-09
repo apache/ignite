@@ -28,8 +28,8 @@ public class GridClientConnectionManagerOsImpl extends GridClientConnectionManag
      * @throws GridClientException In case of error.
      */
     public GridClientConnectionManagerOsImpl(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top) throws GridClientException {
-        super(clientId, sslCtx, cfg, routers, top);
+        Collection<InetSocketAddress> routers, GridClientTopology top, Byte marshId) throws GridClientException {
+        super(clientId, sslCtx, cfg, routers, top, marshId);
     }
 
     /** {@inheritDoc} */

@@ -92,7 +92,7 @@ abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<
             final long reqId = routerMsg.requestId();
 
             try {
-                client.forwardMessage(routerMsg, routerMsg.destinationId())
+                client.forwardMessage(routerMsg, routerMsg.destinationId(), ses.<Byte>meta(MARSHALLER_ID.ordinal()))
                     .listenAsync(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
@@ -133,9 +133,22 @@ abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<
                 ses.close();
             }
             else {
-                ses.addMeta(MARSHALLER.ordinal(), marshMap.get(hs.marshallerId()));
+                byte marshId = hs.marshallerId();
 
-                ses.send(GridClientHandshakeResponse.OK);
+                GridClientMarshaller marsh = marshMap.get(marshId);
+
+                if (marsh == null) {
+                    U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
+                        "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
+
+                    ses.close();
+                }
+                else {
+                    ses.addMeta(MARSHALLER_ID.ordinal(), marshId);
+                    ses.addMeta(MARSHALLER.ordinal(), marsh);
+
+                    ses.send(GridClientHandshakeResponse.OK);
+                }
             }
         }
         else if (msg instanceof GridClientPingPacket)
