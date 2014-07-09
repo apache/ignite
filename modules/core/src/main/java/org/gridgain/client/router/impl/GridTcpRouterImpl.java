@@ -16,14 +16,15 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import javax.net.ssl.*;
 import java.lang.management.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
@@ -32,6 +33,9 @@ import java.util.*;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, GridLifecycleAware {
+    /** */
+    private static final String ENT_NIO_LSNR_CLS = "org.gridgain.client.router.impl.GridTcpRouterNioListenerEntImpl";
+
     /** Id. */
     private final UUID id = UUID.randomUUID();
 
@@ -83,7 +87,21 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
             throw new GridException("Failed to initialise embedded client.", e);
         }
 
-        final GridNioServerListener<GridClientMessage> lsnr = new GridTcpRouterNioListener(log, client);
+        GridNioServerListener<GridClientMessage> lsnr;
+
+        try {
+            Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
+
+            Constructor<?> cons = cls.getConstructor(GridLogger.class, GridRouterClientImpl.class);
+
+            lsnr = (GridNioServerListener<GridClientMessage>)cons.newInstance(log, client);
+        }
+        catch (ClassNotFoundException ignored) {
+            lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
+        }
+        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw new GridException("Failed to create NIO listener.", e);
+        }
 
         parser = new GridTcpRouterNioParser();
 

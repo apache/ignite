@@ -27,7 +27,7 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
  */
-class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
+abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<GridClientMessage> {
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
@@ -44,13 +44,14 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     private final GridRouterClientImpl client;
 
     /** Marshallers map. */
-    private final Map<Byte, GridClientMarshaller> marshMap;
+    protected final Map<Byte, GridClientMarshaller> marshMap;
 
     /**
      * @param log Logger.
      * @param client Client for grid access.
      */
-    GridTcpRouterNioListener(GridLogger log, GridRouterClientImpl client) {
+    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
+    GridTcpRouterNioListenerAdapter(GridLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
 
@@ -58,7 +59,13 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
         marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+
+        init();
     }
+
+    /**
+     */
+    protected abstract void init();
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
