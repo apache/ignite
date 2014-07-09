@@ -64,12 +64,7 @@
 
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
-            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
-                <!-- Configure marshaller. -->
-                <property name="marshaller">
-                    <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller" />
-                </property>
-            </bean>
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration"/>
         </property>
 
         <property name="cacheConfiguration">
