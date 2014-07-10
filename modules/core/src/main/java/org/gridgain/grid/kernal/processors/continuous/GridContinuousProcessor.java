@@ -357,7 +357,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
                 // Handle peer deployment for projection predicate.
-                if (prjPred != null) {
+                if (prjPred != null && !U.isGrid(prjPred.getClass())) {
                     Class cls = U.detectClass(prjPred);
 
                     String clsName = cls.getName();
