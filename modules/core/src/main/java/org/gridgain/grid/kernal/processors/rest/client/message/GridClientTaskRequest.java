@@ -28,8 +28,8 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** Task parameter. */
     private Object arg;
 
-    /** Deserialize portables flag. */
-    private boolean deserializePortables;
+    /** Keep portables flag. */
+    private boolean keepPortables;
 
     /**
      * @return Task name.
@@ -60,17 +60,17 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Deserialize portables flag.
+     * @return Keep portables flag.
      */
-    public boolean deserializePortables() {
-        return deserializePortables;
+    public boolean keepPortables() {
+        return keepPortables;
     }
 
     /**
-     * @param deserializePortables Deserialize portables flag.
+     * @param keepPortables Keep portables flag.
      */
-    public void deserializePortables(boolean deserializePortables) {
-        this.deserializePortables = deserializePortables;
+    public void keepPortables(boolean keepPortables) {
+        this.keepPortables = keepPortables;
     }
 
     /** {@inheritDoc} */
@@ -100,12 +100,12 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(taskName);
-        raw.writeBoolean(deserializePortables);
+        raw.writeBoolean(keepPortables);
 
-        if (deserializePortables)
-            raw.writeObject(arg);
-        else
+        if (keepPortables)
             raw.writeObjectDetached(arg);
+        else
+            raw.writeObject(arg);
     }
 
     /** {@inheritDoc} */
@@ -115,8 +115,8 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
         GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         taskName = raw.readString();
-        deserializePortables = raw.readBoolean();
-        arg = deserializePortables ? raw.readObject() : raw.readObjectDetached();
+        keepPortables = raw.readBoolean();
+        arg = keepPortables ? raw.readObjectDetached() : raw.readObject();
     }
 
     /** {@inheritDoc} */

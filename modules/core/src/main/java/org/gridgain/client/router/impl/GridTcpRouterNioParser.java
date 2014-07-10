@@ -31,15 +31,8 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
     /** Number of sent messages. */
     private volatile long sndCnt;
 
-    /**
-     * @param marsh Marshaller.
-     */
-    GridTcpRouterNioParser(GridClientMarshaller marsh) {
-        super(marsh);
-    }
-
     /** {@inheritDoc} */
-    @Override protected GridClientMessage parseClientMessage(ParserState state) {
+    @Override protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) {
         rcvCnt++;
 
         return new GridRouterRequest(
@@ -70,7 +63,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
             return res;
         }
         else if (msg instanceof GridClientResponse) {
-            GridClientMarshaller marsh = marshaller();
+            GridClientMarshaller marsh = marshaller(ses);
 
             GridClientMessage clientMsg = (GridClientMessage)msg;
 

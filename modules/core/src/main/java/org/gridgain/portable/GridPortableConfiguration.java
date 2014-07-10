@@ -15,6 +15,9 @@ import java.util.*;
  * Common portable configuration.
  */
 public class GridPortableConfiguration {
+    /** Class names. */
+    private Collection<String> clsNames;
+
     /** ID mapper. */
     private GridPortableIdMapper idMapper;
 
@@ -23,6 +26,24 @@ public class GridPortableConfiguration {
 
     /** Types. */
     private Collection<GridPortableTypeConfiguration> typeCfgs;
+
+    /**
+     * Gets class names.
+     *
+     * @return Class names.
+     */
+    public Collection<String> getClassNames() {
+        return clsNames;
+    }
+
+    /**
+     * Sets class names.
+     *
+     * @param clsNames Class names.
+     */
+    public void setClassNames(Collection<String> clsNames) {
+        this.clsNames = clsNames;
+    }
 
     /**
      * Gets ID mapper.

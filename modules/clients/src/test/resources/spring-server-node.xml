@@ -95,12 +95,6 @@
             <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
                 <!-- Configure TCP rest protocol. -->
                 <property name="restTcpPort" value="10080"/>
-
-                <!-- Configure marshaller. -->
-                <property name="marshaller">
-                    <bean class="org.gridgain.client.marshaller.portable.GridClientPortableMarshaller">
-                    </bean>
-                </property>
             </bean>
         </property>
 
@@ -165,6 +159,11 @@
                                             <map>
                                                 <entry key="name" value="java.lang.String"/>
                                             </map>
+                                        </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address</value>
+                                            </list>
                                         </property>
                                     </bean>
                                     <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">

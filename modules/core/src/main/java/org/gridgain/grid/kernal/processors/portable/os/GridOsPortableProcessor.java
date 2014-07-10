@@ -28,16 +28,6 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configureClientMarshaller(GridClientMarshaller marsh) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         return 0;
     }
@@ -45,5 +35,15 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridClientMarshaller portableMarshaller() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortable(GridClientMarshaller marsh) {
+        return false;
     }
 }

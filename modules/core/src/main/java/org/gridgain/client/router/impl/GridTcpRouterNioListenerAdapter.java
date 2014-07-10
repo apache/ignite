@@ -10,6 +10,9 @@
 package org.gridgain.client.router.impl;
 
 import org.gridgain.client.*;
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.nio.*;
@@ -18,11 +21,13 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
  */
-class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
+abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<GridClientMessage> {
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
@@ -38,14 +43,29 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
     /** Client for grid access. */
     private final GridRouterClientImpl client;
 
+    /** Marshallers map. */
+    protected final Map<Byte, GridClientMarshaller> marshMap;
+
     /**
      * @param log Logger.
      * @param client Client for grid access.
      */
-    GridTcpRouterNioListener(GridLogger log, GridRouterClientImpl client) {
+    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
+    GridTcpRouterNioListenerAdapter(GridLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
+
+        marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+
+        init();
     }
+
+    /**
+     */
+    protected abstract void init();
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
@@ -72,7 +92,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             final long reqId = routerMsg.requestId();
 
             try {
-                client.forwardMessage(routerMsg, routerMsg.destinationId())
+                client.forwardMessage(routerMsg, routerMsg.destinationId(), ses.<Byte>meta(MARSHALLER_ID.ordinal()))
                     .listenAsync(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
@@ -103,7 +123,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
         else if (msg instanceof GridClientHandshakeRequest) {
             GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-            short ver = U.bytesToShort(hs.versionBytes(), 0);
+            short ver = hs.version();
 
             if (!SUPP_VERS.contains(ver)) {
                 U.error(log, "Client protocol version is not supported [ses=" + ses +
@@ -112,8 +132,24 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
                 ses.close();
             }
-            else
-                ses.send(GridClientHandshakeResponse.OK);
+            else {
+                byte marshId = hs.marshallerId();
+
+                GridClientMarshaller marsh = marshMap.get(marshId);
+
+                if (marsh == null) {
+                    U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
+                        "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
+
+                    ses.close();
+                }
+                else {
+                    ses.addMeta(MARSHALLER_ID.ordinal(), marshId);
+                    ses.addMeta(MARSHALLER.ordinal(), marsh);
+
+                    ses.send(GridClientHandshakeResponse.OK);
+                }
+            }
         }
         else if (msg instanceof GridClientPingPacket)
             ses.send(GridClientPingPacket.PING_MESSAGE);

@@ -19,13 +19,6 @@ import java.util.*;
  */
 public interface GridPortableObject<T> extends Serializable, Cloneable {
     /**
-     * Gets user type flag value.
-     *
-     * @return Whether this is a user type object.
-     */
-    public boolean userType();
-
-    /**
      * Gets portable object type ID.
      *
      * @return Type ID.

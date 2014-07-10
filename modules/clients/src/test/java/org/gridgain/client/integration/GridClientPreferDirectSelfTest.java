@@ -71,7 +71,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRandomBalanser() throws Exception {
+    public void testRandomBalancer() throws Exception {
         GridClientRandomBalancer b = new GridClientRandomBalancer();
 
         b.setPreferDirectNodes(true);
@@ -82,7 +82,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRoundRobinBalanser() throws Exception {
+    public void testRoundRobinBalancer() throws Exception {
         GridClientRoundRobinBalancer b = new GridClientRoundRobinBalancer();
 
         b.setPreferDirectNodes(true);

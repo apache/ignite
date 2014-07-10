@@ -39,12 +39,6 @@ import java.util.*;
  */
 public class GridHadoopV2Job implements GridHadoopJob {
     /** */
-    private static final String LOCAL_FS_V1 = "fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
-
-    /** */
-    private static final String LOCAL_FS_V2 = "fs.AbstractFileSystem." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl";
-
-    /** */
     private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
 
     /**
@@ -126,8 +120,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         ctx = new JobContextImpl(cfg, hadoopJobID);
 
-        cfg.set(LOCAL_FS_V1, GridHadoopLocalFileSystemV1.class.getName());
-        cfg.set(LOCAL_FS_V2, GridHadoopLocalFileSystemV2.class.getName());
+        GridHadoopFileSystemsUtils.setupFileSystems(cfg);
 
         useNewMapper = cfg.getUseNewMapper();
         useNewReducer = cfg.getUseNewReducer();
@@ -158,9 +151,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         Path jobDir = new Path(jobDirPath);
 
-        try {
-            FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
-
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration())) {
             JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs,
                 ctx.getConfiguration(), jobDir);
 
@@ -228,29 +219,26 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
         Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
-        try {
-            FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
+            FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
 
-            try (FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
+            Class<?> cls = readSplitClass(in, split.offset());
 
-                Class<?> cls = readSplitClass(in, split.offset());
+            assert cls != null;
 
-                assert cls != null;
+            Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
 
-                Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
+            Deserializer deserializer = serialization.getDeserializer(cls);
 
-                Deserializer deserializer = serialization.getDeserializer(cls);
+            deserializer.open(in);
 
-                deserializer.open(in);
+            Object res = deserializer.deserialize(null);
 
-                Object res = deserializer.deserialize(null);
+            deserializer.close();
 
-                deserializer.close();
+            assert res != null;
 
-                assert res != null;
-
-                return res;
-            }
+            return res;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -441,7 +429,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             jobLdr.destroy();
 
         if (!external && rsrcMgr != null)
-            rsrcMgr.releaseJobEnvironment();
+            rsrcMgr.cleanupJobEnvironment();
     }
 
     /** {@inheritDoc} */
@@ -451,7 +439,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.releaseTaskEnvironment(info);
+        rsrcMgr.cleanupTaskEnvironment(info);
     }
 
     /** {@inheritDoc} */

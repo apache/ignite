@@ -23,6 +23,9 @@ import java.util.*;
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
+    /** ID. */
+    public static final byte ID = 1;
+
     /** Optimized marshaller. */
     private final GridOptimizedMarshaller opMarsh;
 

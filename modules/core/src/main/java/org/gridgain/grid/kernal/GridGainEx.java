@@ -74,6 +74,7 @@ import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
@@ -1909,9 +1910,8 @@ public class GridGainEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided or it is a Visor node.
-            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))
-                    && System.getProperty("VISOR") == null) {
+            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
+            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -1959,6 +1959,22 @@ public class GridGainEx {
                     if (log4jCls != null) {
                         URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
+                        if (url == null) {
+                            File cfgFile = new File("config/gridgain-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/gridgain-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
                         if (url != null) {
                             boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
 
@@ -2002,6 +2018,7 @@ public class GridGainEx {
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
             cache.setQueryIndexEnabled(false);
+            cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
 
             return cache;

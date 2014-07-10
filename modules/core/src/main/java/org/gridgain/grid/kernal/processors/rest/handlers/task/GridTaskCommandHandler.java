@@ -26,6 +26,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -171,8 +172,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final List<Object> params = req0.params();
 
-                final boolean deserializePortables = req0.deserializePortables();
-
                 long timeout = req0.timeout();
 
                 final GridFuture<Object> taskFut =
@@ -234,12 +233,18 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                             if (!async) {
                                 if (desc.error() == null) {
-                                    taskRestRes.setFinished(true);
-                                    taskRestRes.setResult(desc.result());
-                                    taskRestRes.setDeserializePortables(deserializePortables);
+                                    try {
+                                        taskRestRes.setFinished(true);
+                                        taskRestRes.setResult(req.portableMode() ?
+                                            ctx.portable().marshalToPortable(desc.result()) : desc.result());
 
-                                    res.setResponse(taskRestRes);
-                                    fut.onDone(res);
+                                        res.setResponse(taskRestRes);
+                                        fut.onDone(res);
+                                    }
+                                    catch (GridPortableException e) {
+                                        fut.onDone(new GridException("Failed to marshal task result: " +
+                                            desc.result(), e));
+                                    }
                                 }
                                 else
                                     fut.onDone(desc.error());

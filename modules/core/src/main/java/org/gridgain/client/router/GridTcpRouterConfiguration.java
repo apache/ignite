@@ -1,14 +1,10 @@
 package org.gridgain.client.router;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -71,12 +67,6 @@ public class GridTcpRouterConfiguration {
 
     /** Credentials. */
     private GridSecurityCredentialsProvider credsProvider;
-
-    /** Marshaller. */
-    private GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
-
-    /** Portable configuration. */
-    private GridPortableConfiguration portableCfg;
 
     /**
      * Gets TCP host or IP address for router to bind to.
@@ -290,49 +280,6 @@ public class GridTcpRouterConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
         this.credsProvider = credsProvider;
-    }
-
-    /**
-     * Gets the marshaller, that is used to communicate between client and server.
-     * <p>
-     * Options, that can be used out-of-the-box:
-     * <ul>
-     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
-     *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
-     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
-     * </ul>
-     *
-     * @return A marshaller to use.
-     */
-    public GridClientMarshaller getMarshaller() {
-        return marsh;
-    }
-
-    /**
-     * Sets the marshaller to use for communication.
-     *
-     * @param marsh A marshaller to use.
-     */
-    public void setMarshaller(GridClientMarshaller marsh) {
-        this.marsh = marsh;
-    }
-
-    /**
-     * Gets portable configuration.
-     *
-     * @return Portable configuration.
-     */
-    public GridPortableConfiguration getPortableConfiguration() {
-        return portableCfg;
-    }
-
-    /**
-     * Sets portable configuration.
-     *
-     * @param portableCfg Portable configuration.
-     */
-    public void setPortableConfiguration(@Nullable GridPortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,8 @@ import java.net.*;
 import java.nio.*;
 import java.util.*;
 
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+
 /**
  * TCP binary protocol implementation.
  */
@@ -40,9 +42,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
-
-    /** Client marshaller. */
-    private GridClientMarshaller marsh;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -108,10 +107,23 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /**
      * Returns marshaller.
      *
+     * @param ses Session.
      * @return Marshaller.
      */
-    GridClientMarshaller marshaller() {
+    GridClientMarshaller marshaller(GridNioSession ses) {
+        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
+
+        assert marsh != null;
+
         return marsh;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Whether portable marshaller is used.
+     */
+    boolean portableMode(GridNioSession ses) {
+        return ctx.portable().isPortable(marshaller(ses));
     }
 
     /** {@inheritDoc} */
@@ -127,8 +139,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
         assert cfg != null;
-
-        marsh = cfg.getMarshaller();
 
         GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 

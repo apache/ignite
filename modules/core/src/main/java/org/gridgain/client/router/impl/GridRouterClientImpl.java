@@ -13,9 +13,11 @@ import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.router.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.client.util.GridClientUtils.*;
 
@@ -29,8 +31,8 @@ class GridRouterClientImpl implements GridClient {
     /** Client configuration. */
     private final GridClientConfiguration cliCfg;
 
-    /** TCP connection manager. */
-    private GridClientConnectionManager connMgr;
+    /** TCP connection managers. */
+    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap8<>();
 
     /**
      * Creates a new TCP client based on the given configuration.
@@ -47,16 +49,12 @@ class GridRouterClientImpl implements GridClient {
         cliCfg.setServers(routerCfg.getServers());
         cliCfg.setSslContextFactory(routerCfg.getSslContextFactory());
         cliCfg.setSecurityCredentialsProvider(routerCfg.getSecurityCredentialsProvider());
-        cliCfg.setMarshaller(routerCfg.getMarshaller());
-        cliCfg.setPortableConfiguration(routerCfg.getPortableConfiguration());
 
         this.cliCfg = cliCfg;
 
         clientImpl = new GridClientImpl(id, cliCfg);
 
-        if (cliCfg.getProtocol() == GridClientProtocol.TCP)
-            connMgr = clientImpl.newConnectionManager();
-        else
+        if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
     }
 
@@ -74,7 +72,7 @@ class GridRouterClientImpl implements GridClient {
      * @throws InterruptedException If router was interrupted while trying.
      *     to establish connection with destination node.
      */
-    GridClientFutureAdapter<?> forwardMessage(Object msg, @Nullable UUID destId)
+    GridClientFutureAdapter<?> forwardMessage(Object msg, @Nullable UUID destId, byte marshId)
         throws GridClientException, InterruptedException {
         GridClientTopology top = clientImpl.topology();
 
@@ -88,6 +86,8 @@ class GridRouterClientImpl implements GridClient {
 
         if (dest == null)
             throw new GridServerUnreachableException("Failed to resolve node for specified destination ID: " + destId);
+
+        GridClientConnectionManager connMgr = connectionManager(marshId);
 
         GridClientConnection conn = null;
 
@@ -116,6 +116,25 @@ class GridRouterClientImpl implements GridClient {
         fail.onDone(cause);
 
         return fail;
+    }
+
+    /**
+     * @param marshId Marshaller ID.
+     * @return Connection manager.
+     * @throws GridClientException In case of error.
+     */
+    private GridClientConnectionManager connectionManager(byte marshId) throws GridClientException {
+        GridClientConnectionManager mgr = connMgrMap.get(marshId);
+
+        if (mgr == null) {
+            GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
+                clientImpl.newConnectionManager(marshId));
+
+            if (old != null)
+                mgr = old;
+        }
+
+        return mgr;
     }
 
     /**

@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.services;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
 

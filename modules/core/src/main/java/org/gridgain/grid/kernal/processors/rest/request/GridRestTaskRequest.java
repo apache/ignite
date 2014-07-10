@@ -32,8 +32,8 @@ public class GridRestTaskRequest extends GridRestRequest {
     /** Timeout. */
     private long timeout;
 
-    /** Deserialize portables flag. */
-    private boolean deserializePortables;
+    /** Keep portables flag. */
+    private boolean keepPortables;
 
     /**
      * @return Task name, if specified, {@code null} otherwise.
@@ -108,15 +108,15 @@ public class GridRestTaskRequest extends GridRestRequest {
     /**
      * @return Keep portables flag.
      */
-    public boolean deserializePortables() {
-        return deserializePortables;
+    public boolean keepPortables() {
+        return keepPortables;
     }
 
     /**
-     * @param deserializePortables Deserialize portables flag.
+     * @param keepPortables Keep portables flag.
      */
-    public void deserializePortables(boolean deserializePortables) {
-        this.deserializePortables = deserializePortables;
+    public void keepPortables(boolean keepPortables) {
+        this.keepPortables = keepPortables;
     }
 
     /** {@inheritDoc} */

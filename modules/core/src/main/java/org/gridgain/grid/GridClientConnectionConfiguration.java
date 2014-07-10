@@ -9,9 +9,6 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.jetbrains.annotations.*;
 
@@ -103,9 +100,6 @@ public class GridClientConnectionConfiguration {
     /** Client message interceptor. */
     private GridClientMessageInterceptor clientMsgInterceptor;
 
-    /** Marshaller. */
-    private GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
-
     /**
      * Creates client connection configuration with all default values.
      */
@@ -141,7 +135,6 @@ public class GridClientConnectionConfiguration {
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
-        marsh = cfg.getMarshaller();
     }
 
     /**
@@ -569,30 +562,5 @@ public class GridClientConnectionConfiguration {
      */
     public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
         clientMsgInterceptor = interceptor;
-    }
-
-    /**
-     * Gets the marshaller, that is used to communicate between client and server.
-     * <p>
-     * Options, that can be used out-of-the-box:
-     * <ul>
-     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
-     *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
-     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
-     * </ul>
-     *
-     * @return A marshaller to use.
-     */
-    public GridClientMarshaller getMarshaller() {
-        return marsh;
-    }
-
-    /**
-     * Sets the marshaller to use for communication.
-     *
-     * @param marsh A marshaller to use.
-     */
-    public void setMarshaller(GridClientMarshaller marsh) {
-        this.marsh = marsh;
     }
 }

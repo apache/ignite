@@ -39,7 +39,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
      * @param req Handshake request.
      */
     public GridClientHandshakeRequestWrapper(GridClientHandshakeRequest req) {
-        bytes = req.rawBytesNoHeader();
+        bytes = req.rawBytes();
     }
 
     /**

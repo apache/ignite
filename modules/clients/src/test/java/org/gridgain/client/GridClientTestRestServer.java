@@ -80,9 +80,6 @@ public class GridClientTestRestServer {
     /** */
     private volatile GridNioSession lastSes;
 
-    /** */
-    private GridClientMarshaller optMarsh = new GridClientOptimizedMarshaller();
-
     /**
      * @param port Port to listen on.
      * @param failOnConnect If {@code true} than server will close connection immediately after connect.
@@ -122,7 +119,7 @@ public class GridClientTestRestServer {
                 .directBuffer(false)
                 .filters(
                     new GridNioAsyncNotifyFilter(gridName, Executors.newFixedThreadPool(2), log),
-                    new GridNioCodecFilter(new GridTcpRestParser(new GridClientOptimizedMarshaller()), log, false)
+                    new GridNioCodecFilter(new TestParser(), log, false)
                 )
                 .build();
         }
@@ -254,6 +251,18 @@ public class GridClientTestRestServer {
         /** {@inheritDoc} */
         @Override public void onSessionIdleTimeout(GridNioSession ses) {
             ses.close();
+        }
+    }
+
+    /**
+     */
+    private static class TestParser extends GridTcpRestParser {
+        /** */
+        private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
+
+        /** {@inheritDoc} */
+        @Override protected GridClientMarshaller marshaller(GridNioSession ses) {
+            return marsh;
         }
     }
 }

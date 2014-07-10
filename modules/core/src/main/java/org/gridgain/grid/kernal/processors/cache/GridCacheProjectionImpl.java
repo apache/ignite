@@ -889,6 +889,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        return cache.primaryEntrySetx(F.and(filter, entryFilter(true)));
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<?, ?> forPortables() {
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
             noNullEntryFilter.entryFilter, flags, subjId, portableKeys, true);

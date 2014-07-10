@@ -11,6 +11,8 @@ package org.gridgain.client.impl.connection;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
@@ -127,13 +129,14 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         long pingTimeout,
         boolean tcpNoDelay,
         GridClientMarshaller marsh,
+        Byte marshId,
         GridClientTopology top,
         Object cred,
         ThreadLocal<Boolean> keepPortablesMode)
         throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
-        assert marsh != null;
+        assert marsh != null || marshId != null;
 
         this.marsh = marsh;
         this.pingInterval = pingInterval;
@@ -170,6 +173,17 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 sslHandshakeFut.get();
 
             GridClientHandshakeRequest req = new GridClientHandshakeRequest();
+
+            if (marshId != null)
+                req.marshallerId(marshId);
+            else {
+                assert marsh != null;
+
+                if (marsh instanceof GridClientOptimizedMarshaller)
+                    req.marshallerId(GridClientOptimizedMarshaller.ID);
+                else if (marsh instanceof GridClientJdkMarshaller)
+                    req.marshallerId(GridClientJdkMarshaller.ID);
+            }
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 
@@ -780,7 +794,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         msg.taskName(taskName);
         msg.argument(arg);
-        msg.deserializePortables(!keepPortables);
+        msg.keepPortables(keepPortables);
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {

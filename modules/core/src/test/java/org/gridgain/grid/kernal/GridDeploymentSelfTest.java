@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -455,7 +456,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean register(ClassLoader ldr, Class rsrc) throws GridSpiException {
             if (super.register(ldr, rsrc)) {
-                deployCnt++;
+                if (rsrc != GridCacheProjectionImpl.FullFilter.class && !rsrc.getName().contains("GridFunc"))
+                    deployCnt++;
 
                 return true;
             }

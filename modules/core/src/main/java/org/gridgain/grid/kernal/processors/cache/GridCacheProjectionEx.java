@@ -414,6 +414,14 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
+     * Gets set of primary entries containing internal entries.
+     *
+     * @param filter Optional filter.
+     * @return Primary entry set.
+     */
+    public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
      * @return Projection that doesn't deserialize values stores as portable objects.
      */
     public GridCacheProjectionEx<?, ?> forPortables();

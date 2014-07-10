@@ -75,16 +75,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static final GridCacheFlag[] EMPTY_FLAGS = new GridCacheFlag[0];
 
-    /** */
-    private final boolean portable;
-
     /**
      * @param ctx Context.
      */
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
-
-        portable = ctx.portable().isPortableEnabled();
     }
 
     /** {@inheritDoc} */
@@ -151,7 +146,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             switch (cmd) {
                 case CACHE_GET: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetCommand(key));
+                        new GetCommand(key), req.portableMode());
 
                     break;
                 }
@@ -166,7 +161,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     keys = new HashSet<>(keys);
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetAllCommand(keys));
+                        new GetAllCommand(keys), req.portableMode());
 
                     break;
                 }
@@ -178,7 +173,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key, new
-                        PutCommand(key, ttl, val));
+                        PutCommand(key, ttl, val), req.portableMode());
 
                     break;
                 }
@@ -190,7 +185,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new AddCommand(key, ttl, val));
+                        new AddCommand(key, ttl, val), req.portableMode());
 
                     break;
                 }
@@ -213,14 +208,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     map = new HashMap<>(map);
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new PutAllCommand(map));
+                        new PutAllCommand(map), req.portableMode());
 
                     break;
                 }
 
                 case CACHE_REMOVE: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new RemoveCommand(key));
+                        new RemoveCommand(key), req.portableMode());
 
                     break;
                 }
@@ -232,7 +227,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new RemoveAllCommand(keys));
+                        new RemoveAllCommand(keys), req.portableMode());
 
                     break;
                 }
@@ -244,7 +239,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new ReplaceCommand(key, ttl, val));
+                        new ReplaceCommand(key, ttl, val), req.portableMode());
 
                     break;
                 }
@@ -268,21 +263,21 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val2 = req0.value2();
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new CasCommand(val2, val1, key));
+                        new CasCommand(val2, val1, key), req.portableMode());
 
                     break;
                 }
 
                 case CACHE_APPEND: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new AppendCommand(key, req0));
+                        new AppendCommand(key, req0), req.portableMode());
 
                     break;
                 }
 
                 case CACHE_PREPEND: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new PrependCommand(key, req0));
+                        new PrependCommand(key, req0), req.portableMode());
 
                     break;
                 }
@@ -335,7 +330,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final String cacheName,
         final GridCacheFlag[] flags,
         final Object key,
-        final CacheProjectionCommand op) throws GridException {
+        final CacheProjectionCommand op,
+        final boolean portable) throws GridException {
 
         final boolean locExec =
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);

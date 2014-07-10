@@ -1342,7 +1342,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
         String path = fs.getFileStatus(file).getPath().toString();
 
-        assertTrue(path.endsWith("/Users/" + System.getProperty("user.name", "anonymous") + "/file"));
+        assertTrue(path.endsWith("/user/" + System.getProperty("user.name", "anonymous") + "/file"));
     }
 
     /** @throws Exception If failed. */
@@ -1372,7 +1372,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     public void testGetWorkingDirectoryIfDefault() throws Exception {
         String path = fs.getWorkingDirectory().toString();
 
-        assertTrue(path.endsWith("/Users/" + System.getProperty("user.name", "anonymous")));
+        assertTrue(path.endsWith("/user/" + System.getProperty("user.name", "anonymous")));
     }
 
     /** @throws Exception If failed. */
