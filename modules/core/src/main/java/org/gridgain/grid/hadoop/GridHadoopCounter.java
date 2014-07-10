@@ -21,6 +21,13 @@ public interface GridHadoopCounter {
     public String name();
 
     /**
+     * Gets counter group.
+     *
+     * @return Counter group's name.
+     */
+    public String group();
+
+    /**
      * Gets current value of this counter.
      *
      * @return Current value.

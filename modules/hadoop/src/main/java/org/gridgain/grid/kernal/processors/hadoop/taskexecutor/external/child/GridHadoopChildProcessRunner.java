@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
@@ -167,7 +168,9 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
+                        final GridHadoopCountersImpl counters = new GridHadoopCountersImpl();
+
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo, counters) {
                             @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                                 onTaskFinished0(this, state, err);
                             }

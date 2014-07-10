@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
@@ -57,17 +58,23 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
 
+    /** Counters. */
+    private final GridHadoopCounters counters;
+
     /**
      * @param log Log.
      * @param job Job.
      * @param mem Memory.
      * @param info Task info.
+     * @param counters
      */
-    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
+    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
+        GridHadoopCounters counters) {
         this.log = log;
         this.job = job;
         this.mem = mem;
         this.info = info;
+        this.counters = counters;
     }
 
     /**
@@ -138,7 +145,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         try (GridHadoopTaskOutput out = createOutput(info, localCombiner);
              GridHadoopTaskInput in = createInput(info, localCombiner)) {
 
-            GridHadoopTaskContext ctx = new GridHadoopTaskContext(info, job, in, out);
+            GridHadoopTaskContext ctx = new GridHadoopTaskContext(info, job, in, out, counters);
 
             task = job.createTask(info);
 

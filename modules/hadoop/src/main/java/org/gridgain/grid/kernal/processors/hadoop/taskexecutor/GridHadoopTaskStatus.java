@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -22,11 +24,20 @@ public class GridHadoopTaskStatus {
     /** */
     private final Throwable failCause;
 
+    /** */
+    private final GridHadoopCounters counters;
+
     public GridHadoopTaskStatus(GridHadoopTaskState state, @Nullable Throwable failCause) {
+        this(state, failCause, GridHadoopEmptyCountersImpl.instance());
+    }
+
+    public GridHadoopTaskStatus(GridHadoopTaskState state, @Nullable Throwable failCause, GridHadoopCounters counters) {
         assert state != null;
+        assert counters != null;
 
         this.state = state;
         this.failCause = failCause;
+        this.counters = counters;
     }
 
     /**
@@ -41,6 +52,13 @@ public class GridHadoopTaskStatus {
      */
     @Nullable public Throwable failCause() {
         return failCause;
+    }
+
+    /**
+     * @return Counters.
+     */
+    @Nullable public GridHadoopCounters counters() {
+        return counters;
     }
 
     /** {@inheritDoc} */

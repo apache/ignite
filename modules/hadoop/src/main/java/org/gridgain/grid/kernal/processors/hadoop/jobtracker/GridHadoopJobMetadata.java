@@ -76,6 +76,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Job complete time. */
     private long completeTs;
 
+    /** Job counters */
+    private Collection<GridHadoopCounter> counters = new ArrayList<>();
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -119,6 +122,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         startTs = src.startTs;
         submitNodeId = src.submitNodeId;
         taskNumMap = src.taskNumMap;
+        counters = src.counters;
         ver = src.ver + 1;
     }
 
@@ -320,6 +324,24 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * Returns job counters.
+     *
+     * @return collection of counters.
+     */
+    public Collection<GridHadoopCounter> counters() {
+        return counters;
+    }
+
+    /**
+     * Sets job counters.
+     *
+     * @param counters Counters collection.
+     */
+    public void counters(Collection<GridHadoopCounter> counters) {
+        this.counters = counters;
+    }
+
+    /**
      * @param failCause Fail cause.
      */
     public void failCause(Throwable failCause) {
@@ -387,6 +409,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeLong(mapCompleteTs);
         out.writeLong(completeTs);
         out.writeObject(reducersAddrs);
+        out.writeObject(counters);
     }
 
     /** {@inheritDoc} */
@@ -408,6 +431,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         mapCompleteTs = in.readLong();
         completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
+        counters = (Collection<GridHadoopCounter>)in.readObject();
     }
 
     /** {@inheritDoc} */

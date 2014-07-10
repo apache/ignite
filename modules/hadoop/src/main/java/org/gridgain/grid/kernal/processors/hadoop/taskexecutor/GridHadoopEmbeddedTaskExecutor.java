@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -88,7 +89,9 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info) {
+            final GridHadoopCounters counters = new GridHadoopCountersImpl();
+
+            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info, counters) {
                 @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
                     if (log.isDebugEnabled())
                         log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
@@ -96,7 +99,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     finalExecutedTasks.remove(this);
 
-                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
+                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err, counters));
                 }
 
                 @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
