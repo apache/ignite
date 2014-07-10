@@ -163,7 +163,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         assert info != null;
 
-        for (GridCacheEntry<K, V> e : cctx.cache().primaryEntrySet())
+        for (GridCacheEntry<K, V> e : internal ? cctx.cache().primaryEntrySetx() : cctx.cache().primaryEntrySet())
             info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null));
 
         info.flushPending();

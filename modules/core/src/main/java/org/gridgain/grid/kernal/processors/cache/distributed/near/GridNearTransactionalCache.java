@@ -110,6 +110,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -130,7 +131,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId, deserializePortable);
     }
 
     /**
@@ -140,11 +141,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return Future.
      */
     GridFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx));
+            CU.subjectId(tx, ctx), deserializePortable);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();

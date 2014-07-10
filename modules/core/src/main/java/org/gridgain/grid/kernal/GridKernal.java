@@ -42,6 +42,7 @@ import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
@@ -55,6 +56,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -182,6 +184,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Grid security instance. */
     private GridSecurity security;
+
+    /** Portables instance. */
+    private GridPortables portables;
 
     /** DR pool. */
     private ExecutorService drPool;
@@ -679,6 +684,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
+            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -694,8 +700,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
 
-            if (ctx.isEnterprise())
+            if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx.security());
+                portables = new GridPortablesImpl(ctx.portable());
+            }
 
             gw.writeLock();
 
@@ -1265,7 +1273,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
 
         // Save port range, port numbers will be stored by rest processor at runtime.
-        add(attrs, ATTR_REST_PORT_RANGE, cfg.getRestPortRange());
+        if (cfg.getClientConnectionConfiguration() != null)
+            add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
 
         // Add data center ID.
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
@@ -1384,8 +1393,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
-        restExecSvcMBean = cfg.getRestExecutorService() != null ?
-            registerExecutorMBean(cfg.getRestExecutorService(), "GridRestExecutor") : null;
+
+        GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+
+        if (clientCfg != null) {
+            restExecSvcMBean = clientCfg.getRestExecutorService() != null ?
+                registerExecutorMBean(clientCfg.getRestExecutorService(), "GridRestExecutor") : null;
+        }
     }
 
     /**
@@ -1517,7 +1531,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.isRestEnabled();
+        return cfg.getClientConnectionConfiguration() != null;
     }
 
     /**
@@ -2326,8 +2340,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             F.copy(objs, cfg.getSegmentationResolvers());
 
-        F.copy(objs, cfg.getClientMessageInterceptor(), cfg.getRestTcpSslContextFactory(),
-            cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
+        if (cfg.getClientConnectionConfiguration() != null)
+            F.copy(objs, cfg.getClientConnectionConfiguration().getClientMessageInterceptor(),
+                cfg.getClientConnectionConfiguration().getRestTcpSslContextFactory());
+
+        F.copy(objs, cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 
         return objs;
     }
@@ -3015,6 +3032,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
 
         return security;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortables portables() {
+        if (!ctx.isEnterprise())
+            throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
+
+        return portables;
     }
 
     /** {@inheritDoc} */

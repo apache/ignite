@@ -11,7 +11,6 @@ package org.gridgain.examples.datagrid;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
@@ -65,25 +64,8 @@ public class CachePutGetExample {
 
         System.out.println(">>> Stored values in cache.");
 
-        // Projection (view) for remote nodes that have cache running.
-        GridProjection rmts = g.forCache(CACHE_NAME).forRemotes();
-
-        // If no other cache nodes are started.
-        if (rmts.nodes().isEmpty()) {
-            System.out.println(">>> Need to start remote nodes to complete example.");
-
-            return;
-        }
-
-        // Get and print out values on all remote nodes.
-        rmts.compute().broadcast(new GridCallable<Object>() {
-            @Override public Object call() throws GridException {
-                for (int i = 0; i < keyCnt; i++)
-                    System.out.println("Got [key=" + i + ", val=" + cache.get(i) + ']');
-
-                return null;
-            }
-        }).get();
+        for (int i = 0; i < keyCnt; i++)
+            System.out.println("Got [key=" + i + ", val=" + cache.get(i) + ']');
     }
 
     /**
@@ -112,35 +94,10 @@ public class CachePutGetExample {
 
         System.out.println(">>> Bulk-stored values in cache.");
 
-        // Projection (view) for remote nodes that have cache running.
-        GridProjection rmts = g.forCache(CACHE_NAME).forRemotes();
+        // Bulk-get values from cache.
+        Map<Integer, String> vals = cache.getAll(batch.keySet());
 
-        // If no other cache nodes are started.
-        if (rmts.nodes().isEmpty()) {
-            System.out.println(">>> Need to start remote nodes to complete example.");
-
-            return;
-        }
-
-        final Collection<Integer> keys = new ArrayList<>(batch.keySet());
-
-        // Get values from all remote cache nodes.
-        Collection<Map<Integer, String>> retMaps = rmts.compute().broadcast(
-            new GridCallable<Map<Integer, String>>() {
-                @Override public Map<Integer, String> call() throws GridException {
-                    Map<Integer, String> vals = cache.getAll(keys);
-
-                    for (Map.Entry<Integer, String> e : vals.entrySet())
-                        System.out.println("Got entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-                    return vals;
-                }
-            }).get();
-
-        System.out.println(">>> Got all entries from all remote nodes.");
-
-        // Since we get the same keys on all nodes, values should be equal to the initial batch.
-        for (Map<Integer, String> map : retMaps)
-            assert map.equals(batch);
+        for (Map.Entry<Integer, String> e : vals.entrySet())
+            System.out.println("Got entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
     }
 }

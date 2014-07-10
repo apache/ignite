@@ -186,7 +186,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             try {
                 if (log.isInfoEnabled() && !ctxs.isEmpty())
                     log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
-                            U.id8(ctx.executionId()) + ']');
+                        U.id8(ctx.executionId()) + ']');
 
                 ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             }
@@ -478,16 +478,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
                     cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
 
-                Map<UUID, Integer> cnts = new HashMap<>();
+                Map<UUID, Integer> cnts = null;
 
                 if (affKey != null) {
                     GridNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
 
-                    assert n != null;
+                    if (n != null) {
+                        cnts = new HashMap<>();
 
-                    int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
+                        int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
 
-                    cnts.put(n.id(), cnt);
+                        cnts.put(n.id(), cnt);
+                    }
                 }
                 else {
                     Collection<GridNode> nodes =
@@ -495,94 +497,101 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             ctx.discovery().nodes(topVer) :
                             F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
 
-                    int size = nodes.size();
+                    if (!nodes.isEmpty()) {
+                        cnts = new HashMap<>();
 
-                    int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
-                    int remainder = totalCnt != 0 ? totalCnt % size : 0;
+                        int size = nodes.size();
 
-                    if (perNodeCnt > maxPerNodeCnt && maxPerNodeCnt != 0) {
-                        perNodeCnt = maxPerNodeCnt;
-                        remainder = 0;
-                    }
+                        int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
+                        int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                    for (GridNode n : nodes)
-                        cnts.put(n.id(), perNodeCnt);
+                        if (perNodeCnt > maxPerNodeCnt && maxPerNodeCnt != 0) {
+                            perNodeCnt = maxPerNodeCnt;
+                            remainder = 0;
+                        }
 
-                    assert perNodeCnt >= 0;
-                    assert remainder >= 0;
+                        for (GridNode n : nodes)
+                            cnts.put(n.id(), perNodeCnt);
 
-                    if (remainder > 0) {
-                        int cnt = perNodeCnt + 1;
+                        assert perNodeCnt >= 0;
+                        assert remainder >= 0;
 
-                        if (oldAssigns != null) {
-                            Collection<UUID> used = new HashSet<>();
+                        if (remainder > 0) {
+                            int cnt = perNodeCnt + 1;
 
-                            // Avoid redundant moving of services.
-                            for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
-                                // Do not assign services to left nodes.
-                                if (ctx.discovery().node(e.getKey()) == null)
-                                    continue;
+                            if (oldAssigns != null) {
+                                Collection<UUID> used = new HashSet<>();
 
-                                // If old count and new count match, then reuse the assignment.
-                                if (e.getValue() == cnt) {
-                                    cnts.put(e.getKey(), cnt);
+                                // Avoid redundant moving of services.
+                                for (Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                    // Do not assign services to left nodes.
+                                    if (ctx.discovery().node(e.getKey()) == null)
+                                        continue;
 
-                                    used.add(e.getKey());
+                                    // If old count and new count match, then reuse the assignment.
+                                    if (e.getValue() == cnt) {
+                                        cnts.put(e.getKey(), cnt);
 
-                                    if (--remainder == 0)
-                                        break;
+                                        used.add(e.getKey());
+
+                                        if (--remainder == 0)
+                                            break;
+                                    }
+                                }
+
+                                if (remainder > 0) {
+                                    List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                                    // Randomize.
+                                    Collections.shuffle(entries);
+
+                                    for (Entry<UUID, Integer> e : entries) {
+                                        // Assign only the ones that have not been reused from previous assignments.
+                                        if (!used.contains(e.getKey())) {
+                                            if (e.getValue() < maxPerNodeCnt) {
+                                                e.setValue(e.getValue() + 1);
+
+                                                if (--remainder == 0)
+                                                    break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
-
-                            if (remainder > 0) {
+                            else {
                                 List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                                 // Randomize.
                                 Collections.shuffle(entries);
 
                                 for (Entry<UUID, Integer> e : entries) {
-                                    // Assign only the ones that have not been reused from previous assignments.
-                                    if (!used.contains(e.getKey())) {
-                                        if (e.getValue() < maxPerNodeCnt) {
-                                            e.setValue(e.getValue() + 1);
+                                    e.setValue(e.getValue() + 1);
 
-                                            if (--remainder == 0)
-                                                break;
-                                        }
-                                    }
+                                    if (--remainder == 0)
+                                        break;
                                 }
-                            }
-                        }
-                        else {
-                            List<Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
-
-                            // Randomize.
-                            Collections.shuffle(entries);
-
-                            for (Entry<UUID, Integer> e : entries) {
-                                e.setValue(e.getValue() + 1);
-
-                                if (--remainder == 0)
-                                    break;
                             }
                         }
                     }
                 }
 
-                assert cnts != null;
+                if (cnts != null) {
+                    assigns.assigns(cnts);
 
-                assigns.assigns(cnts);
-
-                assignCache.put(key, assigns);
+                    assignCache.put(key, assigns);
+                }
+                else
+                    // Remove assignments if no nodes found.
+                    assignCache.removex(key);
 
                 tx.commit();
 
                 break;
-             }
-             catch (GridTopologyException e) {
-                 if (log.isDebugEnabled())
-                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
-             }
+            }
+            catch (GridTopologyException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
+            }
         }
     }
 
@@ -643,6 +652,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 if (log.isDebugEnabled())
                                     log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
                                         svcCtx.executionId() + ']');
+                            }
+                            catch (GridRuntimeException e) {
+                                if (e.hasCause(InterruptedException.class) ||
+                                    e.hasCause(GridInterruptedException.class)) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Service thread was interrupted [name=" + svcCtx.name() +
+                                            ", execId=" + svcCtx.executionId() + ']');
+                                }
+                                else {
+                                    U.error(log, "Service execution stopped with error [name=" + svcCtx.name() +
+                                        ", execId=" + svcCtx.executionId() + ']', e);
+                                }
                             }
                             catch (Throwable e) {
                                 log.error("Service execution stopped with error [name=" + svcCtx.name() +

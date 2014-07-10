@@ -29,20 +29,9 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>modules/clients/dotnet/readme.pdf</source>
-            <outputDirectory>/clients/dotnet</outputDirectory>
-        </file>
-
-        <file>
             <source>examples/pom-standalone-${gridgain.edition}.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
-            <outputDirectory>/examples/clients/dotnet</outputDirectory>
-            <destName>GridClientApiExample.csproj</destName>
         </file>
 
         <file>
@@ -62,35 +51,11 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/cpp</directory>
-            <outputDirectory>/clients/cpp</outputDirectory>
-            <excludes>
-                <exclude>main/tests/**</exclude>
-                <exclude>vsproject/gridgain-tests/**</exclude>
-                <exclude>vsproject/gridgain-router-tests/**</exclude>
-                <exclude>vsproject/gridgain-client-dev.sln</exclude>
-                <exclude>**/*.md</exclude>
-                <exclude>**/*.dxg</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/dotnet/client-lib/libs</directory>
-            <outputDirectory>/clients/dotnet</outputDirectory>
-        </fileSet>
-
-        <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
             <includes>
                 <include>clients/**</include>
-                <include>libs/**</include>
             </includes>
-            <excludes>
-                <exclude>**/*.md</exclude>
-                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
-                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>
@@ -106,16 +71,6 @@
         <fileSet>
             <directory>target/javadoc/client</directory>
             <outputDirectory>/clients/java/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/dotnetdoc</directory>
-            <outputDirectory>/clients/dotnet/doc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/cppdoc</directory>
-            <outputDirectory>/clients/cpp/doc</outputDirectory>
         </fileSet>
 
         <fileSet>
