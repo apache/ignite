@@ -261,10 +261,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null)
+        if (filter != null && !U.isGrid(filter.getClass()))
             filterDep = new DeployableObject(filter, ctx);
 
-        if (prjPred != null)
+        if (prjPred != null && !U.isGrid(prjPred.getClass()))
             prjPredDep = new DeployableObject(prjPred, ctx);
     }
 
