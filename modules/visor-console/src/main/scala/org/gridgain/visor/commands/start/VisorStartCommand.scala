@@ -296,7 +296,7 @@ class VisorStartCommand {
 
                 val errT = VisorTextTable()
 
-                errT.autoBorder
+                errT.autoBorder = false
                 errT.maxCellWidth = 80
 
                 errT #= ("Host", "Error")
