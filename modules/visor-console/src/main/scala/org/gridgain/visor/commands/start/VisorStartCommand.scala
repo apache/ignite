@@ -301,9 +301,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => {
-                    errT += (r.host, r.errMsg)
-                })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split("\n").toSeq) })
 
                 errT.render()
             }
