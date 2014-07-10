@@ -19,6 +19,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -142,6 +143,13 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return Instance of {@code GridSecurity} interface.
      */
     public GridSecurity security();
+
+    /**
+     * Gets an instance of {@code GridPortables} interface. Available in enterprise edition only.
+     *
+     * @return Instance of {@code GridPortables} interface.
+     */
+    public GridPortables portables();
 
     /**
      * Gets an instance of Data Center Replication.

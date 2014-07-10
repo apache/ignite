@@ -20,8 +20,8 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -437,12 +437,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.get(key, entry, filter);
+            return delegate.get(key, entry, deserializePortable, filter);
         }
         finally {
             gate.leave(prev);
@@ -1058,6 +1058,30 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.entrySetx(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.primaryEntrySetx(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<?, ?> forPortables() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.forPortables();
         }
         finally {
             gate.leave(prev);

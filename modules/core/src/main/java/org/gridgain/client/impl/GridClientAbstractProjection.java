@@ -441,7 +441,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
          * @return Future - result of operation.
          * @throws GridClientConnectionResetException If connection was unexpectedly reset. Connection will be
          *      either re-established or different server will be accessed (if available).
-         * @throws GridClientClosedException If client was manually closed by user..
+         * @throws GridClientClosedException If client was manually closed by user.
          */
         public GridClientFuture<R> apply(GridClientConnection conn, UUID affinityNodeId)
             throws GridClientConnectionResetException, GridClientClosedException;

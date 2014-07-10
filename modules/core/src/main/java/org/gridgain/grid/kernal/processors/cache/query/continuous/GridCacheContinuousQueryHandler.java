@@ -136,8 +136,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
                     else {
                         try {
-                            if (ctx.config().isPeerClassLoadingEnabled() &&
-                                U.hasCache(ctx.discovery().node(nodeId), cacheName)) {
+                            GridNode node = ctx.discovery().node(nodeId);
+
+                            if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
+                                U.hasCache(node, cacheName)) {
                                 e.p2pMarshal(ctx.config().getMarshaller());
 
                                 e.cacheName(cacheName);
@@ -259,10 +261,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null && !U.isGrid(filter.getClass()))
+        if (filter != null)
             filterDep = new DeployableObject(filter, ctx);
 
-        if (prjPred != null && !U.isGrid(prjPred.getClass()))
+        if (prjPred != null)
             prjPredDep = new DeployableObject(prjPred, ctx);
     }
 

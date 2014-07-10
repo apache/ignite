@@ -11,14 +11,13 @@ package org.gridgain.examples.misc.client.router;
 
 import org.gridgain.client.*;
 import org.gridgain.client.router.*;
-import org.gridgain.examples.misc.client.api.*;
 
 import java.util.*;
 
 /**
  * This example demonstrates use of Java client, connected to Grid through router.
  * To execute this example you should start an instance of
- * {@link ClientExampleNodeStartup} class which will start up a GridGain node.
+ * {@link RouterExampleNodeStartup} class which will start up a GridGain node.
  * And an instance of {@link RouterStartup} which will start up
  * a GridGain router.
  * <p>
@@ -82,7 +81,7 @@ public class RouterExample {
     private static void runExample(GridClient client) throws GridClientException {
         System.out.println(">>> Executing task...");
         System.out.println(">>> Task result: " + client.compute().
-            execute(ClientExampleTask.class.getName(), "Router example."));
+            execute(RouterExampleTask.class.getName(), "Router example."));
     }
 
     /**

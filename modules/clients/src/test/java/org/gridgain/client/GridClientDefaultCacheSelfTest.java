@@ -67,7 +67,13 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestJettyPath(REST_JETTY_CFG);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -76,8 +82,6 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-
-        cfg.setRestEnabled(true);
 
         return cfg;
     }

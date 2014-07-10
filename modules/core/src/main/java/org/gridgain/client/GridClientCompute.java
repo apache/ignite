@@ -460,4 +460,9 @@ public interface GridClientCompute {
      * @return Future.
      */
     public GridClientFuture<List<String>> logAsync(String path, int lineFrom, int lineTo);
+
+    /**
+     * Sets keep portables flag for the next task execution in the current thread.
+     */
+    public GridClientCompute withKeepPortables();
 }
