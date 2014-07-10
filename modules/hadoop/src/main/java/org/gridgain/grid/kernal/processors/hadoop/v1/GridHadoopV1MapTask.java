@@ -37,8 +37,6 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
-
         InputFormat inFormat = jobConf.getInputFormat();
 
         GridHadoopInputSplit split = info().inputSplit();
@@ -64,6 +62,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
                 fileName(), jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
+
+            Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
 
             Object key = reader.createKey();
             Object val = reader.createValue();

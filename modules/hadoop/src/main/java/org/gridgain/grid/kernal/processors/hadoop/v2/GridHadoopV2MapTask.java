@@ -32,11 +32,9 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
         throws GridException {
-        Mapper mapper;
         InputFormat inFormat;
 
         try {
-            mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), jobCtx.getConfiguration());
             inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), jobCtx.getConfiguration());
         }
         catch (ClassNotFoundException e) {
@@ -68,6 +66,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
             hadoopContext().reader(reader);
 
             outputFormat = jobImpl.info().hasCombiner() || jobImpl.info().hasReducer() ? null : prepareWriter(jobCtx);
+
+            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), jobCtx.getConfiguration());
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));

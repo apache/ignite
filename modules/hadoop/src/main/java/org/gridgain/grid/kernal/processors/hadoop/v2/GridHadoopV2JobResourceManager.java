@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -51,6 +52,9 @@ public class GridHadoopV2JobResourceManager {
 
     /** Staging directory to delivery job jar and config to the work nodes. */
     private Path stagingDir;
+
+    /** Saved context class loader. */
+    private ThreadLocal<ClassLoader> prevClsLdr = new ThreadLocal<>();
 
     /**
      * Creates new instance.
@@ -96,7 +100,7 @@ public class GridHadoopV2JobResourceManager {
 
             JobConf cfg = ctx.getJobConf();
 
-            String mrDir = ctx.getJobConf().get("mapreduce.job.dir");
+            String mrDir = cfg.get("mapreduce.job.dir");
 
             if (mrDir != null) {
                 stagingDir = new Path(new URI(mrDir));
@@ -110,7 +114,7 @@ public class GridHadoopV2JobResourceManager {
 
                     if (!FileUtil.copy(fs, stagingDir, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +
-                             "[path=" + stagingDir + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
+                            "[path=" + stagingDir + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
                 }
 
                 File jarJobFile = new File(jobLocDir, "job.jar");
@@ -120,10 +124,10 @@ public class GridHadoopV2JobResourceManager {
                 rsrcList.add(jarJobFile);
                 rsrcList.add(new File(jobLocDir, "job.xml"));
 
-                processFiles(ctx.getCacheFiles(), download, false, false);
-                processFiles(ctx.getCacheArchives(), download, true, false);
-                processFiles(ctx.getFileClassPaths(), download, false, true);
-                processFiles(ctx.getArchiveClassPaths(), download, true, true);
+                processFiles(ctx.getCacheFiles(), download, true, false, MRJobConfig.CACHE_LOCALFILES);
+                processFiles(ctx.getCacheArchives(), download, true, false, MRJobConfig.CACHE_LOCALARCHIVES);
+                processFiles(ctx.getFileClassPaths(), download, false, true, null);
+                processFiles(ctx.getArchiveClassPaths(), download, true, true, null);
             }
             else if (!jobLocDir.mkdirs())
                 throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
@@ -138,16 +142,19 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Process list of resources.
      *
-     * @param files Array of {@link URI} or {@link Path} to process resources.
+     * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
      * @param extract {@code true}, if need to extract archive.
      * @param addToClsPath {@code true}, if need to add the resource to class path.
+     * @param rsrcNameProp Property for resource name array setting.
      * @throws IOException If errors.
      */
-    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, boolean addToClsPath)
-        throws IOException {
+    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, boolean addToClsPath,
+        String rsrcNameProp) throws IOException {
         if (F.isEmptyOrNulls(files))
-            return;
+            return ;
+
+        Collection<String> res = new ArrayList<>();
 
         for (Object pathObj : files) {
             String locName = null;
@@ -168,13 +175,15 @@ public class GridHadoopV2JobResourceManager {
 
             File dstPath = new File(jobLocDir.getAbsolutePath(), locName);
 
+            res.add(locName);
+
             rsrcList.add(dstPath);
 
             if (addToClsPath)
                 clsPath.add(dstPath.toURI().toURL());
 
             if (!download)
-                return;
+                continue;
 
             JobConf cfg = ctx.getJobConf();
 
@@ -213,6 +222,9 @@ public class GridHadoopV2JobResourceManager {
             else
                 FileUtil.copy(srcFs, srcPath, dstFs, new Path(dstPath.toString()), false, cfg);
         }
+
+        if (!res.isEmpty() && rsrcNameProp != null)
+            ctx.getJobConf().setStrings(rsrcNameProp, res.toArray(new String[res.size()]));
     }
 
     /**
@@ -254,6 +266,10 @@ public class GridHadoopV2JobResourceManager {
     public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         try {
             JobConf cfg = ctx.getJobConf();
+
+            prevClsLdr.set(Thread.currentThread().getContextClassLoader());
+
+            Thread.currentThread().setContextClassLoader(cfg.getClassLoader());
 
             switch(info.type()) {
                 case MAP:
@@ -310,6 +326,8 @@ public class GridHadoopV2JobResourceManager {
      * @throws GridException If fails.
      */
     public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        Thread.currentThread().setContextClassLoader(prevClsLdr.get());
+
         GridHadoopRawLocalFileSystem fs;
 
         File locDir = taskLocalDir(info);

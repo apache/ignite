@@ -128,15 +128,15 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /**
      * @param info Task info.
-     * @param localCombiner If we have mapper with combiner.
+     * @param locCombiner If we have mapper with combiner.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+    private void runTask(GridHadoopTaskInfo info, boolean locCombiner) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-        try (GridHadoopTaskOutput out = createOutput(info, localCombiner);
-             GridHadoopTaskInput in = createInput(info, localCombiner)) {
+        try (GridHadoopTaskOutput out = createOutput(info, locCombiner);
+             GridHadoopTaskInput in = createInput(info, locCombiner)) {
 
             GridHadoopTaskContext ctx = new GridHadoopTaskContext(info, job, in, out);
 
@@ -167,12 +167,12 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /**
      * @param info Task info.
-     * @param localCombiner If we have mapper with combiner.
+     * @param locCombiner If we have mapper with combiner.
      * @return Task input.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+    private GridHadoopTaskInput createInput(GridHadoopTaskInfo info, boolean locCombiner) throws GridException {
         switch (info.type()) {
             case SETUP:
             case MAP:
@@ -181,7 +181,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 return null;
 
             case COMBINE:
-                if (localCombiner) {
+                if (locCombiner) {
                     assert local != null;
 
                     return local.input((Comparator<Object>)job.combineGroupComparator());
@@ -208,11 +208,11 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /**
      * @param info Task info.
-     * @param localCombiner If we have mapper with combiner.
+     * @param locCombiner If we have mapper with combiner.
      * @return Task output.
      * @throws GridException If failed.
      */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info, boolean locCombiner) throws GridException {
         switch (info.type()) {
             case SETUP:
             case REDUCE:
@@ -221,7 +221,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 return null;
 
             case MAP:
-                if (localCombiner) {
+                if (locCombiner) {
                     assert local == null;
 
                     local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?

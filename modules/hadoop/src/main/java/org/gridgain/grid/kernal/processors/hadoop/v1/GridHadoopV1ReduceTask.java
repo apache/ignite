@@ -43,11 +43,6 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
-            jobConf);
-
-        assert reducer != null;
-
         GridHadoopTaskInput input = taskCtx.input();
 
         GridHadoopV1OutputCollector collector = null;
@@ -56,6 +51,10 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
             collector = collector(jobConf, taskCtx, reduce || !jobImpl.info().hasReducer(), fileName(),
                 jobImpl.attemptId(info()));
 
+            Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
+                    jobConf);
+
+            assert reducer != null;
             try {
                 while (input.next()) {
                     if (isCancelled())
