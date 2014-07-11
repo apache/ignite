@@ -74,6 +74,22 @@ public class VisorGgfsEndpoint implements Serializable{
         return port;
     }
 
+    /**
+     * @return URI Authority
+     */
+    public String authority() {
+        String addr = hostName + ":" + port;
+
+        if (ggfsName == null && gridName == null)
+            return addr;
+        else if (ggfsName == null)
+            return gridName + "@" + addr;
+        else if (gridName == null)
+            return ggfsName + "@" + addr;
+        else
+            return ggfsName + ":" + gridName + "@" + addr;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorGgfsEndpoint.class, this);
