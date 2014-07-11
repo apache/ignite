@@ -18,7 +18,7 @@ import java.io.*;
 /**
  * Adapter from own counter implementation into Hadoop API Counter od version 2.0.
  */
-public class GridHadoopV2CounterAdapter implements Counter {
+public class GridHadoopV2Counter implements Counter {
 
     /** Delegate. */
     private final GridHadoopCounter counter;
@@ -28,22 +28,14 @@ public class GridHadoopV2CounterAdapter implements Counter {
      *
      * @param counter Internal counter.
      */
-    public GridHadoopV2CounterAdapter(@NotNull GridHadoopCounter counter) {
+    public GridHadoopV2Counter(GridHadoopCounter counter) {
+        assert counter != null : "counter must be non-null";
         this.counter = counter;
-    }
-
-    /**
-     * Returns underlying counter.
-     *
-     * @return Counter which performs all the job.
-     */
-    GridHadoopCounter delegate() {
-        return counter;
     }
 
     /** {@inheritDoc} */
     @Override public void setDisplayName(String displayName) {
-        throw new UnsupportedOperationException("not implemented");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -53,7 +45,7 @@ public class GridHadoopV2CounterAdapter implements Counter {
 
     /** {@inheritDoc} */
     @Override public String getDisplayName() {
-        throw new UnsupportedOperationException("not implemented");
+        return getName();
     }
 
     /** {@inheritDoc} */
@@ -73,7 +65,7 @@ public class GridHadoopV2CounterAdapter implements Counter {
 
     /** {@inheritDoc} */
     @Override public Counter getUnderlyingCounter() {
-        throw new UnsupportedOperationException("not implemented");
+        return this;
     }
 
     /** {@inheritDoc} */

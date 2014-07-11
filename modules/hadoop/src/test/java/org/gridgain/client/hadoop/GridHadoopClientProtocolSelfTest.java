@@ -136,6 +136,81 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /**
+     * Tests job counters retrieval.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJobCounters() throws Exception {
+        GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+
+        ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
+
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
+            new GridGgfsPath(PATH_INPUT + "/test.file"), true)))) {
+
+            bw.write("word");
+        }
+
+        Configuration conf = config(GridHadoopAbstractSelfTest.REST_PORT);
+
+        final Job job = Job.getInstance(conf);
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setMapperClass(TestCountingMapper.class);
+
+        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+        FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
+
+        job.submit();
+
+        final Counter counter = job.getCounters().findCounter(TestCounter.COUNTER1);
+
+        assert counter.getValue() == 0;
+
+        counter.increment(10);
+
+        assert counter.getValue() == 10;
+
+        // Transferring to map phase.
+        setupLockFile.delete();
+
+        // Transferring to reduce phase.
+        mapLockFile.delete();
+
+        job.waitForCompletion(false);
+
+        assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : "job must end successfully";
+
+        final Counters counters = job.getCounters();
+
+        assert counters != null : "counters cannot be null";
+        assert counters.countCounters() == 1 : "wrong counters count";
+        assert counters.findCounter(TestCounter.COUNTER1).getValue() == 1 : "wrong counter value";
+        assert counters.findCounter(TestCounter.COUNTER2).getValue() == 0 : "wrong counter value";
+    }
+
+    /**
+     * Tests job counters retrieval for unknown job id.
+     *
+     * @throws Exception If failed.
+     */
+    public void testUnknownJobCounters() throws Exception {
+        GridHadoopClientProtocolProvider provider = provider();
+
+        ClientProtocol proto = provider.create(config(GridHadoopAbstractSelfTest.REST_PORT));
+
+        try {
+            proto.getJobCounters(new JobID(UUID.randomUUID().toString(), -1));
+            fail("exception must be thrown");
+        }
+        catch (Exception e) {
+            assert e instanceof IOException : "wrong error has been thrown";
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testJobSubmitMap() throws Exception {
@@ -391,6 +466,24 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
                 ctx.write(word, one);
             }
+        }
+    }
+
+    /**
+     * Test Hadoop counters.
+     */
+    public enum TestCounter {
+        COUNTER1, COUNTER2
+    }
+
+    /**
+     * Test mapper that uses counters.
+     */
+    public static class TestCountingMapper extends TestMapper {
+        /** {@inheritDoc} */
+        @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
+            super.map(key, val, ctx);
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
         }
     }
 

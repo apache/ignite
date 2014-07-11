@@ -24,21 +24,16 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     /** Finished task info. */
     private GridHadoopTaskInfo taskInfo;
 
-    /** Task finish state. */
-    private GridHadoopTaskState state;
-
-    /** Error. */
-    private Throwable err;
+    /** Task finish status. */
+    private GridHadoopTaskStatus status;
 
     /**
      * @param taskInfo Finished task info.
-     * @param state Task finish state.
-     * @param err Error (optional).
+     * @param status Task finish status.
      */
-    public GridHadoopTaskFinishedMessage(GridHadoopTaskInfo taskInfo, GridHadoopTaskState state, Throwable err) {
+    public GridHadoopTaskFinishedMessage(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
         this.taskInfo = taskInfo;
-        this.state = state;
-        this.err = err;
+        this.status = status;
     }
 
     /**
@@ -49,17 +44,10 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     }
 
     /**
-     * @return Task finish state.
+     * @return Task finish status.
      */
-    public GridHadoopTaskState state() {
-        return state;
-    }
-
-    /**
-     * @return Error cause.
-     */
-    public Throwable error() {
-        return err;
+    public GridHadoopTaskStatus status() {
+        return status;
     }
 
     /** {@inheritDoc} */

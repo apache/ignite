@@ -28,12 +28,12 @@ public class GridHadoopTaskStatus {
     private final GridHadoopCounters counters;
 
     public GridHadoopTaskStatus(GridHadoopTaskState state, @Nullable Throwable failCause) {
-        this(state, failCause, GridHadoopEmptyCountersImpl.instance());
+        this(state, failCause, null);
     }
 
-    public GridHadoopTaskStatus(GridHadoopTaskState state, @Nullable Throwable failCause, GridHadoopCounters counters) {
+    public GridHadoopTaskStatus(GridHadoopTaskState state, @Nullable Throwable failCause,
+        @Nullable GridHadoopCounters counters) {
         assert state != null;
-        assert counters != null;
 
         this.state = state;
         this.failCause = failCause;

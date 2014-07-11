@@ -58,23 +58,17 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
 
-    /** Counters. */
-    private final GridHadoopCounters counters;
-
     /**
      * @param log Log.
      * @param job Job.
      * @param mem Memory.
      * @param info Task info.
-     * @param counters
      */
-    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
-        GridHadoopCounters counters) {
+    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
         this.log = log;
         this.job = job;
         this.mem = mem;
         this.info = info;
-        this.counters = counters;
     }
 
     /**
@@ -95,6 +89,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     @Override public Void call() throws GridException {
         execStartTs = System.currentTimeMillis();
 
+        final GridHadoopCounters counters = new GridHadoopCountersImpl();
+
         boolean runCombiner = info.type() == MAP && job.info().hasCombiner() &&
             !get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
 
@@ -104,11 +100,11 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         try {
             job.prepareTaskEnvironment(info);
 
-            runTask(info, runCombiner);
+            runTask(info, runCombiner, counters);
 
             if (runCombiner)
                 runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
-                    null), runCombiner);
+                    null), runCombiner, counters);
         }
         catch (GridHadoopTaskCancelledException ignored) {
             state = GridHadoopTaskState.CANCELED;
@@ -122,7 +118,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         finally {
             execEndTs = System.currentTimeMillis();
 
-            onTaskFinished(state, err);
+            onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
 
             if (runCombiner)
                 local.close();
@@ -138,7 +134,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param localCombiner If we have mapper with combiner.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskInfo info, boolean localCombiner) throws GridException {
+    private void runTask(GridHadoopTaskInfo info, boolean localCombiner, GridHadoopCounters counters)
+        throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -167,10 +164,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     }
 
     /**
-     * @param state State.
-     * @param err Error.
+     * @param status Task status.
      */
-    protected abstract void onTaskFinished(GridHadoopTaskState state, Throwable err);
+    protected abstract void onTaskFinished(GridHadoopTaskStatus status);
 
     /**
      * @param info Task info.

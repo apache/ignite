@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -77,7 +78,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     private long completeTs;
 
     /** Job counters */
-    private Collection<GridHadoopCounter> counters = new ArrayList<>();
+    private GridHadoopCounters counters = new GridHadoopCountersImpl();
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -328,7 +329,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @return collection of counters.
      */
-    public Collection<GridHadoopCounter> counters() {
+    public GridHadoopCounters counters() {
         return counters;
     }
 
@@ -337,7 +338,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @param counters Counters collection.
      */
-    public void counters(Collection<GridHadoopCounter> counters) {
+    public void counters(GridHadoopCounters counters) {
         this.counters = counters;
     }
 
@@ -431,7 +432,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         mapCompleteTs = in.readLong();
         completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
-        counters = (Collection<GridHadoopCounter>)in.readObject();
+        counters = (GridHadoopCounters)in.readObject();
     }
 
     /** {@inheritDoc} */

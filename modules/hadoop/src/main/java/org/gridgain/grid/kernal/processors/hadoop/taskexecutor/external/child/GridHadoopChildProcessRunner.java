@@ -168,11 +168,9 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        final GridHadoopCountersImpl counters = new GridHadoopCountersImpl();
-
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo, counters) {
-                            @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
-                                onTaskFinished0(this, state, err);
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
+                            @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
+                                onTaskFinished0(this, status);
                             }
 
                             @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info)
@@ -189,7 +187,7 @@ public class GridHadoopChildProcessRunner {
                 }
                 catch (GridException e) {
                     for (GridHadoopTaskInfo info : req.tasks())
-                        notifyTaskFinished(info, GridHadoopTaskState.FAILED, e, false);
+                        notifyTaskFinished(info, new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
                 }
             }
         });
@@ -259,40 +257,42 @@ public class GridHadoopChildProcessRunner {
      * Notifies node about task finish.
      *
      * @param run Finished task runnable.
-     * @param state Task finish state.
-     * @param err Error, if any.
+     * @param status Task status.
      */
-    private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskState state, Throwable err) {
+    private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskStatus status) {
         GridHadoopTaskInfo info = run.taskInfo();
 
         int pendingTasks0 = pendingTasks.decrementAndGet();
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
-                + ", state=" + state + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
+                + ", state=" + status.state() + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
                 ", pendingTasks=" + pendingTasks0 +
-                ", err=" + err + ']');
+                ", err=" + status.failCause() + ']');
 
         boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
             (!job.info().hasCombiner() || !GridHadoopJobProperty.get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
 
-        notifyTaskFinished(info, state, err, flush);
+        notifyTaskFinished(info, status, flush);
     }
 
     /**
      * @param taskInfo Finished task info.
-     * @param state Task finish state.
-     * @param err Error, if any.
+     * @param status Task status.
      */
-    private void notifyTaskFinished(final GridHadoopTaskInfo taskInfo, final GridHadoopTaskState state,
-        final Throwable err, boolean flush) {
+    private void notifyTaskFinished(final GridHadoopTaskInfo taskInfo, final GridHadoopTaskStatus status,
+        boolean flush) {
+
+        final GridHadoopTaskState state = status.state();
+        final Throwable err = status.failCause();
+
         if (!flush) {
             try {
                 if (log.isDebugEnabled())
                     log.debug("Sending notification to parent node [taskInfo=" + taskInfo + ", state=" + state +
                         ", err=" + err + ']');
 
-                comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, state, err));
+                comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, status));
             }
             catch (GridException e) {
                 log.error("Failed to send message to parent node (will terminate child process).", e);
@@ -322,13 +322,14 @@ public class GridHadoopChildProcessRunner {
                             // Check for errors on shuffle.
                             f.get();
 
-                            notifyTaskFinished(taskInfo, state, err, false);
+                            notifyTaskFinished(taskInfo, status, false);
                         }
                         catch (GridException e) {
                             log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                                 ", state=" + state + ", err=" + err + ']', e);
 
-                            notifyTaskFinished(taskInfo, GridHadoopTaskState.FAILED, e, false);
+                            notifyTaskFinished(taskInfo,
+                                new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
                         }
                     }
                 });
@@ -337,7 +338,7 @@ public class GridHadoopChildProcessRunner {
                 log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                     ", state=" + state + ", err=" + err + ']', e);
 
-                notifyTaskFinished(taskInfo, GridHadoopTaskState.FAILED, e, false);
+                notifyTaskFinished(taskInfo, new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
             }
         }
     }

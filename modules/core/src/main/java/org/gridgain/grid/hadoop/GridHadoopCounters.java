@@ -27,7 +27,7 @@ public interface GridHadoopCounters {
     /**
      * Returns all existing counters.
      *
-     * @return Unmodifiable collection of counters.
+     * @return Collection of counters.
      */
     Collection<GridHadoopCounter> all();
 
@@ -35,7 +35,6 @@ public interface GridHadoopCounters {
      * Merges all counters from another store with existing counters.
      *
      * @param other Counters to merge with.
-     * @return New instance with merged counters.
      */
-    GridHadoopCounters merge(GridHadoopCounters other);
+    void merge(GridHadoopCounters other);
 }

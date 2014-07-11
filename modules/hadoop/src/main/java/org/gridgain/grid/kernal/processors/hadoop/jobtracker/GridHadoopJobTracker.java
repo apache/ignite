@@ -16,7 +16,6 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.lang.*;
@@ -31,9 +30,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -921,18 +920,16 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Returns job counters.
      *
      * @param jobId Job identifier.
-     * @return Job counters.
+     * @return Job counters or {@code null} if job cannot be found.
      */
-    public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
+    @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
         if (!busyLock.tryReadLock())
             return null;
 
         try {
-            final GridHadoopJobMetadata metadata = jobMetaCache().get(jobId);
+            final GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
-            assert metadata != null : "job metadata not found";
-
-            return new GridHadoopCountersImpl(metadata.counters());
+            return meta != null ? meta.counters() : null;
         } finally {
             busyLock.readUnlock();
         }
@@ -1419,16 +1416,20 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param counters Task counters to add into job counters.
          */
         private IncrementCountersClosure(GridHadoopCounters counters) {
+            assert counters != null;
+
             this.counters = counters;
         }
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            final GridHadoopCounters oldCounters = new GridHadoopCountersImpl(meta.counters());
+            final GridHadoopCounters oldCounters = meta.counters();
+
+            oldCounters.merge(counters);
 
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
-            cp.counters(oldCounters.merge(counters).all());
+            cp.counters(oldCounters);
 
             return cp;
         }

@@ -12,57 +12,61 @@ package org.gridgain.grid.kernal.processors.hadoop.counter;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.jdk8.backport.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Default in-memory counters store.
  */
-public class GridHadoopCountersImpl implements GridHadoopCounters {
-
+public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizable {
     /** */
-    private final ConcurrentMap<GridBiTuple<String, String>, GridHadoopCounter> countersMap;
+    private Map<GridBiTuple<String, String>, GridHadoopCounter> countersMap;
 
     /**
      * Default constructor. Creates new instance without counters.
      */
     public GridHadoopCountersImpl() {
-        countersMap = new ConcurrentHashMap8<>();
+        this(Collections.<GridHadoopCounter>emptyList());
     }
 
     /**
      * Creates new instance that contain given counters.
+     *
      * @param counters Counters to store.
      */
     public GridHadoopCountersImpl(Collection<GridHadoopCounter> counters) {
-        countersMap = new ConcurrentHashMap8<>(counters.size());
-
-        for (GridHadoopCounter counter : counters) {
-            countersMap.put(new T2<>(counter.group(), counter.name()), counter);
-        }
+        countersMap = mapCounters(counters);
     }
 
     /**
-     * Copy constructor.
+     * Converts collection of counters into map.
      *
-     * @param counters Source counters to copy from.
+     * @param counters Counters.
+     * @return Map where key is a pair of counter group and name, value is the counter itself.
      */
-    public GridHadoopCountersImpl(GridHadoopCounters counters) {
-        this(counters.all());
+    private Map<GridBiTuple<String, String>, GridHadoopCounter> mapCounters(Collection<GridHadoopCounter> counters) {
+        assert counters != null;
+
+        Map<GridBiTuple<String, String>, GridHadoopCounter> result = new HashMap<>(counters.size());
+
+        for (GridHadoopCounter counter : counters) {
+            result.put(new T2<>(counter.group(), counter.name()), counter);
+        }
+
+        return result;
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopCounter counter(String group, String name) {
-        GridHadoopCounter counter = new GridHadoopCounterImpl(group, name);
+        final T2<String, String> mapKey = new T2<>(group, name);
 
-        GridHadoopCounter oldCounter =
-            countersMap.putIfAbsent(new T2<>(group, name), counter);
+        GridHadoopCounter counter = countersMap.get(mapKey);
 
-        if (oldCounter != null)
-            counter = oldCounter;
+        if (counter == null) {
+            counter = new GridHadoopCounterImpl(group, name);
+            countersMap.put(mapKey, counter);
+        }
 
         return counter;
     }
@@ -73,13 +77,46 @@ public class GridHadoopCountersImpl implements GridHadoopCounters {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopCounters merge(GridHadoopCounters other) {
-        GridHadoopCountersImpl result = new GridHadoopCountersImpl(this);
-
+    @Override public void merge(GridHadoopCounters other) {
         for (GridHadoopCounter counter : other.all()) {
-            result.counter(counter.group(), counter.name()).increment(counter.value());
+            counter(counter.group(), counter.name()).increment(counter.value());
         }
+    }
 
-        return result;
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(new ArrayList<>(countersMap.values()));
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        countersMap = mapCounters((Collection<GridHadoopCounter>)in.readObject());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridHadoopCountersImpl counters = (GridHadoopCountersImpl)o;
+
+        if (!countersMap.equals(counters.countersMap))
+            return false;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return countersMap.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Counters [" + countersMap.values() + ']';
     }
 }
