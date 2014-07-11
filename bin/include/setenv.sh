@@ -58,7 +58,7 @@ do
 
     base_file_name=$(basename $file)
 
-    if [ -f ${file} ] && [ "${base_file_name:0:16}" == "gridgain-hadoop-" ]; then
+    if [ "${base_file_name:0:15}" == "gridgain-hadoop" ]; then
         HADOOP_EDITION=1
     fi
 done

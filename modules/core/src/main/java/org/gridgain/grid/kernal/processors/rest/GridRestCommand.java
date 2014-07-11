@@ -86,7 +86,16 @@ public enum GridRestCommand {
     NOOP("noop"),
 
     /** Quit. */
-    QUIT("quit");
+    QUIT("quit"),
+
+    /** Start query execution. */
+    CACHE_QUERY_EXECUTE("queryexecute"),
+
+    /** Fetch query results. */
+    CACHE_QUERY_FETCH("queryfetch"),
+
+    /** Rebuild indexes. */
+    CACHE_QUERY_REBUILD_INDEXES("rebuildqueryindexes");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

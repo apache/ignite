@@ -114,7 +114,9 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
         try {
             switchHandlerErrorFlag(true);
 
-            GridGgfsHadoop client = new GridGgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "ggfs0", LOG);
+            GridGgfsHadoop client = new GridGgfsHadoopOutProc("127.0.0.1", 10500, getTestGridName(0), "ggfs", LOG);
+
+            client.handshake(null);
 
             GridGgfsPath path = new GridGgfsPath("/test1.file");
 

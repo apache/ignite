@@ -37,10 +37,12 @@ import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -219,6 +221,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridClosureProcessor closure();
 
     /**
+     * Gets service processor.
+     *
+     * @return Service processor.
+     */
+    public GridServiceProcessor service();
+
+    /**
      * Gets port processor.
      *
      * @return Port processor.
@@ -315,6 +324,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Version converter processor.
      */
     public GridVersionProcessor versionConverter();
+
+    /**
+     * Gets portable processor.
+     *
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable();
 
     /**
      * Gets deployment manager.

@@ -14,6 +14,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.permission.*;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
@@ -73,11 +75,14 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(GridGgfsHadoopFileSystem.class);
 
+    /** Ensures that close routine is invoked at most once. */
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
+
     /** Grid remote client. */
     private GridGgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
-    private GridGgfsPath workingDir = DFLT_WORKING_DIR;
+    private GridGgfsPath workingDir;
 
     /** URI. */
     private URI uri;
@@ -133,6 +138,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             throw e;
         }
+
+        workingDir = new GridGgfsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
     }
 
     /** {@inheritDoc} */
@@ -166,7 +173,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @throws IOException If file system is stopped.
      */
     private void enterBusy() throws IOException {
-        // No-op.
+        if (closeGuard.get())
+            throw new IOException("File system is stopped.");
     }
 
     /**
@@ -298,31 +306,18 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        // No-op. Because FS instance can be cached and reused from other threads thinking that they are separate
-        // processes and that it is safe to close it.
-    }
+        if (closeGuard.compareAndSet(false, true)) {
+            if (rmtClient == null)
+                return;
 
-    /** {@inheritDoc} */
-    @Override protected void finalize() throws Throwable {
-        super.finalize();
+            rmtClient.close(false);
 
-        close0();
-    }
+            if (clientLog.isLogEnabled())
+                clientLog.close();
 
-    /**
-     * Closes file system.
-     */
-    private void close0() {
-        if (rmtClient == null)
-            return;
-
-        rmtClient.close(false);
-
-        if (clientLog.isLogEnabled())
-            clientLog.close();
-
-        // Reset initialized resources.
-        rmtClient = null;
+            // Reset initialized resources.
+            rmtClient = null;
+        }
     }
 
     /** {@inheritDoc} */

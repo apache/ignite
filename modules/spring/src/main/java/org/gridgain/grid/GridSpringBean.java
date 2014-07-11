@@ -9,8 +9,8 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
@@ -19,13 +19,15 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.portable.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -214,6 +216,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices services() {
+        assert g != null;
+
+        return g.services();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridMessaging message() {
         assert g != null;
 
@@ -239,6 +248,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.security();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortables portables() {
+        assert g != null;
+
+        return g.portables();
     }
 
     /** {@inheritDoc} */
@@ -338,6 +354,20 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.forRandom();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        assert g != null;
+
+        return g.forOldest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        assert g != null;
+
+        return g.forYoungest();
     }
 
     /** {@inheritDoc} */

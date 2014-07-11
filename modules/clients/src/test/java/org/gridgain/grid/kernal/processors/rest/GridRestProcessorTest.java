@@ -101,10 +101,14 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
         // Ensure - no authentication.
-        cfg.setRestSecretKey(null);
+        clientCfg.setRestSecretKey(null);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;
@@ -107,6 +108,30 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     @Override public int hashCode() {
         return 31 * (includeMetrics ? 1 : 0) +
             (includeAttrs ? 1 : 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        super.writePortable(writer);
+
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeUuid(nodeId);
+        raw.writeString(nodeIp);
+        raw.writeBoolean(includeMetrics);
+        raw.writeBoolean(includeAttrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        super.readPortable(reader);
+
+        GridPortableRawReader raw = reader.rawReader();
+
+        nodeId = raw.readUuid();
+        nodeIp = raw.readString();
+        includeMetrics = raw.readBoolean();
+        includeAttrs = raw.readBoolean();
     }
 
     /** {@inheritDoc} */

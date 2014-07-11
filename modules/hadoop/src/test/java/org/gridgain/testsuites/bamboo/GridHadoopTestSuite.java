@@ -27,6 +27,8 @@ public class GridHadoopTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
 
+        suite.addTest(new TestSuite(GridHadoopFileSystemsTest.class));
+
         suite.addTest(new TestSuite(GridHadoopValidationSelfTest.class));
 
         suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest.class));

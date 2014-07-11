@@ -37,6 +37,16 @@ public interface GridCacheQueries<K, V> {
     public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause);
 
     /**
+     * Creates user's SQL query, queried class, and query clause which is generally
+     * a where clause. For more information refer to {@link GridCacheQuery} documentation.
+     *
+     * @param clsName Query class name.
+     * @param clause Query clause.
+     * @return Created query.
+     */
+    public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause);
+
+    /**
      * Creates user's SQL fields query for given clause. For more information refer to
      * {@link GridCacheQuery} documentation.
      *
@@ -44,6 +54,16 @@ public interface GridCacheQueries<K, V> {
      * @return Created query.
      */
     public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry);
+
+    /**
+     * Creates user's full text query, queried class, and query clause.
+     * For more information refer to {@link GridCacheQuery} documentation.
+     *
+     * @param clsName Query class name.
+     * @param search Search clause.
+     * @return Created query.
+     */
+    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search);
 
     /**
      * Creates user's full text query, queried class, and query clause.
@@ -85,6 +105,19 @@ public interface GridCacheQueries<K, V> {
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public GridFuture<?> rebuildIndexes(Class<?> cls);
+
+    /**
+     * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
+     * may hold references to objects that have already been removed from cache. Although
+     * not affecting query results, these objects may consume extra memory. Rebuilding
+     * indexes will remove any redundant references that may have temporarily got stuck
+     * inside in-memory index.
+     *
+     * @param typeName Value type name to rebuild indexes for.
+     *
+     * @return Future that will be completed when rebuilding of all indexes is finished.
+     */
+    public GridFuture<?> rebuildIndexes(String typeName);
 
     /**
      * Forces this cache to rebuild search indexes of all types. Sometimes indexes
