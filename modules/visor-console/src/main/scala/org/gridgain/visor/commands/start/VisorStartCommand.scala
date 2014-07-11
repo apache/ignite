@@ -215,6 +215,12 @@ class VisorStartCommand {
             if (fileOpt.isDefined) {
                 val file = new File(fileOpt.get)
 
+                if (file.exists())
+                    scold("File not found: " + file.getAbsolutePath).^^
+
+                if (file.isFile())
+                    scold("File is a directory: " + file.getAbsolutePath).^^
+
                 try
                     res = grid.startNodes(file, restart, timeout, maxConn).get().map(t => {
                         Result(t.get1, t.get2, t.get3)
