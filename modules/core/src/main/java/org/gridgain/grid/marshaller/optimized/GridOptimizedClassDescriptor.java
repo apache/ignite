@@ -962,8 +962,8 @@ class GridOptimizedClassDescriptor {
     /**
      * Encapsulates data about class fields.
      */
+    @SuppressWarnings("PackageVisibleInnerClass")
     static class Fields {
-
         /** Fields. */
         private final List<List<Field>> fields;
 

@@ -13,7 +13,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.*;
-import sun.misc.*;
 
 import java.io.*;
 import java.lang.reflect.*;
@@ -755,7 +754,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
-        private PutFieldImpl(GridOptimizedObjectOutputStream out) throws IOException {
+        private PutFieldImpl(GridOptimizedObjectOutputStream out) {
             this.out = out;
 
             fieldInfoMap = out.curFieldInfoMap;

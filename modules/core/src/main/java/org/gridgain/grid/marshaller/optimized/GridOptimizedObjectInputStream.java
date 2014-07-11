@@ -883,7 +883,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
         private GetFieldImpl(GridOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfoMap = in.curFieldInfoMap;
 
-            final List<GridBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
+            List<GridBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
 
             objs = new Object[infos.size()];
 
@@ -892,7 +892,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
 
                 Object obj = null;
 
-                switch ((t.get2())) {
+                switch (t.get2()) {
                     case BYTE:
                         obj = in.readByte();
 
