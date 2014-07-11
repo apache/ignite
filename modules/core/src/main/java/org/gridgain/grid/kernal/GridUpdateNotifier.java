@@ -120,19 +120,6 @@ class GridUpdateNotifier {
     }
 
     /**
-     * Gets current stack trace.
-     *
-     * @return Stack trace.
-     */
-    private static String getStackTrace() {
-        StringWriter sw = new StringWriter();
-
-        new Throwable().printStackTrace(new PrintWriter(sw));
-
-        return sw.toString();
-    }
-
-    /**
      * Gets system properties.
      *
      * @return System properties.
