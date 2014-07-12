@@ -43,9 +43,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
-
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
         @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
@@ -98,8 +95,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-
-        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /**
@@ -110,28 +105,25 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Returns marshaller from session, if no marshaller found - init it with default.
+     * Returns marshaller.
      *
-     * @param ses Current session.
-     * @return Current session's marshaller.
-     * @throws GridException If marshaller can't be found.
+     * @param ses Session.
+     * @return Marshaller.
      */
-    GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
+    GridClientMarshaller marshaller(GridNioSession ses) {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
-
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Whether portable marshaller is used.
+     */
+    boolean portableMode(GridNioSession ses) {
+        return ctx.portable().isPortable(marshaller(ses));
     }
 
     /** {@inheritDoc} */
@@ -144,15 +136,16 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridConfiguration cfg = ctx.config();
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
-        GridNioServerListener<GridClientMessage> lsnr =
-            new GridTcpRestNioListener(log, this, hnd, ctx, protobufMarshaller);
+        assert cfg != null;
+
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
-            host = resolveRestTcpHost(cfg);
+            host = resolveRestTcpHost(ctx.config());
 
             SSLContext sslCtx = null;
 
@@ -212,7 +205,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
-        String host = cfg.getRestTcpHost();
+        String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -233,7 +226,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

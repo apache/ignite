@@ -45,7 +45,9 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     public GridLogCommandHandler(GridKernalContext ctx) {
         super(ctx);
 
-        String[] accessiblePaths = ctx.config().getRestAccessibleFolders();
+        assert ctx.config().getClientConnectionConfiguration() != null;
+
+        String[] accessiblePaths = ctx.config().getClientConnectionConfiguration().getRestAccessibleFolders();
 
         if (accessiblePaths == null) {
             String ggHome = U.getGridGainHome();

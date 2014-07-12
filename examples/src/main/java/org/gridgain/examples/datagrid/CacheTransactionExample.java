@@ -42,67 +42,51 @@ public class CacheTransactionExample {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
-            GridCache<Long, Account> cache = g.cache(CACHE_NAME);
+            GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
 
             // Initialize.
-            cache.putx(1L, new Account(1, 100));
-            cache.putx(2L, new Account(2, 500));
+            cache.putx(1, new Account(1, 100));
+            cache.putx(2, new Account(1, 200));
 
             System.out.println();
-            System.out.println(">>> Accounts before transfer: ");
-            System.out.println(">>> " + cache.get(1L));
-            System.out.println(">>> " + cache.get(2L));
+            System.out.println(">>> Accounts before deposit: ");
+            System.out.println(">>> " + cache.get(1));
+            System.out.println(">>> " + cache.get(2));
 
-            // Transfer $200 from account2 to account1 within a transaction.
-            transfer(2, 1, 200);
+            // Make transactional deposits.
+            deposit(1, 100);
+            deposit(2, 200);
 
             System.out.println();
             System.out.println(">>> Accounts after transfer: ");
-            System.out.println(">>> " + cache.get(1L));
-            System.out.println(">>> " + cache.get(2L));
+            System.out.println(">>> " + cache.get(1));
+            System.out.println(">>> " + cache.get(2));
 
             System.out.println(">>> Cache transaction example finished.");
         }
     }
 
     /**
-     * Transfer money from one account to another.
+     * Make deposit into specified account.
      *
-     * @param fromId 'From' account ID.
-     * @param toId 'To' account ID.
-     * @param amount Amount to transfer.
+     * @param acctId Account ID.
+     * @param amount Amount to deposit.
      * @throws GridException If failed.
      */
-    private static void transfer(long fromId, long toId, double amount) throws GridException {
-        if (fromId == toId)
-            return;
-
+    private static void deposit(int acctId, double amount) throws GridException {
         // Clone every object we get from cache, so we can freely update it.
-        GridCacheProjection<Long, Account> cache = GridGain.grid().<Long, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        GridCacheProjection<Integer, Account> cache = GridGain.grid().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account fromAcct;
-            Account toAcct;
+            Account acct = cache.get(acctId);
 
-            // In PESSIMISTIC mode cache objects are locked
-            // automatically upon access within a transaction.
-            // To avoid deadlocks, we always lock account with smaller ID first.
-            if (fromId < toId) {
-                fromAcct = cache.get(fromId); // Lock 'from' account first.
-                toAcct = cache.get(toId);
-            }
-            else {
-                toAcct = cache.get(toId); // Lock 'to' account first.
-                fromAcct = cache.get(fromId);
-            }
+            assert acct != null;
 
-            // Debit 'from' account and credit 'to' account.
-            fromAcct.update(-amount);
-            toAcct.update(amount);
+            // Deposit into account.
+            acct.update(amount);
 
-            // Store updated accounts in cache.
-            cache.putx(fromId, fromAcct);
-            cache.putx(toId, toAcct);
+            // Store updated account in cache.
+            cache.putx(acctId, acct);
 
             tx.commit();
         }
@@ -116,7 +100,7 @@ public class CacheTransactionExample {
      */
     private static class Account implements Serializable, Cloneable {
         /** Account ID. */
-        private long id;
+        private int id;
 
         /** Account balance. */
         private double balance;
@@ -125,7 +109,7 @@ public class CacheTransactionExample {
          * @param id Account ID.
          * @param balance Balance.
          */
-        Account(long id, double balance) {
+        Account(int id, double balance) {
             this.id = id;
             this.balance = balance;
         }

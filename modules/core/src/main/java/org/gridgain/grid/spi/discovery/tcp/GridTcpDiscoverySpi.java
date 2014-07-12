@@ -1404,7 +1404,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         if (node.id().equals(locNodeId))
             return true;
 
-        for (InetSocketAddress addr : getNodeAddresses(node) ) {
+        for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node)) ) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 return node.id().equals(pingNode(addr));
@@ -1600,13 +1600,16 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     GridTcpDiscoveryAuthFailedMessage msg =
                         (GridTcpDiscoveryAuthFailedMessage)joinRes.get();
 
-                    throw new GridSpiException("Authentication failed [nodeId=" + msg.creatorNodeId() +
-                        ", addr=" + msg.address().getHostAddress() + ']');
+                    throw new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+                        msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
                 }
                 else if (spiState == CHECK_FAILED) {
                     GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
 
-                    throw new GridSpiException(msg.error());
+                    if (versionCheckFailed(msg))
+                        throw new GridSpiVersionCheckException(msg.error());
+                    else
+                        throw new GridSpiException(msg.error());
                 }
                 else if (spiState == LOOPBACK_PROBLEM) {
                     GridTcpDiscoveryLoopbackProblemMessage msg = (GridTcpDiscoveryLoopbackProblemMessage)joinRes.get();
@@ -1635,6 +1638,42 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
+    }
+
+    /**
+     * @param msg Failed message.
+     * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
+     * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it
+     *      and create separate message for failed version check with next major release.
+     */
+    @Deprecated
+    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
+        return msg.error().contains("versions are not compatible");
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Remote grid version parsed from error message.
+     * @deprecated This method was created for preserving backward compatibility. During major version update
+     *      parsing of error message should be replaced with new {@link GridTcpDiscoveryCheckFailedMessage}
+     *      which contains all necessary information.
+     */
+    @Deprecated
+    @Nullable private String parseRemoteVersion(String msg) {
+        msg = msg.replaceAll("\\s", "");
+
+        final String verPrefix = "rmtBuildVer=";
+
+        int startIdx = msg.indexOf(verPrefix);
+        int endIdx = msg.indexOf(',', startIdx);
+
+        if (endIdx < 0)
+            endIdx = msg.indexOf(']', startIdx);
+
+        if (startIdx < 0 || endIdx < 0)
+            return null;
+
+        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
     }
 
     /**
@@ -3524,7 +3563,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         }
                         else {
                             String errMsg = "Local node's and remote node's build versions are not compatible " +
-                                "(node will not join, all nodes in topology should have compatible build versions) " +
+                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                    "(topologies built with different GridGain versions " +
+                                        "are supported in Enterprise version only) " :
+                                    "(node will not join, all nodes in topology should have " +
+                                        "compatible build versions) ") +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3538,8 +3581,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             try {
                                 String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                    "(node will not join, all nodes in topology should have compatible build " +
-                                    "versions) [locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                        "(topologies built with different GridGain versions " +
+                                            "are supported in Enterprise version only) " :
+                                        "(node will not join, all nodes in topology should have " +
+                                            "compatible build versions) ") +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                     ", rmtNodeId=" + locNode.id() + ']';
@@ -3623,7 +3670,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             throws GridSpiException {
             GridSpiException ex = null;
 
-            for (InetSocketAddress addr : getNodeAddresses(node)) {
+            for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
                     sendMessageDirectly(msg, addr);
 

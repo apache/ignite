@@ -86,7 +86,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     private ExecutorService exec;
 
     /** */
-    private GridClient client;
+    protected GridClient client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -181,17 +181,23 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(BINARY_PORT);
-        cfg.setRestEnabled(true);
 
-        cfg.setRestAccessibleFolders(
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(BINARY_PORT);
+
+        clientCfg.setRestAccessibleFolders(
             U.getGridGainHome() + "/work/log", U.getGridGainHome() + "/os/modules/core/src/test/resources/log");
 
         if (useSsl()) {
-            cfg.setRestTcpSslEnabled(true);
+            clientCfg.setRestTcpSslEnabled(true);
 
-            cfg.setRestTcpSslContextFactory(sslContextFactory());
+            clientCfg.setRestTcpSslContextFactory(sslContextFactory());
         }
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -202,7 +208,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
-        cfg.setClientMessageInterceptor(new GridClientMessageInterceptor() {
+        clientCfg.setClientMessageInterceptor(new GridClientMessageInterceptor() {
             @Override public Object onReceive(@Nullable Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
@@ -264,7 +270,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @return Test client configuration.
      */
-    protected GridClientConfiguration clientConfiguration() {
+    protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         GridClientDataConfiguration nullCache = new GridClientDataConfiguration();

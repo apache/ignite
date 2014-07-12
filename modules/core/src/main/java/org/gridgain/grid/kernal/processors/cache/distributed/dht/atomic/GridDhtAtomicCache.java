@@ -28,6 +28,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
@@ -274,6 +275,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        final boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         subjId = ctx.subjectIdPerCall(subjId);
@@ -282,7 +284,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<GridFuture<Map<K, V>>>() {
             @Override public GridFuture<Map<K, V>> apply() {
-                return getAllAsync0(keys, false, forcePrimary, filter, subjId0);
+                return getAllAsync0(keys, false, forcePrimary, filter, subjId0, deserializePortable);
             }
         });
     }
@@ -696,7 +698,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Get future.
      */
     private GridFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId) {
+        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId,
+        boolean deserializePortable) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
@@ -737,8 +740,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                 success = false;
                             }
-                            else
+                            else {
+                                if (ctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
+                                    v = ((GridPortableObject<V>)v).deserialize();
+
                                 locVals.put(key, v);
+                            }
                         }
                         else
                             success = false;
@@ -776,7 +783,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, filter,
-            subjId);
+            subjId, deserializePortable);
 
         fut.init();
 
@@ -2398,7 +2405,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             GridDhtAtomicDeferredUpdateResponse<K, V> msg = new GridDhtAtomicDeferredUpdateResponse<>(respVers);
 
             try {
-                ctx.io().send(nodeId, msg);
+                ctx.gate().enter();
+
+                try {
+                    ctx.io().send(nodeId, msg);
+                }
+                finally {
+                    ctx.gate().leave();
+                }
+            }
+            catch (IllegalStateException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send deferred dht update response to remote node (grid is stopping) " +
+                        "[nodeId=" + nodeId + ", msg=" + msg + ']');
             }
             catch (GridTopologyException ignored) {
                 if (log.isDebugEnabled())

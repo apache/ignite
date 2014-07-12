@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
@@ -52,8 +53,14 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /** Local callback. */
     private volatile GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
 
+    /** Local callback. */
+    private volatile GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb;
+
     /** Filter. */
     private volatile GridBiPredicate<K, V> filter;
+
+    /** Remote filter. */
+    private volatile GridPredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter;
 
     /** Buffer size. */
     private volatile int bufSize = DFLT_BUF_SIZE;
@@ -86,18 +93,14 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void callback(GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
-        A.notNull(cb, "cb");
-
-        if (!guard.enterBusy())
-            throw new IllegalStateException("Continuous query can't be changed after it was executed.");
-
-        try {
+    @Override public void callback(final GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
+        if (cb != null) {
             this.cb = cb;
+
+            localCallback(new CallbackWrapper<>(cb));
         }
-        finally {
-            guard.leaveBusy();
-        }
+        else
+            localCallback(null);
     }
 
     /** {@inheritDoc} */
@@ -106,12 +109,28 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void filter(@Nullable GridBiPredicate<K, V> filter) {
+    @Override public void filter(final GridBiPredicate<K, V> filter) {
+        if (filter != null) {
+            this.filter = filter;
+
+            remoteFilter(new FilterWrapper<>(filter));
+        }
+        else
+            remoteFilter(null);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridBiPredicate<K, V> filter() {
+        return filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localCallback(GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
 
         try {
-            this.filter = filter;
+            this.locCb = locCb;
         }
         finally {
             guard.leaveBusy();
@@ -119,8 +138,26 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiPredicate<K, V> filter() {
-        return filter;
+    @Nullable @Override public GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback() {
+        return locCb;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void remoteFilter(@Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter) {
+        if (!guard.enterBusy())
+            throw new IllegalStateException("Continuous query can't be changed after it was executed.");
+
+        try {
+            this.rmtFilter = rmtFilter;
+        }
+        finally {
+            guard.leaveBusy();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter() {
+        return rmtFilter;
     }
 
     /** {@inheritDoc} */
@@ -191,7 +228,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
      * @throws GridException If failed.
      */
     public void execute(@Nullable GridProjection prj, boolean internal) throws GridException {
-        if (cb == null)
+        if (locCb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -233,8 +270,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
             guard.block();
 
-            GridContinuousHandler hnd = new GridCacheContinuousQueryHandler<>(ctx.name(), topic, cb, filter, prjPred,
-                internal);
+            GridContinuousHandler hnd = new GridCacheContinuousQueryHandler<>(ctx.name(), topic, locCb, rmtFilter,
+                prjPred, internal);
 
             routineId = ctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval, autoUnsubscribe,
                 prj.predicate()).get();
@@ -249,10 +286,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         closeLock.lock();
 
         try {
-            if (routineId == null)
-                throw new IllegalStateException("Can't cancel query that was not executed.");
-
-            ctx.kernalContext().continuous().stopRoutine(routineId).get();
+            if (routineId != null)
+                ctx.kernalContext().continuous().stopRoutine(routineId).get();
         }
         finally {
             closeLock.unlock();
@@ -262,5 +297,53 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheContinuousQueryAdapter.class, this);
+    }
+
+    /**
+     * Deprecated callback wrapper.
+     */
+    static class CallbackWrapper<K, V> implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> {
+        /** Serialization ID. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
+
+        /**
+         * @param cb Deprecated callback.
+         */
+        private CallbackWrapper(GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
+            this.cb = cb;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<K, V>> entries) {
+            return cb.apply(nodeId, (Collection<Map.Entry<K,V>>)(Collection)entries);
+        }
+    }
+
+    /**
+     * Deprecated filter wrapper.
+     */
+    static class FilterWrapper<K, V> implements GridPredicate<GridCacheContinuousQueryEntry<K, V>> {
+        /** Serialization ID. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final GridBiPredicate<K, V> filter;
+
+        /**
+         * @param filter Deprecated callback.
+         */
+        FilterWrapper(GridBiPredicate<K, V> filter) {
+            this.filter = filter;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public boolean apply(GridCacheContinuousQueryEntry<K, V> entry) {
+            return filter.apply(entry.getKey(), entry.getValue());
+        }
     }
 }

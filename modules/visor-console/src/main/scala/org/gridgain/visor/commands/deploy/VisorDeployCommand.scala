@@ -11,21 +11,21 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.grid.util.io.GridFilenameUtils
-import org.gridgain.grid.util.{GridUtils => U}
-
 import java.io._
+import java.net.UnknownHostException
 import java.util.concurrent._
 
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
-
 import com.jcraft.jsch._
-
+import org.gridgain.grid.util.io.GridFilenameUtils
+import org.gridgain.grid.util.typedef.X
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
+
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Host data.
@@ -114,7 +114,14 @@ private case class VisorCopier(
             }
         }
         catch {
-            case e: Exception => warn(e.getMessage)
+            case e: JSchException if X.hasCause(e, classOf[UnknownHostException]) =>
+                println("Visor Console failed to deploy. Reason: unknown host - " + host.name)
+
+            case e: JSchException =>
+                println("Visor Console failed to deploy. Reason: " + e.getMessage)
+
+            case e: Exception =>
+                warn(e.getMessage)
         }
         finally {
             if (ses.isConnected)
@@ -233,26 +240,26 @@ private case class VisorCopier(
         if (!root.exists)
             throw new Exception("File or folder not found: " + src)
 
-        if (root.isDirectory) {
-            val exists =
-                try {
+        try {
+            if (root.isDirectory) {
+                try
                     ch.ls(dest)
-
-                    true
-                }
                 catch {
-                    case _: SftpException => false
+                    case _: SftpException => ch.mkdir(dest)
                 }
 
-            if (!exists)
-                ch.mkdir(dest)
-
-            root.list.foreach(
-                f => copy(ch, new File(src, f).getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f))
-            )
+                root.listFiles.foreach(
+                    f => copy(ch, f.getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f.getName)))
+            }
+            else
+                ch.put(src, dest)
         }
-        else
-            ch.put(src, dest)
+        catch {
+            case e: SftpException =>
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
+            case e: IOException =>
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
+        }
     }
 }
 

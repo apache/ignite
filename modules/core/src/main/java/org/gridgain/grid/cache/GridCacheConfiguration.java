@@ -15,11 +15,13 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -155,7 +157,7 @@ public class GridCacheConfiguration {
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
-    /** Default value for 'swapEnabled' flag. */
+    /** Default value for 'queryIndexEnabled' flag. */
     public static final boolean DFLT_QUERY_INDEX_ENABLED = false;
 
     /** Default value for 'writeBehindEnabled' flag. */
@@ -387,6 +389,12 @@ public class GridCacheConfiguration {
     /** */
     private GridCacheInterceptor<?, ?> interceptor;
 
+    /** */
+    private boolean portableEnabled;
+
+    /** Query configuration. */
+    private GridCacheQueryConfiguration qryCfg;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -405,6 +413,7 @@ public class GridCacheConfiguration {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
+        atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
@@ -443,6 +452,7 @@ public class GridCacheConfiguration {
         onePhaseCommitAllowed = cc.isOnePhaseCommitAllowed();
         pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cc.getPessimisticTxLogSize();
+        portableEnabled = cc.isPortableEnabled();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
         preloadDelay = cc.getPreloadPartitionedDelay();
@@ -450,8 +460,9 @@ public class GridCacheConfiguration {
         preloadPoolSize = cc.getPreloadThreadPoolSize();
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
-        qryIdxEnabled = cc.isQueryIndexEnabled();
+        qryCfg = cc.getQueryConfiguration();
         refreshAheadRatio = cc.getRefreshAheadRatio();
+        qryIdxEnabled = cc.isQueryIndexEnabled();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         store = cc.getStore();
@@ -466,7 +477,6 @@ public class GridCacheConfiguration {
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         writeSync = cc.getWriteSynchronizationMode();
     }
 
@@ -1429,8 +1439,6 @@ public class GridCacheConfiguration {
      * stored in cache. If this property is {@code false}, then all indexing annotations
      * inside of any class will be ignored. By default query indexing is disabled and
      * defined via {@link #DFLT_QUERY_INDEX_ENABLED} constant.
-     * <p>
-     * Note that indexing is not supported when values are stored off-heap.
      *
      * @return {@code True} if query indexing is enabled.
      * @see #getMemoryMode()
@@ -1978,6 +1986,45 @@ public class GridCacheConfiguration {
      */
     public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
+    }
+
+    /**
+     * Flag indicating whether GridGain should store portable keys and values
+     * as instances of {@link GridPortableObject}.
+     *
+     * @return Portable enabled flag.
+     */
+    public boolean isPortableEnabled() {
+        return portableEnabled;
+    }
+
+    /**
+     * Gets portable enabled flag value.
+     *
+     * @param portableEnabled Portable enabled flag value.
+     */
+    public void setPortableEnabled(boolean portableEnabled) {
+        this.portableEnabled = portableEnabled;
+    }
+
+    /**
+     * Gets query configuration. Query configuration defines which fields should be indexed for objects
+     * without annotations or portable objects.
+     *
+     * @return Cache query configuration.
+     */
+    public GridCacheQueryConfiguration getQueryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * Sets query configuration.
+     *
+     * @param qryCfg Query configuration.
+     * @see GridCacheQueryConfiguration
+     */
+    public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 
     /**

@@ -398,7 +398,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable @Override public V get() throws GridException {
-        return proxy.get(key, isNearEnabled(ctx) ? null : cached);
+        return proxy.get(key, isNearEnabled(ctx) ? null : cached, true);
     }
 
     /** {@inheritDoc} */

@@ -149,8 +149,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         K key = GridClientUtils.first(keys);
 
         return withReconnectHandling(new ClientProjectionClosure<Map<K, V>>() {
-            @Override
-            public GridClientFuture<Map<K, V>> apply(GridClientConnection conn, UUID destNodeId)
+            @Override public GridClientFuture<Map<K, V>> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cacheGetAll(cacheName, keys, flags, destNodeId);
             }
@@ -321,8 +320,8 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         A.notNull(val, "val");
 
         return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
+            @Override public GridClientFuture<Boolean> apply(GridClientConnection conn,
+                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.cachePrepend(cacheName, key, val, flags, destNodeId);
             }
         }, cacheName, key);

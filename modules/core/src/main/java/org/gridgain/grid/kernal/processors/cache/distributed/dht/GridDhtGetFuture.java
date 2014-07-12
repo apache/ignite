@@ -78,6 +78,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Subject ID. */
     private UUID subjId;
 
+    /** Whether to deserialize portable objects. */
+    private boolean deserializePortable;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -104,7 +107,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable GridCacheTxLocalEx<K, V> tx,
         long topVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        boolean deserializePortable) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -119,6 +123,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
+        this.deserializePortable = deserializePortable;
 
         futId = GridUuid.randomUuid();
 
@@ -312,7 +317,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (reload && cctx.isStoreEnabled() && cctx.store().configured())
                 fut = cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
             else
-                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
+                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, deserializePortable, filters) :
                     tx.getAllAsync(keys.keySet(), null, filters);
         }
         else {
@@ -329,7 +334,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (reload)
                             return cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
                         else
-                            return tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
+                            return tx == null ?
+                                cache().getDhtAllAsync(keys.keySet(), subjId, deserializePortable, filters) :
                                 tx.getAllAsync(keys.keySet(), null, filters);
                     }
                 },

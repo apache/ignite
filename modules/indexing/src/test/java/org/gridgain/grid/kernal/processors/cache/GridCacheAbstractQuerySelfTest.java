@@ -22,6 +22,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -717,8 +718,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     public void testTransformQuery() throws Exception {
         GridCache<UUID, Person> c = grid.cache(null);
 
-        final Person p1 = new Person(UUID.randomUUID(), "Bob");
-        final Person p2 = new Person(UUID.randomUUID(), "Tom");
+        final Person p1 = new Person("Bob", 100);
+        final Person p2 = new Person("Tom", 200);
 
         c.put(p1.id, p1);
         c.put(p2.id, p2);
@@ -1308,29 +1309,96 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      *
      */
-    private static class Person {
+    public static class Person implements Externalizable {
         /** */
+        @GridToStringExclude
         @GridCacheQuerySqlField
-        private UUID id;
+        private UUID id = UUID.randomUUID();
 
         /** */
+        @GridCacheQuerySqlField
         @GridCacheQueryTextField
         private String name;
 
+        /** */
+        @GridCacheQuerySqlField
+        private int salary;
+
         /**
-         * @param id Id.
+         * Required by {@link Externalizable}.
          */
-        Person(UUID id) {
-            this.id = id;
+        public Person() {
+            // No-op.
         }
 
         /**
-         * @param id Id;
          * @param name Name.
+         * @param salary Salary.
          */
-        private Person(UUID id, String name) {
-            this.id = id;
+        public Person(String name, int salary) {
+            assert name != null;
+            assert salary > 0;
+
             this.name = name;
+            this.salary = salary;
+        }
+
+        /**
+         * @return Id.
+         */
+        public UUID id() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return Salary.
+         */
+        public double salary() {
+            return salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeUuid(out, id);
+            U.writeString(out, name);
+            out.writeInt(salary);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            id = U.readUuid(in);
+            name = U.readString(in);
+            salary = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id.hashCode() + 31 * name.hashCode() + 31 * 31 * salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof Person))
+                return false;
+
+            Person that = (Person)obj;
+
+            return that.id.equals(id) && that.name.equals(name) && that.salary == salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Person.class, this);
         }
     }
 

@@ -13,6 +13,9 @@ package org.gridgain.client;
  * Exception that represents client authentication failure.
  */
 public class GridClientAuthenticationException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates authentication exception with given error message.
      *

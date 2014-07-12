@@ -22,7 +22,7 @@ Importing GridGain Dependencies In Maven Project
 
 If you are using Maven to manage dependencies of your project, there are two options:
 
-1. Import one of four predefined GridGain editions
+1. Import one of the following predefined GridGain editions:
   - gridgain-hpc
   - gridgain-datagrid
   - gridgain-streaming
@@ -122,7 +122,6 @@ The following modules are available:
 - gridgain-jcl (for Apache Commons logging)
 - gridgain-jta (for XA integration)
 - gridgain-hadoop (for Apache Hadoop Accelerator)
-- gridgain-protobuf (for C++ and .NET clients)
 - gridgain-rest-http (for HTTP REST messages)
 - gridgain-scalar (for GridGain Scala API)
 - gridgain-sl4j (for SL4J logging)

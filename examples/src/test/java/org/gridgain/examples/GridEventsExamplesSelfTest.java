@@ -20,6 +20,6 @@ public class GridEventsExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testGridEventsExample() throws Exception {
-        EventsApiExample.main(EMPTY_ARGS);
+        EventsExample.main(EMPTY_ARGS);
     }
 }
