@@ -11,11 +11,14 @@ package org.gridgain.grid;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -27,13 +30,16 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
     public static final int DFLT_GRID_CNT = 2;
 
     /** Default iteration count per thread. */
-    public static final int DFLT_ITERATION_CNT = 100_000;
+    public static final int DFLT_ITERATION_CNT = 30_000;
 
     /** Default key range. */
-    public static final int DFLT_KEY_RANGE = 100_00;
+    public static final int DFLT_KEY_RANGE = 10_000;
 
     /** Grid count. */
     private int gridCnt = DFLT_GRID_CNT;
+
+    /** Warmup date format. */
+    private static final SimpleDateFormat WARMUP_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
 
     /** Warmup thread count. */
     private int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
@@ -44,8 +50,11 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
     /** Key range. */
     private int keyRange = DFLT_KEY_RANGE;
 
+    /** Warmup discovery port. */
+    private int discoveryPort = 27000;
+
     /** Methods to warmup. */
-    private String[] warmupMethods = {"put", "putx", "get", "remove", "removex"};
+    private String[] warmupMethods = {"put", "putx", "get", "remove", "removex", "putIfAbsent", "replace"};
 
     /**
      * Gets number of grids to start and run warmup.
@@ -137,6 +146,24 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
         this.keyRange = keyRange;
     }
 
+    /**
+     * Gets discovery port for warmup.
+     *
+     * @return Discovery port.
+     */
+    public int getDiscoveryPort() {
+        return discoveryPort;
+    }
+
+    /**
+     * Sets discovery port for warmup.
+     *
+     * @param discoveryPort Discovery port.
+     */
+    public void setDiscoveryPort(int discoveryPort) {
+        this.discoveryPort = discoveryPort;
+    }
+
     /** {@inheritDoc} */
     @Override public void apply(GridConfiguration gridCfg) {
         // Remove cache duplicates, clean up the rest, etc.
@@ -146,9 +173,16 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
         if (cfg == null)
             return;
 
+        out("Starting grids to warmup caches [gridCnt=" + gridCnt +
+            ", caches=" + cfg.getCacheConfiguration().length + ']');
+
         Collection<Grid> grids = new LinkedList<>();
 
+        String old = System.getProperty(GridSystemProperties.GG_UPDATE_NOTIFIER);
+
         try {
+            System.setProperty(GridSystemProperties.GG_UPDATE_NOTIFIER, "false");
+
             GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
             for (int i = 0; i < gridCnt; i++) {
@@ -158,7 +192,11 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
 
                 discoSpi.setIpFinder(ipFinder);
 
+                discoSpi.setLocalPort(discoveryPort);
+
                 cfg0.setDiscoverySpi(discoSpi);
+
+                cfg0.setGridLogger(new GridNullLogger());
 
                 cfg0.setGridName("gridgain-warmup-grid-" + i);
 
@@ -171,9 +209,15 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
             throw new GridRuntimeException(e);
         }
         finally {
-            for (Grid grid : grids) {
+            for (Grid grid : grids)
                 GridGain.stop(grid.name(), false);
-            }
+
+            out("Stopped warmup grids.");
+
+            if (old == null)
+                old = "false";
+
+            System.setProperty(GridSystemProperties.GG_UPDATE_NOTIFIER, old);
         }
     }
 
@@ -226,6 +270,18 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
                                 break;
                             }
 
+                            case "putIfAbsent": {
+                                call = new PutIfAbsentCallable(cache0);
+
+                                break;
+                            }
+
+                            case "replace": {
+                                call = new ReplaceCallable(cache0);
+
+                                break;
+                            }
+
                             default:
                                 throw new GridException("Unsupported warmup method: " + warmupMethod);
                         }
@@ -233,14 +289,29 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
                         futs.add(svc.submit(call));
                     }
 
+                    out("Running warmup [cacheName=" + cache.name() + ", method=" + warmupMethod + ']');
+
                     for (Future fut : futs)
                         fut.get();
+
+                    for (int key = 0; key < keyRange; key++)
+                        cache0.remove(key);
                 }
             }
         }
         finally {
             svc.shutdownNow();
         }
+    }
+
+    /**
+     * Output for warmup messages.
+     *
+     * @param msg Format message.
+     */
+    private static void out(String msg) {
+        System.out.println('[' + WARMUP_DATE_FMT.format(new Date(System.currentTimeMillis())) + "][WARMUP][" +
+            Thread.currentThread().getName() + ']' + ' ' + msg);
     }
 
     /**
@@ -255,11 +326,14 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
 
         GridConfiguration cp = new GridConfiguration();
 
-        cp.setRestEnabled(false);
+        cp.setClientConnectionConfiguration(null);
 
         Collection<GridCacheConfiguration> reduced = new ArrayList<>();
 
         for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
+            if (CU.isSystemCache(ccfg.getName()))
+                continue;
+
             if (!matches(reduced, ccfg)) {
                 GridCacheConfiguration ccfgCp = new GridCacheConfiguration(ccfg);
 
@@ -274,6 +348,9 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
                 reduced.add(ccfgCp);
             }
         }
+
+        if (F.isEmpty(reduced))
+            return null;
 
         GridCacheConfiguration[] res = new GridCacheConfiguration[reduced.size()];
 
@@ -317,6 +394,9 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
             F.eq(ccfg0.getDistributionMode(), ccfg1.getDistributionMode());
     }
 
+    /**
+     * Base class for all warmup callables.
+     */
     private abstract class BaseWarmupCallable implements Callable<Object> {
         /** Cache. */
         protected final GridCache<Object, Object> cache;
@@ -332,7 +412,7 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             for (int i = 0; i < iterCnt; i++)
-                operation(rnd.nextInt());
+                operation(rnd.nextInt(keyRange));
 
             return null;
         }
@@ -427,6 +507,40 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
             cache.removex(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private class PutIfAbsentCallable extends BaseWarmupCallable {
+        /**
+         * @param cache Cache.
+         */
+        private PutIfAbsentCallable(GridCache<Object, Object> cache) {
+            super(cache);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void operation(int key) throws Exception {
+            cache.putIfAbsent(key, key);
+        }
+    }
+
+    /**
+     *
+     */
+    private class ReplaceCallable extends BaseWarmupCallable {
+        /**
+         * @param cache Cache.
+         */
+        private ReplaceCallable(GridCache<Object, Object> cache) {
+            super(cache);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void operation(int key) throws Exception {
+            cache.replace(key, key, key);
         }
     }
 }

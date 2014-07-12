@@ -282,12 +282,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 catch (GridException e) {
                     U.error(log, "Failed to send reply to originating near node (will rollback): " + tx.nearNodeId(), e);
 
-                    try {
-                        tx.rollback();
-                    }
-                    catch (GridException ex) {
-                        U.error(log, "Failed to rollback due to failure to communicate back up nodes: " + tx, ex);
-                    }
+                    tx.rollbackAsync();
                 }
             }
 

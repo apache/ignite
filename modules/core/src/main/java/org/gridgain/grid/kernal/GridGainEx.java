@@ -753,6 +753,9 @@ public class GridGainEx {
                 throw new GridException("Grid instance with this name has already been started: " + name);
         }
 
+        if (startCtx.config().getWarmupClosure() != null)
+            startCtx.config().getWarmupClosure().apply(startCtx.config());
+
         startCtx.single(grids.size() == 1);
 
         boolean success = false;
