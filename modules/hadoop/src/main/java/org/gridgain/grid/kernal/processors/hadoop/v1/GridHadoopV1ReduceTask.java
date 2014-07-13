@@ -41,7 +41,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
+        JobConf jobConf = new JobConf(jobImpl.getTaskConf());
 
         GridHadoopTaskInput input = taskCtx.input();
 

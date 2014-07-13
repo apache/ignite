@@ -113,14 +113,22 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             U.error(log, "Task execution failed.", e);
         }
         finally {
+            try {
+                job.cleanupTaskEnvironment(info);
+            }
+            catch (Throwable e) {
+                if (err == null)
+                    err = e;
+
+                U.error(log, "Error on cleanup task environment.", e);
+            }
+
             execEndTs = System.currentTimeMillis();
 
             onTaskFinished(state, err);
 
             if (runCombiner)
                 local.close();
-
-            job.cleanupTaskEnvironment(info);
         }
 
         return null;

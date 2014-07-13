@@ -16,7 +16,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Hadoop map task implementation for v1 API.
@@ -31,11 +32,12 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
     }
 
     /** {@inheritDoc} */
+    @Override
     @SuppressWarnings("unchecked")
-    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridException {
+    public void run(final GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
+        JobConf jobConf = new JobConf(jobImpl.getTaskConf());
 
         InputFormat inFormat = jobConf.getInputFormat();
 
@@ -48,8 +50,26 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
-        else
-            nativeSplit = (InputSplit)jobImpl.getNativeSplit(split);
+        else {
+            nativeSplit = (InputSplit) jobImpl.getNativeSplit(split);
+
+            try {
+                Class<?> splitCls = Class.forName(nativeSplit.getClass().getName(), true, jobConf.getClassLoader());
+
+                if (!splitCls.isAssignableFrom(nativeSplit.getClass())) {
+                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+                    nativeSplit.write(new DataOutputStream(buf));
+
+                    nativeSplit = (InputSplit) ReflectionUtils.newInstance(splitCls, jobConf);
+
+                    nativeSplit.readFields(new DataInputStream(new ByteArrayInputStream(buf.toByteArray())));
+                }
+            }
+            catch (ClassNotFoundException | IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         assert nativeSplit != null;
 
@@ -70,6 +90,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             assert mapper != null;
 
+            boolean mapperClosed = false;
+
             try {
                 while (reader.next(key, val)) {
                     if (isCancelled())
@@ -77,9 +99,18 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
                     mapper.map(key, val, collector, reporter);
                 }
+
+                mapper.close();
+
+                mapperClosed = true;
             }
             finally {
-                U.closeQuiet(mapper);
+                if (!mapperClosed) {
+                    try {
+                        mapper.close();
+                    }
+                    catch (Throwable ignore){}
+                }
 
                 collector.closeWriter();
             }

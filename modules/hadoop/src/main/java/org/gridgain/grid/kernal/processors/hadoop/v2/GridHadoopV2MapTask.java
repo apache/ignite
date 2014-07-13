@@ -35,7 +35,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         InputFormat inFormat;
 
         try {
-            inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), jobCtx.getConfiguration());
+            inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), hadoopContext().getConfiguration());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -67,7 +67,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             outputFormat = jobImpl.info().hasCombiner() || jobImpl.info().hasReducer() ? null : prepareWriter(jobCtx);
 
-            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), jobCtx.getConfiguration());
+            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));

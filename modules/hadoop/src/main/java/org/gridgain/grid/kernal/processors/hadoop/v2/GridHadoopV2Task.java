@@ -39,7 +39,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
-        hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        hadoopCtx = new GridHadoopV2Context(jobImpl.getTaskConf(), taskCtx, jobImpl.attemptId(info()));
 
         run0(jobImpl, jobCtx, taskCtx);
     }
@@ -70,7 +70,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * @throws ClassNotFoundException If specified class not found.
      */
     protected OutputFormat getOutputFormat(JobContext jobCtx) throws ClassNotFoundException {
-        return ReflectionUtils.newInstance(jobCtx.getOutputFormatClass(), jobCtx.getConfiguration());
+        return ReflectionUtils.newInstance(jobCtx.getOutputFormatClass(), hadoopContext().getConfiguration());
     }
 
     /**

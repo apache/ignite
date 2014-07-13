@@ -31,7 +31,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 
 /**
@@ -87,9 +86,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private ClassLoaderWrapper jobLdr;
-
-    /** */
     private GridHadoopPartitioner part;
 
     /** */
@@ -100,6 +96,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** */
     private Comparator<?> reduceGrpComp;
+
+    private ThreadLocal<JobConf> taskConf = new ThreadLocal<>();
 
     /**
      * @param jobId Job ID.
@@ -139,54 +137,64 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-        String jobDirPath = ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR);
+        JobConf cfg = ctx.getJobConf();
 
-        if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
-            // Assume that we have needed classes and try to generate input splits ourself.
-            if (useNewMapper)
-                return GridHadoopV2Splitter.splitJob(ctx);
-            else
-                return GridHadoopV1Splitter.splitJob(ctx.getJobConf());
-        }
+//        ClassLoader prevClsLdr = Thread.currentThread().getContextClassLoader();
 
-        Path jobDir = new Path(jobDirPath);
+//        Thread.currentThread().setContextClassLoader(cfg.getClassLoader());
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration())) {
-            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs,
-                ctx.getConfiguration(), jobDir);
+        try {
+            String jobDirPath = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
-            if (F.isEmpty(metaInfos))
-                throw new GridException("No input splits found.");
+            if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
+                // Assume that we have needed classes and try to generate input splits ourself.
+                if (useNewMapper)
+                    return GridHadoopV2Splitter.splitJob(ctx);
+                else
+                    return GridHadoopV1Splitter.splitJob(cfg);
+            }
 
-            Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
+            Path jobDir = new Path(jobDirPath);
 
-            try (FSDataInputStream in = fs.open(splitsFile)) {
-                Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
+            try (FileSystem fs = FileSystem.get(jobDir.toUri(), cfg)) {
+                JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, cfg, jobDir);
 
-                for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
-                    long off = metaInfo.getStartOffset();
+                if (F.isEmpty(metaInfos))
+                    throw new GridException("No input splits found.");
 
-                    String[] hosts = metaInfo.getLocations();
+                Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
 
-                    Class<?> cls = readSplitClass(in, off);
+                try (FSDataInputStream in = fs.open(splitsFile)) {
+                    Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
 
-                    GridHadoopFileBlock block = null;
+                    for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
+                        long off = metaInfo.getStartOffset();
 
-                    if (cls != null) {
-                        block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
+                        String[] hosts = metaInfo.getLocations();
 
-                        if (block == null)
-                            block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
+                        Class<?> cls = readSplitClass(in, off);
+
+                        GridHadoopFileBlock block = null;
+
+                        if (cls != null) {
+                            block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
+
+                            if (block == null)
+                                block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
+                        }
+
+                        res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
                     }
 
-                    res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
+                    return res;
                 }
-
-                return res;
+            }
+            catch (IOException e) {
+                throw new GridException(e);
             }
         }
-        catch (IOException e) {
-            throw new GridException(e);
+        finally {
+//            Thread.currentThread().setContextClassLoader(prevClsLdr);
         }
     }
 
@@ -409,11 +417,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         rsrcMgr.prepareJobEnvironment(!external);
 
-        initializeClassLoader(rsrcMgr.getClassPath());
-
-        if (jobLdr != null)
-            ctx.getJobConf().setClassLoader(jobLdr);
-
         part = createPartitioner();
 
         sortComp = ctx.getSortComparator();
@@ -425,20 +428,23 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void dispose(boolean external) throws GridException {
-        if (jobLdr != null)
-            jobLdr.destroy();
-
-        if (!external && rsrcMgr != null)
-            rsrcMgr.cleanupJobEnvironment();
+        if (rsrcMgr != null)
+            rsrcMgr.cleanupJobEnvironment(!external);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.prepareTaskEnvironment(info);
+        JobConf cfg = new JobConf(ctx.getJobConf());
+
+        taskConf.set(cfg);
+
+        rsrcMgr.prepareTaskEnvironment(info, cfg);
     }
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        taskConf.set(null);
+
         rsrcMgr.cleanupTaskEnvironment(info);
     }
 
@@ -448,72 +454,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             rsrcMgr.cleanupStagingDirectory();
     }
 
-    /**
-     * Initializes class loader.
-     *
-     * @param clsPath List of URLs to add to class path.
-     */
-    private void initializeClassLoader(List<URL> clsPath) {
-        assert jobLdr==null;
-
-        if (clsPath.isEmpty())
-            return;
-
-        URL[] urls = new URL[clsPath.size()];
-
-        clsPath.toArray(urls);
-
-        final URLClassLoader urlLdr = new URLClassLoader(urls);
-
-        jobLdr = new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
-    }
-
-    /**
-     * Class loader wrapper.
-     */
-    private static class ClassLoaderWrapper extends ClassLoader {
-        /** */
-        private URLClassLoader delegate;
-
-        /**
-         * Makes classes available for GC.
-         */
-        public void destroy() {
-            delegate = null;
-        }
-
-        /**
-         * @param delegate Delegate.
-         */
-        private ClassLoaderWrapper(URLClassLoader delegate, ClassLoader parent) {
-            super(parent);
-
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            try {
-                return delegate.loadClass(name);
-            }
-            catch (ClassNotFoundException ignore) {
-                return super.loadClass(name);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public InputStream getResourceAsStream(String name) {
-            return delegate.getResourceAsStream(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public URL findResource(final String name) {
-            return delegate.findResource(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Enumeration<URL> findResources(final String name) throws IOException {
-            return delegate.findResources(name);
-        }
+    public JobConf getTaskConf() {
+        return taskConf.get();
     }
 }
