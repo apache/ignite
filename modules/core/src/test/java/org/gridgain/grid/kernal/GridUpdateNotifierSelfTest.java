@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
@@ -44,7 +45,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     private void testNotifier(boolean ent) throws Exception {
         String site = "www.gridgain." + (ent ? "com" : "org");
 
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, "x.x.x", site, false);
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, "x.x.x", site, TEST_GATEWAY, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 
@@ -62,8 +63,37 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
      */
     private static class SelfExecutor implements Executor {
         /** {@inheritDoc} */
-        @Override public void execute(Runnable r) {
+        @Override public void execute(@NotNull Runnable r) {
             r.run();
         }
     }
+
+    /**
+     * Test kernal gateway that always return uninitialized user stack trace.
+     */
+    private static final GridKernalGateway TEST_GATEWAY = new GridKernalGateway() {
+        @Override public void lightCheck() throws IllegalStateException {}
+
+        @Override public void readLock() throws IllegalStateException {}
+
+        @Override public void setState(GridKernalState state) {}
+
+        @Override public GridKernalState getState() {
+            return null;
+        }
+
+        @Override public void readUnlock() {}
+
+        @Override public void writeLock() {}
+
+        @Override public void writeUnlock() {}
+
+        @Override public void addStopListener(Runnable lsnr) {}
+
+        @Override public void removeStopListener(Runnable lsnr) {}
+
+        @Override public String userStackTrace() {
+            return null;
+        }
+    };
 }
