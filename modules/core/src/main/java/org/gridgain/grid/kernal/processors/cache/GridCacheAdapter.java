@@ -2007,7 +2007,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public GridFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(keys, cached0, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(keys, cached0, deserializePortable, filter));
                 }
             });
         }
