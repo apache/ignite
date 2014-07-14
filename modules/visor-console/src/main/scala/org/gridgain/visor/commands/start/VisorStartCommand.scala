@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.start
 
 import org.gridgain.grid._
+import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
 import java.util.concurrent._
@@ -302,12 +303,11 @@ class VisorStartCommand {
 
                 val errT = VisorTextTable()
 
-                errT.autoBorder = false
-                errT.maxCellWidth = 80
+                errT.maxCellWidth = 70
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split("\n").toSeq) })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
 
                 errT.render()
             }

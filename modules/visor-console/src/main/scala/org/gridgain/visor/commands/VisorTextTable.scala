@@ -322,8 +322,7 @@ class VisorTextTable {
 
         // Break up long line into multiple ones - if necessary.
         val lst = lines flatten {
-            case it: Traversable[_] =>
-                it.flatten(_.toString.grouped(maxCellWidth))
+            case it: Traversable[_] => it.flatten(_.toString.grouped(maxCellWidth))
             case obj => obj.toString.grouped(maxCellWidth)
         }
 
