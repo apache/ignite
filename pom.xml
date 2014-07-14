@@ -30,6 +30,13 @@
         <version>${gridgain.version}</version>
     </parent>
 
+    <repositories>
+        <repository>
+            <id>GridGain External Repository</id>
+            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
+        </repository>
+    </repositories>
+
     <modules>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
@@ -73,6 +80,23 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
+                        <id>dependencies-visor</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <finalName>visorui</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>core-jar</id>
                         <phase>package</phase>
                         <goals>
@@ -100,6 +124,7 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
+                <module>modules/visor</module>
             </modules>
         </profile>
 
