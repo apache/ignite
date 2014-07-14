@@ -829,7 +829,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public GridFuture<Boolean> putxIfAbsentAsync(K key, V val);
 
     /**
-     * Stores given key-value pair in cache only if if there is a previous mapping for it.
+     * Stores given key-value pair in cache only if there is a previous mapping for it.
      * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
@@ -859,7 +859,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     @Nullable public V replace(K key, V val) throws GridException;
 
     /**
-     * Asynchronously stores given key-value pair in cache only if if there is a previous mapping for it. If cache
+     * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.In case of
      * {@link GridCacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
      * which in its turn may load the value from the swap storage, and consecutively, if it's not in swap,
