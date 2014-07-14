@@ -1470,10 +1470,28 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <p>
      * GridGain will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
+     * <p>
+     * This method is identical to calling {@link #globalClearAll(long) globalClearAll(0)}.
      *
      * @throws GridException In case of cache could not be cleared on any of the nodes.
+     * @deprecated Deprecated in favor of {@link #globalClearAll(long)} method.
      */
+    @Deprecated
     public void globalClearAll() throws GridException;
+
+    /**
+     * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
+     * nodes and local node, as opposed to {@link GridCacheProjection#clearAll()} method which only
+     * clears local node's cache.
+     * <p>
+     * GridGain will make the best attempt to clear caches on all nodes. If some caches
+     * could not be cleared, then exception will be thrown.
+     *
+     * @param timeout Timeout for clear all task in milliseconds (0 for never).
+     *      Set it to larger value for large caches.
+     * @throws GridException In case of cache could not be cleared on any of the nodes.
+     */
+    public void globalClearAll(long timeout) throws GridException;
 
     /**
      * Clears serialized value bytes from entry (if any) leaving only object representation.
