@@ -64,7 +64,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Future for this get.
      */
     public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<GridCacheEntry<K, V>>[] filter);
+        boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.

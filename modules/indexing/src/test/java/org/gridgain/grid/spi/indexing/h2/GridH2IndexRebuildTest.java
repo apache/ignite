@@ -186,7 +186,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
 
-        checkCancel(grid(0).cache(null).queries().rebuildIndexes(TestValue1.class));
+        checkCancel(grid(0).cache(null).queries().rebuildIndexes("TestValue1"));
 
         checkCancel(grid(0).cache(null).queries().rebuildAllIndexes());
 

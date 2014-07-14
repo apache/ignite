@@ -34,7 +34,7 @@ public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
      * This is a blocking call which will wait if there are no
      * elements available immediately.
      *
-     * @return Next fetched element or {@code null} if all the elements.
+     * @return Next fetched element or {@code null} if all the elements have been fetched.
      * @throws GridException If failed.
      */
     @Nullable public T next() throws GridException;

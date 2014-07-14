@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -112,19 +111,6 @@ public abstract class GridUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
-
-    /** Protobuf marshaller class name. */
-    private static final String PROTOBUF_MARSH_CLS =
-        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
-
-    /** Optimized client marshaller ID. */
-    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
-
-    /** Protobuf client marshaller ID. */
-    public static final byte PROTOBUF_CLIENT_PROTO_ID = 2;
-
-    /** JDK client marshaller ID. */
-    public static final byte JDK_CLIENT_PROTO_ID = 3;
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -7509,16 +7495,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether a node is a Visor node.
-     *
-     * @param node Node to check.
-     * @return {@code True} if node is a Visor node, {@code false} otherwise.
-     */
-    public static boolean isVisorNode(GridNode node) {
-        return node.attributes().containsKey("VISOR");
-    }
-
-    /**
      * Checks whether property is one added by Visor when node is started via remote SSH session.
      *
      * @param name Property name to check.
@@ -8362,34 +8338,6 @@ public abstract class GridUtils {
         int idx = clsName.indexOf("$$Lambda$");
 
         return idx != -1 ? clsName.substring(0, idx) : null;
-    }
-
-    /**
-     * Creates new instance of Protobuf marshaller. If {@code gridgain-protobuf}
-     * module is not enabled, {@code null} is returned.
-     *
-     * @param log Logger.
-     * @return Marshaller instance or {@code null} if {@code gridgain-protobuf} module is not enabled.
-     */
-    @Nullable public static GridClientMarshaller createProtobufMarshaller(GridLogger log) {
-        GridClientMarshaller marsh = null;
-
-        try {
-            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
-
-            Constructor<?> cons = cls.getConstructor();
-
-            marsh = (GridClientMarshaller)cons.newInstance();
-        }
-        catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST C++ and .NET clients " +
-                "(consider adding gridgain-protobuf module to classpath).");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
-        }
-
-        return marsh;
     }
 
     /**

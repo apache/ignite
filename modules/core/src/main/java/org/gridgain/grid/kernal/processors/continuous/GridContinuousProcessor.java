@@ -357,22 +357,20 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
                 // Handle peer deployment for projection predicate.
-                if (prjPred != null) {
+                if (prjPred != null && !U.isGrid(prjPred.getClass())) {
                     Class cls = U.detectClass(prjPred);
 
                     String clsName = cls.getName();
 
-                    if (!U.isGrid(cls)) {
-                        GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
+                    GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
-                        if (dep == null)
-                            throw new GridDeploymentException("Failed to deploy projection predicate: " + prjPred);
+                    if (dep == null)
+                        throw new GridDeploymentException("Failed to deploy projection predicate: " + prjPred);
 
-                        reqData.clsName = clsName;
-                        reqData.depInfo = new GridDeploymentInfoBean(dep);
+                    reqData.clsName = clsName;
+                    reqData.depInfo = new GridDeploymentInfoBean(dep);
 
-                        reqData.p2pMarshal(marsh);
-                    }
+                    reqData.p2pMarshal(marsh);
                 }
 
                 // Handle peer deployment for other handler-specific objects.

@@ -9,10 +9,10 @@
 
 package org.gridgain.jdbc.util;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.jdk.*;
 
-import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -24,7 +24,7 @@ import static java.sql.Types.*;
  */
 public class GridJdbcUtils {
     /** Marshaller. */
-    private static final GridClientMarshaller MARSHALLER = new GridClientJdkMarshaller();
+    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
     /**
      * Marshals task argument to byte array.
@@ -39,7 +39,7 @@ public class GridJdbcUtils {
         try {
             return MARSHALLER.marshal(args);
         }
-        catch (IOException e) {
+        catch (GridException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }
@@ -66,9 +66,9 @@ public class GridJdbcUtils {
         assert bytes != null;
 
         try {
-            return MARSHALLER.unmarshal(bytes);
+            return MARSHALLER.unmarshal(bytes, null);
         }
-        catch (IOException e) {
+        catch (GridException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }

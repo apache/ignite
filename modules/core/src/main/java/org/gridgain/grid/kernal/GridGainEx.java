@@ -74,6 +74,7 @@ import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
@@ -1319,6 +1320,38 @@ public class GridGainEx {
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
 
+            GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+
+            if (clientCfg == null) {
+                // If client config is not provided then create config copying values from GridConfiguration.
+                if (cfg.isRestEnabled()) {
+                    clientCfg = new GridClientConnectionConfiguration();
+
+                    clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
+                    clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
+                    clientCfg.setRestExecutorService(cfg.getRestExecutorService());
+                    clientCfg.setRestExecutorServiceShutdown(cfg.getRestExecutorServiceShutdown());
+                    clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
+                    clientCfg.setRestJettyPath(cfg.getRestJettyPath());
+                    clientCfg.setRestPortRange(cfg.getRestPortRange());
+                    clientCfg.setRestSecretKey(cfg.getRestSecretKey());
+                    clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
+                    clientCfg.setRestTcpHost(cfg.getRestTcpHost());
+                    clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
+                    clientCfg.setRestTcpPort(cfg.getRestTcpPort());
+                    clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
+                    clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
+                    clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
+                    clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
+                    clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
+                    clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
+                    clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
+                }
+            }
+            else
+                clientCfg = new GridClientConnectionConfiguration(clientCfg);
+
+
             String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
@@ -1460,13 +1493,13 @@ public class GridGainEx {
                     new LinkedBlockingQueue<Runnable>());
             }
 
-            restExecSvc = cfg.getRestExecutorService();
+            restExecSvc = clientCfg != null ? clientCfg.getRestExecutorService() : null;
 
             if (restExecSvc != null && !cfg.isRestEnabled()) {
                 U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
                     "(safely ignoring).");
             }
-            else if (restExecSvc == null && cfg.isRestEnabled()) {
+            else if (restExecSvc == null && clientCfg != null) {
                 isAutoRestSvc = true;
 
                 restExecSvc = new GridThreadPoolExecutor(
@@ -1476,6 +1509,8 @@ public class GridGainEx {
                     DFLT_REST_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
                 );
+
+                clientCfg.setRestExecutorService(restExecSvc);
             }
 
             execSvcShutdown = cfg.getExecutorServiceShutdown();
@@ -1483,7 +1518,7 @@ public class GridGainEx {
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
-            restSvcShutdown = cfg.getRestExecutorServiceShutdown();
+            restSvcShutdown = clientCfg != null && clientCfg.isRestExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1523,13 +1558,11 @@ public class GridGainEx {
             myCfg.setManagementExecutorService(mgmtExecSvc);
             myCfg.setPeerClassLoadingExecutorService(p2pExecSvc);
             myCfg.setGgfsExecutorService(ggfsExecSvc);
-            myCfg.setRestExecutorService(restExecSvc);
             myCfg.setExecutorServiceShutdown(execSvcShutdown);
             myCfg.setSystemExecutorServiceShutdown(sysSvcShutdown);
             myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
             myCfg.setPeerClassLoadingExecutorServiceShutdown(p2pSvcShutdown);
             myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
-            myCfg.setRestExecutorServiceShutdown(restSvcShutdown);
             myCfg.setNodeId(nodeId);
 
             GridGgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
@@ -1558,8 +1591,6 @@ public class GridGainEx {
                 p2pExclude = EMPTY_STR_ARR;
 
             myCfg.setPeerClassLoadingLocalClassPathExclude(p2pExclude);
-
-            myCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
 
             /*
              * Initialize default SPI implementations.
@@ -1648,22 +1679,10 @@ public class GridGainEx {
             myCfg.setAdminEmails(cfg.getAdminEmails());
 
             // REST configuration.
-            myCfg.setRestEnabled(cfg.isRestEnabled());
-            myCfg.setRestJettyPath(cfg.getRestJettyPath());
-            myCfg.setRestSecretKey(cfg.getRestSecretKey());
-            myCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
-            myCfg.setRestPortRange(cfg.getRestPortRange());
-            myCfg.setRestTcpHost(cfg.getRestTcpHost());
-            myCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-            myCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-            myCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-            myCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-            myCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-            myCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-            myCfg.setRestTcpPort(cfg.getRestTcpPort());
-            myCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-            myCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-            myCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
+            myCfg.setClientConnectionConfiguration(clientCfg);
+
+            // Portable configuration.
+            myCfg.setPortableConfiguration(cfg.getPortableConfiguration());
 
             // Replication configuration.
             myCfg.setDrSenderHubConfiguration(cfg.getDrSenderHubConfiguration());
@@ -1891,9 +1910,8 @@ public class GridGainEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided or it is a Visor node.
-            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))
-                    && System.getProperty("VISOR") == null) {
+            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
+            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -1941,6 +1959,22 @@ public class GridGainEx {
                     if (log4jCls != null) {
                         URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
+                        if (url == null) {
+                            File cfgFile = new File("config/gridgain-log4j.xml");
+
+                            if (!cfgFile.exists())
+                                cfgFile = new File("../config/gridgain-log4j.xml");
+
+                            if (cfgFile.exists()) {
+                                try {
+                                    url = cfgFile.toURI().toURL();
+                                }
+                                catch (MalformedURLException ignore) {
+                                    // No-op.
+                                }
+                            }
+                        }
+
                         if (url != null) {
                             boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
 
@@ -1984,6 +2018,7 @@ public class GridGainEx {
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
             cache.setQueryIndexEnabled(false);
+            cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
 
             return cache;

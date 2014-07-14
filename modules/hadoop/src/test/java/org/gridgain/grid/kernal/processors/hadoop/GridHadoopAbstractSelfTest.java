@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -184,6 +185,8 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.
             class.getName());
+
+        GridHadoopFileSystemsUtils.setupFileSystems(cfg);
     }
 
     /**

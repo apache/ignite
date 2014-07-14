@@ -99,6 +99,14 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** */
     private boolean all;
 
+    /** */
+    @GridDirectVersion(1)
+    private boolean portableKeys;
+
+    /** */
+    @GridDirectVersion(1)
+    private boolean portableVals;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -126,6 +134,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
+     * @param portableKeys Whether to keep portable keys.
+     * @param portableVals Whether to keep portable values.
      */
     public GridCacheQueryRequest(
         long id,
@@ -133,13 +143,17 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         int pageSize,
         boolean incBackups,
         boolean fields,
-        boolean all) {
+        boolean all,
+        boolean portableKeys,
+        boolean portableVals) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
+        this.portableKeys = portableKeys;
+        this.portableVals = portableVals;
     }
 
     /**
@@ -172,7 +186,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         int pageSize,
         boolean incBackups,
         Object[] args,
-        boolean incMeta) {
+        boolean incMeta,
+        boolean portableKeys,
+        boolean portableVals) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
@@ -191,6 +207,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
+        this.portableKeys = portableKeys;
+        this.portableVals = portableVals;
     }
 
     /** {@inheritDoc} */
@@ -378,6 +396,20 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         return all;
     }
 
+    /**
+     * @return Whether to keep keys as portable.
+     */
+    public boolean portableKeys() {
+        return portableKeys;
+    }
+
+    /**
+     * @return Whether to keep values as portables.
+     */
+    public boolean portableValues() {
+        return portableVals;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -415,6 +447,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.cancel = cancel;
         _clone.incMeta = incMeta;
         _clone.all = all;
+        _clone.portableKeys = portableKeys;
+        _clone.portableVals = portableVals;
     }
 
     /** {@inheritDoc} */
@@ -525,6 +559,18 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
             case 17:
                 if (!commState.putEnum(type))
+                    return false;
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putBoolean(portableKeys))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putBoolean(portableVals))
                     return false;
 
                 commState.idx++;
@@ -686,6 +732,22 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 byte type0 = commState.getByte();
 
                 type = GridCacheQueryType.fromOrdinal(type0);
+
+                commState.idx++;
+
+            case 18:
+                if (buf.remaining() < 1)
+                    return false;
+
+                portableKeys = commState.getBoolean();
+
+                commState.idx++;
+
+            case 19:
+                if (buf.remaining() < 1)
+                    return false;
+
+                portableVals = commState.getBoolean();
 
                 commState.idx++;
 

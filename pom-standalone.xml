@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0-rc1</gridgain.version>
+        <gridgain.version>6.2.0-rc3</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
@@ -52,7 +52,6 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/protobuf</module>
         <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
@@ -218,7 +217,7 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt</excludePackageNames>
+                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.portable:org.gridgain.grid.portable</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
@@ -422,7 +421,7 @@
                                 </group>
                                 <group>
                                     <title>Marshallers</title>
-                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.protobuf</packages>
+                                    <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
                                 </group>
                             </groups>
                             <header>
@@ -548,7 +547,6 @@
                                         <path location="${project.basedir}/modules/jcl/target/classes"/>
                                         <path location="${project.basedir}/modules/jta/target/classes"/>
                                         <path location="${project.basedir}/modules/log4j/target/classes"/>
-                                        <path location="${project.basedir}/modules/protobuf/target/classes"/>
                                         <path location="${project.basedir}/modules/rest-http/target/classes"/>
                                         <path location="${project.basedir}/modules/schedule/target/classes"/>
                                         <path location="${project.basedir}/modules/slf4j/target/classes"/>
