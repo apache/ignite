@@ -281,8 +281,11 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
                 try {
                     mtd.invoke(obj, this);
                 }
-                catch (IllegalAccessException | InvocationTargetException e) {
+                catch (IllegalAccessException e) {
                     throw new IOException(e);
+                }
+                catch (InvocationTargetException e) {
+                    throw new IOException(e.getCause());
                 }
             }
             else
@@ -641,7 +644,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public ObjectOutputStream.PutField putFields() throws IOException {
         if (curObj == null)
-            throw new NotActiveException("Not in writeObject() call.");
+            throw new NotActiveException("Not in writeObject() call or fields already written.");
 
         if (curPut == null)
             curPut = new PutFieldImpl(this);
