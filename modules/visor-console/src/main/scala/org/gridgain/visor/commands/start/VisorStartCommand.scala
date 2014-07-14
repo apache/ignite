@@ -215,10 +215,10 @@ class VisorStartCommand {
             if (fileOpt.isDefined) {
                 val file = new File(fileOpt.get)
 
-                if (file.exists())
+                if (!file.exists())
                     scold("File not found: " + file.getAbsolutePath).^^
 
-                if (file.isFile())
+                if (file.isDirectory)
                     scold("File is a directory: " + file.getAbsolutePath).^^
 
                 try
