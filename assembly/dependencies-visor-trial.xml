@@ -38,7 +38,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-visor</include>
+                <include>org.gridgain:gridgain-visor-trial</include>
                 <include>org.gridgain:gridgain-ssh</include>
                 <include>org.gridgain:gridgain-jcl</include>
             </includes>

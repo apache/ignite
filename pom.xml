@@ -80,7 +80,7 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <id>dependencies-visor</id>
+                        <id>dependencies-visor-trial</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
@@ -124,7 +124,7 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
-                <module>modules/visor</module>
+                <module>modules/visor-trial</module>
             </modules>
         </profile>
 
