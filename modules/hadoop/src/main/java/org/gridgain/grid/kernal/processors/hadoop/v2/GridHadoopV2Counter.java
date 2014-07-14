@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -19,7 +18,6 @@ import java.io.*;
  * Adapter from own counter implementation into Hadoop API Counter od version 2.0.
  */
 public class GridHadoopV2Counter implements Counter {
-
     /** Delegate. */
     private final GridHadoopCounter counter;
 
@@ -30,6 +28,7 @@ public class GridHadoopV2Counter implements Counter {
      */
     public GridHadoopV2Counter(GridHadoopCounter counter) {
         assert counter != null : "counter must be non-null";
+
         this.counter = counter;
     }
 

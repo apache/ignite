@@ -930,7 +930,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             final GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             return meta != null ? meta.counters() : null;
-        } finally {
+        }
+        finally {
             busyLock.readUnlock();
         }
     }
@@ -1423,13 +1424,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
-            final GridHadoopCounters oldCounters = meta.counters();
-
-            oldCounters.merge(counters);
-
             GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
 
-            cp.counters(oldCounters);
+            cp.counters().merge(counters);
 
             return cp;
         }

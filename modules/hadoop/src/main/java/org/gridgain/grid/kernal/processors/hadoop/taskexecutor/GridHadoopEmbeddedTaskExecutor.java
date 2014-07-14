@@ -11,13 +11,12 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.concurrent.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 
 /**

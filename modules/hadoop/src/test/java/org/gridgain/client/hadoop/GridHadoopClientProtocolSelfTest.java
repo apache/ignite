@@ -9,6 +9,7 @@
 
 package org.gridgain.client.hadoop;
 
+import com.google.common.collect.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
@@ -148,7 +149,17 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
             new GridGgfsPath(PATH_INPUT + "/test.file"), true)))) {
 
-            bw.write("word");
+            bw.write(
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n" +
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n" +
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n"
+            );
         }
 
         Configuration conf = config(GridHadoopAbstractSelfTest.REST_PORT);
@@ -159,6 +170,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         job.setOutputValueClass(IntWritable.class);
 
         job.setMapperClass(TestCountingMapper.class);
+        job.setReducerClass(TestCountingReducer.class);
+        job.setCombinerClass(TestCountingCombiner.class);
 
         FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
         FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
@@ -167,11 +180,11 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         final Counter counter = job.getCounters().findCounter(TestCounter.COUNTER1);
 
-        assert counter.getValue() == 0;
+        assertEquals(0, counter.getValue());
 
         counter.increment(10);
 
-        assert counter.getValue() == 10;
+        assertEquals(10, counter.getValue());
 
         // Transferring to map phase.
         setupLockFile.delete();
@@ -181,14 +194,15 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.waitForCompletion(false);
 
-        assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : "job must end successfully";
+        assertEquals("job must end successfully", JobStatus.State.SUCCEEDED, job.getStatus().getState());
 
         final Counters counters = job.getCounters();
 
-        assert counters != null : "counters cannot be null";
-        assert counters.countCounters() == 1 : "wrong counters count";
-        assert counters.findCounter(TestCounter.COUNTER1).getValue() == 1 : "wrong counter value";
-        assert counters.findCounter(TestCounter.COUNTER2).getValue() == 0 : "wrong counter value";
+        assertNotNull("counters cannot be null", counters);
+        assertEquals("wrong counters count", 3, counters.countCounters());
+        assertEquals("wrong counter value", 15, counters.findCounter(TestCounter.COUNTER1).getValue());
+        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER2).getValue());
+        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER3).getValue());
     }
 
     /**
@@ -473,7 +487,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * Test Hadoop counters.
      */
     public enum TestCounter {
-        COUNTER1, COUNTER2
+        COUNTER1, COUNTER2, COUNTER3
     }
 
     /**
@@ -484,6 +498,35 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
             super.map(key, val, ctx);
             ctx.getCounter(TestCounter.COUNTER1).increment(1);
+        }
+    }
+
+    /**
+     * Test combiner that counts invocations.
+     */
+    public static class TestCountingCombiner extends TestReducer {
+        @Override public void reduce(Text key, Iterable<IntWritable> values,
+            Context ctx) throws IOException, InterruptedException {
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
+            ctx.getCounter(TestCounter.COUNTER2).increment(1);
+
+            int sum = 0;
+            for (IntWritable value : values) {
+                sum += value.get();
+            }
+
+            ctx.write(key, new IntWritable(sum));
+        }
+    }
+
+    /**
+     * Test reducer that counts invocations.
+     */
+    public static class TestCountingReducer extends TestReducer {
+        @Override public void reduce(Text key, Iterable<IntWritable> values,
+            Context ctx) throws IOException, InterruptedException {
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
+            ctx.getCounter(TestCounter.COUNTER3).increment(1);
         }
     }
 

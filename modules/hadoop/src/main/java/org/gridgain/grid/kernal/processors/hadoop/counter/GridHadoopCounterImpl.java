@@ -30,7 +30,7 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
 
     /** Counter current value. */
     @GridToStringInclude
-    public long value = 0;
+    public long val;
 
     /**
      * Default constructor required by {@link Externalizable}.
@@ -44,13 +44,15 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
      *
      * @param group Counter group name.
      * @param name Counter name.
+     * @param val Counter value.
      */
-    public GridHadoopCounterImpl(String group, String name) {
+    public GridHadoopCounterImpl(String group, String name, long val) {
         assert group != null : "counter must have group";
         assert name != null : "counter must have name";
 
         this.group = group;
         this.name = name;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
@@ -65,31 +67,31 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
 
     /** {@inheritDoc} */
     @Override public long value() {
-        return value;
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public void value(long val) {
-        value = val;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void increment(long i) {
-        value += i;
+        val += i;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(group);
+        out.writeUTF(group);
         out.writeUTF(name);
-        out.writeLong(value);
+        out.writeLong(val);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        group = (String)in.readObject();
+        group = in.readUTF();
         name = in.readUTF();
-        value = in.readLong();
+        val = in.readLong();
     }
 
     /** {@inheritDoc} */

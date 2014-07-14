@@ -22,15 +22,15 @@ import java.util.*;
  */
 public class GridHadoopClientCounters extends Counters {
     /** */
-    private final GridHadoopCounters counters;
+    private final GridHadoopCounters cntrs;
 
     /**
      * Creates new instance based on given counters.
      *
-     * @param counters Counters to adapt.
+     * @param cntrs Counters to adapt.
      */
-    public GridHadoopClientCounters(GridHadoopCounters counters) {
-        this.counters = counters;
+    public GridHadoopClientCounters(GridHadoopCounters cntrs) {
+        this.cntrs = cntrs;
     }
 
     /** {@inheritDoc} */
@@ -55,16 +55,15 @@ public class GridHadoopClientCounters extends Counters {
 
     /** {@inheritDoc} */
     @Override public synchronized Counter findCounter(String scheme, FileSystemCounter key) {
-        throw new UnsupportedOperationException("not implemented");
+        return findCounter(String.format("FileSystem Counter (%s)", scheme), key.name());
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Iterable<String> getGroupNames() {
         Set<String> result = new HashSet<>();
 
-        for (GridHadoopCounter counter : counters.all()) {
+        for (GridHadoopCounter counter : cntrs.all())
             result.add(counter.group());
-        }
 
         return result;
     }
@@ -98,7 +97,7 @@ public class GridHadoopClientCounters extends Counters {
 
     /** {@inheritDoc} */
     @Override public synchronized int countCounters() {
-        return counters.all().size();
+        return cntrs.all().size();
     }
 
     /** {@inheritDoc} */
@@ -125,12 +124,12 @@ public class GridHadoopClientCounters extends Counters {
         if (!(genericRight instanceof GridHadoopClientCounters))
             return false;
 
-        return counters.all().equals(((GridHadoopClientCounters) genericRight).counters.all());
+        return cntrs.all().equals(((GridHadoopClientCounters)genericRight).cntrs.all());
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return counters.all().hashCode();
+        return cntrs.all().hashCode();
     }
 
     /** {@inheritDoc} */
@@ -157,7 +156,7 @@ public class GridHadoopClientCounters extends Counters {
     public int groupSize(String groupName) {
         int result = 0;
 
-        for (GridHadoopCounter counter : counters.all()) {
+        for (GridHadoopCounter counter : cntrs.all()) {
             if (groupName.equals(counter.group()))
                 result++;
         }
@@ -172,9 +171,9 @@ public class GridHadoopClientCounters extends Counters {
      * @return Counters iterator.
      */
     public Iterator<Counter> iterateGroup(String groupName) {
-        Set<Counter> groupCounters = new HashSet<>();
+        List<Counter> groupCounters = new ArrayList<>();
 
-        for (GridHadoopCounter counter : counters.all()) {
+        for (GridHadoopCounter counter : cntrs.all()) {
             if (groupName.equals(counter.group()))
                 groupCounters.add(new GridHadoopV2Counter(counter));
         }
@@ -191,14 +190,8 @@ public class GridHadoopClientCounters extends Counters {
      * @return The counter that was found or added or {@code null} if create is false.
      */
     public Counter findCounter(String groupName, String counterName, boolean create) {
-        if (create)
-            return new GridHadoopV2Counter(counters.counter(groupName, counterName));
+        final GridHadoopCounter internalCntr = cntrs.counter(groupName, counterName, create);
 
-        for (GridHadoopCounter counter : counters.all()) {
-            if (groupName.equals(counter.group()) && counterName.equals(counter.name()))
-                return new GridHadoopV2Counter(counter);
-        }
-
-        return null;
+        return internalCntr == null ? null : new GridHadoopV2Counter(internalCntr);
     }
 }

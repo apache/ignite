@@ -88,7 +88,7 @@ public class GridHadoopTaskContext {
      * @return Counter.
      */
     public GridHadoopCounter counter(String group, String name) {
-        return counters.counter(group, name);
+        return counters.counter(group, name, true);
     }
 
     /**
