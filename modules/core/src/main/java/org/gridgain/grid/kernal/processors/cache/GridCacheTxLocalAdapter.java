@@ -1349,7 +1349,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached,  final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheEntryEx<K, V> cached, final boolean deserializePortable,
+        final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1416,6 +1417,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             for (GridClosure<V, V> clos : txEntry.transformClosures())
                                                 val = clos.apply(val);
                                         }
+
+                                        if (cctx.portableEnabled() && deserializePortable &&
+                                            val instanceof GridPortableObject)
+                                            val = ((GridPortableObject<V>)val).deserialize();
 
                                         retMap.put(key, val);
                                     }
@@ -1522,7 +1527,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     log.debug("Starting to future-recursively get values for keys: " + redos);
 
                                 // Future recursion.
-                                return getAllAsync(redos, null, filter);
+                                return getAllAsync(redos, null, deserializePortable, filter);
                             }
                         },
                         // Finalize.
