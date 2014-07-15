@@ -731,6 +731,23 @@
                     </execution>
 
                     <execution>
+                        <id>dependencies-visor-trial</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor-trial.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <finalName>visorui</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
