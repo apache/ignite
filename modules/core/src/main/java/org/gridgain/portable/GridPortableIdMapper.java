@@ -14,14 +14,14 @@ package org.gridgain.portable;
  */
 public interface GridPortableIdMapper {
     /**
-     * Gets type ID for provided type name.
+     * Gets type ID for provided class name.
      * <p>
-     * If {@code 0} is returned, hash code of type name will be used.
+     * If {@code 0} is returned, hash code of class simple name will be used.
      *
-     * @param typeName Type name.
+     * @param clsName Class name.
      * @return Type ID.
      */
-    public int typeId(String typeName);
+    public int typeId(String clsName);
 
     /**
      * Gets ID for provided field.
