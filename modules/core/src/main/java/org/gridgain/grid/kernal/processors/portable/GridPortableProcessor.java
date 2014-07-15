@@ -32,6 +32,12 @@ public interface GridPortableProcessor extends GridProcessor {
     public Object marshalToPortable(@Nullable Object obj) throws GridPortableException;
 
     /**
+     * @param obj Object (portable or not).
+     * @return Detached portable object or original object.
+     */
+    public Object detachPortable(@Nullable Object obj);
+
+    /**
      * @return Portable marshaller for client connectivity or {@code null} if it's not
      *      supported (in case of OS edition).
      */

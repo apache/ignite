@@ -194,6 +194,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().onGgfsDataSizeChanged(delta);
         }
 
+        if (cctx.portableEnabled())
+            val = (V)cctx.kernalContext().portable().detachPortable(val);
+
         if (!isOffHeapValuesOnly()) {
             this.val = val;
             this.valBytes = isStoreValueBytes() ? valBytes : null;

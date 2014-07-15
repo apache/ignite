@@ -175,6 +175,9 @@ public class GridCacheAttributes implements Externalizable {
     /** DR send attributes. */
     private GridCacheDrSendAttributes drSndAttrs;
 
+    /** Portable enabled flag. */
+    private boolean portableEnabled;
+
     /**
      * @param cfg Cache configuration.
      */
@@ -245,6 +248,7 @@ public class GridCacheAttributes implements Externalizable {
         nearEvictPlcClsName = className(cfg.getNearEvictionPolicy());
         storeClsName = className(cfg.getStore());
         tmLookupClsName = cfg.getTransactionManagerLookupClassName();
+        portableEnabled = cfg.isPortableEnabled();
     }
 
     /**
@@ -611,6 +615,13 @@ public class GridCacheAttributes implements Externalizable {
         return drSndAttrs;
     }
 
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return portableEnabled;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum0(out, atomicityMode);
@@ -664,6 +675,8 @@ public class GridCacheAttributes implements Externalizable {
 
         out.writeObject(drRcvAttrs);
         out.writeObject(drSndAttrs);
+
+        out.writeBoolean(portableEnabled);
     }
 
     /** {@inheritDoc} */
@@ -719,6 +732,8 @@ public class GridCacheAttributes implements Externalizable {
 
         drRcvAttrs = (GridCacheDrReceiveAttributes)in.readObject();
         drSndAttrs = (GridCacheDrSendAttributes)in.readObject();
+
+        portableEnabled = in.readBoolean();
     }
 
     /**
