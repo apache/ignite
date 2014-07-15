@@ -32,15 +32,6 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
         throws GridException {
-        InputFormat inFormat;
-
-        try {
-            inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), hadoopContext().getConfiguration());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
-
         GridHadoopInputSplit split = info().inputSplit();
 
         InputSplit nativeSplit;
@@ -59,6 +50,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         Exception err = null;
 
         try {
+            InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), hadoopContext().getConfiguration());
+
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
 
             reader.initialize(nativeSplit, hadoopContext());

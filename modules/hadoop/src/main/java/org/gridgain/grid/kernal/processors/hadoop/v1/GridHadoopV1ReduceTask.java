@@ -41,7 +41,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.getTaskConf());
+        JobConf jobConf = jobImpl.getTaskConf();
 
         GridHadoopTaskInput input = taskCtx.input();
 
@@ -52,9 +52,10 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
                 jobImpl.attemptId(info()));
 
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
-                    jobConf);
+                jobConf);
 
             assert reducer != null;
+
             try {
                 while (input.next()) {
                     if (isCancelled())

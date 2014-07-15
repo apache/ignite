@@ -59,8 +59,8 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
      * @param ctx Context for IO operations.
      * @param taskAttemptID Task execution id.
      */
-    public GridHadoopV2Context(Configuration cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
-        super(new JobConf(cfg), taskAttemptID.getJobID());
+    public GridHadoopV2Context(JobConf cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
+        super(cfg, taskAttemptID.getJobID());
 
         this.taskAttemptID = taskAttemptID;
 

@@ -97,6 +97,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private Comparator<?> reduceGrpComp;
 
+    /** Separate JobConf for each task. */
     private ThreadLocal<JobConf> taskConf = new ThreadLocal<>();
 
     /**
@@ -139,62 +140,53 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
         JobConf cfg = ctx.getJobConf();
 
-//        ClassLoader prevClsLdr = Thread.currentThread().getContextClassLoader();
+        String jobDirPath = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
-//        Thread.currentThread().setContextClassLoader(cfg.getClassLoader());
+        if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
+            // Assume that we have needed classes and try to generate input splits ourself.
+            if (useNewMapper)
+                return GridHadoopV2Splitter.splitJob(ctx);
+            else
+                return GridHadoopV1Splitter.splitJob(cfg);
+        }
 
-        try {
-            String jobDirPath = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+        Path jobDir = new Path(jobDirPath);
 
-            if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
-                // Assume that we have needed classes and try to generate input splits ourself.
-                if (useNewMapper)
-                    return GridHadoopV2Splitter.splitJob(ctx);
-                else
-                    return GridHadoopV1Splitter.splitJob(cfg);
-            }
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), cfg)) {
+            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, cfg, jobDir);
 
-            Path jobDir = new Path(jobDirPath);
+            if (F.isEmpty(metaInfos))
+                throw new GridException("No input splits found.");
 
-            try (FileSystem fs = FileSystem.get(jobDir.toUri(), cfg)) {
-                JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, cfg, jobDir);
+            Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
 
-                if (F.isEmpty(metaInfos))
-                    throw new GridException("No input splits found.");
+            try (FSDataInputStream in = fs.open(splitsFile)) {
+                Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
 
-                Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
+                for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
+                    long off = metaInfo.getStartOffset();
 
-                try (FSDataInputStream in = fs.open(splitsFile)) {
-                    Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
+                    String[] hosts = metaInfo.getLocations();
 
-                    for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
-                        long off = metaInfo.getStartOffset();
+                    Class<?> cls = readSplitClass(in, off);
 
-                        String[] hosts = metaInfo.getLocations();
+                    GridHadoopFileBlock block = null;
 
-                        Class<?> cls = readSplitClass(in, off);
+                    if (cls != null) {
+                        block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
 
-                        GridHadoopFileBlock block = null;
-
-                        if (cls != null) {
-                            block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
-
-                            if (block == null)
-                                block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
-                        }
-
-                        res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
+                        if (block == null)
+                            block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
                     }
 
-                    return res;
+                    res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
                 }
-            }
-            catch (IOException e) {
-                throw new GridException(e);
+
+                return res;
             }
         }
-        finally {
-//            Thread.currentThread().setContextClassLoader(prevClsLdr);
+        catch (IOException e) {
+            throw new GridException(e);
         }
     }
 

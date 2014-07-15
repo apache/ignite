@@ -45,7 +45,7 @@ public class GridHadoopV2JobResourceManager {
     private File jobLocDir;
 
     /** Class path list. */
-    private List<URL> clsPath = new ArrayList<>();
+    private Collection<URL> clsPath = new ArrayList<>();
 
     /** List of local resources. */
     private Collection<File> rsrcList = new ArrayList<>();
@@ -232,7 +232,7 @@ public class GridHadoopV2JobResourceManager {
 
     /**
      * Removes temporary working directory is created for job execution.
-     * @param deleteJobLocDir
+     * @param deleteJobLocDir {@code true} If need to delete job local directory.
      */
     public void cleanupJobEnvironment(boolean deleteJobLocDir) {
         ClassLoaderWrapper jobLdr = (ClassLoaderWrapper)ctx.getJobConf().getClassLoader();
@@ -254,7 +254,10 @@ public class GridHadoopV2JobResourceManager {
         return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
-
+    /**
+     * Creates new class loader consider to job configuration.
+     * @return
+     */
     private ClassLoaderWrapper createClassLoader() {
         URL[] urls = new URL[clsPath.size()];
 
@@ -264,6 +267,7 @@ public class GridHadoopV2JobResourceManager {
 
         return new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
     }
+
     /**
      * Prepares the environment for task execution.
      *
@@ -345,6 +349,7 @@ public class GridHadoopV2JobResourceManager {
      */
     public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         ClassLoader clsLdr = prevClsLdr.get();
+
         if (clsLdr != null) {
             ClassLoaderWrapper taskClsLdr = (ClassLoaderWrapper)Thread.currentThread().getContextClassLoader();
 
@@ -432,5 +437,4 @@ public class GridHadoopV2JobResourceManager {
             return delegate.findResources(name);
         }
     }
-
 }
