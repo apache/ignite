@@ -17,6 +17,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.ENT;
+
 /**
  * Collects security information from node.
  */
@@ -46,7 +48,10 @@ public class VisorSecurityCollectorTask extends VisorOneNodeTask<UUID, Collectio
 
         /** {@inheritDoc} */
         @Override protected Collection<GridSecuritySubject> run(UUID nodeToCollect) throws GridException {
-            return g.security().authenticatedSubjects();
+            if (ENT)
+                return g.security().authenticatedSubjects();
+            else
+                return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
