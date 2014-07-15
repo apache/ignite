@@ -949,6 +949,28 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInet6Address() throws Exception {
+        final InetAddress address = Inet6Address.getByAddress(new byte[16]);
+
+        assertEquals(address, marshalUnmarshal(address));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testPutFieldsWithDefaultWriteObject() throws Exception {
+        try {
+            marshalUnmarshal(new CustomWriteObjectMethodObject("test"));
+        }
+        catch (IOException e) {
+            assert e.getCause() instanceof NotActiveException;
+        }
+    }
+
+    /**
      * Marshals and unmarshals object.
      *
      * @param obj Original object.
@@ -2032,5 +2054,32 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         /** */
         C
+    }
+
+    /**
+     * Class with custom serialization method which at the beginning invokes
+     * {@link ObjectOutputStream#defaultWriteObject()} and {@link ObjectOutputStream#putFields()} then.
+     */
+    public static class CustomWriteObjectMethodObject implements Serializable {
+        /** */
+        private final String name;
+
+        /**
+         * Creates new instance.
+         * @param name Object name.
+         */
+        public CustomWriteObjectMethodObject(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            stream.defaultWriteObject();
+
+            ObjectOutputStream.PutField fields = stream.putFields();
+            fields.put("name", "test");
+
+            stream.writeFields();
+        }
     }
 }
