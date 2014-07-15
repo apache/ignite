@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.cache.affinity.fair.*;
+import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
@@ -151,6 +153,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        if (cfg.getCacheMode() == REPLICATED)
+            cfg.setBackups(Integer.MAX_VALUE);
+
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
@@ -252,19 +257,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void validate(GridConfiguration c, GridCacheConfiguration cc) throws GridException {
         if (cc.getCacheMode() == REPLICATED) {
-            if (!(cc.getAffinity() instanceof GridCacheConsistentHashAffinityFunction))
-                throw new GridException("REPLICATED cache can be started only with GridCacheConsistentHashAffinityFunction" +
-                    " [cacheName=" + cc.getName() + ", affinity=" + cc.getAffinity().getClass().getName() + ']');
+            if (cc.getAffinity() instanceof GridCachePartitionFairAffinity)
+                throw new GridException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
+                    " [cacheName=" + cc.getName() + ']');
 
-            GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cc.getAffinity();
+            if (cc.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cc.getAffinity();
 
-            if (cc.getBackups() != Integer.MAX_VALUE)
-                throw new GridException("For REPLICATED cache number of backups in GridCacheCconfiguration must " +
-                    "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() + ", backups=" + cc.getBackups() + ']');
+                if (aff.isExcludeNeighbors())
+                    throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in " +
+                        "GridCacheConsistentHashAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
+            }
 
-            if (aff.isExcludeNeighbors())
-                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCacheConsistentHashAffinityFunction " +
-                    "cannot be set [cacheName=" + cc.getName() + ']');
+            if (cc.getAffinity() instanceof GridCacheRendezvousAffinityFunction) {
+                GridCacheRendezvousAffinityFunction aff = (GridCacheRendezvousAffinityFunction)cc.getAffinity();
+
+                if (aff.isExcludeNeighbors())
+                    throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in " +
+                        "GridCacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
+            }
 
             if (cc.getDistributionMode() == NEAR_PARTITIONED) {
                 U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
