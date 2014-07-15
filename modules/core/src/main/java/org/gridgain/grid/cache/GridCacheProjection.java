@@ -829,7 +829,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public GridFuture<Boolean> putxIfAbsentAsync(K key, V val);
 
     /**
-     * Stores given key-value pair in cache only if if there is a previous mapping for it.
+     * Stores given key-value pair in cache only if there is a previous mapping for it.
      * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
@@ -859,7 +859,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     @Nullable public V replace(K key, V val) throws GridException;
 
     /**
-     * Asynchronously stores given key-value pair in cache only if if there is a previous mapping for it. If cache
+     * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.In case of
      * {@link GridCacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
      * which in its turn may load the value from the swap storage, and consecutively, if it's not in swap,
@@ -1470,10 +1470,28 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <p>
      * GridGain will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
+     * <p>
+     * This method is identical to calling {@link #globalClearAll(long) globalClearAll(0)}.
      *
      * @throws GridException In case of cache could not be cleared on any of the nodes.
+     * @deprecated Deprecated in favor of {@link #globalClearAll(long)} method.
      */
+    @Deprecated
     public void globalClearAll() throws GridException;
+
+    /**
+     * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
+     * nodes and local node, as opposed to {@link GridCacheProjection#clearAll()} method which only
+     * clears local node's cache.
+     * <p>
+     * GridGain will make the best attempt to clear caches on all nodes. If some caches
+     * could not be cleared, then exception will be thrown.
+     *
+     * @param timeout Timeout for clear all task in milliseconds (0 for never).
+     *      Set it to larger value for large caches.
+     * @throws GridException In case of cache could not be cleared on any of the nodes.
+     */
+    public void globalClearAll(long timeout) throws GridException;
 
     /**
      * Clears serialized value bytes from entry (if any) leaving only object representation.
