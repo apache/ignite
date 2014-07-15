@@ -53,7 +53,7 @@ public interface GridHadoop {
      *
      * @param jobId Job ID to get counters for.
      * @return Job counters object.
-     * @throws GridException if failed.
+     * @throws GridException If failed.
      */
     public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException;
 

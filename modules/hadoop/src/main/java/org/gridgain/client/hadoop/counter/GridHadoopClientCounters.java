@@ -134,7 +134,7 @@ public class GridHadoopClientCounters extends Counters {
 
     /** {@inheritDoc} */
     @Override public void setWriteAllCounters(boolean send) {
-        throw new UnsupportedOperationException("not implemented");
+        // No-op.
     }
 
     /** {@inheritDoc} */

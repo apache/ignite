@@ -20,13 +20,19 @@ import java.util.*;
  */
 class GridHadoopClientCounterGroup implements CounterGroup {
     /** Counters. */
-    private final GridHadoopClientCounters counters;
+    private final GridHadoopClientCounters cntrs;
 
     /** Group name. */
     private final String name;
 
-    GridHadoopClientCounterGroup(GridHadoopClientCounters counters, String name) {
-        this.counters = counters;
+    /**
+     * Creates new instance.
+     *
+     * @param cntrs Client counters instance.
+     * @param name Group name.
+     */
+    GridHadoopClientCounterGroup(GridHadoopClientCounters cntrs, String name) {
+        this.cntrs = cntrs;
         this.name = name;
     }
 
@@ -52,36 +58,37 @@ class GridHadoopClientCounterGroup implements CounterGroup {
 
     /** {@inheritDoc} */
     @Override public Counter addCounter(String name, String displayName, long value) {
-        final Counter counter = counters.findCounter(this.name, name);
+        final Counter counter = cntrs.findCounter(this.name, name);
+
         counter.setValue(value);
+
         return counter;
     }
 
     /** {@inheritDoc} */
     @Override public Counter findCounter(String counterName, String displayName) {
-        return counters.findCounter(name, counterName);
+        return cntrs.findCounter(name, counterName);
     }
 
     /** {@inheritDoc} */
     @Override public Counter findCounter(String counterName, boolean create) {
-        return counters.findCounter(name, counterName, create);
+        return cntrs.findCounter(name, counterName, create);
     }
 
     /** {@inheritDoc} */
     @Override public Counter findCounter(String counterName) {
-        return counters.findCounter(name, counterName);
+        return cntrs.findCounter(name, counterName);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return counters.groupSize(name);
+        return cntrs.groupSize(name);
     }
 
     /** {@inheritDoc} */
     @Override public void incrAllCounters(CounterGroupBase<Counter> rightGroup) {
-        for (final Counter counter : rightGroup) {
-            counters.findCounter(name, counter.getName()).increment(counter.getValue());
-        }
+        for (final Counter counter : rightGroup)
+            cntrs.findCounter(name, counter.getName()).increment(counter.getValue());
     }
 
     /** {@inheritDoc} */
@@ -91,7 +98,7 @@ class GridHadoopClientCounterGroup implements CounterGroup {
 
     /** {@inheritDoc} */
     @Override public Iterator<Counter> iterator() {
-        return counters.iterateGroup(name);
+        return cntrs.iterateGroup(name);
     }
 
     /** {@inheritDoc} */

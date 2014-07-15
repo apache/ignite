@@ -921,6 +921,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param jobId Job identifier.
      * @return Job counters or {@code null} if job cannot be found.
+     * @throws GridException If failed.
      */
     @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
         if (!busyLock.tryReadLock())

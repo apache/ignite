@@ -55,6 +55,15 @@ public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable 
         this.val = val;
     }
 
+    /**
+     * Copy constructor.
+     *
+     * @param cntr Counter to copy.
+     */
+    public GridHadoopCounterImpl(GridHadoopCounter cntr) {
+        this(cntr.group(), cntr.name(), cntr.value());
+    }
+
     /** {@inheritDoc} */
     @Override public String name() {
         return name;

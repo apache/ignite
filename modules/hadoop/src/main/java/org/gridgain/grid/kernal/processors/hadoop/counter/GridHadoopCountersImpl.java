@@ -31,7 +31,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * Default constructor. Creates new instance without counters.
      */
     public GridHadoopCountersImpl() {
-        this.cntrsMap = new HashMap<>(MINIMAL_CAPACITY);
+        cntrsMap = new HashMap<>(MINIMAL_CAPACITY);
     }
 
     /**
@@ -40,15 +40,9 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * @param cntrs Counters to store.
      */
     public GridHadoopCountersImpl(Collection<GridHadoopCounter> cntrs) {
-        this.cntrsMap =
-            new HashMap<>(Math.max(MINIMAL_CAPACITY, cntrs.size()));
+        cntrsMap = new HashMap<>(Math.max(MINIMAL_CAPACITY, cntrs.size()));
 
-        List<GridHadoopCounter> copy = new ArrayList<>(cntrs.size());
-
-        for (GridHadoopCounter cntr : cntrs)
-            copy.add(new GridHadoopCounterImpl(cntr.group(), cntr.name(), cntr.value()));
-
-        addCounters(copy);
+        addCounters(cntrs, true);
     }
 
     /**
@@ -64,12 +58,13 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * Adds counters collection in addition to existing counters.
      *
      * @param cntrs Counters to add.
+     * @param copy Whether to copy counters or not.
      */
-    private void addCounters(Collection<GridHadoopCounter> cntrs) {
+    private void addCounters(Collection<GridHadoopCounter> cntrs, boolean copy) {
         assert cntrs != null;
 
-        for (GridHadoopCounter counter : cntrs)
-            cntrsMap.put(new T2<>(counter.group(), counter.name()), counter);
+        for (GridHadoopCounter cntr : cntrs)
+            cntrsMap.put(new T2<>(cntr.group(), cntr.name()), copy ? new GridHadoopCounterImpl(cntr) : cntr);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +101,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in)
         throws IOException, ClassNotFoundException {
-        addCounters(U.<GridHadoopCounter>readCollection(in));
+        addCounters(U.<GridHadoopCounter>readCollection(in), false);
     }
 
     /** {@inheritDoc} */
