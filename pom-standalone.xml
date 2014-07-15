@@ -44,6 +44,7 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
+        <module>modules/visor-trial</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -781,7 +782,11 @@
                                 </fileset>
 
                                 <fileset>
-                                    <directory>bin/include/gridgain-visor-console</directory>
+                                    <directory>bin/include/visorcmd</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/visorui</directory>
                                 </fileset>
                             </filesets>
                         </configuration>
