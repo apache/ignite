@@ -991,6 +991,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void globalClearAll(long timeout) throws GridException {
+        cache.globalClearAll(timeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean clear(K key) {
         return cache.clear0(key, entryFilter(true));
     }
