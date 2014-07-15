@@ -1,5 +1,6 @@
 package org.gridgain.examples.compute;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
@@ -9,7 +10,7 @@ import java.util.*;
 /**
  * Demonstrates a simple use of GridGain grid with {@link GridComputeTaskSplitAdapter}.
  * <p>
- * Phrase passed as task argument is split into jobs eahc taking one word. Then jobs are distributed among
+ * Phrase passed as task argument is split into jobs each taking one word. Then jobs are distributed among
  * grid nodes. Each node computes word length and returns result to master node where total phrase length
  * is calculated on reduce stage.
  * <p>

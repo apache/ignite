@@ -57,19 +57,23 @@ public class GridClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTe
 
         c.setLocalHost(getTestResources().getLocalHost());
 
-        c.setRestEnabled(true);
+        assert c.getClientConnectionConfiguration() == null;
 
-        c.setRestTcpPort(REST_TCP_PORT);
-        c.setRestTcpSslEnabled(true);
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
-        c.setRestTcpSslClientAuth(checkClient);
-        c.setRestTcpSslClientAuth(checkClient);
+        clientCfg.setRestTcpPort(REST_TCP_PORT);
+        clientCfg.setRestTcpSslEnabled(true);
+
+        clientCfg.setRestTcpSslClientAuth(checkClient);
+        clientCfg.setRestTcpSslClientAuth(checkClient);
 
         GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setTrustManagers(srvTrustMgr);
 
-        c.setRestTcpSslContextFactory(factory);
+        clientCfg.setRestTcpSslContextFactory(factory);
+
+        c.setClientConnectionConfiguration(clientCfg);
 
         return c;
     }

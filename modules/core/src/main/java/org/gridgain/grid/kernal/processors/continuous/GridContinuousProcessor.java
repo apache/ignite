@@ -357,7 +357,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
                 // Handle peer deployment for projection predicate.
-                if (prjPred != null) {
+                if (prjPred != null && !U.isGrid(prjPred.getClass())) {
                     Class cls = U.detectClass(prjPred);
 
                     String clsName = cls.getName();
@@ -886,6 +886,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (doRegister) {
             if (interval > 0) {
                 GridThread checker = new GridThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
+                    @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
 
@@ -1063,7 +1064,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Local routine info.
      */
-    private static class LocalRoutineInfo {
+    static class LocalRoutineInfo {
         /** Projection predicate. */
         private final GridPredicate<GridNode> prjPred;
 
@@ -1092,6 +1093,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+        }
+
+        /**
+         * @return Handler.
+         */
+        GridContinuousHandler handler() {
+            return hnd;
         }
     }
 
@@ -1321,6 +1329,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             boolean b = in.readBoolean();
 
@@ -1465,6 +1474,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             routineId = U.readUuid(in);
             prjPred = (GridPredicate<GridNode>)in.readObject();

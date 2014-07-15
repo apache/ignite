@@ -16,6 +16,7 @@ import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -104,6 +105,12 @@ public class GridClientConfiguration {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
+    /** Daemon flag. */
+    private boolean daemon;
+
+    /** Portable configuration. */
+    private GridPortableConfiguration portableCfg;
+
     /**
      * Creates default configuration.
      */
@@ -126,6 +133,7 @@ public class GridClientConfiguration {
         enableAttrsCache = cfg.isEnableAttributesCache();
         enableMetricsCache = cfg.isEnableMetricsCache();
         executor = cfg.getExecutorService();
+        marshaller = cfg.getMarshaller();
         maxConnIdleTime = cfg.getMaxConnectionIdleTime();
         pingInterval = cfg.getPingInterval();
         pingTimeout = cfg.getPingTimeout();
@@ -135,7 +143,9 @@ public class GridClientConfiguration {
         sslCtxFactory = cfg.getSslContextFactory();
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
+        daemon = cfg.isDaemon();
         marshaller = cfg.getMarshaller();
+        portableCfg = cfg.getPortableConfiguration();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -593,9 +603,8 @@ public class GridClientConfiguration {
      * Options, that can be used out-of-the-box:
      * <ul>
      *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
-     *     <li>{@code GridClientProtobufMarshaller} - marshaller, that uses
-     *       <a href="http://code.google.com/p/protobuf/">Google Protobuf</a>.</li>
-     *     <li>{@link GridClientJdkMarshaller} - default JDK marshaller (not recommended).</li>
+     *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
+     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
      *
      * @return A marshaller to use.
@@ -611,6 +620,24 @@ public class GridClientConfiguration {
      */
     public void setMarshaller(GridClientMarshaller marshaller) {
         this.marshaller = marshaller;
+    }
+
+    /**
+     * Gets portable configuration.
+     *
+     * @return Portable configuration.
+     */
+    public GridPortableConfiguration getPortableConfiguration() {
+        return portableCfg;
+    }
+
+    /**
+     * Sets portable configuration.
+     *
+     * @param portableCfg Portable configuration.
+     */
+    public void setPortableConfiguration(@Nullable GridPortableConfiguration portableCfg) {
+        this.portableCfg = portableCfg;
     }
 
     /**
@@ -810,5 +837,23 @@ public class GridClientConfiguration {
         }
 
         return exp.cast(obj);
+    }
+
+    /**
+     * Set the daemon flag value. Communication threads will be created as daemons if this flag is set.
+     *
+     * @param daemon Daemon flag.
+     */
+    public void setDaemon(boolean daemon) {
+        this.daemon = daemon;
+    }
+
+    /**
+     * Get the daemon flag.
+     *
+     * @return Daemon flag.
+     */
+    public boolean isDaemon() {
+        return daemon;
     }
 }

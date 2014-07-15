@@ -24,7 +24,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfNoArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
-                "\"HADOOP_LIB_DIR=hadoop2\" \"JVM_XOPTS=\" \"CONFIG=\"",
+            "\"JVM_XOPTS=\" \"CONFIG=\"",
             GridCommandLineTransformer.transform());
     }
 
@@ -94,7 +94,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfOnlyPathToConfigSpecified() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
-                "\"HADOOP_LIB_DIR=hadoop2\" \"JVM_XOPTS=\" \"CONFIG=c:\\qw.xml\"",
+            "\"JVM_XOPTS=\" \"CONFIG=c:\\qw.xml\"",
             GridCommandLineTransformer.transform("c:\\qw.xml"));
     }
 
@@ -104,9 +104,9 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfAllSupportedArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=1\" \"QUIET=-DGRIDGAIN_QUIET=false\" \"NO_PAUSE=1\" " +
-                "\"HADOOP_LIB_DIR=hadoop1\" \"JVM_XOPTS=-Xmx1g -Xms1m\" " +
-                "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
-            GridCommandLineTransformer.transform("-i", "-np", "-v", "-h1", "-J-Xmx1g", "-J-Xms1m",
-                "\"c:\\path to\\русский каталог\""));
+            "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
+            "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
+            GridCommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",
+            "\"c:\\path to\\русский каталог\""));
     }
 }

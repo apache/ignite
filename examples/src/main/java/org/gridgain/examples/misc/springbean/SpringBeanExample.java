@@ -9,7 +9,7 @@
 
 package org.gridgain.examples.misc.springbean;
 
-import org.gridgain.examples.compute.*;
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.springframework.context.support.*;
 

@@ -47,10 +47,7 @@ public class GridGgfsConfiguration {
     public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
-    public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
-
-    /** Default user's working directory. */
-    public static final GridGgfsPath DFLT_WORKING_DIR = new GridGgfsPath("/Users/" + DFLT_USER_NAME);
+    public static final boolean DFLT_FRAGMENTIZER_ENABLED = false;
 
     /** Default batch size for logging. */
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
@@ -109,8 +106,8 @@ public class GridGgfsConfiguration {
     /** Per node parallel operations. */
     private int perNodeParallelBatchCnt = DFLT_PER_NODE_PARALLEL_BATCH_CNT;
 
-    /** IPC endpoint config (in JSON format) to publish GGFS over. */
-    private String ipcEndpointCfg;
+    /** IPC endpoint properties to publish GGFS over. */
+    private Map<String, String> ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled = DFLT_IPC_ENDPOINT_ENABLED;
@@ -405,7 +402,7 @@ public class GridGgfsConfiguration {
     }
 
     /**
-     * Gets IPC endpoint configuration in JSON format. There are 2 different
+     * Gets map of IPC endpoint configuration properties. There are 2 different
      * types of endpoint supported: {@code shared-memory}, and {@code TCP}.
      * <p>
      * The following configuration properties are supported for {@code shared-memory}
@@ -429,28 +426,22 @@ public class GridGgfsConfiguration {
      *     </li>
      * </ul>
      * <p>
-     * Configuration examples:
-     * <ul>
-     *     <li>Shared memory: {@code {type:'shmem', port:10500}}</li>
-     *     <li>TCP loopback: {@code {type:'tcp', port:10500, host:'127.0.0.1'}}</li>
-     * </ul>
-     * <p>
      * Note that {@code shared-memory} approach is not supported on Windows environments.
      * In case GGFS is failed to bind to particular port, further attempts will be performed every 3 seconds.
      *
-     * @return IPC endpoint configuration in JSON format. In case the value is not set, defaults will be used. Default
+     * @return Map of IPC endpoint configuration properties. In case the value is not set, defaults will be used. Default
      * type for Windows is "tcp", for all other platforms - "shmem". Default port is {@link #DFLT_IPC_PORT}.
      */
-    @Nullable public String getIpcEndpointConfiguration() {
+    @Nullable public Map<String,String> getIpcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 
     /**
      * Sets IPC endpoint configuration to publish GGFS over.
      *
-     * @param ipcEndpointCfg IPC endpoint config (in JSON format).
+     * @param ipcEndpointCfg Map of IPC endpoint config properties.
      */
-    public void setIpcEndpointConfiguration(@Nullable String ipcEndpointCfg) {
+    public void setIpcEndpointConfiguration(@Nullable Map<String,String> ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;
     }
 

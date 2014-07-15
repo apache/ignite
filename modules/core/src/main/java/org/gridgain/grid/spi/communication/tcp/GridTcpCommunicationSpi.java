@@ -1730,7 +1730,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                        errs.addSuppressed(e);
+                        errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
 
                         break;
                     }
@@ -1762,7 +1762,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                    errs.addSuppressed(e);
+                    errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
 
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2 &&
@@ -1784,8 +1784,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote node (make sure that destination node is alive and " +
-                    "operating system firewall is disabled on local and remote host) " +
+                LT.warn(log, null, "Failed to connect to a remote node " +
+                    "(make sure that destination node is alive and " +
+                    "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
             throw errs;
