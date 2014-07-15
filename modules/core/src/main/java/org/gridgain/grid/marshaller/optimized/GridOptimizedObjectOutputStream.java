@@ -13,7 +13,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.*;
-import sun.misc.*;
 
 import java.io.*;
 import java.lang.reflect.*;
@@ -46,6 +45,9 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
 
     /** */
     private List<T2<GridOptimizedFieldType, Long>> curFields;
+
+    /** */
+    private Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private PutFieldImpl curPut;
@@ -139,6 +141,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         curObj = null;
         curFields = null;
         curPut = null;
+        curFieldInfoMap = null;
 
         if (obj == null)
             writeByte(NULL);
@@ -260,29 +263,33 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
      * Writes serializable object.
      *
      * @param obj Object.
-     * @param fieldOffs Field offsets.
      * @param mtds {@code writeObject} methods.
+     * @param fields class fields details.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void writeSerializable(Object obj, List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs, List<Method> mtds)
+    void writeSerializable(Object obj, List<Method> mtds, GridOptimizedClassDescriptor.Fields fields)
         throws IOException {
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
 
             if (mtd != null) {
                 curObj = obj;
-                curFields = fieldOffs.get(i);
+                curFields = fields.fieldOffs(i);
+                curFieldInfoMap = fields.fieldInfoMap(i);
 
                 try {
                     mtd.invoke(obj, this);
                 }
-                catch (IllegalAccessException | InvocationTargetException e) {
+                catch (IllegalAccessException e) {
                     throw new IOException(e);
+                }
+                catch (InvocationTargetException e) {
+                    throw new IOException(e.getCause());
                 }
             }
             else
-                writeFields(obj, fieldOffs.get(i));
+                writeFields(obj, fields.fieldOffs(i));
         }
     }
 
@@ -637,7 +644,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public ObjectOutputStream.PutField putFields() throws IOException {
         if (curObj == null)
-            throw new NotActiveException("Not in writeObject() call.");
+            throw new NotActiveException("Not in writeObject() call or fields already written.");
 
         if (curPut == null)
             curPut = new PutFieldImpl(this);
@@ -709,6 +716,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         curObj = null;
         curFields = null;
         curPut = null;
+        curFieldInfoMap = null;
     }
 
     /** {@inheritDoc} */
@@ -738,8 +746,8 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         /** Stream. */
         private final GridOptimizedObjectOutputStream out;
 
-        /** Class descriptor. */
-        private final GridOptimizedClassDescriptor desc;
+        /** Field info map. */
+        private final Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
         private final GridBiTuple<GridOptimizedFieldType, Object>[] objs;
@@ -749,12 +757,12 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
-        private PutFieldImpl(GridOptimizedObjectOutputStream out) throws IOException {
+        private PutFieldImpl(GridOptimizedObjectOutputStream out) {
             this.out = out;
 
-            desc = classDescriptor(out.curObj.getClass(), out.curObj);
+            fieldInfoMap = out.curFieldInfoMap;
 
-            objs = new GridBiTuple[desc.fieldsCount()];
+            objs = new GridBiTuple[fieldInfoMap.size()];
         }
 
         /** {@inheritDoc} */
@@ -815,7 +823,7 @@ class GridOptimizedObjectOutputStream extends ObjectOutputStream {
          * @param val Value.
          */
         private void value(String name, Object val) {
-            GridBiTuple<Integer, GridOptimizedFieldType> info = desc.fieldInfo(name);
+            GridBiTuple<Integer, GridOptimizedFieldType> info = fieldInfoMap.get(name);
 
             objs[info.get1()] = F.t(info.get2(), val);
         }

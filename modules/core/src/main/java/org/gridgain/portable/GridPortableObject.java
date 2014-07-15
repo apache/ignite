@@ -50,8 +50,9 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
      *
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
+     * @throws GridPortableException In case of error.
      */
-    public GridPortableObject<T> copy(@Nullable Map<String, Object> fields);
+    public GridPortableObject<T> copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
      * Copies this portable object.

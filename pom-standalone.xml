@@ -21,6 +21,7 @@
     <properties>
         <gridgain.version>6.2.0-rc3</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
+        <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
