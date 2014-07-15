@@ -12,10 +12,12 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 
+import java.io.*;
+
 /**
  * Child process initialization request.
  */
-public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
+public class GridHadoopPrepareForJobRequest implements GridHadoopMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,5 +73,21 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
      */
     public int reducers() {
         return reducers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobInfo);
+        out.writeBoolean(hasMappers);
+        out.writeInt(reducers);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobInfo = (GridHadoopJobInfo)in.readObject();
+        hasMappers = in.readBoolean();
+        reducers = in.readInt();
     }
 }

@@ -14,12 +14,13 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Message sent from node to child process to start task(s) execution.
  */
-public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
+public class GridHadoopTaskExecutionRequest implements GridHadoopMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,5 +79,19 @@ public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopTaskExecutionRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobInfo);
+        U.writeCollection(out, tasks);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobInfo = (GridHadoopJobInfo)in.readObject();
+        tasks = U.readCollection(in);
     }
 }

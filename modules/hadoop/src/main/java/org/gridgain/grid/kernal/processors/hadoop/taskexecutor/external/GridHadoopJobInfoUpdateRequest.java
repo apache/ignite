@@ -10,13 +10,14 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+
+import java.io.*;
 
 /**
  * Job info update request.
  */
-public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
+public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,5 +61,19 @@ public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
      */
     public GridHadoopProcessDescriptor[] reducersAddresses() {
         return reducersAddrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobPhase);
+        out.writeObject(reducersAddrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobPhase = (GridHadoopJobPhase)in.readObject();
+        reducersAddrs = (GridHadoopProcessDescriptor[])in.readObject();
     }
 }

@@ -14,10 +14,12 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
  * Task finished message. Sent when local task finishes execution.
  */
-public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
+public class GridHadoopTaskFinishedMessage implements GridHadoopMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,5 +55,17 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopTaskFinishedMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(taskInfo);
+        out.writeObject(status);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        taskInfo = (GridHadoopTaskInfo)in.readObject();
+        status = (GridHadoopTaskStatus)in.readObject();
     }
 }
