@@ -43,9 +43,7 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
 
         Configuration conf = job.getConfiguration();
 
-        conf.set("fs.default.name", ggfsScheme());
-        conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
-        conf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+        setupFileSystems(conf);
 
         FileInputFormat.setInputPaths(job, new Path(inFile));
         FileOutputFormat.setOutputPath(job, new Path(outFile));
@@ -61,6 +59,8 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
         GridHadoopV2Job gridHadoopJob = new GridHadoopV2Job(jobId, jobInfo, log);
 
         hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
+
+        gridHadoopJob.initialize(false, UUID.randomUUID());
 
         return gridHadoopJob;
     }

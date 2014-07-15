@@ -85,7 +85,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
             jobConf.setInt("fs.local.block.size", 65000);
 
             // File system coordinates.
-            setupFileSytems(jobConf);
+            setupFileSystems(jobConf);
 
             GridHadoopWordCount1.setTasksClasses(jobConf, !useNewAPI, !useNewAPI, !useNewAPI);
 

@@ -235,10 +235,11 @@ public class GridHadoopV2JobResourceManager {
      * @param deleteJobLocDir {@code true} If need to delete job local directory.
      */
     public void cleanupJobEnvironment(boolean deleteJobLocDir) {
-        ClassLoaderWrapper jobLdr = (ClassLoaderWrapper)ctx.getJobConf().getClassLoader();
+        if (!clsPath.isEmpty()) {
+            ClassLoaderWrapper jobLdr = (ClassLoaderWrapper)ctx.getJobConf().getClassLoader();
 
-        if (jobLdr != null)
             jobLdr.destroy();
+        }
 
         if (deleteJobLocDir && jobLocDir.exists())
             U.delete(jobLocDir);

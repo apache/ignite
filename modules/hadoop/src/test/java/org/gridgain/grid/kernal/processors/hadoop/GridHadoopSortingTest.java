@@ -78,7 +78,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         job.setMapperClass(Mapper.class);
         job.setNumReduceTasks(0);
 
-        setupFileSytems(job.getConfiguration());
+        setupFileSystems(job.getConfiguration());
 
         FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_INPUT));
 
@@ -92,7 +92,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         // Run main map-reduce job.
         job = Job.getInstance();
 
-        setupFileSytems(job.getConfiguration());
+        setupFileSystems(job.getConfiguration());
 
         job.getConfiguration().set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, JavaSerialization.class.getName() +
             "," + WritableSerialization.class.getName());
