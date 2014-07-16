@@ -863,7 +863,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             return;
                         }
 
-                        checkClearForceTransformBackups(req);
+                        checkClearForceTransformBackups(req, locked);
 
                         boolean hasNear = U.hasNearCache(node, name());
 
@@ -2054,16 +2054,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * sending transformed value to backups if at least one empty entry is found.
      *
      * @param req Near atomic update request.
+     * @param locked Already locked entries (from the request).
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest<K, V> req) {
+    private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest<K, V> req,
+        List<GridDhtCacheEntry<K, V>> locked) {
         if (ctx.isStoreEnabled() && req.operation() == TRANSFORM) {
-            List<K> keys = req.keys();
-
-            for (int i = 0; i < keys.size(); i++) {
-                GridDhtCacheEntry<K, V> entry = entryExx(keys.get(i), req.topologyVersion());
-
-                if (!entry.hasValue()) {
+            for (int i = 0; i < locked.size(); i++) {
+                if (!locked.get(i).hasValue()) {
                     req.forceTransformBackups(false);
 
                     return;
