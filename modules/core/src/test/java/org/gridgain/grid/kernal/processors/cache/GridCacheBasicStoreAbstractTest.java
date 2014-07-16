@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -19,8 +20,12 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -73,12 +78,21 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
+        cc.setDistributionMode(distributionMode());
+        cc.setPreloadMode(SYNC);
 
         cc.setStore(store);
 
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /**
+     * @return Distribution mode.
+     */
+    protected GridCacheDistributionMode distributionMode() {
+        return NEAR_PARTITIONED;
     }
 
     /**
@@ -112,6 +126,56 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         cache.get(300);
         assertEquals("load", store.getLastMethod());
+    }
+
+    /**
+     * @throws Exception If failed.
+     * TODO GG-8769 uncomment when fixed http://atlassian.gridgain.com/jira/browse/GG-8769
+     */
+    public void _testGetAndTransform() throws Exception {
+        final AtomicBoolean finish = new AtomicBoolean();
+
+        try {
+            startGrid(0);
+            startGrid(1);
+            startGrid(2);
+
+            final GridClosure<String, String> trans = new TransformClosure();
+
+            GridFuture<?> fut = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        GridCache<Integer, String> c = cache(ThreadLocalRandom.current().nextInt(3));
+
+                        while (!finish.get() && !Thread.currentThread().isInterrupted()) {
+                            c.get(ThreadLocalRandom.current().nextInt(100));
+                            c.put(ThreadLocalRandom.current().nextInt(100), "s");
+                            c.transform(
+                                ThreadLocalRandom.current().nextInt(100),
+                                trans);
+                        }
+
+                        return null;
+                    }
+                },
+                20);
+
+            Thread.sleep(15_000);
+
+            finish.set(true);
+
+            fut.get();
+        }
+        finally {
+            stopGrid(1);
+            stopGrid(2);
+            stopGrid(3);
+
+            while (!cache().isEmpty())
+                cache().globalClearAll(Long.MAX_VALUE);
+
+            store.reset();
+        }
     }
 
     /** @throws Exception If test fails. */
@@ -561,5 +625,13 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
     }
 
-
+    /**
+     *
+     */
+    private static class TransformClosure implements GridClosure<String, String> {
+        /** {@inheritDoc} */
+        @Override public String apply(String s) {
+            return "str";
+        }
+    }
 }
