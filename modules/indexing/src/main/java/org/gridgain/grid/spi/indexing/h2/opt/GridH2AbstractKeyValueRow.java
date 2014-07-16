@@ -29,16 +29,13 @@ import java.util.*;
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */
-    private static final int DEFAULT_COLUMNS_COUNT = 3;
+    private static final int DEFAULT_COLUMNS_COUNT = 2;
 
     /** Key column. */
     public static final int KEY_COL = 0;
 
     /** Value column. */
     public static final int VAL_COL = 1;
-
-    /** */
-    public static final int VAL_STR_IDX = 2;
 
     /** */
     protected final GridH2RowDescriptor desc;
@@ -73,7 +70,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param desc Row descriptor.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc) {
-        super(STATE_INSERTED, new Value[DEFAULT_COLUMNS_COUNT]);
+        super(new Value[DEFAULT_COLUMNS_COUNT]);
 
         this.desc = desc;
     }
@@ -201,15 +198,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
         if (col < DEFAULT_COLUMNS_COUNT) {
-            if (col == VAL_STR_IDX) {
-                Value v = getValue(VAL_COL);
-
-                if (v.getType() == Value.STRING)
-                    return v;
-
-                return ValueString.get(v.getString());
-            }
-
             Value v = super.getValue(col);
 
             if (col == VAL_COL) {

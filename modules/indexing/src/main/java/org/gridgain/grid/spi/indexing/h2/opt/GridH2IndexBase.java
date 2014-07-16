@@ -40,7 +40,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param keyCol Key column.
      * @param valCol Value column.
      */
-    public GridH2IndexBase(int keyCol, int valCol) {
+    protected GridH2IndexBase(int keyCol, int valCol) {
         this.keyCol = keyCol;
         this.valCol = valCol;
     }
@@ -69,10 +69,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Put row if absent.
      *
      * @param row Row.
-     * @param ifAbsent Put only if such a row does not exist.
-     * @return Existing row or null.
+     * @return Existing row or {@code null}.
      */
-    public abstract GridH2Row put(GridH2Row row, boolean ifAbsent);
+    public abstract GridH2Row put(GridH2Row row);
 
     /**
      * Remove row from index.

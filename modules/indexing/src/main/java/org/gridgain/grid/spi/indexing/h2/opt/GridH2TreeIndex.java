@@ -343,8 +343,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row put(GridH2Row row, boolean ifAbsent) {
-        return ifAbsent ? tree.putIfAbsent(row, row) : tree.put(row, row);
+    @Override public GridH2Row put(GridH2Row row) {
+        return tree.put(row, row);
     }
 
     /** {@inheritDoc} */

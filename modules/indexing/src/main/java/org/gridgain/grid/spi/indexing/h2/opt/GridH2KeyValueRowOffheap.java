@@ -32,7 +32,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     static {
         int cpus = Runtime.getRuntime().availableProcessors();
 
-        // Probability of contention is less than 5%. See http://en.wikipedia.org/wiki/Birthday_problem
         lock = new GridStripedLock(cpus * cpus * 8);
     }
 
@@ -40,10 +39,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     private static final int OFFSET_EXPIRATION = 4;
 
     /** */
-    private static final int OFFSET_STATE = OFFSET_EXPIRATION + 8;
-
-    /** */
-    private static final int OFFSET_VALUE_REF = OFFSET_STATE + 1;
+    private static final int OFFSET_VALUE_REF = OFFSET_EXPIRATION + 8;
 
     /** */
     private static final int OFFSET_KEY_SIZE = OFFSET_VALUE_REF + 8;
@@ -109,6 +105,21 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         desc.cache(this);
     }
 
+    /**
+     * @param ptr Pointer to get lock for.
+     * @return Locked lock, must be released in {@code finally} block.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    private static Lock lock(long ptr) {
+        assert (ptr & 7) == 0 : ptr; // Unsafe allocated pointers aligned.
+
+        Lock l = lock.getLock(ptr >>> 3);
+
+        l.lock();
+
+        return l;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override protected Value getOffheapValue(int col) {
@@ -128,9 +139,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
             bytes = mem.readBytes(p + OFFSET_KEY, size);
         }
         else if (col == VAL_COL) {
-            Lock l = lock.getLock(p);
-
-            l.lock();
+            Lock l = lock(p);
 
             GridUnsafeMemory.Operation op = mem.begin();
 
@@ -161,20 +170,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override protected byte refreshState() {
-        return desc.memory().readByteVolatile(ptr + OFFSET_STATE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized byte finishInsert(boolean success) {
-        byte s = super.finishInsert(success);
-
-        desc.memory().writeByteVolatile(ptr + OFFSET_STATE, s);
-
-        return s;
-    }
-
-    /** {@inheritDoc} */
     @Override public long pointer() {
         long p = ptr;
 
@@ -185,9 +180,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
     /** {@inheritDoc} */
     @Override public synchronized void onSwap() throws GridException {
-        Lock l = lock.getLock(ptr);
-
-        l.lock();
+        Lock l = lock(ptr);
 
         try {
             final long p = ptr + OFFSET_VALUE_REF;
@@ -233,9 +226,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
         assert p > 0 : p;
 
-        Lock l = lock.getLock(p);
-
-        l.lock();
+        Lock l = lock(p);
 
         try {
             GridUnsafeMemory mem = desc.memory();
@@ -288,7 +279,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
             // volatile write to tree node.
             mem.writeInt(p, 1);
             mem.writeLong(p + OFFSET_EXPIRATION, expirationTime);
-            mem.writeByte(p + OFFSET_STATE, (byte)0);
             mem.writeInt(p + OFFSET_KEY_SIZE, keySize);
             mem.writeBytes(p + OFFSET_KEY, data.getBytes(), 0, keySize);
 
