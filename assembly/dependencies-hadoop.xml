@@ -104,7 +104,7 @@
 
     <files>
         <file>
-            <source>target/gridgain-${gridgain.version}.jar</source>
+            <source>target/gridgain-core-${gridgain.version}.jar</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>
