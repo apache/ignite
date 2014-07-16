@@ -20,14 +20,16 @@ import java.util.*;
 /**
  * Message sent from node to child process to start task(s) execution.
  */
-public class GridHadoopTaskExecutionRequest implements GridHadoopMessage, Externalizable {
+public class GridHadoopTaskExecutionRequest implements GridHadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Job ID. */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /** Job info. */
+    @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
     /** Mappers. */
@@ -83,14 +85,17 @@ public class GridHadoopTaskExecutionRequest implements GridHadoopMessage, Extern
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(jobId);
+        jobId.writeExternal(out);
+
         out.writeObject(jobInfo);
         U.writeCollection(out, tasks);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        jobId = (GridHadoopJobId)in.readObject();
+        jobId = new GridHadoopJobId();
+        jobId.readExternal(in);
+
         jobInfo = (GridHadoopJobInfo)in.readObject();
         tasks = U.readCollection(in);
     }

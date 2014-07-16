@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Task finished message. Sent when local task finishes execution.
  */
-public class GridHadoopTaskFinishedMessage implements GridHadoopMessage, Externalizable {
+public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -30,10 +30,20 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage, Externa
     private GridHadoopTaskStatus status;
 
     /**
+     * Constructor required by {@link Externalizable}.
+     */
+    public GridHadoopTaskFinishedMessage() {
+        // No-op.
+    }
+
+    /**
      * @param taskInfo Finished task info.
      * @param status Task finish status.
      */
     public GridHadoopTaskFinishedMessage(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+        assert taskInfo != null;
+        assert status != null;
+
         this.taskInfo = taskInfo;
         this.status = status;
     }
@@ -59,13 +69,16 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage, Externa
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(taskInfo);
-        out.writeObject(status);
+        taskInfo.writeExternal(out);
+        status.writeExternal(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        taskInfo = (GridHadoopTaskInfo)in.readObject();
-        status = (GridHadoopTaskStatus)in.readObject();
+        taskInfo = new GridHadoopTaskInfo();
+        taskInfo.readExternal(in);
+
+        status = new GridHadoopTaskStatus();
+        status.readExternal(in);
     }
 }

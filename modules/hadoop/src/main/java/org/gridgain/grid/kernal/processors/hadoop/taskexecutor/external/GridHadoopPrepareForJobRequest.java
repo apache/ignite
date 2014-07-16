@@ -11,27 +11,40 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
  * Child process initialization request.
  */
-public class GridHadoopPrepareForJobRequest implements GridHadoopMessage, Externalizable {
+public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Job ID. */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /** Job info. */
+    @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
     /** Has mappers flag. */
+    @GridToStringInclude
     private boolean hasMappers;
 
     /** */
+    @GridToStringInclude
     private int reducers;
+
+    /**
+     * Constructor required by {@link Externalizable}.
+     */
+    public GridHadoopPrepareForJobRequest() {
+        // No-op.
+    }
 
     /**
      * @param jobId Job ID.
@@ -41,6 +54,8 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage, Extern
      */
     public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
         int reducers) {
+        assert jobId != null;
+
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.hasMappers = hasMappers;
@@ -77,7 +92,8 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage, Extern
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(jobId);
+        jobId.writeExternal(out);
+
         out.writeObject(jobInfo);
         out.writeBoolean(hasMappers);
         out.writeInt(reducers);
@@ -85,9 +101,16 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage, Extern
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        jobId = (GridHadoopJobId)in.readObject();
+        jobId = new GridHadoopJobId();
+        jobId.readExternal(in);
+
         jobInfo = (GridHadoopJobInfo)in.readObject();
         hasMappers = in.readBoolean();
         reducers = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopPrepareForJobRequest.class, this);
     }
 }
