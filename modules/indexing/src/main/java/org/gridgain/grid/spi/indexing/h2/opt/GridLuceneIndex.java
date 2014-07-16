@@ -33,9 +33,18 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi.*;
 
 /**
- *
+ * Lucene fulltext index.
  */
 public class GridLuceneIndex implements Closeable {
+    /** Field name for string representation of value. */
+    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
+
+    /** Field name for value version. */
+    public static final String VER_FIELD_NAME = "_gg_ver__";
+
+    /** Field name for value expiration time. */
+    public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
+
     /** */
     private final GridIndexingMarshaller marshaller;
 
