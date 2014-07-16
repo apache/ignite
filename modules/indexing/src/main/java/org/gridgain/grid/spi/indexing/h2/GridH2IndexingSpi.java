@@ -1984,8 +1984,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL,
-                offheap, tbl.indexColumn(0, ASCENDING)));
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -2020,7 +2019,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     }
 
                     if (idx.type() == SORTED)
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, offheap, cols));
+                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(new GridH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
@@ -2247,6 +2246,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         /** */
         private final int keyCols;
 
+        /** */
+        private final GridUnsafeGuard guard = new GridUnsafeGuard();
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -2279,6 +2281,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             keyType = keyAsObj ? Value.JAVA_OBJECT : DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridUnsafeGuard guard() {
+            return guard;
         }
 
         /** {@inheritDoc} */

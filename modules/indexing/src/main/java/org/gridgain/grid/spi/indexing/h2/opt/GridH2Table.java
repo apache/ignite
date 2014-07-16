@@ -143,7 +143,8 @@ public class GridH2Table extends TableBase {
 
         lock.readLock().lock();
 
-        GridUnsafeMemory.Operation op = mem == null ? null : mem.begin(); // Begin concurrent unsafe memory operation.
+        if (mem != null)
+            desc.guard().begin();
 
         try {
             row = pk.findOne(row);
@@ -162,7 +163,7 @@ public class GridH2Table extends TableBase {
             lock.readLock().unlock();
 
             if (mem != null)
-                mem.end(op);
+                desc.guard().end();
         }
     }
 
@@ -337,10 +338,8 @@ public class GridH2Table extends TableBase {
 
         lock.readLock().lock();
 
-        GridUnsafeMemory.Operation op = null;
-
         if (mem != null)
-            op = mem.begin();
+            desc.guard().begin();
 
         try {
             GridH2TreeIndex pk = pk();
@@ -396,7 +395,7 @@ public class GridH2Table extends TableBase {
             lock.readLock().unlock();
 
             if (mem != null)
-                mem.end(op);
+                desc.guard().end();
         }
     }
 
@@ -439,7 +438,7 @@ public class GridH2Table extends TableBase {
                 actualSnapshot = takeIndexesSnapshot(); // Allow read access while we are rebuilding indexes.
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
-                GridH2IndexBase newIdx = index(i).rebuild(memory);
+                GridH2IndexBase newIdx = index(i).rebuild();
 
                 idxs.set(i, newIdx);
 

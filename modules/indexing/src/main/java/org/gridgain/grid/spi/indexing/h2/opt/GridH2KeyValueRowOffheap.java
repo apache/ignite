@@ -141,7 +141,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         else if (col == VAL_COL) {
             Lock l = lock(p);
 
-            GridUnsafeMemory.Operation op = mem.begin();
+            desc.guard().begin();
 
             try {
                 long valPtr = mem.readLongVolatile(p + OFFSET_VALUE_REF);
@@ -156,7 +156,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
                 bytes = mem.readBytes(valPtr + OFFSET_VALUE, size);
             }
             finally {
-                mem.end(op);
+                desc.guard().end();
 
                 l.unlock();
             }
@@ -191,7 +191,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
             assert valPtr > 0: valPtr;
 
-            mem.finalizeLater(new Runnable() {
+            desc.guard().finalizeLater(new Runnable() {
                 @Override public void run() {
                     mem.casLong(p, valPtr, 0); // If it was unswapped concurrently we will not update.
 

@@ -95,4 +95,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param ptr Offheap pointer to remove from cache.
      */
     public void uncache(long ptr);
+
+    /**
+     * @return Guard.
+     */
+    public GridUnsafeGuard guard();
 }

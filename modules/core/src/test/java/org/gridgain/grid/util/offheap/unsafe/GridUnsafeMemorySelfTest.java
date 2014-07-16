@@ -226,6 +226,8 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
         final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+        final GridUnsafeGuard guard = new GridUnsafeGuard();
+
         GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
@@ -233,7 +235,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
                 while (!finished.get()) {
                     int idx = rnd.nextInt(ptrs.length());
 
-                    GridUnsafeMemory.Operation op = mem.begin();
+                    guard.begin();
 
                     try {
                         long old;
@@ -248,18 +250,6 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
                                 //noinspection fallthrough
                             case 1:
-                                old = ptrs.getAndSet(idx, ptr);
-
-                                assert old >= 0 : old;
-
-                                if (old != 0) {
-                                    assertEquals(-1, mem.readLong(old));
-
-                                    mem.releaseLater(old, 8);
-                                }
-
-                                break;
-
                             case 2:
                                 old = ptrs.getAndSet(idx, ptr);
 
@@ -268,7 +258,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
                                 if (old != 0) {
                                     assertEquals(-1, mem.readLong(old));
 
-                                    mem.releaseLater(new CmpMem(old, mem));
+                                    guard.releaseLater(new CmpMem(old, mem));
                                 }
 
                                 break;
@@ -283,7 +273,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
                         }
                     }
                     finally {
-                        mem.end(op);
+                        guard.end();
                     }
                 }
 

@@ -33,8 +33,10 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
 
         final GridUnsafeMemory mem = new GridUnsafeMemory(25000);
 
+        final GridUnsafeGuard guard = new GridUnsafeGuard();
+
         final GridOffHeapSnapTreeMap<TestPointer, TestPointer> m = new GridOffHeapSnapTreeMap<>(
-            f, f, mem);
+            f, f, mem, guard);
 
         final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -57,7 +59,7 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
 
                         lock.readLock().lock();
 
-                        GridUnsafeMemory.Operation op = mem.begin();
+                        guard.begin();
 
                         try {
                             GridOffHeapSmartPointer res = put ? m.put(fx, fx) : m.remove(fx);
@@ -65,7 +67,7 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
                         finally {
                             lock.readLock().unlock();
 
-                            mem.end(op);
+                            guard.end();
                         }
 
                         if (i % 100 == 0) {
@@ -113,14 +115,14 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
             if (j % 2 == 0)
                 continue;
 
-            GridUnsafeMemory.Operation op = mem.begin();
+            guard.begin();
 
             try {
                 for (int i = 1; i <= max; i++)
                     m.remove(f.createPointer(i));
             }
             finally {
-                mem.end(op);
+                guard.end();
             }
 
             assertEquals(0, m.size());
@@ -244,6 +246,7 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
                 ptrs[i] = new TestPointer(i + 1);
         }
 
+        /** {@inheritDoc} */
         @Override public TestPointer createPointer(long ptr) {
             assert ptr > 0 && ptr <= ptrs.length : ptr + " " + Long.toBinaryString(ptr);
 
