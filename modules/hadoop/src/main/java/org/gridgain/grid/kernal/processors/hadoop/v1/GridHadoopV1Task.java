@@ -13,9 +13,12 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.GridHadoopTaskCancelledException;
-import org.jetbrains.annotations.Nullable;
+import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext;
+import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.text.*;
 
 /**
@@ -29,9 +32,10 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * Constructor.
      *
      * @param taskInfo Task info.
+     * @param log Logger.
      */
-    protected GridHadoopV1Task(GridHadoopTaskInfo taskInfo) {
-        super(taskInfo);
+    protected GridHadoopV1Task(GridHadoopTaskInfo taskInfo, GridLogger log) {
+        super(taskInfo, log);
     }
 
     /**
@@ -58,7 +62,7 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * @return Collector.
      * @throws IOException In case of IO exception.
      */
-    protected GridHadoopV1OutputCollector collector(JobConf jobConf, GridHadoopTaskContext taskCtx,
+    protected GridHadoopV1OutputCollector collector(JobConf jobConf, GridHadoopV2TaskContext taskCtx,
         boolean directWrite, @Nullable String fileName, TaskAttemptID attempt) throws IOException {
         GridHadoopV1OutputCollector collector = new GridHadoopV1OutputCollector(jobConf, taskCtx, directWrite,
             fileName, attempt) {
@@ -84,5 +88,19 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
     /** Returns true if task is cancelled. */
     public boolean isCancelled() {
         return cancelled;
+    }
+
+    /**
+     * Closes the resource with exceptions suppression.
+     *
+     * @param rsrc Closeable resource.
+     */
+    protected void closeSafe(@Nullable Closeable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            } catch (Throwable e) {
+                U.error(log(), "Error on close resource of " + info(), e);
+            }
     }
 }

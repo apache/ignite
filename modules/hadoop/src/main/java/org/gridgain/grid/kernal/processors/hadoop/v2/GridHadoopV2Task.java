@@ -13,6 +13,8 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,31 +30,33 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Constructor.
      *
      * @param taskInfo Task info.
+     * @param log Logger.
      */
-    protected GridHadoopV2Task(GridHadoopTaskInfo taskInfo) {
-        super(taskInfo);
+    protected GridHadoopV2Task(GridHadoopTaskInfo taskInfo, GridLogger log) {
+        super(taskInfo, log);
     }
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        hadoopCtx = new GridHadoopV2Context(jobImpl.getTaskConf(), taskCtx, jobImpl.attemptId(info()));
+        //JobContext jobCtx = jobImpl.hadoopJobContext();
 
-        run0(jobImpl, jobCtx, taskCtx);
+        hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
+
+        run0(jobImpl, ctx);
     }
 
     /**
      * Internal task routine.
      *
      * @param job Job.
-     * @param jobCtx Job context.
      * @param taskCtx Task context.
      * @throws GridException
      */
-    protected abstract void run0(GridHadoopV2Job job, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx)
         throws GridException;
 
     /**
@@ -107,14 +111,22 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     /**
      * Close writer.
      *
-     * @throws IOException In case of IO exception.
-     * @throws InterruptedException In case of interrupt.
+     * @param suppressE {@code true} If need to suppress any exception.
+     * @throws Exception If fails.
      */
-    protected void closeWriter() throws IOException, InterruptedException {
+    protected void closeWriter(boolean suppressE) throws Exception {
         RecordWriter writer = hadoopCtx.writer();
 
-        if (writer != null)
-            writer.close(hadoopCtx);
+        try {
+            if (writer != null)
+                writer.close(hadoopCtx);
+        }
+        catch (Throwable e) {
+            if (suppressE)
+                U.error(log(), "Error on close writer of " + info(), e);
+            else
+                throw e;
+        }
     }
 
     /**

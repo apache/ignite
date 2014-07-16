@@ -84,6 +84,18 @@ public interface GridHadoopJob {
     @Nullable public Comparator<?> combineGroupComparator();
 
     /**
+     * Creates context for task execution.
+     *
+     * @param info Task info.
+     * @param in Task input.
+     * @param out Task output.
+     * @return Task Context.
+     * @throws GridException If failed.
+     */
+    public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info, GridHadoopTaskInput in,
+        GridHadoopTaskOutput out) throws GridException;
+
+    /**
      * Creates task to be executed.
      *
      * @param taskInfo Task info.

@@ -9,11 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.logger.GridLogger;
 
 /**
  * Hadoop reduce task implementation for v2 API.
@@ -24,22 +26,24 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /**
      * Constructor.
-     *
-     * @param taskInfo Task info.
+     *  @param taskInfo Task info.
      * @param reduce {@code True} if reduce, {@code false} if combine.
+     * @param log Logger.
      */
-    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
-        super(taskInfo);
+    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce, GridLogger log) {
+        super(taskInfo, log);
 
         this.reduce = reduce;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
         throws GridException {
         OutputFormat outputFormat = null;
         Exception err = null;
+
+        JobContextImpl jobCtx = taskCtx.jobContext();
 
         try {
             outputFormat = reduce || !jobImpl.info().hasReducer() ? prepareWriter(jobCtx) : null;
@@ -47,11 +51,18 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
                 jobCtx.getConfiguration());
 
+            boolean successful = false;
+
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
+
+                successful = true;
+
+                closeWriter(false);
             }
             finally {
-                closeWriter();
+                if (!successful)
+                    closeWriter(true);
             }
 
             commit(outputFormat);

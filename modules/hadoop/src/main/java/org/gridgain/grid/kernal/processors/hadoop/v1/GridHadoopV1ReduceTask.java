@@ -15,7 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.logger.GridLogger;
 
 /**
  * Hadoop reduce task implementation for v1 API.
@@ -26,12 +26,12 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
     /**
      * Constructor.
-     *
-     * @param taskInfo Task info.
+     *  @param taskInfo Task info.
      * @param reduce {@code True} if reduce, {@code false} if combine.
+     * @param log Logger.
      */
-    public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
-        super(taskInfo);
+    public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce, GridLogger log) {
+        super(taskInfo, log);
 
         this.reduce = reduce;
     }
@@ -41,20 +41,24 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = jobImpl.getTaskConf();
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
+
+        JobConf jobConf = ctx.jobConf();
 
         GridHadoopTaskInput input = taskCtx.input();
 
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, reduce || !jobImpl.info().hasReducer(), fileName(),
+            collector = collector(jobConf, ctx, reduce || !jobImpl.info().hasReducer(), fileName(),
                 jobImpl.attemptId(info()));
 
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
                 jobConf);
 
             assert reducer != null;
+
+            boolean successful = false;
 
             try {
                 while (input.next()) {
@@ -63,9 +67,14 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
                     reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
                 }
+
+                successful = true;
+
+                reducer.close();
             }
             finally {
-                U.closeQuiet(reducer);
+                if (!successful)
+                    closeSafe(reducer);
 
                 collector.closeWriter();
             }
@@ -79,4 +88,5 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
             throw new GridException(e);
         }
     }
+
 }

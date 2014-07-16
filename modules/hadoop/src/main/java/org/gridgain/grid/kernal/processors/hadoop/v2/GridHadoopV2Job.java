@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -31,6 +32,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 
 /**
@@ -67,6 +70,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** Flag is set if new context-object code is used for running the combiner. */
     private final boolean useNewCombiner;
 
+    /** */
+    private final JobConf jobConf;
+
+    /** */
+    private final JobContextImpl jobContext;
+
     /** Logger. */
     private GridLogger log;
 
@@ -77,7 +86,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     protected GridHadoopDefaultJobInfo jobInfo;
 
     /** Hadoop native job context. */
-    protected JobContextImpl ctx;
+    //protected JobContextImpl ctx;
 
     /** */
     private JobID hadoopJobID;
@@ -97,9 +106,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private Comparator<?> reduceGrpComp;
 
-    /** Separate JobConf for each task. */
-    private ThreadLocal<JobConf> taskConf = new ThreadLocal<>();
-
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -115,15 +121,14 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        JobConf cfg = jobInfo.configuration();
+        jobConf = jobInfo.configuration();
+        jobContext = new JobContextImpl(jobConf, hadoopJobID);
 
-        ctx = new JobContextImpl(cfg, hadoopJobID);
+        GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
-        GridHadoopFileSystemsUtils.setupFileSystems(cfg);
-
-        useNewMapper = cfg.getUseNewMapper();
-        useNewReducer = cfg.getUseNewReducer();
-        useNewCombiner = cfg.getCombinerClass() == null;
+        useNewMapper = jobConf.getUseNewMapper();
+        useNewReducer = jobConf.getUseNewReducer();
+        useNewCombiner = jobConf.getCombinerClass() == null;
     }
 
     /** {@inheritDoc} */
@@ -138,22 +143,20 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-        JobConf cfg = ctx.getJobConf();
-
-        String jobDirPath = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+        String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
         if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
             // Assume that we have needed classes and try to generate input splits ourself.
             if (useNewMapper)
-                return GridHadoopV2Splitter.splitJob(ctx);
+                return GridHadoopV2Splitter.splitJob(jobContext);
             else
-                return GridHadoopV1Splitter.splitJob(cfg);
+                return GridHadoopV1Splitter.splitJob(jobConf);
         }
 
         Path jobDir = new Path(jobDirPath);
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), cfg)) {
-            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, cfg, jobDir);
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf)) {
+            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf, jobDir);
 
             if (F.isEmpty(metaInfos))
                 throw new GridException("No input splits found.");
@@ -203,7 +206,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         String clsName = Text.readString(in);
 
         try {
-            return ctx.getConfiguration().getClassByName(clsName);
+            return jobConf.getClassByName(clsName);
         }
         catch (ClassNotFoundException e) {
             throw new IOException(e);
@@ -217,16 +220,16 @@ public class GridHadoopV2Job implements GridHadoopJob {
      */
     @SuppressWarnings("unchecked")
     private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
-        Path jobDir = new Path(ctx.getConfiguration().get(MRJobConfig.MAPREDUCE_JOB_DIR));
+        Path jobDir = new Path(jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), ctx.getConfiguration());
+        try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf);
             FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
 
             Class<?> cls = readSplitClass(in, split.offset());
 
             assert cls != null;
 
-            Serialization serialization = new SerializationFactory(ctx.getJobConf()).getSerialization(cls);
+            Serialization serialization = new SerializationFactory(jobConf).getSerialization(cls);
 
             Deserializer deserializer = serialization.getDeserializer(cls);
 
@@ -251,28 +254,59 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info, GridHadoopTaskInput in,
+        GridHadoopTaskOutput out) throws GridException {
+
+        JobConf taskJobConf = new JobConf(jobInfo.configuration());
+
+        Collection<URL> clsPath = rsrcMgr.classPath();
+
+        if (!clsPath.isEmpty()) {
+            URL[] urls = new URL[clsPath.size()];
+
+            clsPath.toArray(urls);
+
+            taskJobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(urls), getClass().getClassLoader()));
+        }
+
+        JobContextImpl taskJobContext = new JobContextImpl(taskJobConf, hadoopJobID);
+
+        part = createPartitioner(taskJobContext);
+
+        sortComp = taskJobContext.getSortComparator();
+
+        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? taskJobContext.getCombinerKeyGroupingComparator() : null;
+
+        reduceGrpComp = taskJobContext.getGroupingComparator();
+
+        GridHadoopTaskContext taskCtx = new GridHadoopV2TaskContext(info, this, in, out, taskJobContext);
+
+        return taskCtx;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         boolean isAbort = taskInfo.type() == GridHadoopTaskType.ABORT;
 
         switch (taskInfo.type()) {
             case SETUP:
-                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo) : new GridHadoopV1SetupTask(taskInfo);
+                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo, log) : new GridHadoopV1SetupTask(taskInfo, log);
 
             case MAP:
-                return useNewMapper ? new GridHadoopV2MapTask(taskInfo) : new GridHadoopV1MapTask(taskInfo);
+                return useNewMapper ? new GridHadoopV2MapTask(taskInfo, log) : new GridHadoopV1MapTask(taskInfo, log);
 
             case REDUCE:
-                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo, true) :
-                    new GridHadoopV1ReduceTask(taskInfo, true);
+                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo, true, log) :
+                    new GridHadoopV1ReduceTask(taskInfo, true, log);
 
             case COMBINE:
-                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo, false) :
-                    new GridHadoopV1ReduceTask(taskInfo, false);
+                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo, false, log) :
+                    new GridHadoopV1ReduceTask(taskInfo, false, log);
 
             case COMMIT:
             case ABORT:
-                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort) :
-                    new GridHadoopV1CleanupTask(taskInfo, isAbort);
+                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort, log) :
+                    new GridHadoopV1CleanupTask(taskInfo, isAbort, log);
 
             default:
                 return null;
@@ -288,7 +322,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private GridHadoopSerialization getSerialization(Class<?> cls) throws GridException {
         A.notNull(cls, "cls");
 
-        SerializationFactory factory = new SerializationFactory(ctx.getJobConf());
+        SerializationFactory factory = new SerializationFactory(jobConf);
 
         Serialization<?> serialization = factory.getSerialization(cls);
 
@@ -303,12 +337,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return getSerialization(ctx.getMapOutputKeyClass());
+        return getSerialization(jobContext.getMapOutputKeyClass());
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return getSerialization(ctx.getMapOutputValueClass());
+        return getSerialization(jobContext.getMapOutputValueClass());
     }
 
     /** {@inheritDoc} */
@@ -357,14 +391,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @return Attempt ID.
      */
     public TaskAttemptID attemptId(GridHadoopTaskInfo taskInfo) {
-        TaskID tid = new TaskID(ctx.getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
+        TaskID tid = new TaskID(hadoopJobID, taskType(taskInfo.type()), taskInfo.taskNumber());
 
         return new TaskAttemptID(tid, taskInfo.attempt());
-    }
-
-    /** Hadoop native job context. */
-    public JobContext hadoopJobContext() {
-        return ctx;
     }
 
     /**
@@ -386,10 +415,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /**
      * Creates and initializes partitioner instance.
      *
+     * @param ctx Hadoop job context.
      * @return Partitioner.
      * @throws GridException If fails.
      */
-    private GridHadoopPartitioner createPartitioner() throws GridException {
+    private GridHadoopPartitioner createPartitioner(JobContextImpl ctx) throws GridException {
         Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
         if (partClsOld != null)
@@ -405,17 +435,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, ctx, locNodeId, log);
+        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobContext, locNodeId, log);
 
         rsrcMgr.prepareJobEnvironment(!external);
-
-        part = createPartitioner();
-
-        sortComp = ctx.getSortComparator();
-
-        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? ctx.getCombinerKeyGroupingComparator() : null;
-
-        reduceGrpComp = ctx.getGroupingComparator();
     }
 
     /** {@inheritDoc} */
@@ -426,17 +448,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        JobConf cfg = new JobConf(ctx.getJobConf());
-
-        taskConf.set(cfg);
-
-        rsrcMgr.prepareTaskEnvironment(info, cfg);
+        rsrcMgr.prepareTaskEnvironment(info, jobConf);
     }
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        taskConf.set(null);
-
         rsrcMgr.cleanupTaskEnvironment(info);
     }
 
@@ -446,7 +462,53 @@ public class GridHadoopV2Job implements GridHadoopJob {
             rsrcMgr.cleanupStagingDirectory();
     }
 
-    public JobConf getTaskConf() {
-        return taskConf.get();
+    /**
+     * Class loader wrapper.
+     */
+    private static class ClassLoaderWrapper extends ClassLoader {
+        /** */
+        private URLClassLoader delegate;
+
+        /**
+         * Makes classes available for GC.
+         */
+        public void destroy() {
+            delegate = null;
+        }
+
+        /**
+         * @param delegate Delegate.
+         */
+        private ClassLoaderWrapper(URLClassLoader delegate, ClassLoader parent) {
+            super(parent);
+
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            try {
+                return delegate.loadClass(name);
+            }
+            catch (ClassNotFoundException ignore) {
+                return super.loadClass(name);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public InputStream getResourceAsStream(String name) {
+            return delegate.getResourceAsStream(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public URL findResource(final String name) {
+            return delegate.findResource(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Enumeration<URL> findResources(final String name) throws IOException {
+            return delegate.findResources(name);
+        }
     }
+
 }

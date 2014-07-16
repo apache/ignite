@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.logger.GridLogger;
 
 import java.io.*;
 
@@ -25,9 +26,10 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      * @param abort Abort flag.
+     * @param log Logger.
      */
-    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort) {
-        super(taskInfo);
+    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort, GridLogger log) {
+        super(taskInfo, log);
 
         this.abort = abort;
     }

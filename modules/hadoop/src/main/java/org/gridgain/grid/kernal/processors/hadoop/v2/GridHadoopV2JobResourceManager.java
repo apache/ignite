@@ -53,9 +53,6 @@ public class GridHadoopV2JobResourceManager {
     /** Staging directory to delivery job jar and config to the work nodes. */
     private Path stagingDir;
 
-    /** Saved context class loader. */
-    private ThreadLocal<ClassLoader> prevClsLdr = new ThreadLocal<>();
-
     /**
      * Creates new instance.
      * @param jobId Job ID.
@@ -131,9 +128,6 @@ public class GridHadoopV2JobResourceManager {
             }
             else if (!jobLocDir.mkdirs())
                 throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
-
-            if (!clsPath.isEmpty())
-                cfg.setClassLoader(createClassLoader());
 
             setLocalFSWorkingDirectory(jobLocDir);
         }
@@ -235,12 +229,6 @@ public class GridHadoopV2JobResourceManager {
      * @param deleteJobLocDir {@code true} If need to delete job local directory.
      */
     public void cleanupJobEnvironment(boolean deleteJobLocDir) {
-        if (!clsPath.isEmpty()) {
-            ClassLoaderWrapper jobLdr = (ClassLoaderWrapper)ctx.getJobConf().getClassLoader();
-
-            jobLdr.destroy();
-        }
-
         if (deleteJobLocDir && jobLocDir.exists())
             U.delete(jobLocDir);
     }
@@ -256,20 +244,6 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Creates new class loader consider to job configuration.
-     * @return
-     */
-    private ClassLoaderWrapper createClassLoader() {
-        URL[] urls = new URL[clsPath.size()];
-
-        clsPath.toArray(urls);
-
-        URLClassLoader urlLdr = new URLClassLoader(urls);
-
-        return new ClassLoaderWrapper(urlLdr, getClass().getClassLoader());
-    }
-
-    /**
      * Prepares the environment for task execution.
      *
      * <ul>
@@ -281,18 +255,6 @@ public class GridHadoopV2JobResourceManager {
      * @throws GridException If fails.
      */
     public void prepareTaskEnvironment(GridHadoopTaskInfo info, JobConf cfg) throws GridException {
-        if (!clsPath.isEmpty()) {
-            ClassLoaderWrapper taskClsLdr = createClassLoader();
-
-            cfg.setClassLoader(taskClsLdr);
-
-            prevClsLdr.set(Thread.currentThread().getContextClassLoader());
-
-            Thread.currentThread().setContextClassLoader(taskClsLdr);
-        }
-        else
-            prevClsLdr.set(null);
-
         try {
             switch(info.type()) {
                 case MAP:
@@ -349,16 +311,6 @@ public class GridHadoopV2JobResourceManager {
      * @throws GridException If fails.
      */
     public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        ClassLoader clsLdr = prevClsLdr.get();
-
-        if (clsLdr != null) {
-            ClassLoaderWrapper taskClsLdr = (ClassLoaderWrapper)Thread.currentThread().getContextClassLoader();
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            taskClsLdr.destroy();
-        }
-
         GridHadoopRawLocalFileSystem fs;
 
         File locDir = taskLocalDir(info);
@@ -390,52 +342,7 @@ public class GridHadoopV2JobResourceManager {
         }
     }
 
-    /**
-     * Class loader wrapper.
-     */
-    private static class ClassLoaderWrapper extends ClassLoader {
-        /** */
-        private URLClassLoader delegate;
-
-        /**
-         * Makes classes available for GC.
-         */
-        public void destroy() {
-            delegate = null;
-        }
-
-        /**
-         * @param delegate Delegate.
-         */
-        private ClassLoaderWrapper(URLClassLoader delegate, ClassLoader parent) {
-            super(parent);
-
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            try {
-                return delegate.loadClass(name);
-            }
-            catch (ClassNotFoundException ignore) {
-                return super.loadClass(name);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public InputStream getResourceAsStream(String name) {
-            return delegate.getResourceAsStream(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public URL findResource(final String name) {
-            return delegate.findResource(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Enumeration<URL> findResources(final String name) throws IOException {
-            return delegate.findResources(name);
-        }
+    public Collection<URL> classPath() {
+        return clsPath;
     }
 }

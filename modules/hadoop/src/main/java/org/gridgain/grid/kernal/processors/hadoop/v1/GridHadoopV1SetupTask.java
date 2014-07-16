@@ -13,6 +13,7 @@ import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.GridLogger;
 
 import java.io.*;
 
@@ -24,24 +25,23 @@ public class GridHadoopV1SetupTask extends GridHadoopV1Task {
      * Constructor.
      *
      * @param taskInfo Task info.
+     * @param log Logger.
      */
-    public GridHadoopV1SetupTask(GridHadoopTaskInfo taskInfo) {
-        super(taskInfo);
+    public GridHadoopV1SetupTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
+        super(taskInfo, log);
     }
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         try {
-            jobImpl.getTaskConf().getOutputFormat().checkOutputSpecs(null, jobImpl.getTaskConf());
+            ctx.jobConf().getOutputFormat().checkOutputSpecs(null, ctx.jobConf());
 
-            OutputCommitter committer = jobImpl.getTaskConf().getOutputCommitter();
+            OutputCommitter committer = ctx.jobConf().getOutputCommitter();
 
             if (committer != null)
-                committer.setupJob(jobCtx);
+                committer.setupJob(ctx.jobContext());
         }
         catch (IOException e) {
             throw new GridException(e);

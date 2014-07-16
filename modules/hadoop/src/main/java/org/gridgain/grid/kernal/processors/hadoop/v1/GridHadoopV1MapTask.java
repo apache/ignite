@@ -16,6 +16,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.GridLogger;
 
 import java.io.*;
 
@@ -27,16 +28,18 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
     private static final String[] EMPTY_HOSTS = new String[0];
 
     /** {@inheritDoc} */
-    public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
-        super(taskInfo);
+    public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
+        super(taskInfo, log);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.getTaskConf());
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
+
+        JobConf jobConf = ctx.jobConf();
 
         InputFormat inFormat = jobConf.getInputFormat();
 
@@ -77,7 +80,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
+            collector = collector(jobConf, ctx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
                 fileName(), jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
@@ -89,6 +92,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             assert mapper != null;
 
+            boolean successful = false;
+
             try {
                 while (reader.next(key, val)) {
                     if (isCancelled())
@@ -97,17 +102,13 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
                     mapper.map(key, val, collector, reporter);
                 }
 
-                mapper.close();
+                successful = true;
 
-                mapper = null;
+                mapper.close();
             }
             finally {
-                if (mapper != null) {
-                    try {
-                        mapper.close();
-                    }
-                    catch (Throwable ignore){}
-                }
+                if (!successful)
+                    closeSafe(mapper);
 
                 collector.closeWriter();
             }

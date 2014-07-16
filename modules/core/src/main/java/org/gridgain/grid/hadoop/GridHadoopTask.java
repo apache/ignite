@@ -10,6 +10,7 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -18,17 +19,22 @@ import java.io.*;
  */
 public abstract class GridHadoopTask {
     /** */
+    private GridLogger log;
+
+    /** */
     private GridHadoopTaskInfo taskInfo;
 
     /**
      * Creates task.
      *
      * @param taskInfo Task info.
+     * @param log Logger.
      */
-    public GridHadoopTask(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
         assert taskInfo != null;
 
         this.taskInfo = taskInfo;
+        this.log = log.getLogger(getClass());
     }
 
     /**
@@ -60,4 +66,12 @@ public abstract class GridHadoopTask {
      * Interrupts task execution.
      */
     public abstract void cancel();
+
+    /**
+     * Returns logger.
+     * @return Logger.
+     */
+    public GridLogger log() {
+        return log;
+    }
 }
