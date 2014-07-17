@@ -474,10 +474,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     long delta = e.expireTime() == 0 ? 0 : e.expireTime() - U.currentTimeMillis();
 
                     if (delta >= 0) {
-                        // Set unswapped value.
-                        update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.version());
+                        V val = e.value();
 
-                        return e.value();
+                        if (cctx.portableEnabled())
+                            val = (V)cctx.kernalContext().portable().detachPortable(val);
+
+                        // Set unswapped value.
+                        update(val, e.valueBytes(), e.expireTime(), e.ttl(), e.version());
+
+                        return val;
                     }
                     else
                         clearIndex(e.value());
