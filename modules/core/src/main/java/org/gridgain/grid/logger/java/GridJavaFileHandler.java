@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.logging.*;
 
 /**
- * 'Node ID'-aware File Logging Handler.
+ * File logging handler which skips all the messages until node ID is set.
  */
 public final class GridJavaFileHandler extends StreamHandler {
     /* GridGain Logging Directory. */
@@ -32,26 +32,20 @@ public final class GridJavaFileHandler extends StreamHandler {
 
     /** {@inheritDoc} */
     @Override public void publish(LogRecord record) {
-        if (delegate == null)
-            return;
-
-        delegate.publish(record);
+        if (delegate != null)
+            delegate.publish(record);
     }
 
     /** {@inheritDoc} */
     @Override public void flush() {
-        if (delegate == null)
-            return;
-
-        delegate.flush();
+        if (delegate != null)
+            delegate.flush();
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws SecurityException {
-        if (delegate == null)
-            return;
-
-        delegate.close();
+        if (delegate != null)
+            delegate.close();
     }
 
     /** {@inheritDoc} */

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -79,6 +80,9 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
     private static final long serialVersionUID = 0L;
 
     /** */
+    public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
+
+    /** */
     private static final Object mux = new Object();
 
     /** */
@@ -117,10 +121,11 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * Reads default JUL configuration.
      */
     private void defaultConfiguration() {
-        final URL configUrl = U.resolveGridGainUrl("config/gridgain-jul.properties");
+        final URL configUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
 
         if (configUrl == null) {
-            error("Couldn't resolve default logging config file");
+            error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);
+
             return;
         }
 
@@ -128,7 +133,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             LogManager.getLogManager().readConfiguration(in);
         }
         catch (IOException e) {
-            error("Failed to read logging configuration", e);
+            error("Failed to read logging configuration: " + configUrl, e);
         }
     }
 
@@ -177,26 +182,15 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * @param initImpl Optional log implementation.
      */
     private void configure(@Nullable Logger initImpl) {
-        if (inited) {
-            if (initImpl != null)
-                // Do not init.
-                impl = initImpl;
+        if (initImpl != null)
+            impl = initImpl;
 
+        if (inited)
             return;
-        }
 
         synchronized (mux) {
-            if (inited) {
-                if (initImpl != null)
-                    // Do not init.
-                    impl = initImpl;
-
+            if (inited)
                 return;
-            }
-
-            if (initImpl != null)
-                // Init logger impl.
-                impl = initImpl;
 
             if (isConfigured()) {
                 boolean consoleHndFound = findHandler(impl, ConsoleHandler.class) != null;
@@ -213,15 +207,23 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
             boolean useConsoleAppender = Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"));
 
-            ConsoleHandler consoleHnd = findHandler(impl, ConsoleHandler.class);
-
             if (useConsoleAppender) {
+                ConsoleHandler consoleHnd = findHandler(impl, ConsoleHandler.class);
+
                 if (consoleHnd != null)
                     consoleHnd.setLevel(quiet ? SEVERE : INFO);
                 else
                     System.err.println("Console logging handler is not configured.");
-            } else {
-                impl.removeHandler(consoleHnd);
+            }
+            else {
+                Handler[] handlers = Logger.getLogger("").getHandlers();
+
+                if  (!F.isEmpty(handlers)) {
+                    for (Handler h : handlers) {
+                        if (h instanceof ConsoleHandler)
+                            impl.removeHandler(h);
+                    }
+                }
             }
 
             quiet0 = quiet;
