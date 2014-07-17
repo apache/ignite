@@ -254,7 +254,7 @@ public class GridHadoopV2JobResourceManager {
      * @param info Task info.
      * @throws GridException If fails.
      */
-    public void prepareTaskEnvironment(GridHadoopTaskInfo info, JobConf cfg) throws GridException {
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         try {
             switch(info.type()) {
                 case MAP:
@@ -292,6 +292,8 @@ public class GridHadoopV2JobResourceManager {
                 default:
                     setLocalFSWorkingDirectory(jobLocDir);
             }
+
+            JobConf cfg = ctx.getJobConf();
 
             FileSystem fs = FileSystem.get(cfg);
 

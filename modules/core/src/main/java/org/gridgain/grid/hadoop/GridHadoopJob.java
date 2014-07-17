@@ -52,7 +52,7 @@ public interface GridHadoopJob {
      * @return Serialization facility.
      * @throws GridException if failed.
      */
-    public GridHadoopSerialization keySerialization() throws GridException;
+//    public GridHadoopSerialization keySerialization() throws GridException;
 
     /**
      * Creates new instance of value serialization object.
@@ -60,28 +60,14 @@ public interface GridHadoopJob {
      * @return Serialization facility.
      * @throws GridException if failed.
      */
-    public GridHadoopSerialization valueSerialization() throws GridException;
+//    public GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
      * Creates mapper output key sorting comparator.
      *
      * @return New sort comparator.
      */
-    public Comparator<?> sortComparator();
-
-    /**
-     * Creates reducer key grouping comparator.
-     *
-     * @return New group comparator.
-     */
-    @Nullable public Comparator<?> reduceGroupComparator();
-
-    /**
-     * Creates combiner key grouping comparator.
-     *
-     * @return New group comparator.
-     */
-    @Nullable public Comparator<?> combineGroupComparator();
+    //public Comparator<?> sortComparator();
 
     /**
      * Creates context for task execution.
@@ -90,7 +76,7 @@ public interface GridHadoopJob {
      * @return Task Context.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException;
+    public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException;
 
     /**
      * Creates task to be executed.

@@ -11,10 +11,12 @@ package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.GridException;
 
+import java.util.Comparator;
+
 /**
  * Task context.
  */
-public class GridHadoopTaskContext {
+public abstract class GridHadoopTaskContext {
     /** */
     private final GridHadoopJob job;
 
@@ -70,10 +72,6 @@ public class GridHadoopTaskContext {
         return job;
     }
 
-    public GridHadoopPartitioner partitioner() throws GridException {
-        return null;
-    }
-
     public void input(GridHadoopTaskInput in) {
         input = in;
     }
@@ -81,4 +79,16 @@ public class GridHadoopTaskContext {
     public void output(GridHadoopTaskOutput out) {
         output = out;
     }
+
+    public abstract GridHadoopPartitioner partitioner() throws GridException;
+
+    public abstract Comparator<?> combineGroupComparator();
+
+    public abstract Comparator<?> reduceGroupComparator();
+
+    public abstract GridHadoopSerialization keySerialization() throws GridException;
+
+    public abstract GridHadoopSerialization valueSerialization() throws GridException;
+
+    public abstract Comparator<?> sortComparator();
 }

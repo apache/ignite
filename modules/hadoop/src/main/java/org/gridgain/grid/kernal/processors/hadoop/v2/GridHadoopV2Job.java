@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -33,32 +34,12 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2Job implements GridHadoopJob {
-    /** */
-    private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
-
-    /**
-     * Check for combiner grouping support (available since Hadoop 2.3).
-     */
-    static {
-        boolean ok;
-
-        try {
-            org.apache.hadoop.mapreduce.JobContext.class.getDeclaredMethod("getCombinerKeyGroupingComparator");
-
-            ok = true;
-        }
-        catch (NoSuchMethodException ignore) {
-            ok = false;
-        }
-
-        COMBINE_KEY_GROUPING_SUPPORTED = ok;
-    }
-
     /** Flag is set if new context-object code is used for running the mapper. */
     private final boolean useNewMapper;
 
@@ -92,11 +73,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private GridHadoopV2JobResourceManager rsrcMgr;
 
-    /** */
-    private Comparator<?> combineGrpComp;
-
-    /** */
-    private Comparator<?> reduceGrpComp;
+    private Map<String, GridHadoopTaskContext> contexts = new ConcurrentHashMap<>();
 
     /**
      * @param jobId Job ID.
@@ -113,7 +90,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        jobConf = jobInfo.configuration();
+        jobConf = new JobConf(jobInfo.configuration());
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
@@ -163,7 +140,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
                     String[] hosts = metaInfo.getLocations();
 
-                    Class<?> cls = readSplitClass(in, off);
+                    Class<?> cls = GridHadoopExternalSplit.readSplitClass(in, off, jobConf);
 
                     GridHadoopFileBlock block = null;
 
@@ -185,63 +162,14 @@ public class GridHadoopV2Job implements GridHadoopJob {
         }
     }
 
-    /**
-     * @param in Input stream.
-     * @param off Offset in stream.
-     * @return Class or {@code null} if not found.
-     * @throws IOException If failed.
-     */
-    @Nullable private Class<?> readSplitClass(FSDataInputStream in, long off)
-        throws IOException {
-        in.seek(off);
-
-        String clsName = Text.readString(in);
-
-        try {
-            return jobConf.getClassByName(clsName);
-        }
-        catch (ClassNotFoundException e) {
-            throw new IOException(e);
-        }
-    }
-
-    /**
-     * @param split External split.
-     * @return Native input split.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
-        Path jobDir = new Path(jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR));
-
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf);
-            FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
-
-            Class<?> cls = readSplitClass(in, split.offset());
-
-            assert cls != null;
-
-            Serialization serialization = new SerializationFactory(jobConf).getSerialization(cls);
-
-            Deserializer deserializer = serialization.getDeserializer(cls);
-
-            deserializer.open(in);
-
-            Object res = deserializer.deserialize(null);
-
-            deserializer.close();
-
-            assert res != null;
-
-            return res;
-        }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException {
+    @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
+        String locTaskId = info.type().toString() + info.taskNumber();
+
+        GridHadoopTaskContext res = contexts.get(locTaskId);
+
+        if (res != null)
+            return res;
 
         JobConf taskJobConf = new JobConf(jobInfo.configuration());
 
@@ -257,14 +185,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
 
-        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? taskJobCtx.getCombinerKeyGroupingComparator() : null;
+        res = new GridHadoopV2TaskContext(info, this, taskJobCtx);
 
-        reduceGrpComp = taskJobCtx.getGroupingComparator();
+        contexts.put(locTaskId, res);
 
-
-
-
-        return new GridHadoopV2TaskContext(info, this, taskJobCtx);
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -296,52 +221,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
         }
     }
 
-    /**
-     * Gets serializer for specified class.
-     * @param cls Class.
-     * @return Appropriate serializer.
-     */
-    @SuppressWarnings("unchecked")
-    private GridHadoopSerialization getSerialization(Class<?> cls) throws GridException {
-        A.notNull(cls, "cls");
-
-        SerializationFactory factory = new SerializationFactory(jobConf);
-
-        Serialization<?> serialization = factory.getSerialization(cls);
-
-        if (serialization == null)
-            throw new GridException("Failed to find serialization for: " + cls.getName());
-
-        if (serialization.getClass() == WritableSerialization.class)
-            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
-
-        return new GridHadoopSerializationWrapper(serialization, cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return getSerialization(jobCtx.getMapOutputKeyClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return getSerialization(jobCtx.getMapOutputValueClass());
-    }
-
-    @Override
-    public Comparator<?> sortComparator() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Comparator<?> reduceGroupComparator() {
-        return reduceGrpComp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Comparator<?> combineGroupComparator() {
-        return combineGrpComp;
-    }
+//    @Override
+//    public Comparator<?> sortComparator() {
+//        return sortComparator;
+//    }
 
     /**
      * @param type Task type.
@@ -380,22 +263,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /**
-     * @param split Split.
-     * @return Native Hadoop split.
-     * @throws GridException if failed.
-     */
-    @SuppressWarnings("unchecked")
-    public Object getNativeSplit(GridHadoopInputSplit split) throws GridException {
-        if (split instanceof GridHadoopExternalSplit)
-            return readExternalSplit((GridHadoopExternalSplit)split);
-
-        if (split instanceof GridHadoopSplitWrapper)
-            return ((GridHadoopSplitWrapper)split).innerSplit();
-
-        throw new IllegalStateException("Unknown split: " + split);
-    }
-
-    /**
      * Creates and initializes partitioner instance.
      *
      * @param ctx Hadoop job context.
@@ -421,6 +288,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
         rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobCtx, locNodeId, log);
 
         rsrcMgr.prepareJobEnvironment(!external);
+
+
     }
 
     /** {@inheritDoc} */
@@ -431,7 +300,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.prepareTaskEnvironment(info, jobConf);
+        rsrcMgr.prepareTaskEnvironment(info);
     }
 
     /** {@inheritDoc} */

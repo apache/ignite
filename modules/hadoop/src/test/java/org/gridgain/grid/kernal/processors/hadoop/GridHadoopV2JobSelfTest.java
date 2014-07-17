@@ -60,7 +60,9 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
         GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1),
             new GridHadoopDefaultJobInfo(cfg), log);
 
-        GridHadoopSerialization ser = job.keySerialization();
+        GridHadoopTaskContext taskCtx = job.getTaskContext(new GridHadoopTaskInfo());
+
+        GridHadoopSerialization ser = taskCtx.keySerialization();
 
         assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
 
@@ -68,7 +70,7 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
 
         assertEquals(TEST_SERIALIZED_VALUE, ser.read(in, null).toString());
 
-        ser = job.valueSerialization();
+        ser = taskCtx.valueSerialization();
 
         assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
 

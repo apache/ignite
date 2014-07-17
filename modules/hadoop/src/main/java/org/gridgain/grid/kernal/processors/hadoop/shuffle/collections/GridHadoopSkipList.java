@@ -80,14 +80,15 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public Adder startAdding() throws GridException {
-        return new AdderImpl();
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+        return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(Comparator<Object> groupCmp) throws GridException {
-        Input in = new Input();
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> groupCmp) throws GridException {
+        Input in = new Input(taskCtx);
 
         if (groupCmp != null && groupCmp.getClass() != cmp.getClass())
             return new GroupedInput(groupCmp, in);
@@ -257,8 +258,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /**
          * @throws GridException If failed.
+         * @param ctx
          */
-        protected AdderImpl() throws GridException {
+        protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+            super(ctx);
+
             keyReader = new Reader(keySer);
         }
 
@@ -551,10 +555,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /**
          * @throws GridException If failed.
+         * @param taskCtx
          */
-        public Input() throws GridException {
-            keyReader = new Reader(job.keySerialization());
-            valReader = new Reader(job.valueSerialization());
+        public Input(GridHadoopTaskContext taskCtx) throws GridException {
+            keyReader = new Reader(taskCtx.keySerialization());
+            valReader = new Reader(taskCtx.valueSerialization());
         }
 
         /** {@inheritDoc} */

@@ -87,10 +87,14 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        GridHadoopHashMultimap m = new GridHadoopHashMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()), log), mem, mapSize);
+        GridHadoopV2Job v2Job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
+                new GridHadoopDefaultJobInfo(job.getConfiguration()), log);
 
-        GridHadoopMultimap.Adder a = m.startAdding();
+        GridHadoopTaskContext taskCtx = v2Job.getTaskContext(new GridHadoopTaskInfo());
+
+        final GridHadoopHashMultimap m = new GridHadoopHashMultimap(v2Job, mem, mapSize);
+
+        GridHadoopMultimap.Adder a = m.startAdding(taskCtx);
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
 
@@ -105,9 +109,9 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
 
             a.close();
 
-            check(m, mm);
+            check(m, mm, taskCtx);
 
-            a = m.startAdding();
+            a = m.startAdding(taskCtx);
         }
 
 //        a.add(new IntWritable(10), new IntWritable(2));
@@ -123,8 +127,8 @@ public class GridHadoopHashMapSelfTest extends GridCommonAbstractTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm) throws Exception {
-        final GridHadoopTaskInput in = m.input(null);
+    private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm, GridHadoopTaskContext taskCtx) throws Exception {
+        final GridHadoopTaskInput in = m.input(taskCtx, null);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 

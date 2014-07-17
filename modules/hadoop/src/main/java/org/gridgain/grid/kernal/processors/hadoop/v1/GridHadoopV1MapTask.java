@@ -53,7 +53,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
         else {
-            nativeSplit = (InputSplit) jobImpl.getNativeSplit(split);
+            nativeSplit = (InputSplit) ctx.getNativeSplit(split);
 
             try {
                 Class<?> splitCls = Class.forName(nativeSplit.getClass().getName(), true, jobConf.getClassLoader());

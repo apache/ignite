@@ -37,9 +37,10 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
         tbl = new long[cap];
     }
 
-    /** {@inheritDoc} */
-    @Override public Adder startAdding() throws GridException {
-        return new AdderImpl();
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+        return new AdderImpl(ctx);
     }
 
     /**
@@ -93,8 +94,11 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
 
         /**
          * @throws GridException If failed.
+         * @param ctx
          */
-        protected AdderImpl() throws GridException {
+        protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+            super(ctx);
+
             keyReader = new Reader(keySer);
         }
 

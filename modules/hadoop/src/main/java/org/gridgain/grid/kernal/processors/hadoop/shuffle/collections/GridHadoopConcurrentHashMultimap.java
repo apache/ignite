@@ -77,15 +77,16 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
     /**
      * @return Adder object.
+     * @param ctx
      */
-    @Override public Adder startAdding() throws GridException {
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
         if (state.get() == State.CLOSING)
             throw new IllegalStateException("Closed.");
 
-        return new AdderImpl();
+        return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +154,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> ignore) throws GridException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())
@@ -166,7 +167,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
         assert s != State.REHASHING;
 
-        return new Input() {
+        return new Input(taskCtx) {
             @Override public void close() throws GridException {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
@@ -358,8 +359,11 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
         /**
          * @throws GridException If failed.
+         * @param ctx
          */
-        public AdderImpl() throws GridException {
+        public AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+            super(ctx);
+
             keyReader = new Reader(keySer);
 
             rehashIfNeeded(oldTbl);

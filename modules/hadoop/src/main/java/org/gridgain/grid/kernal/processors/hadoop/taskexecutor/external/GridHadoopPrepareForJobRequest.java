@@ -29,7 +29,7 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     private boolean hasMappers;
 
     /** */
-    private int reducers;
+    private int[] reducers;
 
     /**
      * @param jobId Job ID.
@@ -38,7 +38,7 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
      * @param reducers Number of reducers in job.
      */
     public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
-        int reducers) {
+        int[] reducers) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.hasMappers = hasMappers;
@@ -69,7 +69,7 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /**
      * @return Number of reducers in job.
      */
-    public int reducers() {
+    public int[] reducers() {
         return reducers;
     }
 }

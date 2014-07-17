@@ -38,7 +38,6 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
         try {
             JobContextImpl jobCtx = taskCtx.jobContext();
 
-
             OutputFormat outputFormat = getOutputFormat(jobCtx);
 
             outputFormat.checkOutputSpecs(jobCtx);

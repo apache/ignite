@@ -143,7 +143,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-        GridHadoopTaskContext ctx = job.createTaskContext(info);
+        GridHadoopTaskContext ctx = job.getTaskContext(info);
 
         try (GridHadoopTaskOutput out = createOutput(ctx, locCombiner);
              GridHadoopTaskInput in = createInput(ctx, locCombiner)) {
@@ -195,7 +195,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 if (locCombiner) {
                     assert local != null;
 
-                    return local.input((Comparator<Object>)job.combineGroupComparator());
+                    return local.input(ctx, (Comparator<Object>) ctx.combineGroupComparator());
                 }
 
             default:
@@ -237,9 +237,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
                     local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
                         new GridHadoopHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
-                        new GridHadoopSkipList(job, mem, job.sortComparator()); // TODO replace with red-black tree
+                        new GridHadoopSkipList(job, mem, ctx.sortComparator()); // TODO replace with red-black tree
 
-                    return local.startAdding();
+                    return local.startAdding(ctx);
                 }
 
             default:

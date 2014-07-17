@@ -612,32 +612,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopSerialization keySerialization() throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridHadoopSerialization valueSerialization() throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Comparator<?> sortComparator() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Comparator<?> reduceGroupComparator() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Comparator<?> combineGroupComparator() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException {
+        @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
             return null;
         }
 
