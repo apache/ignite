@@ -182,7 +182,7 @@ public class GridUnsafeGuard {
         /** */
         private long id;
 
-        /** */
+        /** Reentries of the owner thread. */
         private int reentries = 1;
 
         /** */
