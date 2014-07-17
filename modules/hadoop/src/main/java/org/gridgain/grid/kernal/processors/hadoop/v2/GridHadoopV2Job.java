@@ -9,14 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskID;
@@ -74,7 +72,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final JobConf jobConf;
 
     /** */
-    private final JobContextImpl jobContext;
+    private final JobContextImpl jobCtx;
 
     /** Logger. */
     private GridLogger log;
@@ -93,12 +91,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** */
     private GridHadoopV2JobResourceManager rsrcMgr;
-
-    /** */
-    private GridHadoopPartitioner part;
-
-    /** */
-    private Comparator<?> sortComp;
 
     /** */
     private Comparator<?> combineGrpComp;
@@ -122,7 +114,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
         jobConf = jobInfo.configuration();
-        jobContext = new JobContextImpl(jobConf, hadoopJobID);
+        jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
@@ -148,7 +140,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
             // Assume that we have needed classes and try to generate input splits ourself.
             if (useNewMapper)
-                return GridHadoopV2Splitter.splitJob(jobContext);
+                return GridHadoopV2Splitter.splitJob(jobCtx);
             else
                 return GridHadoopV1Splitter.splitJob(jobConf);
         }
@@ -249,13 +241,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopPartitioner partitioner() throws GridException {
-        return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info, GridHadoopTaskInput in,
-        GridHadoopTaskOutput out) throws GridException {
+    @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException {
 
         JobConf taskJobConf = new JobConf(jobInfo.configuration());
 
@@ -269,19 +255,16 @@ public class GridHadoopV2Job implements GridHadoopJob {
             taskJobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(urls), getClass().getClassLoader()));
         }
 
-        JobContextImpl taskJobContext = new JobContextImpl(taskJobConf, hadoopJobID);
+        JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
 
-        part = createPartitioner(taskJobContext);
+        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? taskJobCtx.getCombinerKeyGroupingComparator() : null;
 
-        sortComp = taskJobContext.getSortComparator();
+        reduceGrpComp = taskJobCtx.getGroupingComparator();
 
-        combineGrpComp = COMBINE_KEY_GROUPING_SUPPORTED ? taskJobContext.getCombinerKeyGroupingComparator() : null;
 
-        reduceGrpComp = taskJobContext.getGroupingComparator();
 
-        GridHadoopTaskContext taskCtx = new GridHadoopV2TaskContext(info, this, in, out, taskJobContext);
 
-        return taskCtx;
+        return new GridHadoopV2TaskContext(info, this, taskJobCtx);
     }
 
     /** {@inheritDoc} */
@@ -337,17 +320,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return getSerialization(jobContext.getMapOutputKeyClass());
+        return getSerialization(jobCtx.getMapOutputKeyClass());
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return getSerialization(jobContext.getMapOutputValueClass());
+        return getSerialization(jobCtx.getMapOutputValueClass());
     }
 
-    /** {@inheritDoc} */
-    @Override public Comparator<?> sortComparator() {
-        return sortComp;
+    @Override
+    public Comparator<?> sortComparator() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -435,7 +418,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobContext, locNodeId, log);
+        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobCtx, locNodeId, log);
 
         rsrcMgr.prepareJobEnvironment(!external);
     }

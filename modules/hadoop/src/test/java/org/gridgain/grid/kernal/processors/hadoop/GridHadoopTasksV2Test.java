@@ -58,7 +58,7 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
 
         GridHadoopV2Job gridHadoopJob = new GridHadoopV2Job(jobId, jobInfo, log);
 
-        hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
+        //hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
 
         gridHadoopJob.initialize(false, UUID.randomUUID());
 

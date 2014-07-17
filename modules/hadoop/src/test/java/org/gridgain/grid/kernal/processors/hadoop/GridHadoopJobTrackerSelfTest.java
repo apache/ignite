@@ -304,12 +304,18 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * Test job.
      */
     private static class HadoopTestJob extends GridHadoopV2Job {
+        /** */
+        private final GridLogger log;
+
         /**
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
+         * @param log Logger.
          */
         private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) {
             super(jobId, jobInfoImpl, log);
+
+            this.log = log;
         }
 
         /** {@inheritDoc} */
@@ -331,7 +337,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return new HadoopTestTask(taskInfo);
+            return new HadoopTestTask(taskInfo, log);
         }
     }
 
@@ -341,9 +347,10 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     private static class HadoopTestTask extends GridHadoopTask {
         /**
          * @param taskInfo Task info.
+         * @param log Logger.
          */
-        private HadoopTestTask(GridHadoopTaskInfo taskInfo) {
-            super(taskInfo);
+        private HadoopTestTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
+            super(taskInfo, log);
         }
 
         /**

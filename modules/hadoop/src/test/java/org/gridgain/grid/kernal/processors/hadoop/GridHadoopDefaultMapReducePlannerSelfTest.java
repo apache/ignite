@@ -612,11 +612,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopPartitioner partitioner() throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public GridHadoopSerialization keySerialization() throws GridException {
             return null;
         }
@@ -638,6 +633,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Nullable @Override public Comparator<?> combineGroupComparator() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException {
             return null;
         }
 

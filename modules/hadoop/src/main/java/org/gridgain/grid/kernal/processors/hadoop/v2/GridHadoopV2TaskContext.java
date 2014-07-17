@@ -1,29 +1,44 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapred.*;
+import org.gridgain.grid.GridException;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Partitioner;
 
 public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** */
-    private JobContextImpl jobContext;
+    private JobContextImpl jobCtx;
 
     /**
      * @param taskInfo Task info.
      * @param job      Job.
-     * @param input    Input.
-     * @param output   Output.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopTaskInput input,
-        GridHadoopTaskOutput output, JobContextImpl jobContext) {
-        super(taskInfo, job, input, output);
-        this.jobContext = jobContext;
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job,
+                                   JobContextImpl jobCtx) {
+        super(taskInfo, job);
+        this.jobCtx = jobCtx;
     }
 
     public JobConf jobConf() {
-        return jobContext.getJobConf();
+        return jobCtx.getJobConf();
     }
 
     public JobContextImpl jobContext() {
-        return jobContext;
+        return jobCtx;
+    }
+
+    @Override public GridHadoopPartitioner partitioner() throws GridException {
+        Class<?> partClsOld = jobConf().getClass("mapred.partitioner.class", null);
+
+        if (partClsOld != null)
+            return new GridHadoopV1Partitioner(jobConf().getPartitionerClass(), jobConf());
+
+        try {
+            return new GridHadoopV2Partitioner(jobCtx.getPartitionerClass(), jobConf());
+        }
+        catch (ClassNotFoundException e) {
+            throw new GridException(e);
+        }
+
     }
 }

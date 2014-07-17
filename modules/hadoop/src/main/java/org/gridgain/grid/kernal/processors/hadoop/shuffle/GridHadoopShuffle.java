@@ -188,19 +188,19 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Output.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
-        return job(taskInfo.jobId()).output(taskInfo);
+    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
+        return job(taskCtx.taskInfo().jobId()).output(taskCtx);
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Input.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
-        return job(taskInfo.jobId()).input(taskInfo);
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+        return job(taskCtx.taskInfo().jobId()).input(taskCtx);
     }
 
     /**

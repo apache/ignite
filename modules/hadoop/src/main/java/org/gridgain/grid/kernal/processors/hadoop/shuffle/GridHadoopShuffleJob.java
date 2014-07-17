@@ -43,7 +43,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final GridUnsafeMemory mem;
 
     /** */
-    private final GridHadoopPartitioner partitioner;
+    private final boolean needPartitioner;
+    //private final GridHadoopPartitioner partitioner;
 
     /** */
     private GridHadoopMultimap combinerMap;
@@ -94,7 +95,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log;
 
-        partitioner = reducers > 1 ? job.partitioner() : null;
+        needPartitioner = reducers > 1;
 
         maps = new AtomicReferenceArray<>(reducers);
         msgs = new GridHadoopShuffleMessage[reducers];
@@ -463,37 +464,37 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Output.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
-        switch (taskInfo.type()) {
+    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
+        switch (taskCtx.taskInfo().type()) {
             case MAP:
                 if (combinerMap != null)
                     return combinerMap.startAdding();
 
             case COMBINE:
-                return new PartitionedOutput();
+                return new PartitionedOutput(taskCtx);
 
             default:
-                throw new IllegalStateException("Illegal type: " + taskInfo.type());
+                throw new IllegalStateException("Illegal type: " + taskCtx.taskInfo().type());
         }
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Input.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
-        switch (taskInfo.type()) {
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+        switch (taskCtx.taskInfo().type()) {
             case COMBINE:
                 return combinerMap.input((Comparator<Object>)job.combineGroupComparator());
 
             case REDUCE:
-                int reducer = taskInfo.taskNumber();
+                int reducer = taskCtx.taskInfo().taskNumber();
 
                 GridHadoopMultimap m = maps.get(reducer);
 
@@ -519,7 +520,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 };
 
             default:
-                throw new IllegalStateException("Illegal type: " + taskInfo.type());
+                throw new IllegalStateException("Illegal type: " + taskCtx.taskInfo().type());
         }
     }
 
@@ -528,7 +529,19 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      */
     private class PartitionedOutput implements GridHadoopTaskOutput {
         /** */
+        private GridHadoopPartitioner  partitioner;
+
+        /** */
         private GridHadoopTaskOutput[] adders = new GridHadoopTaskOutput[maps.length()];
+
+        /**
+         *
+         * @param taskCtx
+         */
+        private PartitionedOutput(GridHadoopTaskContext taskCtx) throws GridException {
+            if (needPartitioner)
+                partitioner = taskCtx.partitioner();
+        }
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {

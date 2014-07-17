@@ -172,14 +172,14 @@ public class GridHadoopChildProcessRunner {
                                 onTaskFinished0(this, state, err);
                             }
 
-                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.input(info);
+                                return shuffleJob.input(ctx);
                             }
 
-                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.output(info);
+                                return shuffleJob.output(ctx);
                             }
                         });
                     }

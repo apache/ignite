@@ -44,7 +44,7 @@ public interface GridHadoopJob {
      *
      * @return Partitioner.
      */
-    public GridHadoopPartitioner partitioner() throws GridException;
+//    public GridHadoopPartitioner partitioner() throws GridException;
 
     /**
      * Creates new instance of key serialization object.
@@ -87,13 +87,10 @@ public interface GridHadoopJob {
      * Creates context for task execution.
      *
      * @param info Task info.
-     * @param in Task input.
-     * @param out Task output.
      * @return Task Context.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info, GridHadoopTaskInput in,
-        GridHadoopTaskOutput out) throws GridException;
+    public GridHadoopTaskContext createTaskContext(GridHadoopTaskInfo info) throws GridException;
 
     /**
      * Creates task to be executed.

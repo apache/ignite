@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.GridException;
+
 /**
  * Task context.
  */
@@ -17,10 +19,10 @@ public class GridHadoopTaskContext {
     private final GridHadoopJob job;
 
     /** */
-    private final GridHadoopTaskInput input;
+    private GridHadoopTaskInput input;
 
     /** */
-    private final GridHadoopTaskOutput output;
+    private GridHadoopTaskOutput output;
 
     /** */
     private final GridHadoopTaskInfo taskInfo;
@@ -28,15 +30,10 @@ public class GridHadoopTaskContext {
     /**
      * @param taskInfo Task info.
      * @param job Job.
-     * @param input Input.
-     * @param output Output.
      */
-    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopTaskInput input,
-        GridHadoopTaskOutput output) {
+    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
         this.taskInfo = taskInfo;
         this.job = job;
-        this.input = input;
-        this.output = output;
     }
 
     /**
@@ -71,5 +68,17 @@ public class GridHadoopTaskContext {
      */
     public GridHadoopJob job() {
         return job;
+    }
+
+    public GridHadoopPartitioner partitioner() throws GridException {
+        return null;
+    }
+
+    public void input(GridHadoopTaskInput in) {
+        input = in;
+    }
+
+    public void output(GridHadoopTaskOutput out) {
+        output = out;
     }
 }
