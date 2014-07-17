@@ -607,7 +607,6 @@ public class GridH2Table extends TableBase {
             spaceName = space;
 
             try {
-
                 try (Statement s = conn.createStatement()) {
                     s.execute(sql + " engine \"" + Engine.class.getName() + "\"");
                 }

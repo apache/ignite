@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
-import org.gridgain.grid.spi.*;
 import org.gridgain.testframework.junits.common.*;
 import org.h2.Driver;
 import org.h2.index.*;
@@ -43,7 +42,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     private static final String PK_NAME = "__GG_PK_";
 
     /** */
-    private static final String STR_UK_NAME = "__GG_UK_";
+    private static final String STR_IDX_NAME = "__GG_IDX_";
 
     /** */
     private static final String NON_UNIQUE_IDX_NAME = "__GG_IDX_";
@@ -72,9 +71,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
-                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, null, id));
-                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, null, x, t));
-                idxs.add(new GridH2TreeIndex(STR_UK_NAME, tbl, true, 0, 1, null, str));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, id));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, x, t));
+                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, 0, 1, str));
 
                 return idxs;
             }
@@ -180,12 +179,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertTrue(tbl.doUpdate(row(id, System.currentTimeMillis(), id.toString(), rnd.nextInt(100)), false));
         assertTrue(tbl.doUpdate(row(id2, System.currentTimeMillis(), id2.toString(), rnd.nextInt(100)), false));
 
-        // For not existing id.
-        checkUniqueIndex(tbl, row(UUID.randomUUID(), System.currentTimeMillis(), id.toString(), rnd.nextInt(100)));
-
-        // For existing id .
-        checkUniqueIndex(tbl, row(id2, System.currentTimeMillis(), id.toString(), rnd.nextInt(100)));
-
         // Check index selection.
         checkQueryPlan(conn, "SELECT * FROM T", SCAN_IDX_NAME);
 
@@ -194,10 +187,10 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         checkQueryPlan(conn, "SELECT * FROM T WHERE ID > RANDOM_UUID()", PK_NAME);
         checkQueryPlan(conn, "SELECT * FROM T ORDER BY ID", PK_NAME);
 
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR IS NULL", STR_UK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR = 'aaaa'", STR_UK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR > 'aaaa'", STR_UK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY STR DESC", STR_UK_NAME);
+        checkQueryPlan(conn, "SELECT * FROM T WHERE STR IS NULL", STR_IDX_NAME);
+        checkQueryPlan(conn, "SELECT * FROM T WHERE STR = 'aaaa'", STR_IDX_NAME);
+        checkQueryPlan(conn, "SELECT * FROM T WHERE STR > 'aaaa'", STR_IDX_NAME);
+        checkQueryPlan(conn, "SELECT * FROM T ORDER BY STR DESC", STR_IDX_NAME);
 
         checkQueryPlan(conn, "SELECT * FROM T WHERE X IS NULL", NON_UNIQUE_IDX_NAME);
         checkQueryPlan(conn, "SELECT * FROM T WHERE X = 10000", NON_UNIQUE_IDX_NAME);
@@ -553,34 +546,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                         plan.contains(search));
             }
         }
-    }
-
-    /**
-     * @param tbl Table.
-     * @param row Row.
-     */
-    private void checkUniqueIndex(GridH2Table tbl, GridH2Row row) {
-        ArrayList<? extends Index> idxs = tbl.indexes();
-
-        // Remember current consistent state.
-        Set<Row> rowSet = checkIndexesConsistent((ArrayList<Index>)idxs, null);
-
-        assertFalse(rowSet.contains(row));
-
-        // Try update.
-        try {
-            tbl.doUpdate(row, false);
-
-            fail("Unique index should prevent insertion.");
-        }
-        catch (GridSpiException ignored) {
-            // Expected exception.
-        }
-
-        idxs = tbl.indexes();
-
-        // Check contents is the same after failed insert.
-        checkIndexesConsistent((ArrayList<Index>)idxs, rowSet);
     }
 
     /**

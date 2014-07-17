@@ -29,7 +29,6 @@ import java.util.concurrent.*;
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
-
     /** */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
@@ -63,10 +62,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             pk ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
 
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
-        final GridUnsafeMemory mem = desc.memory();
-        final GridUnsafeGuard guard = desc.guard();
 
-        tree = mem == null ? new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
+        tree = desc == null || desc.memory() == null ? new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
             @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
                 if (val != null)
                     node.key = (GridSearchRowPointer)val;
@@ -78,7 +75,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 return super.comparable(key);
             }
-        } : new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, mem, guard, this) {
+        } : new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
             @Override protected void afterNodeUpdate_nl(long node, GridH2Row val) {
                 final long oldKey = keyPtr(node);
 

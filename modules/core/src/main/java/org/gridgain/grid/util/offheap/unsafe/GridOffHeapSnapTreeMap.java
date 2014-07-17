@@ -1021,10 +1021,10 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     private final GridOffHeapSmartPointerFactory<V> valFactory;
 
     /** */
-    private final GridUnsafeMemory mem;
+    protected final GridUnsafeMemory mem;
 
     /** */
-    private final GridUnsafeGuard guard;
+    protected final GridUnsafeGuard guard;
 
     /** */
     private final KeyLock lock = new KeyLock();
