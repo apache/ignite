@@ -138,7 +138,12 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Visor unique key to get lost events throttle counter from node local storage. */
         private final String evtThrottleCntrKey;
 
-        /** Whether cache sampling enabled in Visor preferences. */
+        /**
+         * Whether cache sampling enabled in Visor preferences.
+         * This parameter was not supported anymore and will be ignored.
+         * Should be removed on next-breaking-compatibility release.
+         */
+        @Deprecated
         private final boolean samplingEnabled;
 
         /** cache sample size. */
@@ -508,7 +513,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         private void caches(VisorDataCollectorJobResult res, VisorDataCollectorTaskArg arg) {
             try {
                 for (GridCache cache : g.cachesx()) {
-                    res.caches.add(VisorCache.from(g, cache, arg.samplingEnabled, arg.sample));
+                    res.caches.add(VisorCache.from(g, cache, arg.sample));
                 }
             }
             catch(Throwable cachesEx) {

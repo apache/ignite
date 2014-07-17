@@ -28,6 +28,9 @@ public class VisorCache implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default cache size sampling.  */
+    private static final int DFLT_CACHE_SIZE_SAMPLING = 10;
+
     /** Cache name. */
     private String name;
 
@@ -85,12 +88,11 @@ public class VisorCache implements Serializable {
     /**
      * @param g Grid.
      * @param c Actual cache.
-     * @param samplingEnabled Whether sampling enabled.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws GridException
      */
-    public static VisorCache from(Grid g, GridCache c, boolean samplingEnabled, int sample) throws GridException {
+    public static VisorCache from(Grid g, GridCache c, int sample) throws GridException {
         assert g != null;
         assert c != null;
 
@@ -142,21 +144,18 @@ public class VisorCache implements Serializable {
 
         Iterator<GridCacheEntry> it = set.iterator();
 
-        if (samplingEnabled && sample > 0 && size > sample) {
-            int cnt = 0;
+        int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 
-            while (it.hasNext() && cnt < sample) {
-                memSz += it.next().memorySize();
-                cnt++;
-            }
+        int cnt = 0;
 
-            memSz = (long)((double)memSz / sample * size);
+        while (it.hasNext() && cnt < sz) {
+            memSz += it.next().memorySize();
+
+            cnt++;
         }
-        else {
-            while (it.hasNext()) {
-                memSz += it.next().memorySize();
-            }
-        }
+
+        if (cnt > 0)
+            memSz = (long)((double)memSz / cnt * size);
 
         GridCacheConfiguration cfg = c.configuration();
 

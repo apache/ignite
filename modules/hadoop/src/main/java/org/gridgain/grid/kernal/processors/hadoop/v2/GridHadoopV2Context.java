@@ -11,11 +11,15 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.counters.*;
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.task.*;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.task.JobContextImpl;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -166,12 +170,12 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(Enum<?> cntrName) {
-        return new GenericCounter(cntrName.name(), cntrName.name());
+        return getCounter(cntrName.getDeclaringClass().getName(), cntrName.name());
     }
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        return new GenericCounter(cntrName, cntrName);
+        return new GridHadoopV2Counter(ctx.counter(grpName, cntrName));
     }
 
     /** {@inheritDoc} */

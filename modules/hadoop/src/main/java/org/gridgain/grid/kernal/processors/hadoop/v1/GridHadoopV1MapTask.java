@@ -55,7 +55,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
         assert nativeSplit != null;
 
-        Reporter reporter = Reporter.NULL;
+        Reporter reporter = new GridHadoopV1Reporter(taskCtx);
 
         GridHadoopV1OutputCollector collector = null;
 
