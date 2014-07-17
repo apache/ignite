@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.concurrent.atomic.*;
 
 /**
@@ -94,13 +96,15 @@ public class GridUnsafeGuard {
     public void end() {
         Operation op = currOp.get();
 
-        if (op == null)
-            throw new IllegalStateException("No active operation.");
+        assert op != null : "must be called after begin in the same thread";
 
-        if (--op.reentries > 0)
+        if (op.reentries != 0) {
+            assert op.reentries > 0 : op.reentries;
+
+            op.reentries--;
+
             return;
-
-        assert op.reentries == 0 : op.reentries;
+        }
 
         currOp.remove();
 
@@ -111,9 +115,9 @@ public class GridUnsafeGuard {
         // Start deallocating from tail.
         op = tail.get();
 
-        while (op.mayDeallocate()) {
-            if (!op.finish() && op.id > curId)
-                break;
+        // Go through the inactive ops until find thread-local one.
+        while (!op.isActive() && op.id <= curId) {
+            op.finish();
 
             Operation next = op.next;
 
@@ -123,6 +127,7 @@ public class GridUnsafeGuard {
             op = next;
         }
 
+        // Move tail forward.
         for (;;) {
             Operation t = tail.get();
 
@@ -162,6 +167,9 @@ public class GridUnsafeGuard {
     @SuppressWarnings("UnusedDeclaration")
     private static class Operation {
         /** */
+        private static final int STATE_ACTIVE = 0;
+
+        /** */
         private static final int STATE_MAY_DEALLOCATE = 1;
 
         /** */
@@ -183,7 +191,7 @@ public class GridUnsafeGuard {
         private long id;
 
         /** Reentries of the owner thread. */
-        private int reentries = 1;
+        private int reentries;
 
         /** */
         private volatile Operation next;
@@ -215,12 +223,10 @@ public class GridUnsafeGuard {
 
         /**
          * Finish operation and release memory.
-         *
-         * @return {@code true} If we deallocated memory for this operation.
          */
-        private boolean finish() {
+        private void finish() {
             if (!stateUpdater.compareAndSet(this, STATE_MAY_DEALLOCATE, STATE_DEALLOCATED))
-                return false;
+                return;
 
             GridUnsafeCompoundMemory c = compound;
 
@@ -243,8 +249,6 @@ public class GridUnsafeGuard {
                 }
                 while(fin != null);
             }
-
-            return true;
         }
 
         /**
@@ -289,8 +293,8 @@ public class GridUnsafeGuard {
         /**
          * @return flag indicating if memory may be deallocated for this operation.
          */
-        private boolean mayDeallocate() {
-            return state == STATE_MAY_DEALLOCATE;
+        private boolean isActive() {
+            return state == STATE_ACTIVE;
         }
 
         /**
@@ -298,6 +302,11 @@ public class GridUnsafeGuard {
          */
         private void next(Operation next) {
             this.next = next;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Operation.class, this);
         }
     }
 
