@@ -138,6 +138,8 @@ public class GridUnsafeGuard {
      * @param compound Compound memory.
      */
     public void releaseLater(GridUnsafeCompoundMemory compound) {
+        assert currOp.get() != null : "must be called in begin-end block";
+
         head.get().add(compound);
     }
 
@@ -149,6 +151,8 @@ public class GridUnsafeGuard {
      * @param finalizer Finalizer.
      */
     public void finalizeLater(Runnable finalizer) {
+        assert currOp.get() != null : "must be called in begin-end block";
+
         head.get().add(new Finalizer(finalizer));
     }
 

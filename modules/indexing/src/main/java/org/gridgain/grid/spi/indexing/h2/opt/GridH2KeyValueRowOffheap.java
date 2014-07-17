@@ -36,19 +36,19 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** */
-    private static final int OFFSET_EXPIRATION = 4;
+    private static final int OFFSET_KEY_SIZE = 4; // 4 after ref cnt int
 
     /** */
-    private static final int OFFSET_VALUE_REF = OFFSET_EXPIRATION + 8;
+    private static final int OFFSET_VALUE_REF = OFFSET_KEY_SIZE + 4; // 8
 
     /** */
-    private static final int OFFSET_KEY_SIZE = OFFSET_VALUE_REF + 8;
+    private static final int OFFSET_EXPIRATION = OFFSET_VALUE_REF + 8; // 16
 
     /** */
-    private static final int OFFSET_KEY = OFFSET_KEY_SIZE + 4;
+    private static final int OFFSET_KEY = OFFSET_EXPIRATION + 8; // 24
 
     /** */
-    private static final int OFFSET_VALUE = 4;
+    private static final int OFFSET_VALUE = 4; // 4 on separate page after val size int
 
     /** */
     private static final Data SIZE_CALCULATOR = Data.create(null, null);
@@ -336,7 +336,9 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         // Deallocate off-heap memory.
         long valPtr = mem.readLongVolatile(p + OFFSET_VALUE_REF);
 
-        if (valPtr > 0)
+        assert valPtr >= 0 : valPtr;
+
+        if (valPtr != 0)
             mem.release(valPtr, mem.readInt(valPtr) + OFFSET_VALUE);
 
         mem.release(p, mem.readInt(p + OFFSET_KEY_SIZE) + OFFSET_KEY);
