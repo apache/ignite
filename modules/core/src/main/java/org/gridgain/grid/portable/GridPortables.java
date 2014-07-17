@@ -21,8 +21,8 @@ public interface GridPortables {
      * <p>
      * Note that object's type needs to be configured in {@link GridPortableConfiguration}.
      *
-     * @param obj
-     * @return
+     * @param obj Object to convert.
+     * @return Converted object.
      */
     public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
 }
