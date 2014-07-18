@@ -27,9 +27,6 @@ import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
  */
 public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     /** */
-    //protected final GridHadoopJob job;
-
-    /** */
     protected final GridUnsafeMemory mem;
 
     /** */
@@ -182,8 +179,8 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         private final GridLongList pages = new GridLongList(16);
 
         /**
+         * @param ctx Task context.
          * @throws GridException If failed.
-         * @param ctx
          */
         protected AdderBase(GridHadoopTaskContext ctx) throws GridException {
             valSer = ctx.valueSerialization();

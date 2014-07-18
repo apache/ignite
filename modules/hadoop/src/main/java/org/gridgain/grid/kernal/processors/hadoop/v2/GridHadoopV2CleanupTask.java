@@ -13,7 +13,7 @@ import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -27,17 +27,16 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
      * @param abort Abort flag.
-     * @param log Logger.
      */
-    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort) {
+        super(taskInfo);
 
         this.abort = abort;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx, GridLogger log)
         throws GridException {
 
         JobContextImpl jobCtx = taskCtx.jobContext();

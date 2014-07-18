@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.GridException;
-
-import java.util.Comparator;
+import org.gridgain.grid.*;
+import java.util.*;
 
 /**
  * Task context.

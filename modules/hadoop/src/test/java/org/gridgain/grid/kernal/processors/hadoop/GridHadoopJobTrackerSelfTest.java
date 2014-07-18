@@ -304,18 +304,12 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * Test job.
      */
     private static class HadoopTestJob extends GridHadoopV2Job {
-        /** */
-        private final GridLogger log;
-
         /**
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
-         * @param log Logger.
          */
         private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) {
             super(jobId, jobInfoImpl, log);
-
-            this.log = log;
         }
 
         /** {@inheritDoc} */
@@ -337,7 +331,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return new HadoopTestTask(taskInfo, log);
+            return new HadoopTestTask(taskInfo);
         }
     }
 
@@ -347,10 +341,9 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     private static class HadoopTestTask extends GridHadoopTask {
         /**
          * @param taskInfo Task info.
-         * @param log Logger.
          */
-        private HadoopTestTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
-            super(taskInfo, log);
+        private HadoopTestTask(GridHadoopTaskInfo taskInfo) {
+            super(taskInfo);
         }
 
         /**
@@ -366,7 +359,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void run(GridHadoopTaskContext ctx) {
+        @Override public void run(GridHadoopTaskContext ctx, GridLogger log) {
             try {
                 UUID nodeId = info().nodeId();
 

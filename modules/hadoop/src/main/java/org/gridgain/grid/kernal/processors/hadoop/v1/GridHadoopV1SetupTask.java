@@ -13,7 +13,7 @@ import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -25,14 +25,13 @@ public class GridHadoopV1SetupTask extends GridHadoopV1Task {
      * Constructor.
      *
      * @param taskInfo Task info.
-     * @param log Logger.
      */
-    public GridHadoopV1SetupTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV1SetupTask(GridHadoopTaskInfo taskInfo) {
+        super(taskInfo);
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         try {

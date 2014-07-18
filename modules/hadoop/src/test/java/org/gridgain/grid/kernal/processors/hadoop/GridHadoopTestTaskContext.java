@@ -11,13 +11,14 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.util.*;
 
 /**
  * Context for test purpose.
  */
-class GridHadoopTestTaskContext extends GridHadoopTaskContext {
+class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     /**
      * Simple key-vale pair.
      * @param <K> Key class.
@@ -90,7 +91,7 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         Iterator<Map.Entry<Object, List>> iterator;
 
         /** Current key and associated value list. */
-        Map.Entry<Object, List> currentEntry;
+        Map.Entry<Object, List> currEntry;
 
         /** {@inheritDoc} */
         @Override public boolean next() {
@@ -99,22 +100,22 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
             }
 
             if (iterator.hasNext()) {
-                currentEntry = iterator.next();
+                currEntry = iterator.next();
             } else {
-                currentEntry = null;
+                currEntry = null;
             }
 
-            return currentEntry != null;
+            return currEntry != null;
         }
 
         /** {@inheritDoc} */
         @Override public Object key() {
-            return currentEntry.getKey();
+            return currEntry.getKey();
         }
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return currentEntry.getValue().iterator() ;
+            return currEntry.getValue().iterator() ;
         }
 
         /** {@inheritDoc} */
@@ -169,8 +170,8 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
     /**
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo,  GridHadoopJob gridJob) {
-        super(taskInfo, gridJob);
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob) {
+        super(taskInfo, gridJob, gridJob.jobContext());
     }
 
     /** {@inheritDoc} */

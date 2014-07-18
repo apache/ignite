@@ -19,22 +19,17 @@ import java.io.*;
  */
 public abstract class GridHadoopTask {
     /** */
-    private GridLogger log;
-
-    /** */
     private GridHadoopTaskInfo taskInfo;
 
     /**
      * Creates task.
      *
      * @param taskInfo Task info.
-     * @param log Logger.
      */
-    public GridHadoopTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
+    public GridHadoopTask(GridHadoopTaskInfo taskInfo) {
         assert taskInfo != null;
 
         this.taskInfo = taskInfo;
-        this.log = log.getLogger(getClass());
     }
 
     /**
@@ -57,21 +52,14 @@ public abstract class GridHadoopTask {
      * Runs task.
      *
      * @param taskCtx Context.
+     * @param log Logger.
      * @throws GridInterruptedException If interrupted.
      * @throws GridException If failed.
      */
-    public abstract void run(GridHadoopTaskContext taskCtx) throws GridException;
+    public abstract void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException;
 
     /**
      * Interrupts task execution.
      */
     public abstract void cancel();
-
-    /**
-     * Returns logger.
-     * @return Logger.
-     */
-    public GridLogger log() {
-        return log;
-    }
 }

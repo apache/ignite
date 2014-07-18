@@ -74,8 +74,8 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     private GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws GridException {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
-        GridHadoopShuffleJob<UUID> shuffleJob = new GridHadoopShuffleJob<>(ctx.localNodeId(), ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(ctx.localNodeId()),
+        GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), ctx.localNodeId(), log,
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()),
             !F.isEmpty(plan.mappers(ctx.localNodeId())));
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
@@ -88,11 +88,11 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             rdcAddrs[i] = nodeId;
         }
 
-        boolean init = shuffleJob.initializeReduceAddresses(rdcAddrs);
+        boolean init = job.initializeReduceAddresses(rdcAddrs);
 
         assert init;
 
-        return shuffleJob;
+        return job;
     }
 
     /**

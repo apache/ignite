@@ -57,16 +57,12 @@ public class GridHadoopV2JobResourceManager {
      * Creates new instance.
      * @param jobId Job ID.
      * @param ctx Hadoop job context.
-     * @param locNodeId Local node ID.
      * @param log Logger.
      */
-    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, UUID locNodeId, GridLogger log)
-        throws GridException {
+    public GridHadoopV2JobResourceManager(GridHadoopJobId jobId, JobContextImpl ctx, GridLogger log) {
         this.jobId = jobId;
         this.ctx = ctx;
         this.log = log.getLogger(GridHadoopV2JobResourceManager.class);
-
-        jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
 
     /**
@@ -88,9 +84,12 @@ public class GridHadoopV2JobResourceManager {
      * Prepare job resources. Resolve the classpath list and download it if needed.
      *
      * @param download {@code true} If need to download resources.
+     * @param locNodeId Local node ID.
      * @throws GridException If failed.
      */
-    public void prepareJobEnvironment(boolean download) throws GridException {
+    public void prepareJobEnvironment(boolean download, UUID locNodeId) throws GridException {
+        jobLocDir = new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+
         try {
             if (jobLocDir.exists())
                 throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
@@ -139,7 +138,7 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Process list of resources.
      *
-     * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
+     * @param files Array of {@link URI} or {@link Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
      * @param extract {@code true}, if need to extract archive.
      * @param addToClsPath {@code true}, if need to add the resource to class path.
@@ -344,6 +343,11 @@ public class GridHadoopV2JobResourceManager {
         }
     }
 
+    /**
+     * Returns collection of class path for current job.
+     *
+     * @return Class path collection.
+     */
     public Collection<URL> classPath() {
         return clsPath;
     }

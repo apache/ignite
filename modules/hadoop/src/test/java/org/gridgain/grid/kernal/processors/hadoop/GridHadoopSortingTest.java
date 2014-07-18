@@ -40,7 +40,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
     /**
      * @return {@code True} if GGFS is enabled on Hadoop nodes.
      */
-    protected boolean ggfsEnabled() {
+    @Override protected boolean ggfsEnabled() {
         return true;
     }
 
@@ -152,7 +152,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
     public static class InFormat extends InputFormat<Text, NullWritable> {
         /** {@inheritDoc} */
-        @Override public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
+        @Override public List<InputSplit> getSplits(JobContext ctx) throws IOException, InterruptedException {
             List<InputSplit> res = new ArrayList<>();
 
             FakeSplit split = new FakeSplit(20);
@@ -165,7 +165,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public RecordReader<Text, NullWritable> createRecordReader(final InputSplit split,
-            TaskAttemptContext context) throws IOException, InterruptedException {
+            TaskAttemptContext ctx) throws IOException, InterruptedException {
             return new RecordReader<Text, NullWritable>() {
                 /** */
                 int cnt;
@@ -173,7 +173,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 Text txt = new Text();
 
-                @Override public void initialize(InputSplit split, TaskAttemptContext context) throws IOException,
+                @Override public void initialize(InputSplit split, TaskAttemptContext ctx) throws IOException,
                     InterruptedException {
                     // No-op.
                 }

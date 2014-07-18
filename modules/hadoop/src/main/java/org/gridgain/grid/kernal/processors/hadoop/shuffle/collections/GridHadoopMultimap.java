@@ -30,20 +30,20 @@ public interface GridHadoopMultimap extends AutoCloseable {
     public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException;
 
     /**
+     * @param ctx Task context.
      * @return Adder.
      * @throws GridException If failed.
-     * @param ctx
      */
     public Adder startAdding(GridHadoopTaskContext ctx) throws GridException;
 
     /**
-     *
-     * @param taskCtx
+     * @param taskCtx Task context.
      * @param groupCmp Optional grouping comparator.
      * @return Task input.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, @Nullable Comparator<Object> groupCmp) throws GridException;
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, @Nullable Comparator<Object> groupCmp)
+        throws GridException;
 
     /** {@inheritDoc} */
     @Override public void close();

@@ -15,7 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 
 /**
  * Hadoop reduce task implementation for v1 API.
@@ -26,19 +26,19 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
     /**
      * Constructor.
-     *  @param taskInfo Task info.
+     *
+     * @param taskInfo Task info.
      * @param reduce {@code True} if reduce, {@code false} if combine.
-     * @param log Logger.
      */
-    public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
+        super(taskInfo);
 
         this.reduce = reduce;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
@@ -74,7 +74,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
             }
             finally {
                 if (!successful)
-                    closeSafe(reducer);
+                    closeSafe(reducer, log);
 
                 collector.closeWriter();
             }
@@ -88,5 +88,4 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
             throw new GridException(e);
         }
     }
-
 }

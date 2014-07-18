@@ -562,12 +562,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = path.hashCode();
+            int res = path.hashCode();
 
-            result = 31 * result + (int) (start ^ (start >>> 32));
-            result = 31 * result + (int) (len ^ (len >>> 32));
+            res = 31 * res + (int) (start ^ (start >>> 32));
+            res = 31 * res + (int) (len ^ (len >>> 32));
 
-            return result;
+            return res;
         }
     }
 

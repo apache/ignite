@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.GridHadoopTaskCancelledException;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -32,10 +32,9 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * Constructor.
      *
      * @param taskInfo Task info.
-     * @param log Logger.
      */
-    protected GridHadoopV1Task(GridHadoopTaskInfo taskInfo, GridLogger log) {
-        super(taskInfo, log);
+    protected GridHadoopV1Task(GridHadoopTaskInfo taskInfo) {
+        super(taskInfo);
     }
 
     /**
@@ -94,13 +93,15 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * Closes the resource with exceptions suppression.
      *
      * @param rsrc Closeable resource.
+     * @param log Logger.
      */
-    protected void closeSafe(@Nullable Closeable rsrc) {
+    protected void closeSafe(@Nullable Closeable rsrc, GridLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
-            } catch (Throwable e) {
-                U.error(log(), "Error on close resource of " + info(), e);
+            }
+            catch (Throwable e) {
+                U.error(log, "Error on close resource of " + info(), e);
             }
     }
 }

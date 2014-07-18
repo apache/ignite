@@ -9,12 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.TaskAttemptID;
@@ -27,14 +24,11 @@ import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 /**
  * Hadoop job implementation for v2 API.
@@ -55,17 +49,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private final JobContextImpl jobCtx;
 
-    /** Logger. */
-    private GridLogger log;
-
     /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
-
-    /** Hadoop native job context. */
-    //protected JobContextImpl ctx;
 
     /** */
     private JobID hadoopJobID;
@@ -73,6 +61,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private GridHadoopV2JobResourceManager rsrcMgr;
 
+    /** */
     private Map<String, GridHadoopTaskContext> contexts = new ConcurrentHashMap<>();
 
     /**
@@ -86,7 +75,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.log = log.getLogger(GridHadoopV2Job.class);
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
@@ -98,6 +86,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
         useNewMapper = jobConf.getUseNewMapper();
         useNewReducer = jobConf.getUseNewReducer();
         useNewCombiner = jobConf.getCombinerClass() == null;
+
+        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobCtx, log);
     }
 
     /** {@inheritDoc} */
@@ -198,33 +188,28 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         switch (taskInfo.type()) {
             case SETUP:
-                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo, log) : new GridHadoopV1SetupTask(taskInfo, log);
+                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo) : new GridHadoopV1SetupTask(taskInfo);
 
             case MAP:
-                return useNewMapper ? new GridHadoopV2MapTask(taskInfo, log) : new GridHadoopV1MapTask(taskInfo, log);
+                return useNewMapper ? new GridHadoopV2MapTask(taskInfo) : new GridHadoopV1MapTask(taskInfo);
 
             case REDUCE:
-                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo, true, log) :
-                    new GridHadoopV1ReduceTask(taskInfo, true, log);
+                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo, true) :
+                    new GridHadoopV1ReduceTask(taskInfo, true);
 
             case COMBINE:
-                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo, false, log) :
-                    new GridHadoopV1ReduceTask(taskInfo, false, log);
+                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo, false) :
+                    new GridHadoopV1ReduceTask(taskInfo, false);
 
             case COMMIT:
             case ABORT:
-                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort, log) :
-                    new GridHadoopV1CleanupTask(taskInfo, isAbort, log);
+                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort) :
+                    new GridHadoopV1CleanupTask(taskInfo, isAbort);
 
             default:
                 return null;
         }
     }
-
-//    @Override
-//    public Comparator<?> sortComparator() {
-//        return sortComparator;
-//    }
 
     /**
      * @param type Task type.
@@ -262,34 +247,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
         return new TaskAttemptID(tid, taskInfo.attempt());
     }
 
-    /**
-     * Creates and initializes partitioner instance.
-     *
-     * @param ctx Hadoop job context.
-     * @return Partitioner.
-     * @throws GridException If fails.
-     */
-    private GridHadoopPartitioner createPartitioner(JobContextImpl ctx) throws GridException {
-        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
-
-        if (partClsOld != null)
-            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass(), ctx.getConfiguration());
-
-        try {
-            return new GridHadoopV2Partitioner(ctx.getPartitionerClass(), ctx.getConfiguration());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr = new GridHadoopV2JobResourceManager(jobId, jobCtx, locNodeId, log);
-
-        rsrcMgr.prepareJobEnvironment(!external);
-
-
+        rsrcMgr.prepareJobEnvironment(!external, locNodeId);
     }
 
     /** {@inheritDoc} */
@@ -312,6 +272,15 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public void cleanupStagingDirectory() {
         if (rsrcMgr != null)
             rsrcMgr.cleanupStagingDirectory();
+    }
+
+    /**
+     * Returns hadoop job context.
+     *
+     * @return Job context.
+     */
+    public JobContextImpl jobContext() {
+        return jobCtx;
     }
 
     /**
@@ -362,5 +331,4 @@ public class GridHadoopV2Job implements GridHadoopJob {
             return delegate.findResources(name);
         }
     }
-
 }

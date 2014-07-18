@@ -40,37 +40,7 @@ public interface GridHadoopJob {
     public Collection<GridHadoopInputSplit> input() throws GridException;
 
     /**
-     * Gets partitioner for the job.
-     *
-     * @return Partitioner.
-     */
-//    public GridHadoopPartitioner partitioner() throws GridException;
-
-    /**
-     * Creates new instance of key serialization object.
-     *
-     * @return Serialization facility.
-     * @throws GridException if failed.
-     */
-//    public GridHadoopSerialization keySerialization() throws GridException;
-
-    /**
-     * Creates new instance of value serialization object.
-     *
-     * @return Serialization facility.
-     * @throws GridException if failed.
-     */
-//    public GridHadoopSerialization valueSerialization() throws GridException;
-
-    /**
-     * Creates mapper output key sorting comparator.
-     *
-     * @return New sort comparator.
-     */
-    //public Comparator<?> sortComparator();
-
-    /**
-     * Creates context for task execution.
+     * Returns context for task execution.
      *
      * @param info Task info.
      * @return Task Context.

@@ -156,7 +156,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (cancelled)
                 throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-            task.run(ctx);
+            task.run(ctx, log);
         }
     }
 
@@ -177,7 +177,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     protected abstract void onTaskFinished(GridHadoopTaskState state, Throwable err);
 
     /**
-     * @param ctx Task info.
+     * @param ctx Task context.
      * @param locCombiner If we have mapper with combiner.
      * @return Task input.
      * @throws GridException If failed.
@@ -204,7 +204,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     }
 
     /**
-     * @param ctx Task info.
+     * @param ctx Task context.
      * @return Input.
      * @throws GridException If failed.
      */

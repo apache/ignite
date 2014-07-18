@@ -12,14 +12,11 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 import com.google.common.collect.*;
 import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,7 +28,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Skip list tests.
  */
-public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
+public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
     /**
      *
      */
@@ -78,17 +75,11 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         int mapSize = 16 << rnd.nextInt(6);
 
-        Job job = Job.getInstance();
+        GridHadoopJob job = mockJob();
 
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-        GridHadoopV2Job v2Job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()), log);
-
-        GridHadoopTaskContext taskCtx = v2Job.getTaskContext(new GridHadoopTaskInfo());
-
-        GridHadoopMultimap m = new GridHadoopSkipList(v2Job, mem, ComparableComparator.getInstance());
+        GridHadoopMultimap m = new GridHadoopSkipList(job, mem, ComparableComparator.getInstance());
 
         GridHadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -145,7 +136,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
             prevKey = k.get();
 
-            LinkedList<Integer> vs = new LinkedList<>();
+            Deque<Integer> vs = new LinkedList<>();
 
             Iterator<?> it = in.values();
 
@@ -159,13 +150,13 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         assertEquals(mmm.size(), keys);
 
-//        assertEquals(m.keys(), keys);
+//!        assertEquals(m.keys(), keys);
 
         // Check visitor.
 
         final byte[] buf = new byte[4];
 
-        final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
+        final GridDataInput dataInput = new GridUnsafeDataInput();
 
         m.visit(false, new GridHadoopConcurrentHashMultimap.Visitor() {
             /** */
@@ -184,7 +175,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                 vis.put(key.get(), val.get());
             }
 
-            private void read(long ptr, int size, IntWritable w) {
+            private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
                 UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF, size);
@@ -218,17 +209,11 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            Job job = Job.getInstance();
+            GridHadoopJob job = mockJob();
 
-            job.setMapOutputKeyClass(IntWritable.class);
-            job.setMapOutputValueClass(IntWritable.class);
+            final GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-            GridHadoopV2Job v2Job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-                    new GridHadoopDefaultJobInfo(job.getConfiguration()), log);
-
-            final GridHadoopTaskContext taskCtx = v2Job.getTaskContext(new GridHadoopTaskInfo());
-
-            final GridHadoopMultimap m = new GridHadoopSkipList(v2Job, mem, ComparableComparator.getInstance());
+            final GridHadoopMultimap m = new GridHadoopSkipList(job, mem, ComparableComparator.getInstance());
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 

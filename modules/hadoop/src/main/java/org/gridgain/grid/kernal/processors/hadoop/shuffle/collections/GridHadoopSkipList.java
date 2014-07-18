@@ -80,14 +80,14 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return true;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
         return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> groupCmp) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> groupCmp)
+        throws GridException {
         Input in = new Input(taskCtx);
 
         if (groupCmp != null && groupCmp.getClass() != cmp.getClass())
@@ -257,8 +257,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private final Reader keyReader;
 
         /**
+         * @param ctx Task context.
          * @throws GridException If failed.
-         * @param ctx
          */
         protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
             super(ctx);
@@ -554,8 +554,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private Reader valReader;
 
         /**
+         * @param taskCtx Task context.
          * @throws GridException If failed.
-         * @param taskCtx
          */
         public Input(GridHadoopTaskContext taskCtx) throws GridException {
             keyReader = new Reader(taskCtx.keySerialization());
@@ -591,7 +591,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      */
     private class GroupedInput implements GridHadoopTaskInput {
         /** */
-        private Comparator<Object> groupCmp;
+        private Comparator<Object> grpCmp;
 
         /** */
         private Input in;
@@ -606,11 +606,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private GridLongList vals = new GridLongList();
 
         /**
-         * @param groupCmp Grouping comparator.
+         * @param grpCmp Grouping comparator.
          * @param in Input.
          */
-        private GroupedInput(Comparator<Object> groupCmp, Input in) {
-            this.groupCmp = groupCmp;
+        private GroupedInput(Comparator<Object> grpCmp, Input in) {
+            this.grpCmp = grpCmp;
             this.in = in;
         }
 
@@ -642,7 +642,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             }
 
             while (in.next()) { // Fill with head value pointers with equal keys.
-                if (groupCmp.compare(prevKey, nextKey = in.key()) == 0) {
+                if (grpCmp.compare(prevKey, nextKey = in.key()) == 0) {
                     vals.add(value(in.metaPtr));
                 }
                 else

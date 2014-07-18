@@ -29,7 +29,7 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
      * @return Hadoop job.
      * @throws IOException If fails.
      */
-    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
+    @Override public GridHadoopV2Job getHadoopJob(String inFile, String outFile) throws Exception {
         JobConf jobConf = GridHadoopWordCount1.getJob(inFile, outFile);
 
         setupFileSystems(jobConf);
@@ -38,11 +38,7 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        GridHadoopJob gridJob = new GridHadoopV2Job(jobId, jobInfo, log);
-
-        gridJob.initialize(false, UUID.randomUUID());
-
-        return gridJob;
+        return new GridHadoopV2Job(jobId, jobInfo, log);
     }
 
     /** {@inheritDoc} */

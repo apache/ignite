@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -30,23 +30,20 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Constructor.
      *
      * @param taskInfo Task info.
-     * @param log Logger.
      */
-    protected GridHadoopV2Task(GridHadoopTaskInfo taskInfo, GridLogger log) {
-        super(taskInfo, log);
+    protected GridHadoopV2Task(GridHadoopTaskInfo taskInfo) {
+        super(taskInfo);
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        //JobContext jobCtx = jobImpl.hadoopJobContext();
-
         hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
 
-        run0(jobImpl, ctx);
+        run0(jobImpl, ctx, log);
     }
 
     /**
@@ -56,7 +53,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * @param taskCtx Task context.
      * @throws GridException
      */
-    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx)
+    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx, GridLogger log)
         throws GridException;
 
     /**
@@ -109,12 +106,12 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /**
-     * Close writer.
+     * Close writer with exception suppression if logger has been specified.
      *
-     * @param suppressE {@code true} If need to suppress any exception.
-     * @throws Exception If fails.
+     * @param log Logger.
+     * @throws Exception If fails and logger hasn't been specified.
      */
-    protected void closeWriter(boolean suppressE) throws Exception {
+    protected void closeWriter(@Nullable GridLogger log) throws Exception {
         RecordWriter writer = hadoopCtx.writer();
 
         try {
@@ -122,8 +119,8 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
                 writer.close(hadoopCtx);
         }
         catch (Throwable e) {
-            if (suppressE)
-                U.error(log(), "Error on close writer of " + info(), e);
+            if (log != null)
+                U.error(log, "Error on close writer of " + info(), e);
             else
                 throw e;
         }

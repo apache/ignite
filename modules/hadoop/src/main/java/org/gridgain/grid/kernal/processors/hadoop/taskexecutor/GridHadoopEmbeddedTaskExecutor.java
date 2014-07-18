@@ -99,12 +99,12 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
                 }
 
-                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext ctx) throws GridException {
-                    return GridHadoopEmbeddedTaskExecutor.this.ctx.shuffle().input(ctx);
+                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext taskCtx) throws GridException {
+                    return ctx.shuffle().input(taskCtx);
                 }
 
-                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx) throws GridException {
-                    return GridHadoopEmbeddedTaskExecutor.this.ctx.shuffle().output(ctx);
+                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext taskCtx) throws GridException {
+                    return ctx.shuffle().output(taskCtx);
                 }
             };
 

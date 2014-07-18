@@ -77,7 +77,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
     /**
      * @return Adder object.
-     * @param ctx
+     * @param ctx Task context.
      */
     @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
         if (inputs.get() != 0)
@@ -359,7 +359,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
         /**
          * @throws GridException If failed.
-         * @param ctx
+         * @param ctx Task context.
          */
         public AdderImpl(GridHadoopTaskContext ctx) throws GridException {
             super(ctx);

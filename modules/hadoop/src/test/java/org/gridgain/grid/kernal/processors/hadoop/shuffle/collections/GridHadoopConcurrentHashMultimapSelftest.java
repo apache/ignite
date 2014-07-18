@@ -11,14 +11,11 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import com.google.common.collect.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -29,7 +26,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  *
  */
-public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstractTest {
+public class GridHadoopConcurrentHashMultimapSelftest extends GridHadoopAbstractMapTest {
     /** */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
@@ -45,17 +42,11 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
         int mapSize = 16 << rnd.nextInt(3);
 
-        Job job = Job.getInstance();
+        GridHadoopJob job = mockJob();
 
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-        GridHadoopV2Job v2Job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()), log);
-
-        GridHadoopTaskContext taskCtx = v2Job.getTaskContext(new GridHadoopTaskInfo());
-
-        GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(v2Job, mem, mapSize);
+        GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(job, mem, mapSize);
 
         GridHadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -106,7 +97,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
             assertNotNull(k);
 
-            LinkedList<Integer> vs = new LinkedList<>();
+            Deque<Integer> vs = new LinkedList<>();
 
             Iterator<?> it = in.values();
 
@@ -128,7 +119,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
 
         final byte[] buf = new byte[4];
 
-        final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
+        final GridDataInput dataInput = new GridUnsafeDataInput();
 
         m.visit(false, new GridHadoopConcurrentHashMultimap.Visitor() {
             /** */
@@ -147,7 +138,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
                 vis.put(key.get(), val.get());
             }
 
-            private void read(long ptr, int size, IntWritable w) {
+            private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
                 UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF, size);
@@ -181,17 +172,11 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridCommonAbstract
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            Job job = Job.getInstance();
+            GridHadoopJob job = mockJob();
 
-            job.setMapOutputKeyClass(IntWritable.class);
-            job.setMapOutputValueClass(IntWritable.class);
+            final GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-            GridHadoopV2Job v2Job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-                    new GridHadoopDefaultJobInfo(job.getConfiguration()), log);
-
-            final GridHadoopTaskContext taskCtx = v2Job.getTaskContext(new GridHadoopTaskInfo());
-
-            final GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(v2Job, mem, 16);
+            final GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(job, mem, 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 

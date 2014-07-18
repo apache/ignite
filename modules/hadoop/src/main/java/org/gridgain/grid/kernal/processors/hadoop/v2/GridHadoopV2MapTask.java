@@ -17,7 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 
 /**
  * Hadoop map task implementation for v2 API.
@@ -25,15 +25,14 @@ import org.gridgain.grid.logger.GridLogger;
 public class GridHadoopV2MapTask extends GridHadoopV2Task {
     /**
      * @param taskInfo Task info.
-     * @param log Logger.
      */
-    public GridHadoopV2MapTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV2MapTask(GridHadoopTaskInfo taskInfo) {
+        super(taskInfo);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx, GridLogger log)
         throws GridException {
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -74,11 +73,11 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
                 successful = true;
 
-                closeWriter(false);
+                closeWriter(null);
             }
             finally {
                 if (!successful)
-                    closeWriter(true);
+                    closeWriter(log);
             }
 
             commit(outputFormat);

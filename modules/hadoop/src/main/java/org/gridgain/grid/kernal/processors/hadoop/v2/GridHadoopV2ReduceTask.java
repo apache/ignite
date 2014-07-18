@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.
@@ -26,19 +26,19 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /**
      * Constructor.
-     *  @param taskInfo Task info.
+     *
+     * @param taskInfo Task info.
      * @param reduce {@code True} if reduce, {@code false} if combine.
-     * @param log Logger.
      */
-    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo, boolean reduce) {
+        super(taskInfo);
 
         this.reduce = reduce;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx, GridLogger log)
         throws GridException {
         OutputFormat outputFormat = null;
         Exception err = null;
@@ -58,11 +58,11 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
                 successful = true;
 
-                closeWriter(false);
+                closeWriter(null);
             }
             finally {
                 if (!successful)
-                    closeWriter(true);
+                    closeWriter(log);
             }
 
             commit(outputFormat);

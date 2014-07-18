@@ -33,7 +33,8 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> ignore) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> ignore)
+        throws GridException {
         return new Input(taskCtx);
     }
 
@@ -153,7 +154,7 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
 
         /**
          * @throws GridException If failed.
-         * @param taskCtx
+         * @param taskCtx Task context.
          */
         public Input(GridHadoopTaskContext taskCtx) throws GridException {
             cap = capacity();

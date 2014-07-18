@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
 import org.gridgain.grid.hadoop.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -82,9 +82,11 @@ public class GridHadoopExternalSplit extends GridHadoopInputSplit {
     }
 
     /**
+     * Reads class name from input stream and tries get one from configuration.
+     *
      * @param in Input stream.
      * @param off Offset in stream.
-     * @param jobConf
+     * @param jobConf Job configuration.
      * @return Class or {@code null} if not found.
      * @throws IOException If failed.
      */
@@ -101,5 +103,4 @@ public class GridHadoopExternalSplit extends GridHadoopInputSplit {
             throw new IOException(e);
         }
     }
-
 }

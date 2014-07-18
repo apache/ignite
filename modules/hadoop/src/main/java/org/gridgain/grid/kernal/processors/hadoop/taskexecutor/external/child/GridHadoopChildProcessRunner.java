@@ -113,7 +113,8 @@ public class GridHadoopChildProcessRunner {
                 job.initialize(true, nodeDesc.processId());
 
                 shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(),
-                    comm.localProcessDescriptor().parentNodeId(), log, job, mem, req.reducers(), req.hasMappers());
+                    comm.localProcessDescriptor().parentNodeId(), log, job, mem, req.reducerCount(), req.reducers(),
+                    req.hasMappers());
 
                 initializeExecutors(req);
 
@@ -214,7 +215,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void updateTasks(final GridHadoopJobInfoUpdateRequest req) {
         initFut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> gridFuture) {
+            @Override public void apply(GridFuture<?> gridFut) {
                 assert initGuard.get();
 
                 assert req.jobId().equals(job.id());

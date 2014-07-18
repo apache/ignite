@@ -565,9 +565,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             JobLocalState state = activeJobs.get(jobId);
 
-            GridHadoopMapReducePlan plan = meta.mapReducePlan();
-
             GridHadoopJob job = job(jobId, meta.jobInfo());
+
+            GridHadoopMapReducePlan plan = meta.mapReducePlan();
 
             switch (meta.phase()) {
                 case PHASE_SETUP: {

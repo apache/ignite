@@ -16,9 +16,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.logger.GridLogger;
-
-import java.io.*;
+import org.gridgain.grid.logger.*;
 
 /**
  * Hadoop map task implementation for v1 API.
@@ -28,13 +26,13 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
     private static final String[] EMPTY_HOSTS = new String[0];
 
     /** {@inheritDoc} */
-    public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
+        super(taskInfo);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
@@ -52,26 +50,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
-        else {
-            nativeSplit = (InputSplit) ctx.getNativeSplit(split);
-
-            try {
-                Class<?> splitCls = Class.forName(nativeSplit.getClass().getName(), true, jobConf.getClassLoader());
-
-                if (!splitCls.isAssignableFrom(nativeSplit.getClass())) {
-                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
-
-                    nativeSplit.write(new DataOutputStream(buf));
-
-                    nativeSplit = (InputSplit) ReflectionUtils.newInstance(splitCls, jobConf);
-
-                    nativeSplit.readFields(new DataInputStream(new ByteArrayInputStream(buf.toByteArray())));
-                }
-            }
-            catch (ClassNotFoundException | IOException e) {
-                e.printStackTrace();
-            }
-        }
+        else
+            nativeSplit = (InputSplit)ctx.getNativeSplit(split);
 
         assert nativeSplit != null;
 
@@ -108,7 +88,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             }
             finally {
                 if (!successful)
-                    closeSafe(mapper);
+                    closeSafe(mapper, log);
 
                 collector.closeWriter();
             }

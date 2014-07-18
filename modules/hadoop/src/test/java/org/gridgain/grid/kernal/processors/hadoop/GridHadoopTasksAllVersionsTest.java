@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.io.*;
 import java.net.*;
@@ -35,7 +36,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @return Hadoop job.
      * @throws IOException If fails.
      */
-    public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception;
+    public abstract GridHadoopV2Job getHadoopJob(String inFile, String outFile) throws Exception;
 
     /**
      * @return prefix of reducer output file name. It's "part-" for v1 and "part-r-" for v2 API
@@ -71,7 +72,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, fileBlock1.length(),
                 ggfs.info(inFile).length() - fileBlock1.length());
 
-        GridHadoopJob gridJob = getHadoopJob(ggfsScheme() + inFile.toString(), ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(ggfsScheme() + inFile.toString(), ggfsScheme() + PATH_OUTPUT);
 
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0,
             fileBlock1);
@@ -80,7 +81,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         ctx.mockOutput().clear();
 
-        executeTask(gridJob, taskInfo, ctx);
+        createAndExecuteTask(gridJob, taskInfo, ctx);
 
         assertEquals("hello0,1; world0,1; world1,1; hello1,1", Joiner.on("; ").join(ctx.mockOutput()));
 
@@ -88,19 +89,24 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2);
 
-        executeTask(gridJob, taskInfo, ctx);
+        createAndExecuteTask(gridJob, taskInfo, ctx);
 
         assertEquals("hello2,1; world2,1; world3,1; hello3,1", Joiner.on("; ").join(ctx.mockOutput()));
     }
 
-    private void executeTask(GridHadoopJob gridJob, GridHadoopTaskInfo taskInfo, GridHadoopTestTaskContext ctx) throws GridException {
+    /**
+     * Create and execute task.
+     *
+     * @param gridJob Job.
+     * @param taskInfo Task info.
+     * @param ctx Task context.
+     * @throws GridException If fails.
+     */
+    private void createAndExecuteTask(GridHadoopJob gridJob, GridHadoopTaskInfo taskInfo, GridHadoopTestTaskContext ctx)
+        throws GridException {
         GridHadoopTask task = gridJob.createTask(taskInfo);
 
-        gridJob.prepareTaskEnvironment(taskInfo);
-
-        task.run(ctx);
-
-        gridJob.cleanupTaskEnvironment(taskInfo);
+        task.run(ctx, log);
     }
 
     /**
@@ -113,7 +119,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @return Context with mock output.
      * @throws GridException If fails.
      */
-    private GridHadoopTestTaskContext runTaskWithInput(GridHadoopJob gridJob, GridHadoopTaskType taskType,
+    private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2Job gridJob, GridHadoopTaskType taskType,
                                                        int taskNum, String... words) throws GridException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, gridJob.id(), taskNum, 0, null);
 
@@ -128,7 +134,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
             ctx.mockInput().put(new Text(words[i]), valList);
         }
 
-        executeTask(gridJob, taskInfo, ctx);
+        createAndExecuteTask(gridJob, taskInfo, ctx);
 
         return ctx;
     }
@@ -139,7 +145,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        GridHadoopJob gridJob = getHadoopJob(ggfsScheme() + PATH_INPUT, ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(ggfsScheme() + PATH_INPUT, ggfsScheme() + PATH_OUTPUT);
 
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
         runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
@@ -157,8 +163,6 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
             readAndSortFile(PATH_OUTPUT + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
                 getOutputFileNamePrefix() + "00001")
         );
-
-        gridJob.dispose(false);
     }
 
     /**
@@ -167,7 +171,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws Exception If fails.
      */
     public void testCombinerTask() throws Exception {
-        GridHadoopJob gridJob = getHadoopJob("/", "/");
+        GridHadoopV2Job gridJob = getHadoopJob("/", "/");
 
         GridHadoopTestTaskContext ctx =
             runTaskWithInput(gridJob, GridHadoopTaskType.COMBINE, 0, "word1", "5", "word2", "10");
@@ -177,8 +181,6 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         ctx = runTaskWithInput(gridJob, GridHadoopTaskType.COMBINE, 1, "word3", "7", "word4", "15");
 
         assertEquals("word3,7; word4,15", Joiner.on("; ").join(ctx.mockOutput()));
-
-        gridJob.dispose(false);
     }
 
     /**
@@ -189,20 +191,22 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @return Context of combine task with mock output.
      * @throws GridException If fails.
      */
-    private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJob gridJob) throws GridException {
+    private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopV2Job gridJob)
+        throws GridException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
 
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
-        executeTask(gridJob, taskInfo, mapCtx);
+        createAndExecuteTask(gridJob, taskInfo, mapCtx);
 
         //Prepare input for combine
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
 
         GridHadoopTestTaskContext combineCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
+
         combineCtx.makeTreeOfWritables(mapCtx.mockOutput());
 
-        executeTask(gridJob, taskInfo, combineCtx);
+        createAndExecuteTask(gridJob, taskInfo, combineCtx);
 
         return combineCtx;
     }
@@ -233,7 +237,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, inFileUri, 0, l);
         GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, inFileUri, l, fileLen - l);
 
-        GridHadoopJob gridJob = getHadoopJob(inFileUri.toString(), ggfsScheme() + PATH_OUTPUT);
+        GridHadoopV2Job gridJob = getHadoopJob(inFileUri.toString(), ggfsScheme() + PATH_OUTPUT);
 
         GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 
@@ -247,20 +251,18 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
         reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());
 
-        executeTask(gridJob, taskInfo, reduceCtx);
+        createAndExecuteTask(gridJob, taskInfo, reduceCtx);
 
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
 
-        executeTask(gridJob, taskInfo, reduceCtx);
+        createAndExecuteTask(gridJob, taskInfo, reduceCtx);
 
         assertEquals(
-            "blue\t200\n" +
-            "green\t150\n" +
-            "red\t100\n" +
-            "yellow\t70\n",
-            readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
+                "blue\t200\n" +
+                        "green\t150\n" +
+                        "red\t100\n" +
+                        "yellow\t70\n",
+                readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
         );
-
-        gridJob.dispose(false);
     }
 }

@@ -12,9 +12,8 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -28,16 +27,15 @@ public class GridHadoopV1CleanupTask extends GridHadoopV1Task {
     /**
      * @param taskInfo Task info.
      * @param abort Abort flag.
-     * @param log Logger.
      */
-    public GridHadoopV1CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort, GridLogger log) {
-        super(taskInfo, log);
+    public GridHadoopV1CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort) {
+        super(taskInfo);
 
         this.abort = abort;
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         JobContext jobCtx = ctx.jobContext();
