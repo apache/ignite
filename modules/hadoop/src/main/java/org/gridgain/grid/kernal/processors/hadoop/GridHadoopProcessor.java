@@ -190,6 +190,11 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException {
+        return hctx.jobTracker().jobCounters(jobId);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().finishFuture(jobId);
     }

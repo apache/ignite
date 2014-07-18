@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.counters.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
@@ -163,12 +162,12 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(Enum<?> cntrName) {
-        return new GenericCounter(cntrName.name(), cntrName.name());
+        return getCounter(cntrName.getDeclaringClass().getName(), cntrName.name());
     }
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        return new GenericCounter(cntrName, cntrName);
+        return new GridHadoopV2Counter(ctx.counter(grpName, cntrName));
     }
 
     /** {@inheritDoc} */

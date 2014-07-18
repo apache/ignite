@@ -28,13 +28,21 @@ public abstract class GridHadoopTaskContext {
     /** */
     private final GridHadoopTaskInfo taskInfo;
 
+    /** */
+    private final GridHadoopCounters counters;
+
     /**
      * @param taskInfo Task info.
      * @param job Job.
+     * @param counters Counters.
      */
-    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
+    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job,
+        GridHadoopCounters counters) {
         this.taskInfo = taskInfo;
         this.job = job;
+        this.input = input;
+        this.output = output;
+        this.counters = counters;
     }
 
     /**
@@ -69,6 +77,26 @@ public abstract class GridHadoopTaskContext {
      */
     public GridHadoopJob job() {
         return job;
+    }
+
+    /**
+     * Gets counter for the given name.
+     *
+     * @param group Counter group's name.
+     * @param name Counter name.
+     * @return Counter.
+     */
+    public GridHadoopCounter counter(String group, String name) {
+        return counters.counter(group, name, true);
+    }
+
+    /**
+     * Gets all known counters.
+     *
+     * @return Unmodifiable collection of counters.
+     */
+    public Collection<GridHadoopCounter> counters() {
+        return counters.all();
     }
 
     public void input(GridHadoopTaskInput in) {

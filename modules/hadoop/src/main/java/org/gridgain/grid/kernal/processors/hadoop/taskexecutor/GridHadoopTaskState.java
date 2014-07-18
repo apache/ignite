@@ -16,7 +16,7 @@ public enum GridHadoopTaskState {
     /** Running task. */
     RUNNING,
 
-    /** Complted task. */
+    /** Completed task. */
     COMPLETED,
 
     /** Failed task. */

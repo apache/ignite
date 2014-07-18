@@ -30,9 +30,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -358,6 +358,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
+
+            if (status.state() == COMPLETED)
+                transform(info.jobId(), new IncrementCountersClosure(status.counters()));
 
             switch (info.type()) {
                 case SETUP: {
@@ -914,6 +917,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Returns job counters.
+     *
+     * @param jobId Job identifier.
+     * @return Job counters or {@code null} if job cannot be found.
+     * @throws GridException If failed.
+     */
+    @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
+        if (!busyLock.tryReadLock())
+            return null;
+
+        try {
+            final GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
+
+            return meta != null ? meta.counters() : null;
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
      * Event handler protected by busy lock.
      */
     private abstract class EventHandler implements Runnable {
@@ -1375,6 +1399,35 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (err != null)
                 cp.failCause(err);
+
+            return cp;
+        }
+    }
+
+    /**
+     * Increment counter values closure.
+     */
+    private static class IncrementCountersClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final GridHadoopCounters counters;
+
+        /**
+         * @param counters Task counters to add into job counters.
+         */
+        private IncrementCountersClosure(GridHadoopCounters counters) {
+            assert counters != null;
+
+            this.counters = counters;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
+
+            cp.counters().merge(counters);
 
             return cp;
         }
