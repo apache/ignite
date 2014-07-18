@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.F;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -109,6 +110,15 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         out.writeObject(jobInfo);
         out.writeBoolean(hasMappers);
         out.writeInt(reducerCnt);
+
+        if (!F.isEmpty(reducers)) {
+            out.writeInt(reducers.length);
+
+            for (int rdc : reducers)
+                out.writeInt(rdc);
+        }
+        else
+            out.writeInt(0);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +129,11 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         jobInfo = (GridHadoopJobInfo)in.readObject();
         hasMappers = in.readBoolean();
         reducerCnt = in.readInt();
+
+        reducers = new int[in.readInt()];
+
+        for (int i = 0; i < reducers.length; i++)
+            reducers[i] = in.readInt();
     }
 
     /** {@inheritDoc} */

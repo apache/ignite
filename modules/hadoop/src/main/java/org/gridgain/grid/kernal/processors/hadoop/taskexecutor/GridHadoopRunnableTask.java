@@ -154,6 +154,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
             ctx.input(in);
             ctx.output(out);
+            ctx.counters(counters);
 
             task = job.createTask(info);
 

@@ -29,20 +29,15 @@ public abstract class GridHadoopTaskContext {
     private final GridHadoopTaskInfo taskInfo;
 
     /** */
-    private final GridHadoopCounters counters;
+    private GridHadoopCounters counters;
 
     /**
      * @param taskInfo Task info.
      * @param job Job.
-     * @param counters Counters.
      */
-    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job,
-        GridHadoopCounters counters) {
+    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
         this.taskInfo = taskInfo;
         this.job = job;
-        this.input = input;
-        this.output = output;
-        this.counters = counters;
     }
 
     /**
@@ -105,6 +100,10 @@ public abstract class GridHadoopTaskContext {
 
     public void output(GridHadoopTaskOutput out) {
         output = out;
+    }
+
+    public void counters(GridHadoopCounters counters) {
+        this.counters = counters;
     }
 
     public abstract GridHadoopPartitioner partitioner() throws GridException;

@@ -54,8 +54,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
      * @param taskInfo Task info.
      * @param job      Job.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job,
-        JobContextImpl jobCtx) {
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx) {
         super(taskInfo, job);
         this.jobCtx = jobCtx;
     }
