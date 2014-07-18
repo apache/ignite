@@ -19,22 +19,55 @@ import org.jetbrains.annotations.*;
  */
 public class GridPortablesImpl implements GridPortables {
     /** */
+    private GridKernalContext ctx;
+
+    /** */
     private GridPortableProcessor proc;
 
     /**
-     * @param proc Portable processor.
+     * @param ctx Context.
      */
-    public GridPortablesImpl(GridPortableProcessor proc) {
-        this.proc = proc;
+    public GridPortablesImpl(GridKernalContext ctx) {
+        this.ctx = ctx;
+
+        proc = ctx.portable();
     }
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        return proc.typeId(typeName);
+        guard();
+
+        try {
+            return proc.typeId(typeName);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T toPortable(@Nullable Object obj) throws GridPortableException {
-        return (T)proc.marshalToPortable(obj);
+        guard();
+
+        try {
+            return (T)proc.marshalToPortable(obj);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * <tt>ctx.gateway().readLock()</tt>
+     */
+    private void guard() {
+        ctx.gateway().readLock();
+    }
+
+    /**
+     * <tt>ctx.gateway().readUnlock()</tt>
+     */
+    private void unguard() {
+        ctx.gateway().readUnlock();
     }
 }
