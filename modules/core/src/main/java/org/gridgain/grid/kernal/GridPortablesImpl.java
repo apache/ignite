@@ -29,6 +29,11 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId(String typeName) {
+        return proc.typeId(typeName);
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T toPortable(@Nullable Object obj) throws GridPortableException {
         return (T)proc.marshalToPortable(obj);
     }

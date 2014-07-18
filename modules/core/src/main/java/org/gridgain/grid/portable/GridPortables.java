@@ -17,6 +17,14 @@ import org.jetbrains.annotations.*;
  */
 public interface GridPortables {
     /**
+     * Gets type ID for given type name.
+     *
+     * @param typeName Type name.
+     * @return Type ID.
+     */
+    public int typeId(String typeName);
+
+    /**
      * Converts provided object to instance of {@link GridPortableObject}.
      * <p>
      * Note that object's type needs to be configured in {@link GridPortableConfiguration}.
