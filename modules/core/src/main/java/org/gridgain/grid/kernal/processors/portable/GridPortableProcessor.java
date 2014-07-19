@@ -48,4 +48,9 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Whether marshaller is portable.
      */
     public boolean isPortable(GridClientMarshaller marsh);
+
+    /**
+     * @return Builder.
+     */
+    public <T> GridPortableBuilder<T> builder();
 }

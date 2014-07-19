@@ -33,4 +33,11 @@ public interface GridPortables {
      * @return Converted object.
      */
     public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
+
+    /**
+     * Gets portable builder.
+     *
+     * @return Portable builder.
+     */
+    public <T> GridPortableBuilder<T> builder();
 }

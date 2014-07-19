@@ -57,6 +57,18 @@ public class GridPortablesImpl implements GridPortables {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> GridPortableBuilder<T> builder() {
+        guard();
+
+        try {
+            return proc.builder();
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
