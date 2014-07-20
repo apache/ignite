@@ -2343,9 +2343,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        if (cctx.peekModeExcluded(mode))
-            return null;
-
         switch (mode) {
             case TX:
                 return peekTx(failFast, filter, tx);
@@ -2454,17 +2451,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, GridException {
-        if (!cctx.peekModeExcluded(TX)) {
-            GridTuple<V> peek = peekTx(failFast, filter, tx);
+        GridTuple<V> peek = peekTx(failFast, filter, tx);
 
-            // If transaction has value (possibly null, which means value is to be deleted).
-            if (peek != null)
-                return peek;
-        }
+        // If transaction has value (possibly null, which means value is to be deleted).
+        if (peek != null)
+            return peek;
 
         long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        return !cctx.peekModeExcluded(GLOBAL) ? peekGlobal(failFast, topVer, filter) : null;
+        return peekGlobal(failFast, topVer, filter);
     }
 
     /**

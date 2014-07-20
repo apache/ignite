@@ -552,43 +552,75 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         };
 
-        Map<K, V> resMap = new HashMap();
-
-        GridCacheProjection<K, V> prj = cctx.cache().projection(filter);
-
-        for (K key : prj.keySet()) {
-            V val = prj.peek(key);
-
-            if (val != null)
-                resMap.put(key, val);
-        }
-
-        Set<Map.Entry<K, V>> entries = resMap.entrySet();
+        final GridCacheProjection<K, V> prj = cctx.cache().projection(filter);
 
         final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         injectResources(keyValFilter);
 
-        final GridIterator<GridIndexingKeyValueRow<K, V>> it = F.iterator(
-            entries,
-            new C1<Map.Entry<K, V>, GridIndexingKeyValueRow<K, V>>() {
-                @Override public GridIndexingKeyValueRow<K, V> apply(Map.Entry<K, V> e) {
-                    return new GridIndexingKeyValueRowAdapter<>(e.getKey(), e.getValue());
-                }
-            },
-            true,
-            new P1<Map.Entry<K, V>>() {
-                @Override public boolean apply(Map.Entry<K, V> e) {
-                    try {
-                        e = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.portableKeys(), qry.portableValues());
+        final GridIterator<GridIndexingKeyValueRow<K, V>> it = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+            private GridIndexingKeyValueRow<K, V> next;
 
-                        return keyValFilter == null || keyValFilter.apply(e.getKey(), e.getValue());
-                    }
-                    catch (GridException ex) {
-                        throw new GridRuntimeException(ex);
+            private Iterator<K> iter = prj.keySet().iterator();
+
+            {
+                advance();
+            }
+
+            @Override public boolean hasNextX() {
+                return next != null;
+            }
+
+            @Override public GridIndexingKeyValueRow<K, V> nextX() {
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                GridIndexingKeyValueRow<K, V> next0 = next;
+
+                advance();
+
+                return next0;
+            }
+
+            @Override public void removeX() {
+                throw new UnsupportedOperationException();
+            }
+
+            private void advance() {
+                GridBiTuple<K, V> next0 = null;
+
+                while (iter.hasNext()) {
+                    next0 = null;
+
+                    K key = iter.next();
+
+                    V val = prj.peek(key);
+
+                    if (val != null) {
+                        next0 = F.t(key, val);
+
+                        if (checkPredicate(next0))
+                            break;
                     }
                 }
-            });
+
+                next = next0 != null ?
+                    new GridIndexingKeyValueRowAdapter<>(next0.getKey(), next0.getValue()) :
+                    null;
+            }
+
+            private boolean checkPredicate(Map.Entry<K, V> e) {
+                try {
+                    Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.portableKeys(),
+                        qry.portableValues());
+
+                    return keyValFilter == null || keyValFilter.apply(e0.getKey(), e0.getValue());
+                }
+                catch (GridException ex) {
+                    throw new GridRuntimeException(ex);
+                }
+            }
+        };
 
         return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
             @Override protected boolean onHasNext() {

@@ -180,9 +180,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local flag array. */
     private static final GridCacheFlag[] FLAG_LOCAL = new GridCacheFlag[]{LOCAL};
 
-    /** Thread local peek mode excludes. */
-    private ThreadLocal<GridCachePeekMode[]> peekModeExcl = new ThreadLocal<>();
-
     /** Data center ID. */
     private byte dataCenterId;
 
@@ -1035,45 +1032,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheFlag[] forcedFlags() {
         return forcedFlags.get();
-    }
-
-    /**
-     * Force peek mode excludes for current thread.
-     *
-     * @param modes Peek modes to exclude.
-     * @return Excludes prior to this call.
-     */
-    public GridCachePeekMode[] excludePeekModes(@Nullable GridCachePeekMode[] modes) {
-        if (nearContext())
-            return dht().near().context().excludePeekModes(modes);
-
-        GridCachePeekMode[] oldModes = peekModeExcl.get();
-
-        peekModeExcl.set(F.isEmpty(modes) ? null : modes);
-
-        return oldModes;
-    }
-
-    /**
-     * @return Peek mode excludes.
-     */
-    public GridCachePeekMode[] peekModeExcludes() {
-        return nearContext() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
-    }
-
-    /**
-     * @param mode Peek mode.
-     * @return {@code true} if given peek mode is excluded.
-     */
-    public boolean peekModeExcluded(GridCachePeekMode mode) {
-        assert mode != null;
-
-        if (nearContext())
-            return dht().near().context().peekModeExcluded(mode);
-
-        GridCachePeekMode[] excl = peekModeExcl.get();
-
-        return excl != null && U.containsObjectArray(excl, mode);
     }
 
     /**
