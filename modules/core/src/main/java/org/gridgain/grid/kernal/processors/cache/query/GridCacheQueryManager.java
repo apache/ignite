@@ -601,6 +601,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         if (checkPredicate(next0))
                             break;
+                        else
+                            next0 = null;
                     }
                 }
 
