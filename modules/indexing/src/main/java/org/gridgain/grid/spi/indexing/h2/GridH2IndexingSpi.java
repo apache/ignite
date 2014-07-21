@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.indexing.h2;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -674,6 +675,38 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             removeTable(tbl);
     }
 
+    /**
+     * @param t Sql result.
+     * @return Array of rows.
+     * @throws GridSpiException If failed.
+     */
+    static Object[][] fetchResult(GridBiTuple<? extends Statement, ResultSet> t) throws GridSpiException {
+        try (Statement stmt = t.get1(); ResultSet rs = t.get2()) {
+            Object[][] res = new Object[16][];
+
+            int cols = rs.getMetaData().getColumnCount();
+
+            int i = 0;
+
+            while (rs.next()) {
+                Object[] row = new Object[cols];
+
+                for (int c = 0; c < cols; c++)
+                    row[c] = rs.getObject(c + 1);
+
+                if (i == res.length)
+                    res = Arrays.copyOf(res, i * 2);
+
+                res[i++] = row;
+            }
+
+            return res;
+        }
+        catch (SQLException e) {
+            throw new GridSpiException("Failed to fetch data.", e);
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
@@ -713,7 +746,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                 throw new GridSpiException("Failed to get meta data.", e);
             }
 
-            return new GridIndexingFieldsResultAdapter(meta, new FieldsIterator(rs, res.get1()));
+            Object[][] data = fetchResult(res);
+
+            return new GridIndexingFieldsResultAdapter(meta, new FieldsIterator(data));
         }
         catch (SQLException e) {
             onSqlException();
@@ -887,7 +922,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         try {
             T2<PreparedStatement, ResultSet> t = executeQuery(qry, params, tbl);
 
-            return t != null ? new KeyValIterator<K, V>(t.get2(), t.get1()) :
+            return t != null ? new KeyValIterator(fetchResult(t)) :
                 new GridEmptyCloseableIterator<GridIndexingKeyValueRow<K, V>>();
         }
         catch (SQLException e) {
@@ -2035,40 +2070,22 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Special field set iterator based on database result set.
      */
-    private class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
+    private static class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param rs Result set.
-         * @param stmt Statement to close at the end (if provided).
+         * @param data Data.
          */
-        protected FieldsIterator(ResultSet rs, Statement stmt) {
-            super(rs, stmt);
+        protected FieldsIterator(Object[][] data) {
+            super(data);
         }
 
         /** {@inheritDoc} */
-        @Override protected void onSqlException(SQLException e) {
-            GridH2IndexingSpi.this.onSqlException();
-        }
+        @Override protected List<GridIndexingEntity<?>> createRow(Object[] arr) {
+            List<GridIndexingEntity<?>> row = new ArrayList<>(arr.length);
 
-        /**
-         * Loads row from result set.
-         *
-         * @return Object associated with row of the result set.
-         * @throws SQLException In case of SQL error.
-         */
-        @Override protected List<GridIndexingEntity<?>> loadRow()
-            throws SQLException, GridSpiException, IOException {
-            ResultSetMetaData m = rs.getMetaData();
-
-            int cnt = m.getColumnCount();
-
-            List<GridIndexingEntity<?>> row = new ArrayList<>(cnt);
-
-            for (int i = 1; i <= cnt; i++) {
-                Object val = rs.getObject(i);
-
+            for (Object val : arr) {
                 row.add(val instanceof GridIndexingEntity ? (GridIndexingEntity<?>)val :
                     new GridIndexingEntityAdapter<>(val, null));
             }
@@ -2080,34 +2097,21 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Special key/value iterator based on database result set.
      */
-    private class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
+    private static class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param rs   Result set.
-         * @param stmt Statement to close at the end (if provided).
+         * @param data Data array.
          */
-        protected KeyValIterator(ResultSet rs, Statement stmt) {
-            super(rs, stmt);
+        protected KeyValIterator(Object[][] data) {
+            super(data);
         }
 
         /** {@inheritDoc} */
-        @Override protected void onSqlException(SQLException e) {
-            GridH2IndexingSpi.this.onSqlException();
-        }
-
-        /**
-         * Loads row from result set.
-         *
-         * @return Object associated with row of the result set.
-         * @throws SQLException In case of SQL error.
-         * @throws GridSpiException In case of error.
-         */
-        @Override protected GridIndexingKeyValueRow<K, V> loadRow()
-            throws SQLException, GridSpiException, IOException {
-            K key = (K)rs.getObject(KEY_FIELD_NAME);
-            V val = (V)rs.getObject(VAL_FIELD_NAME);
+        @Override protected GridIndexingKeyValueRow<K, V> createRow(Object[] row) {
+            K key = (K)row[0];
+            V val = (V)row[1];
 
             return new GridIndexingKeyValueRowAdapter<>(new GridIndexingEntityAdapter<>(key, null),
                 new GridIndexingEntityAdapter<>(val, null), null);
