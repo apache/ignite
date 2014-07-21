@@ -62,7 +62,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private Map<String, GridHadoopTaskContext> contexts = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, GridHadoopTaskContext> contexts = new ConcurrentHashMap<>();
 
     /**
      * @param jobId Job ID.
@@ -163,6 +163,23 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         JobConf taskJobConf = new JobConf(jobInfo.configuration());
 
+        configureClassLoader(taskJobConf);
+
+        JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
+
+        res = new GridHadoopV2TaskContext(info, this, taskJobCtx);
+
+        GridHadoopTaskContext old = contexts.putIfAbsent(locTaskId, res);
+
+        return old == null?res:old;
+    }
+
+    /**
+     * Creates and sets class loader into jobConf.
+     *
+     * @param jobConf Job conf.
+     */
+    private void configureClassLoader(JobConf jobConf) {
         Collection<URL> clsPath = rsrcMgr.classPath();
 
         if (!clsPath.isEmpty()) {
@@ -170,16 +187,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
             clsPath.toArray(urls);
 
-            taskJobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(urls), getClass().getClassLoader()));
+            jobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(urls), getClass().getClassLoader()));
         }
-
-        JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
-
-        res = new GridHadoopV2TaskContext(info, this, taskJobCtx);
-
-        contexts.put(locTaskId, res);
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -250,6 +259,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
         rsrcMgr.prepareJobEnvironment(!external, locNodeId);
+
+        configureClassLoader(jobConf);
     }
 
     /** {@inheritDoc} */

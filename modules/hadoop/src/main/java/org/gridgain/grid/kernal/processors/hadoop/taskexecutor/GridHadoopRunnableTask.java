@@ -14,6 +14,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -161,7 +162,18 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (cancelled)
                 throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-            task.run(ctx, log);
+            ClassLoader prevClsLdr = null;
+
+            try {
+                prevClsLdr = Thread.currentThread().getContextClassLoader();
+
+                Thread.currentThread().setContextClassLoader(((GridHadoopV2TaskContext)ctx).jobConf().getClassLoader());
+
+                task.run(ctx, log);
+            }
+            finally {
+                Thread.currentThread().setContextClassLoader(prevClsLdr);
+            }
         }
     }
 
