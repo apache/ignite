@@ -69,6 +69,42 @@ public class GridPortablesImpl implements GridPortables {
         }
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetaData metaData(Class<?> cls) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(cls.getName()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetaData metaData(String clsName) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(clsName));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetaData metaData(int typeId) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(typeId);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */

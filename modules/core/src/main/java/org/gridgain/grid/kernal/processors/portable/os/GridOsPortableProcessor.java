@@ -56,4 +56,9 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     @Override public <T> GridPortableBuilder<T> builder() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetaData metaData(int typeId) {
+        return null;
+    }
 }

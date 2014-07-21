@@ -53,4 +53,11 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Builder.
      */
     public <T> GridPortableBuilder<T> builder();
+
+    /**
+     * @param typeId Type ID.
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public GridPortableMetaData metaData(int typeId) throws GridPortableException;
 }
