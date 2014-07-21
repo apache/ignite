@@ -632,6 +632,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
 
+            ((GridDhtPreloader<K, V>)cctx.preloader()).onExchangeDone(this);
+
             return true;
         }
 

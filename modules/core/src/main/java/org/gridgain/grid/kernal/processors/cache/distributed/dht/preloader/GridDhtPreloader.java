@@ -785,6 +785,15 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /**
+     * @param exchFut Exchange.
+     */
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        assert exchFut.isDone();
+
+        exchFuts.removex(exchFut);
+    }
+
+    /**
      * @param keys Keys to request.
      * @return Future for request.
      */
@@ -952,6 +961,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
             // Return the value in the set.
             return cur == null ? fut : cur;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture<K, V> removex(
+            GridDhtPartitionsExchangeFuture<K, V> val
+        ) {
+            return super.removex(val);
         }
 
         /**

@@ -51,4 +51,9 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     @Override public boolean isPortable(GridClientMarshaller marsh) {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public <T> GridPortableBuilder<T> builder() {
+        return null;
+    }
 }
