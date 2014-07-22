@@ -415,7 +415,7 @@
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop</packages>
+                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop:org.gridgain.client.hadoop.counter</packages>
                                 </group>
                                 <group>
                                     <title>Router APIs</title>
