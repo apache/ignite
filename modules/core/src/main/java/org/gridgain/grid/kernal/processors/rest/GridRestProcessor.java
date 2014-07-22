@@ -533,6 +533,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
         switch (req.command()) {
             case CACHE_GET:
             case CACHE_GET_ALL:
+            case CACHE_QUERY_EXECUTE:
+            case CACHE_QUERY_FETCH:
+            case CACHE_QUERY_REBUILD_INDEXES:
                 perm = GridSecurityPermission.CACHE_READ;
                 name = ((GridRestCacheRequest)req).cacheName();
 
@@ -574,6 +577,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NOOP:
             case QUIT:
                 break;
+
+            default:
+                throw new AssertionError("Unexpected command: " + req.command());
         }
 
         if (perm != null)
