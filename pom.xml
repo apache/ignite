@@ -30,13 +30,6 @@
         <version>${gridgain.version}</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>GridGain External Repository</id>
-            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
-        </repository>
-    </repositories>
-
     <modules>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
