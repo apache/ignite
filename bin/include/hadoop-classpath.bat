@@ -9,31 +9,39 @@
 :: Version: @bat.file.version
 ::
 
-::
-:: Hadoop class path resolver.
-::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                 Hadoop class path resolver.
+::  Requires environment variables 'HADOOP_PREFIX' or 'HADOOP_HOME'
+::  to be set.
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-::
-:: Check HADOOP_HOME
-::
-
+:: Turn off script echoing
 @echo off
 
-if not defined HADOOP_HOME goto :eof
+:: Check if environment passes deprecated HADOOP_HOME
+if not defined HADOOP_PREFIX set HADOOP_PREFIX=%HADOOP_HOME%
 
-set HADOOP_HOME=%HADOOP_HOME:"=%
+:: Fail if we cannot find Hadoop installation directory
+if not defined HADOOP_PREFIX (
+    echo "ERROR: Failed to find Hadoop installation path (HADOOP_PREFIX is undefined)"
+    goto :eof
+)
 
-if %HADOOP_HOME:~-1,1% == \ (
-    set HADOOP_HOME=%HADOOP_HOME:~0,-1%
+:: Trim quotes
+set HADOOP_PREFIX=%HADOOP_PREFIX:"=%
+
+:: Trim slashes
+if %HADOOP_PREFIX:~-1,1% == \ (
+    set HADOOP_PREFIX=%HADOOP_PREFIX:~0,-1%
 )
 
 ::
-:: Setting all hadoop modules
+:: Setting the rest of Hadoop environment variables.
 ::
 
-set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
-set HADOOP_HDFS_HOME=%HADOOP_HOME%\share\hadoop\hdfs
-set HADOOP_MAPRED_HOME=%HADOOP_HOME%\share\hadoop\mapreduce
+if not defined HADOOP_COMMON_HOME set HADOOP_COMMON_HOME=%HADOOP_PREFIX%\share\hadoop\common
+if not defined HADOOP_HDFS_HOME set HADOOP_HDFS_HOME=%HADOOP_PREFIX%\share\hadoop\hdfs
+if not defined HADOOP_MAPRED_HOME set HADOOP_MAPRED_HOME=%HADOOP_PREFIX%\share\hadoop\mapreduce
 
 ::
 :: Libraries included in classpath.
@@ -46,11 +54,13 @@ for /f %%f in ('dir /B %HADOOP_HDFS_HOME%\hadoop-hdfs-*') do call :concat %HADOO
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-common-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-core-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 
+:: Export result
 set GRIDGAIN_HADOOP_CLASSPATH=%CP%
-set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
 
+:: Exit
 goto :eof
 
+:: Function that adds jar dependency into classpath
 :concat
     set file=%1
     if %file:~-9,9% neq tests.jar set CP=%CP%;%1
