@@ -172,4 +172,10 @@ public interface GridPortableRawWriter {
      * @throws GridPortableException In case of error.
      */
     public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnum(T val) throws GridPortableException;
 }

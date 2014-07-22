@@ -200,6 +200,13 @@ public interface GridPortableWriter {
     public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws GridPortableException;
 
     /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws GridPortableException;
+
+    /**
      * Gets raw writer.
      *
      * @return Raw writer.
