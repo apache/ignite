@@ -26,6 +26,14 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
     public int typeId();
 
     /**
+     * Gets meta data for this portable object.
+     *
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public GridPortableMetaData metaData() throws GridPortableException;
+
+    /**
      * Gets field value.
      *
      * @param fieldName Field name.
