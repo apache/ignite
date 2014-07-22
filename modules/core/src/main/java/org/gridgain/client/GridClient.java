@@ -9,6 +9,8 @@
 
 package org.gridgain.client;
 
+import org.gridgain.client.balancer.*;
+
 import java.util.*;
 
 /**

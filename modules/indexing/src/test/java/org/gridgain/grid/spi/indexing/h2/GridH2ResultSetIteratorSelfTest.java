@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.indexing.h2;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -50,7 +51,8 @@ public class GridH2ResultSetIteratorSelfTest extends GridCommonAbstractTest {
                     }
                 });
 
-            final GridCloseableIterator<Integer> it = new TestIterator((ResultSet)proxy, (Statement)proxy);
+            final GridSpiCloseableIterator<Integer> it = new TestIterator(
+                GridH2IndexingSpi.fetchResult(F.t((Statement)proxy, (ResultSet)proxy)));
 
             GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -77,24 +79,15 @@ public class GridH2ResultSetIteratorSelfTest extends GridCommonAbstractTest {
         private final AtomicInteger val =  new AtomicInteger();
 
         /**
-         * @param rs Result set.
-         * @param stmt Statement to close at the end (if provided).
+         * @param data Data array.
          */
-        protected TestIterator(ResultSet rs, Statement stmt) {
-            super(rs, stmt);
+        protected TestIterator(Object[][] data) {
+            super(data);
         }
 
         /** {@inheritDoc} */
-        @Override protected Integer loadRow() throws SQLException, GridSpiException, IOException {
-            if (rs.isClosed())
-                throw new SQLException("Result set is closed.");
-
+        @Override protected Integer createRow(Object[] row) {
             return val.getAndIncrement();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onSqlException(SQLException e) {
-            // No-op.
         }
     }
 }
