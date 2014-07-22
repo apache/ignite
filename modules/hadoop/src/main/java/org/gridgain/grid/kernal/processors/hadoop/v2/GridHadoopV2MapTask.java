@@ -32,7 +32,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx, GridLogger log)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
         throws GridException {
         GridHadoopInputSplit split = info().inputSplit();
 
@@ -66,18 +66,11 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
 
-            boolean successful = false;
-
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
-
-                successful = true;
-
-                closeWriter(null);
             }
             finally {
-                if (!successful)
-                    closeWriter(log);
+                closeWriter();
             }
 
             commit(outputFormat);

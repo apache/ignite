@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.gridgain.grid.*;
@@ -23,11 +24,21 @@ import java.util.*;
  * Abstract class for maps test.
  */
 public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
+    static class TestComparator extends ComparableComparator implements RawComparator {
+        @Override public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+            return 0;
+        }
+    }
+
     public GridHadoopJob mockJob() throws GridException, IOException {
         Job jobCtx = Job.getInstance();
 
         jobCtx.setMapOutputKeyClass(IntWritable.class);
         jobCtx.setMapOutputValueClass(IntWritable.class);
+
+        jobCtx.setGroupingComparatorClass(TestComparator.class);
+        jobCtx.setSortComparatorClass(TestComparator.class);
+        jobCtx.setCombinerKeyGroupingComparatorClass(TestComparator.class);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(jobCtx.getConfiguration());
 

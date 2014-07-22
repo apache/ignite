@@ -38,7 +38,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx, GridLogger log)
+    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
         throws GridException {
         OutputFormat outputFormat = null;
         Exception err = null;
@@ -55,14 +55,9 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
-
-                successful = true;
-
-                closeWriter(null);
             }
             finally {
-                if (!successful)
-                    closeWriter(log);
+                closeWriter();
             }
 
             commit(outputFormat);

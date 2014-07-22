@@ -84,7 +84,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridHadoopAbstract
 
     private void check(GridHadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
         final Multimap<Integer, Integer> vis, GridHadoopTaskContext taskCtx) throws Exception {
-        final GridHadoopTaskInput in = m.input(taskCtx, null);
+        final GridHadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -230,7 +230,7 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridHadoopAbstract
 
             assertTrue(m.capacity() > 32000);
 
-            GridHadoopTaskInput in = m.input(taskCtx, null);
+            GridHadoopTaskInput in = m.input(taskCtx);
 
             while (in.next()) {
                 IntWritable key = (IntWritable) in.key();

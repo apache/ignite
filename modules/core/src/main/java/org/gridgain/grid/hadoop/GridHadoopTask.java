@@ -10,7 +10,6 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -52,11 +51,10 @@ public abstract class GridHadoopTask {
      * Runs task.
      *
      * @param taskCtx Context.
-     * @param log Logger.
      * @throws GridInterruptedException If interrupted.
      * @throws GridException If failed.
      */
-    public abstract void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException;
+    public abstract void run(GridHadoopTaskContext taskCtx) throws GridException;
 
     /**
      * Interrupts task execution.

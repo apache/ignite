@@ -79,7 +79,7 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
 
         GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-        GridHadoopMultimap m = new GridHadoopSkipList(job, mem, ComparableComparator.getInstance());
+        GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
         GridHadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -117,7 +117,7 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
 
     private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis, GridHadoopTaskContext taskCtx)
         throws Exception {
-        final GridHadoopTaskInput in = m.input(taskCtx, null);
+        final GridHadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -213,7 +213,7 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
 
             final GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-            final GridHadoopMultimap m = new GridHadoopSkipList(job, mem, ComparableComparator.getInstance());
+            final GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 
@@ -261,7 +261,7 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
                 }
             }, 3 + rnd.nextInt(27));
 
-            GridHadoopTaskInput in = m.input(taskCtx, null);
+            GridHadoopTaskInput in = m.input(taskCtx);
 
             int prevKey = Integer.MIN_VALUE;
 

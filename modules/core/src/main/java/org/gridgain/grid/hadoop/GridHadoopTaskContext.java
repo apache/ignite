@@ -10,6 +10,8 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.logger.*;
+
 import java.util.*;
 
 /**
@@ -26,7 +28,7 @@ public abstract class GridHadoopTaskContext {
     private GridHadoopTaskOutput output;
 
     /** */
-    private final GridHadoopTaskInfo taskInfo;
+    private GridHadoopTaskInfo taskInfo;
 
     /** */
     private GridHadoopCounters counters;
@@ -35,7 +37,7 @@ public abstract class GridHadoopTaskContext {
      * @param taskInfo Task info.
      * @param job Job.
      */
-    public GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
+    protected GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
         this.taskInfo = taskInfo;
         this.job = job;
     }
@@ -47,6 +49,15 @@ public abstract class GridHadoopTaskContext {
      */
     public GridHadoopTaskInfo taskInfo() {
         return taskInfo;
+    }
+
+    /**
+     * Set a new task info.
+     *
+     * @param info Task info.
+     */
+    public void taskInfo(GridHadoopTaskInfo info) {
+        taskInfo = info;
     }
 
     /**
@@ -77,12 +88,12 @@ public abstract class GridHadoopTaskContext {
     /**
      * Gets counter for the given name.
      *
-     * @param group Counter group's name.
+     * @param grp Counter group's name.
      * @param name Counter name.
      * @return Counter.
      */
-    public GridHadoopCounter counter(String group, String name) {
-        return counters.counter(group, name, true);
+    public GridHadoopCounter counter(String grp, String name) {
+        return counters.counter(grp, name, true);
     }
 
     /**
@@ -94,27 +105,74 @@ public abstract class GridHadoopTaskContext {
         return counters.all();
     }
 
+    /**
+     * Sets input of the task.
+     * @param in Input.
+     */
     public void input(GridHadoopTaskInput in) {
         input = in;
     }
 
+    /**
+     * Sets output of the task.
+     * @param out Output.
+     */
     public void output(GridHadoopTaskOutput out) {
         output = out;
     }
 
+    /**
+     * Sets container for counters of the task.
+     * @param counters Counters.
+     */
     public void counters(GridHadoopCounters counters) {
         this.counters = counters;
     }
 
+    /**
+     * @return Partitioner.
+     * @throws GridException If fails.
+     */
     public abstract GridHadoopPartitioner partitioner() throws GridException;
 
-    public abstract Comparator<?> combineGroupComparator();
-
-    public abstract Comparator<?> reduceGroupComparator();
-
+    /**
+     * @return Serializer for keys.
+     * @throws GridException If fails.
+     */
     public abstract GridHadoopSerialization keySerialization() throws GridException;
 
+    /**
+     * @return Serializer for values.
+     * @throws GridException If fails.
+     */
     public abstract GridHadoopSerialization valueSerialization() throws GridException;
 
-    public abstract Comparator<?> sortComparator();
+    /**
+     * @return Comparator for sorting.
+     */
+    public abstract Comparator<Object> sortComparator();
+
+    /**
+     * Comparator for grouping on combine or reduce operation.
+     * @return Comparator.
+     */
+    public abstract Comparator<Object> groupComparator();
+
+    /**
+     * @return Logger.
+     */
+    public abstract GridLogger log();
+
+    /**
+     * Prepare local environment for the task.
+     * @throws GridException If failed.
+     */
+    public abstract void prepareTaskEnvironment() throws GridException;
+
+    /**
+     * Cleans up local environment of the task.
+     * @throws GridException If failed.
+     */
+    public abstract void cleanupTaskEnvironment() throws GridException;
+
 }

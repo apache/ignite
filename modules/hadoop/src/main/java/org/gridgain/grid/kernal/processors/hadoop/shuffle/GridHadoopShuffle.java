@@ -75,8 +75,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
         GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()),
-            !F.isEmpty(plan.mappers(ctx.localNodeId())));
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()));
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 

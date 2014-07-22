@@ -38,11 +38,10 @@ public interface GridHadoopMultimap extends AutoCloseable {
 
     /**
      * @param taskCtx Task context.
-     * @param groupCmp Optional grouping comparator.
      * @return Task input.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, @Nullable Comparator<Object> groupCmp)
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx)
         throws GridException;
 
     /** {@inheritDoc} */

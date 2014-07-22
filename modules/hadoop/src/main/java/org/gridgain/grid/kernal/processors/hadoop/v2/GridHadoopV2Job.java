@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.TaskAttemptID;
@@ -62,7 +63,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private ConcurrentMap<String, GridHadoopTaskContext> contexts = new ConcurrentHashMap<>();
+    private ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridHadoopTaskContext> ctxs = new ConcurrentHashMap<>();
+
+    /** Logger. */
+    private GridLogger log;
 
     /**
      * @param jobId Job ID.
@@ -75,6 +79,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.log = log;
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
@@ -130,15 +135,17 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
                     String[] hosts = metaInfo.getLocations();
 
-                    Class<?> cls = GridHadoopExternalSplit.readSplitClass(in, off, jobConf);
+                    in.seek(off);
+
+                    String clsName = Text.readString(in);
 
                     GridHadoopFileBlock block = null;
 
-                    if (cls != null) {
-                        block = GridHadoopV1Splitter.readFileBlock(cls, in, hosts);
+                    if (F.isEmpty(clsName)) {
+                        block = GridHadoopV1Splitter.readFileBlock(clsName, in, hosts);
 
                         if (block == null)
-                            block = GridHadoopV2Splitter.readFileBlock(cls, in, hosts);
+                            block = GridHadoopV2Splitter.readFileBlock(clsName, in, hosts);
                     }
 
                     res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
@@ -154,9 +161,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
-        String locTaskId = info.type().toString() + info.taskNumber();
+        T2<GridHadoopTaskType, Integer> locTaskId =  new T2<>(info.type(),  info.taskNumber());
 
-        GridHadoopTaskContext res = contexts.get(locTaskId);
+        GridHadoopTaskContext res = ctxs.get(locTaskId);
 
         if (res != null)
             return res;
@@ -167,9 +174,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
 
-        res = new GridHadoopV2TaskContext(info, this, taskJobCtx);
+        res = new GridHadoopV2TaskContext(info, this, taskJobCtx, log);
 
-        GridHadoopTaskContext old = contexts.putIfAbsent(locTaskId, res);
+        GridHadoopTaskContext old = ctxs.putIfAbsent(locTaskId, res);
 
         return old == null?res:old;
     }
@@ -180,15 +187,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @param jobConf Job conf.
      */
     private void configureClassLoader(JobConf jobConf) {
-        Collection<URL> clsPath = rsrcMgr.classPath();
+        URL[] clsPath = rsrcMgr.classPath();
 
-        if (!clsPath.isEmpty()) {
-            URL[] urls = new URL[clsPath.size()];
+        if (!F.isEmpty(clsPath))
+            jobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(clsPath), getClass().getClassLoader()));
 
-            clsPath.toArray(urls);
-
-            jobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(urls), getClass().getClassLoader()));
-        }
     }
 
     /** {@inheritDoc} */
@@ -259,9 +262,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
         rsrcMgr.prepareJobEnvironment(!external, locNodeId);
-
-        configureClassLoader(jobConf);
     }
+
 
     /** {@inheritDoc} */
     @Override public void dispose(boolean external) throws GridException {
@@ -269,13 +271,23 @@ public class GridHadoopV2Job implements GridHadoopJob {
             rsrcMgr.cleanupJobEnvironment(!external);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+    /**
+     * Prepare local environment for the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         rsrcMgr.prepareTaskEnvironment(info);
     }
 
-    /** {@inheritDoc} */
-    @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+    /**
+     * Cleans up local environment of the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         rsrcMgr.cleanupTaskEnvironment(info);
     }
 

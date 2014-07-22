@@ -46,14 +46,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final boolean needPartitioner;
 
-    /** */
-    private final boolean needCombinerMap;
-
     /** Collection of task contexts for each reduce task. */
     private final Map<Integer, GridHadoopTaskContext> reducersCtx = new HashMap<>();
-
-    /** */
-    private GridHadoopMultimap combinerMap;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
@@ -87,23 +81,25 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final GridLogger log;
 
     /**
+     *
      * @param locReduceAddr Local reducer address.
-     * @param locNodeId
+     * @param locNodeId Local node Id.
      * @param log Logger.
      * @param job Job.
      * @param mem Memory.
-     * @param reducers Number of reducers for job.
-     * @param hasLocMappers {@code True} if
+     * @param totalReducerCnt Amount of reducer in the Job.
+     * @param locReducers Reducers will work on current node.
+     * @throws GridException If error.
      */
     public GridHadoopShuffleJob(T locReduceAddr, UUID locNodeId, GridLogger log, GridHadoopJob job,
-        GridUnsafeMemory mem, int reducerCnt, int[] reducers, boolean hasLocMappers) throws GridException {
+        GridUnsafeMemory mem, int totalReducerCnt, int[] locReducers) throws GridException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
         this.log = log;
 
-        if (!F.isEmpty(reducers)) {
-            for (int rdc : reducers) {
+        if (!F.isEmpty(locReducers)) {
+            for (int rdc : locReducers) {
                 GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, GridHadoopTaskType.REDUCE, job.id(),
                         rdc, 0, null);
 
@@ -111,12 +107,10 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             }
         }
 
-        needPartitioner = reducerCnt > 1;
+        needPartitioner = totalReducerCnt > 1;
 
-        needCombinerMap = job.info().hasCombiner() && hasLocMappers;
-
-        maps = new AtomicReferenceArray<>(reducerCnt);
-        msgs = new GridHadoopShuffleMessage[reducerCnt];
+        maps = new AtomicReferenceArray<>(totalReducerCnt);
+        msgs = new GridHadoopShuffleMessage[totalReducerCnt];
     }
 
     /**
@@ -176,17 +170,15 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param maps Maps.
      * @param idx Index.
-     * @param taskCtx Task context.
      * @return Map.
      */
-    private GridHadoopMultimap getOrCreateMap(AtomicReferenceArray<GridHadoopMultimap> maps, int idx,
-        GridHadoopTaskContext taskCtx) {
+    private GridHadoopMultimap getOrCreateMap(AtomicReferenceArray<GridHadoopMultimap> maps, int idx) {
         GridHadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
             map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
                 new GridHadoopConcurrentHashMultimap(job, mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
-                new GridHadoopSkipList(job, mem, taskCtx.sortComparator());
+                new GridHadoopSkipList(job, mem);
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -208,7 +200,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         GridHadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
 
-        GridHadoopMultimap map = getOrCreateMap(maps, msg.reducer(), taskCtx);
+        GridHadoopMultimap map = getOrCreateMap(maps, msg.reducer());
 
         // Add data from message to the map.
         try (GridHadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
@@ -443,16 +435,16 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         U.await(ioInitLatch);
 
-        GridWorker sender0 = snd;
+        GridWorker snd0 = snd;
 
-        if (sender0 != null) {
+        if (snd0 != null) {
             if (log.isDebugEnabled())
                 log.debug("Cancelling sender thread.");
 
-            sender0.cancel();
+            snd0.cancel();
 
             try {
-                sender0.join();
+                snd0.join();
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
@@ -488,14 +480,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
         switch (taskCtx.taskInfo().type()) {
             case MAP:
-                if (needCombinerMap) {
-                    if (combinerMap == null)
-                        combinerMap = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
-                            new GridHadoopConcurrentHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)) :
-                            new GridHadoopSkipList(job, mem, taskCtx.sortComparator());
-
-                    return combinerMap.startAdding(taskCtx);
-                }
+                assert !job.info().hasCombiner() : "The output creation is allowed if combiner has not been defined.";
 
             case COMBINE:
                 return new PartitionedOutput(taskCtx);
@@ -513,16 +498,13 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     @SuppressWarnings("unchecked")
     public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
         switch (taskCtx.taskInfo().type()) {
-            case COMBINE:
-                return combinerMap.input(taskCtx, (Comparator<Object>) taskCtx.combineGroupComparator());
-
             case REDUCE:
                 int reducer = taskCtx.taskInfo().taskNumber();
 
                 GridHadoopMultimap m = maps.get(reducer);
 
                 if (m != null)
-                    return m.input(taskCtx, (Comparator<Object>)taskCtx.reduceGroupComparator());
+                    return m.input(taskCtx);
 
                 return new GridHadoopTaskInput() { // Empty input.
                     @Override public boolean next() {
@@ -585,7 +567,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             GridHadoopTaskOutput out = adders[part];
 
             if (out == null)
-                adders[part] = out = getOrCreateMap(maps, part, taskCtx).startAdding(taskCtx);
+                adders[part] = out = getOrCreateMap(maps, part).startAdding(taskCtx);
 
             out.write(key, val);
         }

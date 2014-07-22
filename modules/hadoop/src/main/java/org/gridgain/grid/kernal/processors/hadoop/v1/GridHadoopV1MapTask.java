@@ -32,7 +32,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
@@ -72,24 +72,21 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
             assert mapper != null;
 
-            boolean successful = false;
-
             try {
-                while (reader.next(key, val)) {
-                    if (isCancelled())
-                        throw new GridHadoopTaskCancelledException("Map task cancelled.");
+                try {
+                    while (reader.next(key, val)) {
+                        if (isCancelled())
+                            throw new GridHadoopTaskCancelledException("Map task cancelled.");
 
-                    mapper.map(key, val, collector, reporter);
+                        mapper.map(key, val, collector, reporter);
+                    }
                 }
+                finally {
+                    mapper.close();
 
-                successful = true;
-
-                mapper.close();
+                }
             }
             finally {
-                if (!successful)
-                    closeSafe(mapper, log);
-
                 collector.closeWriter();
             }
 

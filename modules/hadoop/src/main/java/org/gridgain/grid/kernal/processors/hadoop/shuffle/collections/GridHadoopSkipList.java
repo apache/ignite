@@ -24,9 +24,6 @@ import java.util.concurrent.atomic.*;
  * Skip list.
  */
 public class GridHadoopSkipList extends GridHadoopMultimapBase {
-    /** */
-    private final Comparator cmp;
-
     /** Top level. */
     private final AtomicInteger topLevel = new AtomicInteger(-1);
 
@@ -39,14 +36,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     /**
      * @param job Job.
      * @param mem Memory.
-     * @param cmp Comparator for keys.
      */
-    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem, Comparator cmp) {
+    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
         super(job, mem);
-
-        assert cmp != null;
-
-        this.cmp = cmp;
     }
 
     /** {@inheritDoc} */
@@ -86,12 +78,15 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx, Comparator<Object> groupCmp)
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx)
         throws GridException {
+
         Input in = new Input(taskCtx);
 
-        if (groupCmp != null && groupCmp.getClass() != cmp.getClass())
-            return new GroupedInput(groupCmp, in);
+        Comparator<Object> grpCmp = taskCtx.groupComparator();
+
+        if (grpCmp != null)
+            return new GroupedInput(grpCmp, in);
 
         return in;
     }
@@ -248,6 +243,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
     private class AdderImpl extends GridHadoopMultimapBase.AdderBase {
         /** */
+        private final Comparator<Object> cmp;
+
+        /** */
         private Random rnd = new GridRandom();
 
         /** */
@@ -264,6 +262,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             super(ctx);
 
             keyReader = new Reader(keySer);
+
+            cmp = ctx.sortComparator();
         }
 
         /** {@inheritDoc} */

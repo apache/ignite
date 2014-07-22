@@ -20,8 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 
@@ -92,20 +90,28 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        boolean runCombiner = info.type() == MAP && job.info().hasCombiner() &&
-            !get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false);
-
         GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
 
+        GridHadoopTaskContext ctx = job.getTaskContext(info);
+
         try {
-            job.prepareTaskEnvironment(info);
+            ctx.prepareTaskEnvironment();
 
-            runTask(info, runCombiner, counters);
+            try {
+                runTask(ctx, counters);
 
-            if (runCombiner)
-                runTask(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(), info.attempt(),
-                    null), runCombiner, counters);
+                if (info.type() == MAP && job.info().hasCombiner()) {
+                    ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
+                        info.attempt(), null));
+
+                    runTask(ctx, counters);
+                }
+            }
+            finally {
+                ctx.taskInfo(info);
+                ctx.cleanupTaskEnvironment();
+            }
         }
         catch (GridHadoopTaskCancelledException ignored) {
             state = GridHadoopTaskState.CANCELED;
@@ -117,21 +123,11 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             U.error(log, "Task execution failed.", e);
         }
         finally {
-            try {
-                job.cleanupTaskEnvironment(info);
-            }
-            catch (Throwable e) {
-                if (err == null)
-                    err = e;
-
-                U.error(log, "Error on cleanup task environment.", e);
-            }
-
             execEndTs = System.currentTimeMillis();
 
             onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
 
-            if (runCombiner)
+            if (local != null)
                 local.close();
         }
 
@@ -139,41 +135,27 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     }
 
     /**
-     * @param info Task info.
-     * @param locCombiner If we have mapper with combiner.
+     * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskInfo info, boolean locCombiner, GridHadoopCounters counters)
+    private void runTask(GridHadoopTaskContext ctx, GridHadoopCounters counters)
         throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
-
-        try (GridHadoopTaskOutput out = createOutput(ctx, locCombiner);
-             GridHadoopTaskInput in = createInput(ctx, locCombiner)) {
+        try (GridHadoopTaskOutput out = createOutputInternal(ctx);
+             GridHadoopTaskInput in = createInputInternal(ctx)) {
 
             ctx.input(in);
             ctx.output(out);
             ctx.counters(counters);
 
-            task = job.createTask(info);
+            task = job.createTask(ctx.taskInfo());
 
             if (cancelled)
                 throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-            ClassLoader prevClsLdr = null;
-
-            try {
-                prevClsLdr = Thread.currentThread().getContextClassLoader();
-
-                Thread.currentThread().setContextClassLoader(((GridHadoopV2TaskContext)ctx).jobConf().getClassLoader());
-
-                task.run(ctx, log);
-            }
-            finally {
-                Thread.currentThread().setContextClassLoader(prevClsLdr);
-            }
+            task.run(ctx);
         }
     }
 
@@ -194,12 +176,11 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /**
      * @param ctx Task context.
-     * @param locCombiner If we have mapper with combiner.
      * @return Task input.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridHadoopTaskInput createInput(GridHadoopTaskContext ctx, boolean locCombiner) throws GridException {
+    private GridHadoopTaskInput createInputInternal(GridHadoopTaskContext ctx) throws GridException {
         switch (ctx.taskInfo().type()) {
             case SETUP:
             case MAP:
@@ -208,11 +189,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 return null;
 
             case COMBINE:
-                if (locCombiner) {
-                    assert local != null;
+                assert local != null;
 
-                    return local.input(ctx, (Comparator<Object>) ctx.combineGroupComparator());
-                }
+                return local.input(ctx);
 
             default:
                 return createInput(ctx);
@@ -235,11 +214,10 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /**
      * @param ctx Task info.
-     * @param locCombiner If we have mapper with combiner.
      * @return Task output.
      * @throws GridException If failed.
      */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx, boolean locCombiner) throws GridException {
+    private GridHadoopTaskOutput createOutputInternal(GridHadoopTaskContext ctx) throws GridException {
         switch (ctx.taskInfo().type()) {
             case SETUP:
             case REDUCE:
@@ -248,12 +226,12 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                 return null;
 
             case MAP:
-                if (locCombiner) {
+                if (job.info().hasCombiner()) {
                     assert local == null;
 
                     local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
                         new GridHadoopHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
-                        new GridHadoopSkipList(job, mem, ctx.sortComparator()); // TODO replace with red-black tree
+                        new GridHadoopSkipList(job, mem); // TODO replace with red-black tree
 
                     return local.startAdding(ctx);
                 }

@@ -38,7 +38,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
@@ -58,24 +58,20 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
             assert reducer != null;
 
-            boolean successful = false;
-
             try {
-                while (input.next()) {
-                    if (isCancelled())
-                        throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
+                try {
+                    while (input.next()) {
+                        if (isCancelled())
+                            throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
 
-                    reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                        reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                    }
                 }
-
-                successful = true;
-
-                reducer.close();
+                finally {
+                    reducer.close();
+                }
             }
             finally {
-                if (!successful)
-                    closeSafe(reducer, log);
-
                 collector.closeWriter();
             }
 

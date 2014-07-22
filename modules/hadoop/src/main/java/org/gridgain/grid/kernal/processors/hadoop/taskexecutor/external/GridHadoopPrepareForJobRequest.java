@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.F;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -32,16 +31,13 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
-    /** Has mappers flag. */
-    @GridToStringInclude
-    private boolean hasMappers;
-
     /** Total amount of reducers in job. */
     @GridToStringInclude
-    private int reducerCnt;
+    private int totalReducersCnt;
 
     /** Reducers to be executed on current node. */
-    private int[] reducers;
+    @GridToStringInclude
+    private int[] locReducers;
 
     /**
      * Constructor required by {@link Externalizable}.
@@ -54,18 +50,17 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
      * @param jobId Job ID.
      * @param jobInfo Job info.
      * @param hasMappers Has mappers flag.
-     * @param reducerCnt Number of reducers in job.
-     * @param reducers Reducers to be executed on current node.
+     * @param totalReducersCnt Number of reducers in job.
+     * @param locReducers Reducers to be executed on current node.
      */
     public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
-        int reducerCnt, int[] reducers) {
+        int totalReducersCnt, int[] locReducers) {
         assert jobId != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.hasMappers = hasMappers;
-        this.reducerCnt = reducerCnt;
-        this.reducers = reducers;
+        this.totalReducersCnt = totalReducersCnt;
+        this.locReducers = locReducers;
     }
 
     /**
@@ -83,24 +78,17 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     }
 
     /**
-     * @return Has mappers flag.
-     */
-    public boolean hasMappers() {
-        return hasMappers;
-    }
-
-    /**
      * @return Reducers to be executed on current node.
      */
     public int[] reducers() {
-        return reducers;
+        return locReducers;
     }
 
     /**
      * @return Number of reducers in job.
      */
     public int reducerCount() {
-        return reducerCnt;
+        return totalReducersCnt;
     }
 
     /** {@inheritDoc} */
@@ -108,17 +96,9 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         jobId.writeExternal(out);
 
         out.writeObject(jobInfo);
-        out.writeBoolean(hasMappers);
-        out.writeInt(reducerCnt);
+        out.writeInt(totalReducersCnt);
 
-        if (!F.isEmpty(reducers)) {
-            out.writeInt(reducers.length);
-
-            for (int rdc : reducers)
-                out.writeInt(rdc);
-        }
-        else
-            out.writeInt(0);
+        U.writeIntArray(out, locReducers);
     }
 
     /** {@inheritDoc} */
@@ -127,13 +107,9 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         jobId.readExternal(in);
 
         jobInfo = (GridHadoopJobInfo)in.readObject();
-        hasMappers = in.readBoolean();
-        reducerCnt = in.readInt();
+        totalReducersCnt = in.readInt();
 
-        reducers = new int[in.readInt()];
-
-        for (int i = 0; i < reducers.length; i++)
-            reducers[i] = in.readInt();
+        locReducers = U.readIntArray(in);
     }
 
     /** {@inheritDoc} */

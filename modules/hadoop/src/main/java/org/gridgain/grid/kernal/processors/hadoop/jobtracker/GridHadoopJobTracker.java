@@ -1050,39 +1050,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            if (job.info().hasCombiner() && get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false) && status.state() !=
-                CANCELED) {
-                // Create combiner.
-                if (lastMapperFinished) {
-                    GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
-                        jobMetaCache().get(jobId).taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
+            GridInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
+                @Override public void applyx(GridFuture<?> f) {
+                    Throwable err = null;
 
-                    ctx.taskExecutor().run(job, Collections.singletonList(info));
-                }
-            }
-            else {
-                GridInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
-                    @Override public void applyx(GridFuture<?> f) {
-                        Throwable err = null;
-
-                        if (f != null) {
-                            try {
-                                f.get();
-                            }
-                            catch (GridException e) {
-                                err = e;
-                            }
+                    if (f != null) {
+                        try {
+                            f.get();
                         }
-
-                        transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
+                        catch (GridException e) {
+                            err = e;
+                        }
                     }
-                };
 
-                if (lastMapperFinished)
-                    ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
-                else
-                    cacheUpdater.apply(null);
-            }
+                    transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
+                }
+            };
+
+            if (lastMapperFinished)
+                ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
+            else
+                cacheUpdater.apply(null);
         }
 
         /**

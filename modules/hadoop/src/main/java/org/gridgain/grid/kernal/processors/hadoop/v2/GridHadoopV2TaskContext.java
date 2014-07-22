@@ -20,6 +20,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
+import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.IOException;
@@ -50,13 +51,19 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** */
     private JobContextImpl jobCtx;
 
+    /** Logger. */
+    private GridLogger log;
+
     /**
      * @param taskInfo Task info.
-     * @param job      Job.
+     * @param job Job.
+     * @param log Logger.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx) {
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx, GridLogger log) {
         super(taskInfo, job);
+
         this.jobCtx = jobCtx;
+        this.log = log;
     }
 
     /**
@@ -90,16 +97,6 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Comparator<?> combineGroupComparator() {
-        return COMBINE_KEY_GROUPING_SUPPORTED ? jobContext().getCombinerKeyGroupingComparator() : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Comparator<?> reduceGroupComparator() {
-        return jobContext().getGroupingComparator();
     }
 
     /**
@@ -137,8 +134,51 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<?> sortComparator() {
-        return jobCtx.getSortComparator();
+    @Override public Comparator<Object> sortComparator() {
+        return (Comparator<Object>)jobCtx.getSortComparator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridLogger log() {
+        return log;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareTaskEnvironment() throws GridException {
+        ((GridHadoopV2Job)job()).prepareTaskEnvironment(taskInfo());
+
+        Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupTaskEnvironment() throws GridException {
+        ((GridHadoopV2Job)job()).cleanupTaskEnvironment(taskInfo());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<Object> groupComparator() {
+        Comparator<?> res;
+
+        switch (taskInfo().type()) {
+            case COMBINE:
+                res = COMBINE_KEY_GROUPING_SUPPORTED ?
+                    jobContext().getCombinerKeyGroupingComparator() : jobContext().getGroupingComparator();
+
+                break;
+
+            case REDUCE:
+                res = jobContext().getGroupingComparator();
+
+                break;
+
+            default:
+                return null;
+        }
+
+        if (res != null && res.getClass() != sortComparator().getClass())
+            return (Comparator<Object>)res;
+
+        return null;
     }
 
     /**
@@ -169,7 +209,11 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf());
             FSDataInputStream in = fs.open(JobSubmissionFiles.getJobSplitFile(jobDir))) {
 
-            Class<?> cls = GridHadoopExternalSplit.readSplitClass(in, split.offset(), jobConf());
+            in.seek(split.offset());
+
+            String clsName = Text.readString(in);
+
+            Class<?> cls = jobConf().getClassByName(clsName);
 
             assert cls != null;
 
@@ -187,7 +231,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
             return res;
         }
-        catch (IOException e) {
+        catch (IOException | ClassNotFoundException e) {
             throw new GridException(e);
         }
     }

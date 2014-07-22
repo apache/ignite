@@ -119,7 +119,7 @@ public class GridHadoopHashMapSelfTest extends GridHadoopAbstractMapTest {
     }
 
     private void check(GridHadoopHashMultimap m, Multimap<Integer, Integer> mm, GridHadoopTaskContext taskCtx) throws Exception {
-        final GridHadoopTaskInput in = m.input(taskCtx, null);
+        final GridHadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 

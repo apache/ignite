@@ -35,7 +35,7 @@ public class GridHadoopV1CleanupTask extends GridHadoopV1Task {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         JobContext jobCtx = ctx.jobContext();

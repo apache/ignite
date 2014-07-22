@@ -36,14 +36,14 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx, GridLogger log) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
 
-        run0(jobImpl, ctx, log);
+        run0(jobImpl, ctx);
     }
 
     /**
@@ -53,7 +53,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * @param taskCtx Task context.
      * @throws GridException
      */
-    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx, GridLogger log)
+    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx)
         throws GridException;
 
     /**
@@ -106,24 +106,15 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /**
-     * Close writer with exception suppression if logger has been specified.
+     * Closes writer.
      *
-     * @param log Logger.
      * @throws Exception If fails and logger hasn't been specified.
      */
-    protected void closeWriter(@Nullable GridLogger log) throws Exception {
+    protected void closeWriter() throws Exception {
         RecordWriter writer = hadoopCtx.writer();
 
-        try {
-            if (writer != null)
-                writer.close(hadoopCtx);
-        }
-        catch (Throwable e) {
-            if (log != null)
-                U.error(log, "Error on close writer of " + info(), e);
-            else
-                throw e;
-        }
+        if (writer != null)
+            writer.close(hadoopCtx);
     }
 
     /**

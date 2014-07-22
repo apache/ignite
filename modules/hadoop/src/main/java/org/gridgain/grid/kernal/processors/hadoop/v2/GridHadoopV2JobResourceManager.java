@@ -45,7 +45,7 @@ public class GridHadoopV2JobResourceManager {
     private File jobLocDir;
 
     /** Class path list. */
-    private Collection<URL> clsPath = new ArrayList<>();
+    private URL[] clsPath;
 
     /** List of local resources. */
     private Collection<File> rsrcList = new ArrayList<>();
@@ -115,15 +115,23 @@ public class GridHadoopV2JobResourceManager {
 
                 File jarJobFile = new File(jobLocDir, "job.jar");
 
-                clsPath.add(jarJobFile.toURI().toURL());
+                Collection<URL> clsPathUrls = new ArrayList<>();
+
+                clsPathUrls.add(jarJobFile.toURI().toURL());
 
                 rsrcList.add(jarJobFile);
                 rsrcList.add(new File(jobLocDir, "job.xml"));
 
-                processFiles(ctx.getCacheFiles(), download, true, false, MRJobConfig.CACHE_LOCALFILES);
-                processFiles(ctx.getCacheArchives(), download, true, false, MRJobConfig.CACHE_LOCALARCHIVES);
-                processFiles(ctx.getFileClassPaths(), download, false, true, null);
-                processFiles(ctx.getArchiveClassPaths(), download, true, true, null);
+                processFiles(ctx.getCacheFiles(), download, false, null, MRJobConfig.CACHE_LOCALFILES);
+                processFiles(ctx.getCacheArchives(), download, true, null, MRJobConfig.CACHE_LOCALARCHIVES);
+                processFiles(ctx.getFileClassPaths(), download, false, clsPathUrls, null);
+                processFiles(ctx.getArchiveClassPaths(), download, true, clsPathUrls, null);
+
+                if (!clsPathUrls.isEmpty()) {
+                    clsPath = new URL[clsPathUrls.size()];
+
+                    clsPathUrls.toArray(clsPath);
+                }
             }
             else if (!jobLocDir.mkdirs())
                 throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
@@ -138,14 +146,13 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Process list of resources.
      *
-     * @param files Array of {@link URI} or {@link Path} to process resources.
+     * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
      * @param extract {@code true}, if need to extract archive.
-     * @param addToClsPath {@code true}, if need to add the resource to class path.
-     * @param rsrcNameProp Property for resource name array setting.
-     * @throws IOException If errors.
+     * @param clsPathUrls
+     *@param rsrcNameProp Property for resource name array setting.  @throws IOException If errors.
      */
-    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, boolean addToClsPath,
+    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, Collection<URL> clsPathUrls,
         String rsrcNameProp) throws IOException {
         if (F.isEmptyOrNulls(files))
             return ;
@@ -175,8 +182,8 @@ public class GridHadoopV2JobResourceManager {
 
             rsrcList.add(dstPath);
 
-            if (addToClsPath)
-                clsPath.add(dstPath.toURI().toURL());
+            if (clsPathUrls != null)
+                clsPathUrls.add(dstPath.toURI().toURL());
 
             if (!download)
                 continue;
@@ -225,10 +232,10 @@ public class GridHadoopV2JobResourceManager {
 
     /**
      * Removes temporary working directory is created for job execution.
-     * @param deleteJobLocDir {@code true} If need to delete job local directory.
+     * @param delJobLocDir {@code true} If need to delete job local directory.
      */
-    public void cleanupJobEnvironment(boolean deleteJobLocDir) {
-        if (deleteJobLocDir && jobLocDir.exists())
+    public void cleanupJobEnvironment(boolean delJobLocDir) {
+        if (delJobLocDir && jobLocDir.exists())
             U.delete(jobLocDir);
     }
 
@@ -348,7 +355,7 @@ public class GridHadoopV2JobResourceManager {
      *
      * @return Class path collection.
      */
-    public Collection<URL> classPath() {
+    public URL[] classPath() {
         return clsPath;
     }
 }

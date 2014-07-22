@@ -88,20 +88,4 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
     public boolean isCancelled() {
         return cancelled;
     }
-
-    /**
-     * Closes the resource with exceptions suppression.
-     *
-     * @param rsrc Closeable resource.
-     * @param log Logger.
-     */
-    protected void closeSafe(@Nullable Closeable rsrc, GridLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (Throwable e) {
-                U.error(log, "Error on close resource of " + info(), e);
-            }
-    }
 }

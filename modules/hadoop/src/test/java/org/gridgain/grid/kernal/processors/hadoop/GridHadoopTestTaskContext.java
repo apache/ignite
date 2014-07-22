@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.io.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 
 import java.util.*;
 
@@ -170,8 +171,8 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     /**
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob) {
-        super(taskInfo, gridJob, gridJob.jobContext());
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob, GridLogger log) {
+        super(taskInfo, gridJob, gridJob.jobContext(), log);
     }
 
     /** {@inheritDoc} */
