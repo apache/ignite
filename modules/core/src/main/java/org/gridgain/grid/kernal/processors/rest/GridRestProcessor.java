@@ -533,11 +533,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
         switch (req.command()) {
             case CACHE_GET:
             case CACHE_GET_ALL:
+                perm = GridSecurityPermission.CACHE_READ;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
             case CACHE_QUERY_EXECUTE:
             case CACHE_QUERY_FETCH:
             case CACHE_QUERY_REBUILD_INDEXES:
                 perm = GridSecurityPermission.CACHE_READ;
-                name = ((GridRestCacheRequest)req).cacheName();
+                name = ((GridRestCacheQueryRequest)req).cacheName();
 
                 break;
 
