@@ -702,7 +702,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx.security());
-                portables = new GridPortablesImpl(ctx.portable());
+                portables = new GridPortablesImpl(ctx);
             }
 
             gw.writeLock();
