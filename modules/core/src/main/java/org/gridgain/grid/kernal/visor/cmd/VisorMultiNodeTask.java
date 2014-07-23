@@ -36,6 +36,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Gri
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable GridBiTuple<Set<UUID>, A> arg) throws GridException {
         assert arg != null;
+        assert arg.get1() != null;
 
         taskArg = arg.get2();
 
