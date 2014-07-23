@@ -17,6 +17,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.portable.*;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -77,26 +78,41 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        try {
-            Object o = reflectCache.firstFieldValue(key);
+        if (key instanceof GridPortableObject) {
+            GridPortableObject<?> po = (GridPortableObject)key;
 
-            if (o != null)
-                return o;
-        }
-        catch (GridException e) {
-            U.error(log, "Failed to access affinity field for key [field=" + reflectCache.firstField(key.getClass()) +
-                ", key=" + key + ']', e);
-        }
+            try {
+                String affKeyFieldName = po.metaData().affinityKeyFieldName();
 
-        try {
-            Object o = reflectCache.firstMethodValue(key);
-
-            if (o != null)
-                return o;
+                if (affKeyFieldName != null)
+                    return po.field(affKeyFieldName);
+            }
+            catch (GridPortableException e) {
+                U.error(log, "Failed ", e);
+            }
         }
-        catch (GridException e) {
-            U.error(log, "Failed to invoke affinity method for key [mtd=" + reflectCache.firstMethod(key.getClass()) +
-                ", key=" + key + ']', e);
+        else {
+            try {
+                Object o = reflectCache.firstFieldValue(key);
+
+                if (o != null)
+                    return o;
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to access affinity field for key [field=" +
+                    reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
+            }
+
+            try {
+                Object o = reflectCache.firstMethodValue(key);
+
+                if (o != null)
+                    return o;
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to invoke affinity method for key [mtd=" +
+                    reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
+            }
         }
 
         return key;

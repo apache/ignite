@@ -17,6 +17,8 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -243,6 +245,15 @@ public class GridAffinityAssignmentCache {
      * @return Partition.
      */
     public int partition(Object key) {
+        if (ctx.portableEnabled()) {
+            try {
+                key = ctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                U.error(log, "Failed to marshal key to portable: " + key, e);
+            }
+        }
+
         return aff.partition(affMapper.affinityKey(key));
     }
 

@@ -32,4 +32,9 @@ public interface GridPortableMetaData {
      * @return Field type name.
      */
     @Nullable public String fieldTypeName(String fieldName);
+
+    /**
+     * @return Affinity key field name.
+     */
+    @Nullable public String affinityKeyFieldName();
 }

@@ -22,6 +22,9 @@ public class GridPortableTypeConfiguration {
     /** Serializer. */
     private GridPortableSerializer serializer;
 
+    /** Affinity key field name. */
+    private String affKeyFieldName;
+
     /**
      */
     public GridPortableTypeConfiguration() {
@@ -87,5 +90,23 @@ public class GridPortableTypeConfiguration {
      */
     public void setSerializer(GridPortableSerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets affinity key field name.
+     *
+     * @return Affinity key field name.
+     */
+    public String getAffinityKeyFieldName() {
+        return affKeyFieldName;
+    }
+
+    /**
+     * Sets affinity key field name.
+     *
+     * @param affKeyFieldName Affinity key field name.
+     */
+    public void setAffinityFieldName(String affKeyFieldName) {
+        this.affKeyFieldName = affKeyFieldName;
     }
 }

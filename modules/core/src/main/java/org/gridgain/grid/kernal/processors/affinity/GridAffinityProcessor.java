@@ -186,6 +186,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersion());
 
+        if (affInfo.portableEnabled)
+            key = ctx.portable().marshalToPortable(key);
+
         return affInfo.mapper != null ? affInfo.mapper.affinityKey(key) : null;
     }
 
@@ -253,7 +256,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             AffinityInfo info = new AffinityInfo(
                 cctx.config().getAffinity(),
                 cctx.config().getAffinityMapper(),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
+                cctx.portableEnabled());
 
             GridFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
 
@@ -356,7 +360,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private AffinityInfo affinityInfoFromNode(@Nullable String cacheName, long topVer, GridNode n)
         throws GridException {
-        GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
+        GridTuple4<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment, Boolean> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
 
         GridCacheAffinityFunction f = (GridCacheAffinityFunction)unmarshall(ctx, n.id(), t.get1());
@@ -368,7 +372,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3());
+        return new AffinityInfo(f, m, t.get3(), t.get4());
     }
 
     /**
@@ -434,6 +438,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         X.println(">>>   affMapSize: " + affMap.size());
     }
 
+    /**
+     */
     private static class AffinityInfo {
         /** Affinity function. */
         private GridCacheAffinityFunction affFunc;
@@ -444,16 +450,21 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /** Assignment. */
         private GridAffinityAssignment assignment;
 
+        /** Portable enabled flag. */
+        private boolean portableEnabled;
+
         /**
          * @param affFunc Affinity function.
          * @param mapper Affinity key mapper.
          * @param assignment Partition assignment.
+         * @param portableEnabled Portable enabled flag.
          */
         private AffinityInfo(GridCacheAffinityFunction affFunc, GridCacheAffinityKeyMapper mapper,
-            GridAffinityAssignment assignment) {
+            GridAffinityAssignment assignment, boolean portableEnabled) {
             this.affFunc = affFunc;
             this.mapper = mapper;
             this.assignment = assignment;
+            this.portableEnabled = portableEnabled;
         }
     }
 
