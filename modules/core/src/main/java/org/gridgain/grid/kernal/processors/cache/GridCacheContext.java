@@ -36,6 +36,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -44,7 +45,6 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

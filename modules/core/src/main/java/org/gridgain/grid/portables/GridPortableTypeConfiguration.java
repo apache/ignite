@@ -7,16 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
-
-import java.util.*;
+package org.gridgain.grid.portables;
 
 /**
- * Common portable configuration.
+ * Portable type configuration.
  */
-public class GridPortableConfiguration {
-    /** Class names. */
-    private Collection<String> clsNames;
+public class GridPortableTypeConfiguration {
+    /** Class name. */
+    private String clsName;
 
     /** ID mapper. */
     private GridPortableIdMapper idMapper;
@@ -24,25 +22,35 @@ public class GridPortableConfiguration {
     /** Serializer. */
     private GridPortableSerializer serializer;
 
-    /** Types. */
-    private Collection<GridPortableTypeConfiguration> typeCfgs;
-
     /**
-     * Gets class names.
-     *
-     * @return Class names.
      */
-    public Collection<String> getClassNames() {
-        return clsNames;
+    public GridPortableTypeConfiguration() {
+        // No-op.
     }
 
     /**
-     * Sets class names.
-     *
-     * @param clsNames Class names.
+     * @param clsName Class name.
      */
-    public void setClassNames(Collection<String> clsNames) {
-        this.clsNames = clsNames;
+    public GridPortableTypeConfiguration(String clsName) {
+        this.clsName = clsName;
+    }
+
+    /**
+     * Gets type name.
+     *
+     * @return Type name.
+     */
+    public String getClassName() {
+        return clsName;
+    }
+
+    /**
+     * Sets type name.
+     *
+     * @param clsName Type name.
+     */
+    public void setClassName(String clsName) {
+        this.clsName = clsName;
     }
 
     /**
@@ -79,23 +87,5 @@ public class GridPortableConfiguration {
      */
     public void setSerializer(GridPortableSerializer serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Gets types configuration.
-     *
-     * @return Types configuration.
-     */
-    public Collection<GridPortableTypeConfiguration> getTypeConfigurations() {
-        return typeCfgs;
-    }
-
-    /**
-     * Sets type configurations.
-     *
-     * @param typeCfgs Type configurations.
-     */
-    public void setTypeConfigurations(Collection<GridPortableTypeConfiguration> typeCfgs) {
-        this.typeCfgs = typeCfgs;
     }
 }
