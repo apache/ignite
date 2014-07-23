@@ -23,9 +23,12 @@ import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
-import java.util.Comparator;
+import java.io.*;
+import java.util.*;
 
+/**
+ * Context for task execution.
+ */
 public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** */
     private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;

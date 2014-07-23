@@ -69,7 +69,7 @@ public class GridHadoopV2Splitter {
     }
 
     /**
-     * @param clsName Input split class.
+     * @param clsName Input split class name.
      * @param in Input stream.
      * @param hosts Optional hosts.
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.

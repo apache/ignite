@@ -14,7 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -90,22 +89,24 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
+        GridHadoopTaskContext ctx = job.getTaskContext(info);
+
+        ctx.counters(counters);
+
         GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
-
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
 
         try {
             ctx.prepareTaskEnvironment();
 
             try {
-                runTask(ctx, counters);
+                runTask(ctx);
 
                 if (info.type() == MAP && job.info().hasCombiner()) {
                     ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
                         info.attempt(), null));
 
-                    runTask(ctx, counters);
+                    runTask(ctx);
                 }
             }
             finally {
@@ -138,7 +139,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx, GridHadoopCounters counters)
+    private void runTask(GridHadoopTaskContext ctx)
         throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
@@ -148,7 +149,6 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
             ctx.input(in);
             ctx.output(out);
-            ctx.counters(counters);
 
             task = job.createTask(ctx.taskInfo());
 

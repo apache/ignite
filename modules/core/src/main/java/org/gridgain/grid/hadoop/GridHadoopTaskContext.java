@@ -174,5 +174,4 @@ public abstract class GridHadoopTaskContext {
      * @throws GridException If failed.
      */
     public abstract void cleanupTaskEnvironment() throws GridException;
-
 }

@@ -31,7 +31,7 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
-    /** Total amount of reducers in job. */
+    /** Total amount of reducers in the job. */
     @GridToStringInclude
     private int totalReducersCnt;
 
@@ -49,12 +49,11 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
-     * @param hasMappers Has mappers flag.
-     * @param totalReducersCnt Number of reducers in job.
+     * @param totalReducersCnt Number of reducers in the job.
      * @param locReducers Reducers to be executed on current node.
      */
-    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
-        int totalReducersCnt, int[] locReducers) {
+    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, int totalReducersCnt,
+        int[] locReducers) {
         assert jobId != null;
 
         this.jobId = jobId;

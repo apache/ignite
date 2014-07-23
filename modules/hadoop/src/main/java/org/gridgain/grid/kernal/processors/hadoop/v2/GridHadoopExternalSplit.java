@@ -80,27 +80,4 @@ public class GridHadoopExternalSplit extends GridHadoopInputSplit {
     @Override public int hashCode() {
         return (int)(off ^ (off >>> 32));
     }
-
-    /**
-     * Reads class name from input stream and tries get one from configuration.
-     *
-     * @param in Input stream.
-     * @param off Offset in stream.
-     * @param jobConf Job configuration.
-     * @return Class or {@code null} if not found.
-     * @throws IOException If failed.
-     */
-    @Nullable public static Class<?> readSplitClass(FSDataInputStream in, long off, Configuration jobConf)
-            throws IOException {
-        in.seek(off);
-
-        String clsName = Text.readString(in);
-
-        try {
-            return jobConf.getClassByName(clsName);
-        }
-        catch (ClassNotFoundException e) {
-            throw new IOException(e);
-        }
-    }
 }

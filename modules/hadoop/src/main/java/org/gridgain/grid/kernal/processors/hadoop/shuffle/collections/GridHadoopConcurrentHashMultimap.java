@@ -63,7 +63,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         int res = keys.get();
 
         for (AdderImpl adder : adders)
-            res += adder.localKeys.get();
+            res += adder.locKeys.get();
 
         return res;
     }
@@ -71,7 +71,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * @return Current table capacity.
      */
-    public int capacity() {
+    @Override public int capacity() {
         return oldTbl.length();
     }
 
@@ -296,7 +296,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @return Value pointer.
      */
-    protected long value(long meta) {
+    @Override protected long value(long meta) {
         return mem.readLongVolatile(meta + 16);
     }
 
@@ -314,7 +314,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @return Collision pointer.
      */
-    protected long collision(long meta) {
+    @Override protected long collision(long meta) {
         return mem.readLongVolatile(meta + 24);
     }
 
@@ -322,7 +322,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @param collision Collision pointer.
      */
-    protected void collision(long meta, long collision) {
+    @Override protected void collision(long meta, long collision) {
         assert meta != collision : meta;
 
         mem.writeLongVolatile(meta + 24, collision);
@@ -352,7 +352,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         private final Reader keyReader;
 
         /** */
-        private final AtomicInteger localKeys = new AtomicInteger();
+        private final AtomicInteger locKeys = new AtomicInteger();
 
         /** */
         private final Random rnd = new GridRandom();
@@ -398,7 +398,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
          * @param tbl Table.
          */
         private void incrementKeys(AtomicLongArray tbl) {
-            localKeys.lazySet(localKeys.get() + 1);
+            locKeys.lazySet(locKeys.get() + 1);
 
             if (rnd.nextInt(tbl.length()) < 512)
                 rehashIfNeeded(tbl);
@@ -538,7 +538,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
             if (!adders.remove(this))
                 throw new IllegalStateException();
 
-            keys.addAndGet(localKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
+            keys.addAndGet(locKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
 
             super.close();
         }

@@ -603,7 +603,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private void prepareForJob(HadoopProcess proc, GridHadoopJob job, GridHadoopMapReducePlan plan) {
         try {
             comm.sendMessage(proc.descriptor(), new GridHadoopPrepareForJobRequest(job.id(), job.info(),
-                !F.isEmpty(plan.mappers(ctx.localNodeId())), plan.reducers(), plan.reducers(ctx.localNodeId())));
+                plan.reducers(), plan.reducers(ctx.localNodeId())));
         }
         catch (GridException e) {
             U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", job=" + job +

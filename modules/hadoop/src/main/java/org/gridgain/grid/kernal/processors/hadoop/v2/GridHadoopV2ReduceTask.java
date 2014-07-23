@@ -15,7 +15,6 @@ import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.
@@ -50,8 +49,6 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
                 jobCtx.getConfiguration());
-
-            boolean successful = false;
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));

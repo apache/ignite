@@ -78,9 +78,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx)
-        throws GridException {
-
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
         Input in = new Input(taskCtx);
 
         Comparator<Object> grpCmp = taskCtx.groupComparator();

@@ -13,7 +13,6 @@ import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.logger.*;
 
 import java.io.*;
 
@@ -38,7 +37,6 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     @SuppressWarnings("ConstantConditions")
     @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
         throws GridException {
-
         JobContextImpl jobCtx = taskCtx.jobContext();
 
         try {

@@ -81,13 +81,12 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final GridLogger log;
 
     /**
-     *
      * @param locReduceAddr Local reducer address.
      * @param locNodeId Local node Id.
      * @param log Logger.
      * @param job Job.
      * @param mem Memory.
-     * @param totalReducerCnt Amount of reducer in the Job.
+     * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
      * @throws GridException If error.
      */

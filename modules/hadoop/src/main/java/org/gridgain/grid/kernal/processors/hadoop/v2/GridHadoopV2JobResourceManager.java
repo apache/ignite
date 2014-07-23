@@ -149,11 +149,11 @@ public class GridHadoopV2JobResourceManager {
      * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
      * @param extract {@code true}, if need to extract archive.
-     * @param clsPathUrls
+     * @param clsPathUrls Collection to add resource as classpath resource.
      *@param rsrcNameProp Property for resource name array setting.  @throws IOException If errors.
      */
-    private void processFiles(@Nullable Object[] files, boolean download, boolean extract, Collection<URL> clsPathUrls,
-        String rsrcNameProp) throws IOException {
+    private void processFiles(@Nullable Object[] files, boolean download, boolean extract,
+        @Nullable Collection<URL> clsPathUrls, @Nullable String rsrcNameProp) throws IOException {
         if (F.isEmptyOrNulls(files))
             return ;
 
@@ -351,7 +351,7 @@ public class GridHadoopV2JobResourceManager {
     }
 
     /**
-     * Returns collection of class path for current job.
+     * Returns array of class path for current job.
      *
      * @return Class path collection.
      */
