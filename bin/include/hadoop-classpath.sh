@@ -66,7 +66,7 @@ shopt -s nullglob
 
 # Add jars to classpath excluding tests.
 for file in ${HADOOP_HDFS_HOME}/hadoop-hdfs-* \
-            ${HADOOP_COMMON_HOME}/hadoop-common-* \
+            ${HADOOP_COMMON_HOME}/hadoop-{common,auth}-* \
             ${HADOOP_MAPRED_HOME}/hadoop-mapreduce-client-{common,core}-*; do
     [[ "$file" != *-tests.jar ]] && CP=${CP}${SEP}${file}
 done
