@@ -79,14 +79,14 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /**
      * @return Reducers to be executed on current node.
      */
-    public int[] reducers() {
+    public int[] localReducers() {
         return locReducers;
     }
 
     /**
      * @return Number of reducers in job.
      */
-    public int reducerCount() {
+    public int totalReducerCount() {
         return totalReducersCnt;
     }
 

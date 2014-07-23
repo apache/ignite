@@ -20,7 +20,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
-import org.gridgain.grid.logger.GridLogger;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -237,5 +237,10 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         catch (IOException | ClassNotFoundException e) {
             throw new GridException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopV2Job job() {
+        return (GridHadoopV2Job) super.job();
     }
 }

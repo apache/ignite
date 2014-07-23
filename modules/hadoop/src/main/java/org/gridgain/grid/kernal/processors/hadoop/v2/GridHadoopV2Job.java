@@ -139,14 +139,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
                     String clsName = Text.readString(in);
 
-                    GridHadoopFileBlock block = null;
+                    GridHadoopFileBlock block = GridHadoopV1Splitter.readFileBlock(clsName, in, hosts);
 
-                    if (F.isEmpty(clsName)) {
-                        block = GridHadoopV1Splitter.readFileBlock(clsName, in, hosts);
-
-                        if (block == null)
-                            block = GridHadoopV2Splitter.readFileBlock(clsName, in, hosts);
-                    }
+                    if (block == null)
+                        block = GridHadoopV2Splitter.readFileBlock(clsName, in, hosts);
 
                     res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
                 }
@@ -178,7 +174,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         GridHadoopTaskContext old = ctxs.putIfAbsent(locTaskId, res);
 
-        return old == null?res:old;
+        return old == null ? res : old;
     }
 
     /**
@@ -191,7 +187,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         if (!F.isEmpty(clsPath))
             jobConf.setClassLoader(new ClassLoaderWrapper(new URLClassLoader(clsPath), getClass().getClassLoader()));
-
     }
 
     /** {@inheritDoc} */
@@ -263,7 +258,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
         rsrcMgr.prepareJobEnvironment(!external, locNodeId);
     }
-
 
     /** {@inheritDoc} */
     @Override public void dispose(boolean external) throws GridException {

@@ -31,8 +31,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
-        throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
         GridHadoopInputSplit split = info().inputSplit();
 
         InputSplit nativeSplit;
@@ -61,7 +60,9 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             hadoopContext().reader(reader);
 
-            outputFormat = jobImpl.info().hasCombiner() || jobImpl.info().hasReducer() ? null : prepareWriter(jobCtx);
+            GridHadoopJobInfo jobInfo = taskCtx.job().info();
+
+            outputFormat = jobInfo.hasCombiner() || jobInfo.hasReducer() ? null : prepareWriter(jobCtx);
 
             Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
 

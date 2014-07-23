@@ -41,18 +41,16 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
         hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
 
-        run0(jobImpl, ctx);
+        run0(ctx);
     }
 
     /**
      * Internal task routine.
      *
-     * @param job Job.
      * @param taskCtx Task context.
      * @throws GridException
      */
-    protected abstract void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx)
-        throws GridException;
+    protected abstract void run0(GridHadoopV2TaskContext taskCtx) throws GridException;
 
     /**
      * @return hadoop context.

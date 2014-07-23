@@ -31,8 +31,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected void run0(GridHadoopV2Job job, GridHadoopV2TaskContext taskCtx)
-        throws GridException {
+    @Override protected void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
         try {
             JobContextImpl jobCtx = taskCtx.jobContext();
 

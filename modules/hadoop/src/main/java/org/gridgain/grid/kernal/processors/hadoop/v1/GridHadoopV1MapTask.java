@@ -82,7 +82,6 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
                 }
                 finally {
                     mapper.close();
-
                 }
             }
             finally {

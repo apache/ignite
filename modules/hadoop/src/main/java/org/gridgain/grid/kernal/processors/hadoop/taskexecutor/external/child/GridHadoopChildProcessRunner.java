@@ -113,7 +113,7 @@ public class GridHadoopChildProcessRunner {
                 job.initialize(true, nodeDesc.processId());
 
                 shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(),
-                    comm.localProcessDescriptor().parentNodeId(), log, job, mem, req.reducerCount(), req.reducers());
+                    comm.localProcessDescriptor().parentNodeId(), log, job, mem, req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 
@@ -269,7 +269,9 @@ public class GridHadoopChildProcessRunner {
                 ", pendingTasks=" + pendingTasks0 +
                 ", err=" + status.failCause() + ']');
 
-        boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || info.type() == MAP);
+        assert info.type() == MAP || info.type() == REDUCE : "Only MAP or REDUCE tasks are supported.";
+
+        boolean flush = pendingTasks0 == 0 && info.type() == MAP;
 
         notifyTaskFinished(info, status, flush);
     }

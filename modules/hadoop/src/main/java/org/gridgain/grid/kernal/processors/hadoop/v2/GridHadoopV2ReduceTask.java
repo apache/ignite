@@ -37,15 +37,14 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, GridHadoopV2TaskContext taskCtx)
-        throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
         OutputFormat outputFormat = null;
         Exception err = null;
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
         try {
-            outputFormat = reduce || !jobImpl.info().hasReducer() ? prepareWriter(jobCtx) : null;
+            outputFormat = reduce || !taskCtx.job().info().hasReducer() ? prepareWriter(jobCtx) : null;
 
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
                 jobCtx.getConfiguration());

@@ -99,19 +99,18 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         try {
             ctx.prepareTaskEnvironment();
 
-            try {
-                runTask(ctx);
+            runTask(ctx);
 
-                if (info.type() == MAP && job.info().hasCombiner()) {
+            if (info.type() == MAP && job.info().hasCombiner()) {
+                try {
                     ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
                         info.attempt(), null));
 
                     runTask(ctx);
                 }
-            }
-            finally {
-                ctx.taskInfo(info);
-                ctx.cleanupTaskEnvironment();
+                finally {
+                    ctx.taskInfo(info);
+                }
             }
         }
         catch (GridHadoopTaskCancelledException ignored) {
@@ -130,6 +129,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
             if (local != null)
                 local.close();
+
+            ctx.cleanupTaskEnvironment();
         }
 
         return null;
