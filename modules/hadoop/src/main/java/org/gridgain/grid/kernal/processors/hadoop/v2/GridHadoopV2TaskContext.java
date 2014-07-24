@@ -20,7 +20,6 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -52,21 +51,17 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** */
-    private JobContextImpl jobCtx;
-
-    /** Logger. */
-    private GridLogger log;
+    private final JobContextImpl jobCtx;
 
     /**
      * @param taskInfo Task info.
      * @param job Job.
-     * @param log Logger.
+     * @param jobCtx Job context.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx, GridLogger log) {
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx) {
         super(taskInfo, job);
 
         this.jobCtx = jobCtx;
-        this.log = log;
     }
 
     /**
@@ -142,20 +137,15 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridLogger log() {
-        return log;
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment() throws GridException {
-        ((GridHadoopV2Job)job()).prepareTaskEnvironment(taskInfo());
+        job().prepareTaskEnvironment(taskInfo());
 
         Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
     }
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment() throws GridException {
-        ((GridHadoopV2Job)job()).cleanupTaskEnvironment(taskInfo());
+        job().cleanupTaskEnvironment(taskInfo());
     }
 
     /** {@inheritDoc} */
@@ -241,6 +231,6 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public GridHadoopV2Job job() {
-        return (GridHadoopV2Job) super.job();
+        return (GridHadoopV2Job)super.job();
     }
 }

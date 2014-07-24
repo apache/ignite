@@ -30,7 +30,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private final GridUnsafeMemory mem;
 
     /** */
-    private GridLogger log;
+    private final GridLogger log;
 
     /** */
     private final GridHadoopJob job;
@@ -39,7 +39,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private final GridHadoopTaskInfo info;
 
     /** Submit time. */
-    private long submitTs = System.currentTimeMillis();
+    private final long submitTs = System.currentTimeMillis();
 
     /** Execution start timestamp. */
     private long execStartTs;
@@ -62,8 +62,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param mem Memory.
      * @param info Task info.
      */
-    public GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
-        this.log = log;
+    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
+        this.log = log.getLogger(GridHadoopRunnableTask.class);
         this.job = job;
         this.mem = mem;
         this.info = info;
@@ -102,10 +102,10 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             runTask(ctx);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                try {
-                    ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                        info.attempt(), null));
+                ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
+                    info.attempt(), null));
 
+                try {
                     runTask(ctx);
                 }
                 finally {

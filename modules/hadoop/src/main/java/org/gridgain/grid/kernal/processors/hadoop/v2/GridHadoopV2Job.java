@@ -25,6 +25,7 @@ import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.net.*;
@@ -51,22 +52,19 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final JobContextImpl jobCtx;
 
     /** Hadoop job ID. */
-    private GridHadoopJobId jobId;
+    private final GridHadoopJobId jobId;
 
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
     /** */
-    private JobID hadoopJobID;
+    private final JobID hadoopJobID;
 
     /** */
-    private GridHadoopV2JobResourceManager rsrcMgr;
+    private final GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridHadoopTaskContext> ctxs = new ConcurrentHashMap<>();
-
-    /** Logger. */
-    private GridLogger log;
+    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridHadoopTaskContext> ctxs = new ConcurrentHashMap8<>();
 
     /**
      * @param jobId Job ID.
@@ -79,7 +77,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.log = log;
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
@@ -170,7 +167,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         JobContextImpl taskJobCtx = new JobContextImpl(taskJobConf, hadoopJobID);
 
-        res = new GridHadoopV2TaskContext(info, this, taskJobCtx, log);
+        res = new GridHadoopV2TaskContext(info, this, taskJobCtx);
 
         GridHadoopTaskContext old = ctxs.putIfAbsent(locTaskId, res);
 

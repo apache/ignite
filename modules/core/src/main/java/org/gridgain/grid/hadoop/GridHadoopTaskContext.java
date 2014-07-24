@@ -10,7 +10,6 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.*;
 
 import java.util.*;
 
@@ -107,6 +106,7 @@ public abstract class GridHadoopTaskContext {
 
     /**
      * Sets input of the task.
+     *
      * @param in Input.
      */
     public void input(GridHadoopTaskInput in) {
@@ -115,6 +115,7 @@ public abstract class GridHadoopTaskContext {
 
     /**
      * Sets output of the task.
+     *
      * @param out Output.
      */
     public void output(GridHadoopTaskOutput out) {
@@ -123,6 +124,7 @@ public abstract class GridHadoopTaskContext {
 
     /**
      * Sets container for counters of the task.
+     *
      * @param counters Counters.
      */
     public void counters(GridHadoopCounters counters) {
@@ -130,47 +132,53 @@ public abstract class GridHadoopTaskContext {
     }
 
     /**
+     * Gets partitioner.
+     *
      * @return Partitioner.
-     * @throws GridException If fails.
+     * @throws GridException If failed.
      */
     public abstract GridHadoopPartitioner partitioner() throws GridException;
 
     /**
+     * Gets serializer for values.
+     *
      * @return Serializer for keys.
-     * @throws GridException If fails.
+     * @throws GridException If failed.
      */
     public abstract GridHadoopSerialization keySerialization() throws GridException;
 
     /**
+     * Gets serializer for values.
+     *
      * @return Serializer for values.
-     * @throws GridException If fails.
+     * @throws GridException If failed.
      */
     public abstract GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
+     * Gets sorting comparator.
+     *
      * @return Comparator for sorting.
      */
     public abstract Comparator<Object> sortComparator();
 
     /**
-     * Comparator for grouping on combine or reduce operation.
+     * Gets comparator for grouping on combine or reduce operation.
+     *
      * @return Comparator.
      */
     public abstract Comparator<Object> groupComparator();
 
     /**
-     * @return Logger.
-     */
-    public abstract GridLogger log();
-
-    /**
      * Prepare local environment for the task.
+     *
      * @throws GridException If failed.
      */
     public abstract void prepareTaskEnvironment() throws GridException;
 
     /**
      * Cleans up local environment of the task.
+     *
      * @throws GridException If failed.
      */
     public abstract void cleanupTaskEnvironment() throws GridException;

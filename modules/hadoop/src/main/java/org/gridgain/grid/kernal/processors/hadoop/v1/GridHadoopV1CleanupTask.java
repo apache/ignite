@@ -21,7 +21,7 @@ import java.io.*;
  */
 public class GridHadoopV1CleanupTask extends GridHadoopV1Task {
     /** Abort flag. */
-    private boolean abort;
+    private final boolean abort;
 
     /**
      * @param taskInfo Task info.

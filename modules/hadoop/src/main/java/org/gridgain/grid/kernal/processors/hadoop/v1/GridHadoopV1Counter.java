@@ -21,7 +21,7 @@ import static org.apache.hadoop.mapreduce.util.CountersStrings.*;
 /**
  * Hadoop counter implementation for v1 API.
  */
-class GridHadoopV1Counter extends Counters.Counter {
+public class GridHadoopV1Counter extends Counters.Counter {
     /** Delegate. */
     private final GridHadoopCounter counter;
 
