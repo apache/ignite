@@ -60,7 +60,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             jobConf.setInt("fs.local.block.size", 65000);
 
             // File system coordinates.
-            setupFileSytems(jobConf);
+            setupFileSystems(jobConf);
 
             GridHadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 
