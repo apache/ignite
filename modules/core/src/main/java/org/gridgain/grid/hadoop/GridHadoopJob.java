@@ -10,7 +10,6 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -40,48 +39,13 @@ public interface GridHadoopJob {
     public Collection<GridHadoopInputSplit> input() throws GridException;
 
     /**
-     * Gets partitioner for the job.
+     * Returns context for task execution.
      *
-     * @return Partitioner.
+     * @param info Task info.
+     * @return Task Context.
+     * @throws GridException If failed.
      */
-    public GridHadoopPartitioner partitioner() throws GridException;
-
-    /**
-     * Creates new instance of key serialization object.
-     *
-     * @return Serialization facility.
-     * @throws GridException if failed.
-     */
-    public GridHadoopSerialization keySerialization() throws GridException;
-
-    /**
-     * Creates new instance of value serialization object.
-     *
-     * @return Serialization facility.
-     * @throws GridException if failed.
-     */
-    public GridHadoopSerialization valueSerialization() throws GridException;
-
-    /**
-     * Creates mapper output key sorting comparator.
-     *
-     * @return New sort comparator.
-     */
-    public Comparator<?> sortComparator();
-
-    /**
-     * Creates reducer key grouping comparator.
-     *
-     * @return New group comparator.
-     */
-    @Nullable public Comparator<?> reduceGroupComparator();
-
-    /**
-     * Creates combiner key grouping comparator.
-     *
-     * @return New group comparator.
-     */
-    @Nullable public Comparator<?> combineGroupComparator();
+    public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException;
 
     /**
      * Creates task to be executed.
@@ -114,22 +78,6 @@ public interface GridHadoopJob {
      * @throws GridException If failed.
      */
     public void dispose(boolean external) throws GridException;
-
-    /**
-     * Prepare local environment for the task.
-     *
-     * @param info Task info.
-     * @throws GridException If failed.
-     */
-    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
-
-    /**
-     * Cleans up local environment of the task.
-     *
-     * @param info Task info.
-     * @throws GridException If failed.
-     */
-    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
 
     /**
      * Cleans up the job staging directory.
