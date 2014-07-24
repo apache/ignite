@@ -89,19 +89,19 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     /** Context input implementation to read data from mockInput. */
     private GridHadoopTaskInput input = new GridHadoopTaskInput() {
         /** Iterator of keys and associated lists of values. */
-        Iterator<Map.Entry<Object, List>> iterator;
+        Iterator<Map.Entry<Object, List>> iter;
 
         /** Current key and associated value list. */
         Map.Entry<Object, List> currEntry;
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (iterator == null) {
-                iterator = mockInput().entrySet().iterator();
+            if (iter == null) {
+                iter = mockInput().entrySet().iterator();
             }
 
-            if (iterator.hasNext()) {
-                currEntry = iterator.next();
+            if (iter.hasNext()) {
+                currEntry = iter.next();
             } else {
                 currEntry = null;
             }
@@ -169,9 +169,10 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     }
 
     /**
+     * @param taskInfo Task info.
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob, GridLogger log) {
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob) {
         super(taskInfo, gridJob, gridJob.jobContext());
     }
 

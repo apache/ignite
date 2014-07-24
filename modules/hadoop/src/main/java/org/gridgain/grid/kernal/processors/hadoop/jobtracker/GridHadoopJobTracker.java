@@ -127,17 +127,15 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         qry.callback(new GridBiPredicate<UUID,
             Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
-            @Override
-            public boolean apply(UUID nodeId,
-                                 final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
+            @Override public boolean apply(UUID nodeId,
+                final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 if (!busyLock.tryReadLock())
                     return false;
 
                 try {
                     // Must process query callback in a separate thread to avoid deadlocks.
                     evtProcSvc.submit(new EventHandler() {
-                        @Override
-                        protected void body() throws GridException {
+                        @Override protected void body() throws GridException {
                             processJobMetadata(evts);
                         }
                     });

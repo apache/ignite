@@ -77,7 +77,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0,
             fileBlock1);
 
-        GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob, log);
+        GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         ctx.mockOutput().clear();
 
@@ -123,7 +123,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
                                                        int taskNum, String... words) throws GridException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, gridJob.id(), taskNum, 0, null);
 
-        GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob, log);
+        GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         for (int i = 0; i < words.length; i+=2) {
             List<IntWritable> valList = new ArrayList<>();
@@ -195,14 +195,14 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         throws GridException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
 
-        GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob, log);
+        GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         createAndExecuteTask(gridJob, taskInfo, mapCtx);
 
         //Prepare input for combine
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
 
-        GridHadoopTestTaskContext combineCtx = new GridHadoopTestTaskContext(taskInfo, gridJob, log);
+        GridHadoopTestTaskContext combineCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         combineCtx.makeTreeOfWritables(mapCtx.mockOutput());
 
@@ -246,7 +246,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         //Prepare input for combine
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
 
-        GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(taskInfo, gridJob, log);
+        GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
         reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());

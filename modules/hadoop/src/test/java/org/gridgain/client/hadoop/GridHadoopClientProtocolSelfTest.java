@@ -9,7 +9,6 @@
 
 package org.gridgain.client.hadoop;
 
-import com.google.common.collect.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
@@ -539,9 +538,9 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     public static class TestOutputFormat<K, V> extends TextOutputFormat<K, V> {
         /** {@inheritDoc} */
-        @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context)
+        @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext ctx)
             throws IOException {
-            return new TestOutputCommitter(context, (FileOutputCommitter)super.getOutputCommitter(context));
+            return new TestOutputCommitter(ctx, (FileOutputCommitter)super.getOutputCommitter(ctx));
         }
     }
 
@@ -555,47 +554,47 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         /**
          * Constructor.
          *
-         * @param context Task attempt context.
+         * @param ctx Task attempt context.
          * @param delegate Delegate.
          * @throws IOException If failed.
          */
-        private TestOutputCommitter(TaskAttemptContext context, FileOutputCommitter delegate) throws IOException {
-            super(FileOutputFormat.getOutputPath(context), context);
+        private TestOutputCommitter(TaskAttemptContext ctx, FileOutputCommitter delegate) throws IOException {
+            super(FileOutputFormat.getOutputPath(ctx), ctx);
 
             this.delegate = delegate;
         }
 
         /** {@inheritDoc} */
-        @Override public void setupJob(JobContext jobContext) throws IOException {
+        @Override public void setupJob(JobContext jobCtx) throws IOException {
             try {
                 while (setupLockFile.exists())
                     Thread.sleep(50);
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 throw new IOException("Interrupted.");
             }
 
-            delegate.setupJob(jobContext);
+            delegate.setupJob(jobCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void setupTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.setupTask(taskContext);
+        @Override public void setupTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.setupTask(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
-            return delegate.needsTaskCommit(taskContext);
+        @Override public boolean needsTaskCommit(TaskAttemptContext taskCtx) throws IOException {
+            return delegate.needsTaskCommit(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void commitTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.commitTask(taskContext);
+        @Override public void commitTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.commitTask(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void abortTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.abortTask(taskContext);
+        @Override public void abortTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.abortTask(taskCtx);
         }
     }
 

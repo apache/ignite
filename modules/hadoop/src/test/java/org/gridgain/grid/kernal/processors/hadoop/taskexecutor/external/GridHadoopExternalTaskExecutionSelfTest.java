@@ -17,7 +17,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
@@ -181,8 +180,8 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         /** Line constant. */
         private Text line = new Text("line");
 
-        @Override protected void setup(Context context) throws IOException, InterruptedException {
-            super.setup(context);
+        @Override protected void setup(Context ctx) throws IOException, InterruptedException {
+            super.setup(ctx);
         }
 
         /** {@inheritDoc} */

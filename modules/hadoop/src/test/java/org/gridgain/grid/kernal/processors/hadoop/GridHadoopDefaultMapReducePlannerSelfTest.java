@@ -63,10 +63,10 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final MockGrid GRID = new MockGrid();
 
     /** Mocked GGFS. */
-    private static final MockGgfs GGFS = new MockGgfs();
+    private static final GridGgfs GGFS = new MockGgfs();
 
     /** Planner. */
-    private static final GridHadoopDefaultMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
+    private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
 
     /** Block locations. */
     private static final Map<Block, Collection<GridGgfsBlockLocation>> BLOCK_MAP = new HashMap<>();
