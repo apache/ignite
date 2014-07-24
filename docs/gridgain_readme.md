@@ -73,7 +73,7 @@ started and what the expected outcome should be.
 GridGain provides repository for its Maven artifacts.
 
 - GridGain Open Source repository is hosted at Maven Central (no additional URL required)
-- GridGain Enterprise repository is located at http://www.gridgainsystems.com:8085/nexus/content/repositories/external
+- GridGain Enterprise repository is located at http://www.gridgainsystems.com/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
 GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition):
@@ -100,7 +100,7 @@ GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition
 
     <repository>
         <id>GridGain External Repository</id>
-        <url>http://www.gridgainsystems.com:8085/nexus/content/repositories/external</url>
+        <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
     </repository>
     ...
     <dependency>
