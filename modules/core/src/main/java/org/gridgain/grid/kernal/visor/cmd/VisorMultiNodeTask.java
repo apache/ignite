@@ -11,7 +11,10 @@ package org.gridgain.grid.kernal.visor.cmd;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,6 +26,9 @@ import java.util.*;
  * @param <R> Task result type.
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<GridBiTuple<Set<UUID>, A>, R> {
+    @GridInstanceResource
+    protected GridEx g;
+
     /** Task argument. */
     protected A taskArg;
 
@@ -38,12 +44,13 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Gri
         assert arg != null;
         assert arg.get1() != null;
 
+        Set<UUID> nodeIds = arg.get1();
         taskArg = arg.get2();
 
-        Map<GridComputeJob, GridNode> map = new HashMap<>();
+        Map<GridComputeJob, GridNode> map = new GridLeanMap<>(nodeIds.size());
 
         for (GridNode node : subgrid)
-            if (arg.get1().contains(node.id()))
+            if (nodeIds.contains(node.id()))
                 map.put(job(taskArg), node);
 
         return map;
