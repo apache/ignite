@@ -147,10 +147,10 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
         private final int cap;
 
         /** */
-        private Reader keyReader;
+        private final Reader keyReader;
 
         /** */
-        private Reader valReader;
+        private final Reader valReader;
 
         /**
          * @throws GridException If failed.

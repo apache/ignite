@@ -29,10 +29,10 @@ import java.util.concurrent.*;
  */
 public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
-    private ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob<UUID>> jobs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob<UUID>> jobs = new ConcurrentHashMap<>();
 
     /** */
-    protected GridUnsafeMemory mem = new GridUnsafeMemory(0);
+    protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
     /** {@inheritDoc} */
     @Override public void start(GridHadoopContext ctx) throws GridException {

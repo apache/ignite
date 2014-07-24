@@ -10,7 +10,6 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 

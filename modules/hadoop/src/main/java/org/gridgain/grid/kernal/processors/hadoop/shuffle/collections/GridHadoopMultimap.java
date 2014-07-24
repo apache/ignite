@@ -14,11 +14,11 @@ import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Multimap for hadoop intermediate results.
  */
+@SuppressWarnings("PublicInnerClass")
 public interface GridHadoopMultimap extends AutoCloseable {
     /**
      * Incrementally visits all the keys and values in the map.

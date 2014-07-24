@@ -52,7 +52,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         JobContextImpl jobCtx = taskCtx.jobContext();
 
         try {
-            InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), hadoopContext().getConfiguration());
+            InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(),
+                hadoopContext().getConfiguration());
 
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
 

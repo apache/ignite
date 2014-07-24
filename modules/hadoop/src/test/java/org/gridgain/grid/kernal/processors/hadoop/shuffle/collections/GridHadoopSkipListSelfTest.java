@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import com.google.common.collect.*;
-import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;

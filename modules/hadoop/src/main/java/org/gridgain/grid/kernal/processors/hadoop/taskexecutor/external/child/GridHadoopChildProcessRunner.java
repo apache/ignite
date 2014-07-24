@@ -23,6 +23,7 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -53,19 +54,19 @@ public class GridHadoopChildProcessRunner {
     private GridLogger log;
 
     /** Init guard. */
-    private AtomicBoolean initGuard = new AtomicBoolean();
+    private final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** Start time. */
     private long startTime;
 
     /** Init future. */
-    private GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
+    private final GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
 
     /** Job instance. */
     private GridHadoopJob job;
 
     /** Number of uncompleted tasks. */
-    private AtomicInteger pendingTasks = new AtomicInteger();
+    private final AtomicInteger pendingTasks = new AtomicInteger();
 
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
@@ -112,8 +113,10 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(),
-                    comm.localProcessDescriptor().parentNodeId(), log, job, mem, req.totalReducerCount(), req.localReducers());
+                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
+
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                    req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 

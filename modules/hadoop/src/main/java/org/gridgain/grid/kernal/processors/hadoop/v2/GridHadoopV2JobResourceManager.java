@@ -33,13 +33,13 @@ import java.util.*;
  */
 public class GridHadoopV2JobResourceManager {
     /** Hadoop job context. */
-    private JobContextImpl ctx;
+    private final JobContextImpl ctx;
 
     /** Logger. */
-    private GridLogger log;
+    private final GridLogger log;
 
     /** Job ID. */
-    private GridHadoopJobId jobId;
+    private final GridHadoopJobId jobId;
 
     /** Directory to place localized resources. */
     private File jobLocDir;
@@ -48,7 +48,7 @@ public class GridHadoopV2JobResourceManager {
     private URL[] clsPath;
 
     /** List of local resources. */
-    private Collection<File> rsrcList = new ArrayList<>();
+    private final Collection<File> rsrcList = new ArrayList<>();
 
     /** Staging directory to delivery job jar and config to the work nodes. */
     private Path stagingDir;
@@ -146,11 +146,12 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Process list of resources.
      *
-     * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
+     * @param files Array of {@link URI} or {@link Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
      * @param extract {@code true}, if need to extract archive.
      * @param clsPathUrls Collection to add resource as classpath resource.
-     * @param rsrcNameProp Property for resource name array setting.  @throws IOException If errors.
+     * @param rsrcNameProp Property for resource name array setting.
+     * @throws IOException If failed.
      */
     private void processFiles(@Nullable Object[] files, boolean download, boolean extract,
         @Nullable Collection<URL> clsPathUrls, @Nullable String rsrcNameProp) throws IOException {
@@ -232,6 +233,7 @@ public class GridHadoopV2JobResourceManager {
 
     /**
      * Removes temporary working directory is created for job execution.
+     *
      * @param delJobLocDir {@code true} If need to delete job local directory.
      */
     public void cleanupJobEnvironment(boolean delJobLocDir) {

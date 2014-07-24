@@ -317,7 +317,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         private long valPtr;
 
         /** */
-        private ReaderBase valReader;
+        private final ReaderBase valReader;
 
         /**
          * @param valPtr Value page pointer.

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
@@ -75,7 +74,7 @@ public class GridHadoopV2Splitter {
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.
      * @throws GridException If failed.
      */
-    public static GridHadoopFileBlock readFileBlock(String clsName, FSDataInputStream in, @Nullable String[] hosts)
+    public static GridHadoopFileBlock readFileBlock(String clsName, DataInput in, @Nullable String[] hosts)
         throws GridException {
         if (!FileSplit.class.getName().equals(clsName))
             return null;

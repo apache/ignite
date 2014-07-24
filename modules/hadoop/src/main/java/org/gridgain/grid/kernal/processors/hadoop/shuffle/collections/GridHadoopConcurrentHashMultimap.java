@@ -347,7 +347,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * Adder. Must not be shared between threads.
      */
-    public class AdderImpl extends AdderBase {
+    private class AdderImpl extends AdderBase {
         /** */
         private final Reader keyReader;
 
@@ -358,10 +358,10 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         private final Random rnd = new GridRandom();
 
         /**
-         * @throws GridException If failed.
          * @param ctx Task context.
+         * @throws GridException If failed.
          */
-        public AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+        private AdderImpl(GridHadoopTaskContext ctx) throws GridException {
             super(ctx);
 
             keyReader = new Reader(keySer);
@@ -546,7 +546,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         /**
          * Key.
          */
-        public class KeyImpl implements Key {
+        private class KeyImpl implements Key {
             /** */
             private long meta;
 
@@ -587,7 +587,17 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * Current map state.
      */
-    private static enum State {
-        REHASHING, VISITING, READING_WRITING, CLOSING
+    private enum State {
+        /** */
+        REHASHING,
+
+        /** */
+        VISITING,
+
+        /** */
+        READING_WRITING,
+
+        /** */
+        CLOSING
     }
 }

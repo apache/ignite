@@ -46,7 +46,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
     private InputSplit inputSplit;
 
     /** */
-    private GridHadoopTaskContext ctx;
+    private final GridHadoopTaskContext ctx;
 
     /** */
     private String status;

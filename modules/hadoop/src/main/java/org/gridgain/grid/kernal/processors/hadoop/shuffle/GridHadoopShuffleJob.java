@@ -53,10 +53,10 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private T[] reduceAddrs;
 
     /** Local reducers address. */
-    private T locReduceAddr;
+    private final T locReduceAddr;
 
     /** */
-    private GridHadoopShuffleMessage[] msgs;
+    private final GridHadoopShuffleMessage[] msgs;
 
     /** */
     private final AtomicReferenceArray<GridHadoopMultimap> maps;
@@ -95,7 +95,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
-        this.log = log;
+        this.log = log.getLogger(GridHadoopShuffleJob.class);
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
@@ -533,13 +533,13 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      */
     private class PartitionedOutput implements GridHadoopTaskOutput {
         /** */
-        private GridHadoopTaskOutput[] adders = new GridHadoopTaskOutput[maps.length()];
+        private final GridHadoopTaskOutput[] adders = new GridHadoopTaskOutput[maps.length()];
 
         /** */
         private GridHadoopPartitioner partitioner;
 
         /** */
-        private GridHadoopTaskContext taskCtx;
+        private final GridHadoopTaskContext taskCtx;
 
         /**
          * Constructor.

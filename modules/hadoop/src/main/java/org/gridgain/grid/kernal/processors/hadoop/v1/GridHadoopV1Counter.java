@@ -80,6 +80,7 @@ public class GridHadoopV1Counter extends Counters.Counter {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public boolean contentEquals(Counters.Counter counter) {
         return getUnderlyingCounter().equals(counter.getUnderlyingCounter());
     }
