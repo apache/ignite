@@ -295,17 +295,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
         for (GridRestProtocol proto : protos) {
-            for (GridBiTuple<String, Object> p : proto.getProperties()) {
-                String key = p.getKey();
+            Collection<GridBiTuple<String, Object>> props = proto.getProperties();
 
-                if (key == null)
-                    continue;
+            if (props != null) {
+                for (GridBiTuple<String, Object> p : props) {
+                    String key = p.getKey();
 
-                if (attrs.containsKey(key))
-                    throw new GridException(
-                        "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+                    if (key == null)
+                        continue;
 
-                attrs.put(key, p.getValue());
+                    if (attrs.containsKey(key))
+                        throw new GridException(
+                            "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                    attrs.put(key, p.getValue());
+                }
             }
         }
     }
@@ -534,6 +538,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            case CACHE_QUERY_EXECUTE:
+            case CACHE_QUERY_FETCH:
+            case CACHE_QUERY_REBUILD_INDEXES:
+                perm = GridSecurityPermission.CACHE_READ;
+                name = ((GridRestCacheQueryRequest)req).cacheName();
+
+                break;
+
             case CACHE_PUT:
             case CACHE_ADD:
             case CACHE_PUT_ALL:
@@ -570,6 +582,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NOOP:
             case QUIT:
                 break;
+
+            default:
+                throw new AssertionError("Unexpected command: " + req.command());
         }
 
         if (perm != null)
