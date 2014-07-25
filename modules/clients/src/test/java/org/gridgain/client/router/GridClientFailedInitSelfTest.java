@@ -55,10 +55,16 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
+        assert cfg.getClientConnectionConfiguration() == null;
+
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(BINARY_PORT);
-        cfg.setRestJettyPath(REST_JETTY_CFG);
-        cfg.setRestEnabled(true);
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(BINARY_PORT);
+        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

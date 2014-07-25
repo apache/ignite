@@ -12,7 +12,6 @@ package org.gridgain.examples.messaging;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.examples.compute.*;
 
 import java.util.*;
 import java.util.concurrent.*;

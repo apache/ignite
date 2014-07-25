@@ -39,6 +39,9 @@ public class GridRestRequest {
     /** Command. */
     private GridRestCommand cmd;
 
+    /** Portable mode flag. */
+    private boolean portableMode;
+
     /**
      * @return Destination ID.
      */
@@ -133,6 +136,20 @@ public class GridRestRequest {
      */
     public void address(InetSocketAddress addr) {
         this.addr = addr;
+    }
+
+    /**
+     * @return Portable mode flag.
+     */
+    public boolean portableMode() {
+        return portableMode;
+    }
+
+    /**
+     * @param portableMode Portable mode flag.
+     */
+    public void portableMode(boolean portableMode) {
+        this.portableMode = portableMode;
     }
 
     /** {@inheritDoc} */

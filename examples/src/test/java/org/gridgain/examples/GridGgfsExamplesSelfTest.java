@@ -36,8 +36,7 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        String cfgPath = CLIENT_LIGHT_GRID_NAME.equals(gridName) ?
-            (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
+        String cfgPath = gridName == null ? (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
             GGFS_NO_ENDPOINT_CFG;
 
         GridConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
@@ -67,7 +66,7 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
     public void testHadoopFileSystemExample() throws Exception {
         File cpDir = U.resolveGridGainPath("examples/config/hadoop");
 
-        startGrid(CLIENT_LIGHT_GRID_NAME);
+        startGrid(null);
 
         try {
             // Execute light version of this benchmark in order to ensure that it work.

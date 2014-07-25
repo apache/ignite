@@ -208,9 +208,9 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
-        final GridBiInClosure<K, V> c) {
+        boolean deserializePortable, final GridBiInClosure<K, V> c) {
         return cctx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
-            CU.subjectId(this, cctx), null)
+            CU.subjectId(this, cctx), deserializePortable, null)
             .chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                     try {

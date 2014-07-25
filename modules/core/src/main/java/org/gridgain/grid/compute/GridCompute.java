@@ -359,7 +359,7 @@ public interface GridCompute {
      * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
-     * @return Grid projection ({@code this}).
+     * @return This {@code GridCompute} instance for chaining calls.
      */
     public GridCompute withNoFailover();
 

@@ -14,12 +14,9 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -280,7 +277,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         }).get();
 
-        assert F.reduce(res, locRdc) == 1500;
+        assertEquals(1500., F.reduce(res, locRdc));
     }
 
     /**
@@ -469,101 +466,6 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             assertEquals(entry.getKey(), entry.getValue().id());
 
             assert F.<Person>asList(persons).contains(entry.getValue());
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Person implements Externalizable {
-        /** */
-        @GridToStringExclude
-        private UUID id = UUID.randomUUID();
-
-        /** */
-        @GridCacheQuerySqlField
-        @GridCacheQueryTextField
-        private String name;
-
-        /** */
-        @GridCacheQuerySqlField
-        private int salary;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public Person() {
-            // No-op.
-        }
-
-        /**
-         * @param name Name.
-         * @param salary Salary.
-         */
-        Person(String name, int salary) {
-            assert name != null;
-            assert salary > 0;
-
-            this.name = name;
-            this.salary = salary;
-        }
-
-        /**
-         * @return Id.
-         */
-        UUID id() {
-            return id;
-        }
-
-        /**
-         * @return Name.
-         */
-        String name() {
-            return name;
-        }
-
-        /**
-         * @return Salary.
-         */
-        double salary() {
-            return salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, id);
-            U.writeString(out, name);
-            out.writeInt(salary);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readUuid(in);
-            name = U.readString(in);
-            salary = in.readInt();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id.hashCode() + 31 * name.hashCode() + 31 * 31 * salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            if (obj == this)
-                return true;
-
-            if (!(obj instanceof Person))
-                return false;
-
-            Person that = (Person)obj;
-
-            return that.id.equals(id) && that.name.equals(name) && that.salary == salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(Person.class, this);
         }
     }
 }

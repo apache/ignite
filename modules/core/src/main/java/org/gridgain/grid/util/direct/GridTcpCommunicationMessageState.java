@@ -307,14 +307,12 @@ public class GridTcpCommunicationMessageState {
     public final void setBuffer(ByteBuffer buf) {
         assert buf != null;
 
-        if (this.buf == null) {
+        if (this.buf != buf) {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
             baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : BYTE_ARR_OFF;
         }
-        else
-            assert this.buf == buf;
     }
 
     /**
@@ -1480,6 +1478,17 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
+     * @param src Buffer.
+     * @return Whether array was fully written
+     */
+    public boolean putByteBufferClient(ByteBuffer src) {
+        assert src != null;
+        assert src.hasArray();
+
+        return putArrayClient(src.array(), BYTE_ARR_OFF + src.position(), src.remaining(), src.remaining());
+    }
+
+    /**
      * @param arr Array.
      * @param off Offset.
      * @param len Length.
@@ -1500,9 +1509,8 @@ public class GridTcpCommunicationMessageState {
 
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
 
-        if (!arrHdrDone) {
+        if (!arrHdrDone)
             arrHdrDone = true;
-        }
 
         if (!buf.hasRemaining())
             return false;

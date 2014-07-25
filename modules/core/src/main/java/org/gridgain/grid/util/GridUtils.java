@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -112,19 +111,6 @@ public abstract class GridUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
-
-    /** Protobuf marshaller class name. */
-    private static final String PROTOBUF_MARSH_CLS =
-        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
-
-    /** Optimized client marshaller ID. */
-    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
-
-    /** Protobuf client marshaller ID. */
-    public static final byte PROTOBUF_CLIENT_PROTO_ID = 2;
-
-    /** JDK client marshaller ID. */
-    public static final byte JDK_CLIENT_PROTO_ID = 3;
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -4309,6 +4295,24 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes int array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeIntArray(DataOutput out, @Nullable int[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int b : arr)
+                out.writeInt(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -4325,6 +4329,27 @@ public abstract class GridUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readBoolean();
+
+        return res;
+    }
+
+    /**
+     * Reads int array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        int[] res = new int[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readInt();
 
         return res;
     }
@@ -7509,16 +7534,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether a node is a Visor node.
-     *
-     * @param node Node to check.
-     * @return {@code True} if node is a Visor node, {@code false} otherwise.
-     */
-    public static boolean isVisorNode(GridNode node) {
-        return node.attributes().containsKey("VISOR");
-    }
-
-    /**
      * Checks whether property is one added by Visor when node is started via remote SSH session.
      *
      * @param name Property name to check.
@@ -7542,7 +7557,8 @@ public abstract class GridUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and null appender instances.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
+     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
      * @throws GridException In case of failure to add no-op logger for Log4j.
      */
     public static GridBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
@@ -7555,7 +7571,14 @@ public abstract class GridUtils {
 
             rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
 
-            nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            try {
+                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            }
+            catch (ClassNotFoundException ignore) {
+                // Can't found log4j no-op appender in classpath (for example, log4j was added through
+                // log4j-over-slf4j library. No-appender warning will not be suppressed.
+                return new GridBiTuple<>(rootLog, null);
+            }
 
             Class appCls = Class.forName("org.apache.log4j.Appender");
 
@@ -7577,6 +7600,9 @@ public abstract class GridUtils {
     public static void removeLog4jNoOpLogger(GridBiTuple<Object, Object> t) throws GridException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
+
+        if (nullApp == null)
+            return;
 
         try {
             Class appenderCls = Class.forName("org.apache.log4j.Appender");
@@ -8354,34 +8380,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Creates new instance of Protobuf marshaller. If {@code gridgain-protobuf}
-     * module is not enabled, {@code null} is returned.
-     *
-     * @param log Logger.
-     * @return Marshaller instance or {@code null} if {@code gridgain-protobuf} module is not enabled.
-     */
-    @Nullable public static GridClientMarshaller createProtobufMarshaller(GridLogger log) {
-        GridClientMarshaller marsh = null;
-
-        try {
-            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
-
-            Constructor<?> cons = cls.getConstructor();
-
-            marsh = (GridClientMarshaller)cons.newInstance();
-        }
-        catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST C++ and .NET clients " +
-                "(consider adding gridgain-protobuf module to classpath).");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
-        }
-
-        return marsh;
-    }
-
-    /**
      * Converts an array of characters representing hexidecimal values into an
      * array of bytes of those same values. The returned array will be half the
      * length of the passed array, as it takes two characters to represent any
@@ -8426,12 +8424,56 @@ public abstract class GridUtils {
      * @return An integer
      * @throws GridException Thrown if ch is an illegal hex character
      */
-    protected static int toDigit(char ch, int index) throws GridException {
+    public static int toDigit(char ch, int index) throws GridException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
             throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
 
         return digit;
+    }
+
+    /**
+     * Gets oldest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Oldest node.
+     */
+    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode oldest = null;
+
+        long minOrder = Long.MAX_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() < minOrder) {
+                oldest = n;
+
+                minOrder = n.order();
+            }
+        }
+
+        return oldest;
+    }
+
+    /**
+     * Gets youngest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Youngest node.
+     */
+    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode youngest = null;
+
+        long maxOrder = Long.MIN_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() > maxOrder) {
+                youngest = n;
+
+                maxOrder = n.order();
+            }
+        }
+
+        return youngest;
     }
 }

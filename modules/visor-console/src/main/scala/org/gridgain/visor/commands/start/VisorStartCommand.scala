@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.start
 
 import org.gridgain.grid._
+import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
 import java.util.concurrent._
@@ -215,6 +216,12 @@ class VisorStartCommand {
             if (fileOpt.isDefined) {
                 val file = new File(fileOpt.get)
 
+                if (!file.exists())
+                    scold("File not found: " + file.getAbsolutePath).^^
+
+                if (file.isDirectory)
+                    scold("File is a directory: " + file.getAbsolutePath).^^
+
                 try
                     res = grid.startNodes(file, restart, timeout, maxConn).get().map(t => {
                         Result(t.get1, t.get2, t.get3)
@@ -300,9 +307,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => {
-                    errT += (r.host, r.errMsg)
-                })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
 
                 errT.render()
             }

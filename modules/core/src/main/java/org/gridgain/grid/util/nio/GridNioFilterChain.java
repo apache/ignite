@@ -82,6 +82,8 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
                     res.append(", ");
             }
 
+            res.append(']');
+
             // It is OK if this variable will be rewritten concurrently.
             str = res.toString();
         }

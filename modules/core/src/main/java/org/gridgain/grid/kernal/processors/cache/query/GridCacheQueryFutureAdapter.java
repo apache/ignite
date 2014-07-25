@@ -285,36 +285,52 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             log.debug("Received query result page [nodeId=" + nodeId + ", data=" + data +
                 ", err=" + err + ", finished=" + finished + "]");
 
-        if (err != null)
+        try {
+            if (err != null)
+                synchronized (mux) {
+                    enqueue(Collections.emptyList());
+
+                    onPage(nodeId, true);
+
+                    onDone(nodeId != null ?
+                        new GridException("Failed to execute query on node [query=" + qry +
+                            ", nodeId=" + nodeId + "]", err) :
+                        new GridException("Failed to execute query locally: " + qry, err));
+
+                    mux.notifyAll();
+                }
+            else {
+                if (data == null)
+                    data = Collections.emptyList();
+
+                data = dedupIfRequired((Collection<Object>)data);
+
+                data = cctx.unwrapPortablesIfNeeded((Collection<Object>)data, qry.query().portableKeys(),
+                    qry.query().portableValues());
+
+                synchronized (mux) {
+                    enqueue(data);
+
+                    if (qry.query().keepAll())
+                        allCol.addAll(maskNulls((Collection<Object>)data));
+
+                    if (onPage(nodeId, finished)) {
+                        onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
+
+                        clear();
+                    }
+
+                    mux.notifyAll();
+                }
+            }
+        }
+        catch (GridException e) {
             synchronized (mux) {
                 enqueue(Collections.emptyList());
 
                 onPage(nodeId, true);
 
-                onDone(nodeId != null ?
-                    new GridException("Failed to execute query on node [query=" + qry +
-                        ", nodeId=" + nodeId + "]", err) :
-                    new GridException("Failed to execute query locally: " + qry, err));
-
-                mux.notifyAll();
-            }
-        else {
-            if (data == null)
-                data = Collections.emptyList();
-
-            data = dedupIfRequired((Collection<Object>)data);
-
-            synchronized (mux) {
-                enqueue(data);
-
-                if (qry.query().keepAll())
-                    allCol.addAll(maskNulls((Collection<Object>)data));
-
-                if (onPage(nodeId, finished)) {
-                    onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
-
-                    clear();
-                }
+                onDone(e);
 
                 mux.notifyAll();
             }

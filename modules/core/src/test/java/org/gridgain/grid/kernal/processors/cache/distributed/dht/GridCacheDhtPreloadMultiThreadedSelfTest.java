@@ -13,11 +13,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -30,6 +35,9 @@ import java.util.concurrent.*;
 public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private boolean cacheEnabled = true;
 
     /**
      * Creates new test.
@@ -105,8 +113,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                     @Nullable @Override public Object call() throws Exception {
                         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
-                        cfg.setRestEnabled(false);
-
                         startGrid(Thread.currentThread().getName(), cfg);
 
                         return null;
@@ -148,19 +154,73 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExchangeFuturesGc() throws Exception {
+        try {
+            startGrid(0);
+            startGrid(1);
+
+            cacheEnabled = false;
+
+            for (int i = 10; i < 20; i++) {
+                try (Grid g = startGrid(i)) {
+                    assertEquals(3, g.nodes().size());
+                }
+            }
+
+            boolean recheck = false;
+
+            for (int i = 0; i < 3; i++) {
+                for (Grid g : GridGain.allGrids()) {
+                    GridKernal g1 = (GridKernal)g;
+
+                    for (GridCache<?, ?> c : g1.caches()) {
+                        GridCacheAdapter<Object, Object> c0 = g1.internalCache(c.name());
+
+                        GridDhtCacheAdapter dht = c0 instanceof GridDhtCacheAdapter ? (GridDhtCacheAdapter)c0 :
+                            ((GridNearCacheAdapter)c0).dht();
+
+                        if (!((GridDhtPreloader)dht.preloader()).exchangeFutures().isEmpty()) {
+                            info("Check failed for [grid=" + g.name() + ", c=" + c.name() + ']');
+
+                            recheck = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (!recheck)
+                    break;
+
+                U.sleep(1000);
+            }
+
+            assertFalse("Check failed (see logs for details).", recheck);
+        }
+        finally {
+            G.stopAll(true);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
         cfg.setGridName(gridName);
-        cfg.setRestEnabled(false);
 
-        for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
-            if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
-                cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
-                cCfg.setBackups(1);
+        if (cacheEnabled) {
+            for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
+                if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
+                    cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
+                    cCfg.setBackups(1);
+                }
             }
         }
+        else
+            cfg.setCacheConfiguration();
 
         ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

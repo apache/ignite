@@ -22,14 +22,8 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     /** */
     public static final byte CODE_OK = 0;
 
-    /** */
-    public static final byte CODE_UNKNOWN_PROTO_ID = 2;
-
     /** Response, indicating successful handshake. */
-    public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse((byte)0);
-
-    /** Response, indicating that protocol ID, specified by the client, is invalid. */
-    public static final GridClientHandshakeResponse ERR_UNKNOWN_PROTO_ID = new GridClientHandshakeResponse((byte)2);
+    public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse(CODE_OK);
 
     /** */
     private byte resCode;
@@ -55,20 +49,6 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
      */
     public byte resultCode() {
         return resCode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeByte(resCode);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        resCode = in.readByte();
     }
 
     /** {@inheritDoc} */

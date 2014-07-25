@@ -57,6 +57,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
 
+    /** Portable enabled flag. */
+    private final boolean portableEnabled;
+
     /** Per-node buffer size. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private int bufSize = DFLT_PER_NODE_BUFFER_SIZE;
@@ -138,6 +141,15 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         this.flushQ = flushQ;
 
         log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
+
+        GridNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+
+        if (node == null)
+            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
+
+        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
+
+        portableEnabled = attrs.portableEnabled();
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
@@ -323,12 +335,19 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
-            for (Map.Entry<K, V> entry : entries)
+            for (Map.Entry<K, V> entry : entries) {
                 keys.add(entry.getKey());
+
+                if (portableEnabled)
+                    entry.setValue((V)ctx.portable().marshalToPortable(entry.getValue()));
+            }
 
             load0(entries, resFut, keys, 0);
 
             return resFut;
+        }
+        catch (GridException e) {
+            return new GridFinishedFuture<>(ctx, e);
         }
         finally {
             leaveBusy();
@@ -907,6 +926,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                         assert jobPda0 != null;
 
                         dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
+
+                        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+                        if (cache != null)
+                            cache.context().deploy().onEnter();
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to deploy class (request will not be sent): " + jobPda0.deployClass(), e);
@@ -1169,7 +1193,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
         /** {@inheritDoc} */
         @Override public V setValue(V val) {
-            throw new UnsupportedOperationException();
+            V old = this.val;
+
+            this.val = val;
+
+            return old;
         }
 
         /** {@inheritDoc} */

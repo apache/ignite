@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testsuites.*;
@@ -45,6 +46,7 @@ public class GridBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(GridTopologyBuildVersionSelfTest.class);
         suite.addTestSuite(GridReleaseTypeSelfTest.class);
+        suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorConsistentHashSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);

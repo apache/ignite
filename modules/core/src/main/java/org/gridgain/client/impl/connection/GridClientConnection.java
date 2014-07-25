@@ -10,6 +10,7 @@ package org.gridgain.client.impl.connection;
 
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -146,7 +147,9 @@ public abstract class GridClientConnection {
 
         return res.chain(new GridClientFutureCallback<Map<K, V>, V>() {
             @Override public V onComplete(GridClientFuture<Map<K, V>> fut) throws GridClientException {
-                return fut.get().get(key);
+                Map<K, V> map = fut.get();
+
+                return F.firstValue(map);
             }
         });
     }
@@ -301,12 +304,13 @@ public abstract class GridClientConnection {
      * @param taskName Task name.
      * @param arg Task argument.
      * @param destNodeId Destination node ID.
+     * @param keepPortables Keep portables flag.
      * @return Task execution result.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId)
-        throws GridClientConnectionResetException, GridClientClosedException;
+    public abstract <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
+        boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
      * Gets node by node ID.

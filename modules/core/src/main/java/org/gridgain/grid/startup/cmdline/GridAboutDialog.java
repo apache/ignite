@@ -206,14 +206,14 @@ public class GridAboutDialog extends JDialog {
         licPanel.add(Box.createVerticalGlue(), gbcStrut());
 
         addAboutItem(licPanel, "Version:", ver);
-        addAboutItem(licPanel, "Release Date:", new SimpleDateFormat("yyyy/MM/dd").format(release));
+        addAboutItem(licPanel, "Release Date:", new SimpleDateFormat("dd MMM yyyy").format(release));
         addAboutItem(licPanel, "Copyright:", copyright);
 
         if (lic != null) {
             licPanel.add(new JSeparator(), gbcSeparator());
 
             addAboutItem(licPanel, "License ID:", lic.id());
-            addAboutItem(licPanel, "Issue Date:", lic.issueDate());
+            addAboutItem(licPanel, "Issue Date:", new SimpleDateFormat("dd MMM yyyy").format(lic.issueDate()));
             addAboutItem(licPanel, "Issue Org.:", lic.issueOrganization());
             addAboutItem(licPanel, "License Note:", lic.licenseNote());
 
