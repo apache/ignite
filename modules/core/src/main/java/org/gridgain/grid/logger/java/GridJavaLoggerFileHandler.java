@@ -20,7 +20,7 @@ import java.util.logging.*;
 /**
  * File logging handler which skips all the messages until node ID is set.
  */
-public final class GridJavaFileHandler extends StreamHandler {
+public final class GridJavaLoggerFileHandler extends StreamHandler {
     /* GridGain Logging Directory. */
     public static final String GRIDGAIN_LOG_DIR = System.getenv("GRIDGAIN_LOG_DIR");
 
@@ -31,26 +31,38 @@ public final class GridJavaFileHandler extends StreamHandler {
     private volatile FileHandler delegate;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public void publish(LogRecord record) {
-        if (delegate != null)
-            delegate.publish(record);
+        FileHandler delegate0 = delegate;
+
+        if (delegate0 != null)
+            delegate0.publish(record);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public void flush() {
-        if (delegate != null)
-            delegate.flush();
+        FileHandler delegate0 = delegate;
+
+        if (delegate0 != null)
+            delegate0.flush();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public void close() throws SecurityException {
-        if (delegate != null)
-            delegate.close();
+        FileHandler delegate0 = delegate;
+
+        if (delegate0 != null)
+            delegate0.close();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public boolean isLoggable(LogRecord record) {
-        return record != null && delegate != null && delegate.isLoggable(record);
+        FileHandler delegate0 = delegate;
+
+        return delegate0 != null && delegate0.isLoggable(record);
     }
 
     /**
@@ -72,27 +84,31 @@ public final class GridJavaFileHandler extends StreamHandler {
         pattern = new File(logDirectory(), pattern.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
         int limit = getIntProperty(className + ".limit", 0);
+
         if (limit < 0)
             limit = 0;
 
         int count = getIntProperty(className + ".count", 1);
+
         if (count <= 0)
             count = 1;
 
         boolean append = getBooleanProperty(className + ".append", false);
 
+        FileHandler delegate0;
+
         synchronized (this) {
             if (delegate != null)
                 return;
 
-            delegate = new FileHandler(pattern, limit, count, append);
+            delegate = delegate0 = new FileHandler(pattern, limit, count, append);
         }
 
-        delegate.setLevel(getLevel());
-        delegate.setFormatter(getFormatter());
-        delegate.setEncoding(getEncoding());
-        delegate.setFilter(getFilter());
-        delegate.setErrorManager(getErrorManager());
+        delegate0.setLevel(getLevel());
+        delegate0.setFormatter(getFormatter());
+        delegate0.setEncoding(getEncoding());
+        delegate0.setFilter(getFilter());
+        delegate0.setErrorManager(getErrorManager());
     }
 
     /**
@@ -146,6 +162,7 @@ public final class GridJavaFileHandler extends StreamHandler {
      * @param defaultValue Default value.
      * @return Parsed property value if it is set and valid or default value otherwise.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     private boolean getBooleanProperty(String name, boolean defaultValue) {
         String val = manager.getProperty(name);
 
@@ -154,12 +171,17 @@ public final class GridJavaFileHandler extends StreamHandler {
 
         val = val.toLowerCase();
 
-        if (val.equals("true") || val.equals("1"))
+        if ("true".equals(val) || "1".equals(val))
             return true;
 
-        if (val.equals("false") || val.equals("0"))
+        if ("false".equals(val) || "0".equals(val))
             return false;
 
         return defaultValue;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridJavaLoggerFileHandler.class, this);
     }
 }

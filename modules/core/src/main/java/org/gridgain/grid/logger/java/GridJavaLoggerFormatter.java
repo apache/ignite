@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.logger.java;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -18,7 +20,7 @@ import java.util.logging.*;
 /**
  * Formatter for JUL logger.
  */
-public class GridJavaFormatter extends Formatter {
+public class GridJavaLoggerFormatter extends Formatter {
     /** Name for anonymous loggers. */
     public static final String ANONYMOUS_LOGGER_NAME = "UNKNOWN";
 
@@ -60,5 +62,10 @@ public class GridJavaFormatter extends Formatter {
             logName + "] " +
             record.getMessage() +
             (ex == null ? "\n" : ex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridJavaLoggerFormatter.class, this);
     }
 }

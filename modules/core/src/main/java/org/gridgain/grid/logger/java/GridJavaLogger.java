@@ -297,7 +297,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        GridJavaFileHandler gridFileHnd = findHandler(impl, GridJavaFileHandler.class);
+        GridJavaLoggerFileHandler gridFileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
             return gridFileHnd.pattern();
@@ -331,7 +331,7 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
             this.nodeId = nodeId;
         }
 
-        GridJavaFileHandler fileHnd = findHandler(impl, GridJavaFileHandler.class);
+        GridJavaLoggerFileHandler fileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
 
         if (fileHnd == null)
             return;
