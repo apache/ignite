@@ -22,13 +22,6 @@
 HADOOP_DEFAULTS="/etc/default/hadoop"
 HADOOP_PREFIX=${HADOOP_PREFIX:-$HADOOP_HOME}
 
-case "$(uname)" in
-    MINGW*|CYGWIN*)
-        SEP=";";;
-    *)
-        SEP=":";;
-esac
-
 # Environment variable HADOOP_HOME has been deprecated.
 if [[ "$HADOOP_HOME_WARN_SUPPRESS" != "true" && -n "$HADOOP_HOME" ]]; then
     echo 'WARNING: $HADOOP_HOME is deprecated. Use $HADOOP_PREFIX instead'
@@ -40,11 +33,8 @@ if [[ -z "$HADOOP_PREFIX" && -f "$HADOOP_DEFAULTS" ]]; then
     source "$HADOOP_DEFAULTS"
 fi
 
-# Return with error message if Hadoop couldn't be found.
-if [ -z "$HADOOP_PREFIX" ]; then
-    echo 'ERROR: Failed to find Hadoop installation path ($HADOOP_PREFIX is undefined)'
-    exit 1
-fi
+# Return if Hadoop couldn't be found.
+[ -z "$HADOOP_PREFIX" ] && return
 
 #
 # Resolve the rest of Hadoop environment variables.
@@ -59,7 +49,7 @@ HADOOP_MAPRED_HOME=${HADOOP_MAPRED_HOME-"${HADOOP_PREFIX}/share/hadoop/mapreduce
 #
 
 # Add all Hadoop libs.
-CP="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*"
+GRIDGAIN_HADOOP_CLASSPATH="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*"
 
 # Skip globbing pattern if it cannot be resolved.
 shopt -s nullglob
@@ -68,8 +58,5 @@ shopt -s nullglob
 for file in ${HADOOP_HDFS_HOME}/hadoop-hdfs-* \
             ${HADOOP_COMMON_HOME}/hadoop-{common,auth}-* \
             ${HADOOP_MAPRED_HOME}/hadoop-mapreduce-client-{common,core}-*; do
-    [[ "$file" != *-tests.jar ]] && CP=${CP}${SEP}${file}
+    [[ "$file" != *-tests.jar ]] && GRIDGAIN_HADOOP_CLASSPATH=${GRIDGAIN_HADOOP_CLASSPATH}${SEP}${file}
 done
-
-# Output result.
-echo "$CP"

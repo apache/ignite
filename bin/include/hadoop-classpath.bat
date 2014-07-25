@@ -21,11 +21,8 @@
 :: Check if environment passes deprecated HADOOP_HOME
 if not defined HADOOP_PREFIX set HADOOP_PREFIX=%HADOOP_HOME%
 
-:: Fail if we cannot find Hadoop installation directory
-if not defined HADOOP_PREFIX (
-    echo "ERROR: Failed to find Hadoop installation path (HADOOP_PREFIX is undefined)"
-    goto :eof
-)
+:: Exit if we cannot find Hadoop installation directory
+if not defined HADOOP_PREFIX goto :eof
 
 :: Trim quotes
 set HADOOP_PREFIX=%HADOOP_PREFIX:"=%
@@ -50,6 +47,7 @@ if not defined HADOOP_MAPRED_HOME set HADOOP_MAPRED_HOME=%HADOOP_PREFIX%\share\h
 set CP=%HADOOP_COMMON_HOME%\lib\*;%HADOOP_MAPRED_HOME%\lib\*;%HADOOP_MAPRED_HOME%\lib\*
 
 for /f %%f in ('dir /B %HADOOP_COMMON_HOME%\hadoop-common-*') do call :concat %HADOOP_COMMON_HOME%\%%f
+for /f %%f in ('dir /B %HADOOP_COMMON_HOME%\hadoop-auth-*') do call :concat %HADOOP_COMMON_HOME%\%%f
 for /f %%f in ('dir /B %HADOOP_HDFS_HOME%\hadoop-hdfs-*') do call :concat %HADOOP_HDFS_HOME%\%%f
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-common-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-core-*') do call :concat %HADOOP_MAPRED_HOME%\%%f

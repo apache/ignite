@@ -17,34 +17,42 @@
 # `/etc/default/gridgain-hadoop` file.
 ####################################################################
 
+# Stop script on error.
+set -e
+
 #
 # Resolve parameters.
 #
-CONFIG_FILENAME="default-config.xml"
 MAIN_CLASS="org.gridgain.grid.startup.cmdline.GridCommandLineStartup"
 GRIDGAIN_DEFAULTS="/etc/default/gridgain-hadoop"
-EXEC="java"
+DEFAULT_CONFIG="default-config.xml"
 
-# Use JAVA_HOME if specified.
-if [ -n "$JAVA_HOME" ]; then
-  EXEC="$JAVA_HOME/bin/java"
-fi
-
-# Load GridGain path configuration if it wasn't passed through environment.
-if [[ -z "$GRIDGAIN_HOME" && -f "$GRIDGAIN_DEFAULTS" ]]; then
+# Load GridGain path configuration
+if [ -f "$GRIDGAIN_DEFAULTS" -a -r "$GRIDGAIN_DEFAULTS" ]; then
   source "$GRIDGAIN_DEFAULTS"
 fi
 
-# Assume GridGain has simple deployment layout.
-if [ -z "$GRIDGAIN_HOME" ]; then
-  GRIDGAIN_HOME="$( cd "$( dirname "$0" )" && cd "../.." && pwd )"
-fi
+# Load GridGain functions.
+source "${GRIDGAIN_HOME}/bin/include/functions.sh"
 
 # Configure GridGain environment.
 source "${GRIDGAIN_HOME}/bin/include/setenv.sh"
 
-# Extend passed VM options.
-GRIDGAIN_OPTS="$GRIDGAIN_OPTS -DGRIDGAIN_HOME=$GRIDGAIN_HOME -DGRIDGAIN_PROG_NAME=$0"
+# Set default JVM options if they was not passed.
+if [ -z "$JVM_OPTS" ]; then
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts"
+    [ "$HADOOP_EDITION" = "1" ] && JVM_OPTS="${JVM_OPTS} -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
+fi
+
+# Resolve config directory.
+GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${GRIDGAIN_HOME}/config"}
+
+# Resolve full config path.
+[[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$GRIDGAIN_CONF_DIR/$DEFAULT_CONFIG"
+
+# Discover path to Java executable and check it's version.
+checkJava
 
 # And run.
-exec "$EXEC" $GRIDGAIN_OPTS -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$GRIDGAIN_CONF_DIR/$CONFIG_FILENAME"
+exec "$JAVA" $JVM_OPTS -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_SCRIPT -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+    -DGRIDGAIN_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG"
