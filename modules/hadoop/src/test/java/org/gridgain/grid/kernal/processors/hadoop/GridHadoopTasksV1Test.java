@@ -29,14 +29,12 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
      * @return Hadoop job.
      * @throws IOException If fails.
      */
-    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
-        JobConf hadoopJob = GridHadoopWordCount1.getJob(inFile, outFile);
+    @Override public GridHadoopV2Job getHadoopJob(String inFile, String outFile) throws Exception {
+        JobConf jobConf = GridHadoopWordCount1.getJob(inFile, outFile);
 
-        hadoopJob.set("fs.default.name", ggfsScheme());
-        hadoopJob.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
-        hadoopJob.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+        setupFileSystems(jobConf);
 
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob);
+        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(jobConf);
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
