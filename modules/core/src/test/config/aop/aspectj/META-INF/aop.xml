@@ -135,9 +135,6 @@
         <!-- Jackson libs. -->
         <exclude within="org.codehaus.jackson..*"/>
 
-        <!-- Jide libs. -->
-        <exclude within="com.jidesoft..*"/>
-
         <!-- JLine libs. -->
         <exclude within="org.fusesource..*"/>
 
@@ -146,12 +143,6 @@
 
         <!-- JSCH libs. -->
         <exclude within="com.jcraft.jsch..*"/>
-
-        <!-- Universal chardet libs. -->
-        <exclude within="org.mozilla.universalchardet..*"/>
-
-        <!-- MigLayout libs. -->
-        <exclude within="net.miginfocom..*"/>
 
         <!-- SnapTree libs. -->
         <exclude within="edu.stanford..*"/>
@@ -290,9 +281,6 @@
         <!-- Jackson libs. -->
         <exclude within="org.codehaus.jackson..*"/>
 
-        <!-- Jide libs. -->
-        <exclude within="com.jidesoft..*"/>
-
         <!-- JLine libs. -->
         <exclude within="org.fusesource..*"/>
 
@@ -301,12 +289,6 @@
 
         <!-- JSCH libs. -->
         <exclude within="com.jcraft.jsch..*"/>
-
-        <!-- Universal chardet libs. -->
-        <exclude within="org.mozilla.universalchardet..*"/>
-
-        <!-- MigLayout libs. -->
-        <exclude within="net.miginfocom..*"/>
 
         <!-- SnapTree libs. -->
         <exclude within="edu.stanford..*"/>

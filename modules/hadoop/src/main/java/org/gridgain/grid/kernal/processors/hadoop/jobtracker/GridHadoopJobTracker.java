@@ -30,9 +30,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -46,16 +45,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
 
     /** Map-reduce execution planner. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridHadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
-    private ConcurrentMap<GridHadoopJobId, GridFutureAdapterEx<GridHadoopJob>> jobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<GridHadoopJobId, GridFutureAdapterEx<GridHadoopJob>> jobs = new ConcurrentHashMap8<>();
 
     /** Locally active jobs. */
-    private ConcurrentMap<GridHadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<GridHadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
 
     /** Locally requested finish futures. */
-    private ConcurrentMap<GridHadoopJobId, GridFutureAdapter<GridHadoopJobId>> activeFinishFuts =
+    private final ConcurrentMap<GridHadoopJobId, GridFutureAdapter<GridHadoopJobId>> activeFinishFuts =
         new ConcurrentHashMap8<>();
 
     /** Event processing service. */
@@ -65,7 +65,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private GridSpinReadWriteLock busyLock;
 
     /** Closure to check result of async transform of system cache. */
-    private CI1<GridFuture<?>> failsLogger = new CI1<GridFuture<?>>() {
+    private final GridInClosure<GridFuture<?>> failsLogger = new CI1<GridFuture<?>>() {
         @Override public void apply(GridFuture<?> gridFuture) {
             try {
                 gridFuture.get();
@@ -88,6 +88,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * @return Job meta projection.
      */
+    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     private GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaCache() {
         GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> prj = jobMetaPrj;
 
@@ -359,6 +360,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             assert state != null || (ctx.jobUpdateLeader() && (info.type() == COMMIT || info.type() == ABORT)):
                 "Missing local state for finished task [info=" + info + ", status=" + status + ']';
 
+            if (status.state() == COMPLETED)
+                transform(info.jobId(), new IncrementCountersClosure(status.counters()));
+
             switch (info.type()) {
                 case SETUP: {
                     state.onSetupFinished(info, status);
@@ -395,9 +399,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     break;
                 }
             }
-        }
-        catch (GridException e) {
-            U.error(log, "Failed to process task finish event.", e);
         }
         finally {
             busyLock.readUnlock();
@@ -593,8 +594,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 case PHASE_REDUCE: {
                     if (meta.pendingReducers().isEmpty() && ctx.jobUpdateLeader()) {
-                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), GridHadoopTaskType.COMMIT,
-                            jobId, 0, 0, null);
+                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMMIT, jobId, 0, 0, null);
 
                         if (log.isDebugEnabled())
                             log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
@@ -629,8 +629,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                             // Prevent running multiple abort tasks.
                             if (state.onAborted()) {
-                                GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(),
-                                    GridHadoopTaskType.ABORT, jobId, 0, 0, null);
+                                GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), ABORT, jobId, 0, 0,
+                                    null);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
@@ -758,8 +758,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         log.debug("Submitting MAP task for execution [locNodeId=" + locNodeId +
                             ", split=" + split + ']');
 
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                        GridHadoopTaskType.MAP, jobId, meta.taskNumber(split), 0, split);
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, MAP, jobId, meta.taskNumber(split),
+                        0, split);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();
@@ -797,8 +797,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         log.debug("Submitting REDUCE task for execution [locNodeId=" + locNodeId +
                             ", rdc=" + rdc + ']');
 
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                        GridHadoopTaskType.REDUCE, jobId, rdc, 0, null);
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, REDUCE, jobId, rdc, 0, null);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();
@@ -914,6 +913,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Returns job counters.
+     *
+     * @param jobId Job identifier.
+     * @return Job counters or {@code null} if job cannot be found.
+     * @throws GridException If failed.
+     */
+    @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
+        if (!busyLock.tryReadLock())
+            return null;
+
+        try {
+            final GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
+
+            return meta != null ? meta.counters() : null;
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
      * Event handler protected by busy lock.
      */
     private abstract class EventHandler implements Runnable {
@@ -944,13 +964,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     private class JobLocalState {
         /** Mappers. */
-        private Collection<GridHadoopInputSplit> currMappers = new HashSet<>();
+        private final Collection<GridHadoopInputSplit> currMappers = new HashSet<>();
 
         /** Reducers. */
-        private Collection<Integer> currReducers = new HashSet<>();
+        private final Collection<Integer> currReducers = new HashSet<>();
 
         /** Number of completed mappers. */
-        private AtomicInteger completedMappersCnt = new AtomicInteger();
+        private final AtomicInteger completedMappersCnt = new AtomicInteger();
 
         /** Cancelled flag. */
         private boolean cancelled;
@@ -1010,12 +1030,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /**
          * @param taskInfo Task info.
          * @param status Task status.
-         * @throws GridException If failed.
          */
-        private void onMapFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) throws GridException {
+        private void onMapFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
             final GridHadoopJobId jobId = taskInfo.jobId();
-
-            GridHadoopJob job = job(jobId, null);
 
             boolean lastMapperFinished = completedMappersCnt.incrementAndGet() == currMappers.size();
 
@@ -1026,39 +1043,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 return;
             }
 
-            if (job.info().hasCombiner() && get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false) && status.state() !=
-                CANCELED) {
-                // Create combiner.
-                if (lastMapperFinished) {
-                    GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
-                        jobMetaCache().get(jobId).taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
+            GridInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
+                @Override public void applyx(GridFuture<?> f) {
+                    Throwable err = null;
 
-                    ctx.taskExecutor().run(job, Collections.singletonList(info));
-                }
-            }
-            else {
-                GridInClosure<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
-                    @Override public void applyx(GridFuture<?> f) {
-                        Throwable err = null;
-
-                        if (f != null) {
-                            try {
-                                f.get();
-                            }
-                            catch (GridException e) {
-                                err = e;
-                            }
+                    if (f != null) {
+                        try {
+                            f.get();
                         }
-
-                        transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
+                        catch (GridException e) {
+                            err = e;
+                        }
                     }
-                };
 
-                if (lastMapperFinished)
-                    ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
-                else
-                    cacheUpdater.apply(null);
-            }
+                    transform(jobId, new RemoveMappersClosure(taskInfo.inputSplit(), err));
+                }
+            };
+
+            if (lastMapperFinished)
+                ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
+            else
+                cacheUpdater.apply(null);
         }
 
         /**
@@ -1375,6 +1380,35 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (err != null)
                 cp.failCause(err);
+
+            return cp;
+        }
+    }
+
+    /**
+     * Increment counter values closure.
+     */
+    private static class IncrementCountersClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final GridHadoopCounters counters;
+
+        /**
+         * @param counters Task counters to add into job counters.
+         */
+        private IncrementCountersClosure(GridHadoopCounters counters) {
+            assert counters != null;
+
+            this.counters = counters;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
+
+            cp.counters().merge(counters);
 
             return cp;
         }

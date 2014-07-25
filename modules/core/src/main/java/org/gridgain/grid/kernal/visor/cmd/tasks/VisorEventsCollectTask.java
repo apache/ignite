@@ -257,52 +257,10 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 nl.get(arg.keyOrder()) : -1L;
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
-                private Map<String, Boolean> internalTasks = new HashMap<>();
-
-                /**
-                 * TODO-8003 Remove after fix.
-                 * Detects internal task or job.
-                 *
-                 * @param e Event
-                 * @return {@code true} if internal.
-                 */
-                private boolean internal(GridEvent e) {
-                    if (e.getClass().equals(GridTaskEvent.class)) {
-                        GridTaskEvent te = (GridTaskEvent)e;
-
-                        internalTasks.put(te.taskClassName(), te.internal());
-
-                        return te.internal();
-                    }
-
-                    if (e.getClass().equals(GridJobEvent.class)) {
-                        GridJobEvent je = (GridJobEvent)e;
-
-                        Boolean internal = internalTasks.get(je.taskClassName());
-
-                        if (internal != null)
-                            return internal;
-
-                        try {
-                            internal = U.hasAnnotation(Class.forName(je.taskClassName()), GridInternal.class);
-                        }
-                        catch (Exception ignored) {
-                            internal = true;
-                        }
-
-                        internalTasks.put(je.taskClassName(), internal);
-
-                        return internal;
-                    }
-
-                    return true;
-                }
-
                 @Override public boolean apply(GridEvent event) {
                     return event.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
                         event.timestamp() >= startEvtTime &&
-                        !internal(event) &&
                         (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
                         (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
                 }
