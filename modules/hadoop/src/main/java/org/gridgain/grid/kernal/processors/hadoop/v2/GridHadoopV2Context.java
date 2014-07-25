@@ -9,17 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.OutputCommitter;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.RecordWriter;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.task.JobContextImpl;
+import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -53,18 +46,17 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
     private InputSplit inputSplit;
 
     /** */
-    private GridHadoopTaskContext ctx;
+    private final GridHadoopTaskContext ctx;
 
     /** */
     private String status;
 
     /**
-     * @param cfg Hadoop configuration of the job.
      * @param ctx Context for IO operations.
      * @param taskAttemptID Task execution id.
      */
-    public GridHadoopV2Context(Configuration cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
-        super(new JobConf(cfg), taskAttemptID.getJobID());
+    public GridHadoopV2Context(GridHadoopV2TaskContext ctx, TaskAttemptID taskAttemptID) {
+        super(ctx.jobConf(), taskAttemptID.getJobID());
 
         this.taskAttemptID = taskAttemptID;
 

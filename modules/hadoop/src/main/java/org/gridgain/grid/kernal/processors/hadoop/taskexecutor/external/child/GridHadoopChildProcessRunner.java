@@ -23,6 +23,7 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -53,19 +54,19 @@ public class GridHadoopChildProcessRunner {
     private GridLogger log;
 
     /** Init guard. */
-    private AtomicBoolean initGuard = new AtomicBoolean();
+    private final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** Start time. */
     private long startTime;
 
     /** Init future. */
-    private GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
+    private final GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
 
     /** Job instance. */
     private GridHadoopJob job;
 
     /** Number of uncompleted tasks. */
-    private AtomicInteger pendingTasks = new AtomicInteger();
+    private final AtomicInteger pendingTasks = new AtomicInteger();
 
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
@@ -112,8 +113,10 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, req.reducers(),
-                    req.hasMappers());
+                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
+
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                    req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 
@@ -172,14 +175,14 @@ public class GridHadoopChildProcessRunner {
                                 onTaskFinished0(this, status);
                             }
 
-                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.input(info);
+                                return shuffleJob.input(ctx);
                             }
 
-                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.output(info);
+                                return shuffleJob.output(ctx);
                             }
                         });
                     }
@@ -214,7 +217,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void updateTasks(final GridHadoopJobInfoUpdateRequest req) {
         initFut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> gridFuture) {
+            @Override public void apply(GridFuture<?> gridFut) {
                 assert initGuard.get();
 
                 assert req.jobId().equals(job.id());
@@ -269,8 +272,9 @@ public class GridHadoopChildProcessRunner {
                 ", pendingTasks=" + pendingTasks0 +
                 ", err=" + status.failCause() + ']');
 
-        boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
-            (!job.info().hasCombiner() || !GridHadoopJobProperty.get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
+        assert info.type() == MAP || info.type() == REDUCE : "Only MAP or REDUCE tasks are supported.";
+
+        boolean flush = pendingTasks0 == 0 && info.type() == MAP;
 
         notifyTaskFinished(info, status, flush);
     }
