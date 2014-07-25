@@ -1459,7 +1459,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             update(meta, cp);
 
-            return meta;
+            return cp;
         }
 
         /**
