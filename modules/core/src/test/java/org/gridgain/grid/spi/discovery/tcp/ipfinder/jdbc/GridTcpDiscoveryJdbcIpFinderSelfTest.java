@@ -62,7 +62,8 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
             ipFinder().getRegisteredAddresses();
 
             fail("IP finder didn't throw expected exception.");
-        } catch (GridSpiException e) {
+        }
+        catch (GridSpiException e) {
             assertTrue(e.getMessage().contains("IP finder has not been properly initialized"));
         }
     }

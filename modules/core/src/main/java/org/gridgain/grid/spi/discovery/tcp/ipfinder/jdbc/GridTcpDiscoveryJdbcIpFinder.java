@@ -37,8 +37,8 @@ import static java.sql.Connection.*;
  * <h2 class="header">Optional</h2>
  * The following configuration parameters are optional:
  * <ul>
- * <li>Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
- * was explicitly created by user (see {@link #setInitSchema(boolean)})</li>
+ *     <li>Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+ *         was explicitly created by user (see {@link #setInitSchema(boolean)})</li>
  * </ul>
  * <p>
  * The database will contain 1 table which will hold IP addresses.
