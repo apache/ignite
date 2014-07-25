@@ -95,7 +95,8 @@ public class ComputeContinuousMapperExample {
         private final AtomicInteger totalChrCnt = new AtomicInteger(0);
 
         /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> grid, String phrase) throws GridException {
+        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> grid, String phrase)
+            throws GridException {
             if (phrase == null || phrase.isEmpty())
                 throw new GridException("Phrase is empty.");
 
@@ -111,7 +112,8 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
                 return super.result(res, rcvd);
