@@ -1350,7 +1350,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         if (!iter.hasNext())
             throw new IllegalStateException();
 
-        return ((Number)iter.next().get(0)).longValue();
+        return ((GridIndexingEntityAdapter<Number>)iter.next().get(0)).value().longValue();
     }
 
     /** {@inheritDoc} */
