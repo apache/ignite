@@ -143,9 +143,9 @@ if "%JMX_PORT%" == "" (
 set BASE_JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
 
 if "%JVM_OPTS%" == "" (
-    :: Hadoop needs class unloading enabled
+    :: Hadoop needs class unloading enabled and large size of perm space.
     if defined GRIDGAIN_HADOOP_CLASSPATH (
-        set JVM_OPTS=%BASE_JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled
+        set JVM_OPTS=%BASE_JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m
     ) else (
         set JVM_OPTS=%BASE_JVM_OPTS%
     )
