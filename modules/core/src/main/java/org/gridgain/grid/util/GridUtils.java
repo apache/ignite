@@ -8157,8 +8157,10 @@ public abstract class GridUtils {
 
                 res.add(inetSockAddr);
             }
-            else
-                res.add(new InetSocketAddress(addr, port));
+
+            // Always append address because local and remote nodes may have the same hostname
+            // therefore remote hostname will be always resolved to local address.
+            res.add(new InetSocketAddress(addr, port));
         }
 
         return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
