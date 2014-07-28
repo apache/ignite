@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,17 +21,14 @@ import java.util.*;
  * Default in-memory counters store.
  */
 public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizable {
-    /** Minimal capacity for counters underlying map. */
-    public static final int MINIMAL_CAPACITY = 16;
-
     /** */
-    private Map<GridBiTuple<String, String>, GridHadoopCounter> cntrsMap;
+    private final Map<GridBiTuple<String, String>, GridHadoopCounter> cntrsMap = new HashMap<>();
 
     /**
      * Default constructor. Creates new instance without counters.
      */
     public GridHadoopCountersImpl() {
-        cntrsMap = new HashMap<>(MINIMAL_CAPACITY);
+        // No-op.
     }
 
     /**
@@ -40,8 +37,6 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * @param cntrs Counters to store.
      */
     public GridHadoopCountersImpl(Collection<GridHadoopCounter> cntrs) {
-        cntrsMap = new HashMap<>(Math.max(MINIMAL_CAPACITY, cntrs.size()));
-
         addCounters(cntrs, true);
     }
 
@@ -60,7 +55,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
      * @param cntrs Counters to add.
      * @param copy Whether to copy counters or not.
      */
-    private void addCounters(Collection<GridHadoopCounter> cntrs, boolean copy) {
+    private void addCounters(Iterable<GridHadoopCounter> cntrs, boolean copy) {
         assert cntrs != null;
 
         for (GridHadoopCounter cntr : cntrs)
@@ -75,6 +70,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
 
         if (counter == null && create) {
             counter = new GridHadoopCounterImpl(group, name, 0);
+
             cntrsMap.put(mapKey, counter);
         }
 
@@ -99,8 +95,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in)
-        throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         addCounters(U.<GridHadoopCounter>readCollection(in), false);
     }
 
@@ -108,15 +103,13 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
         GridHadoopCountersImpl counters = (GridHadoopCountersImpl)o;
 
-        if (!cntrsMap.equals(counters.cntrsMap))
-            return false;
-
-        return true;
+        return cntrsMap.equals(counters.cntrsMap);
     }
 
     /** {@inheritDoc} */

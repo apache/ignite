@@ -180,7 +180,7 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * @param cfg Config.
      */
-    protected void setupFileSytems(Configuration cfg) {
+    protected void setupFileSystems(Configuration cfg) {
         cfg.set("fs.defaultFS", ggfsScheme());
         cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.
