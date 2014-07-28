@@ -60,6 +60,7 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.bat</exclude>
+                <exclude>ggrouter.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -72,6 +73,7 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.sh</exclude>
+                <exclude>ggrouter.bat</exclude>
             </excludes>
         </fileSet>
 
