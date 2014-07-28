@@ -76,8 +76,16 @@
                 <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
+                <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>readme.txt</include>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/</outputDirectory>
