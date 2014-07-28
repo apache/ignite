@@ -37,23 +37,20 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
 
-        run0(jobImpl, jobCtx, taskCtx);
+        run0(ctx);
     }
 
     /**
      * Internal task routine.
      *
-     * @param job Job.
-     * @param jobCtx Job context.
      * @param taskCtx Task context.
      * @throws GridException
      */
-    protected abstract void run0(GridHadoopV2Job job, JobContext jobCtx, GridHadoopTaskContext taskCtx)
-        throws GridException;
+    protected abstract void run0(GridHadoopV2TaskContext taskCtx) throws GridException;
 
     /**
      * @return hadoop context.
@@ -70,7 +67,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * @throws ClassNotFoundException If specified class not found.
      */
     protected OutputFormat getOutputFormat(JobContext jobCtx) throws ClassNotFoundException {
-        return ReflectionUtils.newInstance(jobCtx.getOutputFormatClass(), jobCtx.getConfiguration());
+        return ReflectionUtils.newInstance(jobCtx.getOutputFormatClass(), hadoopContext().getConfiguration());
     }
 
     /**
@@ -105,12 +102,11 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /**
-     * Close writer.
+     * Closes writer.
      *
-     * @throws IOException In case of IO exception.
-     * @throws InterruptedException In case of interrupt.
+     * @throws Exception If fails and logger hasn't been specified.
      */
-    protected void closeWriter() throws IOException, InterruptedException {
+    protected void closeWriter() throws Exception {
         RecordWriter writer = hadoopCtx.writer();
 
         if (writer != null)

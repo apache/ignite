@@ -31,17 +31,15 @@ public class GridHadoopV1SetupTask extends GridHadoopV1Task {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         try {
-            jobCtx.getJobConf().getOutputFormat().checkOutputSpecs(null, jobCtx.getJobConf());
+            ctx.jobConf().getOutputFormat().checkOutputSpecs(null, ctx.jobConf());
 
-            OutputCommitter committer = jobCtx.getJobConf().getOutputCommitter();
+            OutputCommitter committer = ctx.jobConf().getOutputCommitter();
 
             if (committer != null)
-                committer.setupJob(jobCtx);
+                committer.setupJob(ctx.jobContext());
         }
         catch (IOException e) {
             throw new GridException(e);
