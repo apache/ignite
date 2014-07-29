@@ -193,6 +193,9 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
+                        <configuration>
+                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.portable:org.gridgain.grid.portable</excludePackageNames>
+                        </configuration>
                     </execution>
 
                     <execution>
