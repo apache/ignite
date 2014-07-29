@@ -39,6 +39,7 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
+                <include>org.gridgain:gridgain-log4j</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

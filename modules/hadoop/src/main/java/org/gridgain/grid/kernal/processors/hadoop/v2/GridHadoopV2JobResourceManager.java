@@ -156,7 +156,7 @@ public class GridHadoopV2JobResourceManager {
     private void processFiles(@Nullable Object[] files, boolean download, boolean extract,
         @Nullable Collection<URL> clsPathUrls, @Nullable String rsrcNameProp) throws IOException {
         if (F.isEmptyOrNulls(files))
-            return ;
+            return;
 
         Collection<String> res = new ArrayList<>();
 
