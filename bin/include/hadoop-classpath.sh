@@ -22,11 +22,6 @@
 HADOOP_DEFAULTS="/etc/default/hadoop"
 HADOOP_PREFIX=${HADOOP_PREFIX:-$HADOOP_HOME}
 
-# Environment variable HADOOP_HOME has been deprecated.
-if [[ "$HADOOP_HOME_WARN_SUPPRESS" != "true" && -n "$HADOOP_HOME" ]]; then
-    echo 'WARNING: $HADOOP_HOME is deprecated. Use $HADOOP_PREFIX instead'
-fi
-
 # Try get all variables from Hadoop default environment config
 # if they have not been passed into the script.
 if [[ -z "$HADOOP_PREFIX" && -f "$HADOOP_DEFAULTS" ]]; then
