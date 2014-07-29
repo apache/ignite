@@ -11,7 +11,9 @@ package org.gridgain.portable;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Writer for portable object.
@@ -82,6 +84,12 @@ public interface GridPortableRawWriter {
      * @throws GridPortableException In case of error.
      */
     public void writeDate(@Nullable Date val) throws GridPortableException;
+
+    /**
+     * @param val Timestamp to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeTimestamp(@Nullable Timestamp val) throws GridPortableException;
 
     /**
      * @param obj Value to write.
