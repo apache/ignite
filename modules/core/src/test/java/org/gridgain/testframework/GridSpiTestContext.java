@@ -61,6 +61,22 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridNode> daemonNodes(InclusionMode mode) {
+        assert mode == InclusionMode.ALL || mode == InclusionMode.NON_LOCAL;
+
+        Collection<GridNode> daemons = new ArrayList<>();
+
+        for (GridNode node : rmtNodes)
+            if (node.isDaemon())
+                daemons.add(node);
+
+        if (mode == InclusionMode.ALL && locNode != null && locNode.isDaemon())
+            daemons.add(locNode);
+
+        return daemons;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes() {
         Collection<GridNode> all = new ArrayList<>(rmtNodes);
 

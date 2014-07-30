@@ -28,6 +28,17 @@ import java.util.*;
  */
 public interface GridSpiContext {
     /**
+     * Node inclusion policies.
+     */
+    public enum InclusionMode {
+        /** Include all nodes. */
+        ALL,
+
+        /** Include all nodes except local one. */
+        NON_LOCAL
+    }
+
+    /**
      * Gets a collection of remote grid nodes. Remote nodes are discovered via underlying
      * {@link GridDiscoverySpi} implementation used. Unlike {@link #nodes()},
      * this method does not include local grid node.
@@ -59,6 +70,19 @@ public interface GridSpiContext {
      * @see GridDiscoverySpi
      */
     public GridNode localNode();
+
+    /**
+     * Gets a collection of all daemon nodes in topology. The daemon nodes are discovered via
+     * underlying {@link GridDiscoverySpi} implementation used.
+     *
+     * @param mode Nodes inclusion policy.
+     * @return Collection of all daemon nodes.
+     * @see #localNode()
+     * @see #remoteNodes()
+     * @see #nodes()
+     * @see GridDiscoverySpi
+     */
+    public Collection<GridNode> daemonNodes(InclusionMode mode);
 
     /**
      * Gets a node instance based on its ID.

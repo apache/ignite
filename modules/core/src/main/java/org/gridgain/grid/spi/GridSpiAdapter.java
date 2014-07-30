@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -150,7 +151,10 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
             }
         }, EVT_NODE_JOINED);
 
-        for (GridNode node : spiCtx.remoteNodes()) {
+        final Collection<GridNode> remotes =
+            F.concat(false, spiCtx.remoteNodes(), spiCtx.daemonNodes(GridSpiContext.InclusionMode.NON_LOCAL));
+
+        for (GridNode node : remotes) {
             checkConfigurationConsistency(spiCtx, node, true);
             checkConfigurationConsistency0(spiCtx, node, true);
         }
@@ -353,6 +357,15 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     }
 
     /**
+     * Tests whether this SPI is security-related.
+     *
+     * @return True if adapter belongs to security aspect and false otherwise.
+     */
+    private boolean isSecuritySpi() {
+        return GridAuthenticationSpi.class.isAssignableFrom(getClass());
+    }
+
+    /**
      * Method which is called in the end of checkConfigurationConsistency() method. May be overriden in SPIs.
      *
      * @param spiCtx SPI context.
@@ -379,9 +392,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         assert spiCtx != null;
         assert node != null;
 
-        if (node.isDaemon()) {
+        if (node.isDaemon() && !isSecuritySpi()) {
             if (log.isDebugEnabled())
-                log.debug("Skipping configuration consistency check for daemon node: " + node);
+                log.debug("Skipping non-security configuration consistency check for daemon node: " + node);
 
             return;
         }
@@ -622,6 +635,12 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         /** {@inheritDoc} */
         @Override public GridNode localNode() {
             return locNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridNode> daemonNodes(InclusionMode mode) {
+            return locNode == null || !locNode.isDaemon() || InclusionMode.NON_LOCAL.equals(mode) ?
+                Collections.<GridNode>emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */
