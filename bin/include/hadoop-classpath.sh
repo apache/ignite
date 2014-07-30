@@ -50,8 +50,10 @@ GRIDGAIN_HADOOP_CLASSPATH="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME
 shopt -s nullglob
 
 # Add jars to classpath excluding tests.
+# hadoop-auth-* jar can be located either in home or in home/lib directory, depending on the hadoop version.
 for file in ${HADOOP_HDFS_HOME}/hadoop-hdfs-* \
             ${HADOOP_COMMON_HOME}/hadoop-{common,auth}-* \
+            ${HADOOP_COMMON_HOME}/lib/hadoop-auth-* \
             ${HADOOP_MAPRED_HOME}/hadoop-mapreduce-client-{common,core}-*; do
     [[ "$file" != *-tests.jar ]] && GRIDGAIN_HADOOP_CLASSPATH=${GRIDGAIN_HADOOP_CLASSPATH}${SEP}${file}
 done
