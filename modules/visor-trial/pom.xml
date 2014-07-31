@@ -71,6 +71,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.googlecode.juniversalchardet</groupId>
+            <artifactId>juniversalchardet</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.miglayout</groupId>
             <artifactId>miglayout-core</artifactId>
             <version>4.2</version>
@@ -116,6 +122,18 @@
             <groupId>com.jidesoft</groupId>
             <artifactId>jide-grids</artifactId>
             <version>3.5.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>mailapi</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>smtp</artifactId>
+            <version>1.5.2</version>
         </dependency>
 
         <dependency>
