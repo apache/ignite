@@ -14,6 +14,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -406,5 +407,6 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
      */
     public static void clearCache() {
         GridOptimizedMarshallerUtils.clearCache();
+        GridPortableEnumCache.clearCache();
     }
 }
