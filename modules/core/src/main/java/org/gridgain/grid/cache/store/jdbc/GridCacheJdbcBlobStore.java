@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -128,6 +129,9 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** Data source. */
     private DataSource dataSrc;
+
+    /** Flag for schema initialization. */
+    private boolean initSchema = true;
 
     /** Log. */
     @GridLoggerResource
@@ -368,6 +372,12 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
             if (F.isEmpty(connUrl))
                 throw new GridException("Failed to initialize cache store (connection URL is not provided).");
 
+            if (!initSchema) {
+                initLatch.countDown();
+
+                return;
+            }
+
             if (F.isEmpty(createTblQry))
                 throw new GridException("Failed to initialize cache store (create table query is not provided).");
 
@@ -402,6 +412,17 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
         if (!initOk)
             throw new GridException("Cache store was not properly initialized.");
+    }
+
+    /**
+     * Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+     * was explicitly created by user.
+     *
+     * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
+     *      {code @false} if schema was explicitly created by user.
+     */
+    public void setInitSchema(boolean initSchema) {
+        this.initSchema = initSchema;
     }
 
     /**
