@@ -10,60 +10,50 @@
 # Version: @sh.file.version
 #
 
-#
-# Hadoop class path resolver.
-#
+####################################################################
+#                 Hadoop class path resolver.
+#  Requires environment variables 'HADOOP_PREFIX' or 'HADOOP_HOME'
+#  to be set. If they are both undefined , tries to read them from
+#  from '/etc/default/hadoop' file. The final results are printed
+#  into standard output.
+####################################################################
 
-#
-# Check HADOOP_HOME
-#
+# Resolve constants.
+HADOOP_DEFAULTS="/etc/default/hadoop"
+HADOOP_PREFIX=${HADOOP_PREFIX:-$HADOOP_HOME}
 
-HADOOP_COMMON_HOME=
-
-if [ "$HADOOP_HOME" == "" ]; then
-    #Try get all variables from /etc/default
-    HADOOP_DEFAULTS=/etc/default/hadoop
-
-    if [ -f $HADOOP_DEFAULTS ]; then
-        . $HADOOP_DEFAULTS
-    fi
+# Try get all variables from Hadoop default environment config
+# if they have not been passed into the script.
+if [[ -z "$HADOOP_PREFIX" && -f "$HADOOP_DEFAULTS" ]]; then
+    source "$HADOOP_DEFAULTS"
 fi
 
-if [ "$HADOOP_HOME" == "" ]; then
-    return
-fi
+# Return if Hadoop couldn't be found.
+[ -z "$HADOOP_PREFIX" ] && return
 
 #
-# Setting all hadoop modules if it's not set by /etc/default/hadoop
-#
-if [ "$HADOOP_COMMON_HOME" == "" ]; then
-    export HADOOP_COMMON_HOME=$HADOOP_HOME/share/hadoop/common
-fi
-
-if [ "$HADOOP_HDFS_HOME" == "" ]; then
-    HADOOP_HDFS_HOME=$HADOOP_HOME/share/hadoop/hdfs
-fi
-
-if [ "$HADOOP_MAPRED_HOME" == "" ]; then
-    HADOOP_MAPRED_HOME=$HADOOP_HOME/share/hadoop/mapreduce
-fi
-
-#
-# Libraries included in classpath.
+# Resolve the rest of Hadoop environment variables.
 #
 
-CP="$HADOOP_COMMON_HOME/lib/*${SEP}$HADOOP_MAPRED_HOME/lib/*${SEP}$HADOOP_MAPRED_HOME/lib/*"
+HADOOP_COMMON_HOME=${HADOOP_COMMON_HOME-"${HADOOP_PREFIX}/share/hadoop/common"}
+HADOOP_HDFS_HOME=${HADOOP_HDFS_HOME-"${HADOOP_PREFIX}/share/hadoop/hdfs"}
+HADOOP_MAPRED_HOME=${HADOOP_MAPRED_HOME-"${HADOOP_PREFIX}/share/hadoop/mapreduce"}
 
-files=$(ls \
-$HADOOP_HDFS_HOME/hadoop-hdfs-* \
-$HADOOP_COMMON_HOME/hadoop-common-* \
-$HADOOP_MAPRED_HOME/hadoop-mapreduce-client-common-* \
-$HADOOP_MAPRED_HOME/hadoop-mapreduce-client-core-*)
+#
+# Calculate classpath string with required Hadoop libraries.
+#
 
-for file in $files; do
-    if [ ${file: -10} != "-tests.jar" ]; then
-        CP=${CP}${SEP}$file
-    fi
+# Add all Hadoop libs.
+GRIDGAIN_HADOOP_CLASSPATH="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*"
+
+# Skip globbing pattern if it cannot be resolved.
+shopt -s nullglob
+
+# Add jars to classpath excluding tests.
+# hadoop-auth-* jar can be located either in home or in home/lib directory, depending on the hadoop version.
+for file in ${HADOOP_HDFS_HOME}/hadoop-hdfs-* \
+            ${HADOOP_COMMON_HOME}/hadoop-{common,auth}-* \
+            ${HADOOP_COMMON_HOME}/lib/hadoop-auth-* \
+            ${HADOOP_MAPRED_HOME}/hadoop-mapreduce-client-{common,core}-*; do
+    [[ "$file" != *-tests.jar ]] && GRIDGAIN_HADOOP_CLASSPATH=${GRIDGAIN_HADOOP_CLASSPATH}${SEP}${file}
 done
-
-GRIDGAIN_HADOOP_CLASSPATH=$CP

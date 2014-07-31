@@ -31,13 +31,13 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
-    /** Has mappers flag. */
+    /** Total amount of reducers in the job. */
     @GridToStringInclude
-    private boolean hasMappers;
+    private int totalReducersCnt;
 
-    /** */
+    /** Reducers to be executed on current node. */
     @GridToStringInclude
-    private int reducers;
+    private int[] locReducers;
 
     /**
      * Constructor required by {@link Externalizable}.
@@ -49,17 +49,17 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
-     * @param hasMappers Has mappers flag.
-     * @param reducers Number of reducers in job.
+     * @param totalReducersCnt Number of reducers in the job.
+     * @param locReducers Reducers to be executed on current node.
      */
-    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
-        int reducers) {
+    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, int totalReducersCnt,
+        int[] locReducers) {
         assert jobId != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.hasMappers = hasMappers;
-        this.reducers = reducers;
+        this.totalReducersCnt = totalReducersCnt;
+        this.locReducers = locReducers;
     }
 
     /**
@@ -77,17 +77,17 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     }
 
     /**
-     * @return Has mappers flag.
+     * @return Reducers to be executed on current node.
      */
-    public boolean hasMappers() {
-        return hasMappers;
+    public int[] localReducers() {
+        return locReducers;
     }
 
     /**
      * @return Number of reducers in job.
      */
-    public int reducers() {
-        return reducers;
+    public int totalReducerCount() {
+        return totalReducersCnt;
     }
 
     /** {@inheritDoc} */
@@ -95,8 +95,9 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         jobId.writeExternal(out);
 
         out.writeObject(jobInfo);
-        out.writeBoolean(hasMappers);
-        out.writeInt(reducers);
+        out.writeInt(totalReducersCnt);
+
+        U.writeIntArray(out, locReducers);
     }
 
     /** {@inheritDoc} */
@@ -105,8 +106,9 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
         jobId.readExternal(in);
 
         jobInfo = (GridHadoopJobInfo)in.readObject();
-        hasMappers = in.readBoolean();
-        reducers = in.readInt();
+        totalReducersCnt = in.readInt();
+
+        locReducers = U.readIntArray(in);
     }
 
     /** {@inheritDoc} */

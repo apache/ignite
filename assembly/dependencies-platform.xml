@@ -40,7 +40,6 @@
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
                 <include>org.gridgain:gridgain-indexing</include>
-                <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

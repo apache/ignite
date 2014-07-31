@@ -428,7 +428,7 @@ public class GridClientImpl implements GridClient {
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
                 for (GridClientNodeImpl node : top.nodes()) {
-                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
+                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));

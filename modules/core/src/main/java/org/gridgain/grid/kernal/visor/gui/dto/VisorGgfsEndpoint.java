@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.visor.gui.dto;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -39,7 +40,7 @@ public class VisorGgfsEndpoint implements Serializable{
      * @param hostName Host address / name.
      * @param port Port number.
      */
-    public VisorGgfsEndpoint(String ggfsName, String gridName, String hostName, int port) {
+    public VisorGgfsEndpoint(@Nullable String ggfsName, String gridName, @Nullable String hostName, int port) {
         this.ggfsName = ggfsName;
         this.gridName = gridName;
         this.hostName = hostName;
@@ -49,7 +50,7 @@ public class VisorGgfsEndpoint implements Serializable{
     /**
      * @return GGFS name.
      */
-    public String ggfsName() {
+    @Nullable public String ggfsName() {
         return ggfsName;
     }
 
@@ -63,7 +64,7 @@ public class VisorGgfsEndpoint implements Serializable{
     /**
      * @return Host address / name.
      */
-    public String hostName() {
+    @Nullable public String hostName() {
         return hostName;
     }
 

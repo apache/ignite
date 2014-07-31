@@ -27,9 +27,6 @@ import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
  */
 public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     /** */
-    protected final GridHadoopJob job;
-
-    /** */
     protected final GridUnsafeMemory mem;
 
     /** */
@@ -46,7 +43,6 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         assert job != null;
         assert mem != null;
 
-        this.job = job;
         this.mem = mem;
 
         pageSize = get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
@@ -183,11 +179,12 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         private final GridLongList pages = new GridLongList(16);
 
         /**
+         * @param ctx Task context.
          * @throws GridException If failed.
          */
-        protected AdderBase() throws GridException {
-            valSer = job.valueSerialization();
-            keySer = job.keySerialization();
+        protected AdderBase(GridHadoopTaskContext ctx) throws GridException {
+            valSer = ctx.valueSerialization();
+            keySer = ctx.keySerialization();
 
             out = new GridHadoopDataOutStream(mem) {
                 @Override public long move(long size) {
@@ -320,7 +317,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         private long valPtr;
 
         /** */
-        private ReaderBase valReader;
+        private final ReaderBase valReader;
 
         /**
          * @param valPtr Value page pointer.

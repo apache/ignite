@@ -110,7 +110,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
         completeTs = src.completeTs;
-        counters = new GridHadoopCountersImpl(src.counters);
+        counters = src.counters;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -327,10 +327,19 @@ public class GridHadoopJobMetadata implements Externalizable {
     /**
      * Returns job counters.
      *
-     * @return collection of counters.
+     * @return Collection of counters.
      */
     public GridHadoopCounters counters() {
         return counters;
+    }
+
+    /**
+     * Sets counters.
+     *
+     * @param counters Collection of counters.
+     */
+    public void counters(GridHadoopCounters counters) {
+        this.counters = counters;
     }
 
     /**

@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.event.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -40,6 +41,23 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         VisorDataCollectorTask.VisorDataCollectorTaskResult, VisorDataCollectorTask.VisorDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
+        @Nullable GridBiTuple<Set<UUID>, VisorDataCollectorTaskArg> arg) throws GridException {
+        assert arg != null;
+        assert arg.get1() != null;
+
+        taskArg = arg.get2();
+
+        Map<GridComputeJob, GridNode> map = new HashMap<>();
+
+        // Collect data from ALL nodes.
+        for (GridNode node : g.nodes())
+            map.put(job(taskArg), node);
+
+        return map;
+    }
 
     /** {@inheritDoc} */
     @Override protected VisorDataCollectorJob job(VisorDataCollectorTaskArg arg) {
