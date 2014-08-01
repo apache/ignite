@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -124,7 +123,7 @@ class VisorNodeCommand {
                 val argLst = parseArgs(args)
 
                 if (argLst.isEmpty)
-                    warn("Missing arguments.").^^
+                    warn("Missing arguments.") ^^
                 else {
                     val id8 = argValue("id8", argLst)
                     val id = argValue("id", argLst)
@@ -136,7 +135,7 @@ class VisorNodeCommand {
                         val ns = nodeById8(id8.get)
 
                         if (ns.size != 1)
-                            warn("Unknown (invalid) node ID8: " + id8.get).^^
+                            warn("Unknown (invalid) node ID8: " + id8.get) ^^
                         else
                             node = ns.head
                     }
@@ -144,10 +143,10 @@ class VisorNodeCommand {
                         try
                             node = grid.node(UUID.fromString(id.get))
                         catch {
-                            case e: IllegalArgumentException => warn("Invalid node ID: " + id.get).^^
+                            case e: IllegalArgumentException => warn("Invalid node ID: " + id.get) ^^
                         }
                     else
-                        warn("Invalid arguments: " + args).^^
+                        warn("Invalid arguments: " + args) ^^
 
                     if (node != null) {
                         val t = VisorTextTable()

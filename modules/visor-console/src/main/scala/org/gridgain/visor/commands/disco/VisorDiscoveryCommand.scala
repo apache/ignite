@@ -14,6 +14,7 @@ package org.gridgain.visor.commands.disco
 import org.gridgain.grid._
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.util.typedef.X
 
 import java.util.UUID
@@ -23,7 +24,6 @@ import scala.collection.immutable._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -119,7 +119,7 @@ class VisorDiscoveryCommand {
      * <ex>disco "-t=2m"</ex>
      * Prints discovery events fired during last two minutes.
      */
-    def disco(args: String) = breakable {
+    def disco(args: String) {
         if (!isConnected)
             adviseToConnect()
         else {
@@ -133,36 +133,42 @@ class VisorDiscoveryCommand {
                 val nodes = grid.nodes()
 
                 if (nodes.isEmpty)
-                    scold("Topology is empty.").^^
+                    scold("Topology is empty.") ^^
 
                 val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
 
                 val cntOpt = argValue("c", argLst)
 
-                var cnt = Int.MaxValue
-
-                if (cntOpt.isDefined)
+                val cnt =
                     try
-                        cnt = cntOpt.get.toInt
+                        cntOpt.map(_.toInt).getOrElse(Int.MaxValue)
                     catch {
-                        case e: NumberFormatException => scold("Invalid count: " + cntOpt.get).^^
+                        case e: NumberFormatException =>
+                            scold("Invalid count: " + cntOpt.get)
+
+                            return
                     }
 
                 println("Querying oldest node in grid: " + nodeId8Addr(oldest.id))
 
-                var evts: List[VisorDiscoEvent] = null
+                val evts =
+                    try
+                        events(oldest, f.get, hasArgFlag("r", argLst))
+                    catch {
+                        case e: GridException =>
+                            scold(e.getMessage)
 
-                try
-                    evts = events(oldest, f.get, hasArgFlag("r", argLst))
-                catch {
-                    case e: GridException =>  scold(e.getMessage).^^
-                }
+                            return
+                    }
 
-                if (evts.isEmpty)
+                if (evts.isEmpty) {
                     scold(
                         "No discovery events found.",
                         "Make sure events are not disabled and Event Storage SPI is properly configured."
-                    ).^^
+                    )
+
+                    return
+                }
 
                 nl()
 
@@ -182,7 +188,7 @@ class VisorDiscoveryCommand {
                         nodeId8(e.nodeId),
                         e.ip,
                         formatDateTime(e.ts),
-                        status(evts, e)
+                        status(evts.toList, e)
                     )
                 })
 
@@ -251,19 +257,19 @@ class VisorDiscoveryCommand {
      * @param reverse Reverse order.
      * @return Events.
      */
-    private def events(node: GridNode, f: TimeFilter, reverse: Boolean): List[VisorDiscoEvent] = {
+    private def events(node: GridNode, f: TimeFilter, reverse: Boolean) = {
         assert(node != null)
         assert(f != null)
         assert(!node.isDaemon)
 
-        var evts = grid.forNode(node).events().remoteQuery((e: GridEvent) =>
-             EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
-             !e.asInstanceOf[GridDiscoveryEvent].eventNode().isDaemon && // Filter out daemons.
-             f.apply(e) // Apply timeframe.
-             ,0
-        ).get
-        .toList
-        .map((e: GridEvent) => { // Map GridEvent => DiscoEvent.
+        var evts = grid.forNode(node).events().remoteQuery(
+            new GridPredicate[GridEvent] {
+                override def apply(e: GridEvent) = {
+                    EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
+                    !e.asInstanceOf[GridDiscoveryEvent].eventNode().isDaemon && // Filter out daemons.
+                    f.apply(e) // Apply timeframe.
+                }
+            }, 0).get.map((e: GridEvent) => { // Map GridEvent => DiscoEvent.
             val de = e.asInstanceOf[GridDiscoveryEvent]
 
             val n = grid.node(de.eventNode().id())

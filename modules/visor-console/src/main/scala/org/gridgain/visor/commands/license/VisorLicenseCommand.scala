@@ -17,7 +17,6 @@ import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
 import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -87,7 +86,7 @@ class VisorLicenseCommand {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (grid.isEmpty)
+            if (grid.nodes().isEmpty)
                 scold("Topology is empty.")
             else {
                  val sumT = new VisorTextTable()

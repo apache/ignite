@@ -19,7 +19,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -150,7 +149,7 @@ class VisorPingCommand {
                 try
                     pings.map(pool.submit(_)).foreach(_.get)
                 catch {
-                    case _: RejectedExecutionException => scold("Ping failed due to system error.").^^
+                    case _: RejectedExecutionException => scold("Ping failed due to system error.") ^^
                 }
 
                 val t = VisorTextTable()

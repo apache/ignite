@@ -16,7 +16,6 @@ import java.util.{Collections, HashSet => JavaHashSet}
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesCompactTask
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._
 
@@ -97,14 +96,14 @@ class VisorCacheCompactCommand {
 
         val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
 
-        if (prj.isEmpty) {
+        if (prj.nodes().isEmpty) {
             val msg =
                 if (cacheName == null)
                     "Can't find nodes with default cache."
                 else
                     "Can't find nodes with specified cache: " + cacheName
 
-            scold(msg).^^
+            scold(msg) ^^
         }
 
         val t = VisorTextTable()

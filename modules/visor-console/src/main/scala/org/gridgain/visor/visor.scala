@@ -33,14 +33,13 @@ import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
 import org.gridgain.grid.{GridException => GE, GridGain => G, _}
-import org.gridgain.scalar._
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Holder for command help information.
@@ -992,9 +991,8 @@ object visor extends VisorTag {
      *
      * @param arg Argument to reconstruct.
      */
-    def makeArg(arg: Arg): String = {
+    @Nullable def makeArg(arg: Arg): String = {
         assert(arg != null)
-        assert(arg.isSome)
 
         var s = ""
 
@@ -1557,43 +1555,42 @@ object visor extends VisorTag {
      * @param cfgPath Configuration path.
      */
     def open(cfg: GridConfiguration, cfgPath: String) {
-        val daemon = scalar.isDaemon
+        val daemon = G.isDaemon
 
         val shutdownHook = X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
-        scalar.daemon(true)
+        G.setDaemon(true)
 
         // Make sure visor starts without shutdown hook.
         System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
-             scalar.start(cfg).name
+             G.start(cfg).name
         }
         finally {
-            scalar.daemon(daemon)
+            G.setDaemon(daemon)
 
             System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
         }
 
         this.cfgPath = cfgPath
 
-        grid$(startedGridName) match {
-            case Some(g) => grid = g.asInstanceOf[GridEx]
-            case None =>
-                this.cfgPath = null
+        grid =
+            try
+                G.grid(startedGridName).asInstanceOf[GridEx]
+            catch {
+                case _: IllegalStateException =>
+                    this.cfgPath = null
 
-                throw new GE("Named grid unavailable: " + startedGridName)
-        }
+                    throw new GE("Named grid unavailable: " + startedGridName)
+            }
 
         assert(cfgPath != null)
 
         isCon = true
         conOwner = true
         conTs = System.currentTimeMillis
-
-        if (!grid.configuration().isPeerClassLoadingEnabled)
-            warn("Peer class loading is disabled (custom closures in shell mode will not work).")
 
         grid.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
@@ -1966,7 +1963,7 @@ object visor extends VisorTag {
 
             t #= ("#", "Configuration File")
 
-            (0 until files.size).foreach(i => t += (i, files(i)._1))
+            (0 until files.size).foreach(i => t += (i, files(i).get1()))
 
             println("Local configuration files:")
 
@@ -1978,7 +1975,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(files(a.toInt)._1)
+                    Some(files(a.toInt).get1())
                 catch {
                     case e: Throwable =>
                         nl()
@@ -2154,9 +2151,8 @@ object visor extends VisorTag {
                 G.removeListener(nodeStopLsnr)
 
             if (grid != null && conOwner)
-                try {
-                    scalar.stop(grid.name, true)
-                }
+                try
+                    G.stop(grid.name, true)
                 catch {
                     case e: Exception => warn(e.getMessage)
                 }
@@ -2603,5 +2599,17 @@ object visor extends VisorTag {
      */
     def nodeById8(id8: String) = {
         grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
+    }
+
+    /**
+     * Introduction of `^^` operator for `Any` type that will call `break`.
+     *
+     * @param v `Any` value.
+     */
+    implicit def toReturnable(v: Any) = new {
+        // Ignore the warning below.
+        def ^^ {
+            break()
+        }
     }
 }

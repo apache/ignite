@@ -19,7 +19,6 @@ import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, Viso
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheCollectMetricsTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -217,9 +216,9 @@ class VisorCacheCommand {
                 if (hasArgFlag("i", argLst)) {
                     askForNode("Select node from:") match {
                         case Some(nid) => ask("Detailed statistics (y/n) [n]: ", "n") match {
-                            case "n" | "N" => nl(); cache("-id=" + nid).^^
-                            case "y" | "Y" => nl(); cache("-a -id=" + nid).^^
-                            case x => nl(); warn("Invalid answer: " + x).^^
+                            case "n" | "N" => nl(); cache("-id=" + nid) ^^
+                            case "y" | "Y" => nl(); cache("-a -id=" + nid) ^^
+                            case x => nl(); warn("Invalid answer: " + x) ^^
                         }
                         case None => break()
                     }
@@ -269,13 +268,13 @@ class VisorCacheCommand {
                 val reversed = hasArgName("r", argLst)
 
                 if (sortType.isDefined && !isValidSortType(sortType.get))
-                    scold("Invalid '-s' argument in: " + args).^^
+                    scold("Invalid '-s' argument in: " + args) ^^
 
                 // Get cache stats data from all nodes.
                 val aggrData = cacheData(node, cacheName)
 
                 if (aggrData.isEmpty)
-                    scold("No caches found.").^^
+                    scold("No caches found.") ^^
 
                 println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
 
@@ -551,7 +550,7 @@ class VisorCacheCommand {
         val aggrData = cacheData(node, None)
 
         if (aggrData.isEmpty)
-            scold("No caches found.").^^
+            scold("No caches found.") ^^
 
         val sortedAggrData = sortAggregatedData(aggrData, "cn", false)
 

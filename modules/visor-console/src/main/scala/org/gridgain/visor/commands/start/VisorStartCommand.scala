@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.start
 
 import org.gridgain.grid._
+import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
@@ -21,7 +22,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -185,14 +185,14 @@ class VisorStartCommand {
                     }
                     catch {
                         case e: NumberFormatException =>
-                            scold("Invalid maximum number of parallel connections: " + maxConnOpt.get).^^
+                            scold("Invalid maximum number of parallel connections: " + maxConnOpt.get) ^^
 
                         0 // Never happens.
                     }
             }
 
             if (maxConn <= 0)
-                scold("Invalid maximum number of parallel connections: " + maxConn).^^
+                scold("Invalid maximum number of parallel connections: " + maxConn) ^^
 
             val timeout = timeoutOpt match {
                 case None => DFLT_TIMEOUT
@@ -202,14 +202,14 @@ class VisorStartCommand {
                     }
                     catch {
                         case e: NumberFormatException =>
-                            scold("Invalid timeout: " + to).^^
+                            scold("Invalid timeout: " + to) ^^
 
                         0 // Never happens.
                     }
             }
 
             if (timeout <= 0)
-                scold("Invalid connection timeout: " + timeout).^^
+                scold("Invalid connection timeout: " + timeout) ^^
 
             var res = Seq.empty[Result]
 
@@ -217,54 +217,54 @@ class VisorStartCommand {
                 val file = new File(fileOpt.get)
 
                 if (!file.exists())
-                    scold("File not found: " + file.getAbsolutePath).^^
+                    scold("File not found: " + file.getAbsolutePath) ^^
 
                 if (file.isDirectory)
-                    scold("File is a directory: " + file.getAbsolutePath).^^
+                    scold("File is a directory: " + file.getAbsolutePath) ^^
 
                 try
                     res = grid.startNodes(file, restart, timeout, maxConn).get().map(t => {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
-                    case _: RejectedExecutionException => scold("Failed due to system error.").^^
+                    case e: GridException => scold(e.getMessage) ^^
+                    case _: RejectedExecutionException => scold("Failed due to system error.") ^^
                 }
             }
             else {
                 if (hostOpt.isEmpty)
-                    scold("Hostname is required.").^^
+                    scold("Hostname is required.") ^^
 
                 val port: java.lang.Integer =
                     try {
                         if (portOpt.isDefined) portOpt.get.toInt else null.asInstanceOf[java.lang.Integer]
                     }
                     catch {
-                        case e: NumberFormatException => scold("Invalid port number: " + portOpt.get).^^
+                        case e: NumberFormatException => scold("Invalid port number: " + portOpt.get) ^^
 
                         0 // Never happens.
                     }
 
                 if (port != null && port <= 0)
-                    scold("Invalid port number: " + port).^^
+                    scold("Invalid port number: " + port) ^^
 
                 val keyFile = if (keyOpt.isDefined) new File(keyOpt.get) else null
 
                 if (keyFile != null && (!keyFile.exists || !keyFile.isFile))
-                    scold("File not found: " + keyFile.getAbsolutePath).^^
+                    scold("File not found: " + keyFile.getAbsolutePath) ^^
 
                 val nodes: java.lang.Integer =
                     try {
                         if (nodesOpt.isDefined) nodesOpt.get.toInt else null.asInstanceOf[java.lang.Integer]
                     }
                     catch {
-                        case e: NumberFormatException => scold("Invalid number of nodes: " + nodesOpt.get).^^
+                        case e: NumberFormatException => scold("Invalid number of nodes: " + nodesOpt.get) ^^
 
                         0 // Never happens.
                     }
 
                 if (nodes != null && nodes <= 0)
-                    scold("Invalid number of nodes: " + nodes).^^
+                    scold("Invalid number of nodes: " + nodes) ^^
 
                 val params: Map[String, AnyRef] = Map(
                     "host" -> hostOpt.get,
@@ -279,13 +279,11 @@ class VisorStartCommand {
                 )
 
                 try
-                    res = grid.startNodes(
-                        toJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().map(t => {
-                            Result(t.get1, t.get2, t.get3)
-                        }).toSeq
+                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().
+                        map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
-                    case _: RejectedExecutionException => scold("Failed due to system error.").^^
+                    case e: GridException => scold(e.getMessage) ^^
+                    case _: RejectedExecutionException => scold("Failed due to system error.") ^^
                 }
             }
 
