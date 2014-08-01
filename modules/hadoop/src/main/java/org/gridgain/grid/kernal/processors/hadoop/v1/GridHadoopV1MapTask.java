@@ -16,7 +16,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop map task implementation for v1 API.
@@ -32,12 +31,12 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
+        JobConf jobConf = ctx.jobConf();
 
         InputFormat inFormat = jobConf.getInputFormat();
 
@@ -51,19 +50,21 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
         else
-            nativeSplit = (InputSplit)jobImpl.getNativeSplit(split);
+            nativeSplit = (InputSplit)ctx.getNativeSplit(split);
 
         assert nativeSplit != null;
 
-        Reporter reporter = Reporter.NULL;
+        Reporter reporter = new GridHadoopV1Reporter(taskCtx);
 
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
+            collector = collector(jobConf, ctx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
                 fileName(), jobImpl.attemptId(info()));
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
+
+            Mapper mapper = ReflectionUtils.newInstance(jobConf.getMapperClass(), jobConf);
 
             Object key = reader.createKey();
             Object val = reader.createValue();
@@ -71,16 +72,19 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
             assert mapper != null;
 
             try {
-                while (reader.next(key, val)) {
-                    if (isCancelled())
-                        throw new GridHadoopTaskCancelledException("Map task cancelled.");
+                try {
+                    while (reader.next(key, val)) {
+                        if (isCancelled())
+                            throw new GridHadoopTaskCancelledException("Map task cancelled.");
 
-                    mapper.map(key, val, collector, reporter);
+                        mapper.map(key, val, collector, reporter);
+                    }
+                }
+                finally {
+                    mapper.close();
                 }
             }
             finally {
-                U.closeQuiet(mapper);
-
                 collector.closeWriter();
             }
 

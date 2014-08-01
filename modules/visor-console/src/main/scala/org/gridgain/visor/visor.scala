@@ -17,6 +17,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, Set => JSet, _}
 
+import org.gridgain.grid.GridSystemProperties._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
@@ -1558,14 +1559,21 @@ object visor extends VisorTag {
     def open(cfg: GridConfiguration, cfgPath: String) {
         val daemon = scalar.isDaemon
 
+        val shutdownHook = X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK, "false")
+
         // Make sure Visor console starts as daemon node.
         scalar.daemon(true)
+
+        // Make sure visor starts without shutdown hook.
+        System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
              scalar.start(cfg).name
         }
         finally {
             scalar.daemon(daemon)
+
+            System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
         }
 
         this.cfgPath = cfgPath

@@ -136,6 +136,94 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /**
+     * Tests job counters retrieval.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJobCounters() throws Exception {
+        GridGgfs ggfs = grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName);
+
+        ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
+
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
+            new GridGgfsPath(PATH_INPUT + "/test.file"), true)))) {
+
+            bw.write(
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n" +
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n" +
+                "alpha\n" +
+                "beta\n" +
+                "gamma\n"
+            );
+        }
+
+        Configuration conf = config(GridHadoopAbstractSelfTest.REST_PORT);
+
+        final Job job = Job.getInstance(conf);
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setMapperClass(TestCountingMapper.class);
+        job.setReducerClass(TestCountingReducer.class);
+        job.setCombinerClass(TestCountingCombiner.class);
+
+        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+        FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
+
+        job.submit();
+
+        final Counter counter = job.getCounters().findCounter(TestCounter.COUNTER1);
+
+        assertEquals(0, counter.getValue());
+
+        counter.increment(10);
+
+        assertEquals(10, counter.getValue());
+
+        // Transferring to map phase.
+        setupLockFile.delete();
+
+        // Transferring to reduce phase.
+        mapLockFile.delete();
+
+        job.waitForCompletion(false);
+
+        assertEquals("job must end successfully", JobStatus.State.SUCCEEDED, job.getStatus().getState());
+
+        final Counters counters = job.getCounters();
+
+        assertNotNull("counters cannot be null", counters);
+        assertEquals("wrong counters count", 3, counters.countCounters());
+        assertEquals("wrong counter value", 15, counters.findCounter(TestCounter.COUNTER1).getValue());
+        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER2).getValue());
+        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER3).getValue());
+    }
+
+    /**
+     * Tests job counters retrieval for unknown job id.
+     *
+     * @throws Exception If failed.
+     */
+    public void testUnknownJobCounters() throws Exception {
+        GridHadoopClientProtocolProvider provider = provider();
+
+        ClientProtocol proto = provider.create(config(GridHadoopAbstractSelfTest.REST_PORT));
+
+        try {
+            proto.getJobCounters(new JobID(UUID.randomUUID().toString(), -1));
+            fail("exception must be thrown");
+        }
+        catch (Exception e) {
+            assert e instanceof IOException : "wrong error has been thrown";
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testJobSubmitMap() throws Exception {
@@ -352,12 +440,12 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     private Configuration config(int port) {
         Configuration conf = new Configuration();
 
+        setupFileSystems(conf);
+
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
         conf.set("fs.default.name", "ggfs://:" + getTestGridName(0) + "@/");
-        conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
-        conf.set("fs.AbstractFileSystem.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
 
         return conf;
     }
@@ -395,6 +483,53 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     }
 
     /**
+     * Test Hadoop counters.
+     */
+    public enum TestCounter {
+        COUNTER1, COUNTER2, COUNTER3
+    }
+
+    /**
+     * Test mapper that uses counters.
+     */
+    public static class TestCountingMapper extends TestMapper {
+        /** {@inheritDoc} */
+        @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
+            super.map(key, val, ctx);
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
+        }
+    }
+
+    /**
+     * Test combiner that counts invocations.
+     */
+    public static class TestCountingCombiner extends TestReducer {
+        @Override public void reduce(Text key, Iterable<IntWritable> values,
+            Context ctx) throws IOException, InterruptedException {
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
+            ctx.getCounter(TestCounter.COUNTER2).increment(1);
+
+            int sum = 0;
+            for (IntWritable value : values) {
+                sum += value.get();
+            }
+
+            ctx.write(key, new IntWritable(sum));
+        }
+    }
+
+    /**
+     * Test reducer that counts invocations.
+     */
+    public static class TestCountingReducer extends TestReducer {
+        @Override public void reduce(Text key, Iterable<IntWritable> values,
+            Context ctx) throws IOException, InterruptedException {
+            ctx.getCounter(TestCounter.COUNTER1).increment(1);
+            ctx.getCounter(TestCounter.COUNTER3).increment(1);
+        }
+    }
+
+    /**
      * Test combiner.
      */
     public static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
@@ -403,9 +538,9 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     public static class TestOutputFormat<K, V> extends TextOutputFormat<K, V> {
         /** {@inheritDoc} */
-        @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context)
+        @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext ctx)
             throws IOException {
-            return new TestOutputCommitter(context, (FileOutputCommitter)super.getOutputCommitter(context));
+            return new TestOutputCommitter(ctx, (FileOutputCommitter)super.getOutputCommitter(ctx));
         }
     }
 
@@ -419,47 +554,47 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         /**
          * Constructor.
          *
-         * @param context Task attempt context.
+         * @param ctx Task attempt context.
          * @param delegate Delegate.
          * @throws IOException If failed.
          */
-        private TestOutputCommitter(TaskAttemptContext context, FileOutputCommitter delegate) throws IOException {
-            super(FileOutputFormat.getOutputPath(context), context);
+        private TestOutputCommitter(TaskAttemptContext ctx, FileOutputCommitter delegate) throws IOException {
+            super(FileOutputFormat.getOutputPath(ctx), ctx);
 
             this.delegate = delegate;
         }
 
         /** {@inheritDoc} */
-        @Override public void setupJob(JobContext jobContext) throws IOException {
+        @Override public void setupJob(JobContext jobCtx) throws IOException {
             try {
                 while (setupLockFile.exists())
                     Thread.sleep(50);
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 throw new IOException("Interrupted.");
             }
 
-            delegate.setupJob(jobContext);
+            delegate.setupJob(jobCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void setupTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.setupTask(taskContext);
+        @Override public void setupTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.setupTask(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
-            return delegate.needsTaskCommit(taskContext);
+        @Override public boolean needsTaskCommit(TaskAttemptContext taskCtx) throws IOException {
+            return delegate.needsTaskCommit(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void commitTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.commitTask(taskContext);
+        @Override public void commitTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.commitTask(taskCtx);
         }
 
         /** {@inheritDoc} */
-        @Override public void abortTask(TaskAttemptContext taskContext) throws IOException {
-            delegate.abortTask(taskContext);
+        @Override public void abortTask(TaskAttemptContext taskCtx) throws IOException {
+            delegate.abortTask(taskCtx);
         }
     }
 

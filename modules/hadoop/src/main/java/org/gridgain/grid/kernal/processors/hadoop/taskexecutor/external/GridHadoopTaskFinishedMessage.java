@@ -14,6 +14,8 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
  * Task finished message. Sent when local task finishes execution.
  */
@@ -24,21 +26,26 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     /** Finished task info. */
     private GridHadoopTaskInfo taskInfo;
 
-    /** Task finish state. */
-    private GridHadoopTaskState state;
+    /** Task finish status. */
+    private GridHadoopTaskStatus status;
 
-    /** Error. */
-    private Throwable err;
+    /**
+     * Constructor required by {@link Externalizable}.
+     */
+    public GridHadoopTaskFinishedMessage() {
+        // No-op.
+    }
 
     /**
      * @param taskInfo Finished task info.
-     * @param state Task finish state.
-     * @param err Error (optional).
+     * @param status Task finish status.
      */
-    public GridHadoopTaskFinishedMessage(GridHadoopTaskInfo taskInfo, GridHadoopTaskState state, Throwable err) {
+    public GridHadoopTaskFinishedMessage(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+        assert taskInfo != null;
+        assert status != null;
+
         this.taskInfo = taskInfo;
-        this.state = state;
-        this.err = err;
+        this.status = status;
     }
 
     /**
@@ -49,21 +56,29 @@ public class GridHadoopTaskFinishedMessage implements GridHadoopMessage {
     }
 
     /**
-     * @return Task finish state.
+     * @return Task finish status.
      */
-    public GridHadoopTaskState state() {
-        return state;
-    }
-
-    /**
-     * @return Error cause.
-     */
-    public Throwable error() {
-        return err;
+    public GridHadoopTaskStatus status() {
+        return status;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopTaskFinishedMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        taskInfo.writeExternal(out);
+        status.writeExternal(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        taskInfo = new GridHadoopTaskInfo();
+        taskInfo.readExternal(in);
+
+        status = new GridHadoopTaskStatus();
+        status.readExternal(in);
     }
 }

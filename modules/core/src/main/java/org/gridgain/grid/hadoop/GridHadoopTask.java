@@ -25,7 +25,7 @@ public abstract class GridHadoopTask {
      *
      * @param taskInfo Task info.
      */
-    public GridHadoopTask(GridHadoopTaskInfo taskInfo) {
+    protected GridHadoopTask(GridHadoopTaskInfo taskInfo) {
         assert taskInfo != null;
 
         this.taskInfo = taskInfo;
@@ -34,6 +34,7 @@ public abstract class GridHadoopTask {
     /**
      * For {@link Externalizable}.
      */
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass")
     public GridHadoopTask() {
         // No-op.
     }
