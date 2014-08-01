@@ -15,10 +15,9 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
