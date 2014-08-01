@@ -149,7 +149,7 @@ class VisorPingCommand {
                 try
                     pings.map(pool.submit(_)).foreach(_.get)
                 catch {
-                    case _: RejectedExecutionException => scold("Ping failed due to system error.") ^^
+                    case _: RejectedExecutionException => scold("Ping failed due to system error.").^^
                 }
 
                 val t = VisorTextTable()

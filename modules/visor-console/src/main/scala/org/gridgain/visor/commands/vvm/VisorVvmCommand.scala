@@ -150,12 +150,12 @@ class VisorVvmCommand {
                     "Can't find Visual VM",
                     "Specify '-home' parameter or VVM_HOME environment property to provide " +
                         "Visual VM installation folder."
-                ) ^^
+                ).^^
 
             var nodes: scala.collection.Seq[GridNode] = null
 
             if (id8 != null && id != null)
-                scold("Only one of '-id8' or '-id' is allowed.") ^^
+                scold("Only one of '-id8' or '-id' is allowed.").^^
             else if (id8 == null && id == null)
                 nodes = grid.forRemotes().nodes().toSeq
             else
@@ -163,9 +163,9 @@ class VisorVvmCommand {
                     val ns = nodeById8(id8)
 
                     if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8) ^^
+                        scold("Unknown 'id8' value: " + id8).^^
                     else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8) ^^
+                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8).^^
                     else
                         nodes = Seq(ns.head)
                 }
@@ -174,12 +174,12 @@ class VisorVvmCommand {
                         val node = grid.node(java.util.UUID.fromString(id))
 
                         if (node == null)
-                            scold("'id' does not match any node: " + id) ^^
+                            scold("'id' does not match any node: " + id).^^
 
                         nodes = Seq(node)
                     }
                     catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id) ^^
+                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id).^^
                     }
 
             var started = false

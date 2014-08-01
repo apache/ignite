@@ -102,7 +102,7 @@ class VisorCacheClearCommand {
                 else
                     "Can't find nodes with specified cache: " + cacheName
 
-            scold(msg) ^^
+            scold(msg).^^
         }
 
         val t = VisorTextTable()

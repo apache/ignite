@@ -133,7 +133,7 @@ class VisorDiscoveryCommand {
                 val nodes = grid.nodes()
 
                 if (nodes.isEmpty)
-                    scold("Topology is empty.") ^^
+                    scold("Topology is empty.").^^
 
                 val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
 

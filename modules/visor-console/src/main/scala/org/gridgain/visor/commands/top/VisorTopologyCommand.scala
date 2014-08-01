@@ -147,7 +147,7 @@ class VisorTopologyCommand {
                 try
                     InetAddress.getByName(a._2).getHostAddress
                 catch {
-                    case e: UnknownHostException => scold("Unknown host: " + a._2) ^^
+                    case e: UnknownHostException => scold("Unknown host: " + a._2).^^
 
                     "" // Never happens.
                 }
@@ -230,7 +230,7 @@ class VisorTopologyCommand {
             })
 
         if (nodes.isEmpty)
-            println("Empty topology.") ^^
+            println("Empty topology.").^^
 
         if (all) {
             val nodesT = VisorTextTable()
