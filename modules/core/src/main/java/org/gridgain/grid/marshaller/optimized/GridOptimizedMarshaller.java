@@ -407,6 +407,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
      */
     public static void clearCache() {
         GridOptimizedMarshallerUtils.clearCache();
+
         GridPortableEnumCache.clearCache();
     }
 }
