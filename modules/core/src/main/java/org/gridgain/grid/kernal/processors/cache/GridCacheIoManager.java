@@ -256,7 +256,12 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
         }
         catch (Throwable e) {
-            U.error(log, "Failed processing message [senderId=" + nodeId + ']', e);
+            if (CU.isUtilityCache(cctx.name()) && X.hasCause(e, ClassNotFoundException.class))
+                U.error(log, "Failed processing message (note that distributed services " +
+                    "do not support peerClassLoadingEnabled flag, if you deploy distributed service " +
+                    "you should add all required classes to CLASSPATH on remote node) [senderId=" + nodeId + ']', e);
+            else
+                U.error(log, "Failed processing message [senderId=" + nodeId + ']', e);
         }
         finally {
             if (depEnabled)
