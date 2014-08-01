@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.S;
 import org.gridgain.grid.util.typedef.internal.U;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.IOException;
