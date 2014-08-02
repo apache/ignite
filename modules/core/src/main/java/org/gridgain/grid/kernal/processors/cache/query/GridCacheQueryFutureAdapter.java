@@ -174,27 +174,31 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 res = queue.poll();
             }
 
-            if (res == null && !isDone()) {
-                loadPage();
+            if (res == null) {
+                if (!isDone()) {
+                    loadPage();
 
-                long timeout = qry.query().timeout();
+                    long timeout = qry.query().timeout();
 
-                long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
+                    long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
 
-                if (waitTime <= 0)
-                    break;
+                    if (waitTime <= 0)
+                        break;
 
-                synchronized (mux) {
-                    try {
-                        if (queue.isEmpty() && !isDone())
-                            mux.wait(waitTime);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                    synchronized (mux) {
+                        try {
+                            if (queue.isEmpty() && !isDone())
+                                mux.wait(waitTime);
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
 
-                        throw new GridException("Query was interrupted: " + qry, e);
+                            throw new GridException("Query was interrupted: " + qry, e);
+                        }
                     }
                 }
+                else
+                    break;
             }
         }
 
