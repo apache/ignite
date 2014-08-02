@@ -10,7 +10,7 @@
 package org.gridgain.client;
 
 import org.gridgain.grid.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 
 import java.util.*;
 

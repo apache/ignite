@@ -7,18 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.portable;
+package org.gridgain.grid.logger.log4j;
 
-import org.gridgain.grid.portables.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.lang.*;
 
 /**
- * Extended reader interface.
+ * Interface for those loggers and appenders that evaluate their file paths lazily.
  */
-public interface GridPortableRawReaderEx extends GridPortableRawReader {
+interface GridLog4jFileAware {
     /**
-     * @return Object.
-     * @throws GridPortableException In case of error.
+     * Sets closure that later evaluate file path.
+     *
+     * @param filePathClos Closure that generates actual file path.
      */
-    @Nullable public Object readObjectDetached() throws GridPortableException;
+    void updateFilePath(GridClosure<String, String> filePathClos);
 }

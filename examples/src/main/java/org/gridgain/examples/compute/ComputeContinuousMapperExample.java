@@ -60,19 +60,6 @@ public class ComputeContinuousMapperExample {
     }
 
     /**
-     * Counts number of characters in the given word.
-     *
-     * @param word Word to count characters in.
-     * @return Number of characters in the given word.
-     */
-    static int charCount(String word) {
-        System.out.println();
-        System.out.println(">>> Printing '" + word + "' from grid job at time: " + new Date());
-
-        return word.length();
-    }
-
-    /**
      * This task demonstrates how continuous mapper is used. The passed in phrase
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
@@ -146,6 +133,9 @@ public class ComputeContinuousMapperExample {
                 mapper.send(new GridComputeJobAdapter(word) {
                     @Override public Object execute() {
                         String word = argument(0);
+
+                        System.out.println();
+                        System.out.println(">>> Printing '" + word + "' from grid job at time: " + new Date());
 
                         int cnt = word.length();
 
