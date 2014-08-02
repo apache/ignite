@@ -2325,7 +2325,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         private final int keyCols;
 
         /** */
-        private final GridUnsafeGuard guard = new GridUnsafeGuard();
+        private final GridUnsafeGuard guard = offheap == null ? null : new GridUnsafeGuard();
 
         /**
          * @param type Type descriptor.
