@@ -11,6 +11,10 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Child process initialization request.
@@ -20,29 +24,42 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     private static final long serialVersionUID = 0L;
 
     /** Job ID. */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /** Job info. */
+    @GridToStringInclude
     private GridHadoopJobInfo jobInfo;
 
-    /** Has mappers flag. */
-    private boolean hasMappers;
+    /** Total amount of reducers in the job. */
+    @GridToStringInclude
+    private int totalReducersCnt;
 
-    /** */
-    private int reducers;
+    /** Reducers to be executed on current node. */
+    @GridToStringInclude
+    private int[] locReducers;
+
+    /**
+     * Constructor required by {@link Externalizable}.
+     */
+    public GridHadoopPrepareForJobRequest() {
+        // No-op.
+    }
 
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
-     * @param hasMappers Has mappers flag.
-     * @param reducers Number of reducers in job.
+     * @param totalReducersCnt Number of reducers in the job.
+     * @param locReducers Reducers to be executed on current node.
      */
-    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, boolean hasMappers,
-        int reducers) {
+    public GridHadoopPrepareForJobRequest(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, int totalReducersCnt,
+        int[] locReducers) {
+        assert jobId != null;
+
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.hasMappers = hasMappers;
-        this.reducers = reducers;
+        this.totalReducersCnt = totalReducersCnt;
+        this.locReducers = locReducers;
     }
 
     /**
@@ -60,16 +77,42 @@ public class GridHadoopPrepareForJobRequest implements GridHadoopMessage {
     }
 
     /**
-     * @return Has mappers flag.
+     * @return Reducers to be executed on current node.
      */
-    public boolean hasMappers() {
-        return hasMappers;
+    public int[] localReducers() {
+        return locReducers;
     }
 
     /**
      * @return Number of reducers in job.
      */
-    public int reducers() {
-        return reducers;
+    public int totalReducerCount() {
+        return totalReducersCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        jobId.writeExternal(out);
+
+        out.writeObject(jobInfo);
+        out.writeInt(totalReducersCnt);
+
+        U.writeIntArray(out, locReducers);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = new GridHadoopJobId();
+        jobId.readExternal(in);
+
+        jobInfo = (GridHadoopJobInfo)in.readObject();
+        totalReducersCnt = in.readInt();
+
+        locReducers = U.readIntArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopPrepareForJobRequest.class, this);
     }
 }

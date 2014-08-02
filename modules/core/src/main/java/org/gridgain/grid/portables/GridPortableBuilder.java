@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
+package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
@@ -25,7 +25,7 @@ public interface GridPortableBuilder<T> {
      * @param cls Class.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder<T> typeId(Class<?> cls);
+    public GridPortableBuilder<T> typeId(Class<T> cls);
 
     /**
      * Sets type ID.
@@ -271,6 +271,7 @@ public interface GridPortableBuilder<T> {
      * Builds portable object.
      *
      * @return Portable object.
+     * @throws GridPortableException In case of error.
      */
-    public GridPortableObject<T> build();
+    public GridPortableObject<T> build() throws GridPortableException;
 }

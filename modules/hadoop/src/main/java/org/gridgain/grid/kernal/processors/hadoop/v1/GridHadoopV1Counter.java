@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,17 +21,17 @@ import static org.apache.hadoop.mapreduce.util.CountersStrings.*;
 /**
  * Hadoop counter implementation for v1 API.
  */
-class GridHadoopV1Counter extends Counters.Counter {
+public class GridHadoopV1Counter extends Counters.Counter {
     /** Delegate. */
-    private final GridHadoopCounter counter;
+    private final GridHadoopCounter cntr;
 
     /**
      * Creates new instance.
      *
-     * @param counter Delegate counter.
+     * @param cntr Delegate counter.
      */
-    public GridHadoopV1Counter(GridHadoopCounter counter) {
-        this.counter = counter;
+    public GridHadoopV1Counter(GridHadoopCounter cntr) {
+        this.cntr = cntr;
     }
 
     /** {@inheritDoc} */
@@ -41,7 +41,7 @@ class GridHadoopV1Counter extends Counters.Counter {
 
     /** {@inheritDoc} */
     @Override public String getName() {
-        return counter.name();
+        return cntr.name();
     }
 
     /** {@inheritDoc} */
@@ -51,17 +51,17 @@ class GridHadoopV1Counter extends Counters.Counter {
 
     /** {@inheritDoc} */
     @Override public long getValue() {
-        return counter.value();
+        return cntr.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setValue(long value) {
-        counter.value(value);
+    @Override public void setValue(long val) {
+        cntr.value(val);
     }
 
     /** {@inheritDoc} */
     @Override public void increment(long incr) {
-        counter.increment(incr);
+        cntr.increment(incr);
     }
 
     /** {@inheritDoc} */
@@ -76,17 +76,18 @@ class GridHadoopV1Counter extends Counters.Counter {
 
     /** {@inheritDoc} */
     @Override public String makeEscapedCompactString() {
-        return toEscapedCompactString(new GridHadoopV2Counter(counter));
+        return toEscapedCompactString(new GridHadoopV2Counter(cntr));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean contentEquals(Counters.Counter counter) {
-        return getUnderlyingCounter().equals(counter.getUnderlyingCounter());
+    @SuppressWarnings("deprecation")
+    @Override public boolean contentEquals(Counters.Counter cntr) {
+        return getUnderlyingCounter().equals(cntr.getUnderlyingCounter());
     }
 
     /** {@inheritDoc} */
     @Override public long getCounter() {
-        return counter.value();
+        return cntr.value();
     }
 
     /** {@inheritDoc} */

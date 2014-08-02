@@ -40,7 +40,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
     /**
      * @return {@code True} if GGFS is enabled on Hadoop nodes.
      */
-    protected boolean ggfsEnabled() {
+    @Override protected boolean ggfsEnabled() {
         return true;
     }
 
@@ -78,7 +78,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         job.setMapperClass(Mapper.class);
         job.setNumReduceTasks(0);
 
-        setupFileSytems(job.getConfiguration());
+        setupFileSystems(job.getConfiguration());
 
         FileOutputFormat.setOutputPath(job, new Path(ggfsScheme() + PATH_INPUT));
 
@@ -92,7 +92,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         // Run main map-reduce job.
         job = Job.getInstance();
 
-        setupFileSytems(job.getConfiguration());
+        setupFileSystems(job.getConfiguration());
 
         job.getConfiguration().set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, JavaSerialization.class.getName() +
             "," + WritableSerialization.class.getName());
@@ -152,7 +152,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
     public static class InFormat extends InputFormat<Text, NullWritable> {
         /** {@inheritDoc} */
-        @Override public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
+        @Override public List<InputSplit> getSplits(JobContext ctx) throws IOException, InterruptedException {
             List<InputSplit> res = new ArrayList<>();
 
             FakeSplit split = new FakeSplit(20);
@@ -165,7 +165,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public RecordReader<Text, NullWritable> createRecordReader(final InputSplit split,
-            TaskAttemptContext context) throws IOException, InterruptedException {
+            TaskAttemptContext ctx) throws IOException, InterruptedException {
             return new RecordReader<Text, NullWritable>() {
                 /** */
                 int cnt;
@@ -173,7 +173,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
                 /** */
                 Text txt = new Text();
 
-                @Override public void initialize(InputSplit split, TaskAttemptContext context) throws IOException,
+                @Override public void initialize(InputSplit split, TaskAttemptContext ctx) throws IOException,
                     InterruptedException {
                     // No-op.
                 }

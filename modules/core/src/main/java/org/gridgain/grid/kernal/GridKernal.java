@@ -56,7 +56,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.portable.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -702,7 +702,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx.security());
-                portables = new GridPortablesImpl(ctx.portable());
+                portables = new GridPortablesImpl(ctx);
             }
 
             gw.writeLock();

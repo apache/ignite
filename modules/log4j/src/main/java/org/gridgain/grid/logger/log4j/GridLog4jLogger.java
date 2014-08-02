@@ -17,10 +17,10 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -51,14 +51,15 @@ import static org.gridgain.grid.GridSystemProperties.*;
  *      cfg.setGridLogger(log);
  * </pre>
  *
- * Please take a look at <a target=_new href="http://logging.apache.org/log4j/1.2/index.html>Apache Log4j 1.2</a>
+ * Please take a look at <a target=_new href="http://logging.apache.org/log4j/1.2/index.html">Apache Log4j 1.2</a>
  * for additional information.
  * <p>
  * It's recommended to use GridGain logger injection instead of using/instantiating
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
  */
-public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdAware {
+public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger, GridLoggerNodeIdAware,
+    GridLog4jFileAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -394,13 +395,7 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
 
         this.nodeId = nodeId;
 
-        for (FileAppender a : fileAppenders) {
-            if (a instanceof GridLoggerNodeIdAware) {
-                ((GridLoggerNodeIdAware)a).setNodeId(nodeId);
-
-                a.activateOptions();
-            }
-        }
+        updateFilePath(new GridLog4jNodeIdFilePath(nodeId));
     }
 
     /** {@inheritDoc} */
@@ -504,5 +499,18 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridLog4jLogger.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateFilePath(GridClosure<String, String> filePathClos) {
+        A.notNull(filePathClos, "filePathClos");
+
+        for (FileAppender a : fileAppenders) {
+            if (a instanceof GridLog4jFileAware) {
+                ((GridLog4jFileAware)a).updateFilePath(filePathClos);
+
+                a.activateOptions();
+            }
+        }
     }
 }

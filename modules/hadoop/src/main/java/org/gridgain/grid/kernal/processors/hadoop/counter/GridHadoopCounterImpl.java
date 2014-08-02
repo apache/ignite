@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.hadoop.counter;
 
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,16 +20,13 @@ import java.io.*;
  */
 public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable {
     /** Counter group name. */
-    @GridToStringInclude
-    public String group;
+    private String group;
 
     /** Counter name. */
-    @GridToStringInclude
-    public String name;
+    private String name;
 
     /** Counter current value. */
-    @GridToStringInclude
-    public long val;
+    private long val;
 
     /**
      * Default constructor required by {@link Externalizable}.
