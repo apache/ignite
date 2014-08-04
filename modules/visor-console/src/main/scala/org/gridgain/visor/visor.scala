@@ -2644,6 +2644,6 @@ object visor extends VisorTag {
             n * timeUnit
         }
         else
-            -1
+            Long.MaxValue
     }
 }
