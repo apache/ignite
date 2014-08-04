@@ -306,7 +306,12 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 else if (e instanceof GridDiscoveryEvent) {
                     GridDiscoveryEvent de = (GridDiscoveryEvent)e;
 
-                    res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay, de.eventNode().id()));
+                    GridNode node = de.eventNode();
+
+                    String addr = F.first(node.addresses());
+
+                    res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
+                        node.id(), addr, node.isDaemon()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));

@@ -26,6 +26,12 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
     /** Node that caused this event to be generated. */
     private final UUID evtNodeId;
 
+    /** Node address that caused this event to be generated. */
+    private final String addr;
+
+    /** If node that caused this event is daemon. */
+    private final boolean isDaemon;
+
     /**
      * Create event with given parameters.
      *
@@ -36,7 +42,9 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      * @param timestamp Event timestamp.
      * @param message Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
-     * @param evtNodeId Deployment alias.
+     * @param evtNodeId Event node id.
+     * @param addr Event node address.
+     * @param isDaemon If event node is daemon on not.
      */
     public VisorGridDiscoveryEvent(
         int typeId,
@@ -46,11 +54,15 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
         long timestamp,
         @Nullable String message,
         String shortDisplay,
-        UUID evtNodeId
+        UUID evtNodeId,
+        String addr,
+        boolean isDaemon
     ) {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
 
         this.evtNodeId = evtNodeId;
+        this.addr = addr;
+        this.isDaemon = isDaemon;
     }
 
     /**
@@ -58,6 +70,20 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      */
     public UUID evtNodeId() {
         return evtNodeId;
+    }
+
+    /**
+     * @return Node address that caused this event to be generated.
+     */
+    public String address() {
+        return addr;
+    }
+
+    /**
+     * @return If node that caused this event is daemon.
+     */
+    public boolean isDaemon() {
+        return isDaemon;
     }
 
     /** {@inheritDoc} */

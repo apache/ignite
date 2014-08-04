@@ -13,11 +13,9 @@ package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
-
-import java.util.UUID
+import org.gridgain.grid.util.lang.{GridFunc => F}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -148,9 +146,7 @@ class VisorDiscoveryCommand {
                             return
                     }
 
-                println("Oldest alive node: " + nodeId8(oldest.id))
-
-                println("Querying oldest node in grid: " + nodeId8Addr(oldest.id))
+                println("Oldest alive node in grid: " + nodeId8Addr(oldest.id))
 
                 val evts =
                     try
@@ -181,14 +177,14 @@ class VisorDiscoveryCommand {
                 val t = VisorTextTable()
 
                 // Spaces between ID8(@) and IP are intentional!
-                t #= ("Event", "Node ID8(@)", "IP", "Timestamp")
+                t #= ("Timestamp", "Event", "Node ID8(@)", "IP", )
 
                 evts.take(cnt).foreach(e => {
                     t += (
+                        formatDateTime(e.ts),
                         e.evtName,
                         nodeId8(e.nodeId),
-                        e.ip,
-                        formatDateTime(e.ts))
+                        if (F.isEmpty(e.ip)) "<n/a>" else e.ip)
                 })
 
                 t.render()
@@ -212,40 +208,10 @@ class VisorDiscoveryCommand {
 
         val evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
             toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
+            .toSeq.sortBy(_.ts)
 
-        val discoEvts = evts.toSeq.collect {
-            case evt if evt.isInstanceOf[VisorGridDiscoveryEvent] =>
-                val de = evt.asInstanceOf[VisorGridDiscoveryEvent]
-
-                val nid = de.evtNodeId()
-                val n = grid.node(nid)
-
-                VisorDiscoEvent(
-                    ts = de.timestamp(),
-                    nodeId = nid,
-                    ip = if (n != null) n.addresses.head else "<n/a>",
-                    evtName = de.name(),
-                    upTime = if (n != null) n.metrics().getUpTime else -1)
-        }.toSeq.sortBy(_.ts)
-
-        if (reverse) discoEvts.reverse else discoEvts
+        if (reverse) evts.reverse else evts
     }
-}
-
-/**
- */
-private case class VisorDiscoEvent(
-    evtName: String,
-    nodeId: UUID,
-    ip: String,
-    ts: Long,
-    upTime: Long
-) {
-    assert(evtName != null)
-    assert(nodeId != null)
-    assert(ts > 0)
-    assert(ip != null)
-    assert(upTime > 0)
 }
 
 /**
