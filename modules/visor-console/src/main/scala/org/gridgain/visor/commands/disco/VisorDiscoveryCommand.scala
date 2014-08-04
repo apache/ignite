@@ -13,9 +13,9 @@ package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
-import org.gridgain.grid.util.typedef.X
 
 import java.util.UUID
 
@@ -148,6 +148,8 @@ class VisorDiscoveryCommand {
                             return
                     }
 
+                println("Oldest alive node: " + nodeId8(oldest.id))
+
                 println("Querying oldest node in grid: " + nodeId8Addr(oldest.id))
 
                 val evts =
@@ -179,24 +181,19 @@ class VisorDiscoveryCommand {
                 val t = VisorTextTable()
 
                 // Spaces between ID8(@) and IP are intentional!
-                t #= ("Event", "Node ID8(@)", "IP", "Timestamp", "Status")
+                t #= ("Event", "Node ID8(@)", "IP", "Timestamp")
 
                 evts.take(cnt).foreach(e => {
                     t += (
                         e.evtName,
                         nodeId8(e.nodeId),
                         e.ip,
-                        formatDateTime(e.ts),
-                        status(evts.toList, e)
-                    )
+                        formatDateTime(e.ts))
                 })
 
                 t.render()
 
                 nl()
-
-                println("<root> - current topology root, i.e. oldest alive node.")
-                println(  "*      - marks final event for given node and its uptime at that moment.")
             }
         }
     }
@@ -213,62 +210,25 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        val nodeIds = grid.nodes().map(_.id())
-
         val evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
-            toTaskArgument(nodeIds, VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
+            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
 
-        var discoEvts = evts.toSeq.collect {
-            case de =>
-                val n = grid.node(de.nid())
+        val discoEvts = evts.toSeq.collect {
+            case evt if evt.isInstanceOf[VisorGridDiscoveryEvent] =>
+                val de = evt.asInstanceOf[VisorGridDiscoveryEvent]
+
+                val nid = de.evtNodeId()
+                val n = grid.node(nid)
 
                 VisorDiscoEvent(
                     ts = de.timestamp(),
-                    nodeId = de.nid,
-                    ip = n.addresses.head,
+                    nodeId = nid,
+                    ip = if (n != null) n.addresses.head else "<n/a>",
                     evtName = de.name(),
-                    upTime = n.metrics().getUpTime)
-        }.toSeq
+                    upTime = if (n != null) n.metrics().getUpTime else -1)
+        }.toSeq.sortBy(_.ts)
 
-        // Add made up event for the oldest node since it doesn't have an event about itself.
-        discoEvts = discoEvts :+ VisorDiscoEvent(
-            ts = node.metrics().getStartTime,
-            nodeId = node.id(),
-            ip = node.addresses.headOption getOrElse "<n/a>",
-            evtName = "<root>",
-            upTime = node.metrics.getUpTime)
-
-        if (!reverse) discoEvts.sortBy(_.ts).reverse else discoEvts.sortBy(_.ts)
-    }
-
-    /**
-     * Returns status of the node.
-     *
-     * @param evts List of discovery events.
-     * @param evt Discovery event for which status is requested.
-     * @return Status of the node.
-     */
-    private def status(evts: List[VisorDiscoEvent], evt: VisorDiscoEvent): String = {
-        assert(evts != null)
-        assert(evts.nonEmpty)
-        assert(evt != null)
-
-        val lastEvt = evts.filter(_.nodeId == evt.nodeId).sortBy(_.ts).last
-
-        val mkUpTime =
-            if (evt == lastEvt)
-                "* (" + X.timeSpan2HMS(evt.upTime) + ')'
-            else
-                ""
-
-        lastEvt.evtName match {
-            case "NODE_LEFT" => "LEFT" + mkUpTime
-            case "NODE_FAILED" => "FAIL" + mkUpTime
-            case "NODE_DISCONNECTED" => "DISC" + mkUpTime
-            case "NODE_JOINED" | "NODE_RECONNECTED" => "LIVE" + mkUpTime
-            case "<root>" => "LIVE" + mkUpTime
-            case _ => assert(false, lastEvt.evtName); ""
-        }
+        if (reverse) discoEvts.reverse else discoEvts
     }
 }
 
@@ -306,7 +266,7 @@ object VisorDiscoveryCommand {
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are enabled and GridGain stores last 10,000 local",
+            "By default - all events are disabled and GridGain stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
