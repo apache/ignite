@@ -9,26 +9,27 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
 
 import java.io.*;
-import java.text.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.logging.*;
-import java.util.logging.Formatter;
 
 /**
  * Hadoop external process base class.
  */
 public class GridHadoopExternalProcessStarter {
+    /** Path to Log4j configuration file. */
+    public static final String DFLT_LOG4J_CONFIG = "config/gridgain-log4j.xml";
+
     /** Arguments. */
     private Args args;
 
@@ -70,12 +71,14 @@ public class GridHadoopExternalProcessStarter {
     public void run() throws Exception {
         U.setWorkDirectory(args.workDir, U.getGridGainHome());
 
-        initializeStreams();
+        File outputDir = outputDirectory();
+
+        initializeStreams(outputDir);
 
         ExecutorService msgExecSvc = Executors.newFixedThreadPool(
             Integer.getInteger("MSG_THREAD_POOL_SIZE", Runtime.getRuntime().availableProcessors() * 2));
 
-        GridLogger log = logger();
+        GridLogger log = logger(outputDir);
 
         GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
             args.nodeId,
@@ -105,9 +108,19 @@ public class GridHadoopExternalProcessStarter {
     }
 
     /**
+     * @param outputDir Directory for process output.
      * @throws Exception
      */
-    private void initializeStreams() throws Exception {
+    private void initializeStreams(File outputDir) throws Exception {
+        out = new FileOutputStream(new File(outputDir, args.childProcId + ".out"));
+        err = new FileOutputStream(new File(outputDir, args.childProcId + ".err"));
+    }
+
+    /**
+     * @return Path to output directory.
+     * @throws IOException If failed.
+     */
+    private File outputDirectory() throws IOException {
         File f = new File(args.out);
 
         if (!f.exists()) {
@@ -119,63 +132,36 @@ public class GridHadoopExternalProcessStarter {
                 throw new IOException("Output directory is a file: " + args.out);
         }
 
-        out = new FileOutputStream(new File(f, args.childProcId + ".out"));
-        err = new FileOutputStream(new File(f, args.childProcId + ".err"));
+        return f;
     }
 
     /**
-     * TODO configure logger.
-     *
+     * @param outputDir Directory for process output.
      * @return Logger.
-     * @throws IOException If failed.
      */
-    private GridLogger logger() throws IOException {
-        Logger log = Logger.getLogger("");
+    private GridLogger logger(final File outputDir) {
+        final URL url = U.resolveGridGainUrl(DFLT_LOG4J_CONFIG);
 
-        log.setLevel(Level.FINE);
+        GridLog4jLogger logger;
 
-        for (Handler h : log.getHandlers())
-            log.removeHandler(h);
+        try {
+            logger = url != null ? new GridLog4jLogger(url) : new GridLog4jLogger(true);
+        }
+        catch (GridException e) {
+            System.err.println("Failed to create URL-based logger. Will use default one.");
 
-        FileHandler h = new FileHandler(args.out + File.separator + args.childProcId + ".log", true);
+            e.printStackTrace();
 
-        h.setFormatter(new Formatter() {
-            @Override public String format(LogRecord record) {
-                StringBuffer sb = new StringBuffer();
+            logger = new GridLog4jLogger(true);
+        }
 
-                DateFormat df = new SimpleDateFormat("yy-MM-dd HH:mm:ss.SSS");
-
-                sb.append("[");
-
-                df.format(new Date(record.getMillis()), sb, new FieldPosition(0));
-
-                sb.append("][").append(record.getLevel()).append("][")
-                    .append(record.getLoggerName()).append("] ").append(record.getMessage()).append("\n");
-
-                if (record.getThrown() != null) {
-                    StringWriter sw = new StringWriter();
-
-                    PrintWriter pw = new PrintWriter(sw);
-
-                    record.getThrown().printStackTrace(pw);
-
-                    pw.flush();
-
-                    sb.append(sw.toString());
-                }
-
-                return sb.toString();
+        logger.updateFilePath(new GridClosure<String, String>() {
+            @Override public String apply(String s) {
+                return new File(outputDir, args.childProcId + ".log").getAbsolutePath();
             }
         });
 
-        log.addHandler(h);
-
-        Logger.getLogger(GridIpcSharedMemorySpace.class.toString()).setLevel(Level.WARNING);
-        Logger.getLogger(GridIpcSharedMemorySpace.class.getName()).setLevel(Level.WARNING);
-        Logger.getLogger(GridWorker.class.toString()).setLevel(Level.WARNING);
-        Logger.getLogger(GridWorker.class.getName()).setLevel(Level.WARNING);
-
-        return new GridJavaLogger(log);
+        return logger;
     }
 
     /**

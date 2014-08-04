@@ -7,11 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
+package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Writer for portable object.
@@ -93,6 +95,13 @@ public interface GridPortableWriter {
      * @throws GridPortableException In case of error.
      */
     public void writeDate(String fieldName, @Nullable Date val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Timestamp to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws GridPortableException;
 
     /**
      * @param fieldName Field name.

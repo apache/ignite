@@ -7,11 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
+package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Reader for portable objects.
@@ -93,6 +95,13 @@ public interface GridPortableReader {
      * @throws GridPortableException In case of error.
      */
     @Nullable public Date readDate(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Timestamp.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Timestamp readTimestamp(String fieldName) throws GridPortableException;
 
     /**
      * @param fieldName Field name.

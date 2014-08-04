@@ -126,9 +126,11 @@ public interface GridClientNode {
      * Gets collection of addresses on which REST binary protocol is bound.
      *
      * @param proto Protocol for which addresses are obtained.
+     * @param filterResolved Whether to filter resolved addresses ( {@link InetSocketAddress#isUnresolved()}
+     * returns {@code False} ) or not.
      * @return List of addresses.
      */
-    public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto);
+    public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved);
 
     /**
      * Indicates whether client can establish direct connection with this node.

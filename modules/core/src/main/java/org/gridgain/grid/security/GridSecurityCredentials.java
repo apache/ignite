@@ -10,10 +10,10 @@
 package org.gridgain.grid.security;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
