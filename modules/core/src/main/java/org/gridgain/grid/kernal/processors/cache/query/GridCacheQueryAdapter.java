@@ -153,6 +153,12 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.portableVals = portableVals;
     }
 
+    private static String unifyClassName(String clsName) {
+        if ("order".equalsIgnoreCase(clsName))
+            return "\"" + clsName + "\"";
+        else
+            return clsName;
+    }
     /**
      * @return cache projection filter.
      */
