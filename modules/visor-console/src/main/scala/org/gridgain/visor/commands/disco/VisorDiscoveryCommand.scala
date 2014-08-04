@@ -211,12 +211,19 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
-            node.id(), node.metrics().getStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
+        var evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
+            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get.toSeq
 
-        val evts = Seq(root) ++ grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
-            toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
-            .toSeq.sortBy(_.timestamp())
+        val nodeStartTime = node.metrics().getStartTime
+
+        if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
+            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
+                node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
+
+            evts = Seq(root) ++ evts
+        }
+
+        evts = evts.sortBy(_.timestamp())
 
         if (reverse) evts.reverse else evts
     }
