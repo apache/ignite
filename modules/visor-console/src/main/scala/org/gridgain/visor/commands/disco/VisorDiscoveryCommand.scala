@@ -14,6 +14,8 @@ package org.gridgain.visor.commands.disco
 import org.gridgain.grid._
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.util.typedef.X
 
@@ -45,7 +47,7 @@ import org.gridgain.visor.visor._
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are enabled and GridGain stores last 10,000 local     |
+ * |       | By default - all events are DISABLED and GridGain stores last 10,000 local     |
  * |       | events on each node. Both of these defaults can be changed in configuration.  |
  * +---------------------------------------------------------------------------------------+
  * }}}
@@ -127,9 +129,9 @@ class VisorDiscoveryCommand {
 
             val fs = argValue("t", argLst)
 
-            val f = if (fs.isDefined) timeFilter(fs) else Some((_: GridEvent) => true)
+            val tm = if (fs.isDefined) timeFilter(fs) else Long.MaxValue
 
-            if (f.isDefined) {
+            if (tm > 0) {
                 val nodes = grid.nodes()
 
                 if (nodes.isEmpty)
@@ -153,9 +155,9 @@ class VisorDiscoveryCommand {
 
                 val evts =
                     try
-                        events(oldest, f.get, hasArgFlag("r", argLst))
+                        events(oldest, tm, hasArgFlag("r", argLst))
                     catch {
-                        case e: GridException =>
+                        case e: Throwable =>
                             scold(e.getMessage)
 
                             return
@@ -203,103 +205,43 @@ class VisorDiscoveryCommand {
     }
 
     /**
-     * Creates predicate that filters events by timestamp.
-     *
-     * @param arg Command argument.
-     * @return Predicate.
-     */
-    private def timeFilter(arg: Option[String]): Option[TimeFilter] = {
-        assert(arg != null)
-
-        if (arg.isEmpty)
-            None
-        else {
-            var n = 0
-
-            val s = arg.get
-
-            try
-                n = s.substring(0, s.length - 1).toInt
-            catch {
-                case e: NumberFormatException =>
-                    scold("Time frame size is not numeric in: " + s)
-
-                    return None
-            }
-
-            if (n <= 0) {
-                scold("Time frame size is not positive in: " + s)
-
-                None
-            }
-            else {
-                val m = s.last match {
-                    case 's' => 1000
-                    case 'm' => 1000 * 60
-                    case 'h' => 1000 * 60 * 60
-                    case 'd' => 1000 * 60 * 60 * 24
-                    case _ =>
-                        scold("Invalid time frame suffix in: " + s)
-
-                        return None
-                }
-
-                Some((e: GridEvent) => e.timestamp >= System.currentTimeMillis - n * m)
-            }
-        }
-    }
-
-    /**
      * Gets chronologically sorted list of discovery events.
      *
      * @param node Node.
-     * @param f Event filter.
-     * @param reverse Reverse order.
-     * @return Events.
+     * @param tmFrame Time frame to select events.
+     * @param reverse `True` if sort events in reverse order.
+     * @return Discovery events.
      */
-    private def events(node: GridNode, f: TimeFilter, reverse: Boolean) = {
+    private def events(node: GridNode, tmFrame: Long, reverse: Boolean) = {
         assert(node != null)
-        assert(f != null)
         assert(!node.isDaemon)
 
-        var evts = grid.forNode(node).events().remoteQuery(
-            new GridPredicate[GridEvent] {
-                override def apply(e: GridEvent) = {
-                    EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
-                    !e.asInstanceOf[GridDiscoveryEvent].eventNode().isDaemon && // Filter out daemons.
-                    f.apply(e) // Apply timeframe.
-                }
-            }, 0).get.map((e: GridEvent) => { // Map GridEvent => DiscoEvent.
-            val de = e.asInstanceOf[GridDiscoveryEvent]
+        val nodeIds = grid.nodes().map(_.id())
 
-            val n = grid.node(de.eventNode().id())
+        val evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
+            toTaskArgument(nodeIds, VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
 
-            val upTime =
-                if (n != null)
-                    n.metrics.getUpTime
-                else
-                    de.eventNode().metrics().getUpTime
+        var discoEvts = evts.toSeq.collect {
+            case de =>
+                val n = grid.node(de.nid())
 
-            VisorDiscoEvent(
-                ts = de.timestamp(),
-                nodeId = de.eventNode().id(),
-                ip = de.eventNode().addresses.head,
-                evtName = de.name(),
-                upTime = upTime
-            )
-        })
+                VisorDiscoEvent(
+                    ts = de.timestamp(),
+                    nodeId = de.nid,
+                    ip = n.addresses.head,
+                    evtName = de.name(),
+                    upTime = n.metrics().getUpTime)
+        }.toSeq
 
-        // Add made up event for the oldest node since it doesn't
-        // have an event about itself.
-        evts = evts :+ VisorDiscoEvent(
+        // Add made up event for the oldest node since it doesn't have an event about itself.
+        discoEvts = discoEvts :+ VisorDiscoEvent(
             ts = node.metrics().getStartTime,
             nodeId = node.id(),
             ip = node.addresses.headOption getOrElse "<n/a>",
             evtName = "<root>",
-            upTime = node.metrics.getUpTime
-        )
+            upTime = node.metrics.getUpTime)
 
-        if (!reverse) evts.sortBy(_.ts).reverse else evts.sortBy(_.ts)
+        if (!reverse) discoEvts.sortBy(_.ts).reverse else discoEvts.sortBy(_.ts)
     }
 
     /**

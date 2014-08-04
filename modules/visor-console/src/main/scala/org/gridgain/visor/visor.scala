@@ -2612,4 +2612,38 @@ object visor extends VisorTag {
             break()
         }
     }
+
+    /**
+     * Decode time frame from string.
+     *
+     * @param timeArg Optional time frame: &lt;num&gt;s|m|h|d
+     * @return Time in milliseconds.
+     */
+    def timeFilter(timeArg: Option[String]): Long = {
+        if (timeArg.nonEmpty) {
+            val s = timeArg.get
+
+            val n = try
+                s.substring(0, s.length - 1).toLong
+            catch {
+                case _: NumberFormatException =>
+                    throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
+            }
+
+            if (n <= 0)
+                throw new IllegalArgumentException("Time frame size is not positive in: " + s)
+
+            val timeUnit = s.last match {
+                case 's' => 1000L
+                case 'm' => 1000L * 60L
+                case 'h' => 1000L * 60L * 60L
+                case 'd' => 1000L * 60L * 60L * 24L
+                case _ => throw new IllegalArgumentException("Invalid time frame suffix in: " + s)
+            }
+
+            n * timeUnit
+        }
+        else
+            -1
+    }
 }
