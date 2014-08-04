@@ -16,6 +16,7 @@ import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
 
 import scala.collection.JavaConversions._
@@ -130,8 +131,11 @@ class VisorDiscoveryCommand {
             if (tm > 0) {
                 val nodes = grid.nodes()
 
-                if (nodes.isEmpty)
-                    scold("Topology is empty.").^^
+                if (nodes.isEmpty) {
+                    scold("Topology is empty.")
+
+                    return
+                }
 
                 val oldest = grid.nodes().maxBy(_.metrics().getUpTime)
 
@@ -180,15 +184,13 @@ class VisorDiscoveryCommand {
                 // Spaces between ID8(@) and IP are intentional!
                 t #= ("Timestamp", "Event", "Node ID8(@)", "IP")
 
-                evts.take(cnt).foreach(e => if (e.isInstanceOf[VisorGridDiscoveryEvent]) {
-                    val de = e.asInstanceOf[VisorGridDiscoveryEvent]
-
-                    t += (
-                        formatDateTime(de.timestamp()),
-                        de.name(),
-                        nodeId8(de.evtNodeId()) + (if (de.isDaemon) "(daemon)" else ""),
-                        if (F.isEmpty(de.address())) "<n/a>" else de.address())
-                })
+                evts.take(cnt).foreach {
+                    case de: VisorGridDiscoveryEvent =>
+                        t +=(formatDateTime(de.timestamp()), de.name(),
+                            nodeId8(de.evtNodeId()) + (if (de.isDaemon) "(daemon)" else ""),
+                            if (F.isEmpty(de.address())) "<n/a>" else de.address())
+                    case _ =>
+                }
 
                 t.render()
 
@@ -209,7 +211,10 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        val evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
+        val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
+            node.id(), node.metrics().getStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
+
+        val evts = Seq(root) ++ grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
             toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
             .toSeq.sortBy(_.timestamp())
 
