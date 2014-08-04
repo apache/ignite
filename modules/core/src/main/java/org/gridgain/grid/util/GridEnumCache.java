@@ -7,40 +7,43 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
+package org.gridgain.grid.util;
 
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
 
 /**
- * Portable reader's cache for enum constants.
+ * Cache for enum constants.
  */
-public class GridPortableEnumCache {
+public class GridEnumCache {
     /** Cache for enum constants. */
     private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap8<>();
 
     /**
-     * Gets enum constants for specified class object.
+     * Gets enum constants for provided class.
+     *
      * @param cls Class.
-     * @return Cached enum constants for specified class object.
+     * @return Enum constants.
      */
     public static Object[] get(Class<?> cls) {
-        Object[] consts = ENUM_CACHE.get(cls);
+        assert cls != null;
 
-        if (consts == null) {
-            consts = cls.getEnumConstants();
+        Object[] vals = ENUM_CACHE.get(cls);
 
-            ENUM_CACHE.putIfAbsent(cls, consts);
+        if (vals == null) {
+            vals = cls.getEnumConstants();
+
+            ENUM_CACHE.putIfAbsent(cls, vals);
         }
 
-        return consts;
+        return vals;
     }
 
     /**
-     * Clears enum cache.
+     * Clears cache.
      */
-    public static void clearCache() {
+    public static void clear() {
         ENUM_CACHE.clear();
     }
 }
