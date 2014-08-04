@@ -13,6 +13,7 @@ package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.util.lang.{GridFunc => F}
@@ -177,14 +178,16 @@ class VisorDiscoveryCommand {
                 val t = VisorTextTable()
 
                 // Spaces between ID8(@) and IP are intentional!
-                t #= ("Timestamp", "Event", "Node ID8(@)", "IP", )
+                t #= ("Timestamp", "Event", "Node ID8(@)", "IP")
 
-                evts.take(cnt).foreach(e => {
+                evts.take(cnt).foreach(e => if (e.isInstanceOf[VisorGridDiscoveryEvent]) {
+                    val de = e.asInstanceOf[VisorGridDiscoveryEvent]
+
                     t += (
-                        formatDateTime(e.ts),
-                        e.evtName,
-                        nodeId8(e.nodeId),
-                        if (F.isEmpty(e.ip)) "<n/a>" else e.ip)
+                        formatDateTime(de.timestamp()),
+                        de.name(),
+                        nodeId8(de.evtNodeId()) + (if (de.isDaemon) "(daemon)" else ""),
+                        if (F.isEmpty(de.address())) "<n/a>" else de.address())
                 })
 
                 t.render()
@@ -208,7 +211,7 @@ class VisorDiscoveryCommand {
 
         val evts = grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
             toTaskArgument(node.id(), VisorEventsCollectArgs.createEventsArg(EVTS_DISCOVERY, tmFrame))).get
-            .toSeq.sortBy(_.ts)
+            .toSeq.sortBy(_.timestamp())
 
         if (reverse) evts.reverse else evts
     }
