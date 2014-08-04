@@ -12,11 +12,9 @@
 package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
-import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
-import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.util.typedef.X
 
 import java.util.UUID
@@ -24,7 +22,6 @@ import java.util.UUID
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
