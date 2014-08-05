@@ -108,7 +108,7 @@ class VisorLicenseCommand {
 
                         nl()
 
-                        println("License '" + e._1 + "':")
+                        println("License: '" + e._1 + "'")
 
                         if (l != null) {
                             val licT = new VisorTextTable()
