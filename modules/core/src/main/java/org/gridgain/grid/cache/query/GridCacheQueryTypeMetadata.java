@@ -82,10 +82,7 @@ public class GridCacheQueryTypeMetadata {
      * @param cls Type class.
      */
     public void setType(Class<?> cls) {
-        if ("order".equalsIgnoreCase(cls.getName()))
-            type = "\"" + cls.getName() + "\"";
-        else
-            type = cls.getName();
+        setType(cls.getName());
     }
 
     /**
@@ -94,10 +91,7 @@ public class GridCacheQueryTypeMetadata {
      * @param type Type name.
      */
     public void setType(String type) {
-        if ("order".equalsIgnoreCase(type))
-            this.type = "\"" + type + "\"";
-        else
-            this.type = type;
+        this.type = CU.h2Escape(type);
     }
 
     /**

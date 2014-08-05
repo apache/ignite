@@ -220,6 +220,22 @@ public class GridCacheUtils {
     };
 
     /**
+     * List of keywords that can't be used as identifiers for H2 (table names, column names and so on),
+     * unless they are surrounded with double quotes.
+     */
+    private static final String[] H2_RESERVED_WORDS = {
+        "cross", "current_date", "current_time", "current_timestamp", "distinct", "except", "exists", "false", "for",
+        "from", "full", "group", "having", "inner", "intersect", "is", "join", "like", "limit", "minus", "natural",
+        "not", "null", "on", "order", "primary", "rownum", "select", "sysdate", "systime", "systimestamp", "today",
+        "true", "union", "unique", "where"
+    };
+
+    /** */
+    static {
+        Arrays.sort(H2_RESERVED_WORDS);
+    }
+
+    /**
      * Ensure singleton.
      */
     protected GridCacheUtils() {
@@ -595,7 +611,6 @@ public class GridCacheUtils {
      * @param ctx Cache context to check.
      * @return {@code True} if near cache is enabled, {@code false} otherwise.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(GridCacheContext ctx) {
         return isNearEnabled(ctx.config());
     }
@@ -1611,9 +1626,28 @@ public class GridCacheUtils {
     }
 
     /**
+     * Escapes words reserved by H2 if necessary (such words should be surrounded with double quotes
+     * to be used as identifier).
+     *
+     * @param s String.
+     * @return Escaped string.
+     */
+    public static String h2Escape(String s) {
+        if (s == null)
+            return null;
+
+        if (Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
+            return "\"" + s + "\"";
+
+        return s;
+    }
+
+    /**
      * Type filter.
      */
     public static class TypeFilter<K, V> implements GridBiPredicate<K, V> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Class<?> keyType;
 
