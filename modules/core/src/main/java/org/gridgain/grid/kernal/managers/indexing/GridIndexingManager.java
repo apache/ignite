@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
@@ -25,7 +26,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
-import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

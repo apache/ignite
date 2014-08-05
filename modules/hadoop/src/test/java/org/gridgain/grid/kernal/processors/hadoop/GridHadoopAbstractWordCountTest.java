@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.base.*;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 
@@ -28,6 +30,18 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
     /** GGFS instance. */
     protected GridGgfsEx ggfs;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        Configuration cfg = new Configuration();
+
+        setupFileSystems(cfg);
+
+        // Init cache by correct LocalFileSystem implementation
+        FileSystem.getLocal(cfg);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -51,9 +65,9 @@ public abstract class GridHadoopAbstractWordCountTest extends GridHadoopAbstract
 
     /**
      *
-     * @param path
-     * @param wordCounts
-     * @throws Exception
+     * @param path File name.
+     * @param wordCounts Words and counts.
+     * @throws Exception If failed.
      */
     protected void generateTestFile(String path, Object... wordCounts) throws Exception {
         List<String> wordsArr = new ArrayList<>();

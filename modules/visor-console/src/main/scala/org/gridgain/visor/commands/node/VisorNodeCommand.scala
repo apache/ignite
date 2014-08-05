@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._

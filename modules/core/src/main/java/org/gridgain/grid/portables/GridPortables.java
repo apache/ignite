@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.portable;
+package org.gridgain.grid.portables;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -42,7 +41,7 @@ import org.jetbrains.annotations.*;
  *     ...
  *     &lt;!-- Portable objects configuration. --&gt;
  *     &lt;property name="portableConfiguration"&gt;
- *         &lt;bean class="org.gridgain.portable.GridPortableConfiguration"&gt;
+ *         &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
  *             &lt;property name="classNames"&gt;
  *                 &lt;list&gt;
  *                     &lt;value&gt;org.gridgain.examples.client.portable.Employee&lt;/value&gt;

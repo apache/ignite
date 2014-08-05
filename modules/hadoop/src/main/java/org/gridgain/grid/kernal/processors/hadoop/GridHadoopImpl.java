@@ -81,6 +81,20 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException {
+        if (busyLock.enterBusy()) {
+            try {
+                return proc.counters(jobId);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get job counters (grid is stopping).");
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         if (busyLock.enterBusy()) {
             try {

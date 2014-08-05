@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.portable;
+package org.gridgain.grid.portables;
 
 import java.util.*;
 
@@ -26,6 +26,9 @@ public class GridPortableConfiguration {
 
     /** Types. */
     private Collection<GridPortableTypeConfiguration> typeCfgs;
+
+    /** Use timestamp flag. */
+    private boolean useTs = true;
 
     /**
      * Gets class names.
@@ -97,5 +100,22 @@ public class GridPortableConfiguration {
      */
     public void setTypeConfigurations(Collection<GridPortableTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
+    }
+
+    /**
+     * If {@code true} then date values converted to {@link java.sql.Timestamp} on deserialization.
+     * Default value is {@code true}.
+     *
+     * @return Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     */
+    public boolean isUseTimestamp() {
+        return useTs;
+    }
+
+    /**
+     * @param useTs Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     */
+    public void setUseTimestamp(boolean useTs) {
+        this.useTs = useTs;
     }
 }
