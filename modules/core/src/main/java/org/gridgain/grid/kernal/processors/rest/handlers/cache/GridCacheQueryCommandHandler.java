@@ -147,7 +147,6 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      */
     private static GridRestResponse fetchQueryResults(
         long queryId,
-        int pageSize,
         QueryFutureWrapper wrapper,
         ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
         UUID locNodeId
@@ -155,33 +154,20 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         if (wrapper == null)
             throw new GridException("Failed to find query future (query has been expired).");
 
-        if (pageSize <= 0)
-            pageSize = GridCacheQuery.DFLT_PAGE_SIZE;
+        GridCacheQueryFutureAdapter<?, ?, ?> fut = wrapper.future();
 
-        GridCacheQueryFuture<?> fut = wrapper.future();
-
-        Collection<Object> col = new ArrayList<>(pageSize);
-
-        int cnt = 0;
+        Collection<Object> col = (Collection<Object>)fut.nextPage();
 
         GridCacheRestResponse res = new GridCacheRestResponse();
 
         GridCacheClientQueryResult qryRes = new GridCacheClientQueryResult();
 
-        while (cnt < pageSize) {
-            Object obj = fut.next();
+        if (col == null) {
+            col = Collections.emptyList();
 
-            if (obj == null) {
-                qryRes.last(true);
+            qryRes.last(true);
 
-                locMap.remove(new QueryExecutionKey(queryId), wrapper);
-
-                break;
-            }
-
-            col.add(obj);
-
-            cnt++;
+            locMap.remove(new QueryExecutionKey(queryId), wrapper);
         }
 
         qryRes.items(col);
@@ -296,21 +282,18 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             qry = qry.includeBackups(req.includeBackups()).enableDedup(req.enableDedup()).keepAll(false);
 
-            GridCacheQueryFuture<?> fut;
+            GridCacheQueryFutureAdapter<?, ?, ?> fut;
 
-            if (req.remoteReducerClassName() != null) {
-                fut = qry.execute(
+            if (req.remoteReducerClassName() != null)
+                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(
                     instance(GridReducer.class, req.remoteReducerClassName()),
                     req.queryArguments());
-            }
-            else if (req.remoteTransformerClassName() != null) {
-                fut = qry.execute(
+            else if (req.remoteTransformerClassName() != null)
+                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(
                     instance(GridClosure.class, req.remoteTransformerClassName()),
                     req.queryArguments());
-            }
-            else {
-                fut = qry.execute(req.queryArguments());
-            }
+            else
+                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
                 g.nodeLocalMap();
@@ -321,7 +304,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             assert old == null;
 
-            return fetchQueryResults(qryId, req.pageSize(), wrapper, locMap, g.localNode().id());
+            return fetchQueryResults(qryId, wrapper, locMap, g.localNode().id());
         }
     }
 
@@ -348,7 +331,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
                 g.nodeLocalMap();
 
-            return fetchQueryResults(req.queryId(), req.pageSize(), locMap.get(new QueryExecutionKey(req.queryId())),
+            return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),
                 locMap, g.localNode().id());
         }
     }
@@ -425,7 +408,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      */
     private static class QueryFutureWrapper {
         /** Query future. */
-        private final GridCacheQueryFuture<?> qryFut;
+        private final GridCacheQueryFutureAdapter<?, ?, ?> qryFut;
 
         /** Last future use timestamp. */
         private volatile long lastUseTs;
@@ -433,7 +416,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /**
          * @param qryFut Query future.
          */
-        private QueryFutureWrapper(GridCacheQueryFuture<?> qryFut) {
+        private QueryFutureWrapper(GridCacheQueryFutureAdapter<?, ?, ?> qryFut) {
             this.qryFut = qryFut;
 
             lastUseTs = U.currentTimeMillis();
@@ -442,7 +425,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /**
          * @return Query future.
          */
-        private GridCacheQueryFuture<?> future() {
+        private GridCacheQueryFutureAdapter<?, ?, ?> future() {
             lastUseTs = U.currentTimeMillis();
 
             return qryFut;
