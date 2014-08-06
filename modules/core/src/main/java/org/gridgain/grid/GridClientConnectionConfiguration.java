@@ -43,6 +43,9 @@ public class GridClientConnectionConfiguration {
     /** Default max queue capacity of REST thread pool. */
     public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+
     /** Jetty XML configuration path. */
     private String jettyPath;
 
@@ -62,10 +65,10 @@ public class GridClientConnectionConfiguration {
     private boolean restTcpDirectBuf = DFLT_REST_TCP_DIRECT_BUF;
 
     /** REST TCP send buffer size. */
-    private int restTcpSndBufSize;
+    private int restTcpSndBufSize = DFLT_SOCK_BUF_SIZE;
 
     /** REST TCP receive buffer size. */
-    private int restTcpRcvBufSize;
+    private int restTcpRcvBufSize = DFLT_SOCK_BUF_SIZE;
 
     /** REST TCP send queue limit. */
     private int restTcpSndQueueLimit;
