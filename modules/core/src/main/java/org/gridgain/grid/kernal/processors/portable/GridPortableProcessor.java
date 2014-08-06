@@ -58,6 +58,13 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param typeId Type ID.
+     * @param newMeta New meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public void addMeta(int typeId, final GridPortableMetaData newMeta) throws GridPortableException;
+
+    /**
+     * @param typeId Type ID.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */

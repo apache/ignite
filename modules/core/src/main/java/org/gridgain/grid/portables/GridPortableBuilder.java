@@ -36,14 +36,6 @@ public interface GridPortableBuilder<T> {
     public GridPortableBuilder<T> typeId(String clsName);
 
     /**
-     * Sets type ID.
-     *
-     * @param typeId Type ID.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder<T> typeId(int typeId);
-
-    /**
      * Sets hash code.
      *
      * @param hashCode Hash code.
