@@ -489,7 +489,7 @@ class VisorConfigurationCommand {
                 cacheT += ("Store enabled", bool2Str(cacheCfg.storeConfig().enabled()))
                 cacheT += ("Store", safe(cacheCfg.storeConfig().store(), DFLT))
                 cacheT += ("Store values in bytes", bool2Str(cacheCfg.storeConfig().valueBytes()))
-                cacheT += ("Off-Heap Size", formatMemory(cacheCfg.offsetHeapMaxMemory()))
+                cacheT += ("Off-Heap Size", formatMemoryLimit(cacheCfg.offsetHeapMaxMemory()))
                 cacheT += ("Write-Behind Enabled", bool2Str(cacheCfg.writeBehind().enabled()))
                 cacheT += ("Write-Behind Flush Size", cacheCfg.writeBehind().flushSize())
                 cacheT += ("Write-Behind Frequency", cacheCfg.writeBehind().flushFrequency() + "ms")

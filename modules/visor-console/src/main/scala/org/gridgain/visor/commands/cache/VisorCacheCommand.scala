@@ -19,7 +19,6 @@ import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, Viso
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheCollectMetricsTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -281,7 +280,7 @@ class VisorCacheCommand {
 
                 val sumT = VisorTextTable()
 
-                sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Size", "Hits", "Misses", "Reads", "Writes")
+                sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
                 sortAggregatedData(aggrData, sortType getOrElse "lr", reversed).foreach(
                     ad => {
