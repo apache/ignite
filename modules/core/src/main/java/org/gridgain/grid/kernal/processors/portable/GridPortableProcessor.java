@@ -14,6 +14,8 @@ import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Portable processor.
  */
@@ -60,4 +62,11 @@ public interface GridPortableProcessor extends GridProcessor {
      * @throws GridPortableException In case of error.
      */
     @Nullable public GridPortableMetaData metaData(int typeId) throws GridPortableException;
+
+    /**
+     * @param typeIds Type ID.
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public Map<Integer, GridPortableMetaData> metaData(Collection<Integer> typeIds) throws GridPortableException;
 }

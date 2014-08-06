@@ -43,6 +43,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
+    /** NIO server listener. */
+    private GridTcpRestNioListener lsnr;
+
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
         @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
@@ -140,7 +143,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         assert cfg != null;
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
+        lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
@@ -185,6 +188,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 "Failed to start " + name() + " protocol on port " + port + ". " +
                     "Check restTcpHost configuration property.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        lsnr.onKernalStart();
     }
 
     /** {@inheritDoc} */
