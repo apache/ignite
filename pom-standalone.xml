@@ -222,6 +222,16 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
                             <windowtitle>GridGain ${gridgain.version}</windowtitle>
                             <breakiterator>true</breakiterator>
@@ -412,6 +422,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>core</destDir>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
@@ -604,6 +624,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>client</destDir>
                             <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>
