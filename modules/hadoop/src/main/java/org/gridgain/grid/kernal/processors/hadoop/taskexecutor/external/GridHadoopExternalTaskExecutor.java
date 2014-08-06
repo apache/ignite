@@ -61,15 +61,13 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopExternalCommunication comm;
 
     /** Starting processes. */
-    private ConcurrentMap<UUID, HadoopProcess> runningProcsByProcId =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, HadoopProcess> runningProcsByProcId = new ConcurrentHashMap8<>();
 
     /** Starting processes. */
-    private ConcurrentMap<GridHadoopJobId, HadoopProcess> runningProcsByJobId =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<GridHadoopJobId, HadoopProcess> runningProcsByJobId = new ConcurrentHashMap8<>();
 
     /** Busy lock. */
-    private GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
@@ -603,7 +601,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private void prepareForJob(HadoopProcess proc, GridHadoopJob job, GridHadoopMapReducePlan plan) {
         try {
             comm.sendMessage(proc.descriptor(), new GridHadoopPrepareForJobRequest(job.id(), job.info(),
-                !F.isEmpty(plan.mappers(ctx.localNodeId())), plan.reducers()));
+                plan.reducers(), plan.reducers(ctx.localNodeId())));
         }
         catch (GridException e) {
             U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", job=" + job +
@@ -625,7 +623,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         if (proc != null)
             proc.removeTask(taskMsg.taskInfo());
 
-        jobTracker.onTaskFinished(taskMsg.taskInfo(), new GridHadoopTaskStatus(taskMsg.state(), taskMsg.error()));
+        jobTracker.onTaskFinished(taskMsg.taskInfo(), taskMsg.status());
     }
 
     /**
@@ -712,7 +710,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private static final long serialVersionUID = 0L;
 
         /** Job ID. */
-        private GridHadoopJobId jobId;
+        private final GridHadoopJobId jobId;
 
         /** Process. */
         private Process proc;
@@ -727,7 +725,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private Collection<Integer> reducers;
 
         /** Tasks. */
-        private Collection<GridHadoopTaskInfo> tasks = new ConcurrentLinkedDeque8<>();
+        private final Collection<GridHadoopTaskInfo> tasks = new ConcurrentLinkedDeque8<>();
 
         /** Terminated flag. */
         private volatile boolean terminated;
@@ -872,7 +870,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         private volatile boolean replyReceived;
 
         /** Logger. */
-        private GridLogger log = GridHadoopExternalTaskExecutor.this.log;
+        private final GridLogger log = GridHadoopExternalTaskExecutor.this.log;
 
         /**
          * Empty constructor.

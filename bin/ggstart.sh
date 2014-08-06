@@ -77,7 +77,7 @@ if [ -z "$JVM_OPTS" ] ; then
 
     # Hadoop needs class unloading enabled
     if [ "GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
-        JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
+        JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m"
     fi
 fi
 

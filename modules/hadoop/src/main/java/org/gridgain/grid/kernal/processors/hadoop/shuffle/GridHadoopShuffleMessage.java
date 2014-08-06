@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -22,7 +23,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Shuffle message.
  */
-public class GridHadoopShuffleMessage implements GridHadoopMessage, Externalizable {
+public class GridHadoopShuffleMessage implements GridHadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,18 +37,22 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage, Externalizab
     private static final byte MARKER_VALUE = (byte)31;
 
     /** */
+    @GridToStringInclude
     private long msgId;
 
     /** */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /** */
+    @GridToStringInclude
     private int reducer;
 
     /** */
     private byte[] buf;
 
     /** */
+    @GridToStringInclude
     private int off;
 
     /**
