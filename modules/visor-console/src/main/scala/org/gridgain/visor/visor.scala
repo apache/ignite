@@ -1182,6 +1182,19 @@ object visor extends VisorTag {
     }
 
     /**
+     * Returns string representation of the memory limit.
+     *
+     * @param n Memory size.
+     */
+    def formatMemoryLimit(n: Long): String = {
+        n match {
+            case -1 => "Disabled"
+            case 0 => "Unlimited"
+            case m => formatMemory(m)
+        }
+    }
+
+    /**
      * Returns string representation of the number.
      *
      * @param n Number.
