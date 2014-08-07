@@ -428,6 +428,11 @@ public final class GridSystemProperties {
     public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "GRIDGAIN_PORTABLE_ARRAY_INITIAL_CAPACITY";
 
     /**
+     * Default JMX port.
+     */
+    public static final String GG_JMX_PORT = "GRIDGAIN_JMX_PORT";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
