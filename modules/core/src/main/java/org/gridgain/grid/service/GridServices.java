@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -114,7 +115,7 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface GridServices {
+public interface GridServices extends Serializable {
     /**
      * Gets grid projection to which this {@code GridCompute} instance belongs.
      *
