@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -29,7 +30,7 @@ import java.util.*;
  * given keys. All {@code 'mapKeysToNodes(..)'} methods are not transactional and will not enlist
  * keys into ongoing transaction.
  */
-public interface GridCacheAffinity<K> {
+public interface GridCacheAffinity<K> extends Serializable {
     /**
      * Gets number of partitions in cache according to configured affinity function.
      *

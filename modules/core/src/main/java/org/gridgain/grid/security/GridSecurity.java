@@ -12,6 +12,7 @@ package org.gridgain.grid.security;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.authentication.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -72,7 +73,7 @@ import java.util.*;
  * </pre>
  * Refer to documentation of available authentication SPIs for more information.
  */
-public interface GridSecurity {
+public interface GridSecurity extends Serializable {
     /**
      * Gets collection of authenticated subjects together with their permissions.
      *

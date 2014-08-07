@@ -97,7 +97,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface GridCompute {
+public interface GridCompute extends Serializable {
     /**
      * Gets grid projection to which this {@code GridCompute} instance belongs.
      *

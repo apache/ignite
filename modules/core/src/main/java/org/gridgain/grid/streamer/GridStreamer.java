@@ -12,6 +12,7 @@ package org.gridgain.grid.streamer;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -37,9 +38,8 @@ import java.util.*;
  *
  * @see GridStreamerStage
  * @see GridStreamerEventRouter
- *
  */
-public interface GridStreamer {
+public interface GridStreamer extends Serializable {
     /**
      * Gets streamer configuration.
      *

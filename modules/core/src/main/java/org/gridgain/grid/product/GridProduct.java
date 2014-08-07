@@ -11,6 +11,8 @@ package org.gridgain.grid.product;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
  * Provides information about current release. Note that enterprise users are also
  * able to renew license. Instance of {@code GridProduct} is obtained from grid as follows:
@@ -18,7 +20,7 @@ import org.jetbrains.annotations.*;
  * GridProduct p = GridGain.grid().product();
  * </pre>
  */
-public interface GridProduct {
+public interface GridProduct extends Serializable {
     /**
      * Gets license descriptor for enterprise edition or {@code null} for open source edition.
      *

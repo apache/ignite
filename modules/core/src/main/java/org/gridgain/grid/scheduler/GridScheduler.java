@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -36,9 +37,8 @@ import java.util.concurrent.*;
  *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
-
  */
-public interface GridScheduler {
+public interface GridScheduler extends Serializable {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -42,7 +43,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridEvents {
+public interface GridEvents extends Serializable {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
