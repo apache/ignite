@@ -26,6 +26,7 @@ import java.io.*;
 import java.sql.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
 
 /**
@@ -183,6 +184,9 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                 GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
+                if (c == null)
+                    return new GridBiTuple<>(new GridException("Cache not found: " + escapeName(arg.cacheName())), null);
+
                 if (scan) {
                     GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
@@ -200,7 +204,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                     scheduleResultSetHolderRemoval(qryId);
 
                     return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
-                        SCAN_COL_NAMES, rows.get1(), next != null));
+                        SCAN_COL_NAMES, rows.get1(), next != null, fut.duration()));
                 }
                 else {
                     GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)c.queries())
@@ -233,7 +237,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         scheduleResultSetHolderRemoval(qryId);
 
                         return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
-                            names, rows.get1(), rows.get2() != null));
+                            names, rows.get1(), rows.get2() != null, fut.duration()));
                     }
                 }
             }
