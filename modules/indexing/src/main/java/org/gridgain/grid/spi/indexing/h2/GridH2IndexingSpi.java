@@ -1215,7 +1215,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             char ch = name.charAt(i);
 
             if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_' &&
-                !(ch == '"' && (i == 0 || i == name.length() - 1))) {
+                !(ch == '"' && (i == 0 || i == name.length() - 1)) && ch != '-') {
                 // Class name can also contain '$' or '.' - these should be escaped.
                 assert ch == '$' || ch == '.';
 

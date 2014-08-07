@@ -1626,17 +1626,18 @@ public class GridCacheUtils {
     }
 
     /**
-     * Escapes specified string if it is keyword reserved by H2 (such strings should be surrounded with double quotes
-     * to be used as identifier).
+     * Escapes specified string if it is keyword reserved by H2 or contains special characters
+     * (such strings should be surrounded with double quotes to be used as identifier).
      *
      * @param s String.
-     * @return Escaped string if specified string is keyword reserved by H2, original input otherwise.
+     * @return Escaped string if specified string is keyword reserved by H2 or contains special characters,
+     *      original input otherwise.
      */
     public static String h2Escape(String s) {
         if (s == null)
             return null;
 
-        if (Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
+        if (s.contains("-") || Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
             return "\"" + s + "\"";
 
         return s;
