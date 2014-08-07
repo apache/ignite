@@ -18,6 +18,9 @@ import org.jetbrains.annotations.*;
  * Data structures proxy object.
  */
 public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Delegate object. */
     private GridCacheDataStructures delegate;
 

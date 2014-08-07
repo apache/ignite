@@ -22,6 +22,9 @@ import java.util.*;
  */
 public class GridServicesImpl implements GridServices {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridKernalContext ctx;
 
     /** */

@@ -20,6 +20,9 @@ import java.util.*;
  * {@link GridProduct} implementation.
  */
 public class GridProductImpl implements GridProduct {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Copyright blurb. */
     public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
 

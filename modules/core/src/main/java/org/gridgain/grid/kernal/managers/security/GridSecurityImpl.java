@@ -18,6 +18,9 @@ import java.util.*;
  * Implementation of grid security interface.
  */
 public class GridSecurityImpl implements GridSecurity {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Security manager. */
     private GridSecurityManager secMgr;
 

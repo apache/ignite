@@ -23,6 +23,9 @@ import java.util.*;
  */
 public class GridEventsImpl implements GridEvents {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridKernalContext ctx;
 
     /** */

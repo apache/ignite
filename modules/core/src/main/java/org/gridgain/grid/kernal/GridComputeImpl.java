@@ -31,6 +31,9 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
  */
 public class GridComputeImpl implements GridCompute {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridKernalContext ctx;
 
     /** */

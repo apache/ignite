@@ -20,6 +20,9 @@ import java.util.*;
  * Affinity interface implementation.
  */
 public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
 

@@ -20,9 +20,6 @@ import org.gridgain.grid.service.*;
  * <p>
  * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM
  * which will start GridGain node with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
