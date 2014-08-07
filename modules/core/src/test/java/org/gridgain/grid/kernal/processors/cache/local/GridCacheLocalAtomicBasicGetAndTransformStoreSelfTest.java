@@ -10,16 +10,16 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
- * Test store with local cache.
+ * Test get and transform fro store with local cache in atomic mode.
  */
-public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
+public class GridCacheLocalAtomicBasicGetAndTransformStoreSelfTest
+    extends GridCacheLocalBasicGetAndTransformStoreSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return LOCAL;
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

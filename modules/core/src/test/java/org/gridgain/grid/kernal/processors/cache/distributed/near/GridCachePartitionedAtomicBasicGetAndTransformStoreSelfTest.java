@@ -10,16 +10,16 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
- * Test store with partitioned cache.
+ * Test get and transform for store with partitioned cache in atomic mode.
  */
-public class GridCachePartitionedBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
+public class GridCachePartitionedAtomicBasicGetAndTransformStoreSelfTest
+    extends GridCachePartitionedBasicGetAndTransformStoreSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

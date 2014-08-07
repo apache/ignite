@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.local;
+package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -15,11 +15,12 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test store with local cache.
+ * Test get and transform for store with partitioned cache.
  */
-public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
+public class GridCachePartitionedBasicGetAndTransformStoreSelfTest
+    extends GridCacheBasicGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
-        return LOCAL;
+        return PARTITIONED;
     }
 }

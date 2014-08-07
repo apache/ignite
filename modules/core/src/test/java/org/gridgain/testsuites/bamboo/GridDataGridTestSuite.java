@@ -88,6 +88,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreNoBatchSelfTest.class);
         suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
+        suite.addTestSuite(GridCacheLocalBasicGetAndTransformStoreSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicBasicGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalLoadAllSelfTest.class);
         suite.addTestSuite(GridCacheLocalLockSelfTest.class);
         suite.addTestSuite(GridCacheLocalMultithreadedSelfTest.class);
@@ -119,6 +121,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedBasicOpSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreNoBatchSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedBasicGetAndTransformStoreSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicBasicGetAndTransformStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedEventSelfTest.class));
@@ -198,6 +202,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedBasicOpSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicStoreNoBatchSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicStoreSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedBasicGetAndTransformStoreSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedAtomicBasicGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedEventSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedSynchronousCommitTest.class);
 
