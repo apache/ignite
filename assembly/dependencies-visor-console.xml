@@ -39,6 +39,7 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-visor-console</include>
+                <include>org.gridgain:gridgain-ssh</include>
                 <include>org.gridgain:gridgain-scalar</include>
             </includes>
             <sources>
