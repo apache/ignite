@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -157,7 +158,18 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable protected GridCacheEntryEx<K, V> peekEx(long topVer) {
-        return ctx.cache().peekEx(key);
+        K key0 = key;
+
+        if (ctx.portableEnabled()) {
+            try {
+                key0 = (K)ctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        return ctx.cache().peekEx(key0);
     }
 
     /**
@@ -169,6 +181,15 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public K getKey() {
+        if (ctx.portableEnabled() && !ctx.portableKeys() && key instanceof GridPortableObject) {
+            try {
+                return (K)((GridPortableObject)key).deserialize();
+            }
+            catch (GridPortableException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
         return key;
     }
 
@@ -303,7 +324,16 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                     if (entry != null) {
                         GridTuple<V> peek = entry.peek0(false, mode, filter, tx);
 
-                        return peek != null ? ctx.cloneOnFlag(peek.get()) : null;
+                        if (peek != null) {
+                            V v = peek.get();
+
+                            if (ctx.portableEnabled() && !ctx.portableValues() && v instanceof GridPortableObject)
+                                v = (V)((GridPortableObject)v).deserialize();
+
+                            return v;
+                        }
+                        else
+                            return null;
                     }
                     else
                         return null;

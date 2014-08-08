@@ -1844,6 +1844,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     continue;
                 }
 
+                if (cctx.portableEnabled())
+                    key = (K)cctx.marshalToPortable(key);
+
                 GridCacheTxEntry<K, V> txEntry = entry(key);
 
                 // First time access.
@@ -2112,6 +2115,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             transformed.put(k, val);
                         }
+
+                        if (cctx.portableEnabled() && !cctx.portableValues() && v instanceof GridPortableObject)
+                            v = (V)((GridPortableObject)v).deserialize();
 
                         ret.value(v);
                     }
