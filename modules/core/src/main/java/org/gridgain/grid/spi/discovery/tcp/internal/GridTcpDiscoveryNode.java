@@ -71,7 +71,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     private volatile GridNodeMetrics metrics;
 
     /** Node order in the topology. */
-    private long order;
+    private volatile long order;
 
     /** Node order in the topology (internal). */
     @GridToStringExclude

@@ -2886,6 +2886,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
+            if (log.isDebugEnabled())
+                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
+
             while (!isInterrupted()) {
                 GridTcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
 
@@ -3149,7 +3152,21 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 // If new node is next, then send topology to and all pending messages
                                 // as a part of message.
                                 if (nodeAddedMsg.node().equals(next)) {
-                                    nodeAddedMsg.topology(F.view(ring.allNodes(), F0.notEqualTo(nodeAddedMsg.node())));
+                                    Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
+                                    Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
+
+                                    for (GridTcpDiscoveryNode n0 : allNodes) {
+                                        assert n0.internalOrder() != 0 : n0;
+
+                                        // Skip next node and nodes added after next
+                                        // in case this message is resent due to failures/leaves.
+                                        // There will be separate messages for nodes with greater
+                                        // internal order.
+                                        if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
+                                            topToSend.add(n0);
+                                    }
+
+                                    nodeAddedMsg.topology(topToSend);
 
                                     nodeAddedMsg.messages(pendingMsgs.values());
 

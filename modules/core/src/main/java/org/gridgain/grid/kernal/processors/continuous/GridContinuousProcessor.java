@@ -721,6 +721,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, err), null);
         }
+        catch (GridTopologyException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send start acknowledgement to node (is node alive?): " + nodeId);
+        }
         catch (GridException e) {
             U.error(log, "Failed to send start acknowledgement to node: " + nodeId, e);
         }
