@@ -3730,24 +3730,25 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified() && !locNodeId.equals(node.id())) {
+            if (msg.verified() && !locNodeId.equals(node.id()) && node.internalOrder() > locNode.internalOrder()) {
                 if (metricsStore != null) {
                     node.metricsStore(metricsStore);
 
                     node.logger(log);
                 }
 
-                List<Object> data = msg.newNodeDiscoveryData();
-
-                if (data != null)
-                    exchange.onExchange(data);
-
-                msg.addDiscoveryData(exchange.collect(node.id()));
-
                 boolean topChanged = ring.add(node);
 
-                if (topChanged)
+                if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
+
+                    List<Object> data = msg.newNodeDiscoveryData();
+
+                    if (data != null)
+                        exchange.onExchange(data);
+
+                    msg.addDiscoveryData(exchange.collect(node.id()));
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Added node to local ring [added=" + topChanged + ", node=" + node +
