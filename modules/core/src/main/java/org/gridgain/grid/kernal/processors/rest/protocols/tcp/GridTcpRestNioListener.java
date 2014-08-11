@@ -78,6 +78,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Handler for all memcache requests */
     private GridTcpMemcachedNioListener memcachedLsnr;
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
@@ -94,12 +97,18 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
+        this.ctx = ctx;
 
         marshMap = new HashMap<>();
 
         marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+    }
 
+    /**
+     * Kernal start callback.
+     */
+    void onKernalStart() {
         marshMap.put((byte)0, ctx.portable().portableMarshaller());
     }
 
@@ -296,6 +305,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restTaskReq.portableMode(proto.portableMode(ses));
 
             restReq = restTaskReq;
+        }
+        else if (msg instanceof GridClientMetaDataRequest) {
+            GridClientMetaDataRequest req = (GridClientMetaDataRequest)msg;
+
+            restReq = new GridRestPortableMetaDataRequest(req);
+
+            restReq.command(GET_PORTABLE_METADATA);
         }
         else if (msg instanceof GridClientTopologyRequest) {
             GridClientTopologyRequest req = (GridClientTopologyRequest) msg;

@@ -13,8 +13,10 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * No-op implementation of {@link GridPortableProcessor}.
@@ -58,7 +60,17 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public void addMeta(int typeId, GridPortableMetaData newMeta) throws GridPortableException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridPortableMetaData metaData(int typeId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, GridPortableMetaData> metaData(Collection<Integer> typeIds) {
         return null;
     }
 }

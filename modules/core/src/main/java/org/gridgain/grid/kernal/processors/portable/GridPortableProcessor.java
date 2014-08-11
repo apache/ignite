@@ -11,8 +11,10 @@ package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * Portable processor.
@@ -56,8 +58,22 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param typeId Type ID.
+     * @param newMeta New meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public void addMeta(int typeId, final GridPortableMetaData newMeta) throws GridPortableException;
+
+    /**
+     * @param typeId Type ID.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
     @Nullable public GridPortableMetaData metaData(int typeId) throws GridPortableException;
+
+    /**
+     * @param typeIds Type ID.
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public Map<Integer, GridPortableMetaData> metaData(Collection<Integer> typeIds) throws GridPortableException;
 }
