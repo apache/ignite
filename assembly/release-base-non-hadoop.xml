@@ -42,6 +42,23 @@
 
     <fileSets>
         <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>ggrouter.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>ggrouter.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
             <directory>modules/clients</directory>
             <outputDirectory>/clients/java</outputDirectory>
             <includes>

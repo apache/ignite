@@ -1229,7 +1229,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param msg Event message.
      */
     private void recordTaskEvent(int evtType, String msg) {
-        if (ctx.event().isRecordable(evtType)) {
+        if (!internal && ctx.event().isRecordable(evtType)) {
             GridEvent evt = new GridTaskEvent(
                 ctx.discovery().localNode(),
                 msg,

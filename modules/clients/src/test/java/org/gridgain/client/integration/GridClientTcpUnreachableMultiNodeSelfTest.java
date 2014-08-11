@@ -66,10 +66,11 @@ public class GridClientTcpUnreachableMultiNodeSelfTest extends GridClientTcpMult
                     return node.attributes();
                 }
 
-                @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto) {
+                @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto,
+                    boolean filterResolved) {
                     // Fake address first.
                     return F.asList(new InetSocketAddress("172.22.13.13", 65432),
-                        F.first(node.availableAddresses(proto)));
+                        F.first(node.availableAddresses(proto, filterResolved)));
                 }
 
                 @Override public Map<String, GridClientCacheMode> caches() {
