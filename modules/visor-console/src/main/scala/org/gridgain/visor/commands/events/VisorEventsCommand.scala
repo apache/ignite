@@ -43,7 +43,7 @@ import scala.language.implicitConversions
  * |        | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |        | events on each node can also affect the functionality of this command.        |
  * |        |                                                                               |
- * |        | By default - all events are enabled and GridGain stores last 10,000 local     |
+ * |        | By default - all events are DISABLED and GridGain stores last 10,000 local     |
  * |        | events on each node. Both of these defaults can be changed in configuration.  |
  * +----------------------------------------------------------------------------------------+
  * }}}
@@ -163,34 +163,6 @@ class VisorEventsCommand {
         }
     }
 
-    private[this] def timeFilter(timeArg: Option[String]): java.lang.Long = {
-        if (timeArg.isEmpty)
-            null
-        else {
-            val s = timeArg.get
-
-            val n = try
-                s.substring(0, s.length - 1).toLong
-            catch {
-                case _: NumberFormatException =>
-                    throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
-            }
-
-            if (n <= 0)
-                throw new IllegalArgumentException("Time frame size is not positive in: " + s)
-
-            val timeUnit = s.last match {
-                case 's' => 1000L
-                case 'm' => 1000L * 60L
-                case 'h' => 1000L * 60L * 60L
-                case 'd' => 1000L * 60L * 60L * 24L
-                case _ => throw new IllegalArgumentException("Invalid time frame suffix in: " + s)
-            }
-
-            n * timeUnit
-        }
-    }
-
     /**
      * Gets command's mnemonic for given event.
      *
@@ -290,7 +262,7 @@ class VisorEventsCommand {
             val tpFilter = try
                 typeFilter(typeArg)
             catch {
-                case e: IllegalArgumentException =>
+                case e: Exception =>
                     scold(e.getMessage)
 
                     return
@@ -299,7 +271,7 @@ class VisorEventsCommand {
             val tmFilter = try
                 timeFilter(timeArg)
             catch {
-                case e: IllegalArgumentException =>
+                case e: Exception =>
                     scold(e.getMessage)
 
                     return
@@ -455,7 +427,7 @@ object VisorEventsCommand {
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are enabled and GridGain stores last 10,000 local",
+            "By default - all events are disabled and GridGain stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(

@@ -25,7 +25,6 @@ import scala.util.control.Breaks._
 
 import org.jetbrains.annotations.Nullable
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._

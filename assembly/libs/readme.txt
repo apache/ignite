@@ -130,6 +130,7 @@ The following modules are available:
 - gridgain-aws (for seemless cluster discovery on AWS S3)
 - gridgain-email (for email alerts)
 - gridgain-aop (for AOP-based grid-enabling)
+- gridgain-visor-console (open source command line management and monitoring tool)
 
 For example, if you want to use GridGain Spring-based configuration,
 you should add 'gridgain-spring' module like this:

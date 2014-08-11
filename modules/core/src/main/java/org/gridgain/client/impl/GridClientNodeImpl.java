@@ -165,7 +165,8 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto) {
+    @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto,
+        boolean filterResolved) {
         Collection<String> addrs;
         Collection<String> hostNames;
         AtomicReference<Collection<InetSocketAddress>> addrsCache;
@@ -183,14 +184,34 @@ public class GridClientNodeImpl implements GridClientNode {
         Collection<InetSocketAddress> addrs0 = addrsCache.get();
 
         if (addrs0 != null)
-            return addrs0;
+            return filterIfNecessary(addrs0, filterResolved);
 
         addrs0 = U.toSocketAddresses(addrs, hostNames, port);
 
         if (!addrsCache.compareAndSet(null, addrs0))
-            return addrsCache.get();
+            return filterIfNecessary(addrsCache.get(), filterResolved);
 
-        return addrs0;
+        return filterIfNecessary(addrs0, filterResolved);
+    }
+
+    /**
+     * Filters sockets with resolved addresses.
+     *
+     * @param addrs Addresses to filter.
+     * @param filter Flag indicating whether filter should be applied or not.
+     * @return Collection copy without unresolved addresses if flag is set and collection itself otherwise.
+     */
+    private Collection<InetSocketAddress> filterIfNecessary(Collection<InetSocketAddress> addrs, boolean filter) {
+        if (!filter)
+            return addrs;
+
+        List<InetSocketAddress> res = new ArrayList<>(addrs.size());
+
+        for (InetSocketAddress addr : addrs)
+            if (!addr.isUnresolved())
+                res.add(addr);
+
+        return res;
     }
 
     /** {@inheritDoc} */

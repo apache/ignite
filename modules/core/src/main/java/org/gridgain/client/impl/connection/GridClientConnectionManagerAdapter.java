@@ -310,7 +310,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         }
 
         // Use node's connection, if node is available over rest.
-        Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
+        Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
         if (endpoints.isEmpty()) {
             throw new GridServerUnreachableException("No available endpoints to connect " +
