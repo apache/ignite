@@ -371,7 +371,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 break;
             }
 
-            case ONHEAP_TIERED: break;
+            case ONHEAP_TIERED:
+                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null)
+                    U.quietAndWarn(log, "Eviction policy not enabled with ONHEAP_TIERED mode for cache " +
+                        "(entries will not be moved to off-heap store): " + cc.getName());
+
+                break;
 
             default:
                 throw new IllegalStateException("Unknown memory mode: " + cc.getMemoryMode());
@@ -1889,7 +1894,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Components provided in cache configuration which can implement {@link GridLifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
-        List<Object> ret = new ArrayList<>(7 + objs.length);
+        Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
         ret.add(ccfg.getAffinity());
         ret.add(ccfg.getAffinityMapper());

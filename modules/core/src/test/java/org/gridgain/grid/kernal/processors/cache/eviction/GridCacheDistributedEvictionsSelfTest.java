@@ -142,20 +142,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         }
     }
 
-    /** @throws Exception If failed. */
-    public void testReplicatedSync() throws Exception {
-        gridCnt = 1;
-        mode = REPLICATED;
-        evictSync = true;
-        nearEnabled = true;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(0);
-            }
-        }, GridException.class, null);
-    }
-
     /** @throws Throwable If failed. */
     private void checkEvictions() throws Throwable {
         try {
