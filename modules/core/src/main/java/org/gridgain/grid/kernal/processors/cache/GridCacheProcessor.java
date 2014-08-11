@@ -969,6 +969,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
 
+        Map<String, Boolean> attrPortable = new HashMap<>();
+
         Collection<String> replicationCaches = new ArrayList<>();
 
         Map<String, String> interceptors = new HashMap<>();
@@ -978,6 +980,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             attrVals[i++] = new GridCacheAttributes(cfg);
 
+            attrPortable.put(cfg.getName(), cfg.isPortableEnabled());
+
             if (cfg.getDrSenderConfiguration() != null)
                 replicationCaches.add(cfg.getName());
 
@@ -986,6 +990,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         attrs.put(ATTR_CACHE, attrVals);
+
+        attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
 
         attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
 

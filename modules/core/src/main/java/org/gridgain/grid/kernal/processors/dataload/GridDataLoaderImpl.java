@@ -147,9 +147,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
+        Map<String, Boolean> attrPortable = node.attribute(GridNodeAttributes.ATTR_CACHE_PORTABLE);
 
-        portableEnabled = attrs.portableEnabled();
+        Boolean portableEnabled0 = attrPortable == null ? null : attrPortable.get(cacheName);
+
+        portableEnabled = portableEnabled0 == null ? false : portableEnabled0;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
