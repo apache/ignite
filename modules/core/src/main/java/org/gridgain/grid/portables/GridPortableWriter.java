@@ -216,6 +216,13 @@ public interface GridPortableWriter {
     public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws GridPortableException;
 
     /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws GridPortableException;
+
+    /**
      * Gets raw writer.
      *
      * @return Raw writer.

@@ -202,4 +202,11 @@ public interface GridPortableRawReader {
      * @throws GridPortableException In case of error.
      */
     @Nullable public <T extends Enum<?>> T readEnum(Class<T> enumCls) throws GridPortableException;
+
+    /**
+     * @param enumCls Enum class.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T extends Enum<?>> T[] readEnumArray(Class<T> enumCls) throws GridPortableException;
 }
