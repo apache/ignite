@@ -192,6 +192,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() {
+        super.onKernalStart();
+
         lsnr.onKernalStart();
     }
 

@@ -439,6 +439,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
      */
     private static class AffinityInfo {
         /** Affinity function. */
@@ -468,6 +469,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     *
+     */
     private static class AffinityAssignmentKey {
         /** */
         private String cacheName;

@@ -67,4 +67,9 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
             return new GridFinishedFuture<>(ctx, e);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridPortableMetadataHandler.class, this, super.toString());
+    }
 }

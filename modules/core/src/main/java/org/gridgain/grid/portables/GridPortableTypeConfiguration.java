@@ -9,6 +9,10 @@
 
 package org.gridgain.grid.portables;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.sql.*;
+
 /**
  * Portable type configuration.
  */
@@ -96,17 +100,17 @@ public class GridPortableTypeConfiguration {
     }
 
     /**
-     * If {@code true} then date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * If {@code true} then date values converted to {@link Timestamp} during unmarshalling.
      * Default value is {@code true}.
      *
-     * @return Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
     public boolean isUseTimestamp() {
         return useTs;
     }
 
     /**
-     * @param useTs Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * @param useTs Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
     public void setUseTimestamp(boolean useTs) {
         this.useTs = useTs;
@@ -128,5 +132,10 @@ public class GridPortableTypeConfiguration {
      */
     public void setAffinityFieldName(String affKeyFieldName) {
         this.affKeyFieldName = affKeyFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridPortableTypeConfiguration.class, this, super.toString());
     }
 }
