@@ -297,7 +297,7 @@ public class GridTcpDiscoveryJdbcMetricsStore extends GridTcpDiscoveryMetricsSto
      * @throws GridSpiException If any error occurs.
      */
     private void init() throws GridSpiException {
-        if (initGuard.compareAndSet(false, true)) {
+        if (initLatch.getCount() > 0 && initGuard.compareAndSet(false, true)) {
             if (dataSrc == null)
                 throw new GridSpiException("Data source is null (you must configure it via setDataSource(..)" +
                     " configuration property)");
@@ -390,7 +390,7 @@ public class GridTcpDiscoveryJdbcMetricsStore extends GridTcpDiscoveryMetricsSto
         }
     }
 
-        /** {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpDiscoveryJdbcMetricsStore.class, this);
     }

@@ -364,50 +364,52 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @throws GridException If failed to initialize.
      */
     private void init() throws GridException {
-        if (initGuard.compareAndSet(false, true)) {
-            if (log.isDebugEnabled())
-                log.debug("Initializing cache store.");
+        if (initLatch.getCount() > 0) {
+            if (initGuard.compareAndSet(false, true)) {
+                if (log.isDebugEnabled())
+                    log.debug("Initializing cache store.");
 
-            if (F.isEmpty(connUrl))
-                throw new GridException("Failed to initialize cache store (connection URL is not provided).");
+                if (F.isEmpty(connUrl))
+                    throw new GridException("Failed to initialize cache store (connection URL is not provided).");
 
-            if (!initSchema) {
-                initLatch.countDown();
+                if (!initSchema) {
+                    initLatch.countDown();
 
-                return;
+                    return;
+                }
+
+                if (F.isEmpty(createTblQry))
+                    throw new GridException("Failed to initialize cache store (create table query is not provided).");
+
+                Connection conn = null;
+
+                Statement stmt = null;
+
+                try {
+                    conn = openConnection(false);
+
+                    stmt = conn.createStatement();
+
+                    stmt.execute(createTblQry);
+
+                    conn.commit();
+
+                    initOk = true;
+                }
+                catch (SQLException e) {
+                    throw new GridException("Failed to create database table.", e);
+                }
+                finally {
+                    U.closeQuiet(stmt);
+
+                    closeConnection(conn);
+
+                    initLatch.countDown();
+                }
             }
-
-            if (F.isEmpty(createTblQry))
-                throw new GridException("Failed to initialize cache store (create table query is not provided).");
-
-            Connection conn = null;
-
-            Statement stmt = null;
-
-            try {
-                conn = openConnection(false);
-
-                stmt = conn.createStatement();
-
-                stmt.execute(createTblQry);
-
-                conn.commit();
-
-                initOk = true;
-            }
-            catch (SQLException e) {
-                throw new GridException("Failed to create database table.", e);
-            }
-            finally {
-                U.closeQuiet(stmt);
-
-                closeConnection(conn);
-
-                initLatch.countDown();
-            }
+            else
+                U.await(initLatch);
         }
-        else if (initLatch.getCount() > 0)
-            U.await(initLatch);
 
         if (!initOk)
             throw new GridException("Cache store was not properly initialized.");
