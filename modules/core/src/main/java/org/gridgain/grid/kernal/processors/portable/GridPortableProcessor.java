@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 /**
