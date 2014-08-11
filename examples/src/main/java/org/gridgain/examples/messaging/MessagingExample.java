@@ -12,6 +12,7 @@ package org.gridgain.examples.messaging;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -53,8 +54,16 @@ public final class MessagingExample {
             // Projection for remote nodes.
             GridProjection rmtPrj = g.forRemotes();
 
+            // Listen for messages from remote nodes to make sure that they received all the messages.
+            int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
+
+            CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
+            CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
+
+            localListen(g.forLocal(), orderedLatch, unorderedLatch);
+
             // Register listeners on all grid nodes.
-            startListening(g, rmtPrj);
+            startListening(rmtPrj);
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
@@ -68,22 +77,27 @@ public final class MessagingExample {
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
+            System.out.println(">>> Will wait for messages acknowledgements from all remote nodes.");
 
-            // Listen for messages from remote nodes to make sure that they received the messages.
-            localListen(rmtPrj);
+            orderedLatch.await();
+            unorderedLatch.await();
+
+            System.out.println(">>> Messaging example finished.");
         }
     }
 
     /**
      * Start listening to messages on all grid nodes within passed in projection.
      *
-     * @param g Grid.
      * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void startListening(final Grid g, GridProjection prj) throws GridException {
+    private static void startListening( GridProjection prj) throws GridException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
+            @GridInstanceResource
+            private Grid g;
+
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
@@ -100,6 +114,9 @@ public final class MessagingExample {
 
         // Add unordered message listener.
         prj.message().remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
+            @GridInstanceResource
+            private Grid g;
+
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
@@ -119,32 +136,30 @@ public final class MessagingExample {
      * Listen for messages from remote nodes.
      *
      * @param prj Grid projection.
-     * @throws Exception If failed.
+     * @param orderedLatch Latch for ordered messages acks.
+     * @param unorderedLatch Latch for unordered messages acks.
      */
-    private static void localListen(GridProjection prj) throws Exception {
-        int nodesNum = prj.nodes().size() * MESSAGES_NUM;
-
-        final CountDownLatch ordLatch = new CountDownLatch(nodesNum);
-
+    private static void localListen(
+        GridProjection prj,
+        final CountDownLatch orderedLatch,
+        final CountDownLatch unorderedLatch
+    ) {
         prj.message().localListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
-                ordLatch.countDown();
+                orderedLatch.countDown();
 
-                return true; // Return true to continue listening.
+                // Return true to continue listening, false to stop.
+                return orderedLatch.getCount() > 0;
             }
         });
-
-        final CountDownLatch unOrdLatch = new CountDownLatch(nodesNum);
 
         prj.message().localListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
-                unOrdLatch.countDown();
+                unorderedLatch.countDown();
 
-                return true; // Return true to continue listening.
+                // Return true to continue listening, false to stop.
+                return unorderedLatch.getCount() > 0;
             }
         });
-
-        ordLatch.await();
-        unOrdLatch.await();
     }
 }
