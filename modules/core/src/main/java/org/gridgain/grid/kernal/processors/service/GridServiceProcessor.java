@@ -346,14 +346,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else {
                     GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
-                    GridServiceDeployment dep;
-
+                    if (ctx.deploy().enabled())
+                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
                     try {
-                        if (ctx.deploy().enabled())
-                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                        GridServiceDeployment dep = depCache.putIfAbsent(key,
+                            new GridServiceDeployment(ctx.localNodeId(), cfg));
 
-                        if ((dep = depCache.putIfAbsent(key, new GridServiceDeployment(ctx.localNodeId(), cfg))) != null) {
+                        if (dep != null) {
                             // Remove future from local map.
                             depFuts.remove(cfg.getName());
 
@@ -903,11 +903,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     if (oldest.isLocal()) {
                         final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        try {
-                            if (ctx.deploy().enabled())
-                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                        if (ctx.deploy().enabled())
+                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                            for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
+                        try {
+                            for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e :
+                                depCache.entrySetx()) {
                                 GridServiceDeployment dep = e.getValue();
 
                                 try {
