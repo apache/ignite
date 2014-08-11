@@ -92,7 +92,7 @@ public final class MessagingExample {
      * @param prj Grid projection.
      * @throws GridException If failed.
      */
-    private static void startListening( GridProjection prj) throws GridException {
+    private static void startListening(GridProjection prj) throws GridException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
             @GridInstanceResource
