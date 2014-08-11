@@ -107,8 +107,8 @@ if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g
 :: Uncomment to set preference to IPv4 stack.
 :: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Djava.net.preferIPv4Stack=true
 
-:: Uncomment to set preference to OpenGL.
-:: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
+:: Force to use OpenGL
+set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
 
 ::
 :: Starts Visor Dashboard.
