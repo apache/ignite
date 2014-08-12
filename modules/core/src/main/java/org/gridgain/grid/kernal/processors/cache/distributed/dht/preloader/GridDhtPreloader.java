@@ -14,7 +14,6 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -25,7 +24,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
@@ -38,7 +36,7 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
  */
 public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** Default preload resend timeout. */
-    public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 200;
+    public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
@@ -68,17 +66,10 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final GridFutureAdapter<?> locExchFut;
 
     /** Pending futures. */
-    private final ConcurrentLinkedQueue<GridDhtPartitionsExchangeFuture<K, V>> pendingExchangeFuts =
-        new ConcurrentLinkedQueue<>();
+    private final Queue<GridDhtPartitionsExchangeFuture<K, V>> pendingExchangeFuts = new ConcurrentLinkedQueue<>();
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
-
-    /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getResendTimeout();
-
-    /** Atomic reference for pending timeout object. */
-    private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Pending affinity assignment futures. */
     private ConcurrentMap<Long, GridDhtAssignmentFetchFuture<K, V>> pendingAssignmentFetchFuts =
@@ -159,19 +150,6 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             }
         }
     };
-
-    /**
-     * @return Partition resend timeout get from system property.
-     */
-    private static long getResendTimeout() {
-        try {
-            return Long.parseLong(X.getSystemOrEnv(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
-                String.valueOf(DFLT_PRELOAD_RESEND_TIMEOUT)));
-        }
-        catch (NumberFormatException ignored) {
-            return DFLT_PRELOAD_RESEND_TIMEOUT;
-        }
-    }
 
     /**
      * @param cctx Cache context.
@@ -363,11 +341,6 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         if (demandPool != null)
             demandPool.stop();
-
-        ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
-
-        if (resendTimeoutObj != null)
-            cctx.time().removeTimeoutObject(resendTimeoutObj);
 
         top = null;
         exchFuts = null;
@@ -604,16 +577,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_UNLOADED))
             cctx.events().addUnloadEvent(part.id());
 
-        if (updateSeq) {
-            ResendTimeoutObject timeout = pendingResend.get();
-
-            if (timeout == null || timeout.started()) {
-                ResendTimeoutObject update = new ResendTimeoutObject();
-
-                if (pendingResend.compareAndSet(timeout, update))
-                    cctx.time().addTimeoutObject(update);
-            }
-        }
+        if (updateSeq)
+            demandPool.scheduleResendPartitions();
     }
 
     /**
@@ -630,7 +595,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
 
                 if (top.update(null, msg.partitions()) != null)
-                    demandPool.resendPartitions();
+                    demandPool.scheduleResendPartitions();
             }
             else
                 exchangeFuture(msg.exchangeId(), null).onReceive(node.id(), msg);
@@ -655,7 +620,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                         msg.partitions().toFullString() + ']');
 
                 if (top.update(null, msg.partitions()) != null)
-                    demandPool.resendPartitions();
+                    demandPool.scheduleResendPartitions();
             }
             else
                 exchangeFuture(msg.exchangeId(), null).onReceive(node.id(), msg);
@@ -839,55 +804,6 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      */
     void remoteFuture(GridDhtForceKeysFuture<K, V> fut) {
         forceKeyFuts.remove(fut.futureId(), fut);
-    }
-
-    /**
-     * Partition resend timeout object.
-     */
-    private class ResendTimeoutObject implements GridTimeoutObject {
-        /** Timeout ID. */
-        private final GridUuid timeoutId = GridUuid.randomUuid();
-
-        /** Timeout start time. */
-        private final long createTime = U.currentTimeMillis();
-
-        /** Started flag. */
-        private AtomicBoolean started = new AtomicBoolean();
-
-        /** {@inheritDoc} */
-        @Override public GridUuid timeoutId() {
-            return timeoutId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return createTime + partResendTimeout;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (!busyLock.readLock().tryLock())
-                return;
-
-            try {
-                if (started.compareAndSet(false, true))
-                    demandPool.resendPartitions();
-            }
-            finally {
-                busyLock.readLock().unlock();
-
-                cctx.time().removeTimeoutObject(this);
-
-                pendingResend.compareAndSet(this, null);
-            }
-        }
-
-        /**
-         * @return {@code True} if timeout object started to run.
-         */
-        public boolean started() {
-            return started.get();
-        }
     }
 
     /**

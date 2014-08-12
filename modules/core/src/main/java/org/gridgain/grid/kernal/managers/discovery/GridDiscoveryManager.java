@@ -1899,6 +1899,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             Set<String> nearEnabledSet = new HashSet<>();
 
             for (GridNode node : allNodes) {
+                assert node.order() != 0 : "Invalid node order [locNode=" + ctx.grid().localNode() +
+                    ", node=" + node + ']';
+
                 if (node.order() > maxOrder0)
                     maxOrder0 = node.order();
 

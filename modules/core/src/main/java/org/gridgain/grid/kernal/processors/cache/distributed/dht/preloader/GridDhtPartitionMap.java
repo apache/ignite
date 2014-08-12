@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -110,7 +111,32 @@ public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
 
         out.writeLong(updateSeq);
 
-        U.writeMap(out, this);
+        GridBitByteArrayOutputStream bitOut = new GridBitByteArrayOutputStream();
+
+        for (Map.Entry<Integer, GridDhtPartitionState> entry : entrySet()) {
+            int part = entry.getKey();
+            GridDhtPartitionState state = entry.getValue();
+
+            if (part > 32767)
+                throw new IllegalStateException("Partition index overflow: " + part);
+
+            if (part <= 127) {
+                bitOut.writeBit(false);
+                bitOut.writeBits(part, 7);
+            }
+            else {
+                bitOut.writeBit(true);
+                bitOut.writeBits(part, 15);
+            }
+
+            if (state.ordinal() > 3)
+                throw new IllegalStateException("State ordinal index overflow: " + state.ordinal());
+
+            bitOut.writeBits(state.ordinal(), 2);
+        }
+
+        out.writeLong(bitOut.bitsLength());
+        U.writeByteArray(out, bitOut.internalArray(), bitOut.bytesLength());
     }
 
     /** {@inheritDoc} */
@@ -119,7 +145,21 @@ public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
 
         updateSeq = in.readLong();
 
-        putAll(U.<Integer, GridDhtPartitionState>readMap(in));
+        long bitsLen = in.readLong();
+
+        byte[] data = U.readByteArray(in);
+
+        GridBitByteArrayInputStream bitIn = new GridBitByteArrayInputStream(data, bitsLen);
+
+        while (bitIn.available() > 0) {
+            boolean extended = bitIn.readBit();
+
+            int part = bitIn.readBits(extended ? 15 : 7);
+
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(bitIn.readBits(2));
+
+            put(part, state);
+        }
     }
 
     /** {@inheritDoc} */

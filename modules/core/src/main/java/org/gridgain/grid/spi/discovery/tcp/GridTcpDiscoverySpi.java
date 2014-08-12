@@ -3898,7 +3898,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
-                assert node.internalOrder() > locNode.internalOrder();
+                assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
+                    ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
                 if (nodeVer.equals(node.version()))
                     node.version(nodeVer);

@@ -697,8 +697,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         if (!t.get()) // Just to check if there was an error.
                             return;
 
-                        AtomicReference<GridNode> oldestRef = oldestNode;
-
                         GridNode loc = cctx.localNode();
 
                         msgs.put(nodeId, msg);
@@ -706,12 +704,12 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         boolean match = true;
 
                         // Check if oldest node has changed.
-                        if (!oldestRef.get().equals(loc)) {
+                        if (!oldestNode.get().equals(loc)) {
                             match = false;
 
                             synchronized (mux) {
                                 // Double check.
-                                if (oldestRef.get().equals(loc))
+                                if (oldestNode.get().equals(loc))
                                     match = true;
                             }
                         }
@@ -809,8 +807,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         Collection<UUID> rmtIds = GridDhtPartitionsExchangeFuture.this.rmtIds;
 
                         assert rmtIds != null;
-
-                        AtomicReference<GridNode> oldestNode = GridDhtPartitionsExchangeFuture.this.oldestNode;
 
                         GridNode oldest = oldestNode.get();
 
