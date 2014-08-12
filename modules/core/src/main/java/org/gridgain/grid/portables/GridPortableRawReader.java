@@ -11,7 +11,9 @@ package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Reader for portable objects.
@@ -82,6 +84,12 @@ public interface GridPortableRawReader {
      * @throws GridPortableException In case of error.
      */
     @Nullable public Date readDate() throws GridPortableException;
+
+    /**
+     * @return Timestamp.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Timestamp readTimestamp() throws GridPortableException;
 
     /**
      * @return Object.

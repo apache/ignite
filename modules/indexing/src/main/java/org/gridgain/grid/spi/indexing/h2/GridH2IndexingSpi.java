@@ -1201,7 +1201,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         for (int i = 0; i < name.length(); i++) {
             char ch = name.charAt(i);
 
-            if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_') {
+            if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_' &&
+                !(ch == '"' && (i == 0 || i == name.length() - 1)) && ch != '-') {
                 // Class name can also contain '$' or '.' - these should be escaped.
                 assert ch == '$' || ch == '.';
 
@@ -1216,11 +1217,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         }
 
         if (sb == null)
-            return name;
+            return CU.h2Escape(name);
 
         sb.a(name.substring(sb.length(), name.length()));
 
-        return sb.toString();
+        return CU.h2Escape(sb.toString());
     }
 
     /**
@@ -2122,7 +2123,10 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     int i = 0;
 
                     for (String field : idx.fields()) {
-                        Column col = tbl.getColumn(field.toUpperCase());
+                        // H2 reserved keywords used as column name is case sensitive.
+                        String fieldName = CU.h2Escape(field).startsWith("\"") ? field : field.toUpperCase();
+
+                        Column col = tbl.getColumn(fieldName);
 
                         cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? DESCENDING : ASCENDING);
                     }
