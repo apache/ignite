@@ -29,6 +29,7 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
     /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
+        PUT_PORTABLE_METADATA,
         GET_PORTABLE_METADATA
     );
 
@@ -46,22 +47,41 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-        assert(req.command() == GET_PORTABLE_METADATA);
+        assert SUPPORTED_COMMANDS.contains(req.command()) : req.command();
 
         try {
-            GridRestPortableMetaDataRequest metaReq = (GridRestPortableMetaDataRequest)req;
+            if (req.command() == GET_PORTABLE_METADATA) {
+                GridRestPortableGetMetaDataRequest metaReq = (GridRestPortableGetMetaDataRequest)req;
 
-            GridRestResponse res = new GridRestResponse();
+                GridRestResponse res = new GridRestResponse();
 
-            Map<Integer, GridPortableMetaData> meta = ctx.portable().metaData(metaReq.typeIds());
+                Map<Integer, GridPortableMetaData> meta = ctx.portable().metaData(metaReq.typeIds());
 
-            GridClientMetaDataResponse metaRes = new GridClientMetaDataResponse();
+                GridClientMetaDataResponse metaRes = new GridClientMetaDataResponse();
 
-            metaRes.metaData(meta);
+                metaRes.metaData(meta);
 
-            res.setResponse(metaRes);
+                res.setResponse(metaRes);
 
-            return new GridFinishedFuture<>(ctx, res);
+                return new GridFinishedFuture<>(ctx, res);
+            }
+            else {
+                assert req.command() == PUT_PORTABLE_METADATA;
+
+                GridRestPortablePutMetaDataRequest metaReq = (GridRestPortablePutMetaDataRequest)req;
+
+                for (GridClientPortableMetaData meta : metaReq.metaData())
+                    ctx.portable().updateMetaData(meta.typeId(),
+                        meta.typeName(),
+                        meta.affinityKeyFieldName(),
+                        meta.fields());
+
+                GridRestResponse res = new GridRestResponse();
+
+                res.setResponse(true);
+
+                return new GridFinishedFuture<>(ctx, res);
+            }
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx, e);

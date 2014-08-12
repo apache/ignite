@@ -15,17 +15,17 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Metadata request.
+ * Metadata put request.
  */
-public class GridClientMetaDataRequest extends GridClientAbstractMessage {
+public class GridClientPutMetaDataRequest extends GridClientAbstractMessage {
     /** */
-    private Collection<Integer> typeIds;
+    private Collection<GridClientPortableMetaData> meta;
 
     /**
      * @return Type IDs.
      */
-    public Collection<Integer> typeIds() {
-        return typeIds;
+    public Collection<GridClientPortableMetaData> metaData() {
+        return meta;
     }
 
     /** {@inheritDoc} */
@@ -34,7 +34,7 @@ public class GridClientMetaDataRequest extends GridClientAbstractMessage {
 
         GridPortableRawWriter raw = writer.rawWriter();
 
-        raw.writeCollection(typeIds);
+        raw.writeCollection(meta);
     }
 
     /** {@inheritDoc} */
@@ -43,11 +43,11 @@ public class GridClientMetaDataRequest extends GridClientAbstractMessage {
 
         GridPortableRawReader raw = reader.rawReader();
 
-        typeIds = raw.readCollection();
+        meta = raw.readCollection();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridClientMetaDataRequest.class, this);
+        return S.toString(GridClientPutMetaDataRequest.class, this);
     }
 }

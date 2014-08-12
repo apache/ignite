@@ -65,6 +65,16 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
+     * @param fieldTypeIds Fields map.
+     * @throws GridPortableException In case of error.
+     */
+    void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+        Map<String, Integer> fieldTypeIds) throws GridPortableException;
+
+    /**
+     * @param typeId Type ID.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */

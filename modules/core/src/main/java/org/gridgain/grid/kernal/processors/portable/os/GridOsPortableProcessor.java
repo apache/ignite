@@ -65,6 +65,12 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public void updateMetaData(int typeId, String typeName, String affKeyFieldName,
+        Map<String, Integer> fieldTypeIds) throws GridPortableException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridPortableMetaData metaData(int typeId) {
         return null;
     }

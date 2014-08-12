@@ -14,16 +14,16 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import java.util.*;
 
 /**
- * Portable metadata request.
+ * Portable get metadata request.
  */
-public class GridRestPortableMetaDataRequest extends GridRestRequest {
+public class GridRestPortableGetMetaDataRequest extends GridRestRequest {
     /** */
-    private final GridClientMetaDataRequest msg;
+    private final GridClientGetMetaDataRequest msg;
 
     /**
      * @param msg Client message.
      */
-    public GridRestPortableMetaDataRequest(GridClientMetaDataRequest msg) {
+    public GridRestPortableGetMetaDataRequest(GridClientGetMetaDataRequest msg) {
         this.msg = msg;
     }
 

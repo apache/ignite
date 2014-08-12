@@ -97,6 +97,9 @@ public enum GridRestCommand {
     /** Rebuild indexes. */
     CACHE_QUERY_REBUILD_INDEXES("rebuildqueryindexes"),
 
+    /** Put portable metadata. */
+    PUT_PORTABLE_METADATA("putportablemetadata"),
+
     /** Get portable metadata. */
     GET_PORTABLE_METADATA("getportablemetadata");
 
