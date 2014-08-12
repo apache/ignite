@@ -11,13 +11,15 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 
 import java.util.*;
 
 /**
  * Context for test purpose.
  */
-class GridHadoopTestTaskContext extends GridHadoopTaskContext {
+class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
     /**
      * Simple key-vale pair.
      * @param <K> Key class.
@@ -87,34 +89,34 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
     /** Context input implementation to read data from mockInput. */
     private GridHadoopTaskInput input = new GridHadoopTaskInput() {
         /** Iterator of keys and associated lists of values. */
-        Iterator<Map.Entry<Object, List>> iterator;
+        Iterator<Map.Entry<Object, List>> iter;
 
         /** Current key and associated value list. */
-        Map.Entry<Object, List> currentEntry;
+        Map.Entry<Object, List> currEntry;
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (iterator == null) {
-                iterator = mockInput().entrySet().iterator();
+            if (iter == null) {
+                iter = mockInput().entrySet().iterator();
             }
 
-            if (iterator.hasNext()) {
-                currentEntry = iterator.next();
+            if (iter.hasNext()) {
+                currEntry = iter.next();
             } else {
-                currentEntry = null;
+                currEntry = null;
             }
 
-            return currentEntry != null;
+            return currEntry != null;
         }
 
         /** {@inheritDoc} */
         @Override public Object key() {
-            return currentEntry.getKey();
+            return currEntry.getKey();
         }
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return currentEntry.getValue().iterator() ;
+            return currEntry.getValue().iterator() ;
         }
 
         /** {@inheritDoc} */
@@ -167,10 +169,11 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
     }
 
     /**
+     * @param taskInfo Task info.
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo,  GridHadoopJob gridJob) {
-        super(taskInfo, gridJob, null, null);
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopV2Job gridJob) {
+        super(taskInfo, gridJob, gridJob.jobContext());
     }
 
     /** {@inheritDoc} */

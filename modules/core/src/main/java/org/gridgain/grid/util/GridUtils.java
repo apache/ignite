@@ -4314,6 +4314,24 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes int array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeIntArray(DataOutput out, @Nullable int[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int b : arr)
+                out.writeInt(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -4330,6 +4348,27 @@ public abstract class GridUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readBoolean();
+
+        return res;
+    }
+
+    /**
+     * Reads int array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        int[] res = new int[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readInt();
 
         return res;
     }
