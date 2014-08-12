@@ -227,6 +227,23 @@ public interface GridPortableReader {
         throws GridPortableException;
 
     /**
+     * @param fieldName Field name.
+     * @param enumCls Enum class.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T extends Enum<?>> T readEnum(String fieldName, Class<T> enumCls) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param enumCls Enum class.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName, Class<T> enumCls)
+        throws GridPortableException;
+
+    /**
      * Gets raw reader.
      *
      * @return Raw reader.
