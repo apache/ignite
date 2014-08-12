@@ -150,8 +150,7 @@ public class GridHadoopSetup {
         Collection<File> jarFiles = new ArrayList<>();
 
         jarFiles.addAll(Arrays.asList(gridgainLibs.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
+            @Override public boolean accept(File dir, String name) {
                 return name.endsWith(".jar");
             }
         })));
@@ -162,8 +161,7 @@ public class GridHadoopSetup {
             exit("Folder '" + gridgainHadoopLibs.getAbsolutePath() + "' is not found.", null);
 
         jarFiles.addAll(Arrays.asList(gridgainHadoopLibs.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
+            @Override public boolean accept(File dir, String name) {
                 return name.endsWith(".jar");
             }
         })));
