@@ -7,19 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.local;
+package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test get and transform fro store with local cache in atomic mode.
+ * Test get and transform for store with replicated cache.
  */
-public class GridCacheLocalAtomicBasicGetAndTransformStoreSelfTest
-    extends GridCacheLocalBasicGetAndTransformStoreSelfTest {
+public class GridCacheReplicatedGetAndTransformStoreSelfTest
+    extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected GridCacheMode cacheMode() {
+        return REPLICATED;
     }
 }

@@ -17,8 +17,8 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Test get and transform for store with partitioned cache.
  */
-public class GridCachePartitionedBasicGetAndTransformStoreSelfTest
-    extends GridCacheBasicGetAndTransformStoreAbstractTest {
+public class GridCachePartitionedGetAndTransformStoreSelfTest
+    extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;

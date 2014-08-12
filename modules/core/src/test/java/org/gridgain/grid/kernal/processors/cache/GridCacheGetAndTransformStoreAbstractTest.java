@@ -28,7 +28,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Basic get and transform store test.
  */
-public abstract class GridCacheBasicGetAndTransformStoreAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -38,7 +38,7 @@ public abstract class GridCacheBasicGetAndTransformStoreAbstractTest extends Gri
     /**
      *
      */
-    protected GridCacheBasicGetAndTransformStoreAbstractTest() {
+    protected GridCacheGetAndTransformStoreAbstractTest() {
         super(true /*start grid. */);
     }
 
