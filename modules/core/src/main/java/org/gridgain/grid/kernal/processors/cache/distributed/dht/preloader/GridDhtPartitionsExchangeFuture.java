@@ -526,9 +526,13 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             // If this node is not oldest.
             if (!oldestNode.get().id().equals(cctx.nodeId()))
                 sendPartitions();
-            else if (allReceived() && replied.compareAndSet(false, true)) {
-                if (spreadPartitions(top.partitionMap(true)))
-                    onDone(exchId.topologyVersion());
+            else {
+                boolean allReceived = allReceived();
+
+                if (allReceived && replied.compareAndSet(false, true)) {
+                    if (spreadPartitions(top.partitionMap(true)))
+                        onDone(exchId.topologyVersion());
+                }
             }
 
             scheduleRecheck();
@@ -648,7 +652,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert rmtIds != null : "Remote Ids can't be null: " + this;
 
-        return rcvdIds.containsAll(rmtIds);
+        synchronized (rcvdIds) {
+            return rcvdIds.containsAll(rmtIds);
+        }
     }
 
     /**
@@ -715,11 +721,17 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         }
 
                         if (match) {
-                            if (rcvdIds.add(nodeId))
-                                top.update(exchId, msg.partitions());
+                            boolean allReceived;
+
+                            synchronized (rcvdIds) {
+                                if (rcvdIds.add(nodeId))
+                                    top.update(exchId, msg.partitions());
+
+                                allReceived = allReceived();
+                            }
 
                             // If got all replies, and initialization finished, and reply has not been sent yet.
-                            if (allReceived() && ready.get() && replied.compareAndSet(false, true)) {
+                            if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
                                 spreadPartitions(top.partitionMap(true));
 
                                 onDone(exchId.topologyVersion());

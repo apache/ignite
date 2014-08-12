@@ -595,7 +595,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
 
                 if (top.update(null, msg.partitions()) != null)
-                    demandPool.scheduleResendPartitions();
+                    demandPool.resendPartitions();
             }
             else
                 exchangeFuture(msg.exchangeId(), null).onReceive(node.id(), msg);

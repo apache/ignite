@@ -23,6 +23,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -67,7 +68,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setPreloadMode(preloadMode);
         cc.setPreloadPartitionedDelay(delay);
-        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 521));
+        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
@@ -138,14 +139,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
         GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
-        U.sleep(1000);
-
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(false, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(false, d0, d1, d2);
 
         // Force preload.
         c1.forceRepartition();
@@ -154,14 +148,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         info("Cache1 is repartitioned.");
 
-        U.sleep(1000);
-
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(false, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(false, d0, d1, d2);
 
         info("Beginning to wait for cache2 repartition.");
 
@@ -172,14 +159,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         info("Cache2 is repartitioned.");
 
-        Thread.sleep(1000);
-
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(true, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(true, d0, d1, d2);
 
         checkCache(c0, cnt);
         checkCache(c1, cnt);
@@ -238,12 +218,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         info("Beginning to wait for caches repartition.");
 
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(false, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(false, d0, d1, d2);
 
         assert l1.await(PRELOAD_DELAY * 3 / 2, TimeUnit.MILLISECONDS);
 
@@ -253,12 +228,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         info("Caches are repartitioned.");
 
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(true, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(true, d0, d1, d2);
 
         checkCache(c0, cnt);
         checkCache(c1, cnt);
@@ -267,7 +237,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAutomaticPreload() throws Exception {
-        delay = PRELOAD_DELAY;
+        delay = 0;
         preloadMode = GridCachePreloadMode.SYNC;
 
         Grid g0 = startGrid(0);
@@ -282,8 +252,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
 
-        U.sleep(1000);
-
         GridCache<String, Integer> c1 = g1.cache(null);
         GridCache<String, Integer> c2 = g2.cache(null);
 
@@ -291,12 +259,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
         GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
-        info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
-        info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
-        info("Partition map for node 2: " + d2.topology().partitionMap(false).toFullString());
-
-        checkMaps(true, d0.topology().partitionMap(true), d1.topology().partitionMap(true),
-            d2.topology().partitionMap(true));
+        checkMaps(true, d0, d1, d2);
 
         checkCache(c0, cnt);
         checkCache(c1, cnt);
@@ -437,39 +400,50 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * Checks maps for equality.
      *
      * @param strict Strict check flag.
-     * @param maps Maps to compare.
+     * @param caches Maps to compare.
      */
-    private void checkMaps(boolean strict, GridDhtPartitionFullMap... maps) {
-        if (maps.length < 2)
+    private void checkMaps(final boolean strict, final GridDhtCacheAdapter<String, Integer>... caches)
+        throws GridInterruptedException {
+        if (caches.length < 2)
             return;
 
-        GridDhtPartitionFullMap orig = maps[0];
+        GridTestUtils.retryAssert(log, 50, 500, new CAX() {
+            @Override public void applyx() {
+                info("Checking partition maps.");
 
-        for (int i = 1; i < maps.length; i++) {
-            GridDhtPartitionFullMap cmp = maps[i];
+                for (int i = 0; i < caches.length; i++)
+                    info("Partition map for node " + i + ": " + caches[i].topology().partitionMap(false).toFullString());
 
-            assert orig.keySet().equals(cmp.keySet());
+                GridDhtPartitionFullMap orig = caches[0].topology().partitionMap(true);
 
-            for (Map.Entry<UUID, GridDhtPartitionMap> entry : orig.entrySet()) {
-                UUID nodeId = entry.getKey();
+                for (int i = 1; i < caches.length; i++) {
+                    GridDhtPartitionFullMap cmp = caches[i].topology().partitionMap(true);
 
-                GridDhtPartitionMap nodeMap = entry.getValue();
+                    assert orig.keySet().equals(cmp.keySet());
 
-                GridDhtPartitionMap cmpMap = cmp.get(nodeId);
+                    for (Map.Entry<UUID, GridDhtPartitionMap> entry : orig.entrySet()) {
+                        UUID nodeId = entry.getKey();
 
-                assert cmpMap != null;
+                        GridDhtPartitionMap nodeMap = entry.getValue();
 
-                assert nodeMap.keySet().equals(cmpMap.keySet());
+                        GridDhtPartitionMap cmpMap = cmp.get(nodeId);
 
-                for (Map.Entry<Integer, GridDhtPartitionState> nodeEntry : nodeMap.entrySet()) {
-                    GridDhtPartitionState state = cmpMap.get(nodeEntry.getKey());
+                        assert cmpMap != null;
 
-                    assert state != null;
-                    assert state != GridDhtPartitionState.EVICTED;
-                    assert !strict || state == GridDhtPartitionState.OWNING : "Invalid partition state: " + state;
-                    assert state == nodeEntry.getValue();
+                        assert nodeMap.keySet().equals(cmpMap.keySet());
+
+                        for (Map.Entry<Integer, GridDhtPartitionState> nodeEntry : nodeMap.entrySet()) {
+                            GridDhtPartitionState state = cmpMap.get(nodeEntry.getKey());
+
+                            assert state != null;
+                            assert state != GridDhtPartitionState.EVICTED;
+                            assert !strict || state == GridDhtPartitionState.OWNING : "Invalid partition state: " + state;
+                            assert state == nodeEntry.getValue();
+                        }
+                    }
                 }
             }
-        }
+        });
+
     }
 }
