@@ -88,7 +88,7 @@ public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>,
      * @return Newly created pseudo-random ID.
      */
     public static GridUuid randomUuid() {
-        return new GridUuid(VM_ID, cntGen.incrementAndGet());
+        return new GridUuid(VM_ID, cntGen.incrementAndGet() );
     }
 
     /**
