@@ -173,6 +173,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
             boolean recheck = false;
 
             for (int i = 0; i < 3; i++) {
+                recheck = false;
+
                 for (Grid g : GridGain.allGrids()) {
                     GridKernal g1 = (GridKernal)g;
 
