@@ -16,6 +16,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
@@ -52,11 +53,25 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
-    /** Service configuration cache. */
-    private GridCache<Object, Object> depCache;
+    /**
+     * Service configuration cache.
+     *
+     * @deprecated Object are used for projection for preserving backward compatibility.
+     *      Need to return strongly-typed projection (GridServiceDeploymentKey -> GridServiceDeployment)
+     *      in the next major release.
+     */
+    @Deprecated
+    private GridCacheProjectionEx<Object, Object> depCache;
 
-    /** Service assignments cache. */
-    private GridCache<Object, Object> assignCache;
+    /**
+     * Service assignments cache.
+     *
+     * @deprecated Object are used for projection for preserving backward compatibility.
+     *      Need to return strongly-typed projection (GridServiceAssignmentsKey -> GridServiceAssignments)
+     *      in the next major release.
+     */
+    @Deprecated
+    private GridCacheProjectionEx<Object, Object> assignCache;
 
     /** Local service instances. */
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
@@ -105,8 +120,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        depCache = ctx.cache().utilityCache();
-        assignCache = ctx.cache().utilityCache();
+        depCache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
+        assignCache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
@@ -413,7 +428,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public GridFuture<?> cancelAll() {
         Collection<GridFuture<?>> futs = new ArrayList<>();
 
-        for (GridCacheEntry<Object, Object> e : depCache.entrySet()) {
+        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+            if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                continue;
+
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
             // Cancel each service separately.
@@ -429,7 +447,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<GridServiceDescriptor> deployedServices() {
         Collection<GridServiceDescriptor> descs = new ArrayList<>();
 
-        for (GridCacheEntry<Object, Object> e : depCache.entrySet()) {
+        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+            if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                continue;
+
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
@@ -885,7 +906,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     if (oldest.isLocal()) {
                         final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        for (GridCacheEntry<Object, Object> e : depCache.entrySet()) {
+                        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+                            if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                                continue;
+
                             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
                             try {

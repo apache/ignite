@@ -1710,7 +1710,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache.
      */
-    public GridCache<Object, Object> utilityCache() {
+    public <K, V> GridCache<K, V> utilityCache() {
         return cache(CU.UTILITY_CACHE_NAME);
     }
 
