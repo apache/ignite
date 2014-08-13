@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util.portscanner;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
@@ -20,14 +19,17 @@ import java.nio.channels.*;
  * GridGain port scanner.
  */
 public class GridJmxPortFinder {
-    /** Minimum port number */
+    /** Environment variable for overriding JMX port. */
+    public static final String GG_JMX_PORT = "GRIDGAIN_JMX_PORT";
+
+    /** Minimum port number. */
     private static final int MIN_PORT = 49112;
 
-    /** Maximum port number */
+    /** Maximum port number. */
     private static final int MAX_PORT = 65535;
 
     /**
-     * Private constructor
+     * Private constructor.
      */
     private GridJmxPortFinder() {
         // No-op.
@@ -49,7 +51,7 @@ public class GridJmxPortFinder {
             return;
         }
 
-        String jmxPort = X.getSystemOrEnv(GridSystemProperties.GG_JMX_PORT);
+        String jmxPort = X.getSystemOrEnv(GG_JMX_PORT);
 
         if (jmxPort != null) {
             try {
@@ -143,7 +145,7 @@ public class GridJmxPortFinder {
      * Checks whether port is available.
      *
      * @param port Port number.
-     * @return {@code true} if port is available
+     * @return {@code true} if port is available.
      */
     private static boolean isAvailable(int port) {
         ServerSocket sock = null;
