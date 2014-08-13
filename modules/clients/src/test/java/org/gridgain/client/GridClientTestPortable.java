@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;
@@ -85,6 +85,12 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
 
     /** */
     public Date dateRaw;
+
+    /** */
+    public TestEnum e;
+
+    /** */
+    public TestEnum eRaw;
 
     /** */
     public byte[] bArr;
@@ -226,6 +232,9 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         date = new Date(i);
         dateRaw = new Date(iRaw);
 
+        e = TestEnum.values()[i % TestEnum.values().length];
+        eRaw = TestEnum.values()[iRaw % TestEnum.values().length];
+
         bArr = new byte[]{b, (byte)(b + 1)};
         bArrRaw = new byte[]{bRaw, (byte)(bRaw + 1)};
 
@@ -297,6 +306,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         writer.writeString("_str", str);
         writer.writeUuid("_uuid", uuid);
         writer.writeDate("_date", date);
+        writer.writeEnum("_enum", e);
         writer.writeByteArray("_bArr", bArr);
         writer.writeShortArray("_sArr", sArr);
         writer.writeIntArray("_iArr", iArr);
@@ -327,6 +337,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         raw.writeString(strRaw);
         raw.writeUuid(uuidRaw);
         raw.writeDate(dateRaw);
+        raw.writeEnum(eRaw);
         raw.writeByteArray(bArrRaw);
         raw.writeShortArray(sArrRaw);
         raw.writeIntArray(iArrRaw);
@@ -358,6 +369,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         str = reader.readString("_str");
         uuid = reader.readUuid("_uuid");
         date = reader.readDate("_date");
+        e = reader.readEnum("_enum", TestEnum.class);
         bArr = reader.readByteArray("_bArr");
         sArr = reader.readShortArray("_sArr");
         iArr = reader.readIntArray("_iArr");
@@ -388,6 +400,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         strRaw = raw.readString();
         uuidRaw = raw.readUuid();
         dateRaw = raw.readDate();
+        eRaw = raw.readEnum(TestEnum.class);
         bArrRaw = raw.readByteArray();
         sArrRaw = raw.readShortArray();
         iArrRaw = raw.readIntArray();
@@ -404,6 +417,41 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
         mapRaw = raw.readMap();
         portableRaw1 = (GridClientTestPortable)raw.readObject();
         portableRaw2 = (GridClientTestPortable)raw.readObject();
+    }
+
+    /**
+     * Test enum.
+     */
+    private enum TestEnum {
+        /** */
+        VAL1,
+
+        /** */
+        VAL2,
+
+        /** */
+        VAl3,
+
+        /** */
+        VAL4,
+
+        /** */
+        VAL5,
+
+        /** */
+        VAL6,
+
+        /** */
+        VAL7,
+
+        /** */
+        VAL8,
+
+        /** */
+        VAL9,
+
+        /** */
+        VAL10
     }
 
     /** {@inheritDoc} */

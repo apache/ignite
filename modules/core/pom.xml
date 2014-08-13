@@ -142,66 +142,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <id>properties-augmentation</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <target>
-                                <exec executable="${git.exec}" outputproperty="gridgain.build" failonerror="yes">
-                                    <arg line="log -1 --format=%ct"/>
-                                </exec>
-
-                                <exec executable="${git.exec}" outputproperty="gridgain.revision" failonerror="yes">
-                                    <arg line="log -1 --format=%H"/>
-                                </exec>
-
-                                <tstamp>
-                                    <format property="gridgain.rel.date" pattern="ddMMyyyy" locale="en"/>
-                                </tstamp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.version=.*"/>
-                                    <substitution expression="gridgain.version=${gridgain.version}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.build=.*"/>
-                                    <substitution expression="gridgain.build=${gridgain.build}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.revision=.*"/>
-                                    <substitution expression="gridgain.revision=${gridgain.revision}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.rel.date=.*"/>
-                                    <substitution expression="gridgain.rel.date=${gridgain.rel.date}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.compatible.vers=.*"/>
-                                    <substitution expression="gridgain.compatible.vers=${gridgain.compatible.vers}"/>
-                                </replaceregexp>
-
-                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
-                                    <regexp pattern="gridgain.update.status.params=.*"/>
-                                    <substitution expression="gridgain.update.status.params=ver=${gridgain.version}"/>
-                                </replaceregexp>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.2</version>
                 <executions>

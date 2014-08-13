@@ -60,15 +60,22 @@ public class VisorRestConfig implements Serializable {
     public static VisorRestConfig from(GridConfiguration c) {
         VisorRestConfig cfg = new VisorRestConfig();
 
-        cfg.restEnabled(c.isRestEnabled());
-        cfg.tcpSslEnabled(c.isRestTcpSslEnabled());
-        cfg.accessibleFolders(c.getRestAccessibleFolders());
-        cfg.jettyPath(c.getRestJettyPath());
-        cfg.jettyHost(getProperty(GG_JETTY_HOST));
-        cfg.jettyPort(intValue(GG_JETTY_PORT, null));
-        cfg.tcpHost(c.getRestTcpHost());
-        cfg.tcpPort(c.getRestTcpPort());
-        cfg.tcpSslContextFactory(compactClass(c.getRestTcpSslContextFactory()));
+        GridClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();
+
+        boolean restEnabled = clnCfg != null;
+
+        cfg.restEnabled(restEnabled);
+
+        if (restEnabled) {
+            cfg.tcpSslEnabled(clnCfg.isRestTcpSslEnabled());
+            cfg.accessibleFolders(clnCfg.getRestAccessibleFolders());
+            cfg.jettyPath(clnCfg.getRestJettyPath());
+            cfg.jettyHost(getProperty(GG_JETTY_HOST));
+            cfg.jettyPort(intValue(GG_JETTY_PORT, null));
+            cfg.tcpHost(clnCfg.getRestTcpHost());
+            cfg.tcpPort(clnCfg.getRestTcpPort());
+            cfg.tcpSslContextFactory(compactClass(clnCfg.getRestTcpSslContextFactory()));
+        }
 
         return cfg;
     }

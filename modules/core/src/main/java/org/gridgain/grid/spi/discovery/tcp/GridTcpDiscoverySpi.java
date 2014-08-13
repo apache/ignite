@@ -3060,6 +3060,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
 
+                                    U.closeQuiet(nextNodeSock);
+
+                                    nextNodeSock = null;
+
                                     break;
                                 }
 

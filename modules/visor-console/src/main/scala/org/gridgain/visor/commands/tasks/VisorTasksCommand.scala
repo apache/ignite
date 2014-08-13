@@ -603,16 +603,17 @@ class VisorTasksCommand {
      * Prints list of tasks and executions.
      *
      * @param p Event period.
-     * @param reverse Reverse session chronological sorting?
+     * @param taskName Task name filter.
+     * @param reverse Reverse session chronological sorting.
      * @param all Whether to show full information.
      */
-    private def list(p: Long, s: String, reverse: Boolean, all: Boolean) {
+    private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask],
-                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, null, null))).get
+                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null))).get
 
                 val (tLst, eLst) = mkData(evts)
 

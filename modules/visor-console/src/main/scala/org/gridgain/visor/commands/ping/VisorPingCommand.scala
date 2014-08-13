@@ -19,7 +19,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
