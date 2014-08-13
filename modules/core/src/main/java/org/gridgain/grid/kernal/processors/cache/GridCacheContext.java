@@ -1694,12 +1694,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj == null)
             return null;
 
-        if (obj instanceof GridPortableObject)
+        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
             return obj;
 
         GridPortableProcessor proc = kernalContext().portable();
 
-        return proc != null ? proc.marshalToPortable(obj) : obj;
+        assert proc != null;
+
+        return proc.marshalToPortable(obj);
     }
 
     /**

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.portable;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.portables.*;
+import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -20,6 +21,9 @@ import java.util.*;
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
+    /** */
+    public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.2.0");
+
     /**
      * @param typeName Type name.
      * @return Type ID.

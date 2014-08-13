@@ -41,7 +41,7 @@ class GridAffinityUtils {
      * @param cacheName Cache name.
      * @return Affinity job.
      */
-    static Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment, Boolean>> affinityJob(
+    static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(
         String cacheName, long topVer) {
         return new AffinityJob(cacheName, topVer);
     }
@@ -112,7 +112,7 @@ class GridAffinityUtils {
      */
     @GridInternal
     private static class AffinityJob implements
-        Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment, Boolean>>,
+        Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -147,7 +147,7 @@ class GridAffinityUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public GridTuple4<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment, Boolean> call()
+        @Override public GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> call()
             throws Exception {
             assert grid != null;
             assert log != null;
@@ -163,8 +163,7 @@ class GridAffinityUtils {
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
-                cctx.portableEnabled());
+                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
         }
 
         /** {@inheritDoc} */

@@ -186,10 +186,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersion());
 
+        if (affInfo == null || affInfo.mapper == null)
+            return null;
+
         if (affInfo.portableEnabled)
             key = ctx.portable().marshalToPortable(key);
 
-        return affInfo.mapper != null ? affInfo.mapper.affinityKey(key) : null;
+        return affInfo.mapper.affinityKey(key);
     }
 
     /**
@@ -360,7 +363,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private AffinityInfo affinityInfoFromNode(@Nullable String cacheName, long topVer, GridNode n)
         throws GridException {
-        GridTuple4<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment, Boolean> t = ctx.closure()
+        GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
 
         GridCacheAffinityFunction f = (GridCacheAffinityFunction)unmarshall(ctx, n.id(), t.get1());
@@ -372,7 +375,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3(), t.get4());
+        return new AffinityInfo(f, m, t.get3(), U.cacheAttributes(n, cacheName).portableEnabled());
     }
 
     /**

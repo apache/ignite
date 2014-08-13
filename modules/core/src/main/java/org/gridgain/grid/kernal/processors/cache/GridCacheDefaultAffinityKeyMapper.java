@@ -53,7 +53,7 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
                 if (ann != null) {
                     if (!F.isEmpty(m.getParameterTypes()))
                         throw new IllegalStateException("Method annotated with @GridCacheAffinityKey annotation " +
-                                "cannot have parameters: " + m);
+                            "cannot have parameters: " + m);
 
                     return true;
                 }
