@@ -14,9 +14,35 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Portable object builder.
+ * Portable object builder. Provides ability to build portable objects dynamically
+ * without having class definitions.
  * <p>
- * Type ID is required.
+ * Note that type ID is required in order to build portable object. Usually it is
+ * enough to provide a simple class name via {@link #typeId(String)} method and
+ * GridGain will generate the type ID automatically. Here is an example of how a
+ * portable object can be built dynamically:
+ * <pre name=code class=java>
+ * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ *
+ * builder.typeId("MyObject");
+ *
+ * builder.stringField("fieldA", "A");
+ * build.intField("fieldB", "B");
+ *
+ * GridPortableObject portableObj = builder.build();
+ * </pre>
+ * <p>
+ * For cases when class definition is present
+ * in the class path, it is also possible to populate a standard POJO and then
+ * convert it to portable format, like so:
+ * <pre name=code class=java>
+ * MyObject obj = new MyObject();
+ *
+ * obj.setFieldA("A");
+ * obj.setFieldB(123);
+ *
+ * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * </pre>
  */
 public interface GridPortableBuilder<T> {
     /**
@@ -44,7 +70,8 @@ public interface GridPortableBuilder<T> {
     public GridPortableBuilder<T> typeId(int typeId);
 
     /**
-     * Sets hash code.
+     * Sets hash code for the portable object. If not set, GridGain will generate
+     * one automatically.
      *
      * @param hashCode Hash code.
      * @return {@code this} instance for chaining.
