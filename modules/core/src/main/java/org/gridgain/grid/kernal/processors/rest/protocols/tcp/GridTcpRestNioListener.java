@@ -64,7 +64,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     }
 
     /** Marshallers map. */
-    private final Map<Byte, GridClientMarshaller> marshMap;
+    private Map<Byte, GridClientMarshaller> marshMap;
 
     /** Logger. */
     private GridLogger log;
@@ -77,9 +77,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
     /** Handler for all memcache requests */
     private GridTcpMemcachedNioListener memcachedLsnr;
-
-    /** Kernal context. */
-    private final GridKernalContext ctx;
 
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
@@ -97,7 +94,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
-        this.ctx = ctx;
 
         marshMap = new HashMap<>();
 
@@ -106,10 +102,12 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     }
 
     /**
-     * Kernal start callback.
+     * @param marshMap Marshallers.
      */
-    void onKernalStart() {
-        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+    void marshallers(Map<Byte, GridClientMarshaller> marshMap) {
+        assert marshMap != null;
+
+        this.marshMap = marshMap;
     }
 
     /** {@inheritDoc} */

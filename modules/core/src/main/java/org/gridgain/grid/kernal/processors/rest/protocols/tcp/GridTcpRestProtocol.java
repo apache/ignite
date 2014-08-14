@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -194,7 +196,13 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void onKernalStart() {
         super.onKernalStart();
 
-        lsnr.onKernalStart();
+        Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+
+        lsnr.marshallers(marshMap);
     }
 
     /** {@inheritDoc} */
