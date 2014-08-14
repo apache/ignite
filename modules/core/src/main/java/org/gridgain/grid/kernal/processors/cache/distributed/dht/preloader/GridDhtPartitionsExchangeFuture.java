@@ -619,7 +619,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /** {@inheritDoc} */
     @Override public boolean onDone(Long res, Throwable err) {
         if (err == null)
-            cctx.affinity().cleanUpCache(res - 2);
+            cctx.affinity().cleanUpCache(res - 10);
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
