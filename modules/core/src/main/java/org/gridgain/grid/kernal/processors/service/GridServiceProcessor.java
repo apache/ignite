@@ -894,50 +894,59 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
         @Override public void onEvent(final GridEvent evt) {
-            depExe.submit(new BusyRunnable() {
-                @Override public void run0() {
-                    long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
+            if (!busyLock.enterBusy())
+                return;
 
-                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+            try {
+                depExe.submit(new BusyRunnable() {
+                    @Override public void run0() {
+                        long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-                    if (oldest.isLocal()) {
-                        final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
+                        GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                        if (ctx.deploy().enabled())
-                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
+                        if (oldest.isLocal()) {
+                            final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        try {
-                            for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e :
-                                depCache.entrySetx()) {
-                                GridServiceDeployment dep = e.getValue();
+                            if (ctx.deploy().enabled())
+                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                                try {
-                                    svcName.set(dep.configuration().getName());
+                            try {
+                                for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e :
+                                    depCache.entrySetx()) {
+                                    GridServiceDeployment dep = e.getValue();
 
-                                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
-                                        affinityReadyFuture(topVer).get();
+                                    try {
+                                        svcName.set(dep.configuration().getName());
 
-                                    reassign(dep, topVer);
-                                }
-                                catch (GridException ex) {
-                                    if (!(e instanceof GridTopologyException))
-                                        LT.error(log, ex, "Failed to do service reassignment (will retry): " +
-                                            dep.configuration().getName());
+                                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
+                                            affinityReadyFuture(topVer).get();
 
-                                    retries.add(dep);
+                                        reassign(dep, topVer);
+                                    }
+                                    catch (GridException ex) {
+                                        if (!(e instanceof GridTopologyException))
+                                            LT.error(log, ex, "Failed to do service reassignment (will retry): " +
+                                                dep.configuration().getName());
+
+                                        retries.add(dep);
+                                    }
                                 }
                             }
-                        }
-                        finally {
-                            if (ctx.deploy().enabled())
-                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
-                        }
+                            finally {
+                                if (ctx.deploy().enabled())
+                                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy()
+                                        .ignoreOwnership(false);
+                            }
 
-                        if (!retries.isEmpty())
-                            onReassignmentFailed(topVer, retries);
+                            if (!retries.isEmpty())
+                                onReassignmentFailed(topVer, retries);
+                        }
                     }
-                }
-            });
+                });
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /**
@@ -1002,7 +1011,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener
-        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
+        implements GridBiPredicate<UUID,
+            Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 

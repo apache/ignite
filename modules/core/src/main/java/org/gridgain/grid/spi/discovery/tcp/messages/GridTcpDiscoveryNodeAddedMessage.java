@@ -32,7 +32,8 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private GridTcpDiscoveryNode node;
 
     /** Pending messages from previous node. */
-    private Collection<GridTcpDiscoveryAbstractMessage> msgs;
+    @Deprecated
+    private Collection<GridTcpDiscoveryAbstractMessage> msgs; // Not used any more.
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
@@ -42,7 +43,8 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private Map<Long, Collection<GridNode>> topHist;
 
     /** If {@code true} messages will be processed, otherwise registered. */
-    private boolean procPendingMsgs;
+    @Deprecated
+    private boolean procPendingMsgs; // Not used any more.
 
     /** Discovery data from new node. */
     private List<Object> newNodeDiscoData;
@@ -92,24 +94,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     }
 
     /**
-     * Gets pending messages sent to new node by its previous.
-     *
-     * @return Pending messages from previous node.
-     */
-    @Nullable public Collection<GridTcpDiscoveryAbstractMessage> messages() {
-        return msgs;
-    }
-
-    /**
-     * Sets pending messages to send to new node.
-     *
-     * @param msgs Pending messages to send to new node.
-     */
-    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
-        this.msgs = msgs;
-    }
-
-    /**
      * Gets topology.
      *
      * @return Current topology.
@@ -143,20 +127,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      */
     public void topologyHistory(@Nullable Map<Long, Collection<GridNode>> topHist) {
         this.topHist = topHist;
-    }
-
-    /**
-     * @return {@code True} if pending messages should be processed on receive.
-     */
-    public boolean processPendingMessages() {
-        return procPendingMsgs;
-    }
-
-    /**
-     * @param procPendingMsgs {@code True} if pending messages should be processed on receive.
-     */
-    public void processPendingMessages(boolean procPendingMsgs) {
-        this.procPendingMsgs = procPendingMsgs;
     }
 
     /**

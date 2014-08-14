@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -31,6 +32,9 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final boolean DISCO_DEBUG_MODE = false;
 
     /**
      * Constructs test.
@@ -46,12 +50,14 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
+        disco.setDebugMode(DISCO_DEBUG_MODE);
 
         cfg.setDiscoverySpi(disco);
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
+        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         // This property is essential for this test.
@@ -111,7 +117,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testNodeRestartMultithreaded() throws Exception {
+    public void testNodeRestartMultithreaded() throws Exception {
         final int keyCnt = 1000;
         final int retries = 300;
         int threadCnt = 5;
@@ -139,7 +145,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
                         info("Starting additional grid node with index: " + idx);
 
-                        Grid g = startGrid(idx);
+                        startGrid(idx);
 
                         info("Stopping additional grid node with index: " + idx);
 
