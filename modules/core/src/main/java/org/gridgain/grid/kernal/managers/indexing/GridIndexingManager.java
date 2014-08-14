@@ -1346,7 +1346,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = name;
+            this.name = CU.h2Escape(name);
         }
 
         /** {@inheritDoc} */
@@ -1590,7 +1590,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             this.space = space;
 
-            valTypeName = valType.getSimpleName();
+            String clsName = valType.getSimpleName();
+
+            valTypeName = CU.h2Escape(clsName);
         }
 
         /**
@@ -1601,7 +1603,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          */
         private TypeId(String space, String valTypeName) {
             this.space = space;
-            this.valTypeName = valTypeName;
+            this.valTypeName = CU.h2Escape(valTypeName);
         }
 
         /** {@inheritDoc} */

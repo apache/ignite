@@ -1910,6 +1910,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             GridOptimizedMarshaller.clearCache();
             GridMarshallerExclusions.clearCache();
+            GridEnumCache.clear();
 
             gw.writeLock();
 
