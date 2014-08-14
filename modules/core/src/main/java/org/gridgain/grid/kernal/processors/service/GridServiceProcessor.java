@@ -38,6 +38,7 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Grid service processor.
@@ -125,17 +126,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
-        cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)depCache.queries().createContinuousQuery();
+        try {
+            if (ctx.deploy().enabled())
+                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-        cfgQry.localCallback(new DeploymentListener());
-
-        cfgQry.execute(ctx.grid().forLocal(), true);
-
-        assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)assignCache.queries().createContinuousQuery();
-
-        assignQry.localCallback(new AssignmentListener());
-
-        assignQry.execute(ctx.grid().forLocal(), true);
+            cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)depCache.queries().createContinuousQuery();
+    
+            cfgQry.localCallback(new DeploymentListener());
+    
+            cfgQry.execute(ctx.grid().forLocal(), true);
+    
+            assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)assignCache.queries().createContinuousQuery();
+    
+            assignQry.localCallback(new AssignmentListener());
+    
+            assignQry.execute(ctx.grid().forLocal(), true);
+        }
+        finally {
+            if (ctx.deploy().enabled())
+                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
+        }
 
         GridServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
@@ -348,24 +358,32 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else {
                     GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
-                    GridServiceDeployment dep;
+                    if (ctx.deploy().enabled())
+                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                    GridServiceDeployment insertDep = new GridServiceDeployment(ctx.localNodeId(), cfg);
+                    try {
+                        GridServiceDeployment dep = (GridServiceDeployment)depCache.putIfAbsent(key,
+                            new GridServiceDeployment(ctx.localNodeId(), cfg));
 
-                    if ((dep = (GridServiceDeployment)depCache.putIfAbsent(key, insertDep)) != null) {
-                        // Remove future from local map.
-                        depFuts.remove(cfg.getName());
+                        if (dep != null) {
+                            // Remove future from local map.
+                            depFuts.remove(cfg.getName());
 
-                        if (failDups)
-                            fut.onDone(new GridException("Failed to deploy service " +
-                                "(service already exists and must be undeployed first): " + cfg.getName()));
-                        else {
-                            fut.onDone();
+                            if (failDups)
+                                fut.onDone(new GridException("Failed to deploy service " +
+                                    "(service already exists and must be undeployed first): " + cfg.getName()));
+                            else {
+                                fut.onDone();
 
-                            if (!dep.configuration().equals(cfg))
-                                U.warn(log, "Service already deployed with different configuration (will ignore) " +
-                                    "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                                if (!dep.configuration().equals(cfg))
+                                    U.warn(log, "Service already deployed with different configuration (will ignore) " +
+                                        "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                            }
                         }
+                    }
+                    finally {
+                        if (ctx.deploy().enabled())
+                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
                     }
                 }
 
@@ -906,27 +924,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     if (oldest.isLocal()) {
                         final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
-                            if (!(e.getKey() instanceof GridServiceDeploymentKey))
-                                continue;
+                        if (ctx.deploy().enabled())
+                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                            GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
+                        try {
+                            for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+                                if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                                    continue;
 
-                            try {
-                                svcName.set(dep.configuration().getName());
+                                GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
-                                ctx.cache().internalCache(CU.UTILITY_CACHE_NAME).context().affinity().
-                                    affinityReadyFuture(topVer).get();
+                                try {
+                                    svcName.set(dep.configuration().getName());
 
-                                reassign(dep, topVer);
+                                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
+                                        affinityReadyFuture(topVer).get();
+
+                                    reassign(dep, topVer);
+                                }
+                                catch (GridException ex) {
+                                    if (!(e instanceof GridTopologyException))
+                                        LT.error(log, ex, "Failed to do service reassignment (will retry): " +
+                                            dep.configuration().getName());
+
+                                    retries.add(dep);
+                                }
                             }
-                            catch (GridException ex) {
-                                if (!(e instanceof GridTopologyException))
-                                    LT.error(log, ex, "Failed to do service reassignment (will retry): " +
-                                        dep.configuration().getName());
-
-                                retries.add(dep);
-                            }
+                        }
+                        finally {
+                            if (ctx.deploy().enabled())
+                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
                         }
 
                         if (!retries.isEmpty())
