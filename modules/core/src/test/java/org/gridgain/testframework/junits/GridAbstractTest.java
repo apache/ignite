@@ -1130,6 +1130,7 @@ public abstract class GridAbstractTest extends TestCase {
             GridClassLoaderCache.clear();
             GridOptimizedMarshaller.clearCache();
             GridMarshallerExclusions.clearCache();
+            GridEnumCache.clear();
         }
 
         Thread.currentThread().setContextClassLoader(clsLdr);
