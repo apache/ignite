@@ -34,7 +34,10 @@ public class GridPortableTypeConfiguration {
     private GridPortableSerializer serializer;
 
     /** Use timestamp flag. */
-    private boolean useTs = true;
+    private Boolean useTs;
+
+    /** Meta data enabled flag. */
+    private Boolean metaDataEnabled;
 
     /** Affinity key field name. */
     private String affKeyFieldName;
@@ -112,15 +115,32 @@ public class GridPortableTypeConfiguration {
      *
      * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
-    public boolean isUseTimestamp() {
+    public Boolean isUseTimestamp() {
         return useTs;
     }
 
     /**
      * @param useTs Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
-    public void setUseTimestamp(boolean useTs) {
+    public void setUseTimestamp(Boolean useTs) {
         this.useTs = useTs;
+    }
+
+    /**
+     * Defines whether meta data is collected for this type. This value will override
+     * {@link GridPortableConfiguration#isMetaDataEnabled()} property.
+     *
+     * @return Whether meta data is collected.
+     */
+    public Boolean isMetaDataEnabled() {
+        return metaDataEnabled;
+    }
+
+    /**
+     * @param metaDataEnabled Whether meta data is collected.
+     */
+    public void setMetaDataEnabled(Boolean metaDataEnabled) {
+        this.metaDataEnabled = metaDataEnabled;
     }
 
     /**
