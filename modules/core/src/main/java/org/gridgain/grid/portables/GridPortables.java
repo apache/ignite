@@ -224,5 +224,5 @@ public interface GridPortables {
      *
      * @return Portable builder.
      */
-    public <T> GridPortableBuilder<T> builder();
+    public GridPortableBuilder builder();
 }

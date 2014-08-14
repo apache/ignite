@@ -80,7 +80,7 @@ import java.util.*;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  */
-public interface GridPortableObject<T> extends Serializable, Cloneable {
+public interface GridPortableObject extends Serializable, Cloneable {
     /**
      * Gets portable object type ID.
      *
@@ -104,7 +104,7 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    @Nullable public T deserialize() throws GridPortableException;
+    @Nullable public <T> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -115,12 +115,12 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
      * @return Copy of this portable object.
      * @throws GridPortableException In case of error.
      */
-    public GridPortableObject<T> copy(@Nullable Map<String, Object> fields) throws GridPortableException;
+    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
      */
-    public GridPortableObject<T> clone() throws CloneNotSupportedException;
+    public GridPortableObject clone() throws CloneNotSupportedException;
 }
