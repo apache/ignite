@@ -14,7 +14,14 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.sql.*;
 
 /**
- * Portable type configuration.
+ * Defines configuration properties for a specific portable type. Providing per-type
+ * configuration is optional, as it is generally enough to provide global
+ * portable configuration in {@link GridPortableConfiguration} instance. However,
+ * this class allows you to change configuration properties for a specific
+ * portable type without affecting configuration for other portable types.
+ * <p>
+ * Per-type portable configuration can be specified in
+ * {@link GridPortableConfiguration#getTypeConfigurations()} method.
  */
 public class GridPortableTypeConfiguration {
     /** Class name. */
