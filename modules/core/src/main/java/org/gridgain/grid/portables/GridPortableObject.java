@@ -20,6 +20,8 @@ import java.util.*;
  * User can choose to work either with the portable format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
+ * <b>NOTE:</b> user does not need to (and should not) implement this interface directly.
+ * <p>
  * To work with the portable format directly, user should create a cache projection
  * over {@code GridPortableObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
