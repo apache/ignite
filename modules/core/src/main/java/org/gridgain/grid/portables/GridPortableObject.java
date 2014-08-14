@@ -81,6 +81,29 @@ import java.util.*;
  * fields B and C, then the server-side portable object will have the fields A, B, and C.
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
+ * <h1 class="header">Building Portable Objects</h1>
+ * GridGain comes with {@link GridPortableBuilder} which allows to build portable objects dynamically:
+ * <pre name=code class=java>
+ * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ *
+ * builder.typeId("MyObject");
+ *
+ * builder.stringField("fieldA", "A");
+ * build.intField("fieldB", "B");
+ *
+ * GridPortableObject portableObj = builder.build();
+ * </pre>
+ * For the cases when class definition is present
+ * in the class path, it is also possible to populate a standard POJO and then
+ * convert it to portable format, like so:
+ * <pre name=code class=java>
+ * MyObject obj = new MyObject();
+ *
+ * obj.setFieldA("A");
+ * obj.setFieldB(123);
+ *
+ * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * </pre>
  */
 public interface GridPortableObject extends Serializable, Cloneable {
     /**

@@ -86,6 +86,31 @@ import java.util.*;
  * {@code List} in C#, {@link LinkedList} in Java is {@link LinkedList} in C#, {@link HashMap}
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
+ * <h1 class="header">Building Portable Objects</h1>
+ * GridGain comes with {@link GridPortableBuilder} which allows to build portable objects dynamically:
+ * <pre name=code class=java>
+ * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ *
+ * builder.typeId("MyObject");
+ *
+ * builder.stringField("fieldA", "A");
+ * build.intField("fieldB", "B");
+ *
+ * GridPortableObject portableObj = builder.build();
+ * </pre>
+ * For the cases when class definition is present
+ * in the class path, it is also possible to populate a standard POJO and then
+ * convert it to portable format, like so:
+ * <pre name=code class=java>
+ * MyObject obj = new MyObject();
+ *
+ * obj.setFieldA("A");
+ * obj.setFieldB(123);
+ *
+ * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * </pre>
+ * NOTE: you don't need to convert typed objects to portable format before storing
+ * them in cache, GridGain will do that automatically.
  * <h1 class="header">Dynamic Structure Changes</h1>
  * Since objects are always cached in the portable binary format, server does not need to
  * be aware of the class definitions. Moreover, if class definitions are not present or not

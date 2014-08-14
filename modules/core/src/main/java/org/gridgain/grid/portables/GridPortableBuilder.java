@@ -31,8 +31,7 @@ import java.util.*;
  *
  * GridPortableObject portableObj = builder.build();
  * </pre>
- * <p>
- * For cases when class definition is present
+ * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
  * convert it to portable format, like so:
  * <pre name=code class=java>
