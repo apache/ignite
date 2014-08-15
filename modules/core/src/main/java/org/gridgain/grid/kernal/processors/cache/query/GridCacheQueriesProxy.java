@@ -255,7 +255,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
         try {
             GridCacheContext cctx = stash.get();
 
-            return cctx.cache().queries();
+            return cctx.grid().cache(cctx.cache().name()).queries();
         }
         catch (Exception e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

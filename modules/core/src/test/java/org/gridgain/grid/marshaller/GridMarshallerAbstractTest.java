@@ -777,7 +777,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert outBean.getObjectField() != null;
 
         assert inBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheDataStructuresImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);
@@ -805,7 +805,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert outBean.getObjectField() != null;
 
         assert inBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheAffinityImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);

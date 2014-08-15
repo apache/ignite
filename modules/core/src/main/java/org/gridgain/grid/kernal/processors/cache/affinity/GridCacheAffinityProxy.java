@@ -255,7 +255,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
         try {
             GridCacheContext cctx = stash.get();
 
-            return cctx.cache().affinity();
+            return cctx.grid().cache(cctx.cache().name()).affinity();
         }
         catch (Exception e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
