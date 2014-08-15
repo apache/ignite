@@ -94,11 +94,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
-
-        marshMap = new HashMap<>();
-
-        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
-        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
     }
 
     /**

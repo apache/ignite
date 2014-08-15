@@ -18,6 +18,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -249,7 +250,7 @@ public class GridAffinityAssignmentCache {
                 key = ctx.marshalToPortable(key);
             }
             catch (GridPortableException e) {
-                throw new GridRuntimeException("Failed to marshal key to portable: " + key, e);
+                U.error(log, "Failed to marshal key to portable: " + key, e);
             }
         }
 
