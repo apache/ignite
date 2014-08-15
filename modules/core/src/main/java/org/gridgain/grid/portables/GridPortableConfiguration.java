@@ -12,7 +12,10 @@ package org.gridgain.grid.portables;
 import java.util.*;
 
 /**
- * Common portable configuration.
+ * Defines configuration for GridGain portable functionality. All configuration
+ * properties defined here can be overridden on per-type level in
+ * {@link GridPortableTypeConfiguration}. Type configurations are provided via
+ * {@link #getTypeConfigurations()} method.
  */
 public class GridPortableConfiguration {
     /** Class names. */

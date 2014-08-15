@@ -57,7 +57,7 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPortableBuilder<T> builder() {
+    @Override public GridPortableBuilder builder() {
         guard();
 
         try {

@@ -52,5 +52,5 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @return Builder.
      */
-    public <T> GridPortableBuilder<T> builder();
+    public GridPortableBuilder builder();
 }
