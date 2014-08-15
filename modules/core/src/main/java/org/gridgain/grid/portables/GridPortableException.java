@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Exception indicating portable object serialization/deserialization error.
+ * Exception indicating portable object serialization error.
  */
 public class GridPortableException extends GridException {
     /** */
