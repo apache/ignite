@@ -76,15 +76,13 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
             springCtx = applicationContext(cfgUrl, excludedProps);
         }
         catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class)) {
+            if (X.hasCause(e, ClassNotFoundException.class))
                 throw new GridException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
                     "[springUrl=" + cfgUrl + ']', e);
-            }
-            else {
+            else
                 throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
-            }
         }
 
         Map<String, GridConfiguration> cfgMap;
@@ -117,15 +115,13 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
             springCtx.refresh();
         }
         catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class)) {
+            if (X.hasCause(e, ClassNotFoundException.class))
                 throw new GridException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
                     "[springUrl=" + cfgUrl + ']', e);
-            }
-            else {
+            else
                 throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
-            }
         }
 
         Map<Class<?>, Object> beans = new HashMap<>();
