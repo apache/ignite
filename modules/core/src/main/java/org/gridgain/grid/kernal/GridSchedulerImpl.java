@@ -13,17 +13,28 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
  * {@link GridScheduler} implementation.
  */
-public class GridSchedulerImpl implements GridScheduler {
+public class GridSchedulerImpl implements GridScheduler, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridKernalContext ctx;
+    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
+
+    /** */
+    private GridKernalContext ctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridSchedulerImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -100,5 +111,35 @@ public class GridSchedulerImpl implements GridScheduler {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridKernalContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = stash.get();
+
+            return ctx.grid().scheduler();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 }

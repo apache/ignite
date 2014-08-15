@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -44,7 +43,7 @@ import java.util.*;
  * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
  * actually do arrive, they will be ignored.
  */
-public interface GridMessaging extends Serializable {
+public interface GridMessaging {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *

@@ -18,6 +18,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -29,9 +30,12 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 /**
  * {@link GridCompute} implementation.
  */
-public class GridComputeImpl implements GridCompute {
+public class GridComputeImpl implements GridCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
 
     /** */
     private GridKernalContext ctx;
@@ -41,6 +45,13 @@ public class GridComputeImpl implements GridCompute {
 
     /** */
     private UUID subjId;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridComputeImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -476,5 +487,35 @@ public class GridComputeImpl implements GridCompute {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridKernalContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = stash.get();
+
+            return ctx.grid().compute();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 }

@@ -17,7 +17,6 @@ import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -50,7 +49,7 @@ import java.util.*;
  * This API provides ability to manage DR process on sender cache node as well as get metrics for sender cache,
  * receiver cache, sender hub and receiver hub.
  */
-public interface GridDr extends Serializable {
+public interface GridDr {
     /**
      * Starts full state transfer for the given sender cache.
      * <p>

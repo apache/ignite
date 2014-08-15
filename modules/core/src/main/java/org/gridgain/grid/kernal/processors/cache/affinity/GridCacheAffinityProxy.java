@@ -12,22 +12,37 @@ package org.gridgain.grid.kernal.processors.cache.affinity;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Affinity interface implementation.
  */
-public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
+public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<GridCacheContext> stash = new ThreadLocal<>();
 
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
 
     /** Affinity delegate. */
     private GridCacheAffinity<K> delegate;
+
+    /** Context. */
+    private GridCacheContext<K, V> cctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheAffinityProxy() {
+        // No-op.
+    }
 
     /**
      * @param cctx Context.
@@ -36,6 +51,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
     public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, GridCacheAffinity<K> delegate) {
         gate = cctx.gate();
         this.delegate = delegate;
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
@@ -216,6 +232,36 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
         }
         finally {
             gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridCacheContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridCacheContext cctx = stash.get();
+
+            return cctx.cache().affinity();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
         }
     }
 }

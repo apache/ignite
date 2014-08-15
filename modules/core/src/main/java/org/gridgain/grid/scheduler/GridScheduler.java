@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
  * );
  * </pre>
  */
-public interface GridScheduler extends Serializable {
+public interface GridScheduler {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>

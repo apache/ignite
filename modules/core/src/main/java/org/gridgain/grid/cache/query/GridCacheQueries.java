@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -26,7 +25,7 @@ import java.util.*;
  * GridCacheQueries q = GridGain.grid().cache("myCache").queries();
  * </pre>
  */
-public interface GridCacheQueries<K, V> extends Serializable {
+public interface GridCacheQueries<K, V> {
     /**
      * Creates user's SQL query, queried class, and query clause which is generally
      * a where clause. For more information refer to {@link GridCacheQuery} documentation.

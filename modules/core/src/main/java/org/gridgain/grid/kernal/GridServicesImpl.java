@@ -15,14 +15,18 @@ import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl implements GridServices {
+public class GridServicesImpl implements GridServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
 
     /** */
     private GridKernalContext ctx;
@@ -32,6 +36,13 @@ public class GridServicesImpl implements GridServices {
 
     /** */
     private UUID subjId;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridServicesImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -174,5 +185,35 @@ public class GridServicesImpl implements GridServices {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridKernalContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = stash.get();
+
+            return ctx.grid().services();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 }

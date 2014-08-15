@@ -12,14 +12,20 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
 
 /**
  * Data structures proxy object.
  */
-public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures {
+public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<GridCacheContext> stash = new ThreadLocal<>();
 
     /** Delegate object. */
     private GridCacheDataStructures delegate;
@@ -27,12 +33,23 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
 
+    /** Context. */
+    private GridCacheContext<K, V> cctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheDataStructuresProxy() {
+        // No-op.
+    }
+
     /**
      * @param cctx Cache context.
      * @param delegate Delegate object.
      */
     public GridCacheDataStructuresProxy(GridCacheContext<K, V> cctx, GridCacheDataStructures delegate) {
         this.delegate = delegate;
+        this.cctx = cctx;
 
         gate = cctx.gate();
     }
@@ -220,6 +237,36 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
         }
         finally {
             gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridCacheContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridCacheContext cctx = stash.get();
+
+            return cctx.cache().dataStructures();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
         }
     }
 }

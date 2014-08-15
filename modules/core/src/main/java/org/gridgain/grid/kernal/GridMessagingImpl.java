@@ -17,20 +17,31 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl implements GridMessaging {
+public class GridMessagingImpl implements GridMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridKernalContext ctx;
+    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
 
     /** */
-    private final GridProjection prj;
+    private GridKernalContext ctx;
+
+    /** */
+    private GridProjection prj;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridMessagingImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -173,5 +184,35 @@ public class GridMessagingImpl implements GridMessaging {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridKernalContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = stash.get();
+
+            return ctx.grid().message();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 }

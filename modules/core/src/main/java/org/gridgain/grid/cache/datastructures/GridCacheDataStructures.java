@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
 /**
  * Facade for working with distributed cache data structures. All cache data structures are similar
  * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
@@ -22,7 +20,7 @@ import java.io.*;
  * know about the change. Or if you add an element to {@link GridCacheQueue} on one node,
  * you can poll it on another node.
  */
-public interface GridCacheDataStructures extends Serializable {
+public interface GridCacheDataStructures {
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}.
