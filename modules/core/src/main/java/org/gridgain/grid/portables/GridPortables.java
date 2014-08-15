@@ -22,6 +22,7 @@ import java.util.*;
  * <li>Make any object portable with zero code change to your existing code.</li>
  * <li>Nest portable objects within each other.</li>
  * <li>Automatically handle {@code circular} or {@code null} references.</li>
+ * <li>Automatically convert collections and maps between Java, .NET, and C++.</li>
  * <li>
  *      Optionally avoid deserialization of objects on the server side
  *      (objects are stored in {@link GridPortableObject} format).

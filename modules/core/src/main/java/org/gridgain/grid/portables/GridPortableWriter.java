@@ -16,8 +16,8 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Writer for portable object used in {@link GridPortableMarshalAware} implementations
- * for the cases when user wants a fine-grained control over serialization.
+ * Writer for portable object used in {@link GridPortableMarshalAware} implementations.
+ * Useful for the cases when user wants a fine-grained control over serialization.
  * <p>
  * Note that GridGain never writes full strings for field or type names. Instead,
  * for performance reasons, GridGain writes integer hash codes for type and field names.
