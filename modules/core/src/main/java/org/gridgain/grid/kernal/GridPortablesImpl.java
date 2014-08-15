@@ -69,7 +69,7 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetaData metaData(Class<?> cls) throws GridPortableException {
+    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
         guard();
 
         try {
@@ -81,7 +81,7 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetaData metaData(String clsName) throws GridPortableException {
+    @Nullable @Override public GridPortableMetadata metadata(String clsName) throws GridPortableException {
         guard();
 
         try {
@@ -93,7 +93,7 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetaData metaData(int typeId) throws GridPortableException {
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) throws GridPortableException {
         guard();
 
         try {

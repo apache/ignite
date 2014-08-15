@@ -19,12 +19,12 @@ import java.util.*;
  */
 public class GridClientMetaDataResponse implements GridPortableMarshalAware {
     /** */
-    private Map<Integer, GridPortableMetaData> meta;
+    private Map<Integer, GridPortableMetadata> meta;
 
     /**
      * @param meta Portable objects metadata.
      */
-    public void metaData(Map<Integer, GridPortableMetaData> meta) {
+    public void metaData(Map<Integer, GridPortableMetadata> meta) {
         this.meta = meta;
     }
 

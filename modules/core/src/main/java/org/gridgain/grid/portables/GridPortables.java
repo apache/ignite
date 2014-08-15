@@ -112,6 +112,12 @@ import java.util.*;
  * </pre>
  * NOTE: you don't need to convert typed objects to portable format before storing
  * them in cache, GridGain will do that automatically.
+ * <h1 class="header">Portable Metadata</h1>
+ * Even though GridGain portable protocol only works with hash codes for type and field names
+ * to achieve better performance, GridGain provides metadata for all portable types which
+ * can be queried ar runtime via any of the {@link GridPortables#metadata(Class) GridPortables.metadata(...)}
+ * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
+ * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
  * Since objects are always cached in the portable binary format, server does not need to
  * be aware of the class definitions. Moreover, if class definitions are not present or not
@@ -129,7 +135,7 @@ import java.util.*;
  * list them on server side as well, then you get ability to deserialize portable objects
  * into concrete types on the server as well.
  * <p>
- * Here is an example of portable configuration:
+ * Here is an example of portable configuration (note that star (*) notation is supported):
  * <pre name=code class=xml>
  *     ...
  *     &lt;!-- Portable objects configuration. --&gt;
@@ -137,6 +143,7 @@ import java.util.*;
  *         &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
  *             &lt;property name="classNames"&gt;
  *                 &lt;list&gt;
+ *                     &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
  *                     &lt;value&gt;org.gridgain.examples.client.portable.Employee&lt;/value&gt;
  *                     &lt;value&gt;org.gridgain.examples.client.portable.Address&lt;/value&gt;
  *                 &lt;/list&gt;
@@ -242,6 +249,7 @@ public interface GridPortables {
      *
      * @param obj Object to convert.
      * @return Converted object.
+     * @throws GridPortableException In case of error.
      */
     public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
 
@@ -259,7 +267,7 @@ public interface GridPortables {
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetaData metaData(Class<?> cls) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException;
 
     /**
      * Gets meta data for provided class name.
@@ -268,7 +276,7 @@ public interface GridPortables {
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetaData metaData(String clsName) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(String clsName) throws GridPortableException;
 
     /**
      * Gets meta data for provided type ID.
@@ -277,5 +285,5 @@ public interface GridPortables {
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetaData metaData(int typeId) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
 }

@@ -65,7 +65,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param newMeta New meta data.
      * @throws GridPortableException In case of error.
      */
-    public void addMeta(int typeId, final GridPortableMetaData newMeta) throws GridPortableException;
+    public void addMeta(int typeId, final GridPortableMetadata newMeta) throws GridPortableException;
 
     /**
      * @param typeId Type ID.
@@ -82,12 +82,12 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetaData metaData(int typeId) throws GridPortableException;
+    @Nullable public GridPortableMetadata metaData(int typeId) throws GridPortableException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    public Map<Integer, GridPortableMetaData> metaData(Collection<Integer> typeIds) throws GridPortableException;
+    public Map<Integer, GridPortableMetadata> metaData(Collection<Integer> typeIds) throws GridPortableException;
 }
