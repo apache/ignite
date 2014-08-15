@@ -20,6 +20,8 @@ import java.util.*;
  * User can choose to work either with the portable format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
+ * <b>NOTE:</b> user does not need to (and should not) implement this interface directly.
+ * <p>
  * To work with the portable format directly, user should create a cache projection
  * over {@code GridPortableObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
@@ -79,8 +81,31 @@ import java.util.*;
  * fields B and C, then the server-side portable object will have the fields A, B, and C.
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
+ * <h1 class="header">Building Portable Objects</h1>
+ * GridGain comes with {@link GridPortableBuilder} which allows to build portable objects dynamically:
+ * <pre name=code class=java>
+ * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ *
+ * builder.typeId("MyObject");
+ *
+ * builder.stringField("fieldA", "A");
+ * build.intField("fieldB", "B");
+ *
+ * GridPortableObject portableObj = builder.build();
+ * </pre>
+ * For the cases when class definition is present
+ * in the class path, it is also possible to populate a standard POJO and then
+ * convert it to portable format, like so:
+ * <pre name=code class=java>
+ * MyObject obj = new MyObject();
+ *
+ * obj.setFieldA("A");
+ * obj.setFieldB(123);
+ *
+ * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * </pre>
  */
-public interface GridPortableObject<T> extends Serializable, Cloneable {
+public interface GridPortableObject extends Serializable, Cloneable {
     /**
      * Gets portable object type ID.
      *
@@ -112,7 +137,7 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
      * @throws GridPortableInvalidClassException If class doesn't exist.
      * @throws GridPortableException In case of any other error.
      */
-    @Nullable public T deserialize() throws GridPortableException;
+    @Nullable public <T> T deserialize() throws GridPortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -123,12 +148,12 @@ public interface GridPortableObject<T> extends Serializable, Cloneable {
      * @return Copy of this portable object.
      * @throws GridPortableException In case of error.
      */
-    public GridPortableObject<T> copy(@Nullable Map<String, Object> fields) throws GridPortableException;
+    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
      */
-    public GridPortableObject<T> clone() throws CloneNotSupportedException;
+    public GridPortableObject clone() throws CloneNotSupportedException;
 }
