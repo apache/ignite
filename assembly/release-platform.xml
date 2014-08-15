@@ -77,9 +77,6 @@
             <includes>
                 <include>*hadoop*.bat</include>
             </includes>
-            <excludes>
-                <exclude>ggrebuild.bat</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>
@@ -89,9 +86,6 @@
             <includes>
                 <include>*hadoop*.sh</include>
             </includes>
-            <excludes>
-                <exclude>ggrebuild.sh</exclude>
-            </excludes>
         </fileSet>
     </fileSets>
 </assembly>
