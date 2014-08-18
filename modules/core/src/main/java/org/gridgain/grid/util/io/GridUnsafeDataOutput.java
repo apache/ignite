@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.io;
 
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import sun.misc.*;
@@ -264,6 +265,17 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         UNSAFE.copyMemory(arr, byteArrOff, bytes, byteArrOff + off, arr.length);
 
         onWrite(arr.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDirectBuffer(GridDirectByteBuffer buf, int off, int len) throws IOException {
+        requestFreeSize(len);
+
+        // UNSAFE.copyMemory(b, byteArrOff + off, bytes, byteArrOff + this.off, len);
+
+        buf.copyTo(off, bytes, this.off, len);
+
+        onWrite(len);
     }
 
     /** {@inheritDoc} */
