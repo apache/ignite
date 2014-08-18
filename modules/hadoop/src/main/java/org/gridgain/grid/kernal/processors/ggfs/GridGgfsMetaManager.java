@@ -651,7 +651,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
     public GridUuid putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
@@ -693,7 +693,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
     private GridUuid putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
