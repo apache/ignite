@@ -149,7 +149,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
         Map<String, Boolean> attrPortable = node.attribute(GridNodeAttributes.ATTR_CACHE_PORTABLE);
 
-        Boolean portableEnabled0 = attrPortable == null ? null : attrPortable.get(cacheName);
+        Boolean portableEnabled0 = attrPortable == null ? null : attrPortable.get(CU.mask(cacheName));
 
         portableEnabled = portableEnabled0 == null ? false : portableEnabled0;
 

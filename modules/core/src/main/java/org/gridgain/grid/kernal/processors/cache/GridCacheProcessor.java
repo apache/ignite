@@ -981,7 +981,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             attrVals[i++] = new GridCacheAttributes(cfg);
 
-            attrPortable.put(cfg.getName(), cfg.isPortableEnabled());
+            attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
 
             if (cfg.getDrSenderConfiguration() != null)
                 replicationCaches.add(cfg.getName());
