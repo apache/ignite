@@ -743,6 +743,18 @@
                                     </fileset>
                                 </replace>
 
+                                <replace token="os/" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="os\" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
+
                                 <replaceregexp byline="true">
                                     <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                     <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
