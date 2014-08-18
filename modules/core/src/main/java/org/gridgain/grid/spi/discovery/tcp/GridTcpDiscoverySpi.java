@@ -3174,6 +3174,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             onBeforeMessageSentAcrossRing(msg);
 
+            registerPendingMessage(msg);
+
             Collection<GridTcpDiscoveryNode> failedNodes;
 
             GridTcpDiscoverySpiState state;
@@ -3336,6 +3338,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 failure = GridTcpDiscoverySpi.this.failedNodes.size() < failedNodes.size();
                             }
 
+                            assert !forceSndPending || msg instanceof GridTcpDiscoveryNodeLeftMessage;
+
                             if (failure || forceSndPending) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
@@ -3379,8 +3383,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                     ", res=" + res + ']');
 
                             clearNodeAddedMessage(msg);
-
-                            registerPendingMessage(msg);
 
                             sent = true;
 
@@ -3488,6 +3490,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             }
         }
 
+        /**
+         * @param msg Message to clear.
+         */
         private void clearNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
             if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
                 // Nullify topology before registration.
@@ -3498,6 +3503,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             }
         }
 
+        /**
+         * @param msg Message to prepare.
+         */
         private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
             if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
                 GridTcpDiscoveryNodeAddedMessage nodeAddedMsg =
