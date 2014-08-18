@@ -970,6 +970,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
 
+        Map<String, Boolean> attrPortable = new HashMap<>();
+
         Collection<String> replicationCaches = new ArrayList<>();
 
         Map<String, String> interceptors = new HashMap<>();
@@ -979,6 +981,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             attrVals[i++] = new GridCacheAttributes(cfg);
 
+            attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
+
             if (cfg.getDrSenderConfiguration() != null)
                 replicationCaches.add(cfg.getName());
 
@@ -987,6 +991,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         attrs.put(ATTR_CACHE, attrVals);
+
+        attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
 
         attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
 
@@ -1287,8 +1293,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
-                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
+                        Boolean locPortableEnabled = U.portableEnabled(ctx.discovery().localNode(), locAttr.cacheName());
+                        Boolean rmtPortableEnabled = U.portableEnabled(rmt, locAttr.cacheName());
+
+                        if (locPortableEnabled != null && rmtPortableEnabled != null)
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
+                                "Portables enabled", locPortableEnabled, rmtPortableEnabled, true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
@@ -1374,7 +1384,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
                                 ", locVer=" + ctx.product().version() + ']');
 
-                        if (locAttr.portableEnabled() && rmt.version().compareTo(GridPortableProcessor.SINCE_VER) < 0)
+                        if (locPortableEnabled != null && locPortableEnabled &&
+                            rmt.version().compareTo(GridPortableProcessor.SINCE_VER) < 0)
                             throw new GridException("Cannot use cache with portables enabled because grid contains " +
                                 "nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
                                 ", rmtVer=" + rmt.version() +
@@ -1708,6 +1719,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
         return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
+    }
+
+    /**
+     * Gets utility cache.
+     *
+     * @return Utility cache.
+     */
+    public <K, V> GridCache<K, V> utilityCache() {
+        return cache(CU.UTILITY_CACHE_NAME);
     }
 
     /**
