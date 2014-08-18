@@ -76,12 +76,8 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         GridConfiguration cfg = new GridConfiguration();
 
-        // We have to explicitly configure path to license because of undefined GRIDGAIN_HOME.
-        cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
-
         cfg.setGridLogger(log);
         cfg.setDiscoverySpi(disc);
-        cfg.setRestEnabled(false);
 
         return cfg;
     }
