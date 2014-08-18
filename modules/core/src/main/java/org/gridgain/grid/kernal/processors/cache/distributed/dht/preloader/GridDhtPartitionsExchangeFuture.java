@@ -657,7 +657,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
-        rmtIds.clear();
         rcvdIds.clear();
         rmtNodes.clear();
         oldestNode.set(null);
