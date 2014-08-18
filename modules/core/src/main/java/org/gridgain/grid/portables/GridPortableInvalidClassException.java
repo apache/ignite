@@ -12,7 +12,7 @@ package org.gridgain.grid.portables;
 import org.jetbrains.annotations.*;
 
 /**
- * Exception indicating that class needed for deserialization of portable object doesn't exist.
+ * Exception indicating that class needed for deserialization of portable object does not exist.
  * <p>
  * Thrown from {@link GridPortableObject#deserialize()} method.
  */

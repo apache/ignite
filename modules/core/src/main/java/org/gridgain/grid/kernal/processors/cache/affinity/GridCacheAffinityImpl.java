@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.affinity;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -25,11 +27,16 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
+    /** Logger. */
+    private GridLogger log;
+
     /**
      * @param cctx Context.
      */
     public GridCacheAffinityImpl(GridCacheContext<K, V> cctx) {
         this.cctx = cctx;
+
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -149,6 +156,15 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** {@inheritDoc} */
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
+
+        if (cctx.portableEnabled()) {
+            try {
+                key = (K)cctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                U.error(log, "Failed to marshal key to portable: " + key, e);
+            }
+        }
 
         return cctx.config().getAffinityMapper().affinityKey(key);
     }
