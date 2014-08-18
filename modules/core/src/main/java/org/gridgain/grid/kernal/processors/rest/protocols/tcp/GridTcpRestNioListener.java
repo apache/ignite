@@ -10,8 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -27,6 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
@@ -63,8 +62,11 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         SUPP_VERS.add((short)1);
     }
 
+    /** */
+    private final CountDownLatch marshMapLatch = new CountDownLatch(1);
+
     /** Marshallers map. */
-    private final Map<Byte, GridClientMarshaller> marshMap;
+    private Map<Byte, GridClientMarshaller> marshMap;
 
     /** Logger. */
     private GridLogger log;
@@ -94,13 +96,17 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
+    }
 
-        marshMap = new HashMap<>();
+    /**
+     * @param marshMap Marshallers.
+     */
+    void marshallers(Map<Byte, GridClientMarshaller> marshMap) {
+        assert marshMap != null;
 
-        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
-        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+        this.marshMap = marshMap;
 
-        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+        marshMapLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -140,6 +146,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 }
                 else {
                     byte marshId = hs.marshallerId();
+
+                    if (marshMapLatch.getCount() > 0)
+                        U.awaitQuiet(marshMapLatch);
 
                     GridClientMarshaller marsh = marshMap.get(marshId);
 
@@ -296,6 +305,20 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restTaskReq.portableMode(proto.portableMode(ses));
 
             restReq = restTaskReq;
+        }
+        else if (msg instanceof GridClientGetMetaDataRequest) {
+            GridClientGetMetaDataRequest req = (GridClientGetMetaDataRequest)msg;
+
+            restReq = new GridRestPortableGetMetaDataRequest(req);
+
+            restReq.command(GET_PORTABLE_METADATA);
+        }
+        else if (msg instanceof GridClientPutMetaDataRequest) {
+            GridClientPutMetaDataRequest req = (GridClientPutMetaDataRequest)msg;
+
+            restReq = new GridRestPortablePutMetaDataRequest(req);
+
+            restReq.command(PUT_PORTABLE_METADATA);
         }
         else if (msg instanceof GridClientTopologyRequest) {
             GridClientTopologyRequest req = (GridClientTopologyRequest) msg;

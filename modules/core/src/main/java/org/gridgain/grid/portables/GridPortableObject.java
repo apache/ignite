@@ -104,6 +104,12 @@ import java.util.*;
  *
  * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
  * </pre>
+ * <h1 class="header">Portable Metadata</h1>
+ * Even though GridGain portable protocol only works with hash codes for type and field names
+ * to achieve better performance, GridGain provides metadata for all portable types which
+ * can be queried ar runtime via any of the {@link GridPortables#metadata(Class) GridPortables.metadata(...)}
+ * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
+ * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface GridPortableObject extends Serializable, Cloneable {
     /**
@@ -112,6 +118,14 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @return Type ID.
      */
     public int typeId();
+
+    /**
+     * Gets meta data for this portable object.
+     *
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public GridPortableMetadata metaData() throws GridPortableException;
 
     /**
      * Gets field value.

@@ -1952,7 +1952,7 @@ public class GridGainEx {
                     try {
                         log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
                     }
-                    catch (ClassNotFoundException ignored) {
+                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                         log4jCls = null;
                     }
 
