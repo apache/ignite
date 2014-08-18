@@ -44,7 +44,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** */
     private GridDhtPartitionTopology<K, V> top;
 
-    /** Partition map futures. */
+    /**
+     * Partition map futures.
+     * This set also contains already completed exchange futures to address race conditions when coordinator
+     * leaves grid and new coordinator sends full partition message to a node which has not yet received
+     * discovery event. In case if remote node will retry partition exchange, completed future will indicate
+     * that full partition map should be sent to requesting node right away.
+     */
     private ExchangeFutureSet exchFuts = new ExchangeFutureSet();
 
     /** Topology version. */
@@ -755,7 +761,10 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
         assert exchFut.isDone();
 
-        exchFuts.removex(exchFut);
+        for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts) {
+            if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
+                fut.cleanUp();
+        }
     }
 
     /**
