@@ -223,7 +223,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (svcs == null) {
             assert ctx != null;
 
-            svcs = new GridServicesImpl(ctx, this, subjId);
+            svcs = new GridServicesImpl(ctx, this);
         }
 
         return svcs;
