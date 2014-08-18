@@ -1824,7 +1824,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 val = ctx.cloneOnFlag(val);
 
                                 if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val = ((GridPortableObject<V>)val).deserialize();
+                                    val = ((GridPortableObject)val).deserialize();
 
                                 map.put(key, val);
 
