@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
  * Data structures implementation object.
  */
 public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructures {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Data structures manager. */
     private GridCacheDataStructuresManager<K, V> dsMgr;
 

@@ -24,9 +24,6 @@ import java.util.*;
  * Affinity interface implementation.
  */
 public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 

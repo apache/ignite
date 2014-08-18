@@ -34,9 +34,6 @@ public class GridServicesImpl implements GridServices, Externalizable {
     /** */
     private GridProjection prj;
 
-    /** */
-    private UUID subjId;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -48,10 +45,9 @@ public class GridServicesImpl implements GridServices, Externalizable {
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridServicesImpl(GridKernalContext ctx, GridProjection prj, UUID subjId) {
+    public GridServicesImpl(GridKernalContext ctx, GridProjection prj) {
         this.ctx = ctx;
         this.prj = prj;
-        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -198,10 +194,10 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
         try {
