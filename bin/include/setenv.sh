@@ -68,9 +68,9 @@ if [ "${USER_LIBS}" != "" ]; then
 fi
 
 if [ "$HADOOP_EDITION" == "1" ]; then
-    . ${GRIDGAIN_HOME}/os/bin/include/hadoop-classpath.sh
+    . ${GRIDGAIN_HOME}${OS_INCLUDE}/bin/include/hadoop-classpath.sh
 
     if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
-        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${OS_INCLUDE}$GRIDGAIN_HADOOP_CLASSPATH
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
     fi
 fi
