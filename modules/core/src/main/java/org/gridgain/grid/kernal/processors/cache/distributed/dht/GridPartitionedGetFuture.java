@@ -52,6 +52,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Keys. */
     private Collection<? extends K> keys;
 
+    /** Topology version. */
+    private long topVer;
+
     /** Reload flag. */
     private boolean reload;
 
@@ -112,6 +115,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /**
      * @param cctx Context.
      * @param keys Keys.
+     * @param topVer Topology version.
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
@@ -120,6 +124,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
+        long topVer,
         boolean reload,
         boolean forcePrimary,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
@@ -133,6 +138,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         this.cctx = cctx;
         this.keys = keys;
+        this.topVer = topVer;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
         this.filters = filters;
@@ -150,7 +156,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * Initializes future.
      */
     public void init() {
-        long topVer = ctx.discovery().topologyVersion();
+        long topVer = this.topVer > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
 
         map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
