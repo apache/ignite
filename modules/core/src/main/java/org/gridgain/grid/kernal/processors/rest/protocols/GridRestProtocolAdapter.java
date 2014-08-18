@@ -180,4 +180,9 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
      * @return Node attribute name.
      */
     protected abstract String getPortPropertyName();
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        // No-op.
+    }
 }

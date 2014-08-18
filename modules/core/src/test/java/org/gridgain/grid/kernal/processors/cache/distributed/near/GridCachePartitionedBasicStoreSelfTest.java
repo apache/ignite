@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test store with replicated cache.
+ * Test store with partitioned cache.
  */
 public class GridCachePartitionedBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
     /** {@inheritDoc} */

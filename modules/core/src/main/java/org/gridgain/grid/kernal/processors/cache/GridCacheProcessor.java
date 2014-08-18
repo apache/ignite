@@ -33,6 +33,7 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -1286,6 +1287,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
+                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
+
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
                                 "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),
@@ -1368,6 +1372,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "grid contains nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
                                 ", rmtVer=" + rmt.version() +
                                 ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
+                                ", locVer=" + ctx.product().version() + ']');
+
+                        if (locAttr.portableEnabled() && rmt.version().compareTo(GridPortableProcessor.SINCE_VER) < 0)
+                            throw new GridException("Cannot use cache with portables enabled because grid contains " +
+                                "nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
+                                ", rmtVer=" + rmt.version() +
+                                ", supportedSince=" + GridPortableProcessor.SINCE_VER +
                                 ", locVer=" + ctx.product().version() + ']');
                     }
                 }
