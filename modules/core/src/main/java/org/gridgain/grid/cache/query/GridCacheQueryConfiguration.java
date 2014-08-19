@@ -16,6 +16,9 @@ import java.util.*;
  * Query configuration object.
  */
 public class GridCacheQueryConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Collection of query type metadata. */
     private Collection<GridCacheQueryTypeMetadata> typeMeta;
 
