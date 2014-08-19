@@ -228,25 +228,28 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     GridDhtPartitionTopology<?, ?> top = dht.topology();
 
                     for (int p = 0; p < aff.partitions(); p++) {
-                        Collection<GridNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
-
-                        int exp = affNodes.size();
-
                         long start = 0;
 
                         for (int i = 0; ; i++) {
+                            // Must map on updated version of topology.
+                            Collection<GridNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
+
+                            int exp = affNodes.size();
+
                             Collection<GridNode> owners = top.nodes(p, -1);
 
                             int actual = owners.size();
 
                             if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
                                 LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual + ']');
+                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
+                                    ", affNodes=" + affNodes + ", owners=" + owners +
+                                    ", locNode=" + g.localNode().id() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                Thread.sleep(50); // Busy wait.
+                                Thread.sleep(200); // Busy wait.
 
                                 continue;
                             }
