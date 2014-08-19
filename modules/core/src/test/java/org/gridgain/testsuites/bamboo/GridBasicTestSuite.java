@@ -32,7 +32,6 @@ public class GridBasicTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Gridgain Basic Test Suite");
 
         suite.addTest(GridLangSelfTestSuite.suite());
-        suite.addTest(GridLoggingSelfTestSuite.suite());
         suite.addTest(GridUtilSelfTestSuite.suite());
         suite.addTest(GridMarshallerSelfTestSuite.suite());
         suite.addTest(GridKernalSelfTestSuite.suite());
