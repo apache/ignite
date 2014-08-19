@@ -27,7 +27,7 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
+    private static final ThreadLocal<GridProjection> stash = new ThreadLocal<>();
 
     /** */
     private GridKernalContext ctx;
@@ -261,12 +261,12 @@ public class GridEventsImpl implements GridEvents, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
+        out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        stash.set((GridProjection)in.readObject());
     }
 
     /**
@@ -277,9 +277,7 @@ public class GridEventsImpl implements GridEvents, Externalizable {
      */
     private Object readResolve() throws ObjectStreamException {
         try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().events();
+            return stash.get().events();
         }
         catch (Exception e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

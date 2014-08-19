@@ -131,9 +131,7 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
      */
     private Object readResolve() throws ObjectStreamException {
         try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().scheduler();
+            return stash.get().grid().scheduler();
         }
         catch (Exception e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
