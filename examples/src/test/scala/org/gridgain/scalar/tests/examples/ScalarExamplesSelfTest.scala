@@ -77,7 +77,7 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
 
     /** */
     def testScalarPopularNumbersRealTimeExample() {
-        ScalarPopularNumbersRealTimeExample.main(EMPTY_ARGS)
+        ScalarCachePopularNumbersExample.main(EMPTY_ARGS)
     }
 
     /** */
