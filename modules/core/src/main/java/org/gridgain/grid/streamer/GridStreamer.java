@@ -37,7 +37,6 @@ import java.util.*;
  *
  * @see GridStreamerStage
  * @see GridStreamerEventRouter
- *
  */
 public interface GridStreamer {
     /**

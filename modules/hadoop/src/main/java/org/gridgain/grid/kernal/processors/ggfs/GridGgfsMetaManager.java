@@ -651,10 +651,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    public GridGgfsFileInfo putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    public GridUuid putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -663,7 +663,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert fileName != null;
                 assert newFileInfo != null;
 
-                GridGgfsFileInfo res = null;
+                GridUuid res = null;
 
                 GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -693,10 +693,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    private GridGgfsFileInfo putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    private GridUuid putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
         if (log.isDebugEnabled())
             log.debug("Locking parent id [parentId=" + parentId + ", fileName=" + fileName + ", newFileInfo=" +
@@ -723,13 +723,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         assert validTxState(true);
 
-        if (entry != null) {
-            newFileInfo = info(entry.fileId());
-
-            assert newFileInfo != null : "Expects file info exist: " + entry.fileId();
-
-            return newFileInfo;
-        }
+        if (entry != null)
+            return entry.fileId();
 
         GridUuid fileId = newFileInfo.id();
 
@@ -1649,10 +1644,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 ggfsCtx.ggfs().evictExclude(path, false), properties(status));
 
                             // Add new file info to the listing optionally removing the previous one.
-                            GridGgfsFileInfo oldInfo = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+                            GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
 
-                            if (oldInfo != null) {
-                                id2InfoPrj.removex(oldInfo.id()); // Remove the old one.
+                            if (oldId != null) {
+                                GridGgfsFileInfo oldInfo = info(oldId);
+
+                                id2InfoPrj.removex(oldId); // Remove the old one.
                                 id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
 
                                 id2InfoPrj.transform(parentInfo.id(),
@@ -2309,10 +2306,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.getLen(),
                         ggfsCtx.ggfs().evictExclude(curPath, false), properties(status));
 
-                GridGgfsFileInfo newCurInfo = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
+                GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
-                if (newCurInfo != null)
-                    curInfo = newCurInfo;
+                if (oldId != null)
+                    curInfo = info(oldId);
 
                 if (created != null)
                     created.put(curPath, curInfo);

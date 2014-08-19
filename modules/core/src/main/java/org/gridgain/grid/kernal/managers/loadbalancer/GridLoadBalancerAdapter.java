@@ -33,10 +33,10 @@ public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter i
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         throw new InvalidObjectException("Load balancer cannot be used from remote node.");
