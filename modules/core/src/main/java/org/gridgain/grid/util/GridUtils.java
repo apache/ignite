@@ -6923,6 +6923,7 @@ public abstract class GridUtils {
 
     /**
      * Gets cache attributes from the given node for the given cache name.
+     *
      * @param n Node.
      * @param cacheName Cache name.
      * @return Attributes.
@@ -6934,6 +6935,19 @@ public abstract class GridUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Gets portable enabled flag from the given node for the given cache name.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @return Portable enabled flag.
+     */
+    @Nullable public static Boolean portableEnabled(GridNode n, @Nullable String cacheName) {
+        Map<String, Boolean> map = n.attribute(ATTR_CACHE_PORTABLE);
+
+        return map == null ? null : map.get(cacheName);
     }
 
     /**

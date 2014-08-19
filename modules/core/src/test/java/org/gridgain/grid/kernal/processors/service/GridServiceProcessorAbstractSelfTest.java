@@ -387,6 +387,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * Affinity service.
      */
     protected static class AffinityService implements GridService {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Latch. */
         private static CountDownLatch latch;
 

@@ -186,7 +186,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersion());
 
-        return affInfo.mapper != null ? affInfo.mapper.affinityKey(key) : null;
+        if (affInfo == null || affInfo.mapper == null)
+            return null;
+
+        if (affInfo.portableEnabled)
+            key = ctx.portable().marshalToPortable(key);
+
+        return affInfo.mapper.affinityKey(key);
     }
 
     /**
@@ -253,7 +259,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             AffinityInfo info = new AffinityInfo(
                 cctx.config().getAffinity(),
                 cctx.config().getAffinityMapper(),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
+                cctx.portableEnabled());
 
             GridFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
 
@@ -368,7 +375,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3());
+        Boolean portableEnabled = U.portableEnabled(n, cacheName);
+
+        return new AffinityInfo(f, m, t.get3(), portableEnabled != null && portableEnabled);
     }
 
     /**
@@ -434,6 +443,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         X.println(">>>   affMapSize: " + affMap.size());
     }
 
+    /**
+     *
+     */
     private static class AffinityInfo {
         /** Affinity function. */
         private GridCacheAffinityFunction affFunc;
@@ -444,19 +456,27 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /** Assignment. */
         private GridAffinityAssignment assignment;
 
+        /** Portable enabled flag. */
+        private boolean portableEnabled;
+
         /**
          * @param affFunc Affinity function.
          * @param mapper Affinity key mapper.
          * @param assignment Partition assignment.
+         * @param portableEnabled Portable enabled flag.
          */
         private AffinityInfo(GridCacheAffinityFunction affFunc, GridCacheAffinityKeyMapper mapper,
-            GridAffinityAssignment assignment) {
+            GridAffinityAssignment assignment, boolean portableEnabled) {
             this.affFunc = affFunc;
             this.mapper = mapper;
             this.assignment = assignment;
+            this.portableEnabled = portableEnabled;
         }
     }
 
+    /**
+     *
+     */
     private static class AffinityAssignmentKey {
         /** */
         private String cacheName;
