@@ -74,7 +74,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
- * <li>{@code GridTcpDiscoveryS3IpFinder}</li>
+ * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder}</li>
  * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link GridTcpDiscoveryVmIpFinder}</li>
  * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
@@ -86,7 +86,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following metrics store implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsMetricsStore}</li>
- * <li>{@code GridTcpDiscoveryS3MetricsStore}</li>
+ * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.GridTcpDiscoveryS3MetricsStore}</li>
  * <li>{@link GridTcpDiscoveryJdbcMetricsStore}</li>
  * <li>{@link GridTcpDiscoveryVmMetricsStore}</li>
  * </ul>
@@ -3056,6 +3056,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
+
+                                    U.closeQuiet(nextNodeSock);
+
+                                    nextNodeSock = null;
 
                                     break;
                                 }

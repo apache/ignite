@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.start
 
 import org.gridgain.grid._
+import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
 import java.util.concurrent._
@@ -20,7 +21,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -215,6 +215,12 @@ class VisorStartCommand {
             if (fileOpt.isDefined) {
                 val file = new File(fileOpt.get)
 
+                if (!file.exists())
+                    scold("File not found: " + file.getAbsolutePath).^^
+
+                if (file.isDirectory)
+                    scold("File is a directory: " + file.getAbsolutePath).^^
+
                 try
                     res = grid.startNodes(file, restart, timeout, maxConn).get().map(t => {
                         Result(t.get1, t.get2, t.get3)
@@ -272,10 +278,8 @@ class VisorStartCommand {
                 )
 
                 try
-                    res = grid.startNodes(
-                        toJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().map(t => {
-                            Result(t.get1, t.get2, t.get3)
-                        }).toSeq
+                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().
+                        map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
                     case e: GridException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
@@ -300,9 +304,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => {
-                    errT += (r.host, r.errMsg)
-                })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
 
                 errT.render()
             }

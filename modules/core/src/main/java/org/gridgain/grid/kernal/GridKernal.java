@@ -56,7 +56,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.portable.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
@@ -565,7 +565,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         if (notifyEnabled) {
             try {
-                verChecker0 = new GridUpdateNotifier(gridName, VER, SITE, false);
+                verChecker0 = new GridUpdateNotifier(gridName, VER, SITE, gw, false);
 
                 verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
             }
@@ -701,8 +701,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verProc.addConvertersToAttributes(attrs);
 
             if (ctx.isEnterprise()) {
-                security = new GridSecurityImpl(ctx.security());
-                portables = new GridPortablesImpl(ctx.portable());
+                security = new GridSecurityImpl(ctx);
+                portables = new GridPortablesImpl(ctx);
             }
 
             gw.writeLock();
@@ -1910,6 +1910,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             GridOptimizedMarshaller.clearCache();
             GridMarshallerExclusions.clearCache();
+            GridEnumCache.clear();
 
             gw.writeLock();
 

@@ -337,7 +337,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
     /**
      *
      */
-    private static class GoodMarshallable implements GridOptimizedMarshallable, Serializable {
+    public static class GoodMarshallable implements GridOptimizedMarshallable, Serializable {
         /** Class ID required by {@link GridOptimizedMarshallable}. */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -352,7 +352,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
          * @param str String.
          * @param i Integer.
          */
-        private GoodMarshallable(String str, int i) {
+        public GoodMarshallable(String str, int i) {
             this.str = str;
             this.i = i;
         }
@@ -380,7 +380,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
     /**
      *
      */
-    private static class NoMarshallable implements Serializable {
+    public static class NoMarshallable implements Serializable {
         /** */
         private String str;
 
@@ -391,7 +391,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
          * @param str String.
          * @param i Integer.
          */
-        private NoMarshallable(String str, int i) {
+        public NoMarshallable(String str, int i) {
             this.str = str;
             this.i = i;
         }

@@ -41,8 +41,8 @@ class GridAffinityUtils {
      * @param cacheName Cache name.
      * @return Affinity job.
      */
-    static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(String cacheName,
-        long topVer) {
+    static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(
+        String cacheName, long topVer) {
         return new AffinityJob(cacheName, topVer);
     }
 
@@ -112,7 +112,8 @@ class GridAffinityUtils {
      */
     @GridInternal
     private static class AffinityJob implements
-        Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, Externalizable {
+        Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>,
+        Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -21,6 +21,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -73,12 +75,21 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
+        cc.setDistributionMode(distributionMode());
+        cc.setPreloadMode(SYNC);
 
         cc.setStore(store);
 
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /**
+     * @return Distribution mode.
+     */
+    protected GridCacheDistributionMode distributionMode() {
+        return NEAR_PARTITIONED;
     }
 
     /**
@@ -560,6 +571,4 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             assert lastMtd.equals(mtd) : "Last method does not match [expected=" + mtd + ", lastMtd=" + lastMtd + ']';
         }
     }
-
-
 }

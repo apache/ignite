@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
@@ -25,7 +26,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
-import org.gridgain.portable.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -1346,7 +1346,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = name;
+            this.name = CU.h2Escape(name);
         }
 
         /** {@inheritDoc} */
@@ -1590,7 +1590,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             this.space = space;
 
-            valTypeName = valType.getSimpleName();
+            String clsName = valType.getSimpleName();
+
+            valTypeName = CU.h2Escape(clsName);
         }
 
         /**
@@ -1601,7 +1603,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          */
         private TypeId(String space, String valTypeName) {
             this.space = space;
-            this.valTypeName = valTypeName;
+            this.valTypeName = CU.h2Escape(valTypeName);
         }
 
         /** {@inheritDoc} */

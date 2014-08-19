@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test store with replicated cache.
+ * Test store with local cache.
  */
 public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
     /** {@inheritDoc} */

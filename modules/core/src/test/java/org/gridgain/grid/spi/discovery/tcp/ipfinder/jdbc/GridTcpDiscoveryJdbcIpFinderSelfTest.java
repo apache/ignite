@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc;
 
 import com.mchange.v2.c3p0.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 
 /**
@@ -19,6 +20,9 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
     GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoveryJdbcIpFinder> {
     /** */
     private ComboPooledDataSource dataSrc;
+
+    /** */
+    private boolean initSchema = true;
 
     /**
      * Constructor.
@@ -37,16 +41,41 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
 
         dataSrc = new ComboPooledDataSource();
         dataSrc.setDriverClass("org.h2.Driver");
-        dataSrc.setJdbcUrl("jdbc:h2:mem");
+
+        if (initSchema)
+            dataSrc.setJdbcUrl("jdbc:h2:mem");
+        else {
+            dataSrc.setJdbcUrl("jdbc:h2:mem:jdbc_ipfinder_not_initialized_schema");
+
+            finder.setInitSchema(false);
+        }
 
         finder.setDataSource(dataSrc);
 
         return finder;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInitSchemaFlag() throws Exception {
+        initSchema = false;
+
+        try {
+            ipFinder().getRegisteredAddresses();
+
+            fail("IP finder didn't throw expected exception.");
+        }
+        catch (GridSpiException e) {
+            assertTrue(e.getMessage().contains("IP finder has not been properly initialized"));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        initSchema = true;
 
         dataSrc.close();
     }

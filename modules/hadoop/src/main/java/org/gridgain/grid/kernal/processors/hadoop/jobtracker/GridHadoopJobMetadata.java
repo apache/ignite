@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -76,6 +77,9 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Job complete time. */
     private long completeTs;
 
+    /** Job counters */
+    private GridHadoopCounters counters = new GridHadoopCountersImpl();
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -106,6 +110,7 @@ public class GridHadoopJobMetadata implements Externalizable {
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
         completeTs = src.completeTs;
+        counters = src.counters;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -320,6 +325,24 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * Returns job counters.
+     *
+     * @return Collection of counters.
+     */
+    public GridHadoopCounters counters() {
+        return counters;
+    }
+
+    /**
+     * Sets counters.
+     *
+     * @param counters Collection of counters.
+     */
+    public void counters(GridHadoopCounters counters) {
+        this.counters = counters;
+    }
+
+    /**
      * @param failCause Fail cause.
      */
     public void failCause(Throwable failCause) {
@@ -387,6 +410,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeLong(mapCompleteTs);
         out.writeLong(completeTs);
         out.writeObject(reducersAddrs);
+        out.writeObject(counters);
     }
 
     /** {@inheritDoc} */
@@ -408,6 +432,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         mapCompleteTs = in.readLong();
         completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
+        counters = (GridHadoopCounters)in.readObject();
     }
 
     /** {@inheritDoc} */

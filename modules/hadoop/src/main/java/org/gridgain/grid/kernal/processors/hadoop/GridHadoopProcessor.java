@@ -93,14 +93,8 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
                 .getLocation();
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ++=========================   WARNING!!!   ==========================++ ");
-            U.quietAndWarn(log, "   !!  Apache Hadoop is not found in classpath! Check that HADOOP_HOME  !! ");
-            U.quietAndWarn(log, "   !!        points to valid Apache Hadoop installation directory!      !! ");
-            U.quietAndWarn(log, "   ++===================================================================++ ");
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ");
+            U.quietAndWarn(log, "Apache Hadoop is not in classpath. Check if HADOOP_HOME environment variable " +
+                "points to Apache Hadoop installation directory.");
         }
 
         if (log.isDebugEnabled())
@@ -187,6 +181,11 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().status(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException {
+        return hctx.jobTracker().jobCounters(jobId);
     }
 
     /** {@inheritDoc} */

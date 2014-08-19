@@ -26,6 +26,9 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridCacheContext<K, V> ctx;
 
     /** */

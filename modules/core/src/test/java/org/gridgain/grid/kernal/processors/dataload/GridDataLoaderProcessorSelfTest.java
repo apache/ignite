@@ -463,6 +463,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoaderApi() throws Exception {
+        useCache = true;
+
         try {
             Grid g1 = startGrid(1);
 
@@ -483,15 +485,13 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.future().get();
 
-            // Create another loader.
-            ldr = g1.dataLoader("UNKNOWN_CACHE");
-
             try {
-                ldr.addData(0, 0).get();
+                // Create another loader.
+                ldr = g1.dataLoader("UNKNOWN_CACHE");
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IllegalStateException e) {
                 info("Caught expected exception: " + e);
             }
 

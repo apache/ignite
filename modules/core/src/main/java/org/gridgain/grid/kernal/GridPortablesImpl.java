@@ -10,8 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.portable.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,17 +18,103 @@ import org.jetbrains.annotations.*;
  */
 public class GridPortablesImpl implements GridPortables {
     /** */
+    private GridKernalContext ctx;
+
+    /** */
     private GridPortableProcessor proc;
 
     /**
-     * @param proc Portable processor.
+     * @param ctx Context.
      */
-    public GridPortablesImpl(GridPortableProcessor proc) {
-        this.proc = proc;
+    public GridPortablesImpl(GridKernalContext ctx) {
+        this.ctx = ctx;
+
+        proc = ctx.portable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId(String typeName) {
+        guard();
+
+        try {
+            return proc.typeId(typeName);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T toPortable(@Nullable Object obj) throws GridPortableException {
-        return (T)proc.marshalToPortable(obj);
+        guard();
+
+        try {
+            return (T)proc.marshalToPortable(obj);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder() {
+        guard();
+
+        try {
+            return proc.builder();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(cls.getName()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(String clsName) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(clsName));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(typeId);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * <tt>ctx.gateway().readLock()</tt>
+     */
+    private void guard() {
+        ctx.gateway().readLock();
+    }
+
+    /**
+     * <tt>ctx.gateway().readUnlock()</tt>
+     */
+    private void unguard() {
+        ctx.gateway().readUnlock();
     }
 }

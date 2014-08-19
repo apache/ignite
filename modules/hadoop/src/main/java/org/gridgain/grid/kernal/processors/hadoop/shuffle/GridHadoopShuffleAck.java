@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -18,14 +19,16 @@ import java.io.*;
 /**
  * Acknowledgement message.
  */
-public class GridHadoopShuffleAck implements GridHadoopMessage, Externalizable {
+public class GridHadoopShuffleAck implements GridHadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringInclude
     private long msgId;
 
     /** */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /**
@@ -39,6 +42,8 @@ public class GridHadoopShuffleAck implements GridHadoopMessage, Externalizable {
      * @param msgId Message ID.
      */
     public GridHadoopShuffleAck(long msgId, GridHadoopJobId jobId) {
+        assert jobId != null;
+
         this.msgId = msgId;
         this.jobId = jobId;
     }

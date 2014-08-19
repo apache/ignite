@@ -16,7 +16,8 @@ import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X
-import org.gridgain.scalar.scalar._
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -150,6 +151,10 @@ class VisorNodeCommand {
                     if (node != null) {
                         val t = VisorTextTable()
 
+                        t.autoBorder = false
+
+                        t.maxCellWidth = 60
+
                         t += ("ID", node.id)
                         t += ("ID8", nid8(node))
                         t += ("Order", node.order)
@@ -160,6 +165,10 @@ class VisorNodeCommand {
 
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
+                        val ver = U.productVersion(node)
+                        val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
+                            (if (F.isEmpty(ver.stage())) "" else "-" + ver.stage())
+
                         if (all) {
                             t += ("OS info", "" +
                                 node.attribute("os.name") + " " +
@@ -169,7 +178,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain version", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
@@ -226,7 +235,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain build#", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Grid name", safe(gridName, "<default>"))
                             t += ("JVM start time", formatDateTime(m.getStartTime))

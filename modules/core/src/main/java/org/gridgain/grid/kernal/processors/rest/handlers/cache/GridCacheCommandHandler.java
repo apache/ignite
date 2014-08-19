@@ -915,16 +915,19 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            GridCacheEntry<Object, Object> entry = c.entry(key);
+            if (ttl != null) {
+                GridCacheEntry<Object, Object> entry = c.entry(key);
 
-            if (entry != null) {
-                if (ttl != null)
+                if (entry != null) {
                     entry.timeToLive(ttl);
 
-                return entry.setxAsync(val);
+                    return entry.setxAsync(val);
+                }
+                else
+                    return new GridFinishedFuture<Object>(ctx, false);
             }
             else
-                return new GridFinishedFuture<Object>(ctx, false);
+                return c.putxAsync(key, val);
         }
     }
 

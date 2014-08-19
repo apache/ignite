@@ -22,6 +22,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.service.*;
@@ -50,7 +51,6 @@ import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -1069,7 +1069,8 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return an instance of logger to use in grid. If not provided, {@code GridLog4jLogger}
+     * Should return an instance of logger to use in grid. If not provided,
+     * {@gglink org.gridgain.grid.logger.log4j.GridLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -2166,7 +2167,7 @@ public class GridConfiguration {
 
     /**
      * Should return fully configured indexing SPI implementations. If not provided,
-     * {@code GridH2IndexingSpi} will be used.
+     * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).

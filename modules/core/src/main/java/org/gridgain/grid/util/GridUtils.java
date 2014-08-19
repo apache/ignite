@@ -142,6 +142,12 @@ public abstract class GridUtils {
     /** Indicates whether current OS is Windows 7. */
     private static boolean win7;
 
+    /** Indicates whether current OS is Windows 8. */
+    private static boolean win8;
+
+    /** Indicates whether current OS is Windows 8.1. */
+    private static boolean win81;
+
     /** Indicates whether current OS is some version of Windows. */
     private static boolean unknownWin;
 
@@ -292,6 +298,10 @@ public abstract class GridUtils {
                 win2008 = true;
             else if (osLow.contains("7"))
                 win7 = true;
+            else if (osLow.contains("8.1"))
+                win81 = true;
+            else if (osLow.contains("8"))
+                win8 = true;
             else
                 unknownWin = true;
         }
@@ -4295,6 +4305,24 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes int array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeIntArray(DataOutput out, @Nullable int[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int b : arr)
+                out.writeInt(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -4311,6 +4339,27 @@ public abstract class GridUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readBoolean();
+
+        return res;
+    }
+
+    /**
+     * Reads int array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        int[] res = new int[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readInt();
 
         return res;
     }
@@ -5662,8 +5711,8 @@ public abstract class GridUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return winXp || win95 || win98 || winNt || win2k ||
-            win2003 || win2008 || winVista || win7 || unknownWin;
+        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
+            win2003 || win2008 || winVista || unknownWin;
     }
 
     /**
@@ -5682,6 +5731,24 @@ public abstract class GridUtils {
      */
     public static boolean isWindows7() {
         return win7;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.
+     *
+     * @return {@code true} if current OS is Windows 8 - {@code false} otherwise.
+     */
+    public static boolean isWindows8() {
+        return win8;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.1.
+     *
+     * @return {@code true} if current OS is Windows 8.1 - {@code false} otherwise.
+     */
+    public static boolean isWindows81() {
+        return win81;
     }
 
     /**
@@ -5745,8 +5812,9 @@ public abstract class GridUtils {
      */
     public static boolean isSufficientlyTestedOs() {
         return
-            win2k ||
-                win7 ||
+            win7 ||
+                win8 ||
+                win81 ||
                 winXp ||
                 winVista ||
                 mac ||
@@ -6884,6 +6952,7 @@ public abstract class GridUtils {
 
     /**
      * Gets cache attributes from the given node for the given cache name.
+     *
      * @param n Node.
      * @param cacheName Cache name.
      * @return Attributes.
@@ -6895,6 +6964,19 @@ public abstract class GridUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Gets portable enabled flag from the given node for the given cache name.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @return Portable enabled flag.
+     */
+    @Nullable public static Boolean portableEnabled(GridNode n, @Nullable String cacheName) {
+        Map<String, Boolean> map = n.attribute(ATTR_CACHE_PORTABLE);
+
+        return map == null ? null : map.get(cacheName);
     }
 
     /**
@@ -8118,8 +8200,10 @@ public abstract class GridUtils {
 
                 res.add(inetSockAddr);
             }
-            else
-                res.add(new InetSocketAddress(addr, port));
+
+            // Always append address because local and remote nodes may have the same hostname
+            // therefore remote hostname will be always resolved to local address.
+            res.add(new InetSocketAddress(addr, port));
         }
 
         return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
