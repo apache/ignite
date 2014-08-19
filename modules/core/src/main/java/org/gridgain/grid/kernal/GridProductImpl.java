@@ -13,13 +13,20 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.text.*;
 import java.util.*;
 
 /**
  * {@link GridProduct} implementation.
  */
-public class GridProductImpl implements GridProduct {
+public class GridProductImpl implements GridProduct, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
+
     /** Copyright blurb. */
     public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
 
@@ -51,13 +58,13 @@ public class GridProductImpl implements GridProduct {
     public static final String ACK_VER;
 
     /** */
-    private final GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** */
-    private final GridProductVersion ver;
+    private GridProductVersion ver;
 
     /** Update notifier. */
-    private final GridUpdateNotifier verChecker;
+    private GridUpdateNotifier verChecker;
 
     /**
      *
@@ -88,6 +95,13 @@ public class GridProductImpl implements GridProduct {
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
 
         ACK_VER = COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
+    }
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridProductImpl() {
+        // No-op.
     }
 
     /**
@@ -146,6 +160,36 @@ public class GridProductImpl implements GridProduct {
         }
         finally {
             ctx.gateway().readUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridKernalContext)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = stash.get();
+
+            return ctx.product();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
         }
     }
 }

@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -42,6 +44,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
+
+    /** NIO server listener. */
+    private GridTcpRestNioListener lsnr;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -140,7 +145,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         assert cfg != null;
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
+        lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
@@ -185,6 +190,19 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 "Failed to start " + name() + " protocol on port " + port + ". " +
                     "Check restTcpHost configuration property.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        super.onKernalStart();
+
+        Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+
+        lsnr.marshallers(marshMap);
     }
 
     /** {@inheritDoc} */

@@ -964,11 +964,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                         try {
                             // Fails only if parent is not a directory or if modified concurrently.
-                            GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, fileName, fileInfo);
+                            GridUuid oldId = meta.putIfAbsent(parentId, fileName, fileInfo);
 
-                            fileId = oldInfo == null ? fileInfo.id() : oldInfo.id(); // Update node ID.
+                            fileId = oldId == null ? fileInfo.id() : oldId; // Update node ID.
 
-                            if (oldInfo == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
+                            if (oldId == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
                                 evts.record(new GridGgfsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
                         }
                         catch (GridException e) {
@@ -1311,14 +1311,16 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 // Add new file into tree structure.
                 while (true) {
-                    GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, fileName, info);
+                    GridUuid oldId = meta.putIfAbsent(parentId, fileName, info);
 
-                    if (oldInfo == null)
+                    if (oldId == null)
                         break;
 
                     if (!overwrite)
                         throw new GridGgfsPathAlreadyExistsException("Failed to create file (file already exists): " +
                             path);
+
+                    GridGgfsFileInfo oldInfo = meta.info(oldId);
 
                     if (oldInfo.isDirectory())
                         throw new GridGgfsPathAlreadyExistsException("Failed to create file (path points to a " +
@@ -1326,7 +1328,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     // Remove old file from the tree.
                     // Only one file is deleted, so we use internal data loader.
-                    deleteFile(path, new FileDescriptor(parentId, fileName, oldInfo.id(), oldInfo.isFile()), false);
+                    deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
                         evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
@@ -1409,10 +1411,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     info = new GridGgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
                         mode == PRIMARY), props);
 
-                    GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, path.name(), info);
+                    GridUuid oldId = meta.putIfAbsent(parentId, path.name(), info);
 
-                    if (oldInfo != null)
-                        info = oldInfo;
+                    if (oldId != null)
+                        info = meta.info(oldId);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
                         evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));

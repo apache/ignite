@@ -20,9 +20,10 @@ import org.gridgain.grid.service.*;
  * <p>
  * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM
  * which will start GridGain node with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
+ * <p>
+ * NOTE:<br/>
+ * Starting {@code ggstart.sh} directly will not work, as distributed services
+ * cannot be peer-deployed and classes must be on the classpath for every node.
  */
 public class ServicesExample {
     public static void main(String[] args) throws Exception {

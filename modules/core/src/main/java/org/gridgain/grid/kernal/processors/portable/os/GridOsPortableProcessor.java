@@ -16,6 +16,8 @@ import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * No-op implementation of {@link GridPortableProcessor}.
  */
@@ -53,7 +55,28 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPortableBuilder<T> builder() {
+    @Override public GridPortableBuilder builder() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMeta(int typeId, GridPortableMetadata newMeta) throws GridPortableException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateMetaData(int typeId, String typeName, String affKeyFieldName,
+        Map<String, Integer> fieldTypeIds) throws GridPortableException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metaData(int typeId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, GridPortableMetadata> metaData(Collection<Integer> typeIds) {
         return null;
     }
 }

@@ -464,7 +464,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
                         return delegate.remainingCapacity();
                     }
                 }, cctx);
-            
+
             return delegate.remainingCapacity();
         }
         catch (GridException e) {
@@ -486,7 +486,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
                         return delegate.drainTo(c);
                     }
                 }, cctx);
-            
+
             return delegate.drainTo(c);
         }
         catch (GridException e) {
@@ -508,7 +508,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
                         return delegate.drainTo(c, maxElements);
                     }
                 }, cctx);
-            
+
             return delegate.drainTo(c, maxElements);
         }
         catch (GridException e) {
@@ -530,7 +530,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
                         return delegate.remove();
                     }
                 }, cctx);
-            
+
             return delegate.remove();
         }
         catch (GridException e) {
@@ -552,7 +552,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
                         return delegate.element();
                     }
                 }, cctx);
-            
+
             return delegate.element();
         }
         catch (GridException e) {
@@ -712,10 +712,10 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

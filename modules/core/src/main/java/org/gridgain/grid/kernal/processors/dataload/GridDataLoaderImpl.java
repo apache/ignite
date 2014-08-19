@@ -35,6 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
@@ -147,9 +148,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
+        Map<String, Boolean> attrPortable = node.attribute(ATTR_CACHE_PORTABLE);
 
-        portableEnabled = attrs.portableEnabled();
+        Boolean portableEnabled0 = attrPortable == null ? null : attrPortable.get(CU.mask(cacheName));
+
+        portableEnabled = portableEnabled0 == null ? false : portableEnabled0;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
