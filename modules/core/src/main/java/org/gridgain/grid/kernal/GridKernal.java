@@ -701,7 +701,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verProc.addConvertersToAttributes(attrs);
 
             if (ctx.isEnterprise()) {
-                security = new GridSecurityImpl(ctx.security());
+                security = new GridSecurityImpl(ctx);
                 portables = new GridPortablesImpl(ctx);
             }
 
