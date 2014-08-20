@@ -3548,8 +3548,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                     if (!F.eq(rmtBuildVer, locBuildVer)) {
-                        final String osFlag = "-os-";
-                        final String entFlag = "-ent-";
+                        final String osFlag = "-os";
+                        final String entFlag = "-ent";
 
                         assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
                         assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);

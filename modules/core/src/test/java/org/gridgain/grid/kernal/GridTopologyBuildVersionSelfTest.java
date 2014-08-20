@@ -32,7 +32,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
 
     /** Test compatible versions. */
     private static final Collection<String> COMPATIBLE_VERS =
-        F.asList("platform-ent-1.0.0", "platform-ent-2.0.0", "platform-ent-3.0.0", "platform-ent-4.0.0");
+        F.asList("1.0.0-ent", "2.0.0-ent", "3.0.0-ent", "4.0.0-ent");
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -45,7 +45,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
             @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
-                attrs.put(GridNodeAttributes.ATTR_BUILD_VER, "platform-ent-" + idx + ".0.0");
+                attrs.put(GridNodeAttributes.ATTR_BUILD_VER, idx + ".0.0" + "-ent");
 
                 if (idx < 3)
                     attrs.remove(GridNodeAttributes.ATTR_BUILD_DATE);
@@ -81,8 +81,8 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
                 // Now check the map itself.
                 assertEquals(4, verMap.get(GridProductVersion.fromString("1.0.0")).size());
                 assertEquals(3, verMap.get(GridProductVersion.fromString("2.0.0")).size());
-                assertEquals(2, verMap.get(GridProductVersion.fromString("3.0.0-1385099743")).size());
-                assertEquals(1, verMap.get(GridProductVersion.fromString("4.0.0-1385099743")).size());
+                assertEquals(2, verMap.get(GridProductVersion.fromString("3.0.0-ent-1385099743")).size());
+                assertEquals(1, verMap.get(GridProductVersion.fromString("4.0.0-ent-1385099743")).size());
             }
         }
         finally {

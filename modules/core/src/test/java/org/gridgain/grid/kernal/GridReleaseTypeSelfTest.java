@@ -65,8 +65,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNodeJoinTopologyWithDifferentReleaseType() throws Exception {
-        firstNodeVer = "platform-ent-1.0.0";
-        secondNodeVer = "platform-os-1.0.0";
+        firstNodeVer = "1.0.0-ent";
+        secondNodeVer = "1.0.0-os";
 
         try {
             startGrids(2);
@@ -80,7 +80,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
             assertTrue(
                 "Caught exception does not contain specified string.",
-                stackTrace.contains("Local and remote nodes have different release types")
+                stackTrace.contains("Topology cannot contain nodes of both enterprise and open source")
             );
 
             return;
@@ -96,8 +96,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
-        firstNodeVer = "platform-os-1.0.0";
-        secondNodeVer = "platform-os-1.0.1";
+        firstNodeVer = "1.0.0-os";
+        secondNodeVer = "1.0.1-os";
 
         try {
             startGrids(2);
@@ -110,8 +110,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             String stackTrace = errors.toString();
 
             assertTrue(
-                "Catched exception wasn't contain specified string.",
-                stackTrace.contains("'Open Source' releases do not support rolling updates")
+                "Caught exception does not contain specified string.",
+                stackTrace.contains("Local node and remote node have different version numbers")
             );
 
             return;
