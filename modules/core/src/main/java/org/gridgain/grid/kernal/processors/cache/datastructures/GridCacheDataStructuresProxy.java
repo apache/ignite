@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,9 +22,6 @@ import java.io.*;
 public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final ThreadLocal<GridCacheContext> stash = new ThreadLocal<>();
 
     /** Delegate object. */
     private GridCacheDataStructures delegate;
@@ -246,8 +242,9 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridCacheContext)in.readObject());
+        cctx = (GridCacheContext<K, V>)in.readObject();
     }
 
     /**
@@ -257,16 +254,6 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridCacheContext cctx = stash.get();
-
-            return cctx.grid().cache(cctx.cache().name()).dataStructures();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return cctx.grid().cache(cctx.cache().name()).dataStructures();
     }
 }

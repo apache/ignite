@@ -22,6 +22,9 @@ import java.util.*;
  */
 public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final Map<GridBiTuple<String, String>, GridHadoopCounter> cntrsMap = new HashMap<>();
 
     /**
