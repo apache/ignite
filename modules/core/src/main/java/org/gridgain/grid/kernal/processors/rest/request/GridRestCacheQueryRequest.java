@@ -17,6 +17,9 @@ import java.io.Serializable;
  * Cache query request.
  */
 public class GridRestCacheQueryRequest extends GridRestRequest implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Request message. */
     private GridClientCacheQueryRequest msg;
 

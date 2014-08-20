@@ -24,9 +24,6 @@ public class GridProductImpl implements GridProduct, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
-
     /** Copyright blurb. */
     public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
 
@@ -170,7 +167,7 @@ public class GridProductImpl implements GridProduct, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        ctx = (GridKernalContext)in.readObject();
     }
 
     /**
@@ -180,16 +177,6 @@ public class GridProductImpl implements GridProduct, Externalizable {
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.product();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return ctx.product();
     }
 }

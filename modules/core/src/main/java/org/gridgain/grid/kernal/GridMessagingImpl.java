@@ -28,9 +28,6 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
-
-    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -188,12 +185,12 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
+        out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        prj = (GridProjection)in.readObject();
     }
 
     /**
@@ -203,16 +200,6 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().message();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return prj.message();
     }
 }

@@ -133,6 +133,15 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /**
+     * Gets cache context.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<K, V> context() {
+        return cctx;
+    }
+
+    /**
      * @param noNulls Flag indicating whether filter should accept nulls or not.
      * @return Entry filter for the flag.
      */

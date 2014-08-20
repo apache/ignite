@@ -24,9 +24,6 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
-
-    /** */
     private GridKernalContext ctx;
 
     /**
@@ -120,7 +117,7 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        ctx = (GridKernalContext)in.readObject();
     }
 
     /**
@@ -130,16 +127,6 @@ public class GridSchedulerImpl implements GridScheduler, Externalizable {
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().scheduler();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return ctx.grid().scheduler();
     }
 }

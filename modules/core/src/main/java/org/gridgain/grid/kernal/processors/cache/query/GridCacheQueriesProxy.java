@@ -10,10 +10,10 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -27,9 +27,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridCacheContext> stash = new ThreadLocal<>();
-
-    /** */
     private GridCacheGateway<K, V> gate;
 
     /** */
@@ -37,9 +34,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
 
     /** */
     private GridCacheQueriesEx<K, V> delegate;
-
-    /** Context. */
-    private GridCacheContext<K, V> cctx;
 
     /**
      * Required by {@link Externalizable}.
@@ -51,20 +45,28 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     /**
      * Create cache queries implementation.
      *
-     * @param ctx Сontext.
+     * @param cctx Сontext.
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
-    public GridCacheQueriesProxy(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj,
+    public GridCacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
         GridCacheQueriesEx<K, V> delegate) {
-        assert ctx != null;
+        assert cctx != null;
         assert delegate != null;
 
-        gate = ctx.gate();
+        gate = cctx.gate();
 
         this.prj = prj;
         this.delegate = delegate;
-        this.cctx = ctx;
+    }
+
+    /**
+     * Gets cache projection.
+     *
+     * @return Cache projection.
+     */
+    public GridCacheProjection<K, V> projection() {
+        return prj;
     }
 
     /** {@inheritDoc} */
@@ -237,31 +239,15 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(cctx);
+        out.writeObject(prj);
+        out.writeObject(delegate);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridCacheContext)in.readObject());
-    }
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+        delegate = (GridCacheQueriesEx<K, V>)in.readObject();
 
-    /**
-     * Reconstructs object on unmarshalling.
-     *
-     * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of unmarshalling error.
-     */
-    private Object readResolve() throws ObjectStreamException {
-        try {
-            GridCacheContext cctx = stash.get();
-
-            return cctx.grid().cache(cctx.cache().name()).queries();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        gate = prj.context().gate();
     }
 }
