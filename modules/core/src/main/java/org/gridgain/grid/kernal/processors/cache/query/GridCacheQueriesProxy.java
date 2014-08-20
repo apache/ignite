@@ -14,8 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -27,14 +25,6 @@ import java.util.*;
 public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final ThreadLocal<GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx>> stash =
-        new ThreadLocal<GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx>>() {
-        @Override protected GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx> initialValue() {
-            return F.t2();
-        }
-    };
 
     /** */
     private GridCacheGateway<K, V> gate;
@@ -255,34 +245,9 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx> t = stash.get();
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+        delegate = (GridCacheQueriesEx<K, V>)in.readObject();
 
-        t.set1((GridCacheProjectionImpl)in.readObject());
-        t.set2((GridCacheQueriesEx)in.readObject());
-    }
-
-    /**
-     * Reconstructs object on unmarshalling.
-     *
-     * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of unmarshalling error.
-     */
-    @SuppressWarnings("unchecked")
-    private Object readResolve() throws ObjectStreamException {
-        try {
-            GridCacheProjectionImpl<K, V> prj = stash.get().get1();
-
-            GridCacheQueriesEx<K, V> delegate = stash.get().get2();
-
-            assert prj != null;
-
-            return new GridCacheQueriesProxy<>(prj.context(), prj, delegate);
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        gate = prj.context().gate();
     }
 }
