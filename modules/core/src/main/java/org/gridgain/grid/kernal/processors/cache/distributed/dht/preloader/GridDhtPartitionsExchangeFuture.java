@@ -452,18 +452,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 // Must initialize topology after we get discovery event.
                 initTopology();
 
-                // Optimization: skip processing, if node joined but immediately left.
-                if (exchId.isJoined() && ctx.discovery().node(exchId.nodeId()) == null) {
-                    assert exchId.isJoined();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Joined node left before exchange completed (nothing to do): " + this);
-
-                    onDone(exchId.topologyVersion());
-
-                    return;
-                }
-
                 long topVer = exchId.topologyVersion();
 
                 assert topVer == top.topologyVersion() :
@@ -995,7 +983,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                 ", ready=" + ready + ", replied=" + replied + ", added=" + added +
                                 ", oldest=" + U.id8(oldestNode.get().id()) + ", oldestOrder=" +
                                 oldestNode.get().order() + ", evtLatch=" + evtLatch.getCount() +
-                                ", locNodeOrder=" + cctx.localNode().order() + ", locNodeId=" + cctx.localNodeId() + ']',
+                                ", locNodeOrder=" + cctx.localNode().order() +
+                                ", locNodeId8=" + U.id8(cctx.localNode().id()) + ']',
                             "Retrying preload partition exchange due to timeout.");
 
                         recheck();
