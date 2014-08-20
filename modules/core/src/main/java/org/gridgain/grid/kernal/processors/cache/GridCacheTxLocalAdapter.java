@@ -1012,7 +1012,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     V val = txEntry.value();
 
                     // Read value from locked entry in group-lock transaction as well.
-                    if (txEntry.hasValue() || (groupLock() && !txEntry.groupLockEntry())) {
+                    if (txEntry.hasValue()) {
                         if (!F.isEmpty(txEntry.transformClosures())) {
                             for (GridClosure<V, V> clos : txEntry.transformClosures())
                                 val = clos.apply(val);
@@ -1028,7 +1028,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         }
                     }
                     else {
-                        assert txEntry.op() == TRANSFORM;
+                        assert txEntry.op() == TRANSFORM || (groupLock() && !txEntry.groupLockEntry());
 
                         while (true) {
                             try {
