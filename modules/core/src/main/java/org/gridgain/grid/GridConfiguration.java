@@ -451,6 +451,9 @@ public class GridConfiguration {
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
+    /** Local event listeners. */
+    private Map<GridLocalEventListener, int[]> lsnrs;
+
     /** TCP host. */
     private String restTcpHost;
 
@@ -594,6 +597,7 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
+        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
@@ -3135,6 +3139,27 @@ public class GridConfiguration {
      */
     public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
+    }
+
+    /**
+     * Gets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @return Pre-configured event listeners map.
+     * @see GridEventType
+     */
+    @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {
+        return lsnrs;
+    }
+
+    /**
+     * Sets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @param lsnrs Pre-configured event listeners map.
+     */
+    public void setLocalEventListeners(Map<GridLocalEventListener, int[]> lsnrs) {
+        this.lsnrs = lsnrs;
     }
 
     /** {@inheritDoc} */
