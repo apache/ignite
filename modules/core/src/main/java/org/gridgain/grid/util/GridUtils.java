@@ -142,6 +142,12 @@ public abstract class GridUtils {
     /** Indicates whether current OS is Windows 7. */
     private static boolean win7;
 
+    /** Indicates whether current OS is Windows 8. */
+    private static boolean win8;
+
+    /** Indicates whether current OS is Windows 8.1. */
+    private static boolean win81;
+
     /** Indicates whether current OS is some version of Windows. */
     private static boolean unknownWin;
 
@@ -292,6 +298,10 @@ public abstract class GridUtils {
                 win2008 = true;
             else if (osLow.contains("7"))
                 win7 = true;
+            else if (osLow.contains("8.1"))
+                win81 = true;
+            else if (osLow.contains("8"))
+                win8 = true;
             else
                 unknownWin = true;
         }
@@ -5701,8 +5711,8 @@ public abstract class GridUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return winXp || win95 || win98 || winNt || win2k ||
-            win2003 || win2008 || winVista || win7 || unknownWin;
+        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
+            win2003 || win2008 || winVista || unknownWin;
     }
 
     /**
@@ -5721,6 +5731,24 @@ public abstract class GridUtils {
      */
     public static boolean isWindows7() {
         return win7;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.
+     *
+     * @return {@code true} if current OS is Windows 8 - {@code false} otherwise.
+     */
+    public static boolean isWindows8() {
+        return win8;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.1.
+     *
+     * @return {@code true} if current OS is Windows 8.1 - {@code false} otherwise.
+     */
+    public static boolean isWindows81() {
+        return win81;
     }
 
     /**
@@ -5784,8 +5812,9 @@ public abstract class GridUtils {
      */
     public static boolean isSufficientlyTestedOs() {
         return
-            win2k ||
-                win7 ||
+            win7 ||
+                win8 ||
+                win81 ||
                 winXp ||
                 winVista ||
                 mac ||
