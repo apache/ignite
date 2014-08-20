@@ -223,7 +223,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             req.groupLockKey(),
                             req.partitionLock(),
-                            req.transactionNodes()
+                            req.transactionNodes(),
+                            req.subjectId()
                         );
 
                         tx = ctx.tm().onCreated(tx);
@@ -365,7 +366,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             req.groupLockKey(),
                             false,
-                            null));
+                            null,
+                            req.subjectId()));
 
                     if (tx == null || !ctx.tm().onStarted(tx))
                         throw new GridCacheTxRollbackException("Attempt to start a completed transaction: " + req);
@@ -538,7 +540,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.groupLockKey(),
                     req.nearXidVersion(),
-                    req.transactionNodes());
+                    req.transactionNodes(),
+                    req.subjectId());
 
                 tx = ctx.tm().onCreated(tx);
 
@@ -644,7 +647,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 0,
                                 ctx,
                                 req.txSize(),
-                                req.groupLockKey());
+                                req.groupLockKey(),
+                                req.subjectId());
 
                             tx = ctx.tm().onCreated(tx);
 
@@ -811,7 +815,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.timeout(),
                                     ctx,
                                     req.txSize(),
-                                    req.groupLockKey());
+                                    req.groupLockKey(),
+                                    req.subjectId());
 
                                 tx = ctx.tm().onCreated(tx);
 
@@ -1641,7 +1646,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.groupLockKey(),
                                     req.partitionLock(),
-                                    null);
+                                    null,
+                                    req.subjectId());
 
                                 tx = ctx.tm().onCreated(tx);
 
@@ -1826,7 +1832,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (ret)
                                         val = e.innerGet(tx, true/*swap*/, true/*read-through*/, /*fail-fast.*/false,
                                             /*unmarshal*/false, /*update-metrics*/true,
-                                            /*event notification*/req.returnValue(i), CU.<K, V>empty());
+                                            /*event notification*/req.returnValue(i), CU.subjectId(tx, ctx),
+                                            CU.<K, V>empty());
 
                                     assert e.lockedBy(mappedVer) ||
                                         (ctx.mvcc().isRemoved(mappedVer) && req.timeout() > 0) :

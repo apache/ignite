@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -754,8 +755,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
-        aff = new GridCacheConsistentHashAffinityFunction();
-        backups = 10;
+        aff = new GridCachePartitionFairAffinity(); // Check cannot use GridCachePartitionFairAffinity.
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -763,7 +763,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         }, GridException.class, null);
 
-        aff = new GridCacheConsistentHashAffinityFunction(true);
+        aff = new GridCacheConsistentHashAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
         backups = Integer.MAX_VALUE;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -776,6 +776,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         startGrid(1);
 
+        // Try to start node with  different number of partitions.
         aff = new GridCacheConsistentHashAffinityFunction(false, 200);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {

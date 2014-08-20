@@ -11,18 +11,18 @@
 
 package org.gridgain.visor.commands.gc
 
+import java.lang.{Boolean => JavaBoolean}
+import java.util.{UUID, HashSet => JavaHashSet}
+
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridEx
-import resources.GridInstanceResource
-import org.gridgain.scalar._
-import scalar._
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorGcTask
 import org.gridgain.visor._
-import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import collection.JavaConversions._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import scala.util.control.Exception._
-import org.gridgain.grid.util.lang.GridAbsClosure
 
 /**
  * ==Overview==
@@ -106,56 +106,57 @@ class VisorGcCommand {
             var node: GridNode = null
 
             if (id8.isDefined && id.isDefined)
-                scold("Only one of '-id8' or '-id' is allowed.") ^^
+                scold("Only one of '-id8' or '-id' is allowed.").^^
             else if (id8.isDefined) {
                 val ns = nodeById8(id8.get)
 
                 if (ns.isEmpty)
-                    scold("Unknown 'id8' value: " + id8.get) ^^
+                    scold("Unknown 'id8' value: " + id8.get).^^
                 else if (ns.size != 1) {
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get) ^^
+                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
                 }
                 else
                     node = ns.head
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(java.util.UUID.fromString(id.get))
+                    node = grid.node(UUID.fromString(id.get))
 
                     if (node == null)
-                        scold("'id' does not match any node: " + id.get) ^^
+                        scold("'id' does not match any node: " + id.get).^^
                 }
                 catch {
-                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get) ^^
+                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
                 }
 
-            val f = new GridAbsClosure {
-                @GridInstanceResource
-                val g: Grid = null
+            try {
+                val t = VisorTextTable()
 
-                override def apply() {
-                    System.gc()
+                t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                    if (dgc)
-                        g.asInstanceOf[GridEx].cachesx().foreach(_.dgc())
+                val prj = grid.forRemotes()
+
+                val nids = prj.nodes().map(_.id())
+
+                prj.compute().withNoFailover().execute(classOf[VisorGcTask],
+                    toTaskArgument(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
+                    val roundHb = math.round(stat.get1() / (1024L * 1024L))
+                    val roundHa = math.round(stat.get2() / (1024L * 1024L))
+
+                    val sign = if (roundHa > roundHb) "+" else ""
+
+                    val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+
+                    t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
                 }
+
+                println("Garbage collector procedure results:")
+
+                t.render()
             }
-
-            val hnd: Catcher[Unit] = {
+            catch {
                 case e: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: GridException => scold(e.getMessage)
-            }
-
-            catching(hnd) {
-                if (node != null)
-                    grid.forNode(node)
-                        .compute()
-                        .withNoFailover()
-                        .run(f)
-                else
-                    grid.compute()
-                        .withNoFailover()
-                        .broadcast(f)
             }
         }
     }

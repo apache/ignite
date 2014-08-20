@@ -81,6 +81,8 @@ public class GridGgfsMarshaller {
 
                     GridGgfsHandshakeRequest req = (GridGgfsHandshakeRequest)msg;
 
+                    U.writeString(out, req.gridName());
+                    U.writeString(out, req.ggfsName());
                     U.writeString(out, req.logDirectory());
 
                     break;
@@ -195,6 +197,8 @@ public class GridGgfsMarshaller {
                 case HANDSHAKE: {
                     GridGgfsHandshakeRequest req = new GridGgfsHandshakeRequest();
 
+                    req.gridName(U.readString(in));
+                    req.ggfsName(U.readString(in));
                     req.logDirectory(U.readString(in));
 
                     msg = req;

@@ -420,7 +420,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.syncRollback(),
             txMapping.transactionNodes(),
             m.last(),
-            m.lastBackups());
+            m.lastBackups(),
+            tx.subjectId());
 
         for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
             if (txEntry.op() == TRANSFORM)

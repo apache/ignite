@@ -15,13 +15,14 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -136,10 +137,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(cctx, xidVer, implicit, implicitSingle, /*local*/true, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, grpLockKey);
+            swapEnabled, storeEnabled, txSize, grpLockKey, subjId);
 
         assert !partLock || grpLockKey != null;
 
@@ -304,7 +306,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
-        final GridBiInClosure<K, V> c) {
+        boolean deserializePortable, final GridBiInClosure<K, V> c) {
         if (!async) {
             try {
                 return new GridFinishedFuture<>(cctx.kernalContext(),
@@ -715,7 +717,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             txEntry.filters(),
                                             cached.detached() ? DR_NONE : drType,
                                             txEntry.drExpireTime(),
-                                            near() ? null : explicitVer);
+                                            near() ? null : explicitVer,
+                                            CU.subjectId(this, cctx));
 
                                         if (nearCached != null && updRes.success())
                                             nearCached.innerSet(
@@ -733,7 +736,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 CU.<K, V>empty(),
                                                 DR_NONE,
                                                 txEntry.drExpireTime(),
-                                                null);
+                                                null,
+                                                CU.subjectId(this, cctx));
                                     }
                                     else if (op == DELETE) {
                                         GridCacheUpdateTxResult<V> updRes = cached.innerRemove(
@@ -747,7 +751,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             topVer,
                                             txEntry.filters(),
                                             cached.detached()  ? DR_NONE : drType,
-                                            near() ? null : explicitVer);
+                                            near() ? null : explicitVer,
+                                            CU.subjectId(this, cctx));
 
                                         if (nearCached != null && updRes.success())
                                             nearCached.innerRemove(
@@ -761,7 +766,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 topVer,
                                                 CU.<K, V>empty(),
                                                 DR_NONE,
-                                                null);
+                                                null,
+                                                CU.subjectId(this, cctx));
                                     }
                                     else if (op == RELOAD) {
                                         cached.innerReload(CU.<K, V>empty());
@@ -954,7 +960,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * Checks if there is a cached or swapped value for
-     * {@link #getAllAsync(Collection, GridCacheEntryEx, GridPredicate[])} method.
+     * {@link #getAllAsync(Collection, GridCacheEntryEx, boolean, GridPredicate[])} method.
      *
      *
      * @param keys Key to enlist.
@@ -962,6 +968,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param map Return map.
      * @param missed Map of missed keys.
      * @param keysCnt Keys count (to avoid call to {@code Collection.size()}).
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Filter to test.
      * @throws GridException If failed.
      * @return Enlisted keys.
@@ -973,6 +980,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         Map<K, V> map,
         Map<K, GridCacheVersion> missed,
         int keysCnt,
+        boolean deserializePortable,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
@@ -1010,8 +1018,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 val = clos.apply(val);
                         }
 
-                        if (val != null)
-                            map.put(key, val);
+                        if (val != null) {
+                            V val0 = val;
+
+                            if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+                                val0 = ((GridPortableObject)val).deserialize();
+
+                            map.put(key, val0);
+                        }
                     }
                     else {
                         assert txEntry.op() == TRANSFORM;
@@ -1019,7 +1033,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         while (true) {
                             try {
                                 val = txEntry.cached().innerGet(this, true, /*no read-through*/false, true, true, true,
-                                    true, filter);
+                                    true, CU.subjectId(this, cctx), filter);
 
                                 if (val != null) {
                                     if (!readCommitted())
@@ -1030,7 +1044,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             val = clos.apply(val);
                                     }
 
-                                    map.put(key, val);
+                                    V val0 = val;
+
+                                    if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+                                        val0 = ((GridPortableObject)val).deserialize();
+
+                                    map.put(key, val0);
                                 }
                                 else
                                     missed.put(key, txEntry.cached().version());
@@ -1084,10 +1103,17 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 /*unmarshal*/true,
                                 /*metrics*/true,
                                 /*event*/true,
+                                CU.subjectId(this, cctx),
                                 filter);
 
-                            if (val != null)
-                                map.put(key, val);
+                            if (val != null) {
+                                V val0 = val;
+
+                                if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+                                    val0 = ((GridPortableObject)val).deserialize();
+
+                                map.put(key, val0);
+                            }
                             else
                                 missed.put(key, ver);
                         }
@@ -1157,16 +1183,18 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /**
-     * Loads all missed keys for {@link #getAllAsync(Collection, GridCacheEntryEx, GridPredicate[])} method.
+     * Loads all missed keys for {@link #getAllAsync(Collection, GridCacheEntryEx, boolean, GridPredicate[])} method.
      *
      * @param map Return map.
      * @param missedMap Missed keys.
      * @param redos Keys to retry.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Filter.
      * @return Loaded key-value pairs.
      */
     private GridFuture<Map<K, V>> checkMissed(final Map<K, V> map, final Map<K, GridCacheVersion> missedMap,
-        @Nullable final Collection<K> redos, final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable final Collection<K> redos, final boolean deserializePortable,
+        final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert redos != null || pessimistic();
 
         if (log.isDebugEnabled())
@@ -1175,7 +1203,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         final Collection<K> loaded = new HashSet<>();
 
         return new GridEmbeddedFuture<>(cctx.kernalContext(),
-            loadMissing(false, missedMap.keySet(), new CI2<K, V>() {
+            loadMissing(false, missedMap.keySet(), deserializePortable, new CI2<K, V>() {
                 /** */
                 private GridCacheVersion nextVer;
 
@@ -1342,7 +1370,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached,  final GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheEntryEx<K, V> cached, final boolean deserializePortable,
+        final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1359,7 +1388,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             final Map<K, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
-            final Collection<K> lockKeys = enlistRead(keys, cached, retMap, missed, keysCnt, filter);
+            final Collection<K> lockKeys = enlistRead(keys, cached, retMap, missed, keysCnt, deserializePortable,
+                filter);
 
             if (single && missed.isEmpty())
                 return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
@@ -1396,6 +1426,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*unmarshal*/true,
                                         /*metrics*/true,
                                         /*events*/true,
+                                        CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
                                         filter);
 
                                     // If value is in cache and passed the filter.
@@ -1408,6 +1439,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             for (GridClosure<V, V> clos : txEntry.transformClosures())
                                                 val = clos.apply(val);
                                         }
+
+                                        if (cctx.portableEnabled() && deserializePortable &&
+                                            val instanceof GridPortableObject)
+                                            val = ((GridPortableObject)val).deserialize();
 
                                         retMap.put(key, val);
                                     }
@@ -1443,7 +1478,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         }
 
                         if (!missed.isEmpty() && (cctx.isReplicated() || cctx.isLocal()))
-                            return checkMissed(retMap, missed, null, filter);
+                            return checkMissed(retMap, missed, null, deserializePortable, filter);
 
                         return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
                     }
@@ -1502,7 +1537,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     return new GridEmbeddedFuture<>(
                         cctx.kernalContext(),
                         // First future.
-                        checkMissed(retMap, missed, redos, filter),
+                        checkMissed(retMap, missed, redos, deserializePortable, filter),
                         // Closure that returns another future, based on result from first.
                         new PMC<Map<K, V>>() {
                             @Override public GridFuture<Map<K, V>> postMiss(Map<K, V> map) {
@@ -1514,7 +1549,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     log.debug("Starting to future-recursively get values for keys: " + redos);
 
                                 // Future recursion.
-                                return getAllAsync(redos, null, filter);
+                                return getAllAsync(redos, null, deserializePortable, filter);
                             }
                         },
                         // Finalize.
@@ -1850,6 +1885,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         retval,
                                         /*metrics*/retval,
                                         /*events*/retval,
+                                        CU.subjectId(this, cctx),
                                         CU.<K, V>empty());
                                 }
                                 catch (GridCacheFilterFailedException e) {
@@ -1902,15 +1938,16 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         // one key in the keys collection.
                                         assert keys.size() == 1;
 
-                                        GridFuture<Boolean> fut = loadMissing(true, F.asList(key), new CI2<K, V>() {
-                                            @Override public void apply(K k, V v) {
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Loaded value from remote node [key=" + k + ", val=" +
-                                                        v + ']');
+                                        GridFuture<Boolean> fut = loadMissing(true, F.asList(key), !portableValues(),
+                                            new CI2<K, V>() {
+                                                @Override public void apply(K k, V v) {
+                                                    if (log.isDebugEnabled())
+                                                        log.debug("Loaded value from remote node [key=" + k + ", val=" +
+                                                            v + ']');
 
-                                                ret.set(v, true);
-                                            }
-                                        });
+                                                    ret.set(v, true);
+                                                }
+                                            });
 
                                         return new GridEmbeddedFuture<>(
                                             cctx.kernalContext(),
@@ -2051,6 +2088,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*unmarshal*/retval,
                                         /*metrics*/true,
                                         /*event*/!dht(),
+                                        CU.subjectId(this, cctx),
                                         CU.<K, V>empty());
                             }
                             catch (GridCacheFilterFailedException e) {
@@ -2134,8 +2172,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return Operation future.
      */
     private GridFuture<GridCacheReturn<V>> putAllAsync0(
-        @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, ? extends GridClosure<V, V>> transformMap,
+        @Nullable Map<? extends K, ? extends V> map,
+        @Nullable Map<? extends K, ? extends GridClosure<V, V>> transformMap,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -2144,25 +2182,67 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         cctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<? extends K, ? extends V> map0;
+        final Map<K, V> map0;
+        final Map<K, GridClosure<V, V>> transformMap0;
+
         if (drMap != null) {
             assert map == null;
 
-            map0 = F.viewReadOnly(drMap, new GridClosure<GridCacheDrInfo<V>, V>() {
+            map0 = (Map<K, V>)F.viewReadOnly(drMap, new GridClosure<GridCacheDrInfo<V>, V>() {
                 @Override public V apply(GridCacheDrInfo<V> val) {
                     return val.value();
                 }
             });
+
+            transformMap0 = null;
         }
-        else
-            map0 = map;
+        else if (cctx.portableEnabled()) {
+            if (map != null) {
+                map0 = new HashMap<>(map.size());
+
+                try {
+                    for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
+                        K key = (K)cctx.marshalToPortable(e.getKey());
+                        V val = (V)cctx.marshalToPortable(e.getValue());
+
+                        map0.put(key, val);
+                    }
+                }
+                catch (GridPortableException e) {
+                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                }
+            }
+            else
+                map0 = null;
+
+            if (transformMap != null) {
+                transformMap0 = new HashMap<>(transformMap.size());
+
+                try {
+                    for (Map.Entry<? extends K, ? extends GridClosure<V, V>> e : transformMap.entrySet()) {
+                        K key = (K)cctx.marshalToPortable(e.getKey());
+
+                        transformMap0.put(key, e.getValue());
+                    }
+                }
+                catch (GridPortableException e) {
+                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                }
+            }
+            else
+                transformMap0 = null;
+        }
+        else {
+            map0 = (Map<K, V>)map;
+            transformMap0 = (Map<K, GridClosure<V, V>>)transformMap;
+        }
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
 
-        assert map0 != null || transformMap != null;
+        assert map0 != null || transformMap0 != null;
         assert cached == null ||
-            (map0 != null && map0.size() == 1) || (transformMap != null && transformMap.size() == 1);
+            (map0 != null && map0.size() == 1) || (transformMap0 != null && transformMap0.size() == 1);
 
         try {
             checkValid(filter);
@@ -2171,7 +2251,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        if (transformMap != null && optimistic() && isSingleUpdate())
+        if (transformMap0 != null && optimistic() && isSingleUpdate())
             return new GridFinishedFuture<>(cctx.kernalContext(),
                 new GridException("Failed to transform keys within OPTIMISTIC transaction and store enabled (" +
                     "storeBatchUpdate must be enabled as well)"));
@@ -2180,7 +2260,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
-        if (F.isEmpty(map0) && F.isEmpty(transformMap)) {
+        if (F.isEmpty(map0) && F.isEmpty(transformMap0)) {
             if (implicit())
                 try {
                     commit();
@@ -2193,7 +2273,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         }
 
         try {
-            Set<? extends K> keySet = map0 != null ? map0.keySet() : transformMap.keySet();
+            Set<? extends K> keySet = map0 != null ? map0.keySet() : transformMap0.keySet();
 
             Collection<K> enlisted = new LinkedList<>();
 
@@ -2203,7 +2283,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 ttl,
                 implicit,
                 map0,
-                transformMap,
+                transformMap0,
                 retval,
                 false,
                 filter,
@@ -2242,17 +2322,17 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         Map<K, V> transformed = null;
 
-                        if (isSingleUpdate() && transformMap != null)
+                        if (isSingleUpdate() && transformMap0 != null)
                             // Need to preserve order.
-                            transformed = new LinkedHashMap<>(transformMap.size());
+                            transformed = new LinkedHashMap<>(transformMap0.size());
 
-                        Set<K> failed = postLockWrite(keys, loaded, transformed, transformMap, ret,
+                        Set<K> failed = postLockWrite(keys, loaded, transformed, transformMap0, ret,
                             /*remove*/false, retval, filter);
 
                         // Write-through.
                         if (isSingleUpdate()) {
-                            if (transformMap == null) {
-                                cctx.store().putAllToStore(GridCacheTxLocalAdapter.this, F.viewReadOnly((Map<K, V>)map0,
+                            if (transformMap0 == null) {
+                                cctx.store().putAllToStore(GridCacheTxLocalAdapter.this, F.viewReadOnly(map0,
                                     new C1<V, GridBiTuple<V, GridCacheVersion>>() {
                                     @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
                                         return F.t(v, writeVersion());
@@ -2346,7 +2426,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                 try {
                                     cctx.store().putAllToStore(GridCacheTxLocalAdapter.this,
-                                        F.viewReadOnly((Map<K,V>)map0,
+                                        F.viewReadOnly(map0,
                                         new C1<V, GridBiTuple<V, GridCacheVersion>>() {
                                             @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
                                                 return F.t(v, writeVersion());
@@ -2559,6 +2639,20 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
+    }
+
+    /**
+     * Checks if portable values should be preserved.
+     *
+     * @return {@code True} if portables should be preserved, {@code false} otherwise.
+     */
+    private boolean portableValues() {
+        GridCacheProjectionImpl<K, V> pimpl = cctx.projectionPerCall();
+
+        if (pimpl == null)
+            return false;
+
+        return pimpl.portableValues();
     }
 
     /**

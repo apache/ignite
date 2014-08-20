@@ -64,8 +64,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      */
     public void addEvent(int part, K key, GridCacheTx tx, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal) {
-        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal);
+        int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId) {
+        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId);
     }
 
     /**
@@ -81,9 +81,9 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      */
     public void addEvent(int part, K key, UUID nodeId, GridCacheTx tx, GridCacheMvccCandidate<K> owner,
-        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal) {
+        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId);
     }
 
     /**
@@ -98,11 +98,11 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      */
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal) {
+        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId) {
         GridCacheTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId);
     }
 
     /**
@@ -118,7 +118,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      */
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridUuid xid, @Nullable Object lockId, int type,
-        @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal) {
+        @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId) {
         assert key != null;
 
         if (!cctx.events().isRecordable(type))
@@ -137,7 +137,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     "discovery SPI): " + evtNodeId);
 
             cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
-                "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal));
+                "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal,
+                subjId));
         }
     }
 
@@ -203,7 +204,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
-        return cctx.gridEvents().isRecordable(type);
+        return !CU.isUtilityCache(cctx.name()) && cctx.gridEvents().isRecordable(type);
     }
 
     /** {@inheritDoc} */

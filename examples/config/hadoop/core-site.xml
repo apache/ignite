@@ -19,7 +19,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://ipc</value>
+        <value>ggfs:///</value>
     </property>
 
     <property>
@@ -33,36 +33,4 @@
         <name>fs.AbstractFileSystem.ggfs.impl</name>
         <value>org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
-
-    <!-- This is an example of how to configure IPC endpoint type with shared memory. -->
-    <!--
-    <property>
-        <name>fs.ggfs.ipc.endpoint.type</name>
-        <value>shmem</value>
-    </property>
-    -->
-
-    <!-- This is an example of how to configure IPC endpoint type with TCP loopback interface. -->
-    <!--
-    <property>
-        <name>fs.ggfs.ipc.endpoint.type</name>
-        <value>tcp</value>
-    </property>
-    -->
-
-    <!-- This is an example of how to configure IPC endpoint host with TCP loopback interface. -->
-    <!--
-    <property>
-        <name>fs.ggfs.ipc.endpoint.host</name>
-        <value>127.0.0.1</value>
-    </property>
-    -->
-
-    <!-- This is an example of how to configure IPC endpoint port. -->
-    <!--
-    <property>
-        <name>fs.ggfs.ipc.endpoint.port</name>
-        <value>10500</value>
-    </property>
-    -->
 </configuration>

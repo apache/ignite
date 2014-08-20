@@ -178,10 +178,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      * @return Query info.
-     * @throws ClassNotFoundException If class not found.
      */
-    private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
-        throws ClassNotFoundException {
+    private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req) {
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
@@ -201,9 +199,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
-                U.forName(req.className(), cctx.deploy().globalLoader()),
+                req.className(),
                 req.clause(),
-                req.includeMetaData()
+                req.includeMetaData(),
+                req.portableKeys(),
+                req.portableValues()
             );
 
         return new GridCacheQueryInfo(
@@ -493,7 +493,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         try {
             qry.query().validate();
 
-            String clsName = qry.query().queryClass() != null ? qry.query().queryClass().getName() : null;
+            String clsName = qry.query().queryClassName();
 
             GridCacheQueryRequest req = new GridCacheQueryRequest(
                 reqId,
@@ -509,7 +509,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().pageSize(),
                 qry.query().includeBackups(),
                 qry.arguments(),
-                false);
+                false,
+                qry.query().portableKeys(),
+                qry.query().portableValues());
 
             addQueryFuture(req.id(), fut);
 
@@ -544,7 +546,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         try {
             GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.includeBackups(), fut.fields(), all);
+                qry.includeBackups(), fut.fields(), all, qry.portableKeys(), qry.portableValues());
 
             sendRequest(fut, req, nodes);
         }
@@ -605,7 +607,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().pageSize(),
                 qry.query().includeBackups(),
                 qry.arguments(),
-                qry.query().includeMetadata());
+                qry.query().includeMetadata(),
+                qry.query().portableKeys(),
+                qry.query().portableValues());
 
             addQueryFuture(req.id(), fut);
 

@@ -45,11 +45,78 @@
             <artifactId>spring-beans</artifactId>
             <version>3.2.2.RELEASE</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-urideploy</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>deploy</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.gridgain</groupId>
+                        <artifactId>gridgain-tools</artifactId>
+                        <version>${gridgain.version}</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>com.sun.mail</groupId>
+                        <artifactId>javax.mail</artifactId>
+                        <version>1.5.2</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>gar</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar"
+                                      todir="${basedir}/target/classes/lib"/>
+
+                                <taskdef name="gar"
+                                    classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"/>
+
+                                <gar destfile="${basedir}/deploy/uri.gar"
+                                     basedir="${basedir}/target/classes"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

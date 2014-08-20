@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.nio.impl;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.testframework.junits.common.*;
@@ -19,8 +18,6 @@ import org.jetbrains.annotations.*;
 import java.net.*;
 import java.nio.*;
 import java.util.concurrent.atomic.*;
-
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * Tests filter chain event processing.
@@ -266,7 +263,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
          * Creates empty mock session.
          */
         public MockNioSession() {
-            addMeta(MARSHALLER.ordinal(), new GridOptimizedMarshaller());
+            // No-op.
         }
 
         /**

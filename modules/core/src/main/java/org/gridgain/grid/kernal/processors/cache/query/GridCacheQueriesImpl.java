@@ -17,6 +17,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
@@ -24,12 +25,22 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 /**
  * {@link GridCacheQueries} implementation.
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
+public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
-    private final GridCacheContext<K, V> ctx;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private GridCacheContext<K, V> ctx;
 
     /** */
     private GridCacheProjectionImpl<K, V> prj;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheQueriesImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Context.
@@ -47,14 +58,25 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(clause, "clause");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause, null, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getSimpleName(), clause, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
+        A.notNull("clsName", clsName);
+        A.notNull("clause", clause);
+
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), clsName, clause, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         A.notNull(qry, "qry");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -62,13 +84,24 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
         A.notNull(search, "search");
 
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search, null, false);
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), U.box(cls).getSimpleName(), search, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
+        A.notNull("clsName", clsName);
+        A.notNull("search", search);
+
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), clsName, search, null, false,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
         return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, (GridBiPredicate<Object, Object>)filter,
-            false);
+            false, prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /** {@inheritDoc} */
@@ -81,6 +114,13 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         A.notNull(cls, "cls");
 
         return ctx.queries().rebuildIndexes(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+        A.notNull("typeName", typeName);
+
+        return ctx.queries().rebuildIndexes(typeName);
     }
 
     /** {@inheritDoc} */
@@ -107,13 +147,36 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta,
+            prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
     /**
      * @return Optional projection filter.
      */
+    @SuppressWarnings("unchecked")
     @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return prj.queries();
     }
 }

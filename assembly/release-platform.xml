@@ -37,15 +37,8 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
     </componentDescriptors>
-
-    <files>
-        <file>
-            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
-            <outputDirectory>/examples/clients/dotnet</outputDirectory>
-            <destName>GridClientApiExample.csproj</destName>
-        </file>
-    </files>
 
     <fileSets>
         <fileSet>
@@ -76,11 +69,23 @@
             <includes>
                 <include>clients/**</include>
             </includes>
-            <excludes>
-                <exclude>**/*.md</exclude>
-                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
-                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
-            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>*hadoop*.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*hadoop*.sh</include>
+            </includes>
         </fileSet>
     </fileSets>
 </assembly>

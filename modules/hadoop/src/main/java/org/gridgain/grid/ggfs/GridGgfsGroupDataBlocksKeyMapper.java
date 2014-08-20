@@ -73,7 +73,7 @@ public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKe
 
             long grpId = blockKey.getBlockId() / grpSize;
 
-            return blockKey.getFileId().hashCode() ^ (int)(grpId ^ (grpId >>> 32));
+            return blockKey.getFileId().hashCode() + (int)(grpId ^ (grpId >>> 32));
         }
 
         return super.affinityKey(key);

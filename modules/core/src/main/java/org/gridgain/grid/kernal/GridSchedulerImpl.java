@@ -13,14 +13,25 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
  * {@link GridScheduler} implementation.
  */
-public class GridSchedulerImpl implements GridScheduler {
+public class GridSchedulerImpl implements GridScheduler, Externalizable {
     /** */
-    private final GridKernalContext ctx;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private GridKernalContext ctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridSchedulerImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -97,5 +108,25 @@ public class GridSchedulerImpl implements GridScheduler {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        ctx = (GridKernalContext)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return ctx.grid().scheduler();
     }
 }

@@ -361,6 +361,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                         GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
 
                                         info.keyBytes(e.getKey());
+                                        info.value(swapEntry.value());
                                         info.valueBytes(swapEntry.valueBytes());
                                         info.ttl(swapEntry.ttl());
                                         info.expireTime(swapEntry.expireTime());

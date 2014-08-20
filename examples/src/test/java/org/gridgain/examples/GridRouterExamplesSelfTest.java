@@ -37,7 +37,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         // Start up a grid node.
         startGrid("grid-router-examples", "examples/config/example-cache.xml");
         // Start up a router.
-        startRouter("modules/clients/src/main/java/config/router/default-router.xml");
+        startRouter("modules/clients/config/router/default-router.xml");
     }
 
     /**

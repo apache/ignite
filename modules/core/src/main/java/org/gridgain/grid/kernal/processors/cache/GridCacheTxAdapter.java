@@ -177,6 +177,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Lock condition. */
     private final Condition cond = lock.newCondition();
 
+    /** Subject ID initiated this transaction. */
+    protected UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -212,7 +215,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId
     ) {
         assert xidVer != null;
         assert cctx != null;
@@ -230,6 +234,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
+        this.subjId = subjId;
 
         startVer = cctx.versions().last();
 
@@ -268,7 +273,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId
     ) {
         this.cctx = cctx;
         this.nodeId = nodeId;
@@ -283,6 +289,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
+        this.subjId = subjId;
 
         implicit = false;
         implicitSingle = false;
@@ -399,6 +406,14 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @Override public UUID otherNodeId() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        if (subjId != null)
+            return subjId;
+
+        return originatingNodeId();
     }
 
     /** {@inheritDoc} */
@@ -1091,6 +1106,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*unmarshal*/true,
                         /*metrics*/metrics,
                         /*event*/false,
+                        /*subjId*/null, // Passing null because event is not generated.
                         CU.<K, V>empty());
 
                 try {
@@ -1261,10 +1277,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         return new TxShadow(

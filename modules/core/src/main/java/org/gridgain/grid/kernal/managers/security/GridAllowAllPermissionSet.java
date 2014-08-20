@@ -36,6 +36,11 @@ public class GridAllowAllPermissionSet implements GridSecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridSecurityPermission> systemPermissions() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     public String toString() {
         return getClass().getSimpleName();
     }

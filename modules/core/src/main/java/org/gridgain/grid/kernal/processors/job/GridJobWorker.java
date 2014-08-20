@@ -310,7 +310,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if parent task is internal or Visor-related.
      */
-    boolean isInternal() {
+    public boolean isInternal() {
         return internal;
     }
 

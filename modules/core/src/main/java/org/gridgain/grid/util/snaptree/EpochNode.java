@@ -111,6 +111,9 @@ abstract class EpochNode extends AtomicLong implements Epoch.Ticket {
     //////////////// subclasses
 
     private static class Child extends EpochNode {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         private Child(final EpochNode parent, final int whichInParent) {
             super(parent, whichInParent);
         }

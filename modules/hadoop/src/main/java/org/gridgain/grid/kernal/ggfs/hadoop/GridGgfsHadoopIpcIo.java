@@ -11,10 +11,8 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.logger.jcl.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.ipc.shmem.*;
@@ -204,7 +202,8 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                         log.debug("IPC IO stopping as unused: " + this);
 
                     stop();
-                } else if (log.isDebugEnabled())
+                }
+                else if (log.isDebugEnabled())
                     log.debug("IPC IO released: " + this);
 
                 return;
@@ -230,7 +229,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
         try {
             endpoint = GridIpcEndpointFactory.connectEndpoint(
-                endpointAddr, new GridLoggerProxy(new GridJclLogger(log), null, null, ""));
+                endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
 
             out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
@@ -319,11 +318,13 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
         assert outBuf == null || msg.command() == GridGgfsIpcCommand.READ_BLOCK;
 
         if (!busyLock.readLock().tryLock())
-            throw new GridGgfsIoException("Failed to send message (client is being concurrently closed).");
+            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+                "closed).");
 
         try {
             if (stopping)
-                throw new GridGgfsIoException("Failed to send message (client is being concurrently closed).");
+                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently " +
+                    "closed).");
 
             long reqId = reqIdCnt.getAndIncrement();
 
@@ -356,7 +357,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                 err = e;
             }
             catch (IOException e) {
-                err = new GridGgfsIoException(e);
+                err = new GridGgfsHadoopCommunicationException(e);
             }
 
             if (err != null) {
@@ -375,12 +376,12 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     /** {@inheritDoc} */
     @Override public void sendPlain(GridGgfsMessage msg) throws GridException {
         if (!busyLock.readLock().tryLock())
-            throw new GridGgfsIoException("Failed to send message (client is being " +
+            throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being " +
                 "concurrently closed).");
 
         try {
             if (stopping)
-                throw new GridGgfsIoException("Failed to send message (client is being concurrently closed).");
+                throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being concurrently closed).");
 
             assert msg.command() == GridGgfsIpcCommand.WRITE_BLOCK;
 
@@ -399,7 +400,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             }
         }
         catch (IOException e) {
-            throw new GridGgfsIoException(e);
+            throw new GridGgfsHadoopCommunicationException(e);
         }
         finally {
             busyLock.readLock().unlock();
@@ -569,7 +570,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                 if (!stopping)
                     log.error("Failed to read data (connection will be closed)", e);
 
-                err = new GridGgfsIoException(e);
+                err = new GridGgfsHadoopCommunicationException(e);
             }
             catch (GridException e) {
                 if (!stopping)

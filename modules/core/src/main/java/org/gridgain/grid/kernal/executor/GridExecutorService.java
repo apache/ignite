@@ -66,9 +66,6 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final ThreadLocal<GridProjection> stash = new ThreadLocal<>();
-
     /** Projection. */
     private GridProjection prj;
 
@@ -116,25 +113,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridProjection) in.readObject());
+        prj = (GridProjection) in.readObject();
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        try {
-            return stash.get().compute().executorService();
-        }
-        catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return prj.compute().executorService();
     }
 
     /** {@inheritDoc} */

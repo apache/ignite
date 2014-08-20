@@ -440,11 +440,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
-                // Must initialize topology after we get discovery event.
-                initTopology();
-
                 // Update before waiting for locks.
                 top.updateTopologyVersion(exchId, this);
+
+                // Must initialize topology after we get discovery event.
+                initTopology();
 
                 // Optimization: skip processing, if node joined but immediately left.
                 if (exchId.isJoined() && ctx.discovery().node(exchId.nodeId()) == null) {
@@ -631,6 +631,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             // Deschedule timeout object.
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
+
+            ((GridDhtPreloader<K, V>)cctx.preloader()).onExchangeDone(this);
 
             return true;
         }

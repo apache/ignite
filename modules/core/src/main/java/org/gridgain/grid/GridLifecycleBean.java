@@ -81,7 +81,7 @@ import org.gridgain.grid.resources.*;
  * </pre>
  * or from Spring XML configuration file as follows:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
+ * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;
  *       &lt;list&gt;

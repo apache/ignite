@@ -11,16 +11,17 @@
 
 package org.gridgain.visor.commands.ping
 
-import org.gridgain.visor._
 import org.gridgain.grid._
-import scala.collection._
-import JavaConversions._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
+
 import java.util.concurrent._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import org.gridgain.scalar._
-import scalar._
+
+import org.gridgain.visor._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
 
 /**
  * Ping result container.
@@ -36,7 +37,7 @@ private class Result {
     var fails = 0
 
     /** Failed nodes. */
-    val failedNodes = mutable.Set.empty[GridNode]
+    val failedNodes = collection.mutable.Set.empty[GridNode]
 }
 
 /**
@@ -148,7 +149,7 @@ class VisorPingCommand {
                 try
                     pings.map(pool.submit(_)).foreach(_.get)
                 catch {
-                    case _: RejectedExecutionException => scold("Ping failed due to system error.") ^^
+                    case _: RejectedExecutionException => scold("Ping failed due to system error.").^^
                 }
 
                 val t = VisorTextTable()
@@ -159,7 +160,7 @@ class VisorPingCommand {
                 t += ("Successful pings", res.oks + " (" + formatInt(100 * res.oks / res.total) + "%)")
                 t += ("Failed pings", res.fails + " (" + formatInt(100 * res.fails / res.total) + "%)")
 
-                if (!res.failedNodes.isEmpty)
+                if (res.failedNodes.nonEmpty)
                     t += ("Failed nodes", res.failedNodes.map(n => nodeId8Addr(n.id)))
 
                 t.render()

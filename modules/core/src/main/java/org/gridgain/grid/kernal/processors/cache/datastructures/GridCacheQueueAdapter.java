@@ -433,11 +433,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     private void releaseSemaphores() {
         if (bounded()) {
             writeSem.drainPermits();
-            writeSem.release(Integer.MAX_VALUE);
+            writeSem.release(1_000_000); // Let all blocked threads to proceed (operation will fail with exception).
         }
 
         readSem.drainPermits();
-        readSem.release(Integer.MAX_VALUE);
+        readSem.release(1_000_000); // Let all blocked threads to proceed (operation will fail with exception).
     }
 
     /**

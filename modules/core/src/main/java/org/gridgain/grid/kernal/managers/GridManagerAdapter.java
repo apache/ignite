@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
@@ -452,6 +453,14 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
                         return ctx.versionConverter().readDelta(nodeId, msgCls, buf);
+                    }
+
+                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+                        return ctx.grid().security().authenticatedSubjects();
+                    }
+
+                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+                        return ctx.grid().security().authenticatedSubject(subjId);
                     }
 
                     /**

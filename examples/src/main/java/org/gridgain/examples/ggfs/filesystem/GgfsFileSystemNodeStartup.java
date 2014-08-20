@@ -94,14 +94,24 @@ public class GgfsFileSystemNodeStartup {
 
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
-        ggfsCfg.setName("GGFS");
+        ggfsCfg.setName("ggfs");
         ggfsCfg.setMetaCacheName("ggfs-meta");
         ggfsCfg.setDataCacheName("ggfs-data");
         ggfsCfg.setBlockSize(128 * 1024);
         ggfsCfg.setPerNodeBatchSize(512);
         ggfsCfg.setPerNodeParallelBatchCount(16);
         ggfsCfg.setPrefetchBlocks(32);
-        ggfsCfg.setIpcEndpointConfiguration(GridUtils.isWindows() ? "{type:'tcp'}" : "{type:'shmem', port:'10500'}");
+
+        Map<String, String> endpointCfg = new HashMap<>();
+
+        if (GridUtils.isWindows())
+            endpointCfg.put("type", "tcp");
+        else {
+            endpointCfg.put("type", "shmem");
+            endpointCfg.put("port", "10500");
+        }
+
+        ggfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         cfg.setGgfsConfiguration(ggfsCfg);
 

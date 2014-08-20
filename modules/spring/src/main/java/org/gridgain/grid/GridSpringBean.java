@@ -9,22 +9,25 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -46,9 +49,9 @@ import java.util.*;
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean" scope="singleton"&gt;
+ * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
- *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
+ *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *             &lt;property name="gridName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -56,7 +59,7 @@ import java.util.*;
  * </pre>
  * Or use default configuration:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean" scope="singleton"/&gt;
+ * &lt;bean id="mySpringBean" class="org.gridgain.grid.GridSpringBean"/&gt;
  * </pre>
  * <h1 class="header">Java Example</h1>
  * Here is how you may access this bean from code:
@@ -125,9 +128,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
             cfg = new GridConfiguration();
         }
 
-        GridGainSpring.start(cfg, appCtx);
-
-        g = G.grid(cfg.getGridName());
+        g = GridGainSpring.start(cfg, appCtx);
     }
 
     /** {@inheritDoc} */
@@ -215,6 +216,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices services() {
+        assert g != null;
+
+        return g.services();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridMessaging message() {
         assert g != null;
 
@@ -240,6 +248,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.security();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortables portables() {
+        assert g != null;
+
+        return g.portables();
     }
 
     /** {@inheritDoc} */
@@ -339,6 +354,20 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.forRandom();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOldest() {
+        assert g != null;
+
+        return g.forOldest();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forYoungest() {
+        assert g != null;
+
+        return g.forYoungest();
     }
 
     /** {@inheritDoc} */
@@ -465,6 +494,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.ggfss();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        assert g != null;
+
+        return g.hadoop();
     }
 
     /** {@inheritDoc} */

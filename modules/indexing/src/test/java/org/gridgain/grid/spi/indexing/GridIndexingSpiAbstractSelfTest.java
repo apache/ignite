@@ -21,6 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
@@ -382,6 +383,17 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
             GridTestUtils.setFieldValue(spi, "log", oldLog);
             ((GridH2IndexingSpi)spi).setLongQueryExecutionTimeout(3000);
         }
+    }
+
+    public void _testResultReuse() throws Exception {
+        final X spi = getSpi();
+
+        multithreaded(new Callable<Object>() {
+              @Override public Object call() throws Exception {
+                  return spi.queryFields(null, "SELECT sum(x) + sum(x) + sum(x) + sum(x) FROM SYSTEM_RANGE(?, ?)",
+                      F.<Object>asList(0, 7000000));
+              }
+          }, 5);
     }
 
     /**

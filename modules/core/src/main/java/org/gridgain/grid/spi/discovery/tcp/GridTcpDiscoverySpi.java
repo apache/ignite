@@ -74,7 +74,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
- * <li>{@code GridTcpDiscoveryS3IpFinder}</li>
+ * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder}</li>
  * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link GridTcpDiscoveryVmIpFinder}</li>
  * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
@@ -86,7 +86,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * See the following metrics store implementations for details on configuration:
  * <ul>
  * <li>{@link GridTcpDiscoverySharedFsMetricsStore}</li>
- * <li>{@code GridTcpDiscoveryS3MetricsStore}</li>
+ * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.GridTcpDiscoveryS3MetricsStore}</li>
  * <li>{@link GridTcpDiscoveryJdbcMetricsStore}</li>
  * <li>{@link GridTcpDiscoveryVmMetricsStore}</li>
  * </ul>
@@ -209,6 +209,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         }
     };
 
+    /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
+    public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
+
+    /** Address resolver. */
+    private GridAddressResolver addrRslvr;
+
     /** Local port which node uses. */
     private int locPort = DFLT_PORT;
 
@@ -286,6 +292,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private GridTcpDiscoveryNode locNode;
+
+    /** Internal and external addresses of local node. */
+    private Collection<InetSocketAddress> locNodeAddrs;
 
     /** Local IP address. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -420,6 +429,28 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      */
     public String getLocalAddress() {
         return locAddr;
+    }
+
+    /**
+     * Sets address resolver.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    @GridSpiConfiguration(optional = true)
+    @GridAddressResolverResource
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        // Injection should not override value already set by Spring or user.
+        if (this.addrRslvr == null)
+            this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Gets address resolver.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
     }
 
     /** {@inheritDoc} */
@@ -945,9 +976,23 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             metricsProvider,
             nodeVer);
 
+        try {
+            Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
+                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
+                    locNode.discoveryPort());
+
+            if (extAddrs != null)
+                nodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+        }
+        catch (GridException e) {
+            throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
+        }
+
         locNode.setAttributes(nodeAttrs);
 
         locNode.local(true);
+
+        locNodeAddrs = getNodeAddresses(locNode);
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
@@ -1304,7 +1349,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      * @return {@code true} if IP finder contains local address.
      */
     private boolean ipFinderHasLocalAddress() throws GridSpiException {
-        for (InetSocketAddress locAddr : locNode.socketAddresses()) {
+        for (InetSocketAddress locAddr : locNodeAddrs) {
             for (InetSocketAddress addr : registeredAddresses())
                 try {
                     int port = addr.getPort();
@@ -1359,7 +1404,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         if (node.id().equals(locNodeId))
             return true;
 
-        for (InetSocketAddress addr : node.socketAddresses()) {
+        for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node)) ) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 return node.id().equals(pingNode(addr));
@@ -1385,7 +1430,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private UUID pingNode(InetSocketAddress addr) throws GridSpiException {
         assert addr != null;
 
-        if (locNode.socketAddresses().contains(addr))
+        if (F.contains(locNodeAddrs, addr))
             return locNodeId;
 
         Collection<Throwable> errs = null;
@@ -1476,9 +1521,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     if (subj == null)
                         throw new GridSpiException("Authentication failed for local node: " + locNode.id());
-                    else if (!(subj instanceof Serializable))
-                        throw new GridSpiException("Authentication failed for local node " +
-                            "(sbuject is not Serializable): " + locNode.id());
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
@@ -1558,13 +1600,16 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     GridTcpDiscoveryAuthFailedMessage msg =
                         (GridTcpDiscoveryAuthFailedMessage)joinRes.get();
 
-                    throw new GridSpiException("Authentication failed [nodeId=" + msg.creatorNodeId() +
-                        ", addr=" + msg.address().getHostAddress() + ']');
+                    throw new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+                        msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
                 }
                 else if (spiState == CHECK_FAILED) {
                     GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
 
-                    throw new GridSpiException(msg.error());
+                    if (versionCheckFailed(msg))
+                        throw new GridSpiVersionCheckException(msg.error());
+                    else
+                        throw new GridSpiException(msg.error());
                 }
                 else if (spiState == LOOPBACK_PROBLEM) {
                     GridTcpDiscoveryLoopbackProblemMessage msg = (GridTcpDiscoveryLoopbackProblemMessage)joinRes.get();
@@ -1593,6 +1638,42 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
+    }
+
+    /**
+     * @param msg Failed message.
+     * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
+     * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it
+     *      and create separate message for failed version check with next major release.
+     */
+    @Deprecated
+    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
+        return msg.error().contains("versions are not compatible");
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Remote grid version parsed from error message.
+     * @deprecated This method was created for preserving backward compatibility. During major version update
+     *      parsing of error message should be replaced with new {@link GridTcpDiscoveryCheckFailedMessage}
+     *      which contains all necessary information.
+     */
+    @Deprecated
+    @Nullable private String parseRemoteVersion(String msg) {
+        msg = msg.replaceAll("\\s", "");
+
+        final String verPrefix = "rmtBuildVer=";
+
+        int startIdx = msg.indexOf(verPrefix);
+        int endIdx = msg.indexOf(',', startIdx);
+
+        if (endIdx < 0)
+            endIdx = msg.indexOf(']', startIdx);
+
+        if (startIdx < 0 || endIdx < 0)
+            return null;
+
+        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
     }
 
     /**
@@ -2239,7 +2320,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 InetSocketAddress resolved = addr.isUnresolved() ?
                     new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
 
-                if (!locNode.socketAddresses().contains(resolved))
+                if (!locNodeAddrs.contains(resolved))
                     res.add(resolved);
             }
             catch (UnknownHostException ignored) {
@@ -2249,6 +2330,46 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 res.add(addr);
             }
         }
+
+        return res;
+    }
+
+    /**
+     * @param node Node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     *      Internal addresses placed before external addresses.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node) {
+        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
+
+        Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
+
+        if (extAddrs != null)
+            res.addAll(extAddrs);
+
+        return res;
+    }
+
+    /**
+     * @param node Node.
+     * @param sameHost Same host flag.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     *      Internal addresses placed before external addresses.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node, boolean sameHost) {
+        ArrayList<InetSocketAddress> addrs = new ArrayList<>(node.socketAddresses());
+
+        Collections.sort(addrs, inetAddressesComparator(sameHost));
+
+        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(addrs);
+
+        Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
+
+        if (extAddrs != null)
+            res.addAll(extAddrs);
 
         return res;
     }
@@ -2616,15 +2737,16 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             try {
                 // Addresses that belongs to nodes in topology.
-                Collection<InetSocketAddress> currAddrs = F.flat(
+                Collection<InetSocketAddress> currAddrs = F.flatCollections(
                     F.viewReadOnly(
                         ring.allNodes(),
                         new C1<GridTcpDiscoveryNode, Collection<InetSocketAddress>>() {
                             @Override public Collection<InetSocketAddress> apply(GridTcpDiscoveryNode node) {
-                                return node.socketAddresses();
+                                return getNodeAddresses(node);
                             }
                         }
-                    ));
+                    )
+                );
 
                 // Addresses registered in IP finder.
                 Collection<InetSocketAddress> regAddrs = registeredAddresses();
@@ -2907,11 +3029,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 final boolean sameHost = U.sameMacs(locNode, next);
 
-                List<InetSocketAddress> rmtAddrs = new ArrayList<>(next.socketAddresses());
-
-                Collections.sort(rmtAddrs, inetAddressesComparator(sameHost));
-
-                addr: for (InetSocketAddress addr : rmtAddrs) {
+                addr: for (InetSocketAddress addr : getNodeAddresses(next, sameHost)) {
                     long ackTimeout0 = ackTimeout;
 
                     for (int i = 0; i < reconCnt; i++) {
@@ -2938,6 +3056,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
+
+                                    U.closeQuiet(nextNodeSock);
+
+                                    nextNodeSock = null;
 
                                     break;
                                 }
@@ -3529,7 +3651,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         }
                         else {
                             String errMsg = "Local node's and remote node's build versions are not compatible " +
-                                "(node will not join, all nodes in topology should have compatible build versions) " +
+                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                    "(topologies built with different GridGain versions " +
+                                        "are supported in Enterprise version only) " :
+                                    "(node will not join, all nodes in topology should have " +
+                                        "compatible build versions) ") +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                 ", rmtNodeAddrs=" + U.addressesAsString(node) +
@@ -3543,8 +3669,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             try {
                                 String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                    "(node will not join, all nodes in topology should have compatible build " +
-                                    "versions) [locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                        "(topologies built with different GridGain versions " +
+                                            "are supported in Enterprise version only) " :
+                                        "(node will not join, all nodes in topology should have " +
+                                            "compatible build versions) ") +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                     ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                     ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                     ", rmtNodeId=" + locNode.id() + ']';
@@ -3628,7 +3758,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             throws GridSpiException {
             GridSpiException ex = null;
 
-            for (InetSocketAddress addr : node.socketAddresses()) {
+            for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
                     sendMessageDirectly(msg, addr);
 

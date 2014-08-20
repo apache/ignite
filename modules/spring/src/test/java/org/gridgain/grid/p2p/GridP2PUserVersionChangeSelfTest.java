@@ -337,17 +337,19 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * Creates content of META-INF/gridgain.xml for specified user version.
      *
-     * @param userVersion Version to create.
+     * @param userVer Version to create.
      * @return content of META-INF/gridgain.xml.
      */
-    private String makeUserVersion(String userVersion) {
+    private String makeUserVersion(String userVer) {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?> " +
             "<beans xmlns=\"http://www.springframework.org/schema/beans\" " +
             "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
             "xmlns:util=\"http://www.springframework.org/schema/util\" " +
-            "xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd " +
-            "http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd\"> " +
-            "<bean id=\"userVersion\" class=\"java.lang.String\"><constructor-arg value=\"" + userVersion + "\"/></bean> " +
+            "xsi:schemaLocation=\"http://www.springframework.org/schema/beans " +
+            "http://www.springframework.org/schema/beans/spring-beans.xsd " +
+            "http://www.springframework.org/schema/util " +
+            "http://www.springframework.org/schema/util/spring-util.xsd\"> " +
+            "<bean id=\"userVersion\" class=\"java.lang.String\"><constructor-arg value=\"" + userVer + "\"/></bean> " +
             "</beans>";
     }
 }

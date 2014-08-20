@@ -124,7 +124,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         Collection<GridCacheTxEntry<K, V>> writes,
         Object grpLockKey,
         boolean partLock,
-        Map<UUID, Collection<UUID>> txNodes) {
+        Map<UUID, Collection<UUID>> txNodes
+    ) {
         super(tx.xidVersion(), 0);
 
         commitVer = null;

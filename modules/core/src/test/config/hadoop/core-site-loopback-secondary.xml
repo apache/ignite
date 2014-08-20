@@ -7,7 +7,7 @@
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://secondary/</value>
+        <value>ggfs://127.0.0.1:11500/</value>
     </property>
 
     <property>
@@ -21,17 +21,17 @@
     </property>
 
     <property>
+        <name>fs.ggfs.127.0.0.1:11500.endpoint.no_embed</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.127.0.0.1:11500.endpoint.no_local_shmem</name>
+        <value>true</value>
+    </property>
+
+    <property>
         <name>fs.ggfs.block.size</name>
         <value>1024</value>
-    </property>
-
-    <property>
-        <name>fs.ggfs.secondary.endpoint.type</name>
-        <value>tcp</value>
-    </property>
-
-    <property>
-        <name>fs.ggfs.secondary.endpoint.port</name>
-        <value>11500</value>
     </property>
 </configuration>

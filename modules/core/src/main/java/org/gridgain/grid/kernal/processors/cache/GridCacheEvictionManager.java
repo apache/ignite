@@ -699,7 +699,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal);
+                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null);
 
             if (log.isDebugEnabled())
                 log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
@@ -980,7 +980,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                     if (recordable)
                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
-                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue());
+                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null);
                 }
             }
         }

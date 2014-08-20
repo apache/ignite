@@ -32,9 +32,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("GridGain Examples Test Suite");
 
         suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientApiExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientCacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientMessageInterceptorExampleSelfTest.class));
         suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuationExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousMapperExamplesSelfTest.class));
@@ -55,8 +52,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         // Multi-node.
         suite.addTest(new TestSuite(GridCacheExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheStoreLoadDataExampleMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientApiExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientCacheExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridBasicExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridContinuationExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousMapperExamplesMultiNodeSelfTest.class));

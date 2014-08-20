@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.indexing.h2;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -20,6 +21,7 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.opt.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -171,6 +173,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** */
     private static final GridIndexingQueryFilter[] EMPTY_FILTER = new GridIndexingQueryFilter[0];
+
+    /** */
+    private static final Object[][] EMPTY_DATA = new Object[0][];
 
     /** */
     private static final Field COMMAND_FIELD;
@@ -327,6 +332,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         }
     };
 
+    /** This field will be cleaned up after each update. */
+    private volatile ConcurrentMap<Object, GridFutureAdapterEx<QueryResult>> qryResCache = new ConcurrentHashMap8<>();
+
     /**
      * Gets DB connection.
      *
@@ -444,14 +452,18 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param stmt SQL statement.
      * @param idx Index.
      * @param obj Value to store.
-     * @throws SQLException In case of errors.
+     * @throws GridSpiException If failed.
      */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj)
-        throws SQLException {
-        if (obj == null)
-            stmt.setNull(idx, Types.VARCHAR);
-        else
-            stmt.setObject(idx, obj);
+    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws GridSpiException {
+        try {
+            if (obj == null)
+                stmt.setNull(idx, Types.VARCHAR);
+            else
+                stmt.setObject(idx, obj);
+        }
+        catch (SQLException e) {
+            throw new GridSpiException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
+        }
     }
 
     /**
@@ -468,6 +480,14 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             // Reset connection to receive new one at next call.
             U.close(conn, log);
         }
+    }
+
+    /**
+     * Invalidates query cache.
+     */
+    private void invalidateQueryCache() {
+        if (!qryResCache.isEmpty())
+            qryResCache = new ConcurrentHashMap8<>();
     }
 
     /** {@inheritDoc} */
@@ -494,6 +514,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         }
         finally {
             localSpi.remove();
+
+            invalidateQueryCache();
         }
     }
 
@@ -508,6 +530,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         localSpi.set(this);
 
+        boolean foundOrErr = true;
+
         try {
             for (TableDescriptor tbl : tables(schema(spaceName))) {
                 if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
@@ -519,9 +543,14 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     }
                 }
             }
+
+            foundOrErr = false;
         }
         finally {
             localSpi.remove();
+
+            if (foundOrErr)
+                invalidateQueryCache();
         }
 
         return false;
@@ -674,57 +703,132 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             removeTable(tbl);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-        @Nullable Collection<Object> params, GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
-        localSpi.set(this);
+    /**
+     * @param t Sql result.
+     * @return Array of rows.
+     * @throws GridSpiException If failed.
+     */
+    static Object[][] fetchResult(GridBiTuple<? extends Statement, ResultSet> t) throws GridSpiException {
+        try (Statement stmt = t.get1(); ResultSet rs = t.get2()) {
+            Object[][] res = new Object[16][];
 
-        try {
-            Connection conn = connectionForThread(schema(spaceName));
+            int cols = rs.getMetaData().getColumnCount();
 
-            setFilters(filters != null ? filters : EMPTY_FILTER);
+            int i = 0;
 
-            T2<PreparedStatement, ResultSet> res = executeSqlQueryWithTimer(conn, qry, params);
+            while (rs.next()) {
+                Object[] row = new Object[cols];
 
-            if (res == null)
-                return new GridIndexingFieldsResultAdapter(null,
-                    new GridEmptyCloseableIterator<List<GridIndexingEntity<?>>>());
+                for (int c = 0; c < cols; c++)
+                    row[c] = rs.getObject(c + 1);
 
-            ResultSet rs = res.get2();
+                if (i == res.length)
+                    res = Arrays.copyOf(res, i * 2);
 
-            List<GridIndexingFieldMetadata> meta;
-
-            try {
-                ResultSetMetaData rsMeta = rs.getMetaData();
-
-                meta = new ArrayList<>(rsMeta.getColumnCount());
-
-                for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
-                    String schemaName = rsMeta.getSchemaName(i);
-                    String typeName = rsMeta.getTableName(i);
-                    String name = rsMeta.getColumnLabel(i);
-                    String type = rsMeta.getColumnClassName(i);
-
-                    meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
-                }
-            }
-            catch (SQLException e) {
-                throw new GridSpiException("Failed to get meta data.", e);
+                res[i++] = row;
             }
 
-            return new GridIndexingFieldsResultAdapter(meta, new FieldsIterator(rs, res.get1()));
+            return res;
         }
         catch (SQLException e) {
-            onSqlException();
-
-            throw new GridSpiException("Failed to query fields: " + qry, e);
+            throw new GridSpiException("Failed to fetch data.", e);
         }
-        finally {
-            setFilters(null);
+    }
 
-            localSpi.remove();
+    /**
+     * Executes query reusing existing results if possible.
+     *
+     * @param key Query result cache key.
+     * @param qryClos Query closure.
+     * @return Query result.
+     * @throws GridSpiException If failed.
+     */
+    private QueryResult executeQueryWithCache(Object key, GridOutClosure<QueryResult> qryClos) throws GridSpiException {
+        GridFutureAdapterEx<QueryResult> fut = new GridFutureAdapterEx<>();
+
+        ConcurrentMap<Object, GridFutureAdapterEx<QueryResult>> qryResCache0 = qryResCache;
+
+        GridFutureAdapterEx<QueryResult> old = qryResCache0.putIfAbsent(key, fut);
+
+        if (old == null) {
+            try {
+                fut.onDone(qryClos.apply());
+            }
+            catch (Throwable err) {
+                fut.onDone(err);
+            }
+            finally {
+                if (qryResCache0 == qryResCache) // Remove only if cache is still valid.
+                    qryResCache0.remove(key, fut);
+            }
         }
+        else
+            fut = old;
+
+        try {
+            return fut.get();
+        }
+        catch (GridException e) {
+            throw new GridSpiException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
+        @Nullable final Collection<Object> params, final GridIndexingQueryFilter<K, V>... filters)
+        throws GridSpiException {
+        QueryResult qryRes = executeQueryWithCache(new T2<>(qry, params), new COX<QueryResult>() {
+            @Override public QueryResult applyx() throws GridSpiException {
+                localSpi.set(GridH2IndexingSpi.this);
+
+                setFilters(filters != null ? filters : EMPTY_FILTER);
+
+                try {
+                    Connection conn = connectionForThread(schema(spaceName));
+
+                    QueryResult qryRes = new QueryResult();
+
+                    T2<PreparedStatement, ResultSet> res = executeSqlQueryWithTimer(conn, qry, params);
+
+                    if (res != null) {
+                        ResultSet rs = res.get2();
+
+                        List<GridIndexingFieldMetadata> meta;
+
+                        try {
+                            ResultSetMetaData rsMeta = rs.getMetaData();
+
+                            meta = new ArrayList<>(rsMeta.getColumnCount());
+
+                            for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
+                                String schemaName = rsMeta.getSchemaName(i);
+                                String typeName = rsMeta.getTableName(i);
+                                String name = rsMeta.getColumnLabel(i);
+                                String type = rsMeta.getColumnClassName(i);
+
+                                meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
+                            }
+                        }
+                        catch (SQLException e) {
+                            throw new GridSpiException("Failed to get meta data.", e);
+                        }
+
+                        qryRes.meta = meta;
+                        qryRes.data = fetchResult(res);
+                    }
+
+                    return qryRes;
+                }
+                finally {
+                    setFilters(null);
+
+                    localSpi.remove();
+                }
+            }
+        });
+
+        return new GridIndexingFieldsResultAdapter(qryRes.meta, new FieldsIterator(qryRes.data));
     }
 
     /**
@@ -747,11 +851,10 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws SQLException If failed.
      * @throws GridSpiException If failed.
      */
     @Nullable private T2<PreparedStatement, ResultSet> executeSqlQuery(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws SQLException, GridSpiException {
+        @Nullable Collection<Object> params) throws GridSpiException {
         PreparedStatement stmt;
 
         try {
@@ -761,7 +864,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             if (e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1)
                 return null;
 
-            throw new GridSpiException("Failed to parse query: " + sql, e);
+            throw new GridSpiException("Failed to parse SQL query: " + sql, e);
         }
 
         switch (commandType(stmt)) {
@@ -776,7 +879,12 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         bindParameters(stmt, params);
 
-        return new T2<>(stmt, stmt.executeQuery());
+        try {
+            return new T2<>(stmt, stmt.executeQuery());
+        }
+        catch (SQLException e) {
+            throw new GridSpiException("Failed to execute SQL query.", e);
+        }
     }
 
     /**
@@ -786,42 +894,48 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws SQLException If failed.
      * @throws GridSpiException If failed.
      */
     private T2<PreparedStatement, ResultSet> executeSqlQueryWithTimer(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws SQLException, GridSpiException {
+        @Nullable Collection<Object> params) throws GridSpiException {
         long start = U.currentTimeMillis();
 
-        T2<PreparedStatement, ResultSet> res = executeSqlQuery(conn, sql, params);
+        try {
+            T2<PreparedStatement, ResultSet> res = executeSqlQuery(conn, sql, params);
 
-        long time = U.currentTimeMillis() - start;
+            long time = U.currentTimeMillis() - start;
 
-        if (time > longQryExecTimeout) {
-            String msg = "Query execution is too long (" + time + " ms): " + sql;
+            if (time > longQryExecTimeout) {
+                String msg = "Query execution is too long (" + time + " ms): " + sql;
 
-            String longMsg = msg;
+                String longMsg = msg;
 
-            if (longQryExplain) {
-                T2<PreparedStatement, ResultSet> t2 = executeSqlQuery(conn, "EXPLAIN " + sql, params);
+                if (longQryExplain) {
+                    T2<PreparedStatement, ResultSet> t2 = executeSqlQuery(conn, "EXPLAIN " + sql, params);
 
-                if (t2 == null)
-                    longMsg = "Failed to explain plan because required table does not exist: " + sql;
-                else {
-                    ResultSet planRs = t2.get2();
+                    if (t2 == null)
+                        longMsg = "Failed to explain plan because required table does not exist: " + sql;
+                    else {
+                        ResultSet planRs = t2.get2();
 
-                    planRs.next();
+                        planRs.next();
 
-                    // Add SQL explain result message into log.
-                    longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        // Add SQL explain result message into log.
+                        longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                             ", plan=" + U.nl() + planRs.getString(1) + U.nl() + ", parameters=" + params + "]";
+                    }
                 }
+
+                LT.warn(log, null, longMsg, msg);
             }
 
-            LT.warn(log, null, longMsg, msg);
+            return res;
         }
+        catch (SQLException e) {
+            onSqlException();
 
-        return res;
+            throw new GridSpiException(e);
+        }
     }
 
     /**
@@ -832,10 +946,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param tbl Target table of query to generate select.
      * @return Result set.
      * @throws GridSpiException If failed.
-     * @throws SQLException If failed.
      */
     private T2<PreparedStatement, ResultSet> executeQuery(String qry, @Nullable Collection<Object> params,
-        @Nullable TableDescriptor tbl) throws GridSpiException, SQLException {
+        @Nullable TableDescriptor tbl) throws GridSpiException {
         Connection conn = connectionForThread(tbl != null ? tbl.schema() : "PUBLIC");
 
         String sql = generateQuery(qry, tbl);
@@ -848,9 +961,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      *
      * @param stmt Prepared statement.
      * @param params Parameters collection.
-     * @throws SQLException If failed.
+     * @throws GridSpiException If failed.
      */
-    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws SQLException {
+    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws GridSpiException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -873,37 +986,37 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
-        String qry, @Nullable Collection<Object> params, GridIndexingTypeDescriptor type,
-        GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        final String qry, @Nullable final Collection<Object> params, GridIndexingTypeDescriptor type,
+        final GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
+        final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
             return new GridEmptyCloseableIterator<>();
 
-        setFilters(filters != null ? filters : EMPTY_FILTER);
+        return new KeyValIterator(executeQueryWithCache(new T3<>(tbl.fullTableName(), qry, params),
+            new COX<QueryResult>() {
+            @Override public QueryResult applyx() throws GridSpiException {
+                setFilters(filters != null ? filters : EMPTY_FILTER);
 
-        localSpi.set(this);
+                localSpi.set(GridH2IndexingSpi.this);
 
-        try {
-            T2<PreparedStatement, ResultSet> t = executeQuery(qry, params, tbl);
+                try {
+                    T2<PreparedStatement, ResultSet> t = executeQuery(qry, params, tbl);
 
-            return t != null ? new KeyValIterator<K, V>(t.get2(), t.get1()) :
-                new GridEmptyCloseableIterator<GridIndexingKeyValueRow<K, V>>();
-        }
-        catch (SQLException e) {
-            if (e.getErrorCode() != ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1) {
-                onSqlException();
+                    QueryResult qryRes = new QueryResult();
 
-                throw new GridSpiException("Failed to query entries: " + qry, e);
+                    if (t != null)
+                        qryRes.data = fetchResult(t);
+
+                    return qryRes;
+                }
+                finally {
+                    setFilters(null);
+
+                    localSpi.remove();
+                }
             }
-
-            return new GridEmptyCloseableIterator<>();
-        }
-        finally {
-            setFilters(null);
-
-            localSpi.remove();
-        }
+        }).data);
     }
 
     /**
@@ -990,12 +1103,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         TableDescriptor tbl = new TableDescriptor(spaceName, type);
 
-        Statement stmt = null;
-
         try {
             Connection conn = connectionForThread(null);
-
-            stmt = conn.createStatement();
 
             Schema schema = schemas.get(tbl.schema());
 
@@ -1016,9 +1125,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             onSqlException();
 
             throw new GridSpiException("Failed to register query type: " + type, e);
-        }
-        finally {
-            U.close(stmt, log);
         }
 
         return true;
@@ -1092,7 +1198,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         for (int i = 0; i < name.length(); i++) {
             char ch = name.charAt(i);
 
-            if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_') {
+            if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_' &&
+                !(ch == '"' && (i == 0 || i == name.length() - 1)) && ch != '-') {
                 // Class name can also contain '$' or '.' - these should be escaped.
                 assert ch == '$' || ch == '.';
 
@@ -1107,11 +1214,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         }
 
         if (sb == null)
-            return name;
+            return CU.h2Escape(name);
 
         sb.a(name.substring(sb.length(), name.length()));
 
-        return sb.toString();
+        return CU.h2Escape(sb.toString());
     }
 
     /**
@@ -1233,27 +1340,18 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** {@inheritDoc} */
     @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor type) throws GridSpiException {
-        Connection conn = connectionForThread(null);
-
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
             return -1;
 
-        try {
-            ResultSet rs = executeSqlQueryWithTimer(conn, "SELECT COUNT(*) FROM " + tbl.fullTableName(), null).get2();
+        GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iter = queryFields(spaceName,
+            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null).iterator();
 
-            rs.next();
+        if (!iter.hasNext())
+            throw new IllegalStateException();
 
-            return rs.getInt(1);
-        }
-        catch (SQLException e) {
-            U.rollbackConnection(conn, log);
-
-            onSqlException();
-
-            throw new GridSpiException("Failed to get table size: " + tbl.fullTableName(), e);
-        }
+        return ((GridIndexingEntityAdapter<Number>)iter.next().get(0)).value().longValue();
     }
 
     /** {@inheritDoc} */
@@ -2014,7 +2112,10 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     int i = 0;
 
                     for (String field : idx.fields()) {
-                        Column col = tbl.getColumn(field.toUpperCase());
+                        // H2 reserved keywords used as column name is case sensitive.
+                        String fieldName = CU.h2Escape(field).startsWith("\"") ? field : field.toUpperCase();
+
+                        Column col = tbl.getColumn(fieldName);
 
                         cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? DESCENDING : ASCENDING);
                     }
@@ -2035,40 +2136,22 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Special field set iterator based on database result set.
      */
-    private class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
+    private static class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param rs Result set.
-         * @param stmt Statement to close at the end (if provided).
+         * @param data Data.
          */
-        protected FieldsIterator(ResultSet rs, Statement stmt) {
-            super(rs, stmt);
+        protected FieldsIterator(Object[][] data) {
+            super(data);
         }
 
         /** {@inheritDoc} */
-        @Override protected void onSqlException(SQLException e) {
-            GridH2IndexingSpi.this.onSqlException();
-        }
+        @Override protected List<GridIndexingEntity<?>> createRow(Object[] arr) {
+            List<GridIndexingEntity<?>> row = new ArrayList<>(arr.length);
 
-        /**
-         * Loads row from result set.
-         *
-         * @return Object associated with row of the result set.
-         * @throws SQLException In case of SQL error.
-         */
-        @Override protected List<GridIndexingEntity<?>> loadRow()
-            throws SQLException, GridSpiException, IOException {
-            ResultSetMetaData m = rs.getMetaData();
-
-            int cnt = m.getColumnCount();
-
-            List<GridIndexingEntity<?>> row = new ArrayList<>(cnt);
-
-            for (int i = 1; i <= cnt; i++) {
-                Object val = rs.getObject(i);
-
+            for (Object val : arr) {
                 row.add(val instanceof GridIndexingEntity ? (GridIndexingEntity<?>)val :
                     new GridIndexingEntityAdapter<>(val, null));
             }
@@ -2080,34 +2163,21 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Special key/value iterator based on database result set.
      */
-    private class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
+    private static class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param rs   Result set.
-         * @param stmt Statement to close at the end (if provided).
+         * @param data Data array.
          */
-        protected KeyValIterator(ResultSet rs, Statement stmt) {
-            super(rs, stmt);
+        protected KeyValIterator(Object[][] data) {
+            super(data);
         }
 
         /** {@inheritDoc} */
-        @Override protected void onSqlException(SQLException e) {
-            GridH2IndexingSpi.this.onSqlException();
-        }
-
-        /**
-         * Loads row from result set.
-         *
-         * @return Object associated with row of the result set.
-         * @throws SQLException In case of SQL error.
-         * @throws GridSpiException In case of error.
-         */
-        @Override protected GridIndexingKeyValueRow<K, V> loadRow()
-            throws SQLException, GridSpiException, IOException {
-            K key = (K)rs.getObject(KEY_FIELD_NAME);
-            V val = (V)rs.getObject(VAL_FIELD_NAME);
+        @Override protected GridIndexingKeyValueRow<K, V> createRow(Object[] row) {
+            K key = (K)row[0];
+            V val = (V)row[1];
 
             return new GridIndexingKeyValueRowAdapter<>(new GridIndexingEntityAdapter<>(key, null),
                 new GridIndexingEntityAdapter<>(val, null), null);
@@ -2402,5 +2472,16 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         @Override public Object deserialize(byte[] bytes) throws Exception {
             return localSpi.get().marshaller.unmarshal(bytes).value();
         }
+    }
+
+    /**
+     * Reused query result.
+     */
+    private static class QueryResult {
+        /** */
+        private List<GridIndexingFieldMetadata> meta;
+
+        /** */
+        private Object[][] data = EMPTY_DATA;
     }
 }

@@ -11,16 +11,18 @@
 
 package org.gridgain.visor.commands.kill
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridNodeAttributes._
+
+import java.util.{Collections, UUID}
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import org.gridgain.grid._
-import kernal.GridNodeAttributes._
-import scala.util.control.Breaks._
-import org.gridgain.scalar._
-import scalar._
-import java.util.{UUID, Collections}
-import scala.collection.JavaConversions._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -118,11 +120,11 @@ class VisorKillCommand {
             val iHosts = hasArgFlag("ih", argLst)
 
             if (iNodes && iHosts)
-                scold("Only one of '-in' or '-ih' can be specified.") ^^
+                scold("Only one of '-in' or '-ih' can be specified.").^^
             else if (iNodes)
-                interactiveNodes() ^^
+                interactiveNodes().^^
             else if (iHosts)
-                interactiveHosts() ^^
+                interactiveHosts().^^
 
             val id8 = argValue("id8", argLst)
             val id = argValue("id", argLst)
@@ -142,9 +144,9 @@ class VisorKillCommand {
                     val ns = nodeById8(id8.get)
 
                     if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8.get) ^^
+                        scold("Unknown 'id8' value: " + id8.get).^^
                     else if (ns.size != 1) {
-                        scold("'id8' resolves to more than one node (use full 'id' instead) : " + args) ^^
+                        scold("'id8' resolves to more than one node (use full 'id' instead) : " + args).^^
                     }
                     else
                         node = ns.head
@@ -154,21 +156,21 @@ class VisorKillCommand {
                         node = grid.node(java.util.UUID.fromString(id.get))
 
                         if (node == null)
-                            scold("'id' does not match any node : " + args) ^^
+                            scold("'id' does not match any node : " + args).^^
                     }
                     catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id' in args: " + args) ^^
+                        case e: IllegalArgumentException => scold("Invalid node 'id' in args: " + args).^^
                     }
 
                 if (node == null && (id.isDefined || id8.isDefined))
-                    scold("Node with given ID cannot be found.") ^^
+                    scold("Node with given ID cannot be found.").^^
 
                 try
                     // In case of the restart - check that target node supports it.
                     if (restart && node != null && node.attribute[String](ATTR_RESTART_ENABLED) != "true")
-                        scold("Node doesn't support restart: " + nid8(node)) ^^
+                        scold("Node doesn't support restart: " + nid8(node)).^^
                 catch {
-                    case e: GridException => scold("Failed to restart the node. " + e.getMessage) ^^
+                    case e: GridException => scold("Failed to restart the node. " + e.getMessage).^^
                 }
 
                 val op = if (restart) "restart" else "kill"
@@ -176,7 +178,7 @@ class VisorKillCommand {
                 try
                     killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
-                    case _: GridException => scold("Failed to " + op + " due to system error.") ^^
+                    case _: GridException => scold("Failed to " + op + " due to system error.").^^
                 }
             }
         }
@@ -204,7 +206,7 @@ class VisorKillCommand {
         assert(nodes != null)
 
         if (nodes.isEmpty)
-            warn("Topology is empty.") ^^
+            warn("Topology is empty.").^^
 
         val op = if (restart) "restart" else "kill"
 

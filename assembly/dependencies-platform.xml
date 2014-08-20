@@ -40,7 +40,6 @@
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
                 <include>org.gridgain:gridgain-indexing</include>
-                <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -50,6 +49,7 @@
                         <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>readme.txt</include>
+                            <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
@@ -64,6 +64,8 @@
                         </includes>
                         <excludes>
                             <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
@@ -71,21 +73,49 @@
         </moduleSet>
 
         <moduleSet>
+            <includeSubModules>true</includeSubModules>
             <includes>
-                <include>org.gridgain:gridgain-core</include>
+                <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
+                <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>readme.txt</include>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>gridgain-${gridgain.version}.jar</include>
+                            <include>*.jar</include>
                         </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
+                        </excludes>
                     </fileSet>
                 </fileSets>
             </sources>
         </moduleSet>
     </moduleSets>
+
+    <fileSets>
+        <fileSet>
+            <directory>modules/core/licenses</directory>
+            <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
+    </fileSets>
+
+    <files>
+        <file>
+            <source>target/gridgain-core-${gridgain.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
 </assembly>

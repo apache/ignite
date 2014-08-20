@@ -59,6 +59,10 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** Topology version. */
     private long topVer;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -102,7 +106,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int nearCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
@@ -116,6 +121,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         assert miniId != null;
 
         this.miniId = miniId;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -128,6 +134,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      */
     public UUID nearNodeId() {
         return nodeId();
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -274,6 +287,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.owned = owned;
         _clone.ownedBytes = ownedBytes;
         _clone.topVer = topVer;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -339,6 +353,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
             case 27:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -421,6 +441,16 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 28:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -66,22 +67,6 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
      */
     public GridNearCacheAdapter<K, V> near() {
         return ctx.near();
-    }
-
-    /**
-     * @param filter Optional filter.
-     * @return {@code True} if evicted.
-     */
-    public boolean evictNearOnly(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return ctx.near().evictNearOnly(key, filter);
-    }
-
-    /**
-     * @param filter Filter.
-     * @return {@code True} if evicted.
-     */
-    public boolean evictDhtOnly(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return ctx.near().dht().evict(key, filter);
     }
 
     /** {@inheritDoc} */
@@ -244,20 +229,24 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx<K, V> entryEx(boolean touch, long topVer) {
         try {
-            return ctx.affinity().localNode(key, topVer) ? dht().entryEx(key, touch) : near().entryEx(key, touch);
+            return ctx.affinity().localNode(key, topVer) ? dht().entryEx(key, touch) :
+                ctx.isNear() ? near().entryEx(key, touch) :
+                    new GridDhtDetachedCacheEntry<>(ctx, key, 0, null, null, 0, 0);
         }
         catch (GridDhtInvalidPartitionException ignore) {
-            return near().entryEx(key);
+            return ctx.isNear() ? near().entryEx(key) :
+                new GridDhtDetachedCacheEntry<>(ctx, key, 0, null, null, 0, 0);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx<K, V> peekEx(long topVer) {
         try {
-            return ctx.affinity().localNode(key, topVer) ? dht().peekEx(key) : near().peekEx(key);
+            return ctx.affinity().localNode(key, topVer) ? dht().peekEx(key) :
+                ctx.isNear() ? near().peekEx(key) : null;
         }
         catch (GridDhtInvalidPartitionException ignore) {
-            return near().peekEx(key);
+            return ctx.isNear() ? near().peekEx(key) : null;
         }
     }
 
@@ -270,14 +259,16 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMeta(name, val);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null) {
-            V1 v1 = ne.addMeta(name, val);
+            if (ne != null) {
+                V1 v1 = ne.addMeta(name, val);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -292,14 +283,16 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMetaIfAbsent(name, c);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null) {
-            V1 v1 = ne.addMetaIfAbsent(name, c);
+            if (ne != null) {
+                V1 v1 = ne.addMetaIfAbsent(name, c);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -314,14 +307,16 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMetaIfAbsent(name, val);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null) {
-            V1 v1 = ne.addMetaIfAbsent(name, val);
+            if (ne != null) {
+                V1 v1 = ne.addMetaIfAbsent(name, val);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -336,17 +331,19 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             m = de.allMeta();
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null) {
-            Map<String, V1> m1 = ne.allMeta();
+            if (ne != null) {
+                Map<String, V1> m1 = ne.allMeta();
 
-            if (m == null)
-                m = m1;
-            else if (!m1.isEmpty()) {
-                for (Map.Entry<String, V1> e1 : m1.entrySet())
-                    if (!m.containsKey(e1.getKey())) // Give preference to DHT.
-                        m.put(e1.getKey(), e1.getValue());
+                if (m == null)
+                    m = m1;
+                else if (!m1.isEmpty()) {
+                    for (Map.Entry<String, V1> e1 : m1.entrySet())
+                        if (!m.containsKey(e1.getKey())) // Give preference to DHT.
+                            m.put(e1.getKey(), e1.getValue());
+                }
             }
         }
 
@@ -362,10 +359,12 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             b = de.hasMeta(name);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null)
-            b |= ne.hasMeta(name);
+            if (ne != null)
+                b |= ne.hasMeta(name);
+        }
 
         return b;
     }
@@ -379,10 +378,12 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             b = de.hasMeta(name, val);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null)
-            b |= ne.hasMeta(name, val);
+            if (ne != null)
+                b |= ne.hasMeta(name, val);
+        }
 
         return b;
     }
@@ -397,13 +398,15 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = (V1)de.meta(name);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null) {
-            V1 v1 = (V1)ne.meta(name);
+            if (ne != null) {
+                V1 v1 = (V1)ne.meta(name);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -419,14 +422,16 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = (V1)de.putMetaIfAbsent(name, c);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null) {
-            V1 v1 = (V1)ne.putMetaIfAbsent(name, c);
+            if (ne != null) {
+                V1 v1 = (V1)ne.putMetaIfAbsent(name, c);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -465,13 +470,15 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = (V1)de.removeMeta(name);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null) {
-            V1 v1 = (V1)ne.removeMeta(name);
+            if (ne != null) {
+                V1 v1 = (V1)ne.removeMeta(name);
 
-            if (v == null)
-                v = v1;
+                if (v == null)
+                    v = v1;
+            }
         }
 
         return v;
@@ -486,10 +493,12 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             b = de.removeMeta(name, val);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null)
-            b |= ne.removeMeta(name, val);
+            if (ne != null)
+                b |= ne.removeMeta(name, val);
+        }
 
         return b;
     }
@@ -503,10 +512,12 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             b = de.replaceMeta(name, curVal, newVal);
 
-        GridNearCacheEntry<K, V> ne = near().peekExx(key);
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = near().peekExx(key);
 
-        if (ne != null)
-            b |= ne.replaceMeta(name, curVal, newVal);
+            if (ne != null)
+                b |= ne.replaceMeta(name, curVal, newVal);
+        }
 
         return b;
     }
@@ -518,11 +529,13 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             de.copyMeta(data);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null)
-            ne.copyMeta(data);
+            if (ne != null)
+                ne.copyMeta(data);
+        }
     }
 
     /** {@inheritDoc} */
@@ -532,11 +545,13 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             de.copyMeta(from);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
+        if (ctx.isNear()) {
+            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
-        if (ne != null)
-            ne.copyMeta(from);
+            if (ne != null)
+                ne.copyMeta(from);
+        }
     }
 
     /** {@inheritDoc} */

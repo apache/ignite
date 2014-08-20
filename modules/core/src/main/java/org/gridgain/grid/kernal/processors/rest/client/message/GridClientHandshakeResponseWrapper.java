@@ -19,6 +19,9 @@ import java.nio.*;
  */
 public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMessageAdapter {
     /** */
+    private static final long serialVersionUID = -1529807975073967381L;
+
+    /** */
     private byte code;
 
     /**

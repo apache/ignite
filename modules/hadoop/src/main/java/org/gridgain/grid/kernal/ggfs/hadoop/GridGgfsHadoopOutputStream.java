@@ -11,13 +11,14 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
  * GGFS Hadoop output stream implementation.
  */
-public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfsStreamEventListener {
+public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfsHadoopStreamEventListener {
     /** Log instance. */
     private Log log;
 
@@ -27,11 +28,8 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     /** Log stream ID. */
     private long logStreamId;
 
-    /** Grid remote client. */
-    private GridGgfsHadoop rmtClient;
-
-    /** Server stream ID. */
-    private long streamId;
+    /** Server stream delegate. */
+    private GridGgfsHadoopStreamDelegate delegate;
 
     /** Closed flag. */
     private volatile boolean closed;
@@ -57,22 +55,20 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     /**
      * Creates light output stream.
      *
-     * @param rmtClient Remote client to use.
-     * @param streamId Stream ID.
+     * @param delegate Server stream delegate.
      * @param log Logger to use.
      * @param clientLog Client logger.
      */
-    public GridGgfsHadoopOutputStream(GridGgfsHadoop rmtClient, long streamId, Log log,
+    public GridGgfsHadoopOutputStream(GridGgfsHadoopStreamDelegate delegate, Log log,
         GridGgfsHadoopLogger clientLog, long logStreamId) {
-        this.rmtClient = rmtClient;
-        this.streamId = streamId;
+        this.delegate = delegate;
         this.log = log;
         this.clientLog = clientLog;
         this.logStreamId = logStreamId;
 
         lastTs = System.nanoTime();
 
-        rmtClient.addEventListener(streamId, this);
+        delegate.hadoop().addEventListener(delegate, this);
     }
 
     /**
@@ -98,18 +94,15 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] b, int off, int len) throws IOException {
+    @Override public void write(@NotNull byte[] b, int off, int len) throws IOException {
         check();
 
         writeStart();
 
         try {
-            rmtClient.writeData(streamId, b, off, len);
+            delegate.hadoop().writeData(delegate, b, off, len);
 
             total += len;
-        }
-        catch (GridException e) {
-            throw new IOException(e);
         }
         finally {
             writeEnd();
@@ -124,34 +117,34 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /** {@inheritDoc} */
+    @Override public void flush() throws IOException {
+        delegate.hadoop().flush(delegate);
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        try {
-            if (!closed) {
-                if (log.isDebugEnabled())
-                    log.debug("Closing output stream: " + streamId);
+        if (!closed) {
+            if (log.isDebugEnabled())
+                log.debug("Closing output stream: " + delegate);
 
-                writeStart();
+            writeStart();
 
-                rmtClient.closeStream(streamId).get();
+            delegate.hadoop().closeStream(delegate);
 
-                markClosed(false);
+            markClosed(false);
 
-                writeEnd();
+            writeEnd();
 
-                if (clientLog.isLogEnabled())
-                    clientLog.logCloseOut(logStreamId, userTime, writeTime, total);
+            if (clientLog.isLogEnabled())
+                clientLog.logCloseOut(logStreamId, userTime, writeTime, total);
 
-                if (log.isDebugEnabled())
-                    log.debug("Closed output stream [streamId=" + streamId + ", writeTime=" + writeTime / 1000 +
-                        ", userTime=" + userTime / 1000 + ']');
-            }
-            else if(connBroken)
-                throw new IOException(
-                    "Failed to close stream, because connection was broken (data could have been lost).");
+            if (log.isDebugEnabled())
+                log.debug("Closed output stream [delegate=" + delegate + ", writeTime=" + writeTime / 1000 +
+                    ", userTime=" + userTime / 1000 + ']');
         }
-        catch (GridException e) {
-            throw new IOException(e);
-        }
+        else if(connBroken)
+            throw new IOException(
+                "Failed to close stream, because connection was broken (data could have been lost).");
     }
 
     /**
@@ -164,7 +157,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
         if (!closed) {
             closed = true;
 
-            rmtClient.removeEventListener(streamId);
+            delegate.hadoop().removeEventListener(delegate);
 
             this.connBroken = connBroken;
         }
@@ -193,7 +186,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /** {@inheritDoc} */
-    @Override public void onError(String errMsg) throws GridException {
+    @Override public void onError(String errMsg) {
         this.errMsg = errMsg;
     }
 }

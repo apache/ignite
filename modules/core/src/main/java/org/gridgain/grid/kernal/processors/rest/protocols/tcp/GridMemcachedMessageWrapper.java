@@ -26,6 +26,9 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
  * Memcached message wrapper for direct marshalling.
  */
 public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 3053626103006980626L;
+
     /** UTF-8 charset. */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 

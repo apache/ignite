@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -294,7 +295,7 @@ public class GridSpiTestContext implements GridSpiContext {
     public void triggerTaskEvent(int type, String taskName, GridUuid taskSesId, String msg) {
         assert type > 0;
 
-        triggerEvent(new GridTaskEvent(locNode, msg, type, taskSesId, taskName));
+        triggerEvent(new GridTaskEvent(locNode, msg, type, taskSesId, taskName, null, false, null));
     }
 
     /**
@@ -486,6 +487,16 @@ public class GridSpiTestContext implements GridSpiContext {
     /** {@inheritDoc} */
     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+        return null;
     }
 
     /**

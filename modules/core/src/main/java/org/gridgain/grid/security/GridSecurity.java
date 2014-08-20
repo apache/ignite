@@ -64,6 +64,9 @@ import java.util.*;
  *         "task":"org.mytasks.*",
  *         "permissions":["TASK_EXECUTE"]
  *     },
+ *     {
+ *         "system":["EVENTS_ENABLE", "ADMIN_VIEW"]
+ *     }
  *     "defaultAllow":"false"
  * }
  * </pre>

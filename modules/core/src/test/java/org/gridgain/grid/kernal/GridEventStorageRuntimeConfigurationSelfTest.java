@@ -146,6 +146,29 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    public void testEnableDisable() throws Exception {
+        inclEvtTypes = null;
+
+        try {
+            Grid g = startGrid();
+
+            GridEvents evts = g.events();
+
+            evts.enableLocal(EVT_CACHE_OBJECT_PUT);
+
+            evts.disableLocal(EVT_CACHE_OBJECT_PUT);
+
+            for (int evtType : evts.enabledEvents())
+                assertFalse(evtType == EVT_CACHE_OBJECT_PUT);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void testInvalidTypes() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED};

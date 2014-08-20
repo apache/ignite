@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -16,7 +18,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable {
+public class GridClientTaskResultBean implements Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -87,6 +89,30 @@ public class GridClientTaskResultBean implements Externalizable {
      */
     public void setError(String error) {
         this.error = error;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
+
+        raw.writeString(id);
+        raw.writeBoolean(finished);
+
+        raw.writeObject(res);
+
+        raw.writeString(error);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
+
+        id = raw.readString();
+        finished = raw.readBoolean();
+
+        res = raw.readObject();
+
+        error = raw.readString();
     }
 
     /** {@inheritDoc} */

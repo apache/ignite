@@ -23,11 +23,11 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="deploymentMode" value="SHARED"/>
 
         <!--
@@ -60,6 +60,11 @@
                     <!--property name="defaultIndexFixedTyping" value="false"/-->
                 </bean>
             </list>
+        </property>
+
+        <!-- Client configuration. -->
+        <property name="clientConnectionConfiguration">
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration"/>
         </property>
 
         <property name="cacheConfiguration">
@@ -226,6 +231,18 @@
                             </list>
                         </property>
                     </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="portableConfiguration">
+            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                        </bean>
+                    </list>
                 </property>
             </bean>
         </property>

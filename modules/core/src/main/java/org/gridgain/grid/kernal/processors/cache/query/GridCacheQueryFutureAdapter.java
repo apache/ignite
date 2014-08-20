@@ -161,6 +161,53 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Returns next page for the query.
+     *
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    public Collection<R> nextPage() throws GridException {
+        Collection<R> res = null;
+
+        while (res == null) {
+            synchronized (mux) {
+                res = queue.poll();
+            }
+
+            if (res == null) {
+                if (!isDone()) {
+                    loadPage();
+
+                    long timeout = qry.query().timeout();
+
+                    long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
+
+                    if (waitTime <= 0)
+                        break;
+
+                    synchronized (mux) {
+                        try {
+                            if (queue.isEmpty() && !isDone())
+                                mux.wait(waitTime);
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new GridException("Query was interrupted: " + qry, e);
+                        }
+                    }
+                }
+                else
+                    break;
+            }
+        }
+
+        checkError();
+
+        return res;
+    }
+
+    /**
      * @throws GridException If future is done with an error.
      */
     private void checkError() throws GridException {
@@ -285,36 +332,52 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             log.debug("Received query result page [nodeId=" + nodeId + ", data=" + data +
                 ", err=" + err + ", finished=" + finished + "]");
 
-        if (err != null)
+        try {
+            if (err != null)
+                synchronized (mux) {
+                    enqueue(Collections.emptyList());
+
+                    onPage(nodeId, true);
+
+                    onDone(nodeId != null ?
+                        new GridException("Failed to execute query on node [query=" + qry +
+                            ", nodeId=" + nodeId + "]", err) :
+                        new GridException("Failed to execute query locally: " + qry, err));
+
+                    mux.notifyAll();
+                }
+            else {
+                if (data == null)
+                    data = Collections.emptyList();
+
+                data = dedupIfRequired((Collection<Object>)data);
+
+                data = cctx.unwrapPortablesIfNeeded((Collection<Object>)data, qry.query().portableKeys(),
+                    qry.query().portableValues());
+
+                synchronized (mux) {
+                    enqueue(data);
+
+                    if (qry.query().keepAll())
+                        allCol.addAll(maskNulls((Collection<Object>)data));
+
+                    if (onPage(nodeId, finished)) {
+                        onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
+
+                        clear();
+                    }
+
+                    mux.notifyAll();
+                }
+            }
+        }
+        catch (GridException e) {
             synchronized (mux) {
                 enqueue(Collections.emptyList());
 
                 onPage(nodeId, true);
 
-                onDone(nodeId != null ?
-                    new GridException("Failed to execute query on node [query=" + qry +
-                        ", nodeId=" + nodeId + "]", err) :
-                    new GridException("Failed to execute query locally: " + qry, err));
-
-                mux.notifyAll();
-            }
-        else {
-            if (data == null)
-                data = Collections.emptyList();
-
-            data = dedupIfRequired((Collection<Object>)data);
-
-            synchronized (mux) {
-                enqueue(data);
-
-                if (qry.query().keepAll())
-                    allCol.addAll(maskNulls((Collection<Object>)data));
-
-                if (onPage(nodeId, finished)) {
-                    onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
-
-                    clear();
-                }
+                onDone(e);
 
                 mux.notifyAll();
             }

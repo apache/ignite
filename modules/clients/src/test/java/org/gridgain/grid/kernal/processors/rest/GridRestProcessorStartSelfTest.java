@@ -47,8 +47,14 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(TCP_PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(TCP_PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         TestDiscoverySpi disc = new TestDiscoverySpi();
 

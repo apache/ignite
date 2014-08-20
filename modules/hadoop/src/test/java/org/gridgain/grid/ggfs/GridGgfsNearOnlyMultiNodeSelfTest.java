@@ -21,6 +21,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -73,8 +74,8 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setMetaCacheName("partitioned");
         ggfsCfg.setName("ggfs");
 
-        ggfsCfg.setIpcEndpointConfiguration("{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint
-            .DFLT_IPC_PORT + cnt) + "}");
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(
+            "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -136,7 +137,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("ggfs://shmem:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("ggfs://127.0.0.1:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -145,7 +146,6 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testContentsConsistency() throws Exception {
-
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<GridBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),

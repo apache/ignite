@@ -80,6 +80,9 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
         subj.address(authCtx.address());
         subj.permissions(allowAll);
 
+        if (authCtx.credentials() != null)
+            subj.login(authCtx.credentials().getLogin());
+
         return subj;
     }
 

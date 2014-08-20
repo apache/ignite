@@ -33,6 +33,13 @@ public interface GridSecuritySubject extends Serializable {
     public GridSecuritySubjectType type();
 
     /**
+     * Login provided via subject security credentials.
+     *
+     * @return Login object.
+     */
+    public Object login();
+
+    /**
      * Gets subject connection address. Usually {@link InetSocketAddress} representing connection IP and port.
      *
      * @return Subject connection address.

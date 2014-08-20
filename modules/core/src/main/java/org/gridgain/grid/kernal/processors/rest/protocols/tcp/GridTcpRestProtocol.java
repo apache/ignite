@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -43,8 +45,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** JDK marshaller. */
     private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
 
-    /** Protobuf marshaller. */
-    private final GridClientMarshaller protobufMarshaller;
+    /** NIO server listener. */
+    private GridTcpRestNioListener lsnr;
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
@@ -98,8 +100,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-
-        protobufMarshaller = U.createProtobufMarshaller(log);
     }
 
     /**
@@ -110,28 +110,25 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Returns marshaller from session, if no marshaller found - init it with default.
+     * Returns marshaller.
      *
-     * @param ses Current session.
-     * @return Current session's marshaller.
-     * @throws GridException If marshaller can't be found.
+     * @param ses Session.
+     * @return Marshaller.
      */
-    GridClientMarshaller marshaller(GridNioSession ses) throws GridException {
+    GridClientMarshaller marshaller(GridNioSession ses) {
         GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
 
-        if (marsh == null) {
-            U.warn(log, "No marshaller defined for NIO session, using PROTOBUF as default [ses=" + ses + ']');
-
-            if (protobufMarshaller == null)
-                throw new GridException("Failed to use Protobuf marshaller (session will be closed). " +
-                    "Is gridgain-protobuf module added to classpath?");
-
-            marsh = protobufMarshaller;
-
-            ses.addMeta(MARSHALLER.ordinal(), marsh);
-        }
+        assert marsh != null;
 
         return marsh;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Whether portable marshaller is used.
+     */
+    boolean portableMode(GridNioSession ses) {
+        return ctx.portable().isPortable(marshaller(ses));
     }
 
     /** {@inheritDoc} */
@@ -144,14 +141,16 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridConfiguration cfg = ctx.config();
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
+        assert cfg != null;
+
+        lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
         GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
-            host = resolveRestTcpHost(cfg);
+            host = resolveRestTcpHost(ctx.config());
 
             SSLContext sslCtx = null;
 
@@ -167,10 +166,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             int lastPort = cfg.getRestTcpPort() + cfg.getRestPortRange() - 1;
 
-            for (port = cfg.getRestTcpPort(); port <= lastPort; port++) {
-                if (startTcpServer(host, port, lsnr, parser, sslCtx, cfg)) {
+            for (int port0 = cfg.getRestTcpPort(); port0 <= lastPort; port0++) {
+                if (startTcpServer(host, port0, lsnr, parser, sslCtx, cfg)) {
                     if (log.isInfoEnabled())
                         log.info(startInfo());
+
+                    port = port0;
 
                     return;
                 }
@@ -189,6 +190,19 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 "Failed to start " + name() + " protocol on port " + port + ". " +
                     "Check restTcpHost configuration property.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        super.onKernalStart();
+
+        Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+
+        lsnr.marshallers(marshMap);
     }
 
     /** {@inheritDoc} */
@@ -211,7 +225,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
-        String host = cfg.getRestTcpHost();
+        String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -232,7 +246,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

@@ -77,7 +77,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
      * @throws Exception In case of error.
      */
     public void testFilteredKeySet() throws Exception {
-        if (!txEnabled())
+        if (!txEnabled() || portableEnabled())
             return;
 
         final GridCache<String, Integer> myCache = cache();

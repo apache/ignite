@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -183,7 +182,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 it.remove();
             }
 
-            assertEquals(0, c.swapKeys());
+            assertEquals("Swap keys: " + c.swapKeys(), 0, c.swapKeys());
             assertEquals(0, c.offHeapEntriesCount());
             assertEquals(0, c.size());
         }

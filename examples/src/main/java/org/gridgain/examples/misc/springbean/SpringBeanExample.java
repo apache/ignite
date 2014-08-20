@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.misc.springbean;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.springframework.context.support.*;
 
@@ -22,9 +23,15 @@ import java.util.concurrent.*;
  * out on any node in the grid.
  * <p>
  * The major point of this example is to show grid injection by Spring
- * framework. Grid bean is described in spring-bean.xml file and instantiated
+ * framework. Grid bean is described in {@code spring-bean.xml} file and instantiated
  * by Spring context. Once application completed its execution Spring will
  * apply grid bean destructor and stop the grid.
+ * <p>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * <p>
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class SpringBeanExample {
     /**

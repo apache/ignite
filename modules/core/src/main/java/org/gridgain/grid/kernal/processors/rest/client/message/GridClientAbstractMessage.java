@@ -8,26 +8,38 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static AtomicInteger typeIdGen = new AtomicInteger();
+
+    /**
+     * @return Portable type identifier for internal client messages classes.
+     */
+    static int nextSystemTypeId() {
+        return typeIdGen.decrementAndGet();
+    }
+
     /** Request ID (transient). */
-    private long reqId;
+    private transient long reqId;
 
     /** Client ID (transient). */
-    private UUID id;
+    private transient UUID id;
 
     /** Node ID (transient). */
-    private UUID destId;
+    private transient UUID destId;
 
     /** Session token. */
     private byte[] sesTok;
@@ -84,5 +96,24 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sesTok = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeByteArray(sesTok);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        GridPortableRawReader raw = reader.rawReader();
+
+        sesTok = raw.readByteArray();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientAbstractMessage.class, this, super.toString());
     }
 }

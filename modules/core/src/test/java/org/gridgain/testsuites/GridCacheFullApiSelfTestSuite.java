@@ -58,6 +58,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
@@ -77,6 +78,9 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
+
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
 
         suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);

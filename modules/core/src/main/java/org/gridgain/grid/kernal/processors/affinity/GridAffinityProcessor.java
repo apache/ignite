@@ -147,6 +147,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Maps single key to a node.
+     *
+     * @param cacheName Cache name.
+     * @param key Key to map.
+     * @return Picked node.
+     * @throws GridException If failed.
+     */
+    @Nullable public <K> GridNode mapKeyToNode(@Nullable String cacheName, K key, long topVer) throws GridException {
+        Map<GridNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key), topVer);
+
+        return map != null ? F.first(map.keySet()) : null;
+    }
+
+    /**
      * Maps single key to a node on default cache.
      *
      * @param key Key to map.
@@ -154,9 +168,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws GridException If failed.
      */
     @Nullable public <K> GridNode mapKeyToNode(K key) throws GridException {
-        Map<GridNode, Collection<K>> map = keysToNodes(null, F.asList(key));
-
-        return map != null ? F.first(map.keySet()) : null;
+        return mapKeyToNode(null, key);
     }
 
     /**
@@ -172,9 +184,15 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (key == null)
             return null;
 
-        AffinityInfo affInfo = affinityCache(cacheName);
+        AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersion());
 
-        return affInfo.mapper != null ? affInfo.mapper.affinityKey(key) : null;
+        if (affInfo == null || affInfo.mapper == null)
+            return null;
+
+        if (affInfo.portableEnabled)
+            key = ctx.portable().marshalToPortable(key);
+
+        return affInfo.mapper.affinityKey(key);
     }
 
     /**
@@ -193,6 +211,18 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private <K> Map<GridNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
         Collection<? extends K> keys) throws GridException {
+        return keysToNodes(cacheName, keys, ctx.discovery().topologyVersion());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param keys Keys.
+     * @param topVer Topology version.
+     * @return Affinity map.
+     * @throws GridException If failed.
+     */
+    private <K> Map<GridNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
+        Collection<? extends K> keys, long topVer) throws GridException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
@@ -201,7 +231,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (U.hasCache(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
             return F.asMap(loc, (Collection<K>)keys);
 
-        AffinityInfo affInfo = affinityCache(cacheName);
+        AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
         return affInfo != null ? affinityMap(affInfo, keys) : Collections.<GridNode, Collection<K>>emptyMap();
     }
@@ -212,10 +242,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws GridException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private AffinityInfo affinityCache(@Nullable final String cacheName)
-        throws GridException {
-        long topVer = ctx.discovery().topologyVersion();
-
+    private AffinityInfo affinityCache(@Nullable final String cacheName, long topVer) throws GridException {
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
         GridFuture<AffinityInfo> fut = affMap.get(key);
@@ -232,7 +259,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             AffinityInfo info = new AffinityInfo(
                 cctx.config().getAffinity(),
                 cctx.config().getAffinityMapper(),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
+                cctx.portableEnabled());
 
             GridFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
 
@@ -347,7 +375,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3());
+        Boolean portableEnabled = U.portableEnabled(n, cacheName);
+
+        return new AffinityInfo(f, m, t.get3(), portableEnabled != null && portableEnabled);
     }
 
     /**
@@ -413,6 +443,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         X.println(">>>   affMapSize: " + affMap.size());
     }
 
+    /**
+     *
+     */
     private static class AffinityInfo {
         /** Affinity function. */
         private GridCacheAffinityFunction affFunc;
@@ -423,19 +456,27 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /** Assignment. */
         private GridAffinityAssignment assignment;
 
+        /** Portable enabled flag. */
+        private boolean portableEnabled;
+
         /**
          * @param affFunc Affinity function.
          * @param mapper Affinity key mapper.
          * @param assignment Partition assignment.
+         * @param portableEnabled Portable enabled flag.
          */
         private AffinityInfo(GridCacheAffinityFunction affFunc, GridCacheAffinityKeyMapper mapper,
-            GridAffinityAssignment assignment) {
+            GridAffinityAssignment assignment, boolean portableEnabled) {
             this.affFunc = affFunc;
             this.mapper = mapper;
             this.assignment = assignment;
+            this.portableEnabled = portableEnabled;
         }
     }
 
+    /**
+     *
+     */
     private static class AffinityAssignmentKey {
         /** */
         private String cacheName;
