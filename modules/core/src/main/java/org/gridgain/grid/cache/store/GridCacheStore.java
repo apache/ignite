@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 import java.util.*;
 
@@ -50,6 +51,22 @@ import java.util.*;
  *     // Store connection in transaction metadata, so it can be accessed
  *     // for other operations on the same transaction.
  *     tx.addMeta("some.name", conn);
+ * }
+ * </pre>
+ * <p>
+ * When portables are enabled for cache ({@link GridCacheConfiguration#isPortableEnabled()} is
+ * {@code true}), all non-primitive keys and values are converted to instances of {@link GridPortableObject}.
+ * Therefore, all cache store methods will take parameters in portable format. So to avoid class
+ * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
+ * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
+ * signature should be the following:
+ * <pre>
+ * public class PortableCacheStore implements GridCacheStore&lt;Integer, GridPortableObject&gt; {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws GridException {
+ *         ...
+ *     }
+ *
+ *     ...
  * }
  * </pre>
  */
