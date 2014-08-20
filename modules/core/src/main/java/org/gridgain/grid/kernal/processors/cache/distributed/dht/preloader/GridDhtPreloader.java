@@ -761,7 +761,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
         assert exchFut.isDone();
 
-        for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts) {
+        for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts.values()) {
             if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
                 fut.cleanUp();
         }
