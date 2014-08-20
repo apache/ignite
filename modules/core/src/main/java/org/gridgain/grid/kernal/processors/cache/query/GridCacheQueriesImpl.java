@@ -30,9 +30,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridCacheProjectionImpl> stash = new ThreadLocal<>();
-
-    /** */
     private GridCacheContext<K, V> ctx;
 
     /** */
@@ -168,8 +165,9 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridCacheProjectionImpl)in.readObject());
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
     }
 
     /**
@@ -179,14 +177,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            return stash.get().queries();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return prj.queries();
     }
 }

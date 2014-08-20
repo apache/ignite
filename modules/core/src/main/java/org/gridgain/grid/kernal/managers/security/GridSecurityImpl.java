@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.managers.security;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -23,9 +22,6 @@ import java.util.*;
 public class GridSecurityImpl implements GridSecurity, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
 
     /** Security manager. */
     private GridSecurityManager secMgr;
@@ -65,7 +61,7 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        ctx = (GridKernalContext)in.readObject();
     }
 
     /**
@@ -75,16 +71,6 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().security();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return ctx.grid().security();
     }
 }
