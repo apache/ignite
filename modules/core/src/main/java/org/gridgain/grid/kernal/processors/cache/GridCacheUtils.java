@@ -822,8 +822,16 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    public static <K, V> GridBiPredicate<K, V> typeFilter(Class<?> keyType, Class<?> valType) {
-        return new TypeFilter<>(keyType, valType);
+    public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
+        return new P2<K, V>() {
+            @Override public boolean apply(K k, V v) {
+                return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
+            }
+
+            @Override public String toString() {
+                return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
+            }
+        };
     }
 
     /**
@@ -1641,37 +1649,5 @@ public class GridCacheUtils {
             return "\"" + s + "\"";
 
         return s;
-    }
-
-    /**
-     * Type filter.
-     */
-    public static class TypeFilter<K, V> implements GridBiPredicate<K, V> {
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Class<?> keyType;
-
-        /** */
-        private final Class<?> valType;
-
-        /**
-         * @param keyType Key type.
-         * @param valType Value type.
-         */
-        public TypeFilter(Class<?> keyType, Class<?> valType) {
-            this.keyType = keyType;
-            this.valType = valType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(K k, V v) {
-            return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
-        }
     }
 }

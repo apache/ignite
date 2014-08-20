@@ -13,11 +13,11 @@ import org.gridgain.grid.service.*;
 
 /**
  * Simple service which loops infinitely and prints out a counter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class SimpleService implements GridService {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public void cancel(GridServiceContext ctx) {
         System.out.println("Service was cancelled: " + ctx.name());
