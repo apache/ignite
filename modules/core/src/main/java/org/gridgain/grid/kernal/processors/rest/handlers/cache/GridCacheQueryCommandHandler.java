@@ -226,6 +226,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      *
      */
     private static class ExecuteQuery implements GridCallable<GridRestResponse> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Injected grid. */
         @GridInstanceResource
         private Grid g;
@@ -323,6 +326,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      *
      */
     private static class FetchQueryResults implements GridCallable<GridRestResponse> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Injected grid. */
         @GridInstanceResource
         private Grid g;
@@ -351,6 +357,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * Rebuild indexes closure.
      */
     private static class RebuildIndexes implements GridCallable<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Injected grid. */
         @GridInstanceResource
         private Grid g;
