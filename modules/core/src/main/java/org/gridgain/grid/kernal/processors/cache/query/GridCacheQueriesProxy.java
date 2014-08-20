@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -28,7 +29,12 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridCacheProjectionImpl> stash = new ThreadLocal<>();
+    private static final ThreadLocal<GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx>> stash =
+        new ThreadLocal<GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx>>() {
+        @Override protected GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx> initialValue() {
+            return F.t2();
+        }
+    };
 
     /** */
     private GridCacheGateway<K, V> gate;
@@ -244,11 +250,15 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
+        out.writeObject(delegate);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridCacheProjectionImpl)in.readObject());
+        GridBiTuple<GridCacheProjectionImpl, GridCacheQueriesEx> t = stash.get();
+
+        t.set1((GridCacheProjectionImpl)in.readObject());
+        t.set2((GridCacheQueriesEx)in.readObject());
     }
 
     /**
@@ -260,9 +270,13 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
-            GridCacheProjectionImpl<K, V> prj = stash.get();
+            GridCacheProjectionImpl<K, V> prj = stash.get().get1();
 
-            return new GridCacheProxyImpl<>(prj.context(), prj, prj).queries();
+            GridCacheQueriesEx<K, V> delegate = stash.get().get2();
+
+            assert prj != null;
+
+            return new GridCacheQueriesProxy<>(prj.context(), prj, delegate);
         }
         catch (Exception e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

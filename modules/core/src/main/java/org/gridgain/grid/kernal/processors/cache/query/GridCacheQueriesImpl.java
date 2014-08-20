@@ -17,6 +17,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
@@ -24,15 +25,25 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 /**
  * {@link GridCacheQueries} implementation.
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
+public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridCacheContext<K, V> ctx;
+    private static final ThreadLocal<GridCacheProjectionImpl> stash = new ThreadLocal<>();
+
+    /** */
+    private GridCacheContext<K, V> ctx;
 
     /** */
     private GridCacheProjectionImpl<K, V> prj;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheQueriesImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Context.
@@ -149,5 +160,33 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     @SuppressWarnings("unchecked")
     @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set((GridCacheProjectionImpl)in.readObject());
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            return stash.get().queries();
+        }
+        catch (Exception e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 }
