@@ -22,6 +22,7 @@ import java.util.*;
  *     <li>Protocol version (2 bytes)</li>
  *     <li>Marshaller ID (2 bits)</li>
  *     <li>Reserved space (6 bits + 1 byte)</li>
+ *     <li>Marshaller ID for backward compatibility (1 byte)</li>
  * </ol>
  */
 public class GridClientHandshakeRequest extends GridClientAbstractMessage {
@@ -29,7 +30,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Packet size. */
-    private static final int PACKET_SIZE = 4;
+    static final int PACKET_SIZE = 5;
 
     /** Protocol version. */
     private static final short PROTO_VER = 1;
@@ -86,6 +87,8 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         U.shortToBytes(PROTO_VER, ret, 0);
 
         ret[2] = (byte)(marshId << 6);
+
+        ret[4] = marshId; // Marshaller ID for backward compatibility.
 
         return ret;
     }
