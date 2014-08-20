@@ -48,7 +48,7 @@ public class GridClientTestPortableAffinityKeyTask extends GridComputeTaskAdapte
     /**
      * @param arg Argument.
      * @return Execution result.
-     * @throws org.gridgain.grid.GridException If failed.
+     * @throws GridException If failed.
      */
      protected Boolean executeJob(Object arg) throws GridException {
         Collection args = (Collection)arg;
