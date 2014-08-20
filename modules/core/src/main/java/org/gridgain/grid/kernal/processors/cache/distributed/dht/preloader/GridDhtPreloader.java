@@ -27,7 +27,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
@@ -301,19 +300,17 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Finished waiting on local exchange: " + fut.exchangeId());
 
-        if (cctx.config().getPreloadMode() == SYNC) {
-            final long start = U.currentTimeMillis();
+        final long start = U.currentTimeMillis();
 
-            if (cctx.config().getPreloadPartitionedDelay() >= 0) {
-                U.log(log, "Starting preloading in SYNC mode: " + cctx.name());
+        if (cctx.config().getPreloadPartitionedDelay() >= 0) {
+            U.log(log, "Starting preloading in " + cctx.config().getPreloadMode() + " mode: " + cctx.name());
 
-                demandPool.syncFuture().listenAsync(new CI1<Object>() {
-                    @Override public void apply(Object t) {
-                        U.log(log, "Completed preloading in SYNC mode [cache=" + cctx.name() +
-                            ", time=" + (U.currentTimeMillis() - start) + " ms]");
-                    }
-                });
-            }
+            demandPool.syncFuture().listenAsync(new CI1<Object>() {
+                @Override public void apply(Object t) {
+                    U.log(log, "Completed preloading in " + cctx.config().getPreloadMode() + " mode " +
+                        "[cache=" + cctx.name() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
+                }
+            });
         }
     }
 
