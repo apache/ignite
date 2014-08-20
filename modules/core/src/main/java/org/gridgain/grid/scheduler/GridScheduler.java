@@ -36,7 +36,6 @@ import java.util.concurrent.*;
  *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
-
  */
 public interface GridScheduler {
     /**

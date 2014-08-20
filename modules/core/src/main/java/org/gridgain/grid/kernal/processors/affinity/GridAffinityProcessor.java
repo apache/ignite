@@ -375,7 +375,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3(), U.cacheAttributes(n, cacheName).portableEnabled());
+        Boolean portableEnabled = U.portableEnabled(n, cacheName);
+
+        return new AffinityInfo(f, m, t.get3(), portableEnabled != null && portableEnabled);
     }
 
     /**
