@@ -372,6 +372,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         GridCacheEntryEx<K, V> entry = null;
 
                         try {
+                            if (ctx.portableEnabled()) {
+                                key = (K)ctx.marshalToPortable(key);
+                                val = (V)ctx.marshalToPortable(val);
+                            }
+
                             entry = entryEx(key, false);
 
                             entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
