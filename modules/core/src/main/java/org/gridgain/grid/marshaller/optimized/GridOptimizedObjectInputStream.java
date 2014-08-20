@@ -48,6 +48,12 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
     private List<T2<GridOptimizedFieldType, Long>> curFields;
 
     /** */
+    private List<GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoList;
+
+    /** */
+    private Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> curFieldInfoMap;
+
+    /** */
     private Class<?> curCls;
 
     /**
@@ -106,12 +112,16 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
 
         curObj = null;
         curFields = null;
+        curFieldInfoList = null;
+        curFieldInfoMap = null;
     }
 
     /** {@inheritDoc} */
     @Override public Object readObjectOverride() throws ClassNotFoundException, IOException {
         curObj = null;
         curFields = null;
+        curFieldInfoList = null;
+        curFieldInfoMap = null;
 
         byte ref = in.readByte();
 
@@ -306,16 +316,16 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      * Reads serializable object.
      *
      * @param cls Class.
-     * @param fieldOffs Field offsets.
      * @param mtds {@code readObject} methods.
      * @param readResolveMtd {@code readResolve} method.
+     * @param fields class fields details.
      * @return Object.
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    Object readSerializable(Class<?> cls, List<List<T2<GridOptimizedFieldType, Long>>> fieldOffs,
-        List<Method> mtds, Method readResolveMtd) throws ClassNotFoundException, IOException {
+    Object readSerializable(Class<?> cls, List<Method> mtds, Method readResolveMtd,
+        GridOptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
         Object obj;
 
         try {
@@ -332,7 +342,9 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
 
             if (mtd != null) {
                 curObj = obj;
-                curFields = fieldOffs.get(i);
+                curFields = fields.fieldOffs(i);
+                curFieldInfoList = fields.fieldInfoList(i);
+                curFieldInfoMap = fields.fieldInfoMap(i);
 
                 try {
                     mtd.invoke(obj, this);
@@ -342,7 +354,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
                 }
             }
             else
-                readFields(obj, fieldOffs.get(i));
+                readFields(obj, fields.fieldOffs(i));
         }
 
         if (readResolveMtd != null) {
@@ -856,8 +868,8 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
      * {@link GetField} implementation.
      */
     private static class GetFieldImpl extends GetField {
-        /** Class descriptor. */
-        private final GridOptimizedClassDescriptor desc;
+        /** Field info map. */
+        private final Map<String, GridBiTuple<Integer, GridOptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
         private final Object[] objs;
@@ -869,9 +881,9 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private GetFieldImpl(GridOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
-            desc = classDescriptor(in.curObj.getClass(), in.curObj);
+            fieldInfoMap = in.curFieldInfoMap;
 
-            List<GridBiTuple<Integer, GridOptimizedFieldType>> infos = desc.fieldInfos();
+            List<GridBiTuple<Integer, GridOptimizedFieldType>> infos = in.curFieldInfoList;
 
             objs = new Object[infos.size()];
 
@@ -880,7 +892,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
 
                 Object obj = null;
 
-                switch ((t.get2())) {
+                switch (t.get2()) {
                     case BYTE:
                         obj = in.readByte();
 
@@ -936,7 +948,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
 
         /** {@inheritDoc} */
         @Override public boolean defaulted(String name) throws IOException {
-            return objs[desc.fieldInfo(name).get1()] == null;
+            return objs[fieldInfoMap.get(name).get1()] == null;
         }
 
         /** {@inheritDoc} */
@@ -990,7 +1002,7 @@ class GridOptimizedObjectInputStream extends ObjectInputStream {
          * @return Value.
          */
         private <T> T value(String name, T dflt) {
-            return objs[desc.fieldInfo(name).get1()] != null ? (T)objs[desc.fieldInfo(name).get1()] : dflt;
+            return objs[fieldInfoMap.get(name).get1()] != null ? (T)objs[fieldInfoMap.get(name).get1()] : dflt;
         }
     }
 }

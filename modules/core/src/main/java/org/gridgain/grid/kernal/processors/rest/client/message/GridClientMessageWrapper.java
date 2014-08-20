@@ -19,6 +19,9 @@ import java.util.*;
  * Client message wrapper for direct marshalling.
  */
 public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 5284375300887454697L;
+
     /** Client request header. */
     public static final byte REQ_HEADER = (byte)0x90;
 
@@ -35,7 +38,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
     private UUID destId;
 
     /** */
-    private byte[] msg;
+    private ByteBuffer msg;
 
     /**
      * @return Request ID.
@@ -94,16 +97,26 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
     }
 
     /**
+     * @return Message buffer.
+     */
+    public ByteBuffer message() {
+        return msg;
+    }
+
+    /**
      * @return Message bytes.
      */
-    public byte[] message() {
-        return msg;
+    public byte[] messageArray() {
+        assert msg.hasArray();
+        assert msg.position() == 0 && msg.remaining() == msg.capacity();
+
+        return msg.array();
     }
 
     /**
      * @param msg Message bytes.
      */
-    public void message(byte[] msg) {
+    public void message(ByteBuffer msg) {
         this.msg = msg;
     }
 
@@ -144,7 +157,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArrayClient(msg))
+                if (!commState.putByteBufferClient(msg))
                     return false;
 
                 commState.idx++;
@@ -204,7 +217,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 if (msg0 == BYTE_ARR_NOT_READ)
                     return false;
 
-                msg = msg0;
+                msg = ByteBuffer.wrap(msg0);
 
                 commState.idx++;
         }

@@ -882,11 +882,6 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 processRegularMessage0(ioMsg, locNodeId);
         }
         else {
-            GridNode node0 = ctx.discovery().node(node.id());
-
-            if (node0 == null)
-                throw new GridTopologyException("Failed to send message to node (has node left grid?): " + node.id());
-
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));
 
@@ -894,7 +889,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 getSpi().sendMessage(node, ioMsg);
             }
             catch (GridSpiException e) {
-                throw new GridException("Failed to send message [node=" + node + ", topic=" + topic +
+                throw new GridException("Failed to send message (node may have left the grid or " +
+                    "TCP connection cannot be established due to firewall issues) " +
+                    "[node=" + node + ", topic=" + topic +
                     ", msg=" + msg + ", policy=" + plc + ']', e);
             }
         }
@@ -1240,7 +1237,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                     msg + ", policy=" + plc + ']');
         }
         catch (GridSpiException e) {
-            throw new GridException("Failed to send message [nodes=" + nodes + ", topic=" + topic +
+            throw new GridException("Failed to send message (nodes may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[nodes=" + nodes + ", topic=" + topic +
                 ", msg=" + msg + ", policy=" + plc + ']', e);
         }
     }

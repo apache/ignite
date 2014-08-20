@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -68,7 +69,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         GridUserResource.class);
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<Grid> gridInjector;
+    private GridResourceBasicInjector<GridEx> gridInjector;
 
     /** GridGain home folder injector. */
     private GridResourceBasicInjector<String> ggHomeInjector;
@@ -96,6 +97,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
+
+    /** Address resolver injector. */
+    private GridResourceBasicInjector<GridAddressResolver> addrsRslvrInjector;
 
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
@@ -129,6 +133,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         execInjector = new GridResourceBasicInjector<Executor>(ctx.config().getExecutorService());
         nodeIdInjector = new GridResourceBasicInjector<>(ctx.config().getNodeId());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
+        addrsRslvrInjector = new GridResourceBasicInjector<>(ctx.config().getAddressResolver());
     }
 
     /** {@inheritDoc} */
@@ -503,6 +508,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, addrsRslvrInjector, null, null);
     }
 
     /**
@@ -529,6 +535,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridAddressResolverResource.class, nullInjector, null, null);
     }
 
     /**
@@ -571,6 +578,61 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         // Unwrap Proxy object.
         Object obj = unwrapTarget(lifecycleBean);
+
+        // Caching key is null for the life-cycle beans.
+        ioc.inject(obj, GridLoggerResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridExecutorServiceResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridLocalNodeIdResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridLocalHostResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridMBeanServerResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridHomeResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridNameResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
+        ioc.inject(obj, GridInstanceResource.class, nullInjector, null, null);
+    }
+
+    /**
+     * Injects resources into service.
+     *
+     * @param svc Service to inject.
+     * @throws GridException If failed.
+     */
+    public void inject(GridService svc) throws GridException {
+        if (log.isDebugEnabled())
+            log.debug("Injecting resources: " + svc);
+
+        // Unwrap Proxy object.
+        Object obj = unwrapTarget(svc);
+
+        // No deployment for lifecycle beans.
+        ioc.inject(obj, GridExecutorServiceResource.class, execInjector, null, null);
+        ioc.inject(obj, GridLocalNodeIdResource.class, nodeIdInjector, null, null);
+        ioc.inject(obj, GridLocalHostResource.class, locHostInjector, null, null);
+        ioc.inject(obj, GridMBeanServerResource.class, mbeanSrvInjector, null, null);
+        ioc.inject(obj, GridHomeResource.class, ggHomeInjector, null, null);
+        ioc.inject(obj, GridNameResource.class, ggNameInjector, null, null);
+        ioc.inject(obj, GridMarshallerResource.class, marshInjector, null, null);
+        ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
+        ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
+        ioc.inject(obj, GridInstanceResource.class, gridInjector, null, null);
+        ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+    }
+
+    /**
+     * Cleans up resources from given service. Essentially, this
+     * method injects {@code null}s into service bean.
+     *
+     * @param svc Service.
+     * @throws GridException Thrown in case of any errors.
+     */
+    public void cleanup(GridService svc) throws GridException {
+        if (log.isDebugEnabled())
+            log.debug("Cleaning up resources: " + svc);
+
+        // Unwrap Proxy object.
+        Object obj = unwrapTarget(svc);
 
         // Caching key is null for the life-cycle beans.
         ioc.inject(obj, GridLoggerResource.class, nullInjector, null, null);

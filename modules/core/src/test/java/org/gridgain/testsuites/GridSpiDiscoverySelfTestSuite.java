@@ -10,6 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
@@ -39,6 +40,7 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpDiscoveryVmMetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySharedFsMetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreInitSchemaSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySpiSelfTest.class));
@@ -46,6 +48,8 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpDiscoverySpiConfigSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryMarshallerCheckSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySnapshotHistoryTest.class));
+
+        suite.addTest(new TestSuite(GridTcpSpiForwardingSelfTest.class));
 
         return suite;
     }

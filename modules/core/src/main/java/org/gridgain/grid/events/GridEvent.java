@@ -14,7 +14,6 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Grid events are used for notification about what happens within the grid. Note that by
@@ -100,7 +99,7 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
     /**
      * Node where event occurred and was recorded
      *
-     * @return node where event occured and was recorded.
+     * @return node where event occurred and was recorded.
      */
     public GridNode node();
 

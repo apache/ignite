@@ -45,5 +45,7 @@ public class GridJavaLoggerTest extends TestCase {
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
         assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof GridJavaLogger;
+
+        assert log.fileName() != null;
     }
 }

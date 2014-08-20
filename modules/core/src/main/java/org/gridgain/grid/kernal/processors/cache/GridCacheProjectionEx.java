@@ -24,6 +24,14 @@ import java.util.*;
  */
 public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Client ID.
+     * @return Internal projection.
+     */
+    GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
+
+    /**
      * Gets predicate on which this projection is based on or {@code null}
      * if predicate is not defined.
      *
@@ -284,7 +292,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Value.
      * @throws GridException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
@@ -396,4 +404,25 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return DR pause state.
      */
     @Nullable public GridDrStatus drPauseState();
+
+    /**
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
+    public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * Gets set of primary entries containing internal entries.
+     *
+     * @param filter Optional filter.
+     * @return Primary entry set.
+     */
+    public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * @return Projection that doesn't deserialize values stores as portable objects.
+     */
+    public GridCacheProjectionEx<?, ?> forPortables();
 }

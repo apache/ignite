@@ -38,10 +38,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
+    private GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
 
     /** Filter. */
-    private GridBiPredicate<K, V> filter;
+    private GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
     private GridPredicate<GridCacheEntry<K, V>> prjPred;
@@ -71,7 +71,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param internal If {@code true} then query is notified about internal entries updates.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
-        GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb, @Nullable GridBiPredicate<K, V> filter,
+        GridBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
+        @Nullable GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
         assert topic != null;
         assert cb != null;
@@ -82,6 +83,21 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.filter = filter;
         this.prjPred = prjPred;
         this.internal = internal;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForEvents() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForMessaging() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForQuery() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -106,8 +122,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 GridCacheFlag[] f = cacheContext(ctx).forceLocalRead();
 
                 try {
-                    notify = (prjPred == null || prjPred.apply(e)) &&
-                        (filter == null || filter.apply(e.getKey(), e.getValue()));
+                    notify = (prjPred == null || checkProjection(e)) &&
+                        (filter == null || filter.apply(e));
                 }
                 finally {
                     cacheContext(ctx).forceFlags(f);
@@ -115,13 +131,15 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 if (notify) {
                     if (loc) {
-                        if (!cb.apply(nodeId, F.<Map.Entry<K, V>>asList(e)))
+                        if (!cb.apply(nodeId, F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
                         try {
-                            if (ctx.config().isPeerClassLoadingEnabled() &&
-                                U.hasCache(ctx.discovery().node(nodeId), cacheName)) {
+                            GridNode node = ctx.discovery().node(nodeId);
+
+                            if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
+                                U.hasCache(node, cacheName)) {
                                 e.p2pMarshal(ctx.config().getMarshaller());
 
                                 e.cacheName(cacheName);
@@ -140,14 +158,34 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
                 }
             }
+
+            private boolean checkProjection(GridCacheContinuousQueryEntry<K, V> e) {
+                GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
+
+                GridCacheProjectionImpl.KeyValueFilter<K, V> kvFilter = filter.keyValueFilter();
+                GridPredicate<? super GridCacheEntry<K, V>> entryFilter = filter.entryFilter();
+
+                boolean ret = true;
+
+                if (kvFilter != null) {
+                    V v = e.getValue() == null ? e.getOldValue() : e.getValue();
+
+                    ret = v != null && kvFilter.apply(e.getKey(), v);
+                }
+
+                if (entryFilter != null)
+                    ret = ret && entryFilter.apply(e);
+
+                return ret;
+            }
         };
 
-        return cacheContext(ctx).continuousQueries().registerListener(routineId, lsnr, internal);
+        return manager(ctx).registerListener(routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        cacheContext(ctx).continuousQueries().iterate(internal, routineId);
+        manager(ctx).iterate(internal, routineId);
     }
 
     /** {@inheritDoc} */
@@ -155,17 +193,27 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        cacheContext(ctx).continuousQueries().unregisterListener(internal, routineId);
+        manager(ctx).unregisterListener(internal, routineId);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Continuous query manager.
+     */
+    private GridCacheContinuousQueryManager<K, V> manager(GridKernalContext ctx) {
+        return cacheContext(ctx).continuousQueries();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void notifyCallback(UUID nodeId, UUID routineId, Collection<?> objs, GridKernalContext ctx) {
         assert nodeId != null;
         assert routineId != null;
         assert objs != null;
         assert ctx != null;
 
-        Collection<Map.Entry<K, V>> entries = (Collection<Map.Entry<K, V>>)objs;
+        Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> entries =
+            (Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>)objs;
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
             for (Map.Entry<K, V> e : entries) {
@@ -213,10 +261,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null)
+        if (filter != null && !U.isGrid(filter.getClass()))
             filterDep = new DeployableObject(filter, ctx);
 
-        if (prjPred != null)
+        if (prjPred != null && !U.isGrid(prjPred.getClass()))
             prjPredDep = new DeployableObject(prjPred, ctx);
     }
 
@@ -265,6 +313,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
         topic = in.readObject();
@@ -274,7 +323,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             filterDep = (DeployableObject)in.readObject();
         else
-            filter = (GridBiPredicate<K, V>)in.readObject();
+            filter = (GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
 
         b = in.readBoolean();
 

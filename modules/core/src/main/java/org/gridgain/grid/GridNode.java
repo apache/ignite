@@ -35,7 +35,7 @@ import java.util.*;
  * {@link GridConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+ * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
  *     ...
  *     &lt;property name="userAttributes">
  *         &lt;map>

@@ -28,7 +28,7 @@ public class GridClientTcpDirectMultiNodeSelfTest extends GridClientAbstractMult
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() {
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
         assert NODES_CNT > 3 : "Too few nodes to execute direct multinode test";
 
         GridClientConfiguration cfg = super.clientConfiguration();

@@ -159,6 +159,22 @@ public class GridLongList implements Externalizable {
     }
 
     /**
+     * Clears the list.
+     */
+    public void clear() {
+        idx = 0;
+    }
+
+    /**
+     * Gets the last element.
+     *
+     * @return The last element.
+     */
+    public long last() {
+        return arr[idx - 1];
+    }
+
+    /**
      * Removes and returns the last element of the list. Complementary method to {@link #add(long)} for stack like usage.
      *
      * @return Removed element.
@@ -457,5 +473,20 @@ public class GridLongList implements Externalizable {
             Arrays.sort(arr, 0, idx);
 
         return this;
+    }
+
+    /**
+     * Removes given number of elements from the end. If the given number of elements is higher than
+     * list size, then list will be cleared.
+     *
+     * @param cnt Count to pop from the end.
+     */
+    public void pop(int cnt) {
+        assert cnt >= 0 : cnt;
+
+        if (idx < cnt)
+            idx = 0;
+        else
+            idx -= cnt;
     }
 }

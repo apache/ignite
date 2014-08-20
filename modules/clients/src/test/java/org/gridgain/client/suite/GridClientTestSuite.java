@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.integration.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.router.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -88,7 +87,6 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientDefaultCacheSelfTest.class));
 
         suite.addTestSuite(GridClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(GridClientProtobufMarshallerSelfTest.class);
         suite.addTestSuite(GridClientPartitionAffinitySelfTest.class);
         suite.addTestSuite(GridClientPropertiesConfigurationSelfTest.class);
         suite.addTestSuite(GridClientConsistentHashSelfTest.class);

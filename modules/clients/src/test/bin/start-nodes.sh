@@ -39,7 +39,7 @@ if [ -d "${M2_HOME}" ]; then
     MVN_EXEC=${M2_HOME}/bin/${MVN_EXEC}
 fi
 
-${MVN_EXEC} -P+test,-scala,-release clean package -DskipTests
+${MVN_EXEC} -P+test,-scala,-examples,-release clean package -DskipTests -DskipClientDocs
 
 echo Switch to build script directory $SCRIPT_DIR
 cd $SCRIPT_DIR
@@ -51,6 +51,8 @@ fi
 if [ ! -d "${GG_HOME}/work/log" ]; then
     mkdir "${GG_HOME}/work/log"
 fi
+
+export JVM_OPTS="${JVM_OPTS} -DCLIENTS_MODULE_PATH=${CLIENTS_MODULE_PATH}"
 
 for iter in {1..2}
 do

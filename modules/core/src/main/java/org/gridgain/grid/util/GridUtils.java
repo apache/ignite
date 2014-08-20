@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -22,6 +21,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
@@ -112,19 +112,6 @@ public abstract class GridUtils {
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
 
-    /** Protobuf marshaller class name. */
-    private static final String PROTOBUF_MARSH_CLS =
-        "org.gridgain.client.marshaller.protobuf.GridClientProtobufMarshaller";
-
-    /** Optimized client marshaller ID. */
-    public static final byte OPTIMIZED_CLIENT_PROTO_ID = 1;
-
-    /** Protobuf client marshaller ID. */
-    public static final byte PROTOBUF_CLIENT_PROTO_ID = 2;
-
-    /** JDK client marshaller ID. */
-    public static final byte JDK_CLIENT_PROTO_ID = 3;
-
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -154,6 +141,12 @@ public abstract class GridUtils {
 
     /** Indicates whether current OS is Windows 7. */
     private static boolean win7;
+
+    /** Indicates whether current OS is Windows 8. */
+    private static boolean win8;
+
+    /** Indicates whether current OS is Windows 8.1. */
+    private static boolean win81;
 
     /** Indicates whether current OS is some version of Windows. */
     private static boolean unknownWin;
@@ -305,6 +298,10 @@ public abstract class GridUtils {
                 win2008 = true;
             else if (osLow.contains("7"))
                 win7 = true;
+            else if (osLow.contains("8.1"))
+                win81 = true;
+            else if (osLow.contains("8"))
+                win8 = true;
             else
                 unknownWin = true;
         }
@@ -614,6 +611,17 @@ public abstract class GridUtils {
         GridDiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
+    }
+
+    /**
+     * Checks whether authentication SPI other than noop authentication SPI is configured.
+     *
+     * @param cfg Configuration to check.
+     * @return {@code True} if authentication SPI is configured.
+     */
+    public static boolean securityEnabled(GridConfiguration cfg) {
+        return cfg.getAuthenticationSpi() != null &&
+            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
     }
 
     /**
@@ -4297,6 +4305,24 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes int array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeIntArray(DataOutput out, @Nullable int[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int b : arr)
+                out.writeInt(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -4313,6 +4339,27 @@ public abstract class GridUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readBoolean();
+
+        return res;
+    }
+
+    /**
+     * Reads int array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        int[] res = new int[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readInt();
 
         return res;
     }
@@ -5664,8 +5711,8 @@ public abstract class GridUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return winXp || win95 || win98 || winNt || win2k ||
-            win2003 || win2008 || winVista || win7 || unknownWin;
+        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
+            win2003 || win2008 || winVista || unknownWin;
     }
 
     /**
@@ -5684,6 +5731,24 @@ public abstract class GridUtils {
      */
     public static boolean isWindows7() {
         return win7;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.
+     *
+     * @return {@code true} if current OS is Windows 8 - {@code false} otherwise.
+     */
+    public static boolean isWindows8() {
+        return win8;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.1.
+     *
+     * @return {@code true} if current OS is Windows 8.1 - {@code false} otherwise.
+     */
+    public static boolean isWindows81() {
+        return win81;
     }
 
     /**
@@ -5747,8 +5812,9 @@ public abstract class GridUtils {
      */
     public static boolean isSufficientlyTestedOs() {
         return
-            win2k ||
-                win7 ||
+            win7 ||
+                win8 ||
+                win81 ||
                 winXp ||
                 winVista ||
                 mac ||
@@ -6886,6 +6952,7 @@ public abstract class GridUtils {
 
     /**
      * Gets cache attributes from the given node for the given cache name.
+     *
      * @param n Node.
      * @param cacheName Cache name.
      * @return Attributes.
@@ -6897,6 +6964,19 @@ public abstract class GridUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Gets portable enabled flag from the given node for the given cache name.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @return Portable enabled flag.
+     */
+    @Nullable public static Boolean portableEnabled(GridNode n, @Nullable String cacheName) {
+        Map<String, Boolean> map = n.attribute(ATTR_CACHE_PORTABLE);
+
+        return map == null ? null : map.get(cacheName);
     }
 
     /**
@@ -7497,16 +7577,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether a node is a Visor node.
-     *
-     * @param node Node to check.
-     * @return {@code True} if node is a Visor node, {@code false} otherwise.
-     */
-    public static boolean isVisorNode(GridNode node) {
-        return node.attributes().containsKey("VISOR");
-    }
-
-    /**
      * Checks whether property is one added by Visor when node is started via remote SSH session.
      *
      * @param name Property name to check.
@@ -7530,7 +7600,8 @@ public abstract class GridUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and null appender instances.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
+     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
      * @throws GridException In case of failure to add no-op logger for Log4j.
      */
     public static GridBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
@@ -7543,7 +7614,14 @@ public abstract class GridUtils {
 
             rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
 
-            nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            try {
+                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+            }
+            catch (ClassNotFoundException ignore) {
+                // Can't found log4j no-op appender in classpath (for example, log4j was added through
+                // log4j-over-slf4j library. No-appender warning will not be suppressed.
+                return new GridBiTuple<>(rootLog, null);
+            }
 
             Class appCls = Class.forName("org.apache.log4j.Appender");
 
@@ -7565,6 +7643,9 @@ public abstract class GridUtils {
     public static void removeLog4jNoOpLogger(GridBiTuple<Object, Object> t) throws GridException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
+
+        if (nullApp == null)
+            return;
 
         try {
             Class appenderCls = Class.forName("org.apache.log4j.Appender");
@@ -8119,11 +8200,51 @@ public abstract class GridUtils {
 
                 res.add(inetSockAddr);
             }
-            else
-                res.add(new InetSocketAddress(addr, port));
+
+            // Always append address because local and remote nodes may have the same hostname
+            // therefore remote hostname will be always resolved to local address.
+            res.add(new InetSocketAddress(addr, port));
         }
 
         return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
+    }
+
+    /**
+     * Resolves all not loopback addresses and collect results.
+     *
+     * @param addrRslvr Address resolver.
+     * @param addrs Addresses.
+     * @param port Port.
+     * @return Resolved socket addresses.
+     * @throws GridException If failed.
+     */
+    public static Collection<InetSocketAddress> resolveAddresses(
+        GridAddressResolver addrRslvr,
+        Iterable<String> addrs,
+        int port
+    ) throws GridException {
+        assert addrRslvr != null;
+
+        Collection<InetSocketAddress> extAddrs = new HashSet<>();
+
+        for (String addr : addrs) {
+            InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
+
+            if (!sockAddr.isUnresolved()) {
+                try {
+                    Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
+
+                    if (extAddrs0 != null)
+                        extAddrs.addAll(extAddrs0);
+                }
+                catch (GridException e) {
+                    throw new GridSpiException("Failed to get mapped external addresses " +
+                        "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
+                }
+            }
+        }
+
+        return extAddrs;
     }
 
     /**
@@ -8304,34 +8425,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Creates new instance of Protobuf marshaller. If {@code gridgain-protobuf}
-     * module is not enabled, {@code null} is returned.
-     *
-     * @param log Logger.
-     * @return Marshaller instance or {@code null} if {@code gridgain-protobuf} module is not enabled.
-     */
-    @Nullable public static GridClientMarshaller createProtobufMarshaller(GridLogger log) {
-        GridClientMarshaller marsh = null;
-
-        try {
-            Class<?> cls = Class.forName(PROTOBUF_MARSH_CLS);
-
-            Constructor<?> cons = cls.getConstructor();
-
-            marsh = (GridClientMarshaller)cons.newInstance();
-        }
-        catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to create Protobuf marshaller for REST C++ and .NET clients " +
-                "(consider adding gridgain-protobuf module to classpath).");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create Protobuf marshaller for REST.", e);
-        }
-
-        return marsh;
-    }
-
-    /**
      * Converts an array of characters representing hexidecimal values into an
      * array of bytes of those same values. The returned array will be half the
      * length of the passed array, as it takes two characters to represent any
@@ -8376,12 +8469,56 @@ public abstract class GridUtils {
      * @return An integer
      * @throws GridException Thrown if ch is an illegal hex character
      */
-    protected static int toDigit(char ch, int index) throws GridException {
+    public static int toDigit(char ch, int index) throws GridException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
             throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
 
         return digit;
+    }
+
+    /**
+     * Gets oldest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Oldest node.
+     */
+    public static GridNode oldest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode oldest = null;
+
+        long minOrder = Long.MAX_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() < minOrder) {
+                oldest = n;
+
+                minOrder = n.order();
+            }
+        }
+
+        return oldest;
+    }
+
+    /**
+     * Gets youngest node out of collection of nodes.
+     *
+     * @param c Collection of nodes.
+     * @return Youngest node.
+     */
+    public static GridNode youngest(Collection<GridNode> c, @Nullable GridPredicate<GridNode> p) {
+        GridNode youngest = null;
+
+        long maxOrder = Long.MIN_VALUE;
+
+        for (GridNode n : c) {
+            if ((p == null || p.apply(n)) && n.order() > maxOrder) {
+                youngest = n;
+
+                maxOrder = n.order();
+            }
+        }
+
+        return youngest;
     }
 }

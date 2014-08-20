@@ -102,11 +102,12 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         boolean explicitLock,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         this(xidVer, implicit, implicitSingle, cctx, concurrency, isolation, timeout, invalidate,
             syncCommit, syncRollback, explicitLock, false, cctx.isStoreEnabled() && cctx.writeToStoreFromDht(),
-            txSize, grpLockKey, partLock);
+            txSize, grpLockKey, partLock, subjId);
     }
 
     /**
@@ -143,10 +144,11 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId
     ) {
         super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, swapEnabled,
-            storeEnabled, txSize, grpLockKey, partLock);
+            storeEnabled, txSize, grpLockKey, partLock, subjId);
 
         assert cctx != null;
 

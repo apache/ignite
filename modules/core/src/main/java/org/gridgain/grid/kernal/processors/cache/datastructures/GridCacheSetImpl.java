@@ -122,7 +122,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             }
 
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false);
+                new GridSetQueryPredicate<>(id, collocated), false, false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -340,7 +340,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private GridCloseableIterator<T> iterator0() {
         try {
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false);
+                new GridSetQueryPredicate<>(id, collocated), false, false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -544,6 +544,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      *
      */
     private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = -1460570789166994846L;
+
         /** Query future. */
         private final GridCacheQueryFuture<T> fut;
 
@@ -652,6 +655,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      */
     private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
         /** */
+        private static final long serialVersionUID = -3436987759126521204L;
+
+        /** */
         private int cntr;
 
         /**
@@ -688,6 +694,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * Item key for collocated set.
      */
     private static class CollocatedItemKey extends GridCacheSetItemKey {
+        /** */
+        private static final long serialVersionUID = -1400701398705953750L;
+
         /** */
         private String setName;
 

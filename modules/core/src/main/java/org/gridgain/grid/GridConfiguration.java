@@ -16,13 +16,16 @@ import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.checkpoint.*;
@@ -384,6 +387,9 @@ public class GridConfiguration {
     /** Indexing SPI. */
     private GridIndexingSpi[] indexingSpi;
 
+    /** Address resolver. */
+    private GridAddressResolver addrRslvr;
+
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
 
@@ -508,6 +514,18 @@ public class GridConfiguration {
     /** Security credentials. */
     private GridSecurityCredentialsProvider securityCred;
 
+    /** Service configuration. */
+    private GridServiceConfiguration[] svcCfgs;
+
+    /** Hadoop configuration. */
+    private GridHadoopConfiguration hadoopCfg;
+
+    /** Client access configuration. */
+    private GridClientConnectionConfiguration clientCfg;
+
+    /** Portable configuration. */
+    private GridPortableConfiguration portableCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -521,6 +539,7 @@ public class GridConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
+    @SuppressWarnings("deprecation")
     public GridConfiguration(GridConfiguration cfg) {
         assert cfg != null;
 
@@ -541,11 +560,14 @@ public class GridConfiguration {
         /*
          * Order alphabetically for maintenance purposes.
          */
+        addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
+        clientCfg = cfg.getClientConnectionConfiguration();
+        clientMsgInterceptor = cfg.getClientMessageInterceptor();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         dataCenterId = cfg.getDataCenterId();
@@ -563,6 +585,7 @@ public class GridConfiguration {
         ggfsCfg = cfg.getGgfsConfiguration();
         ggfsSvc = cfg.getGgfsExecutorService();
         ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+        hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         jettyPath = cfg.getRestJettyPath();
@@ -587,8 +610,10 @@ public class GridConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pSvc = cfg.getPeerClassLoadingExecutorService();
         p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        portableCfg = cfg.getPortableConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restEnabled = cfg.isRestEnabled();
+        restIdleTimeout = cfg.getRestIdleTimeout();
         restPortRange = cfg.getRestPortRange();
         restSecretKey = cfg.getRestSecretKey();
         restTcpHost = cfg.getRestTcpHost();
@@ -625,7 +650,6 @@ public class GridConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
-        clientMsgInterceptor = cfg.getClientMessageInterceptor();
     }
 
     /**
@@ -1045,7 +1069,8 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return an instance of logger to use in grid. If not provided, {@code GridLog4jLogger}
+     * Should return an instance of logger to use in grid. If not provided,
+     * {@gglink org.gridgain.grid.logger.log4j.GridLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -2142,7 +2167,7 @@ public class GridConfiguration {
 
     /**
      * Should return fully configured indexing SPI implementations. If not provided,
-     * {@code GridH2IndexingSpi} will be used.
+     * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).
@@ -2151,6 +2176,24 @@ public class GridConfiguration {
      */
     public GridIndexingSpi[] getIndexingSpi() {
         return indexingSpi;
+    }
+
+    /**
+     * Gets address resolver for addresses mapping determination.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
+    }
+
+    /*
+     * Sets address resolver for addresses mapping determination.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        this.addrRslvr = addrRslvr;
     }
 
     /**
@@ -2279,7 +2322,9 @@ public class GridConfiguration {
      * accessing GridGain APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestJettyPath(String)}.
      */
+    @Deprecated
     public void setRestJettyPath(String jettyPath) {
         this.jettyPath = jettyPath;
     }
@@ -2296,7 +2341,9 @@ public class GridConfiguration {
      * @return Path to {@code JETTY} XML configuration file.
      * @see GridSystemProperties#GG_JETTY_HOST
      * @see GridSystemProperties#GG_JETTY_PORT
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestJettyPath()}.
      */
+    @Deprecated
     public String getRestJettyPath() {
         return jettyPath;
     }
@@ -2305,7 +2352,9 @@ public class GridConfiguration {
      * Sets flag indicating whether external {@code REST} access is enabled or not.
      *
      * @param restEnabled Flag indicating whether external {@code REST} access is enabled or not.
+     * @deprecated Use {@link GridClientConnectionConfiguration}.
      */
+    @Deprecated
     public void setRestEnabled(boolean restEnabled) {
         this.restEnabled = restEnabled;
     }
@@ -2317,7 +2366,9 @@ public class GridConfiguration {
      * @return Flag indicating whether external {@code REST} access is enabled or not.
      * @see GridSystemProperties#GG_JETTY_HOST
      * @see GridSystemProperties#GG_JETTY_PORT
+     * @deprecated Use {@link GridClientConnectionConfiguration}.
      */
+    @Deprecated
     public boolean isRestEnabled() {
         return restEnabled;
     }
@@ -2333,7 +2384,9 @@ public class GridConfiguration {
      * locally-available IP addresses.
      *
      * @return TCP host.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpHost()}.
      */
+    @Deprecated
     public String getRestTcpHost() {
         return restTcpHost;
     }
@@ -2342,7 +2395,9 @@ public class GridConfiguration {
      * Sets host for TCP binary protocol server.
      *
      * @param restTcpHost TCP host.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpHost(String)}.
      */
+    @Deprecated
     public void setRestTcpHost(String restTcpHost) {
         this.restTcpHost = restTcpHost;
     }
@@ -2353,7 +2408,9 @@ public class GridConfiguration {
      * Default is {@link #DFLT_TCP_PORT}.
      *
      * @return TCP port.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpPort()}.
      */
+    @Deprecated
     public int getRestTcpPort() {
         return restTcpPort;
     }
@@ -2362,7 +2419,9 @@ public class GridConfiguration {
      * Sets port for TCP binary protocol server.
      *
      * @param restTcpPort TCP port.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpPort(int)}.
      */
+    @Deprecated
     public void setRestTcpPort(int restTcpPort) {
         this.restTcpPort = restTcpPort;
     }
@@ -2375,7 +2434,9 @@ public class GridConfiguration {
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *
      * @return Whether {@code TCP_NODELAY} option should be enabled.
+     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpNoDelay()}.
      */
+    @Deprecated
     public boolean isRestTcpNoDelay() {
         return restTcpNoDelay;
     }
@@ -2385,7 +2446,9 @@ public class GridConfiguration {
      *
      * @param restTcpNoDelay {@code True} if option should be enabled.
      * @see #isRestTcpNoDelay()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpNoDelay(boolean)}.
      */
+    @Deprecated
     public void setRestTcpNoDelay(boolean restTcpNoDelay) {
         this.restTcpNoDelay = restTcpNoDelay;
     }
@@ -2397,7 +2460,9 @@ public class GridConfiguration {
      * size).
      *
      * @return Whether direct buffer should be used.
+     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpDirectBuffer()}.
      */
+    @Deprecated
     public boolean isRestTcpDirectBuffer() {
         return restTcpDirectBuf;
     }
@@ -2407,7 +2472,9 @@ public class GridConfiguration {
      *
      * @param restTcpDirectBuf {@code True} if option should be enabled.
      * @see #isRestTcpDirectBuffer()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpDirectBuffer(boolean)}.
      */
+    @Deprecated
     public void setRestTcpDirectBuffer(boolean restTcpDirectBuf) {
         this.restTcpDirectBuf = restTcpDirectBuf;
     }
@@ -2416,7 +2483,9 @@ public class GridConfiguration {
      * Gets REST TCP server send buffer size.
      *
      * @return REST TCP server send buffer size (0 for default).
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSendBufferSize()}.
      */
+    @Deprecated
     public int getRestTcpSendBufferSize() {
         return restTcpSndBufSize;
     }
@@ -2426,7 +2495,9 @@ public class GridConfiguration {
      *
      * @param restTcpSndBufSize Send buffer size.
      * @see #getRestTcpSendBufferSize()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSendBufferSize(int)}.
      */
+    @Deprecated
     public void setRestTcpSendBufferSize(int restTcpSndBufSize) {
         this.restTcpSndBufSize = restTcpSndBufSize;
     }
@@ -2435,7 +2506,9 @@ public class GridConfiguration {
      * Gets REST TCP server receive buffer size.
      *
      * @return REST TCP server receive buffer size (0 for default).
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpReceiveBufferSize()}.
      */
+    @Deprecated
     public int getRestTcpReceiveBufferSize() {
         return restTcpRcvBufSize;
     }
@@ -2445,7 +2518,9 @@ public class GridConfiguration {
      *
      * @param restTcpRcvBufSize Receive buffer size.
      * @see #getRestTcpReceiveBufferSize()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpReceiveBufferSize(int)}.
      */
+    @Deprecated
     public void setRestTcpReceiveBufferSize(int restTcpRcvBufSize) {
         this.restTcpRcvBufSize = restTcpRcvBufSize;
     }
@@ -2455,7 +2530,9 @@ public class GridConfiguration {
      * block until the queue has enough capacity.
      *
      * @return REST TCP server send queue limit (0 for unlimited).
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSendQueueLimit()}.
      */
+    @Deprecated
     public int getRestTcpSendQueueLimit() {
         return restTcpSndQueueLimit;
     }
@@ -2465,7 +2542,9 @@ public class GridConfiguration {
      *
      * @param restTcpSndQueueLimit REST TCP server send queue limit (0 for unlimited).
      * @see #getRestTcpSendQueueLimit()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSendQueueLimit(int)}.
      */
+    @Deprecated
     public void setRestTcpSendQueueLimit(int restTcpSndQueueLimit) {
         this.restTcpSndQueueLimit = restTcpSndQueueLimit;
     }
@@ -2475,7 +2554,9 @@ public class GridConfiguration {
      * may increase throughput, but also increases context switching.
      *
      * @return Number of selector threads for REST TCP server.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSelectorCount()}.
      */
+    @Deprecated
     public int getRestTcpSelectorCount() {
         return restTcpSelectorCnt;
     }
@@ -2485,7 +2566,9 @@ public class GridConfiguration {
      *
      * @param restTcpSelectorCnt Number of selector threads for REST TCP server.
      * @see #getRestTcpSelectorCount()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSelectorCount(int)}.
      */
+    @Deprecated
     public void setRestTcpSelectorCount(int restTcpSelectorCnt) {
         this.restTcpSelectorCnt = restTcpSelectorCnt;
     }
@@ -2497,7 +2580,9 @@ public class GridConfiguration {
      * come within idle timeout, the connection is closed.
      *
      * @return Idle timeout in milliseconds.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestIdleTimeout()}.
      */
+    @Deprecated
     public long getRestIdleTimeout() {
         return restIdleTimeout;
     }
@@ -2507,7 +2592,9 @@ public class GridConfiguration {
      *
      * @param restIdleTimeout Idle timeout in milliseconds.
      * @see #getRestIdleTimeout()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestIdleTimeout(long)}.
      */
+    @Deprecated
     public void setRestIdleTimeout(long restIdleTimeout) {
         this.restIdleTimeout = restIdleTimeout;
     }
@@ -2519,7 +2606,9 @@ public class GridConfiguration {
      * should be provided, otherwise binary rest protocol will fail to start.
      *
      * @return {@code True} if SSL should be enabled.
+     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpSslEnabled()}.
      */
+    @Deprecated
     public boolean isRestTcpSslEnabled() {
         return restTcpSslEnabled;
     }
@@ -2531,7 +2620,9 @@ public class GridConfiguration {
      * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param restTcpSslEnabled {@code True} if SSL should be enabled.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslEnabled(boolean)}.
      */
+    @Deprecated
     public void setRestTcpSslEnabled(boolean restTcpSslEnabled) {
         this.restTcpSslEnabled = restTcpSslEnabled;
     }
@@ -2541,7 +2632,9 @@ public class GridConfiguration {
      * validity will be verified with trust manager.
      *
      * @return Whether or not client authentication is required.
+     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpSslClientAuth()}.
      */
+    @Deprecated
     public boolean isRestTcpSslClientAuth() {
         return restTcpSslClientAuth;
     }
@@ -2550,7 +2643,9 @@ public class GridConfiguration {
      * Sets flag indicating whether or not SSL client authentication is required.
      *
      * @param needClientAuth Whether or not client authentication is required.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslClientAuth(boolean)}.
      */
+    @Deprecated
     public void setRestTcpSslClientAuth(boolean needClientAuth) {
         restTcpSslClientAuth = needClientAuth;
     }
@@ -2560,7 +2655,9 @@ public class GridConfiguration {
      *
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSslContextFactory()}.
      */
+    @Deprecated
     public GridSslContextFactory getRestTcpSslContextFactory() {
         return restTcpSslCtxFactory;
     }
@@ -2571,7 +2668,9 @@ public class GridConfiguration {
      * {@link #setRestTcpSslEnabled(boolean)} is set to {@code true}.
      *
      * @param restTcpSslCtxFactory Instance of {@link GridSslContextFactory}
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslContextFactory(GridSslContextFactory)}.
      */
+    @Deprecated
     public void setRestTcpSslContextFactory(GridSslContextFactory restTcpSslCtxFactory) {
         this.restTcpSslCtxFactory = restTcpSslCtxFactory;
     }
@@ -2580,7 +2679,9 @@ public class GridConfiguration {
      * Gets number of ports to try if configured port is already in use.
      *
      * @return Number of ports to try.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestPortRange()}.
      */
+    @Deprecated
     public int getRestPortRange() {
         return restPortRange;
     }
@@ -2589,7 +2690,9 @@ public class GridConfiguration {
      * Sets number of ports to try if configured one is in use.
      *
      * @param restPortRange Port range.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestPortRange(int)}.
      */
+    @Deprecated
     public void setRestPortRange(int restPortRange) {
         this.restPortRange = restPortRange;
     }
@@ -2603,7 +2706,9 @@ public class GridConfiguration {
      * could not be detected and property is not specified, no restrictions applied.
      *
      * @return Array of folders that are allowed be read by remote clients.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestAccessibleFolders()}.
      */
+    @Deprecated
     public String[] getRestAccessibleFolders() {
         return restAccessibleFolders;
     }
@@ -2612,7 +2717,9 @@ public class GridConfiguration {
      * Sets array of folders accessible by REST processor for log reading command.
      *
      * @param restAccessibleFolders Array of folder paths.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestAccessibleFolders(String...)}.
      */
+    @Deprecated
     public void setRestAccessibleFolders(String... restAccessibleFolders) {
         this.restAccessibleFolders = restAccessibleFolders;
     }
@@ -2631,7 +2738,9 @@ public class GridConfiguration {
      *
      * @return Thread pool implementation to be used for processing of client
      *      messages.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestExecutorService()}.
      */
+    @Deprecated
     public ExecutorService getRestExecutorService() {
         return restExecSvc;
     }
@@ -2641,7 +2750,9 @@ public class GridConfiguration {
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
      * @see GridConfiguration#getRestExecutorService()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
      */
+    @Deprecated
     public void setRestExecutorService(ExecutorService restExecSvc) {
         this.restExecSvc = restExecSvc;
     }
@@ -2651,7 +2762,9 @@ public class GridConfiguration {
      *
      * @param restSvcShutdown REST executor service shutdown flag.
      * @see GridConfiguration#getRestExecutorService()
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
      */
+    @Deprecated
     public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
         this.restSvcShutdown = restSvcShutdown;
     }
@@ -2664,7 +2777,9 @@ public class GridConfiguration {
      * or by GridGain.
      *
      * @return REST executor service shutdown flag.
+     * @deprecated Use {@link GridClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
      */
+    @Deprecated
     public boolean getRestExecutorServiceShutdown() {
         return restSvcShutdown;
     }
@@ -2739,7 +2854,9 @@ public class GridConfiguration {
      * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @param restSecretKey REST secret key.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setRestSecretKey(String)}.
      */
+    @Deprecated
     public void setRestSecretKey(@Nullable String restSecretKey) {
         this.restSecretKey = restSecretKey;
     }
@@ -2750,7 +2867,9 @@ public class GridConfiguration {
      * @return Secret key.
      * @see GridSystemProperties#GG_JETTY_HOST
      * @see GridSystemProperties#GG_JETTY_PORT
+     * @deprecated Use {@link GridClientConnectionConfiguration#getRestSecretKey()}.
      */
+    @Deprecated
     @Nullable public String getRestSecretKey() {
         return restSecretKey;
     }
@@ -2817,7 +2936,9 @@ public class GridConfiguration {
      *
      * @see GridClientMessageInterceptor
      * @return Interceptor.
+     * @deprecated Use {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
+    @Deprecated
     @Nullable public GridClientMessageInterceptor getClientMessageInterceptor() {
         return clientMsgInterceptor;
     }
@@ -2831,7 +2952,9 @@ public class GridConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
+     * @deprecated Use {@link GridClientConnectionConfiguration#setClientMessageInterceptor(GridClientMessageInterceptor)}.
      */
+    @Deprecated
     public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
         clientMsgInterceptor = interceptor;
     }
@@ -2933,6 +3056,24 @@ public class GridConfiguration {
     }
 
     /**
+     * Gets hadoop configuration.
+     *
+     * @return Hadoop configuration.
+     */
+    public GridHadoopConfiguration getHadoopConfiguration() {
+        return hadoopCfg;
+    }
+
+    /**
+     * Sets hadoop configuration.
+     *
+     * @param hadoopCfg Hadoop configuration.
+     */
+    public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
+        this.hadoopCfg = hadoopCfg;
+    }
+
+    /**
      * Gets security credentials.
      *
      * @return Security credentials.
@@ -2948,6 +3089,52 @@ public class GridConfiguration {
      */
     public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider securityCred) {
         this.securityCred = securityCred;
+    }
+
+    /**
+     * @return Client connection configuration.
+     */
+    public GridClientConnectionConfiguration getClientConnectionConfiguration() {
+        return clientCfg;
+    }
+
+    /**
+     * @param clientCfg Client connection configuration.
+     */
+    public void setClientConnectionConfiguration(GridClientConnectionConfiguration clientCfg) {
+        this.clientCfg = clientCfg;
+    }
+
+    /**
+     * @return Portable configuration.
+     */
+    public GridPortableConfiguration getPortableConfiguration() {
+        return portableCfg;
+    }
+
+    /**
+     * @param portableCfg Portable configuration.
+     */
+    public void setPortableConfiguration(GridPortableConfiguration portableCfg) {
+        this.portableCfg = portableCfg;
+    }
+
+    /**
+     * Gets configurations for services to be deployed on the grid.
+     *
+     * @return Configurations for services to be deployed on the grid.
+     */
+    public GridServiceConfiguration[] getServiceConfiguration() {
+        return svcCfgs;
+    }
+
+    /**
+     * Sets configurations for services to be deployed on the grid.
+     *
+     * @param svcCfgs Configurations for services to be deployed on the grid.
+     */
+    public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
+        this.svcCfgs = svcCfgs;
     }
 
     /** {@inheritDoc} */

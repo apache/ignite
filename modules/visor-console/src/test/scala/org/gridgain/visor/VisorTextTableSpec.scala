@@ -11,9 +11,10 @@
 
 package org.gridgain.visor
 
-import org.scalatest._
-import collection._
 import org.gridgain.visor.commands.VisorTextTable
+import org.scalatest._
+
+import scala.collection._
 
 /**
  * Test for visor text table.

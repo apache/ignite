@@ -154,6 +154,9 @@ public final class GridGgfsHadoopLogger {
      * @return Logger instance.
      */
     public static GridGgfsHadoopLogger logger(String endpoint, String ggfsName, String dir, int batchSize) {
+        if (endpoint == null)
+            endpoint = "";
+
         logLock.readLock().lock();
 
         try {

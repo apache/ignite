@@ -123,6 +123,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** */
     private final boolean noFailover;
 
+    /** */
+    private final UUID subjId;
+
     /** Continuous mapper. */
     private final GridComputeTaskContinuousMapper mapper = new GridComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
@@ -212,6 +215,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
         this.noFailover = noFailover != null ? noFailover : false;
+
+        UUID subjId = getThreadContext(TC_SUBJ_ID);
+
+        this.subjId = subjId != null ? subjId : ctx.localNodeId();
     }
 
     /**
@@ -1222,16 +1229,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param msg Event message.
      */
     private void recordTaskEvent(int evtType, String msg) {
-        if (ctx.event().isRecordable(evtType)) {
-            GridTaskEvent evt = new GridTaskEvent();
-
-            evt.message(msg);
-            evt.node(ctx.discovery().localNode());
-            evt.taskName(ses.getTaskName());
-            evt.taskClassName(ses.getTaskClassName());
-            evt.taskSessionId(ses.getId());
-            evt.type(evtType);
-            evt.internal(internal);
+        if (!internal && ctx.event().isRecordable(evtType)) {
+            GridEvent evt = new GridTaskEvent(
+                ctx.discovery().localNode(),
+                msg,
+                evtType,
+                ses.getId(),
+                ses.getTaskName(),
+                ses.getTaskClassName(),
+                internal,
+                subjId);
 
             ctx.event().record(evt);
         }

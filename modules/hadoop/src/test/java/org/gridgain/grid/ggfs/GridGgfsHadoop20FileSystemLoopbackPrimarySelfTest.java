@@ -25,7 +25,7 @@ public class GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest extends GridGgfsH
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://primary/";
+        return "ggfs://ggfs:" + getTestGridName(0) + "@/";
     }
 
     /** {@inheritDoc} */

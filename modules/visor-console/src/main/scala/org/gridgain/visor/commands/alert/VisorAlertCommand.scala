@@ -11,18 +11,22 @@
 
 package org.gridgain.visor.commands.alert
 
+import org.gridgain.grid._
+import org.gridgain.grid.events._
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.grid.util.lang.{GridFunc => F}
+
 import java.util.UUID
 import java.util.concurrent.atomic._
-import org.gridgain.visor._
-import org.gridgain.grid._
-import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.events._
-import GridEventType._
-import collection.immutable._
+
+import scala.collection.immutable._
+import scala.language.implicitConversions
 import scala.util.control.Breaks._
+
+import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid.lang.GridPredicate
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -40,7 +44,7 @@ import org.gridgain.grid.lang.GridPredicate
  * {{{
  *     alert
  *     alert "-u {-id=<alert-id>|-a}"
- *     alert "-r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
+ *     alert "-r {-t=<sec>} {-<metric>=<condition><value>} ... {-<metric>=<condition><value>}"
  * }}}
  *
  * ====Arguments====
@@ -57,44 +61,46 @@ import org.gridgain.grid.lang.GridPredicate
  *         Register new alert with mnemonic predicate(s).
  *         Note that only one of the '-u' or '-r' is allowed.
  *         If neither '-u' or '-r' provided - all alerts will be printed.
+ *
+ *         NOTE: Email settings can be specified in GridGain configu
+ *         Email notification will be sent for the alert only
+ *         provided mnemonic predicates evaluate to 'true'."
  *     -t
  *         Defines notification frequency in seconds. Default is 15 minutes.
  *         This parameter can only appear with '-r'.
- *     -ck=ek<num>
+ *     -<metric>
  *         This defines a mnemonic for the metric that will be measured:
+ *
  *         Grid-wide metrics (not node specific):
- *            -cc Total number of available CPUs in the grid.
- *            -nc Total number of nodes in the grid.
- *            -hc Total number of physical hosts in the grid.
- *            -cl Current average CPU load (in %) in the grid.
+ *            cc - Total number of available CPUs in the grid.
+ *            nc - Total number of nodes in the grid.
+ *            hc - Total number of physical hosts in the grid.
+ *            cl - Current average CPU load (in %) in the grid.
  *
  *         Per-node current metrics:
- *            -aj Active jobs on the node.
- *            -cj Cancelled jobs on the node.
- *            -tc Thread count on the node.
- *            -it Idle time on the node.
+ *            aj - Active jobs on the node.
+ *            cj - Cancelled jobs on the node.
+ *            tc - Thread count on the node.
+ *            ut - Up time on the node.
  *                Note: <num> can have 's', 'm', or 'h' suffix indicating
  *                seconds, minutes, and hours. By default (no suffix provided)
  *                value is assumed to be in milliseconds.
- *            -ut Up time on the node.
- *                Note: <num> can have 's', 'm', or 'h' suffix indicating
- *                seconds, minutes, and hours. By default (no suffix provided)
- *                value is assumed to be in milliseconds.
- *            -je Job execute time on the node.
- *            -jw Job wait time on the node.
- *            -wj Waiting jobs count on the node.
- *            -rj Rejected jobs count on the node.
- *            -hu Heap memory used (in MB) on the node.
- *            -cd Current CPU load on the node.
- *            -hm Heap memory maximum (in MB) on the node.
- *
- *         Comparison part of the mnemonic predicate:
- *            =eq<num> Equal '=' to '<num>' number.
- *            =neq<num> Not equal '!=' to '<num>' number.
- *            =gt<num> Greater than '>' to '<num>' number.
- *            =gte<num> Greater than or equal '>=' to '<num>' number.
- *            =lt<num> Less than '<' to 'NN' number.
- *            =lte<num> Less than or equal '<=' to '<num>' number.
+ *            je - Job execute time on the node.
+ *            jw - Job wait time on the node.
+ *            wj - Waiting jobs count on the node.
+ *            rj - Rejected jobs count on the node.
+ *            hu - Heap memory used (in MB) on the node.
+ *            cd - Current CPU load on the node.
+ *            hm - Heap memory maximum (in MB) on the node.
+ *          ),
+ *     <condition>
+ *        Comparison part of the mnemonic predicate:
+ *           eq - Equal '=' to '<value>' number.
+ *           neq - Not equal '!=' to '<value>' number.
+ *           gt - Greater than '>' to '<value>' number.
+ *           gte - Greater than or equal '>=' to '<value>' number.
+ *           lt - Less than '<' to 'NN' number.
+ *           lte - Less than or equal '<=' to '<value>' number.
  *
  *         NOTE: Email notification will be sent for the alert only when all
  *               provided mnemonic predicates evaluate to 'true'.
@@ -117,16 +123,16 @@ class VisorAlertCommand {
     val DFLT_FREQ = 15L * 60L
 
     /** Alerts. */
-    private var alerts = new HashMap[String, Alert]
+    private var alerts = new HashMap[String, VisorAlert]
 
     /** Map of last sent notification per alert ID. */
     private var sent = new HashMap[(String, UUID), Long]
 
     /** Map of alert statistics. */
-    private var stats = new HashMap[String, Stats]
+    private var stats = new HashMap[String, VisorStats]
 
     /** Last 10 sent alerts. */
-    private var last10 = List.empty[SentAlert]
+    private var last10 = List.empty[VisorSentAlert]
 
     /** Subscribe guard. */
     private val guard = new AtomicBoolean(false)
@@ -306,7 +312,7 @@ class VisorAlertCommand {
                     break()
                 }
 
-                val alert = new Alert(
+                val alert = new VisorAlert(
                     id = id8,
                     nodeFilter = nf,
                     gridFilter = gf,
@@ -322,7 +328,7 @@ class VisorAlertCommand {
                 registerListener()
 
                 alerts = alerts + (alert.id -> alert)
-                stats = stats + (alert.id -> Stats())
+                stats = stats + (alert.id -> VisorStats())
 
                 // Set visor var pointing to created alert.
                 mset(alert.varName, alert.id)
@@ -383,7 +389,7 @@ class VisorAlertCommand {
                                     if (gb && alert.perGrid)
                                         sent = sent + (gKey -> now)
 
-                                    val stat: Stats = stats(id)
+                                    val stat: VisorStats = stats(id)
 
                                     assert(stat != null)
 
@@ -408,7 +414,7 @@ class VisorAlertCommand {
                                         "]"
                                     )
 
-                                    last10 = SentAlert(
+                                    last10 = VisorSentAlert(
                                         id = alert.id,
                                         spec = alert.spec,
                                         createdOn = alert.createdOn,
@@ -456,7 +462,7 @@ class VisorAlertCommand {
      * @param a Alert to send email about.
      * @param n `Option` for node.
      */
-    private def sendEmail(a: Alert, n: Option[GridNode]) {
+    private def sendEmail(a: VisorAlert, n: Option[GridNode]) {
         assert(a != null)
         assert(n != null)
 
@@ -464,8 +470,6 @@ class VisorAlertCommand {
         val headline = "GridGain ver. " + grid.product().version()
 
         val lic = grid.product().license()
-
-        assert(lic != null)
 
         val stat = stats(a.id)
 
@@ -488,9 +492,15 @@ class VisorAlertCommand {
             "First send: " + (if (stat.firstSnd == 0) "n/a" else formatDateTime(stat.firstSnd)) + NL +
             "Last send: " + (if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)) + NL +
             "----" + NL +
-            "Grid name: " + grid.name + NL +
-            "License ID: "  +  lic.id.toString.toUpperCase + NL +
-            "Licesned to: " + lic.userOrganization + NL +
+            "Grid name: " + grid.name + NL
+
+        if (lic != null) {
+            body +=
+                "License ID: " + lic.id.toString.toUpperCase + NL +
+                "Licensed to: " + lic.userOrganization + NL
+        }
+
+        body +=
             "----" + NL +
             NL +
             "NOTE:" + NL +
@@ -517,7 +527,7 @@ class VisorAlertCommand {
     private def unregisterAll() {
         mclear("-al")
 
-        alerts = new HashMap[String, Alert]
+        alerts = new HashMap[String, VisorAlert]
     }
 
     /**
@@ -609,7 +619,7 @@ class VisorAlertCommand {
 
             last10T #= ("ID(@)", "Spec", "Sent", "Registered", "Count")
 
-            last10.foreach((a: SentAlert) => last10T += (
+            last10.foreach((a: VisorSentAlert) => last10T += (
                 a.idVar,
                 a.spec,
                 formatDateTime(a.sentTs),
@@ -622,7 +632,7 @@ class VisorAlertCommand {
             last10T.render()
         }
 
-        if (!alerts.isEmpty) {
+        if (alerts.nonEmpty) {
             val tbl = new VisorTextTable()
 
             tbl #= ("ID(@)", "Spec", "Count", "Registered", "First Send", "Last Send")
@@ -674,7 +684,7 @@ class VisorAlertCommand {
 /**
  * Visor alert.
  */
-sealed private case class Alert(
+sealed private case class VisorAlert(
     id: String,
     nodeFilter: GridNode => Boolean,
     gridFilter: () => Boolean,
@@ -693,7 +703,7 @@ sealed private case class Alert(
 /**
  * Snapshot of the sent alert.
  */
-private case class SentAlert(
+private case class VisorSentAlert(
     id: String,
     sentTs: Long,
     createdOn: Long,
@@ -712,7 +722,7 @@ private case class SentAlert(
 /**
  * Statistics holder for visor alert.
  */
-sealed private case class Stats(
+sealed private case class VisorStats(
     var cnt: Int = 0,
     var firstSnd: Long = 0,
     var lastSnd: Long = 0
@@ -732,7 +742,7 @@ object VisorAlertCommand {
         spec = Seq(
             "alert",
             "alert -u {-id=<alert-id>|-a}",
-            "alert -r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
+            "alert -r {-t=<sec>} {-<metric>=<condition><value>} ... {-<metric>=<condition><value>}"
         ),
         args = Seq(
             "-u" -> Seq(
@@ -748,46 +758,49 @@ object VisorAlertCommand {
             "-r" -> Seq(
                 "Register new alert with mnemonic predicate(s).",
                 "Note that only one of the '-u' or '-r' is allowed.",
-                "If neither '-u' or '-r' provided - all alerts will be printed."
+                "If neither '-u' or '-r' provided - all alerts will be printed.",
+                "",
+                "NOTE: Email settings can be specified in GridGain configuration file.",
+                "      Email notification will be sent for the alert only when all",
+                "      provided mnemonic predicates evaluate to 'true'."
             ),
             "-t" -> Seq(
                 "Defines notification frequency in seconds. Default is 15 minutes.",
                 "This parameter can only appear with '-r'."
              ),
-            "-ck=ek<num>" -> Seq(
+            "-<metric>" -> Seq(
                 "This defines a mnemonic for the metric that will be measured:",
+                "",
                 "Grid-wide metrics (not node specific):",
-                "   -cc Total number of available CPUs in the grid.",
-                "   -nc Total number of nodes in the grid.",
-                "   -hc Total number of physical hosts in the grid.",
-                "   -cl Current average CPU load (in %) in the grid.",
+                "   cc - Total number of available CPUs in the grid.",
+                "   nc - Total number of nodes in the grid.",
+                "   hc - Total number of physical hosts in the grid.",
+                "   cl - Current average CPU load (in %) in the grid.",
                 "",
                 "Per-node current metrics:",
-                "   -aj Active jobs on the node.",
-                "   -cj Cancelled jobs on the node.",
-                "   -tc Thread count on the node.",
-                "   -ut Up time on the node.",
+                "   aj - Active jobs on the node.",
+                "   cj - Cancelled jobs on the node.",
+                "   tc - Thread count on the node.",
+                "   ut - Up time on the node.",
                 "       Note: <num> can have 's', 'm', or 'h' suffix indicating",
                 "       seconds, minutes, and hours. By default (no suffix provided)",
                 "       value is assumed to be in milliseconds.",
-                "   -je Job execute time on the node.",
-                "   -jw Job wait time on the node.",
-                "   -wj Waiting jobs count on the node.",
-                "   -rj Rejected jobs count on the node.",
-                "   -hu Heap memory used (in MB) on the node.",
-                "   -cd Current CPU load on the node.",
-                "   -hm Heap memory maximum (in MB) on the node.",
-                "",
+                "   je - Job execute time on the node.",
+                "   jw - Job wait time on the node.",
+                "   wj - Waiting jobs count on the node.",
+                "   rj - Rejected jobs count on the node.",
+                "   hu - Heap memory used (in MB) on the node.",
+                "   cd - Current CPU load on the node.",
+                "   hm - Heap memory maximum (in MB) on the node."
+            ),
+            "<condition>" -> Seq(
                 "Comparison part of the mnemonic predicate:",
-                "   =eq<num> Equal '=' to '<num>' number.",
-                "   =neq<num> Not equal '!=' to '<num>' number.",
-                "   =gt<num> Greater than '>' to '<num>' number.",
-                "   =gte<num> Greater than or equal '>=' to '<num>' number.",
-                "   =lt<num> Less than '<' to 'NN' number.",
-                "   =lte<num> Less than or equal '<=' to '<num>' number.",
-                "",
-                "NOTE: Email notification will be sent for the alert only when all",
-                "      provided mnemonic predicates evaluate to 'true'."
+                "   eq - Equal '=' to '<value>' number.",
+                "   neq - Not equal '!=' to '<value>' number.",
+                "   gt - Greater than '>' to '<value>' number.",
+                "   gte - Greater than or equal '>=' to '<value>' number.",
+                "   lt - Less than '<' to 'NN' number.",
+                "   lte - Less than or equal '<=' to '<value>' number."
             )
         ),
         examples = Seq(

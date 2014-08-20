@@ -23,7 +23,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
         Optional description.
     -->
@@ -34,7 +34,7 @@
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="deploymentMode" value="SHARED"/>
 
         <!-- Set to local host address just for examples. -->

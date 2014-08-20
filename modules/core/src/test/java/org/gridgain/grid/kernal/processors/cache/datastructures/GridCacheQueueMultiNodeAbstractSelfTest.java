@@ -147,6 +147,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             assertEquals(0, grid(i).cache(null).primaryKeySet().size());
             assertEquals(0, grid(i).cache(null).entrySet().size());
             assertEquals(0, grid(i).cache(null).primaryEntrySet().size());
+            assertEquals(0, grid(i).cache(null).globalSize());
+            assertEquals(0, grid(i).cache(null).globalPrimarySize());
         }
     }
 

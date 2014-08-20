@@ -20,8 +20,8 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -133,78 +133,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** {@inheritDoc} */
     @Override public GridCacheDataStructures dataStructures() {
         return dataStructures;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
-        cache.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        cache.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMeta(String name, V1 val) {
-        return cache.addMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 putMetaIfAbsent(String name, V1 val) {
-        return cache.putMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
-        return cache.putMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
-        return cache.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
-        return cache.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"RedundantTypeArguments"})
-    @Override public <V1> V1 meta(String name) {
-        return cache.<V1>meta(name);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"RedundantTypeArguments"})
-    @Override public <V1> V1 removeMeta(String name) {
-        return cache.<V1>removeMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean removeMeta(String name, V1 val) {
-        return cache.removeMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> Map<String, V1> allMeta() {
-        return cache.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        return cache.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean hasMeta(String name, V1 val) {
-        return cache.hasMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
-        return cache.replaceMeta(name, curVal, newVal);
     }
 
     /** {@inheritDoc} */
@@ -335,6 +263,10 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** {@inheritDoc} */
     @Override public GridPredicate<GridCacheEntry<K, V>> predicate() {
         return delegate.predicate();
+    }
+
+    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
+        return delegate.forSubjectId(subjId);
     }
 
     /** {@inheritDoc} */
@@ -505,12 +437,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.get(key, entry, filter);
+            return delegate.get(key, entry, deserializePortable, filter);
         }
         finally {
             gate.leave(prev);
@@ -1121,6 +1053,42 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.entrySetx(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.primaryEntrySetx(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<?, ?> forPortables() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.forPortables();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> primaryEntrySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1297,7 +1265,19 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll();
+            delegate.globalClearAll(0);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalClearAll(long timeout) throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.globalClearAll(timeout);
         }
         finally {
             gate.leave(prev);
@@ -1705,6 +1685,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.globalSize();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public int nearSize() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1722,6 +1714,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.primarySize();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.globalPrimarySize();
         }
         finally {
             gate.leave(prev);

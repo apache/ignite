@@ -19,45 +19,155 @@
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
     GridGain.start("path-to-this-file/default-config.xml");
-
-    NOTE:
-    ====
-    This configuration file should be used with data nodes only. For nodes not
-    responsible for caching files, such as submitter or job-scheduler nodes, use 'default-config-client.xml'.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!--
         Optional description.
     -->
     <description>
-        Spring file for grid configuration with GGFS to be used on data nodes.
+        Spring file for GridGain node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        GridGain node will start with this configuration by default.
     </description>
 
-    <import resource="default-config-base.xml"/>
-
     <!--
-        Default configuration using TCP-based communication on Windows and
-        shared-memory-based communication on all other platforms.
+        Initialize property configurer so we can reference environment variables.
     -->
-    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase"/>
-
-    <!-- Example of how to configure IPC endpoint using shared memory (overrides default). -->
-    <!--
-    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase">
-        <property name="ipcEndpointConfiguration" value="{type:'shmem', port:'10500'}"/>
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
     </bean>
-    -->
 
-    <!-- Example of how to configure IPC endpoint using TCP loopback interface (overrides default). -->
     <!--
-    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase">
-        <property name="ipcEndpointConfiguration" value="{type:'127.0.0.1', port:'10500'}"/>
-    </bean>
+        Abstract GGFS file system configuration to be used as a template.
     -->
+    <bean id="ggfsCfgBase" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" abstract="true">
+        <!-- Must correlate with cache affinity mapper. -->
+        <property name="blockSize" value="#{128 * 1024}"/>
+        <property name="perNodeBatchSize" value="512"/>
+        <property name="perNodeParallelBatchCount" value="16"/>
 
-    <bean id="cacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration" parent="cacheCfgBase"/>
+        <property name="prefetchBlocks" value="32"/>
+    </bean>
+
+    <!--
+        Abstract cache configuration for GGFS file data to be used as a template.
+    -->
+    <bean id="dataCacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true">
+        <property name="cacheMode" value="PARTITIONED"/>
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="backups" value="0"/>
+        <property name="affinityMapper">
+            <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
+                <!-- How many sequential blocks will be stored on the same node. -->
+                <constructor-arg value="512"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!--
+        Abstract cache configuration for GGFS metadata to be used as a template.
+    -->
+    <bean id="metaCacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true">
+        <property name="cacheMode" value="REPLICATED"/>
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+    </bean>
+
+    <!--
+        Configuration of GridGain node.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+        <!--
+            Apache Hadoop Accelerator configuration.
+        -->
+        <property name="hadoopConfiguration">
+            <bean class="org.gridgain.grid.hadoop.GridHadoopConfiguration">
+                <!-- Information about finished jobs will be kept for 30 seconds. -->
+                <property name="finishedJobInfoTtl" value="30000"/>
+            </bean>
+        </property>
+
+        <!--
+            This port will be used by Apache Hadoop client to connect to GridGain node as if it was a job tracker.
+        -->
+        <property name="restTcpPort" value="11211"/>
+
+        <!--
+            Configure one GGFS file system instance named "ggfs" on this node.
+        -->
+        <property name="ggfsConfiguration">
+            <list>
+                <bean class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase">
+                    <property name="name" value="ggfs"/>
+
+                    <!-- Caches with these names must be configured. -->
+                    <property name="metaCacheName" value="ggfs-meta"/>
+                    <property name="dataCacheName" value="ggfs-data"/>
+
+                    <!-- Configure TCP endpoint for communication with the file system instance. -->
+                    <property name="ipcEndpointConfiguration">
+                        <map>
+                            <entry key="type" value="tcp"/>
+                            <entry key="host" value="0.0.0.0"/>
+                            <entry key="port" value="10500"/>
+                        </map>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            Caches needed by GGFS.
+        -->
+        <property name="cacheConfiguration">
+            <list>
+                <!-- File system metadata cache. -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration" parent="metaCacheCfgBase">
+                    <property name="name" value="ggfs-meta"/>
+                </bean>
+
+                <!-- File system files data cache. -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration" parent="dataCacheCfgBase">
+                    <property name="name" value="ggfs-data"/>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            Disable events.
+        -->
+        <property name="includeEventTypes">
+            <list>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FAILED"/>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FINISHED"/>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
+            </list>
+        </property>
+
+        <!--
+            TCP discovery SPI can be configured with list of addresses if multicast is not available.
+        -->
+        <!--
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        -->
+    </bean>
 </beans>

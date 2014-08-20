@@ -12,13 +12,13 @@
 package org.gridgain.visor.commands.alert
 
 import java.util.regex.Pattern
-import org.gridgain.visor._
-import VisorAlertCommand._
-import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G}
+
 import org.gridgain.grid.spi.discovery.GridDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+import org.gridgain.grid.{GridConfiguration, GridGain => G}
+import org.gridgain.visor._
+import org.gridgain.visor.commands.alert.VisorAlertCommand._
 
 /**
  * Unit test for alert commands.
@@ -39,9 +39,9 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     override def config(name: String): GridConfiguration = {
         val cfg = new GridConfiguration
 
-        cfg setGridName(name)
-        cfg setLifeCycleEmailNotification(false)
-        cfg setLocalHost("127.0.0.1")
+        cfg.setGridName(name)
+        cfg.setLifeCycleEmailNotification(false)
+        cfg.setLocalHost("127.0.0.1")
 
         val discoSpi: GridTcpDiscoverySpi = new GridTcpDiscoverySpi()
 
@@ -96,61 +96,51 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "An 'alert' visor command"
 
     it should "print not connected error message" in {
-        checkOut(visor alert("-r -t=5 -cc=gte4"), "Visor is disconnected.")
+        visor.close()
 
-        checkOut(visor alert(), "No alerts are registered.")
+        checkOut(visor.alert("-r -t=5 -cc=gte4"), "Visor is disconnected.")
+
+        checkOut(visor.alert(), "No alerts are registered.")
     }
 
     it should "register new alert" in {
         try {
-            visor open("-e -g=node-1", false)
+            checkOut(visor.alert(), "No alerts are registered.")
 
-            checkOut(visor alert(), "No alerts are registered.")
+            matchOut(visor.alert("-r -t=5 -cc=gte4"), "Alert.+registered.")
 
-            matchOut(visor alert("-r -t=5 -cc=gte4"), "Alert.+registered.")
-
-            checkOut(visor alert(), "No alerts are registered.", false)
+            checkOut(visor.alert(), "No alerts are registered.", false)
         }
         finally {
-            visor alert("-u -a")
-
-            visor close()
+            visor.alert("-u -a")
         }
     }
 
     it should "print error messages on incorrect alerts" in {
         try {
-            visor open("-e -g=node-1", false)
+            matchOut(visor.alert("-r -t=5"), "Alert.+registered.")
 
-            matchOut(visor alert("-r -t=5"), "Alert.+registered.")
+            checkOut(visor.alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
 
-            checkOut(visor alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
-
-            checkOut(visor alert("-r -cc=UNKNOWN_OPERATION20"), "Invalid expression")
+            checkOut(visor.alert("-r -cc=UNKNOWN_OPERATION20"), "Invalid expression")
         }
         finally {
-            visor alert("-u -a")
-
-            visor close()
+            visor.alert("-u -a")
         }
     }
 
     it should "write alert to log" in {
         try {
-            visor.open("-e -g=node-1", false)
+            matchOut(visor.alert("-r -nc=gte1"), "Alert.+registered.")
 
-            matchOut(visor alert("-r -nc=gte1"), "Alert.+registered.")
+            G.start(config("node-2"))
 
-            GridGain.start(config("node-2"))
+            G.stop("node-2", false)
 
-            GridGain.stop("node-2", false)
-
-            checkOut(visor alert(), "No alerts are registered.", false)
+            checkOut(visor.alert(), "No alerts are registered.", false)
         }
         finally {
-            visor alert("-u -a")
-
-            visor close()
+            visor.alert("-u -a")
         }
     }
 }

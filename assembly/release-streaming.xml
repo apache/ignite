@@ -37,6 +37,7 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>

@@ -191,6 +191,11 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public boolean replicated();
 
     /**
+     * @return Subject ID initiated this transaction.
+     */
+    public UUID subjectId();
+
+    /**
      * @return {@code True} if transaction is user transaction, which means:
      * <ul>
      *     <li>Explicit</li>

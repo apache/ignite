@@ -33,7 +33,7 @@ import java.util.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@code GridCacheHibernateBlobStore}</li>
+ *     <li>{@gglink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
  *     <li>{@link GridCacheJdbcBlobStore}</li>
  * </ul>
  * <p>

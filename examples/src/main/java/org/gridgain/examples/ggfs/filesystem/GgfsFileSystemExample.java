@@ -59,7 +59,7 @@ public class GgfsFileSystemExample {
             Path locHome = new Path("file:///" + path + '/');
 
             /** GGFS home path. */
-            Path ggfsHome = new Path("ggfs://ipc");
+            Path ggfsHome = new Path("ggfs://ggfs@/");
 
             /** HDFS path to name node. */
             Path hdfsHome = new Path(System.getProperty("HDFS_HOME", "hdfs://localhost:9000/"));

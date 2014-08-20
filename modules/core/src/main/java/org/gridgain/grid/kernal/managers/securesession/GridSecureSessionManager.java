@@ -50,19 +50,4 @@ public interface GridSecureSessionManager extends GridManager {
      */
     public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
         @Nullable Object params) throws GridException;
-
-    /**
-     * Gets collection of authenticated clients.
-     *
-     * @return Collection of authenticated clients.
-     */
-    public Collection<GridSecuritySubject> authenticatedClients();
-
-    /**
-     * Gets authenticated client subject.
-     *
-     * @param clientId Client ID.
-     * @return Security subject.
-     */
-    public GridSecuritySubject authenticatedClient(UUID clientId);
 }

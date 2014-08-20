@@ -18,6 +18,9 @@ import java.nio.*;
  * Client handshake wrapper for direct marshalling.
  */
 public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = -5705048094821942662L;
+
     /** Signal char. */
     public static final byte HANDSHAKE_HEADER = (byte)0x91;
 
@@ -36,7 +39,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
      * @param req Handshake request.
      */
     public GridClientHandshakeRequestWrapper(GridClientHandshakeRequest req) {
-        bytes = req.rawBytesNoHeader();
+        bytes = req.rawBytes();
     }
 
     /**
@@ -44,13 +47,6 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
      */
     public byte[] bytes() {
         return bytes;
-    }
-
-    /**
-     * @return Protocol ID.
-     */
-    public byte protocolId() {
-        return bytes[4];
     }
 
     /** {@inheritDoc} */
@@ -82,7 +78,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                byte[] bytes0 = commState.getByteArrayClient(5);
+                byte[] bytes0 = commState.getByteArrayClient(4);
 
                 if (bytes0 == BYTE_ARR_NOT_READ)
                     return false;

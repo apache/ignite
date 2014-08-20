@@ -9,28 +9,26 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.text.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * {@link GridProduct} implementation.
  */
-public class GridProductImpl implements GridProduct {
+public class GridProductImpl implements GridProduct, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Copyright blurb. */
     public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
 
     /** Enterprise edition flag. */
     public static final boolean ENT;
-
-    /** Edition name. */
-    public static final String EDITION;
 
     /** GridGain version. */
     public static final String VER;
@@ -57,16 +55,13 @@ public class GridProductImpl implements GridProduct {
     public static final String ACK_VER;
 
     /** */
-    private final GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** */
-    private final GridProductVersion ver;
-
-    /** */
-    private final GridProductEdition edition;
+    private GridProductVersion ver;
 
     /** Update notifier. */
-    private final GridUpdateNotifier verChecker;
+    private GridUpdateNotifier verChecker;
 
     /**
      *
@@ -83,7 +78,6 @@ public class GridProductImpl implements GridProduct {
 
         ENT = ent0;
 
-        EDITION = GridProperties.get("gridgain.edition");
         VER = GridProperties.get("gridgain.version");
         BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
         REV_HASH = GridProperties.get("gridgain.revision");
@@ -91,13 +85,20 @@ public class GridProductImpl implements GridProduct {
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VER = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+        COMPOUND_VER = VER + "-" + (ENT ? "ent" : "os");
 
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
 
         ACK_VER = COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
+    }
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridProductImpl() {
+        // No-op.
     }
 
     /**
@@ -110,14 +111,7 @@ public class GridProductImpl implements GridProduct {
 
         String releaseType = ctx.isEnterprise() ? "ent" : "os";
 
-        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
-
-        edition = editionFromString(EDITION);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProductEdition edition() {
-        return edition;
+        ver = GridProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */
@@ -166,31 +160,23 @@ public class GridProductImpl implements GridProduct {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        ctx = (GridKernalContext)in.readObject();
+    }
+
     /**
-     * @param edition Edition name.
-     * @return Edition.
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private static GridProductEdition editionFromString(String edition) {
-        switch (edition) {
-            case "hpc":
-                return HPC;
-
-            case "datagrid":
-                return DATA_GRID;
-
-            case "hadoop":
-                return HADOOP;
-
-            case "streaming":
-                return STREAMING;
-
-            case "mongo":
-                return MONGO;
-
-            case "platform":
-                return PLATFORM;
-        }
-
-        throw new GridRuntimeException("Failed to determine GridGain edition: " + edition);
+    private Object readResolve() throws ObjectStreamException {
+        return ctx.product();
     }
 }

@@ -423,6 +423,11 @@ public final class GridSystemProperties {
     public static final String GG_IPC_SHMEM_SPACE_DEBUG = "GRIDGAIN_IPC_SHMEM_SPACE_DEBUG";
 
     /**
+     * Portable object array initial capacity.
+     */
+    public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "GRIDGAIN_PORTABLE_ARRAY_INITIAL_CAPACITY";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {

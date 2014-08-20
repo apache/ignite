@@ -45,9 +45,6 @@ public class GridCommandLineTransformer {
     /** Verbose mode. */
     private boolean verbose;
 
-    /** Use Hadoop 1.x libraries. */
-    private boolean useHadoop1;
-
     /** No pause mode. */
     private boolean noPause;
 
@@ -119,11 +116,6 @@ public class GridCommandLineTransformer {
 
                     break;
 
-                case "-h1":
-                    useHadoop1 = true;
-
-                    break;
-
                 case "-np":
                     noPause = true;
 
@@ -149,7 +141,6 @@ public class GridCommandLineTransformer {
         addArgWithValue(sb, "INTERACTIVE", formatBooleanValue(interactive));
         addArgWithValue(sb, "QUIET", "-DGRIDGAIN_QUIET=" + !verbose);
         addArgWithValue(sb, "NO_PAUSE", formatBooleanValue(noPause));
-        addArgWithValue(sb, "HADOOP_LIB_DIR", useHadoop1 ? "hadoop1" : "hadoop2");
 
         parseJvmOptionsAndSpringConfig(args);
 

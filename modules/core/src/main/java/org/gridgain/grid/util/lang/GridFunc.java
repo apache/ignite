@@ -3048,7 +3048,7 @@ public class GridFunc {
      * @param <T> Type of the inner collections.
      * @return Iterable over the elements of the inner collections.
      */
-    public static <T> Collection<T> flat(@Nullable final Collection<? extends Collection<T>> c) {
+    public static <T> Collection<T> flatCollections(@Nullable final Collection<? extends Collection<T>> c) {
         if (F.isEmpty(c)) {
             return Collections.emptyList();
         }
@@ -4580,7 +4580,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Collections' first element or {@code null} in case if the collection is empty.
      */
-    @Nullable public static <T> T first(@Nullable Iterable<? extends T> c) {
+    public static <T> T first(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
 

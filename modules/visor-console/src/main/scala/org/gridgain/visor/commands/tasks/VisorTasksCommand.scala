@@ -12,21 +12,21 @@
 package org.gridgain.visor.commands.tasks
 
 import java.util.UUID
+
 import org.gridgain.grid._
-import org.gridgain.grid.events._
-import GridEventType._
-import events._
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.visor.cmd.dto.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.util.typedef.X
-import org.gridgain.grid.lang.GridPredicate
-import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor._
-import visor._
-import collection.immutable._
-import collection.JavaConversions._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 import scala.util.control.Breaks._
-import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 
 /**
  * Task execution state.
@@ -47,10 +47,10 @@ import org.gridgain.visor.commands.tasks.State._
 /**
  * Task execution data.
  */
-private case class Execution(
+private case class VisorExecution(
     id: GridUuid,
     taskName: String,
-    var evts: List[GridEvent] = Nil,
+    var evts: List[_ <: VisorGridEvent] = Nil,
     var nodeIds: Set[UUID] = Set.empty[UUID],
     var failedNodeIds: Set[UUID] = Set.empty[UUID],
     var startTs: Long = Long.MaxValue,
@@ -83,37 +83,37 @@ private case class Execution(
      * Gets number of job rejections in this session.
      */
     lazy val rejections: Int =
-        evts.count(_.`type` == EVT_JOB_REJECTED)
+        evts.count(_.typeId() == EVT_JOB_REJECTED)
 
     /**
      * Gets number of job cancellations in this session.
      */
     lazy val cancels: Int =
-        evts.count(_.`type` == EVT_JOB_CANCELLED)
+        evts.count(_.typeId() == EVT_JOB_CANCELLED)
 
     /**
      * Gets number of job finished in this session.
      */
     lazy val finished: Int =
-        evts.count(_.`type` == EVT_JOB_FINISHED)
+        evts.count(_.typeId() == EVT_JOB_FINISHED)
 
     /**
      * Gets number of job started in this session.
      */
     lazy val started: Int =
-        evts.count(_.`type` == EVT_JOB_STARTED)
+        evts.count(_.typeId() == EVT_JOB_STARTED)
 
     /**
      * Gets number of job failures in this session.
      */
     lazy val failures: Int =
-        evts.count(_.`type` == EVT_JOB_FAILED)
+        evts.count(_.typeId() == EVT_JOB_FAILED)
 
     /**
      * Gets number of job failovers in this session.
      */
     lazy val failovers: Int =
-        evts.count(_.`type` == EVT_JOB_FAILED_OVER)
+        evts.count(_.typeId() == EVT_JOB_FAILED_OVER)
 
     /**
      * Gets duration of the session.
@@ -124,10 +124,10 @@ private case class Execution(
     override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
-        else if (r == null || !r.isInstanceOf[Execution])
+        else if (r == null || !r.isInstanceOf[VisorExecution])
             false
         else
-            r.asInstanceOf[Execution].id == id
+            r.asInstanceOf[VisorExecution].id == id
 
     override def hashCode() =
         id.hashCode()
@@ -136,9 +136,9 @@ private case class Execution(
 /**
  * Task data.
  */
-private case class Task(
+private case class VisorTask(
     taskName: String,
-    var execs: Set[Execution] = Set.empty[Execution]
+    var execs: Set[VisorExecution] = Set.empty[VisorExecution]
 ) {
     /**
      * Task host + its associated variable host.
@@ -150,13 +150,13 @@ private case class Task(
      * Oldest timestamp for this task (oldest event related to this task).
      */
     lazy val oldest: Long =
-        execs.min(Ordering.by[Execution, Long](_.startTs)).startTs
+        execs.min(Ordering.by[VisorExecution, Long](_.startTs)).startTs
 
     /**
      * Latest timestamp for this task (latest event related to this task).
      */
     lazy val latest: Long =
-        execs.max(Ordering.by[Execution, Long](_.endTs)).endTs
+        execs.max(Ordering.by[VisorExecution, Long](_.endTs)).endTs
 
     /**
      * Gets timeframe of this task executions.
@@ -182,13 +182,13 @@ private case class Task(
      * Minimal duration of this task execution.
      */
     lazy val minDuration: Long =
-        execs.min(Ordering.by[Execution, Long](_.duration)).duration
+        execs.min(Ordering.by[VisorExecution, Long](_.duration)).duration
 
     /**
      * Maximum duration of this task execution.
      */
     lazy val maxDuration: Long =
-        execs.max(Ordering.by[Execution, Long](_.duration)).duration
+        execs.max(Ordering.by[VisorExecution, Long](_.duration)).duration
 
     /**
      * Average duration of this task execution.
@@ -200,13 +200,13 @@ private case class Task(
      * Minimal number of nodes this task was executed on.
      */
     lazy val minNodes: Int =
-        execs.min(Ordering.by[Execution, Int](_.nodeIds.size)).nodeIds.size
+        execs.min(Ordering.by[VisorExecution, Int](_.nodeIds.size)).nodeIds.size
 
     /**
      * Minimal number of nodes this task was executed on.
      */
     lazy val maxNodes: Int =
-        execs.max(Ordering.by[Execution, Int](_.nodeIds.size)).nodeIds.size
+        execs.max(Ordering.by[VisorExecution, Int](_.nodeIds.size)).nodeIds.size
 
     /**
      * Average number of nodes this task was executed on.
@@ -217,46 +217,13 @@ private case class Task(
     override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
-        else if (r == null || !r.isInstanceOf[Task])
+        else if (r == null || !r.isInstanceOf[VisorTask])
             false
         else
-            r.asInstanceOf[Task].taskName == taskName
+            r.asInstanceOf[VisorTask].taskName == taskName
 
     override def hashCode() =
         taskName.hashCode()
-}
-
-@GridInternal
-class VisorContainsFilter(n: Long, s: String) extends GridPredicate[GridEvent] {
-    override def apply(e: GridEvent): Boolean = {
-        (e.timestamp >= System.currentTimeMillis - n) && (e match {
-            case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), s)
-            case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskClassName(), s)
-            case _ => false
-        })
-    }
-}
-
-@GridInternal
-class VisorTaskNameFilter(s: String) extends GridPredicate[GridEvent] {
-    override def apply(e: GridEvent): Boolean = {
-        e match {
-            case te: GridTaskEvent => te.taskName() == s
-            case je: GridJobEvent => je.taskName() == s
-            case _ => false
-        }
-    }
-}
-
-@GridInternal
-class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
-    override def apply(e: GridEvent): Boolean = {
-        e match {
-            case te: GridTaskEvent => te.taskSessionId() == u
-            case je: GridJobEvent => je.taskSessionId() == u
-            case _ => false
-        }
-    }
 }
 
 /**
@@ -528,89 +495,103 @@ class VisorTasksCommand {
     /**
      * Gets collections of tasks and executions for given event filter.
      *
-     * @param f Event filter.
+     * @param evts Collected events.
      */
-    private def mkData(f: GridPredicate[GridEvent]): (List[Task], List[Execution]) = {
-        assert(f != null)
+    private def mkData(evts: java.lang.Iterable[_ <: VisorGridEvent]): (List[VisorTask], List[VisorExecution]) = {
+        var sMap = Map.empty[GridUuid, VisorExecution] // Execution map.
+        var tMap = Map.empty[String, VisorTask] // Task map.
 
-        var evts = grid.events().localQuery(f).toList
+        if (evts == null)
+            return tMap.values.toList -> sMap.values.toList
 
-        val remote = grid.forRemotes()
-
-        if (remote.nodes().size() > 0)
-            evts ++= remote.events().remoteQuery(f, 0).get.toList
-
-        var sMap = Map.empty[GridUuid, Execution] // Execution map.
-        var tMap = Map.empty[String, Task] // Task map.
-
-        def getSession(id: GridUuid, taskName: String): Execution = {
+        def getSession(id: GridUuid, taskName: String): VisorExecution = {
             assert(id != null)
             assert(taskName != null)
 
-            sMap.get(id) getOrElse {
-                val s = Execution(id, taskName)
+            sMap.getOrElse(id, {
+                val s = VisorExecution(id, taskName)
 
                 sMap = sMap + (id -> s)
 
                 s
-            }
+            })
         }
 
-        def getTask(taskName: String): Task = {
+        def getTask(taskName: String): VisorTask = {
             assert(taskName != null)
 
-            tMap.get(taskName) getOrElse {
-                val t = Task(taskName)
+            tMap.getOrElse(taskName, {
+                val t = VisorTask(taskName)
 
                 tMap = tMap + (taskName -> t)
 
                 t
-            }
+            })
         }
 
-        evts foreach {
-            case te: GridTaskEvent =>
-                val s = getSession(te.taskSessionId(), te.taskName())
-                val t = getTask(te.taskName())
+        /**
+         * If task name is task class name, show simple class name.
+         *
+         * @param taskName Task name.
+         * @param taskClsName Task class name.
+         * @return Simple class name.
+         */
+        def taskSimpleName(taskName: String, taskClsName: String) =  {
+            if (taskName == taskClsName || taskName == null) {
+                val idx = taskClsName.lastIndexOf('.')
+
+                if (idx >= 0) taskClsName.substring(idx + 1) else taskClsName
+            }
+            else
+                taskName
+        }
+
+        evts.foreach {
+            case te: VisorGridTaskEvent =>
+                val displayedTaskName = taskSimpleName(te.taskName(), te.taskClassName())
+
+                val s = getSession(te.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
                 s.evts = s.evts :+ te
-                s.nodeIds = s.nodeIds + te.node().id()
+                s.nodeIds = s.nodeIds + te.nid()
                 s.startTs = math.min(s.startTs, te.timestamp())
                 s.endTs = math.max(s.endTs, te.timestamp())
 
-                te.`type` match {
+                te.typeId() match {
                     case EVT_TASK_STARTED =>
                         if (s.state == UNDEFINED) s.state = STARTED
 
-                        s.origNodeId = te.node().id()
+                        s.origNodeId = te.nid()
 
                     case EVT_TASK_FINISHED =>
                         if (s.state == UNDEFINED || s.state == STARTED) s.state = FINISHED
 
-                        s.origNodeId = te.node().id()
+                        s.origNodeId = te.nid()
 
                     case EVT_TASK_FAILED => if (s.state == UNDEFINED || s.state == STARTED) s.state = FAILED
                     case EVT_TASK_TIMEDOUT => if (s.state == UNDEFINED || s.state == STARTED) s.state = TIMEDOUT
                     case _ =>
                 }
 
-            case je: GridJobEvent =>
-                val s = getSession(je.taskSessionId(), je.taskName())
-                val t = getTask(je.taskName())
+            case je: VisorGridJobEvent =>
+                val displayedTaskName = taskSimpleName(je.taskName(), je.taskClassName())
+                val s = getSession(je.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
                 // Collect node IDs where jobs didn't finish ok.
-                je.`type` match {
+                je.typeId() match {
                     case EVT_JOB_CANCELLED | EVT_JOB_FAILED | EVT_JOB_REJECTED | EVT_JOB_TIMEDOUT =>
-                        s.failedNodeIds = s.failedNodeIds + je.node().id()
+                        s.failedNodeIds = s.failedNodeIds + je.nid()
                     case _ =>
                 }
 
                 s.evts = s.evts :+ je
-                s.nodeIds = s.nodeIds + je.node().id()
+                s.nodeIds = s.nodeIds + je.nid()
                 s.startTs = math.min(s.startTs, je.timestamp())
                 s.endTs = math.max(s.endTs, je.timestamp())
         }
@@ -622,13 +603,19 @@ class VisorTasksCommand {
      * Prints list of tasks and executions.
      *
      * @param p Event period.
-     * @param reverse Reverse session chronological sorting?
+     * @param taskName Task name filter.
+     * @param reverse Reverse session chronological sorting.
      * @param all Whether to show full information.
      */
-    private def list(p: Long, s: String, reverse: Boolean, all: Boolean) {
+    private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
-                val (tLst, eLst) = mkData(new VisorContainsFilter(p, "visor"))
+                val prj = grid.forRemotes()
+
+                val evts = prj.compute().execute(classOf[VisorEventsCollectTask],
+                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null))).get
+
+                val (tLst, eLst) = mkData(evts)
 
                 if (tLst.isEmpty) {
                     scold("No tasks or executions found.")
@@ -659,7 +646,7 @@ class VisorTasksCommand {
                         sortedExecs = sortedExecs.slice(0, SHOW_LIMIT)
                     }
 
-                    sortedExecs foreach ((e: Execution) => {
+                    sortedExecs foreach ((e: VisorExecution) => {
                         execsT +=(
                             (
                                 e.id8Var,
@@ -736,7 +723,7 @@ class VisorTasksCommand {
                     sortedTasks = sortedTasks.slice(0, SHOW_LIMIT)
                 }
 
-                sortedTasks foreach ((t: Task) => {
+                sortedTasks foreach ((t: VisorTask) => {
                     val sE = t.execsFor(STARTED)
                     val fE = t.execsFor(FINISHED)
                     val eE = t.execsFor(FAILED)
@@ -831,7 +818,12 @@ class VisorTasksCommand {
             assert(taskName != null)
 
             try {
-                val (tLst, eLst) = mkData(new VisorTaskNameFilter(taskName))
+                val prj = grid.forRemotes()
+
+                val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorEventsCollectArgs.createTasksArg(null, taskName, null))).get
+
+                val (tLst, eLst) = mkData(evts)
 
                 if (tLst.isEmpty) {
                     scold("Task not found: " + taskName)
@@ -916,7 +908,7 @@ class VisorTasksCommand {
                         sorted = sorted.slice(0, SHOW_LIMIT)
                     }
 
-                    sorted foreach ((e: Execution) => {
+                    sorted foreach ((e: VisorExecution) => {
                         execsT += (
                             (
                                 e.id8Var,
@@ -1003,7 +995,12 @@ class VisorTasksCommand {
             }
 
             try {
-                val (tLst, eLst) = mkData(new VisorSessionIdFilter(uuid))
+                val prj = grid.forRemotes()
+
+                val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorEventsCollectArgs.createTasksArg(null, null, uuid))).get
+
+                val (tLst, eLst) = mkData(evts)
 
                 if (tLst.isEmpty) {
                     scold("Task execution not found: " + sesId)
@@ -1089,10 +1086,10 @@ class VisorTasksCommand {
 
                 val se = if (!reverse) e.evts.sortBy(_.timestamp()) else e.evts.sortBy(_.timestamp()).reverse
 
-                se.foreach((e: GridEvent) => evtsT += (
+                se.foreach(e => evtsT += (
                     formatDateTime(e.timestamp()),
-                    nodeId8Addr(e.node().id()),
-                    e.name
+                    nodeId8Addr(e.nid()),
+                    e.name()
                     ))
 
                 println("\nTrace:")
@@ -1116,7 +1113,12 @@ class VisorTasksCommand {
     private def nodes(f: Long) {
         breakable {
             try {
-                val eLst = mkData(new VisorContainsFilter(f, "visor"))._2
+                val prj = grid.forRemotes()
+
+                val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorEventsCollectArgs.createTasksArg(f, null, null))).get
+
+                val eLst = mkData(evts)._2
 
                 if (eLst.isEmpty) {
                     scold("No executions found.")
@@ -1124,11 +1126,11 @@ class VisorTasksCommand {
                     break()
                 }
 
-                var nMap = Map.empty[UUID, Set[Execution]]
+                var nMap = Map.empty[UUID, Set[VisorExecution]]
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        var eSet = nMap.getOrElse(id, Set.empty[Execution])
+                        var eSet = nMap.getOrElse(id, Set.empty[VisorExecution])
 
                         eSet += e
 
@@ -1163,7 +1165,7 @@ class VisorTasksCommand {
                     }
 
                     sortedNames.foreach(taskName => {
-                        val t = Task(taskName, execsMap.get(taskName).get)
+                        val t = VisorTask(taskName, execsMap.get(taskName).get)
 
                         val sE = t.execsFor(STARTED)
                         val fE = t.execsFor(FINISHED)
@@ -1223,7 +1225,12 @@ class VisorTasksCommand {
     private def hosts(f: Long) {
         breakable {
             try {
-                val eLst = mkData(new VisorContainsFilter(f, "visor"))._2
+                val prj = grid.forRemotes()
+
+                val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
+                    VisorEventsCollectArgs.createTasksArg(f, null, null))).get
+
+                val eLst = mkData(evts)._2
 
                 if (eLst.isEmpty) {
                     scold("No executions found.")
@@ -1231,14 +1238,14 @@ class VisorTasksCommand {
                     break()
                 }
 
-                var hMap = Map.empty[String, Set[Execution]]
+                var hMap = Map.empty[String, Set[VisorExecution]]
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
                         val host = grid.node(id).addresses.headOption
 
                         if (host.isDefined) {
-                            var eSet = hMap.getOrElse(host.get, Set.empty[Execution])
+                            var eSet = hMap.getOrElse(host.get, Set.empty[VisorExecution])
 
                             eSet += e
 
@@ -1274,7 +1281,7 @@ class VisorTasksCommand {
                     }
 
                     sortedNames.foreach(taskName => {
-                        val t = Task(taskName, execsMap.get(taskName).get)
+                        val t = VisorTask(taskName, execsMap.get(taskName).get)
 
                         val sE = t.execsFor(STARTED)
                         val fE = t.execsFor(FINISHED)

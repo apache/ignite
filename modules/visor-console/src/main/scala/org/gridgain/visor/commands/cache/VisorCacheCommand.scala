@@ -11,25 +11,23 @@
 
 package org.gridgain.visor.commands.cache
 
-import java.util
+import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
-import org.jetbrains.annotations._
-import scala.collection._
-import scala.collection.JavaConversions._
-import scala.util.control.Breaks._
+
 import org.gridgain.grid._
-import org.gridgain.grid.compute.{GridComputeJobResult, GridComputeJobAdapter, GridComputeJob}
-import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, VisorCacheMetrics}
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheCollectMetricsTask
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.cache._
-import org.gridgain.grid.kernal.GridEx
-import org.gridgain.grid.resources.GridInstanceResource
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
-import visor._
-import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleCommand, VisorTextTable}
-import VisorCacheCommand._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.visor._
+import org.jetbrains.annotations._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -64,6 +62,7 @@ import VisorCacheCommand._
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
+ *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  * }}}
  *
  * ====Arguments====
@@ -102,6 +101,8 @@ import VisorCacheCommand._
  *          Clears cache.
  *     -scan
  *          Prints list of all entries from cache.
+ *     -swap
+ *          Swaps backup entries in cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -136,6 +137,12 @@ import VisorCacheCommand._
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -swap
+ *         Swaps entries in interactively selected cache.
+ *     cache -swap -c=cache
+ *         Swaps entries in cache with name 'cache'.
+ *     cache -swap -c=@c0
+ *         Swaps entries in cache with name taken from 'c0' memory variable.
  * }}}
  */
 class VisorCacheCommand {
@@ -187,6 +194,15 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
+     * <br>
+     * <ex>cache -swap</ex>
+     *     Swaps entries in interactively selected cache.
+     * <br>
+     * <ex>cache -swap -c=cache</ex>
+     *     Swaps entries in cache with name 'cache'.
+     * <br>
+     * <ex>cache -swap -c=@c0</ex>
+     *     Swaps entries in cache with name taken from 'c0' memory variable.
      *
      * @param args Command arguments.
      */
@@ -227,7 +243,7 @@ class VisorCacheCommand {
                     case cn => cn
                 }
 
-                if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
+                if (Seq("clear", "compact", "swap", "scan").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
                             case Some(name) => argLst = argLst ++ Seq("c" -> name)
@@ -238,6 +254,8 @@ class VisorCacheCommand {
                         VisorCacheClearCommand().clear(argLst, node)
                     else if (hasArgFlag("compact", argLst))
                         VisorCacheCompactCommand().compact(argLst, node)
+                    else if (hasArgFlag("swap", argLst))
+                        VisorCacheSwapCommand().swap(argLst, node)
                     else if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
 
@@ -262,7 +280,7 @@ class VisorCacheCommand {
 
                 val sumT = VisorTextTable()
 
-                sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Size", "Hits", "Misses", "Reads", "Writes")
+                sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
                 sortAggregatedData(aggrData, sortType getOrElse "lr", reversed).foreach(
                     ad => {
@@ -333,7 +351,7 @@ class VisorCacheCommand {
                         ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size",
                             "Last Read/Write", "Hi/Mi/Rd/Wr")
 
-                        sortData(ad.data, sortType getOrElse "lr", reversed).
+                        sortData(ad.metrics(), sortType getOrElse "lr", reversed).
                             foreach(cd => {
                                 ciT += (
                                     nodeId8Addr(cd.nodeId),
@@ -369,7 +387,7 @@ class VisorCacheCommand {
                         println("'Wr' - Number of cache writes.")
 
                         // Print metrics.
-                        val qm = ad.qryMetrics
+                        val qm = ad.queryMetrics()
 
                         nl()
                         println("Aggregated queries metrics:")
@@ -430,13 +448,16 @@ class VisorCacheCommand {
      *
      * @return Caches metrics data.
      */
-    private def cacheData(node: Option[GridNode], name: Option[String]): List[VisorCacheAggregatedData] = {
+    private def cacheData(node: Option[GridNode], name: Option[String]): List[VisorCacheAggregatedMetrics] = {
         assert(node != null)
 
         try {
-            val prj = if (node.isDefined) grid.forNode(node.get) else grid
+            val prj = node.fold(grid.forRemotes())(grid.forNode(_))
 
-            prj.compute().execute(classOf[VisorCacheDataTask], name).get().toList
+            val nids = prj.nodes().map(_.id())
+
+            prj.compute().execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
+                new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).get.toList
         }
         catch {
             case e: GridException => Nil
@@ -462,7 +483,7 @@ class VisorCacheCommand {
      * @param reverse Whether to reverse sorting or not.
      * @return Sorted data.
      */
-    private def sortData(data: Iterable[VisorCacheData], arg: String, reverse: Boolean): List[VisorCacheData] = {
+    private def sortData(data: Iterable[VisorCacheMetrics], arg: String, reverse: Boolean): List[VisorCacheMetrics] = {
         assert(data != null)
         assert(arg != null)
 
@@ -493,8 +514,8 @@ class VisorCacheCommand {
      * @param reverse Whether to reverse sorting or not.
      * @return Sorted data.
      */
-    private def sortAggregatedData(data: Iterable[VisorCacheAggregatedData], arg: String, reverse: Boolean):
-        List[VisorCacheAggregatedData] = {
+    private def sortAggregatedData(data: Iterable[VisorCacheAggregatedMetrics], arg: String, reverse: Boolean):
+        List[VisorCacheAggregatedMetrics] = {
 
         val sorted = arg.trim match {
             case "lr" => data.toList.sortBy(_.lastRead)
@@ -503,8 +524,8 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.avgMisses)
             case "rd" => data.toList.sortBy(_.avgReads)
             case "wr" => data.toList.sortBy(_.avgWrites)
-            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null ||
-                x.cacheName.toLowerCase < y.cacheName.toLowerCase)
+            case "cn" => data.toList.sortWith((x, y) =>
+                x.cacheName == null || (y.cacheName != null && x.cacheName.toLowerCase < y.cacheName.toLowerCase))
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -537,7 +558,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= (">", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
+        sumT #= ("#", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
@@ -563,7 +584,7 @@ class VisorCacheCommand {
 
         sumT.render()
 
-        val a = ask("\nChoose cache ('c' to cancel) [c]: ", "c")
+        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "c")
 
         if (a.toLowerCase == "c")
             None
@@ -579,186 +600,6 @@ class VisorCacheCommand {
         }
     }
 }
-
-/**
- * Task that runs on all nodes and returns cache metrics data.
- */
-@GridInternal
-private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String], Iterable[VisorCacheAggregatedData]] {
-    @impl def job(name: Option[String]): GridComputeJob = new GridComputeJobAdapter() {
-        /** Injected grid */
-        @GridInstanceResource
-        private val g: GridEx = null
-
-        override def execute(): AnyRef = {
-            val caches: Iterable[GridCache[_, _]] = name match {
-                case Some(n) => Seq(g.cachex(n))
-                case None => g.cachesx()
-            }
-
-            if (caches != null)
-                caches.collect {
-                    case c =>
-                        val m = g.localNode.metrics
-                        val qm = c.queries().metrics()
-
-                        VisorCacheData(
-                            cacheName = c.name,
-                            nodeId = g.localNode.id,
-                            cpus = m.getTotalCpus,
-                            heapUsed = m.getHeapMemoryUsed / m.getHeapMemoryMaximum * 100,
-                            cpuLoad = m.getCurrentCpuLoad * 100,
-                            upTime = m.getUpTime,
-                            size = c.size,
-                            lastRead = c.metrics.readTime,
-                            lastWrite = c.metrics.writeTime,
-                            hits = c.metrics.hits,
-                            misses = c.metrics.misses,
-                            reads = c.metrics.reads,
-                            writes = c.metrics.writes,
-                            VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
-                                qm.executions(), qm.fails())
-                        )
-                }.toSeq
-            else
-                Seq.empty[VisorCacheData]
-
-        }
-    }
-
-    override def reduce(results: util.List[GridComputeJobResult]): Iterable[VisorCacheAggregatedData] = {
-        val aggrData = mutable.Map.empty[String, VisorCacheAggregatedData]
-
-        for (res <- results if res.getException == null) {
-            for (cd <- res.getData[Seq[VisorCacheData]]) {
-                val ad = aggrData.getOrElse(cd.cacheName, VisorCacheAggregatedData(cd.cacheName))
-
-                ad.data = ad.data :+ cd
-
-                ad.nodes = nodeId8Addr(cd.nodeId) +: ad.nodes
-
-                ad.minSize = math.min(ad.minSize, cd.size)
-                ad.maxSize = math.max(ad.maxSize, cd.size)
-                ad.lastRead = math.max(ad.lastRead, cd.lastRead)
-                ad.lastWrite = math.max(ad.lastWrite, cd.lastWrite)
-                ad.minHits = math.min(ad.minHits, cd.hits)
-                ad.maxHits = math.max(ad.maxHits, cd.hits)
-                ad.minMisses = math.min(ad.minMisses, cd.misses)
-                ad.maxMisses = math.max(ad.maxMisses, cd.misses)
-                ad.minReads = math.min(ad.minReads, cd.reads)
-                ad.maxReads = math.max(ad.maxReads, cd.reads)
-                ad.minWrites = math.min(ad.minWrites, cd.writes)
-                ad.maxWrites = math.max(ad.maxWrites, cd.writes)
-
-                // Partial aggregation of averages.
-                ad.avgWrites += cd.writes
-                ad.avgReads += cd.reads
-                ad.avgMisses += cd.misses
-                ad.avgHits += cd.hits
-                ad.avgSize += cd.size
-
-                // Aggregate query metrics data
-                val qm = cd.qryMetrics
-                val aqm = ad.qryMetrics
-
-                aqm.minTime = if (aqm.minTime > 0) math.min(qm.minTime, aqm.minTime) else qm.minTime
-                aqm.maxTime = math.max(qm.maxTime, aqm.maxTime)
-                aqm.execs += qm.execs
-                aqm.fails += qm.fails
-                aqm.totalTime += (qm.avgTime * qm.execs).toLong
-
-                aggrData.put(cd.cacheName, ad)
-            }
-        }
-
-        // Final aggregation of averages.
-        aggrData.values foreach (ad => {
-            val n = ad.nodes.size
-
-            ad.avgSize /= n
-            ad.avgHits /= n
-            ad.avgMisses /= n
-            ad.avgReads /= n
-            ad.avgWrites /= n
-
-            val aqm = ad.qryMetrics
-
-            aqm.avgTime = if (aqm.execs > 0) aqm.totalTime / aqm.execs else 0
-        })
-
-        aggrData.values
-    }
-}
-
-/**
- * Cache metrics data.
- */
-private case class VisorCacheData(
-    cacheName: String,
-    nodeId: UUID,
-    cpus: Int,
-    heapUsed: Double,
-    cpuLoad: Double,
-    upTime: Long,
-    size: Int,
-    lastRead: Long,
-    lastWrite: Long,
-    hits: Int,
-    misses: Int,
-    reads: Int,
-    writes: Int,
-    qryMetrics: VisorCacheQueryMetrics
-)
-
-/**
- * Aggregated cache metrics data.
- */
-private case class VisorCacheAggregatedData(
-    cacheName: String,
-    var nodes: Seq[String] = Seq.empty[String],
-    var minSize: Int = Int.MaxValue,
-    var avgSize: Double = 0.0,
-    var maxSize: Int = 0,
-    var lastRead: Long = 0,
-    var lastWrite: Long = 0,
-    var minHits: Int = Int.MaxValue,
-    var avgHits: Double = 0.0,
-    var maxHits: Int = 0,
-    var minMisses: Int = Int.MaxValue,
-    var avgMisses: Double = 0.0,
-    var maxMisses: Int = 0,
-    var minReads: Int = Int.MaxValue,
-    var avgReads: Double = 0.0,
-    var maxReads: Int = 0,
-    var minWrites: Int = Int.MaxValue,
-    var avgWrites: Double = 0.0,
-    var maxWrites: Int = 0,
-    qryMetrics: VisorAggregatedCacheQueryMetrics = VisorAggregatedCacheQueryMetrics(),
-    var data: Seq[VisorCacheData] = Seq.empty[VisorCacheData]
-)
-
-/**
- * Cache query metrics data.
- */
-private case class VisorCacheQueryMetrics(
-    minTime: Long,
-    maxTime: Long,
-    avgTime: Double,
-    execs: Int,
-    fails: Int
-)
-
-/**
- * Aggregated cache query metrics data.
- */
-private case class VisorAggregatedCacheQueryMetrics(
-    var minTime: Long = 0,
-    var maxTime: Long = 0,
-    var avgTime: Double = 0,
-    var totalTime: Long = 0,
-    var execs: Int = 0,
-    var fails: Int = 0
-)
 
 /**
  * Companion object that does initialization of the command.
@@ -782,16 +623,19 @@ object VisorCacheCommand {
             " ",
             "Compacts entries in cache.",
             " ",
-            "Prints list of all entries from cache."
+            "Prints list of all entries from cache.",
+            " ",
+            "Swaps backup entries in cache."
         ),
         spec = Seq(
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
-            "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -compact {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
-        ),
+            "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
+            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
+            "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
+    ),
         args = Seq(
             "-id=<node-id>" -> Seq(
                 "Full ID of the node to get cache statistics from.",
@@ -808,14 +652,17 @@ object VisorCacheCommand {
                 "Name of the cache.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
-            "-clear" -> Seq(
-                "Clears cache."
-            ),
             "-compact" -> Seq(
                 "Compacts entries in cache."
             ),
+            "-clear" -> Seq(
+                "Clears cache."
+            ),
             "-scan" -> Seq(
                 "Prints list of all entries from cache."
+            ),
+            "-swap" -> Seq(
+                "Swaps backup entries in cache."
             ),
             "-s=lr|lw|hi|mi|re|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -874,7 +721,10 @@ object VisorCacheCommand {
             "cache -scan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
-            "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8."
+            "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
+            "cache -swap" -> "Swaps entries in interactively selected cache.",
+            "cache -swap -c=cache" -> "Swaps entries in cache with name 'cache'.",
+            "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )

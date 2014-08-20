@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.security;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -46,4 +48,11 @@ public interface GridSecurityPermissionSet extends Serializable {
      * @return Map of cache names to cache permissions.
      */
     public Map<String, Collection<GridSecurityPermission>> cachePermissions();
+
+    /**
+     * Collection of system-wide permissions (events enable/disable, Visor task execution).
+     *
+     * @return Collection of system-wide permissions.
+     */
+    @Nullable public Collection<GridSecurityPermission> systemPermissions();
 }

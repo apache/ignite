@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.metadata.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
@@ -119,7 +120,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                ctx.config().getRestExecutorService().execute(w);
+                config().getRestExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
@@ -239,10 +240,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (isRestEnabled()) {
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
+            addHandler(new GridCacheQueryCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
+            addHandler(new GridPortableMetadataHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -253,6 +256,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         if (isRestEnabled()) {
+            for (GridRestProtocol proto : protos)
+                proto.onKernalStart();
+
             startLatch.countDown();
 
             if (log.isDebugEnabled())
@@ -294,29 +300,34 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
         for (GridRestProtocol proto : protos) {
-            for (GridBiTuple<String, Object> p : proto.getProperties()) {
-                String key = p.getKey();
+            Collection<GridBiTuple<String, Object>> props = proto.getProperties();
 
-                if (key == null)
-                    continue;
+            if (props != null) {
+                for (GridBiTuple<String, Object> p : props) {
+                    String key = p.getKey();
 
-                if (attrs.containsKey(key))
-                    throw new GridException(
-                        "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+                    if (key == null)
+                        continue;
 
-                attrs.put(key, p.getValue());
+                    if (attrs.containsKey(key))
+                        throw new GridException(
+                            "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                    attrs.put(key, p.getValue());
+                }
             }
         }
     }
 
     /**
-     * Applies {@link GridClientMessageInterceptor} from {@link GridConfiguration#getClientMessageInterceptor()}
+     * Applies {@link GridClientMessageInterceptor}
+     * from {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
      */
     private void interceptRequest(GridRestRequest req) {
-        GridClientMessageInterceptor interceptor = ctx.config().getClientMessageInterceptor();
+        GridClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
 
         if (interceptor == null)
             return;
@@ -356,14 +367,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link GridClientMessageInterceptor} from {@link GridConfiguration#getClientMessageInterceptor()}
+     * Applies {@link GridClientMessageInterceptor} from
+     * {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
      * @param req Request.
      */
     private void interceptResponse(GridRestResponse res, GridRestRequest req) {
-        GridClientMessageInterceptor interceptor = ctx.config().getClientMessageInterceptor();
+        GridClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {
@@ -386,7 +398,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 case EXE:
                     if (res.getResponse() instanceof GridClientTaskResultBean) {
-                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean) res.getResponse();
+                        GridClientTaskResultBean taskRes = (GridClientTaskResultBean)res.getResponse();
 
                         taskRes.setResult(interceptor.onSend(taskRes.getResult()));
                     }
@@ -531,6 +543,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            case CACHE_QUERY_EXECUTE:
+            case CACHE_QUERY_FETCH:
+            case CACHE_QUERY_REBUILD_INDEXES:
+                perm = GridSecurityPermission.CACHE_READ;
+                name = ((GridRestCacheQueryRequest)req).cacheName();
+
+                break;
+
             case CACHE_PUT:
             case CACHE_ADD:
             case CACHE_PUT_ALL:
@@ -566,7 +586,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case LOG:
             case NOOP:
             case QUIT:
+            case GET_PORTABLE_METADATA:
+            case PUT_PORTABLE_METADATA:
                 break;
+
+            default:
+                throw new AssertionError("Unexpected command: " + req.command());
         }
 
         if (perm != null)
@@ -578,7 +603,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return !ctx.config().isDaemon() && ctx.config().isRestEnabled();
+        return !ctx.config().isDaemon() && ctx.config().getClientConnectionConfiguration() != null;
     }
 
     /**
@@ -628,6 +653,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new GridException("Failed to initialize HTTP REST protocol.", e);
         }
+    }
+
+    /**
+     * @return Client configuration.
+     */
+    private GridClientConnectionConfiguration config() {
+        return ctx.config().getClientConnectionConfiguration();
     }
 
     /**

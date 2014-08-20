@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.swapspace.inmemory.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -24,12 +24,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
@@ -99,12 +99,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         super.beforeTest();
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = grid(0);
     }
@@ -115,6 +119,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = null;
     }
@@ -142,21 +148,69 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);
 
-        cache().putAll(map);
+        // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
+        Map<GridNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
+
+        for (int i = 0; i < gridCount(); i++) {
+            Collection<String> keys = mapped.get(grid(i).localNode());
+
+            if (!F.isEmpty(keys)) {
+                for (String key : keys)
+                    cache(i).put(key, map.get(key));
+            }
+        }
+
+        map.remove("key0");
+
+        mapped = grid(0).mapKeysToNodes(null, map.keySet());
+
+        for (int i = 0; i < gridCount(); i++) {
+            // Will actually delete entry from map.
+            CU.invalidate(cache(i), "key0");
+
+            assertNull("Failed check for grid: " + i, cache(i).peek("key0"));
+
+            Collection<String> keysCol = mapped.get(grid(i).localNode());
+
+            assert !cache(i).isEmpty() || F.isEmpty(keysCol);
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheContext<String, Integer> ctx = context(i);
+
+            int sum = 0;
+
+            for (String key : map.keySet())
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
+                    sum++;
+
+            assertEquals("Incorrect key size on cache #" + i, sum, cache(i).keySet().size());
+            assertEquals("Incorrect key size on cache #" + i, sum, cache(i).size());
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            Collection<String> keysCol = mapped.get(grid(i).localNode());
+
+            assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
+                cache(i).primarySize());
+        }
+
+        int globalPrimarySize = map.size();
 
         for (int i = 0; i < gridCount(); i++)
-            CU.invalidate(cache(i), "key0"); // Will actually delete entry from map.
+            assertEquals(globalPrimarySize, cache(i).globalPrimarySize());
 
-        checkKeySize(F.lose(map.keySet(), true, F.asSet("key0")));
-        checkSize(F.lose(map.keySet(), true, F.asSet("key0")));
+        int times = 1;
 
-        Map<GridNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, cache().keySet());
+        if (cacheMode() == REPLICATED)
+            times = gridCount();
+        else if (cacheMode() == PARTITIONED)
+            times = Math.min(gridCount(), cache().configuration().getBackups() + 1);
 
-        Collection<String> keysCol = mapped.get(grid(0).localNode());
+        int globalSize = globalPrimarySize * times;
 
-        assertEquals(keysCol != null ? keysCol.size() : 0, cache().primarySize());
-
-        assert !cache().isEmpty() || keysCol == null || keysCol.isEmpty();
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(globalSize, cache(i).globalSize());
     }
 
     /**
@@ -4300,7 +4354,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         entry = c.entry(key);
 
-        assert entry.get() != null;
+        assertEquals((Integer)10, entry.get());
 
         assertEquals(0, entry.timeToLive());
         assertEquals(0, entry.expirationTime());

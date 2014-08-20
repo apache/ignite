@@ -86,6 +86,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         if (grpLockKey != null)
             throw new IllegalStateException("Group locking is not supported for LOCAL cache.");
 
+        // Use null as subject ID for transactions if subject per call is not set.
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
         return new GridLocalTx<>(
             ctx,
             implicit,
@@ -96,7 +101,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             invalidate,
             swapOrOffheapEnabled,
             storeEnabled,
-            txSize);
+            txSize,
+            subjId);
     }
 
     /**

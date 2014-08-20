@@ -16,13 +16,25 @@ import java.util.*;
 
 /**
  * Security context.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSecurityContext implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Visor tasks prefix. */
+    private static final String VISOR_TASK_PREFIX = "org.gridgain.grid.kernal.visor.";
+
+    /** Cache query task name. */
+    public static final String VISOR_CACHE_QUERY_TASK_NAME =
+        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask";
+
+    /** Cache load task name. */
+    public static final String VISOR_CACHE_LOAD_TASK_NAME =
+        "org.gridgain.grid.kernal.visor.gui.tasks.VisorCachesLoadTask";
+
+    /** Cache clear task name. */
+    public static final String VISOR_CACHE_CLEAR_TASK_NAME =
+        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesClearTask";
 
     /** Security subject. */
     private GridSecuritySubject subj;
@@ -38,6 +50,9 @@ public class GridSecurityContext implements Externalizable {
 
     /** String task permissions. */
     private Map<String, Collection<GridSecurityPermission>> wildcardCachePermissions = new LinkedHashMap<>();
+
+    /** System-wide permissions. */
+    private Collection<GridSecurityPermission> sysPermissions;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -71,6 +86,9 @@ public class GridSecurityContext implements Externalizable {
      */
     public boolean taskOperationAllowed(String taskClsName, GridSecurityPermission perm) {
         assert perm == GridSecurityPermission.TASK_EXECUTE || perm == GridSecurityPermission.TASK_CANCEL;
+
+        if (visorTask(taskClsName))
+            return visorTaskAllowed(taskClsName);
 
         Collection<GridSecurityPermission> p = strictTaskPermissions.get(taskClsName);
 
@@ -117,6 +135,55 @@ public class GridSecurityContext implements Externalizable {
     }
 
     /**
+     * Checks whether system-wide permission is allowed (excluding Visor task operations).
+     *
+     * @param perm Permission to check.
+     * @return {@code True} if system operation is allowed.
+     */
+    public boolean systemOperationAllowed(GridSecurityPermission perm) {
+        if (sysPermissions == null)
+            return subj.permissions().defaultAllowAll();
+
+        boolean ret = sysPermissions.contains(perm);
+
+        if (!ret && (perm == GridSecurityPermission.EVENTS_ENABLE || perm == GridSecurityPermission.EVENTS_DISABLE))
+            ret |= sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
+
+        return ret;
+    }
+
+    /**
+     * Checks if task is Visor task.
+     *
+     * @param taskCls Task class name.
+     * @return {@code True} if task is Visor task.
+     */
+    private boolean visorTask(String taskCls) {
+        return taskCls.startsWith(VISOR_TASK_PREFIX);
+    }
+
+    /**
+     * Checks if Visor task is allowed for execution.
+     *
+     * @param taskName Task name.
+     * @return {@code True} if execution is allowed.
+     */
+    private boolean visorTaskAllowed(String taskName) {
+        if (sysPermissions == null)
+            return subj.permissions().defaultAllowAll();
+
+        switch (taskName) {
+            case VISOR_CACHE_QUERY_TASK_NAME:
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_QUERY);
+            case VISOR_CACHE_LOAD_TASK_NAME:
+            case VISOR_CACHE_CLEAR_TASK_NAME:
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_CACHE);
+            default:
+                return sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
+        }
+    }
+
+    /**
      * Init rules.
      */
     private void initRules() {
@@ -149,6 +216,8 @@ public class GridSecurityContext implements Externalizable {
             else
                 strictCachePermissions.put(ptrn, vals);
         }
+
+        sysPermissions = permSet.systemPermissions();
     }
 
     /** {@inheritDoc} */

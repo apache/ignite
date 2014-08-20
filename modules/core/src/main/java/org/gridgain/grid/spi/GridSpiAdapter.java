@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -378,9 +379,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         assert spiCtx != null;
         assert node != null;
 
-        if (U.isVisorNode(node)) {
+        if (node.isDaemon()) {
             if (log.isDebugEnabled())
-                log.debug("Skipping configuration consistency check for Visor node: " + node);
+                log.debug("Skipping configuration consistency check for daemon node: " + node);
 
             return;
         }
@@ -672,6 +673,16 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         /** {@inheritDoc} */
         @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+            return Collections.emptyList();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+            return null;
         }
     }
 }

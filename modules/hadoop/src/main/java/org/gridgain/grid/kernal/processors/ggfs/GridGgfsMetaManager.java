@@ -40,6 +40,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 /**
  * Cache based structure (meta data) manager.
  */
+@SuppressWarnings("all")
 public class GridGgfsMetaManager extends GridGgfsManager {
     /** GGFS configuration. */
     private GridGgfsConfiguration cfg;
@@ -62,11 +63,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /** Events manager. */
     private GridEventStorageManager evts;
 
-    /** Local node ID. */
-    private UUID locNodeId;
-
     /** Local node. */
     private GridNode locNode;
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
@@ -78,8 +79,6 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             throw new GridException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
         evts = ggfsCtx.kernalContext().event();
-
-        locNodeId = ggfsCtx.kernalContext().localNodeId();
 
         sampling = new GridGgfsSamplingKey(cfg.getName());
 
@@ -105,7 +104,18 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         GridGgfsDeleteWorker delWorker0 = delWorker;
 
         if (delWorker0 != null)
-            delWorker0.shutdown();
+            delWorker0.cancel();
+
+        if (delWorker0 != null) {
+            try {
+                U.join(delWorker0);
+            }
+            catch (GridInterruptedException ignored) {
+                // No-op.
+            }
+        }
+
+        busyLock.block();
     }
 
     /**
@@ -114,7 +124,16 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Nodes where meta cache is defined.
      */
     Collection<GridNode> metaCacheNodes() {
-        return ggfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);
+        if (busyLock.enterBusy()) {
+            try {
+                return ggfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get meta cache nodes because Grid is stopping.");
     }
 
     /**
@@ -125,9 +144,18 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     @Nullable public GridUuid fileId(GridGgfsPath path) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        return fileId(path, false);
+                return fileId(path, false);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get file ID because Grid is stopping: " + path);
     }
 
     /**
@@ -155,7 +183,17 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     @Nullable public GridUuid fileId(GridUuid parentId, String fileName) throws GridException {
-        return fileId(parentId, fileName, false);
+        if (busyLock.enterBusy()) {
+            try {
+                return fileId(parentId, fileName, false);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get file ID because Grid is stopping [parentId=" + parentId +
+                ", fileName=" + fileName + ']');
     }
 
     /**
@@ -189,9 +227,18 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public List<GridUuid> fileIds(GridGgfsPath path) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        return fileIds(path, false);
+                return fileIds(path, false);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get file IDS because Grid is stopping: " + path);
     }
 
     /**
@@ -237,10 +284,20 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException IF failed.
      */
     public boolean exists(GridUuid fileId) throws GridException{
-        assert fileId != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fileId != null;
 
-        // containsKey() doesn't work here since meta cache can be PARTITIONED (we do not restrict if!).
-        return info(fileId) != null;
+                // containsKey() doesn't work here since meta cache can be PARTITIONED (we do not restrict if!).
+                return info(fileId) != null;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to check file system entry existence because Grid is stopping: " +
+                fileId);
     }
 
     /**
@@ -251,18 +308,25 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     @Nullable public GridGgfsFileInfo info(@Nullable GridUuid fileId) throws GridException {
-        //assert validTxState(any); // Allow this method call for any transaction state.
+        if (busyLock.enterBusy()) {
+            try {
+                if (fileId == null)
+                    return null;
 
-        if (fileId == null)
-            return null;
+                GridGgfsFileInfo info = id2InfoPrj.get(fileId);
 
-        GridGgfsFileInfo info = id2InfoPrj.get(fileId);
+                // Force root ID always exist in cache.
+                if (info == null && ROOT_ID.equals(fileId))
+                    id2InfoPrj.putxIfAbsent(ROOT_ID, info = new GridGgfsFileInfo());
 
-        // Force root ID always exist in cache.
-        if (info == null && ROOT_ID.equals(fileId))
-            id2InfoPrj.putxIfAbsent(ROOT_ID, info = new GridGgfsFileInfo());
-
-        return info;
+                return info;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get file info because Grid is stopping: " + fileId);
     }
 
     /**
@@ -273,26 +337,35 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public Map<GridUuid, GridGgfsFileInfo> infos(Collection<GridUuid> fileIds) throws GridException {
-        assert validTxState(false);
-        assert fileIds != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
+                assert fileIds != null;
 
-        if (F.isEmpty(fileIds))
-            return Collections.emptyMap();
+                if (F.isEmpty(fileIds))
+                    return Collections.emptyMap();
 
-        Map<GridUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
+                Map<GridUuid, GridGgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
 
-        // Force root ID always exist in cache.
-        if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
-            GridGgfsFileInfo info = new GridGgfsFileInfo();
+                // Force root ID always exist in cache.
+                if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
+                    GridGgfsFileInfo info = new GridGgfsFileInfo();
 
-            id2InfoPrj.putxIfAbsent(ROOT_ID, info);
+                    id2InfoPrj.putxIfAbsent(ROOT_ID, info);
 
-            map = new GridLeanMap<>(map);
+                    map = new GridLeanMap<>(map);
 
-            map.put(ROOT_ID, info);
+                    map.put(ROOT_ID, info);
+                }
+
+                return map;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        return map;
+        else
+            throw new IllegalStateException("Failed to get file infos because Grid is stopping: " + fileIds);
     }
 
     /**
@@ -303,34 +376,43 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public GridGgfsFileInfo lock(GridUuid fileId) throws GridException {
-        assert validTxState(false);
-        assert fileId != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
+                assert fileId != null;
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            // Lock file ID for this transaction.
-            GridGgfsFileInfo oldInfo = info(fileId);
+                try {
+                    // Lock file ID for this transaction.
+                    GridGgfsFileInfo oldInfo = info(fileId);
 
-            if (oldInfo == null)
-                throw new GridException("Failed to lock file (file not found): " + fileId);
+                    if (oldInfo == null)
+                        throw new GridException("Failed to lock file (file not found): " + fileId);
 
-            GridGgfsFileInfo newInfo = lockInfo(oldInfo);
+                    GridGgfsFileInfo newInfo = lockInfo(oldInfo);
 
-            boolean put = metaCache.putx(fileId, newInfo);
+                    boolean put = metaCache.putx(fileId, newInfo);
 
-            assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
+                    assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
-            tx.commit();
+                    tx.commit();
 
-            return newInfo;
+                    return newInfo;
+                }
+                catch (GridClosureException e) {
+                    throw U.cast(e);
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        catch (GridClosureException e) {
-            throw U.cast(e);
-        }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to obtain lock because Grid is stopping: " + fileId);
     }
 
     /**
@@ -341,13 +423,22 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException In case lock is already set on that file.
      */
     public GridGgfsFileInfo lockInfo(GridGgfsFileInfo info) throws GridException {
-        assert info != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert info != null;
 
-        if (info.lockId() != null)
-            throw new GridException("Failed to lock file (file is being concurrently written) [fileId=" + info.id() +
-                ", lockId=" + info.lockId() + ']');
+                if (info.lockId() != null)
+                    throw new GridException("Failed to lock file (file is being concurrently written) [fileId=" +
+                        info.id() + ", lockId=" + info.lockId() + ']');
 
-        return new GridGgfsFileInfo(info, GridUuid.randomUuid(), info.modificationTime());
+                return new GridGgfsFileInfo(info, GridUuid.randomUuid(), info.modificationTime());
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get lock info because Grid is stopping: " + info);
     }
 
     /**
@@ -361,48 +452,57 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert validTxState(false);
         assert info != null;
 
-        GridUuid lockId = info.lockId();
+        if (busyLock.enterBusy()) {
+            try {
+                GridUuid lockId = info.lockId();
 
-        if (lockId == null)
-            return;
+                if (lockId == null)
+                    return;
 
-        // Temporary clear interrupted state for unlocking.
-        boolean interrupted = Thread.interrupted();
+                // Temporary clear interrupted state for unlocking.
+                boolean interrupted = Thread.interrupted();
 
-        GridUuid fileId = info.id();
+                GridUuid fileId = info.id();
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            // Lock file ID for this transaction.
-            GridGgfsFileInfo oldInfo = info(fileId);
+                try {
+                    // Lock file ID for this transaction.
+                    GridGgfsFileInfo oldInfo = info(fileId);
 
-            if (oldInfo == null)
-                throw new GridGgfsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
+                    if (oldInfo == null)
+                        throw new GridGgfsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
 
-            if (!info.lockId().equals(oldInfo.lockId()))
-                throw new GridException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
-                    ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
+                    if (!info.lockId().equals(oldInfo.lockId()))
+                        throw new GridException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
+                            ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
 
-            GridGgfsFileInfo newInfo = new GridGgfsFileInfo(oldInfo, null, modificationTime);
+                    GridGgfsFileInfo newInfo = new GridGgfsFileInfo(oldInfo, null, modificationTime);
 
-            boolean put = metaCache.putx(fileId, newInfo);
+                    boolean put = metaCache.putx(fileId, newInfo);
 
-            assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
+                    assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
-            tx.commit();
+                    tx.commit();
+                }
+                catch (GridClosureException e) {
+                    throw U.cast(e);
+                }
+                finally {
+                    tx.close();
+
+                    assert validTxState(false);
+
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        catch (GridClosureException e) {
-            throw U.cast(e);
-        }
-        finally {
-            tx.close();
-
-            assert validTxState(false);
-
-            if (interrupted)
-                Thread.currentThread().interrupt();
-        }
+        else
+            throw new IllegalStateException("Failed to unlock file system entry because Grid is stopping: " + info);
     }
 
     /**
@@ -454,7 +554,16 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public Map<String, GridGgfsListingEntry> directoryListing(GridUuid fileId) throws GridException {
-        return directoryListing(fileId, false);
+        if (busyLock.enterBusy()) {
+            try {
+                return directoryListing(fileId, false);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get directory listing because Grid is stopping: " + fileId);
     }
 
     /**
@@ -465,7 +574,16 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed to get file for fragmentizer.
      */
     public GridGgfsFileInfo fileForFragmentizer(Collection<GridUuid> exclude) throws GridException {
-        return fileForFragmentizer0(ROOT_ID, exclude);
+        if (busyLock.enterBusy()) {
+            try {
+                return fileForFragmentizer0(ROOT_ID, exclude);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get file for framentizer because Grid is stopping.");
     }
 
     /**
@@ -533,30 +651,40 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    public GridGgfsFileInfo putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    public GridUuid putIfAbsent(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
-        assert validTxState(false);
-        assert parentId != null;
-        assert fileName != null;
-        assert newFileInfo != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
+                assert parentId != null;
+                assert fileName != null;
+                assert newFileInfo != null;
 
-        GridGgfsFileInfo res = null;
+                GridUuid res = null;
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            res = putIfAbsentNonTx(parentId, fileName, newFileInfo);
+                try {
+                    res = putIfAbsentNonTx(parentId, fileName, newFileInfo);
 
-            tx.commit();
+                    tx.commit();
+                }
+                finally {
+                    tx.close();
+                }
+
+                return res;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
-
-        return res;
+        else
+            throw new IllegalStateException("Failed to put file because Grid is stopping [parentId=" + parentId +
+                ", fileName=" + fileName + ", newFileInfo=" + newFileInfo + ']');
     }
 
     /**
@@ -565,10 +693,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
-     * @return File info already stored in meta cache or {@code null} if passed file info was stored.
+     * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws GridException If failed.
      */
-    private GridGgfsFileInfo putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
+    private GridUuid putIfAbsentNonTx(GridUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
         throws GridException {
         if (log.isDebugEnabled())
             log.debug("Locking parent id [parentId=" + parentId + ", fileName=" + fileName + ", newFileInfo=" +
@@ -595,13 +723,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         assert validTxState(true);
 
-        if (entry != null) {
-            newFileInfo = info(entry.fileId());
-
-            assert newFileInfo != null : "Expects file info exist: " + entry.fileId();
-
-            return newFileInfo;
-        }
+        if (entry != null)
+            return entry.fileId();
 
         GridUuid fileId = newFileInfo.id();
 
@@ -627,18 +750,29 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public void move(GridUuid fileId, String srcFileName, GridUuid srcParentId, String destFileName,
         GridUuid destParentId) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
+                try {
+                    moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
 
-            tx.commit();
+                    tx.commit();
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to move file system entry because Grid is stopping [fileId=" +
+                fileId + ", srcFileName=" + srcFileName + ", srcParentId=" + srcParentId + ", destFileName=" +
+                destFileName + ", destParentId=" + destParentId + ']');
     }
 
     /**
@@ -736,27 +870,37 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     @Nullable public GridGgfsFileInfo removeIfEmpty(GridUuid parentId, String fileName, GridUuid fileId,
         GridGgfsPath path, boolean rmvLocked)
         throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            if (parentId != null)
-                lockIds(parentId, fileId, TRASH_ID);
-            else
-                lockIds(fileId, TRASH_ID);
+                try {
+                    if (parentId != null)
+                        lockIds(parentId, fileId, TRASH_ID);
+                    else
+                        lockIds(fileId, TRASH_ID);
 
-            GridGgfsFileInfo fileInfo = removeIfEmptyNonTx(parentId, fileName, fileId, path, rmvLocked);
+                    GridGgfsFileInfo fileInfo = removeIfEmptyNonTx(parentId, fileName, fileId, path, rmvLocked);
 
-            tx.commit();
+                    tx.commit();
 
-            delWorker.signal();
+                    delWorker.signal();
 
-            return fileInfo;
+                    return fileInfo;
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to remove file system entry because Grid is stopping [parentId=" +
+                parentId + ", fileName=" + fileName + ", fileId=" + fileId + ", path=" + path + ']');
     }
 
     /**
@@ -840,27 +984,37 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     GridUuid softDelete(@Nullable GridUuid parentId, @Nullable String pathName, GridUuid pathId) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            if (parentId == null)
-                lockIds(pathId, TRASH_ID);
-            else
-                lockIds(parentId, pathId, TRASH_ID);
+                try {
+                    if (parentId == null)
+                        lockIds(pathId, TRASH_ID);
+                    else
+                        lockIds(parentId, pathId, TRASH_ID);
 
-            GridUuid resId = softDeleteNonTx(parentId, pathName, pathId);
+                    GridUuid resId = softDeleteNonTx(parentId, pathName, pathId);
 
-            tx.commit();
+                    tx.commit();
 
-            delWorker.signal();
+                    delWorker.signal();
 
-            return resId;
+                    return resId;
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to perform soft delete because Grid is stopping [parentId=" +
+                parentId + ", pathName=" + pathName + ", pathId=" + pathId + ']');
     }
 
     /**
@@ -949,71 +1103,81 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     Collection<GridUuid> delete(GridUuid parentId, Map<String, GridGgfsListingEntry> listing)
         throws GridException {
-        assert parentId != null;
-        assert listing != null;
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert parentId != null;
+                assert listing != null;
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            Collection<GridUuid> res = new HashSet<>();
+                try {
+                    Collection<GridUuid> res = new HashSet<>();
 
-            // Obtain all necessary locks in one hop.
-            GridUuid[] allIds = new GridUuid[listing.size() + 1];
+                    // Obtain all necessary locks in one hop.
+                    GridUuid[] allIds = new GridUuid[listing.size() + 1];
 
-            allIds[0] = parentId;
+                    allIds[0] = parentId;
 
-            int i = 1;
+                    int i = 1;
 
-            for (GridGgfsListingEntry entry : listing.values())
-                allIds[i++] = entry.fileId();
+                    for (GridGgfsListingEntry entry : listing.values())
+                        allIds[i++] = entry.fileId();
 
-            Map<GridUuid, GridGgfsFileInfo> locks = lockIds(allIds);
+                    Map<GridUuid, GridGgfsFileInfo> locks = lockIds(allIds);
 
-            GridGgfsFileInfo parentInfo = locks.get(parentId);
+                    GridGgfsFileInfo parentInfo = locks.get(parentId);
 
-            // Ensure parent is still in place.
-            if (parentInfo != null) {
-                Map<String, GridGgfsListingEntry> newListing =
-                    new HashMap<>(parentInfo.listing().size(), 1.0f);
+                    // Ensure parent is still in place.
+                    if (parentInfo != null) {
+                        Map<String, GridGgfsListingEntry> newListing =
+                            new HashMap<>(parentInfo.listing().size(), 1.0f);
 
-                newListing.putAll(parentInfo.listing());
+                        newListing.putAll(parentInfo.listing());
 
-                // Remove child entries if possible.
-                for (Map.Entry<String, GridGgfsListingEntry> entry : listing.entrySet()) {
-                    GridUuid entryId = entry.getValue().fileId();
+                        // Remove child entries if possible.
+                        for (Map.Entry<String, GridGgfsListingEntry> entry : listing.entrySet()) {
+                            GridUuid entryId = entry.getValue().fileId();
 
-                    GridGgfsFileInfo entryInfo = locks.get(entryId);
+                            GridGgfsFileInfo entryInfo = locks.get(entryId);
 
-                    if (entryInfo != null) {
-                        // Delete only files or empty folders.
-                        if (entryInfo.isFile() || entryInfo.isDirectory() && entryInfo.listing().isEmpty()) {
-                            id2InfoPrj.remove(entryId);
+                            if (entryInfo != null) {
+                                // Delete only files or empty folders.
+                                if (entryInfo.isFile() || entryInfo.isDirectory() && entryInfo.listing().isEmpty()) {
+                                    id2InfoPrj.remove(entryId);
 
-                            newListing.remove(entry.getKey());
+                                    newListing.remove(entry.getKey());
 
-                            res.add(entryId);
+                                    res.add(entryId);
+                                }
+                            }
+                            else {
+                                // Entry was deleted concurrently.
+                                newListing.remove(entry.getKey());
+
+                                res.add(entryId);
+                            }
                         }
-                    }
-                    else {
-                        // Entry was deleted concurrently.
-                        newListing.remove(entry.getKey());
 
-                        res.add(entryId);
+                        // Update parent listing.
+                        id2InfoPrj.putx(parentId, new GridGgfsFileInfo(newListing, parentInfo));
                     }
+
+                    tx.commit();
+
+                    return res;
                 }
-
-                // Update parent listing.
-                id2InfoPrj.putx(parentId, new GridGgfsFileInfo(newListing, parentInfo));
+                finally {
+                    tx.close();
+                }
             }
-
-            tx.commit();
-
-            return res;
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to perform delete because Grid is stopping [parentId=" +
+                parentId + ", listing=" + listing + ']');
     }
 
     /**
@@ -1026,38 +1190,48 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     boolean delete(GridUuid parentId, String name, GridUuid id) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            boolean res = false;
+                try {
+                    boolean res = false;
 
-            Map<GridUuid, GridGgfsFileInfo> infos = lockIds(parentId, id);
+                    Map<GridUuid, GridGgfsFileInfo> infos = lockIds(parentId, id);
 
-            // Proceed only in case both parent and child exist.
-            if (infos.containsKey(parentId) && infos.containsKey(id)) {
-                GridGgfsFileInfo parentInfo = infos.get(parentId);
+                    // Proceed only in case both parent and child exist.
+                    if (infos.containsKey(parentId) && infos.containsKey(id)) {
+                        GridGgfsFileInfo parentInfo = infos.get(parentId);
 
-                assert parentInfo != null;
+                        assert parentInfo != null;
 
-                GridGgfsListingEntry listingEntry = parentInfo.listing().get(name);
+                        GridGgfsListingEntry listingEntry = parentInfo.listing().get(name);
 
-                if (listingEntry != null)
-                    id2InfoPrj.transform(parentId, new UpdateListing(name, listingEntry, true));
+                        if (listingEntry != null)
+                            id2InfoPrj.transform(parentId, new UpdateListing(name, listingEntry, true));
 
-                id2InfoPrj.remove(id);
+                        id2InfoPrj.remove(id);
 
-                res = true;
+                        res = true;
+                    }
+
+                    tx.commit();
+
+                    return res;
+                }
+                finally {
+                    tx.close();
+                }
             }
-
-            tx.commit();
-
-            return res;
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to perform delete because Grid is stopping [parentId=" +
+                parentId + ", name=" + name + ", id=" + id + ']');
     }
 
     /**
@@ -1067,21 +1241,30 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If operation failed.
      */
     public Collection<GridUuid> pendingDeletes() throws GridException {
-        GridGgfsFileInfo trashInfo = id2InfoPrj.get(TRASH_ID);
+        if (busyLock.enterBusy()) {
+            try {
+                GridGgfsFileInfo trashInfo = id2InfoPrj.get(TRASH_ID);
 
-        if (trashInfo != null) {
-            Map<String, GridGgfsListingEntry> listing = trashInfo.listing();
+                if (trashInfo != null) {
+                    Map<String, GridGgfsListingEntry> listing = trashInfo.listing();
 
-            if (listing != null && !listing.isEmpty()) {
-                return F.viewReadOnly(listing.values(), new GridClosure<GridGgfsListingEntry, GridUuid>() {
-                    @Override public GridUuid apply(GridGgfsListingEntry e) {
-                        return e.fileId();
+                    if (listing != null && !listing.isEmpty()) {
+                        return F.viewReadOnly(listing.values(), new GridClosure<GridGgfsListingEntry, GridUuid>() {
+                            @Override public GridUuid apply(GridGgfsListingEntry e) {
+                                return e.fileId();
+                            }
+                        });
                     }
-                });
+                }
+
+                return Collections.emptySet();
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
-
-        return Collections.emptySet();
+        else
+            throw new IllegalStateException("Failed to get pending deletes because Grid is stopping.");
     }
 
     /**
@@ -1180,20 +1363,30 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     @Nullable public GridGgfsFileInfo updateProperties(@Nullable GridUuid parentId, GridUuid fileId, String fileName,
         Map<String, String> props) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            GridGgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
+                try {
+                    GridGgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
 
-            tx.commit();
+                    tx.commit();
 
-            return info;
+                    return info;
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to update properties because Grid is stopping [parentId=" +
+                parentId + ", fileId=" + fileId + ", fileName=" + fileName + ", props=" + props + ']');
     }
 
     /**
@@ -1207,11 +1400,22 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public void updateParentListingAsync(GridUuid parentId, GridUuid fileId, String fileName, long lenDelta,
         long modificationTime) {
-        assert parentId != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert parentId != null;
 
-        assert validTxState(false);
+                assert validTxState(false);
 
-        id2InfoPrj.transformAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, 0, modificationTime));
+                id2InfoPrj.transformAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, 0,
+                    modificationTime));
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to update parent listing because Grid is stopping [parentId=" +
+                parentId + ", fileId=" + fileId + ", fileName=" + fileName + ']');
     }
 
     /**
@@ -1228,48 +1432,60 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert fileId != null;
         assert c != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
+        if (busyLock.enterBusy()) {
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
 
-        GridCacheTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStart(PESSIMISTIC,
+                    REPEATABLE_READ);
 
-        try {
-            // Lock file ID for this transaction.
-            GridGgfsFileInfo oldInfo = info(fileId);
+                try {
+                    // Lock file ID for this transaction.
+                    GridGgfsFileInfo oldInfo = info(fileId);
 
-            if (oldInfo == null)
-                return null; // File not found.
+                    if (oldInfo == null)
+                        return null; // File not found.
 
-            GridGgfsFileInfo newInfo = c.apply(oldInfo);
+                    GridGgfsFileInfo newInfo = c.apply(oldInfo);
 
-            if (newInfo == null)
-                throw new GridGgfsException("Failed to update file info with null value" +
-                    " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                    if (newInfo == null)
+                        throw new GridGgfsException("Failed to update file info with null value" +
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-            if (!oldInfo.id().equals(newInfo.id()))
-                throw new GridGgfsException("Failed to update file info (file IDs differ)" +
-                    " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                    if (!oldInfo.id().equals(newInfo.id()))
+                        throw new GridGgfsException("Failed to update file info (file IDs differ)" +
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-            if (oldInfo.isDirectory() != newInfo.isDirectory())
-                throw new GridGgfsException("Failed to update file info (file types differ)" +
-                    " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                    if (oldInfo.isDirectory() != newInfo.isDirectory())
+                        throw new GridGgfsException("Failed to update file info (file types differ)" +
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-            boolean b = metaCache.replace(fileId, oldInfo, newInfo);
+                    boolean b = metaCache.replace(fileId, oldInfo, newInfo);
 
-            assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']';
+                    assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo +
+                        ", c=" + c + ']';
 
-            if (tx != null)
-                tx.commit();
+                    if (tx != null)
+                        tx.commit();
 
-            return newInfo;
+                    return newInfo;
+                }
+                catch (GridClosureException e) {
+                    throw U.cast(e);
+                }
+                finally {
+                    if (tx != null)
+                        tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        catch (GridClosureException e) {
-            throw U.cast(e);
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to update file system entry info because Grid is stopping: " +
+                fileId);
     }
 
     /**
@@ -1280,20 +1496,29 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public boolean sampling(Boolean val) throws GridException {
-        validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                validTxState(false);
 
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            Object prev = val != null ? metaCache.put(sampling, val) : metaCache.remove(sampling);
+                try {
+                    Object prev = val != null ? metaCache.put(sampling, val) : metaCache.remove(sampling);
 
-            tx.commit();
+                    tx.commit();
 
-            return !F.eq(prev, val);
+                    return !F.eq(prev, val);
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to set sampling flag because Grid is stopping.");
     }
 
     /**
@@ -1304,11 +1529,20 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     public Boolean sampling() throws GridException {
-        validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                validTxState(false);
 
-        Object val = metaCache.get(sampling);
+                Object val = metaCache.get(sampling);
 
-        return (val == null || !(val instanceof Boolean)) ? null : (Boolean)val;
+                return (val == null || !(val instanceof Boolean)) ? null : (Boolean)val;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get sampling flag because Grid is stopping.");
     }
 
     /**
@@ -1330,150 +1564,162 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         final boolean simpleCreate, @Nullable final FsPermission perm, final boolean overwrite, final int bufSize,
         final short replication, final long blockSize, final GridUuid affKey)
         throws GridException {
-        assert fs != null;
-        assert path != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert path != null;
 
-        // Events to fire (can be done outside of a transaction).
-        final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                // Events to fire (can be done outside of a transaction).
+                final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
 
-        SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
-            new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
-            /** Output stream to the secondary file system. */
-            private FSDataOutputStream out;
+                SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
+                        /** Output stream to the secondary file system. */
+                        private FSDataOutputStream out;
 
-            @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
-                GridGgfsFileInfo> infos) throws Exception {
-                assert !infos.isEmpty();
+                        @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
+                            GridGgfsFileInfo> infos) throws Exception {
+                            assert !infos.isEmpty();
 
-                // Determine the first existing parent.
-                GridGgfsPath parentPath = null;
+                            // Determine the first existing parent.
+                            GridGgfsPath parentPath = null;
 
-                for (GridGgfsPath curPath : infos.keySet()) {
-                    if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
-                        parentPath = curPath;
-                }
+                            for (GridGgfsPath curPath : infos.keySet()) {
+                                if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
+                                    parentPath = curPath;
+                            }
 
-                assert parentPath != null;
+                            assert parentPath != null;
 
-                GridGgfsFileInfo parentInfo = infos.get(parentPath);
+                            GridGgfsFileInfo parentInfo = infos.get(parentPath);
 
-                // Delegate to the secondary file system.
-                Path path0 = secondaryPath(path);
+                            // Delegate to the secondary file system.
+                            Path path0 = secondaryPath(path);
 
-                out = simpleCreate ? fs.create(secondaryPath(path), overwrite) :
-                    fs.create(path0, perm, overwrite, bufSize, replication, blockSize, null);
+                            out = simpleCreate ? fs.create(secondaryPath(path), overwrite) :
+                                fs.create(path0, perm, overwrite, bufSize, replication, blockSize, null);
 
-                GridGgfsPath parent0 = path.parent();
+                            GridGgfsPath parent0 = path.parent();
 
-                assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
+                            assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
 
-                // If some of the parent directories were missing, synchronize again.
-                if (!parentPath.equals(parent0)) {
-                    parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
+                            // If some of the parent directories were missing, synchronize again.
+                            if (!parentPath.equals(parent0)) {
+                                parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
 
-                    // Fire notification about missing directories creation.
-                    if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
-                        GridGgfsPath evtPath = parent0;
+                                // Fire notification about missing directories creation.
+                                if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
+                                    GridGgfsPath evtPath = parent0;
 
-                        while (!parentPath.equals(evtPath)) {
-                            pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                                    while (!parentPath.equals(evtPath)) {
+                                        pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
-                            evtPath = evtPath.parent();
+                                        evtPath = evtPath.parent();
 
-                            assert evtPath != null; // If this fails, then ROOT does not exist.
-                        }
-                    }
-                }
-
-                // Get created file info.
-                FileStatus status;
-
-                try {
-                    status = fs.getFileStatus(path0);
-                }
-                catch (IOException e) {
-                    throw new GridGgfsException("Failed to get status of the file created in the secondary file " +
-                        "system: " + path, e);
-                }
-
-                if (status == null)
-                    throw new GridGgfsException("Failed to open output stream to the file created in the secondary " +
-                        "file system because it no longer exists: " + path);
-                else if (status.isDir())
-                    throw new GridGgfsException("Failed to open output stream to the file created in the secondary " +
-                        "file system because the path points to a directory: " + path);
-
-                GridGgfsFileInfo newInfo = new GridGgfsFileInfo((int)status.getBlockSize(), status.getLen(), affKey,
-                    GridUuid.randomUuid(), ggfsCtx.ggfs().evictExclude(path, false), properties(status));
-
-                // Add new file info to the listing optionally removing the previous one.
-                GridGgfsFileInfo oldInfo = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
-
-                if (oldInfo != null) {
-                    id2InfoPrj.removex(oldInfo.id()); // Remove the old one.
-                    id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
-
-                    id2InfoPrj.transform(parentInfo.id(),
-                        new UpdateListing(path.name(), parentInfo.listing().get(path.name()), true));
-                    id2InfoPrj.transform(parentInfo.id(),
-                        new UpdateListing(path.name(), new GridGgfsListingEntry(newInfo), false));
-
-                    GridFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
-
-                    // Record PURGE event if needed.
-                    if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
-                        delFut.listenAsync(new CI1<GridFuture<?>>() {
-                            @Override public void apply(GridFuture<?> t) {
-                                try {
-                                    t.get(); // Ensure delete succeeded.
-
-                                    evts.record(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
-                                }
-                                catch (GridException e) {
-                                    LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
-                                        ", simpleCreate=" + simpleCreate + ", permission=" + perm +
-                                        ", overwrite=" + overwrite + ", bufferSize=" + bufSize +
-                                        ", replication=" + replication + ", blockSize=" + blockSize + ']');
+                                        assert evtPath != null; // If this fails, then ROOT does not exist.
+                                    }
                                 }
                             }
-                        });
-                    }
 
-                    // Record DELETE event if needed.
-                    if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                        pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
+                            // Get created file info.
+                            FileStatus status;
+
+                            try {
+                                status = fs.getFileStatus(path0);
+                            }
+                            catch (IOException e) {
+                                throw new GridGgfsException("Failed to get status of the file created in the " +
+                                    "secondary file system: " + path, e);
+                            }
+
+                            if (status == null)
+                                throw new GridGgfsException("Failed to open output stream to the file created in " +
+                                    "the secondary file system because it no longer exists: " + path);
+                            else if (status.isDir())
+                                throw new GridGgfsException("Failed to open output stream to the file created in " +
+                                    "the secondary file system because the path points to a directory: " + path);
+
+                            GridGgfsFileInfo newInfo = new GridGgfsFileInfo((int)status.getBlockSize(),
+                                status.getLen(), affKey, GridUuid.randomUuid(),
+                                ggfsCtx.ggfs().evictExclude(path, false), properties(status));
+
+                            // Add new file info to the listing optionally removing the previous one.
+                            GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+
+                            if (oldId != null) {
+                                GridGgfsFileInfo oldInfo = info(oldId);
+
+                                id2InfoPrj.removex(oldId); // Remove the old one.
+                                id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
+
+                                id2InfoPrj.transform(parentInfo.id(),
+                                    new UpdateListing(path.name(), parentInfo.listing().get(path.name()), true));
+                                id2InfoPrj.transform(parentInfo.id(),
+                                    new UpdateListing(path.name(), new GridGgfsListingEntry(newInfo), false));
+
+                                GridFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
+
+                                // Record PURGE event if needed.
+                                if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
+                                    delFut.listenAsync(new CI1<GridFuture<?>>() {
+                                        @Override public void apply(GridFuture<?> t) {
+                                            try {
+                                                t.get(); // Ensure delete succeeded.
+
+                                                evts.record(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
+                                            }
+                                            catch (GridException e) {
+                                                LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
+                                                    ", simpleCreate=" + simpleCreate + ", permission=" + perm +
+                                                    ", overwrite=" + overwrite + ", bufferSize=" + bufSize +
+                                                    ", replication=" + replication + ", blockSize=" + blockSize + ']');
+                                            }
+                                        }
+                                    });
+                                }
+
+                                // Record DELETE event if needed.
+                                if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
+                                    pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_DELETED));
+                            }
+
+                            // Record CREATE event if needed.
+                            if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
+                                pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
+
+                            return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
+                        }
+
+                        @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
+                            throws GridException {
+                            U.closeQuiet(out);
+
+                            U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
+                                simpleCreate + ", permission=" + perm + ", overwrite=" + overwrite + ", bufferSize=" +
+                                bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
+
+                            if (err instanceof GridGgfsException)
+                                throw (GridGgfsException)err;
+                            else
+                                throw new GridGgfsException("Failed to create the file due to secondary file system " +
+                                    "exception: " + path, err);
+                        }
+                    };
+
+                try {
+                    return synchronizeAndExecute(task, fs, false, path.parent());
                 }
-
-                // Record CREATE event if needed.
-                if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                    pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
-
-                return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
+                finally {
+                    for (GridGgfsEvent evt : pendingEvts)
+                        evts.record(evt);
+                }
             }
-
-            @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
-                throws GridException {
-                U.closeQuiet(out);
-
-                U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" + simpleCreate +
-                    ", permission=" + perm + ", overwrite=" + overwrite + ", bufferSize=" + bufSize +
-                    ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
-
-                if (err instanceof GridGgfsException)
-                    throw (GridException)err;
-                else
-                    throw new GridGgfsException("Failed to create the file due to secondary file system exception: " +
-                        path, err);
+            finally {
+                busyLock.leaveBusy();
             }
-        };
-
-        try {
-            return synchronizeAndExecute(task, fs, false, path.parent());
         }
-        finally {
-            for (GridGgfsEvent evt : pendingEvts)
-                evts.record(evt);
-        }
+        else
+            throw new IllegalStateException("Failed to create file in DUAL mode because Grid is stopping: " + path);
     }
 
     /**
@@ -1487,70 +1733,80 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public GridGgfsSecondaryOutputStreamDescriptor appendDual(final FileSystem fs, final GridGgfsPath path,
         final int bufSize) throws GridException {
-        assert fs != null;
-        assert path != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert path != null;
 
-        SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
-            new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
-                /** Output stream to the secondary file system. */
-                private FSDataOutputStream out;
+                SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
+                        /** Output stream to the secondary file system. */
+                        private FSDataOutputStream out;
 
-                @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
-                    GridGgfsFileInfo> infos) throws Exception {
-                    GridGgfsFileInfo info = infos.get(path);
+                        @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
+                            GridGgfsFileInfo> infos) throws Exception {
+                            GridGgfsFileInfo info = infos.get(path);
 
-                    if (info.isDirectory())
-                        throw new GridGgfsException("Failed to open output stream to the file in the secondary file " +
-                            "system because the path points to a directory: " + path);
+                            if (info.isDirectory())
+                                throw new GridGgfsException("Failed to open output stream to the file in the " +
+                                    "secondary file system because the path points to a directory: " + path);
 
-                    Path path0 = secondaryPath(path);
+                            Path path0 = secondaryPath(path);
 
-                    out = fs.append(path0, bufSize);
+                            out = fs.append(path0, bufSize);
 
-                    // Synchronize file ending.
-                    long len = info.length();
-                    int blockSize = info.blockSize();
+                            // Synchronize file ending.
+                            long len = info.length();
+                            int blockSize = info.blockSize();
 
-                    int remainder = (int)(len % blockSize);
+                            int remainder = (int)(len % blockSize);
 
-                    if (remainder > 0) {
-                        int blockIdx = (int)(len / blockSize);
+                            if (remainder > 0) {
+                                int blockIdx = (int)(len / blockSize);
 
-                        GridGgfsSecondaryInputStreamWrapper wrapper = new GridGgfsSecondaryInputStreamWrapper(fs,
-                            path0, bufSize, log);
+                                GridGgfsSecondaryInputStreamWrapper wrapper =
+                                    new GridGgfsSecondaryInputStreamWrapper(fs, path0, bufSize, log);
 
-                        try {
-                            ggfsCtx.data().dataBlock(info, path, blockIdx, wrapper).get();
+                                try {
+                                    ggfsCtx.data().dataBlock(info, path, blockIdx, wrapper).get();
+                                }
+                                finally {
+                                    wrapper.close();
+                                }
+                            }
+
+                            // Set lock and return.
+                            info = lockInfo(info);
+
+                            metaCache.putx(info.id(), info);
+
+                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info,
+                                out);
                         }
-                        finally {
-                            wrapper.close();
+
+                        @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
+                            throws GridException {
+                            U.closeQuiet(out);
+
+                            U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
+                                ']', err);
+
+                            if (err instanceof GridGgfsException)
+                                throw (GridGgfsException)err;
+                            else
+                                throw new GridException("Failed to append to the file due to secondary file system " +
+                                    "exception: " + path, err);
                         }
-                    }
+                    };
 
-                    // Set lock and return.
-                    info = lockInfo(info);
-
-                    metaCache.putx(info.id(), info);
-
-                    return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
-                }
-
-                @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
-                    throws GridException {
-                    U.closeQuiet(out);
-
-                    U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
-                        ']', err);
-
-                    if (err instanceof GridGgfsException)
-                        throw (GridGgfsException)err;
-                    else
-                        throw new GridException("Failed to append to the file due to secondary file system " +
-                            "exception: " + path, err);
-                }
-            };
-
-        return synchronizeAndExecute(task, fs, true, path);
+                return synchronizeAndExecute(task, fs, true, path);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to append to file in DUAL mode because Grid is stopping: " + path);
     }
 
     /**
@@ -1565,49 +1821,59 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     public GridGgfsSecondaryInputStreamDescriptor openDual(final FileSystem fs, final GridGgfsPath path,
         final int bufSize)
         throws GridException {
-        assert fs != null;
-        assert path != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert path != null;
 
-        // First, try getting file info without any transactions and synchronization.
-        GridGgfsFileInfo info = info(fileId(path));
+                // First, try getting file info without any transactions and synchronization.
+                GridGgfsFileInfo info = info(fileId(path));
 
-        if (info != null) {
-            if (!info.isFile())
-                throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+                if (info != null) {
+                    if (!info.isFile())
+                        throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
-            return new GridGgfsSecondaryInputStreamDescriptor(info,
-                new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
+                    return new GridGgfsSecondaryInputStreamDescriptor(info,
+                        new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
+                }
+
+                // If failed, try synchronize.
+                SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor> task =
+                    new SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor>() {
+                        @Override public GridGgfsSecondaryInputStreamDescriptor onSuccess(
+                            Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
+                            GridGgfsFileInfo info = infos.get(path);
+
+                            if (info == null)
+                                throw new GridGgfsFileNotFoundException("File not found: " + path);
+                            if (!info.isFile())
+                                throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+
+                            return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path),
+                                new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
+                        }
+
+                        @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
+                            throws GridException {
+                            U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
+                                ']', err);
+
+                            if (err instanceof GridGgfsException)
+                                throw (GridException)err;
+                            else
+                                throw new GridException("Failed to open the path due to secondary file system " +
+                                    "exception: " + path, err);
+                        }
+                    };
+
+                return synchronizeAndExecute(task, fs, false, path);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        // If failed, try synchronize.
-        SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor> task =
-            new SynchronizationTask<GridGgfsSecondaryInputStreamDescriptor>() {
-            @Override public GridGgfsSecondaryInputStreamDescriptor onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos)
-                throws Exception {
-                GridGgfsFileInfo info = infos.get(path);
-
-                if (info == null)
-                    throw new GridGgfsFileNotFoundException("File not found: " + path);
-                if (!info.isFile())
-                    throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
-
-                return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path),
-                    new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
-            }
-
-            @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
-                throws GridException {
-                U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize + ']', err);
-
-                if (err instanceof GridGgfsException)
-                    throw (GridException)err;
-                else
-                    throw new GridException("Failed to open the path due to secondary file system exception: " +
-                        path, err);
-            }
-        };
-
-        return synchronizeAndExecute(task, fs, false, path);
+        else
+            throw new IllegalStateException("Failed to open file in DUAL mode because Grid is stopping: " + path);
     }
 
     /**
@@ -1623,30 +1889,41 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert fs != null;
         assert path != null;
 
-        // First, try getting file info without any transactions and synchronization.
-        GridGgfsFileInfo info = info(fileId(path));
+        if (busyLock.enterBusy()) {
+            try {
+                // First, try getting file info without any transactions and synchronization.
+                GridGgfsFileInfo info = info(fileId(path));
 
-        if (info != null)
-            return info;
+                if (info != null)
+                    return info;
 
-        // If failed, try synchronize.
-        SynchronizationTask<GridGgfsFileInfo> task =
-            new SynchronizationTask<GridGgfsFileInfo>() {
-                @Override public GridGgfsFileInfo onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos)
-                    throws Exception {
-                    return infos.get(path);
-                }
+                // If failed, try synchronize.
+                SynchronizationTask<GridGgfsFileInfo> task =
+                    new SynchronizationTask<GridGgfsFileInfo>() {
+                        @Override public GridGgfsFileInfo onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos)
+                            throws Exception {
+                            return infos.get(path);
+                        }
 
-                @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
-                    if (err instanceof GridGgfsException)
-                        throw (GridException)err;
-                    else
-                        throw new GridException("Failed to synchronize path due to secondary file system " +
-                            "exception: " + path, err);
-                }
-            };
+                        @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
+                            if (err instanceof GridGgfsException)
+                                throw (GridException)err;
+                            else
+                                throw new GridException("Failed to synchronize path due to secondary file system " +
+                                    "exception: " + path, err);
+                        }
+                    };
 
-        return synchronizeAndExecute(task, fs, false, path);
+                return synchronizeAndExecute(task, fs, false, path);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to synchronize file because Grid is stopping: " + path);
+
+
     }
 
     /**
@@ -1660,68 +1937,78 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public boolean mkdirsDual(final FileSystem fs, final GridGgfsPath path, final Map<String, String> props)
         throws GridException {
-        assert fs != null;
-        assert path != null;
-        assert props != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert path != null;
+                assert props != null;
 
-        if (path.parent() == null)
-            return true; // No additional handling for root directory is needed.
+                if (path.parent() == null)
+                    return true; // No additional handling for root directory is needed.
 
-        // Events to fire (can be done outside of a transaction).
-        final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                // Events to fire (can be done outside of a transaction).
+                final Deque<GridGgfsEvent> pendingEvts = new LinkedList<>();
 
-        SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-            @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                if (!fs.mkdirs(secondaryPath(path), new GridGgfsHdfsProperties(props).permission()))
-                    return false;
+                SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
+                    @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
+                        if (!fs.mkdirs(secondaryPath(path), new GridGgfsHdfsProperties(props).permission()))
+                            return false;
 
-                assert !infos.isEmpty();
+                        assert !infos.isEmpty();
 
-                // Now perform synchronization again starting with the last created parent.
-                GridGgfsPath parentPath = null;
+                        // Now perform synchronization again starting with the last created parent.
+                        GridGgfsPath parentPath = null;
 
-                for (GridGgfsPath curPath : infos.keySet()) {
-                    if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
-                        parentPath = curPath;
-                }
+                        for (GridGgfsPath curPath : infos.keySet()) {
+                            if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
+                                parentPath = curPath;
+                        }
 
-                assert parentPath != null;
+                        assert parentPath != null;
 
-                GridGgfsFileInfo parentPathInfo = infos.get(parentPath);
+                        GridGgfsFileInfo parentPathInfo = infos.get(parentPath);
 
-                synchronize(fs, parentPath, parentPathInfo, path, true, null);
+                        synchronize(fs, parentPath, parentPathInfo, path, true, null);
 
-                if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
-                    GridGgfsPath evtPath = path;
+                        if (evts.isRecordable(EVT_GGFS_DIR_CREATED)) {
+                            GridGgfsPath evtPath = path;
 
-                    while (!parentPath.equals(evtPath)) {
-                        pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
+                            while (!parentPath.equals(evtPath)) {
+                                pendingEvts.addFirst(new GridGgfsEvent(evtPath, locNode, EVT_GGFS_DIR_CREATED));
 
-                        evtPath = evtPath.parent();
+                                evtPath = evtPath.parent();
 
-                        assert evtPath != null; // If this fails, then ROOT does not exist.
+                                assert evtPath != null; // If this fails, then ROOT does not exist.
+                            }
+                        }
+
+                        return true;
                     }
+
+                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                        U.error(log, "Directory creation in DUAL mode failed [path=" + path + ", properties=" + props +
+                            ']', err);
+
+                        throw new GridException("Failed to create the path due to secondary file system exception: " +
+                            path, err);
+                    }
+                };
+
+                try {
+                    return synchronizeAndExecute(task, fs, false, path.parent());
                 }
-
-                return true;
+                finally {
+                    for (GridGgfsEvent evt : pendingEvts)
+                        evts.record(evt);
+                }
             }
-
-            @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
-                U.error(log, "Directory creation in DUAL mode failed [path=" + path + ", properties=" + props +
-                    ']', err);
-
-                throw new GridException("Failed to create the path due to secondary file system exception: " +
-                    path, err);
+            finally {
+                busyLock.leaveBusy();
             }
-        };
-
-        try {
-            return synchronizeAndExecute(task, fs, false, path.parent());
         }
-        finally {
-            for (GridGgfsEvent evt : pendingEvts)
-                evts.record(evt);
-        }
+        else
+            throw new IllegalStateException("Failed to create directory in DUAL mode because Grid is stopping: " +
+                path);
     }
 
     /**
@@ -1735,85 +2022,96 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public boolean renameDual(final FileSystem fs, final GridGgfsPath src, final GridGgfsPath dest) throws
         GridException {
-        assert fs != null;
-        assert src != null;
-        assert dest != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert src != null;
+                assert dest != null;
 
-        if (src.parent() == null)
-            return false; // Root directory cannot be renamed.
+                if (src.parent() == null)
+                    return false; // Root directory cannot be renamed.
 
-        // Events to fire (can be done outside of a transaction).
-        final Collection<GridGgfsEvent> pendingEvts = new LinkedList<>();
+                // Events to fire (can be done outside of a transaction).
+                final Collection<GridGgfsEvent> pendingEvts = new LinkedList<>();
 
-        SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-            @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                GridGgfsFileInfo srcInfo = infos.get(src);
-                GridGgfsFileInfo srcParentInfo = infos.get(src.parent());
-                GridGgfsFileInfo destInfo = infos.get(dest);
-                GridGgfsFileInfo destParentInfo = dest.parent() != null ? infos.get(dest.parent()) : null;
+                SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
+                    @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
+                        GridGgfsFileInfo srcInfo = infos.get(src);
+                        GridGgfsFileInfo srcParentInfo = infos.get(src.parent());
+                        GridGgfsFileInfo destInfo = infos.get(dest);
+                        GridGgfsFileInfo destParentInfo = dest.parent() != null ? infos.get(dest.parent()) : null;
 
-                // Source path and destination (or destination parent) must exist.
-                if (srcInfo == null)
-                    throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                        // Source path and destination (or destination parent) must exist.
+                        if (srcInfo == null)
+                            throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
 
-                if (destInfo == null && destParentInfo == null)
-                    throw new GridGgfsFileNotFoundException("Failed to rename (destination path not found): " + dest);
+                        if (destInfo == null && destParentInfo == null)
+                            throw new GridGgfsFileNotFoundException("Failed to rename (destination path not found): " +
+                                dest);
 
-                // Delegate to the secondary file system.
-                if (!fs.rename(secondaryPath(src), secondaryPath(dest)))
-                    throw new GridGgfsException("Failed to rename (secondary file system returned false) [src=" +
-                        src + ", dest=" + dest + ']');
+                        // Delegate to the secondary file system.
+                        if (!fs.rename(secondaryPath(src), secondaryPath(dest)))
+                            throw new GridGgfsException("Failed to rename (secondary file system returned false) " +
+                                "[src=" + src + ", dest=" + dest + ']');
 
-                // Rename was successful, perform compensation in the local file system.
-                if (destInfo == null) {
-                    // Move and rename.
-                    assert destParentInfo != null;
+                        // Rename was successful, perform compensation in the local file system.
+                        if (destInfo == null) {
+                            // Move and rename.
+                            assert destParentInfo != null;
 
-                    moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), dest.name(), destParentInfo.id());
+                            moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), dest.name(), destParentInfo.id());
+                        }
+                        else {
+                            // Move.
+                            if (destInfo.isFile())
+                                throw new GridGgfsException("Failed to rename the path in the local file system " +
+                                    "because destination path already exists and it is a file: " + dest);
+                            else
+                                moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());
+                        }
+
+                        // Record event if needed.
+                        if (srcInfo.isFile()) {
+                            if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
+                                pendingEvts.add(new GridGgfsEvent(
+                                    src,
+                                    destInfo == null ? dest : new GridGgfsPath(dest, src.name()),
+                                    locNode,
+                                    EVT_GGFS_FILE_RENAMED));
+                        }
+                        else if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
+                            pendingEvts.add(new GridGgfsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
+
+                        return true;
+                    }
+
+                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                        U.error(log, "Path rename in DUAL mode failed [source=" + src + ", destination=" + dest + ']',
+                            err);
+
+                        if (err instanceof GridGgfsException)
+                            throw (GridException)err;
+                        else
+                            throw new GridException("Failed to rename the path due to secondary file system " +
+                                "exception: " + src, err);
+                    }
+                };
+
+                try {
+                    return synchronizeAndExecute(task, fs, false, src, dest);
                 }
-                else {
-                    // Move.
-                    if (destInfo.isFile())
-                        throw new GridGgfsException("Failed to rename the path in the local file system because " +
-                            "destination path already exists and it is a file: " + dest);
-                    else
-                        moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());
+                finally {
+                    for (GridGgfsEvent evt : pendingEvts)
+                        evts.record(evt);
                 }
-
-                // Record event if needed.
-                if (srcInfo.isFile()) {
-                    if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
-                        pendingEvts.add(new GridGgfsEvent(
-                            src,
-                            destInfo == null ? dest : new GridGgfsPath(dest, src.name()),
-                            locNode,
-                            EVT_GGFS_FILE_RENAMED));
-                }
-                else if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                    pendingEvts.add(new GridGgfsEvent(src, dest, locNode, EVT_GGFS_DIR_RENAMED));
-
-                return true;
             }
-
-            @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
-                U.error(log, "Path rename in DUAL mode failed [source=" + src + ", destination=" + dest + ']',
-                    err);
-
-                if (err instanceof GridGgfsException)
-                    throw (GridException)err;
-                else
-                    throw new GridException("Failed to rename the path due to secondary file system exception: " +
-                        src, err);
+            finally {
+                busyLock.leaveBusy();
             }
-        };
-
-        try {
-            return synchronizeAndExecute(task, fs, false, src, dest);
         }
-        finally {
-            for (GridGgfsEvent evt : pendingEvts)
-                evts.record(evt);
-        }
+        else
+            throw new IllegalStateException("Failed to rename in DUAL mode because Grid is stopping [src=" + src +
+                ", dest=" + dest + ']');
     }
 
     /**
@@ -1827,48 +2125,59 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public boolean deleteDual(final FileSystem fs, final GridGgfsPath path, final boolean recursive)
         throws GridException {
-        assert fs != null;
-        assert path != null;
+        if (busyLock.enterBusy()) {
+            try {
+                assert fs != null;
+                assert path != null;
 
-        SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-            @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                GridGgfsFileInfo info = infos.get(path);
+                SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
+                    @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
+                        GridGgfsFileInfo info = infos.get(path);
 
-                if (info == null)
-                    return false; // File doesn't exist in the secondary file system.
+                        if (info == null)
+                            return false; // File doesn't exist in the secondary file system.
 
-                if (!fs.delete(secondaryPath(path), recursive))
-                    return false; // Delete failed remotely.
+                        if (!fs.delete(secondaryPath(path), recursive))
+                            return false; // Delete failed remotely.
 
-                if (path.parent() != null) {
-                    assert infos.containsKey(path.parent());
+                        if (path.parent() != null) {
+                            assert infos.containsKey(path.parent());
 
-                    softDeleteNonTx(infos.get(path.parent()).id(), path.name(), info.id());
-                }
-                else {
-                    assert ROOT_ID.equals(info.id());
+                            softDeleteNonTx(infos.get(path.parent()).id(), path.name(), info.id());
+                        }
+                        else {
+                            assert ROOT_ID.equals(info.id());
 
-                    softDeleteNonTx(null, path.name(), info.id());
-                }
+                            softDeleteNonTx(null, path.name(), info.id());
+                        }
 
-                // Update the deleted file info with path information for delete worker.
-                id2InfoPrj.transform(info.id(), new UpdatePath(path));
+                        // Update the deleted file info with path information for delete worker.
+                        id2InfoPrj.transform(info.id(), new UpdatePath(path));
 
-                return true; // No additional handling is required.
+                        return true; // No additional handling is required.
+                    }
+
+                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                        U.error(log, "Path delete in DUAL mode failed [path=" + path + ", recursive=" + recursive + ']',
+                            err);
+
+                        throw new GridException("Failed to delete the path due to secondary file system exception: ",
+                            err);
+                    }
+                };
+
+                Boolean res = synchronizeAndExecute(task, fs, false, Collections.singleton(TRASH_ID), path);
+
+                delWorker.signal();
+
+                return res;
             }
-
-            @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
-                U.error(log, "Path delete in DUAL mode failed [path=" + path + ", recursive=" + recursive + ']', err);
-
-                throw new GridException("Failed to delete the path due to secondary file system exception: ", err);
+            finally {
+                busyLock.leaveBusy();
             }
-        };
-
-        Boolean res = synchronizeAndExecute(task, fs, false, Collections.singleton(TRASH_ID), path);
-
-        delWorker.signal();
-
-        return res;
+        }
+        else
+            throw new IllegalStateException("Failed to delete in DUAL mode because Grid is stopping: " + path);
     }
 
     /**
@@ -1886,36 +2195,49 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert path != null;
         assert props != null && !props.isEmpty();
 
-        SynchronizationTask<GridGgfsFileInfo> task = new SynchronizationTask<GridGgfsFileInfo>() {
-            @Override public GridGgfsFileInfo onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                if (infos.get(path) == null)
-                    return null;
+        if (busyLock.enterBusy()) {
+            try {
+                SynchronizationTask<GridGgfsFileInfo> task = new SynchronizationTask<GridGgfsFileInfo>() {
+                    @Override public GridGgfsFileInfo onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos)
+                        throws Exception {
+                        if (infos.get(path) == null)
+                            return null;
 
-                Path secondaryPath = secondaryPath(path);
+                        Path secondaryPath = secondaryPath(path);
 
-                GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props);
+                        GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props);
 
-                if (props0.userName() != null || props0.groupName() != null)
-                    fs.setOwner(secondaryPath, props0.userName(), props0.groupName());
+                        if (props0.userName() != null || props0.groupName() != null)
+                            fs.setOwner(secondaryPath, props0.userName(), props0.groupName());
 
-                if (props0.permission() != null)
-                    fs.setPermission(secondaryPath, props0.permission());
+                        if (props0.permission() != null)
+                            fs.setPermission(secondaryPath, props0.permission());
 
-                assert path.parent() == null || infos.get(path.parent()) != null;
+                        assert path.parent() == null || infos.get(path.parent()) != null;
 
-                return updatePropertiesNonTx(infos.get(path.parent()).id(), infos.get(path).id(), path.name(), props);
+                        return updatePropertiesNonTx(infos.get(path.parent()).id(), infos.get(path).id(), path.name(),
+                            props);
+                    }
+
+                    @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
+                        U.error(log, "Path update in DUAL mode failed [path=" + path + ", properties=" + props + ']',
+                            err);
+
+                        throw new GridException("Failed to update the path due to secondary file system exception: " +
+                            path, err);
+                    }
+                };
+
+                return synchronizeAndExecute(task, fs, false, path);
             }
-
-            @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
-                U.error(log, "Path update in DUAL mode failed [path=" + path + ", properties=" + props + ']',
-                    err);
-
-                throw new GridException("Failed to update the path due to secondary file system exception: " +
-                    path, err);
+            finally {
+                busyLock.leaveBusy();
             }
-        };
+        }
+        else
+            throw new IllegalStateException("Failed to update in DUAL mode because Grid is stopping: " + path);
 
-        return synchronizeAndExecute(task, fs, false, path);
+
     }
 
     /**
@@ -1984,10 +2306,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.getLen(),
                         ggfsCtx.ggfs().evictExclude(curPath, false), properties(status));
 
-                GridGgfsFileInfo newCurInfo = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
+                GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
-                if (newCurInfo != null)
-                    curInfo = newCurInfo;
+                if (oldId != null)
+                    curInfo = info(oldId);
 
                 if (created != null)
                     created.put(curPath, curInfo);
@@ -2298,46 +2620,59 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     public void updateTimes(GridUuid parentId, GridUuid fileId, String fileName, long accessTime,
         long modificationTime) throws GridException {
-        assert validTxState(false);
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
 
-        // Start pessimistic transaction.
-        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                // Start pessimistic transaction.
+                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
-            Map<GridUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);
+                try {
+                    Map<GridUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);
 
-            GridGgfsFileInfo fileInfo = infoMap.get(fileId);
+                    GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
-            if (fileInfo == null)
-                throw new GridGgfsFileNotFoundException("Failed to update times (path was not found): " + fileName);
+                    if (fileInfo == null)
+                        throw new GridGgfsFileNotFoundException("Failed to update times (path was not found): " +
+                            fileName);
 
-            GridGgfsFileInfo parentInfo = infoMap.get(parentId);
+                    GridGgfsFileInfo parentInfo = infoMap.get(parentId);
 
-            if (parentInfo == null)
-                throw new GridGgfsInvalidPathException("Failed to update times (parent was not found): " + fileName);
+                    if (parentInfo == null)
+                        throw new GridGgfsInvalidPathException("Failed to update times (parent was not found): " +
+                            fileName);
 
-            GridGgfsListingEntry entry = parentInfo.listing().get(fileName);
+                    GridGgfsListingEntry entry = parentInfo.listing().get(fileName);
 
-            // Validate listing.
-            if (entry == null || !entry.fileId().equals(fileId))
-                throw new GridGgfsInvalidPathException("Failed to update times (file concurrently modified): " +
-                    fileName);
+                    // Validate listing.
+                    if (entry == null || !entry.fileId().equals(fileId))
+                        throw new GridGgfsInvalidPathException("Failed to update times (file concurrently modified): " +
+                            fileName);
 
-            assert parentInfo.isDirectory();
+                    assert parentInfo.isDirectory();
 
-            GridGgfsFileInfo updated = new GridGgfsFileInfo(fileInfo,
-                accessTime == -1 ? fileInfo.accessTime() : accessTime,
-                modificationTime == -1 ? fileInfo.modificationTime() : modificationTime);
+                    GridGgfsFileInfo updated = new GridGgfsFileInfo(fileInfo,
+                        accessTime == -1 ? fileInfo.accessTime() : accessTime,
+                        modificationTime == -1 ? fileInfo.modificationTime() : modificationTime);
 
-            id2InfoPrj.putx(fileId, updated);
+                    id2InfoPrj.putx(fileId, updated);
 
-            id2InfoPrj.transform(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime, modificationTime));
+                    id2InfoPrj.transform(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
+                        modificationTime));
 
-            tx.commit();
+                    tx.commit();
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-        finally {
-            tx.close();
-        }
+        else
+            throw new IllegalStateException("Failed to update times because Grid is stopping [parentId=" + parentId +
+                ", fileId=" + fileId + ", fileName=" + fileName + ']');
     }
 
     /**

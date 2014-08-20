@@ -73,11 +73,12 @@ started and what the expected outcome should be.
 GridGain provides repository for its Maven artifacts.
 
 - GridGain Open Source repository is hosted at Maven Central (no additional URL required)
-- GridGain Enterprise repository is located at http://www.gridgainsystems.com:8085/nexus/content/repositories/external
+- GridGain Enterprise repository is located at http://www.gridgainsystems.com/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
-GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition):
+GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition):
 
+* gridgain-hpc - contains jars and dependencies for In-Memory High Performance Computing (HPC)
 * gridgain-datagrid - contains jars and dependencies for In-Memory Data Grid
 * gridgain-streaming - contains jars and dependencies for In-Memory Streaming
 * gridgain-hadoop1 - contains jars and dependencies for In-Memory Accelerator for Hadoop (Hadoop 1.x version)
@@ -88,25 +89,25 @@ GridGain Maven repository has `5` artifacts (add `'-ent'` for enterprise edition
 
 #### 3.2.1 Open Source
 
-
     <dependency>
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-platform</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 #### 3.2.2 Enterprise
 
-
     <repository>
         <id>GridGain External Repository</id>
-        <url>http://www.gridgainsystems.com:8085/nexus/content/repositories/external</url>
+        <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
     </repository>
     ...
     <dependency>
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-platform-ent</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 ## 4. Starting Grid Nodes

@@ -18,7 +18,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,7 +32,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
 /**
  * Tests for GGFS streams content.
  */
-public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
+public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -107,6 +106,7 @@ public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
+        ggfsCfg.setFragmentizerEnabled(true);
 
         cfg.setGgfsConfiguration(ggfsCfg);
 

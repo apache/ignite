@@ -17,7 +17,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <description>Main Spring file for grid configuration.</description>
 
     <!--
@@ -26,7 +26,7 @@
         All configuration properties are commented. Uncomment any property to
         provide a non-default value for it.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!--
             Specify grid instance name.
         -->

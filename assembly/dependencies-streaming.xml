@@ -48,6 +48,7 @@
                         <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>readme.txt</include>
+                            <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
@@ -62,28 +63,26 @@
                         </includes>
                         <excludes>
                             <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
             </sources>
         </moduleSet>
-
-        <moduleSet>
-            <includes>
-                <include>org.gridgain:gridgain-core</include>
-            </includes>
-            <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
-                <fileSets>
-                    <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>gridgain-${gridgain.version}.jar</include>
-                        </includes>
-                    </fileSet>
-                </fileSets>
-            </sources>
-        </moduleSet>
     </moduleSets>
+
+    <fileSets>
+        <fileSet>
+            <directory>modules/core/licenses</directory>
+            <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
+    </fileSets>
+
+    <files>
+        <file>
+            <source>target/gridgain-core-${gridgain.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
 </assembly>

@@ -17,9 +17,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.lang.reflect.*;
 import java.net.*;
-import java.text.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -30,9 +28,6 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  * Loader class for router.
  */
 public class GridRouterCommandLineStartup {
-    /** Router implementation class name. */
-    private static final String ROUTER_IMPL_CLS = "org.gridgain.client.router.impl.GridTcpRouterImpl";
-
     /** Logger. */
     @SuppressWarnings("FieldCanBeLocal")
     private GridLogger log;
@@ -59,7 +54,7 @@ public class GridRouterCommandLineStartup {
         if (tcpCfg == null)
             U.warn(log, "TCP router startup skipped (configuration not found).");
         else {
-            tcpRouter = createRouter(tcpCfg);
+            tcpRouter = new GridTcpRouterImpl(tcpCfg);
 
             if (tcpRouter != null) {
                 try {
@@ -89,43 +84,12 @@ public class GridRouterCommandLineStartup {
     }
 
     /**
-     * Creates TCP router if it exists on classpath.
-     *
-     * @param tcpCfg Configuration.
-     * @return Router.
-     */
-    private GridLifecycleAware createRouter(GridTcpRouterConfiguration tcpCfg) {
-        GridLifecycleAware router = null;
-
-        try {
-            Class<?> cls = Class.forName(ROUTER_IMPL_CLS);
-
-            Constructor<?> cons = cls.getConstructor(GridTcpRouterConfiguration.class);
-
-            router = (GridLifecycleAware)cons.newInstance(tcpCfg);
-        }
-        catch (ClassNotFoundException ignored) {
-            U.error(log, "Failed to create TCP router (consider adding gridgain-clients module to classpath).");
-        }
-        catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-            U.error(log, "Failed to create TCP router.", e);
-        }
-
-        return router;
-    }
-
-    /**
      * Wrapper method to run router from command-line.
      *
      * @param args Command-line arguments.
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
-
-        String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-        String ver = "ver. " + VER + '#' + buildDate + "-sha1:" + rev;
-
         X.println(
             "  _____     _     _______      _         ",
             " / ___/____(_)___/ / ___/___ _(_)___     ",
@@ -133,7 +97,7 @@ public class GridRouterCommandLineStartup {
             "\\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/",
             " ",
             "GridGain Router Command Line Loader",
-            ver,
+            "ver. " + ACK_VER,
             COPYRIGHT,
             " "
         );

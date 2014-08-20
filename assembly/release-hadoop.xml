@@ -39,31 +39,45 @@
         <componentDescriptor>release-base.xml</componentDescriptor>
     </componentDescriptors>
 
+    <files>
+        <file>
+            <source>docs/hadoop_readme.pdf</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+        <file>
+            <source>docs/core-site.gridgain.xml</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+        <file>
+            <source>docs/mapred-site.gridgain.xml</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
+    </files>
+
     <fileSets>
         <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
+            <directory>libs</directory>
+            <outputDirectory>/libs</outputDirectory>
             <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-                <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
-                <exclude>src/**/client/interceptor/**</exclude>
-                <exclude>src/**/client/memcache/**</exclude>
-                <exclude>src/**/ClientCacheExample*</exclude>
-                <exclude>src/**/scala/**/ScalarCache*</exclude>
-                <exclude>src/**/scala/**/ScalarPopularNumbersRealTimeExample*</exclude>
-                <exclude>src/**/scala/**/ScalarSnowflakeSchemaExample*</exclude>
-                <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
-                <exclude>config/example-cache*</exclude>
-                <exclude>config/hibernate/**</exclude>
-                <exclude>config/example-streamer*</exclude>
-                <exclude>config/servlet/**</exclude>
+                <exclude>optional/**</exclude>
             </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>*hadoop*.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*hadoop*.sh</include>
+            </includes>
         </fileSet>
     </fileSets>
 </assembly>

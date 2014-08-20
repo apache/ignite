@@ -24,11 +24,14 @@ public enum GridNioSessionMetaKey {
     /** NIO operation (request type). */
     NIO_OPERATION,
 
+    /** Last future. */
+    LAST_FUT,
+
     /** Client marshaller. */
     MARSHALLER,
 
-    /** Last future. */
-    LAST_FUT;
+    /** Client marshaller ID. */
+    MARSHALLER_ID;
 
     /** Maximum count of NIO session keys in system. */
     public static final int MAX_KEYS_CNT = 64;

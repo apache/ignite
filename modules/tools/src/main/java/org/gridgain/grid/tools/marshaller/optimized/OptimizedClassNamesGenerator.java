@@ -164,14 +164,47 @@ public class OptimizedClassNamesGenerator {
         try {
             Class cls = Class.forName(name, false, OptimizedClassNamesGenerator.class.getClassLoader());
 
-            if (isAccepted(cls))
+            if (isAccepted(cls)) {
+                checkSerialVersionUid(cls);
+
                 clsNames.add(name);
+            }
         }
         catch (SecurityException | LinkageError ignored) {
             // No-op.
         }
         catch (ClassNotFoundException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * Checks serialVersionUID field in provided class.
+     *
+     * @param cls Class.
+     */
+    private void checkSerialVersionUid(Class cls) {
+        // Check only GridGain classes.
+        if (cls.isEnum() || cls.getSimpleName().isEmpty() || (!cls.getName().startsWith("org.gridgain.grid") &&
+            !cls.getName().startsWith("org.gridgain.client")))
+            return;
+
+        try {
+            Field field = cls.getDeclaredField("serialVersionUID");
+
+            if (!field.getType().equals(long.class))
+                throw new RuntimeException("serialVersionUID field is not long in class: " + cls.getName());
+
+            int mod = field.getModifiers();
+
+            if (!Modifier.isStatic(mod))
+                throw new RuntimeException("serialVersionUID field is not static in class: " + cls.getName());
+
+            if (!Modifier.isFinal(mod))
+                throw new RuntimeException("serialVersionUID field is not final in class: " + cls.getName());
+        }
+        catch (NoSuchFieldException ignored) {
+            System.out.println(">>> No serialVersionUID field in class: " + cls.getName());
         }
     }
 
@@ -235,7 +268,7 @@ public class OptimizedClassNamesGenerator {
             if (home == null)
                 throw new Exception("Failed to find GridGain home.");
 
-            dir = new File(home, "/modules/src/java/org/gridgain/grid/marshaller/optimized");
+            dir = new File(home, "/os/modules/core/src/main/java/org/gridgain/grid/marshaller/optimized");
         }
 
         if (!dir.exists())

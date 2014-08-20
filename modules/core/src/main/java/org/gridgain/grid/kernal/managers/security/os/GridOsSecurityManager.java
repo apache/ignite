@@ -53,28 +53,36 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException {
-        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(ctx.subjectType(), ctx.subjectId());
+    @Override public GridSecurityContext authenticate(GridAuthenticationContext authCtx) throws GridException {
+        GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         s.permissions(ALLOW_ALL);
-        s.address(ctx.address());
+        s.address(authCtx.address());
+
+        if (authCtx.credentials() != null)
+            s.login(authCtx.credentials().getLogin());
 
         return new GridSecurityContext(s);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedNodes() {
+    @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedNode(UUID nodeId) {
+    @Override public GridSecuritySubject authenticatedSubject(UUID nodeId) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, GridSecurityPermission perm, @Nullable GridSecurityContext securityCtx)
         throws GridSecurityException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSessionExpired(UUID subjId) {
         // No-op.
     }
 }

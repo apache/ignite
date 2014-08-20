@@ -353,8 +353,14 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         boolean sys) {
         assert sesId != null;
 
-        ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), GridSecurityPermission.TASK_EXECUTE,
-            null);
+        String taskClsName;
+
+        if (task != null)
+            taskClsName = task.getClass().getName();
+        else
+            taskClsName = taskCls != null ? taskCls.getName() : taskName;
+
+        ctx.security().authorize(taskClsName, GridSecurityPermission.TASK_EXECUTE, null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
@@ -451,7 +457,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     ldr = U.detectClassLoader(cls);
                 }
 
-                // Implicit deploy.
+                // Explicit deploy.
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
@@ -695,14 +701,15 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            GridTaskEvent evt = new GridTaskEvent();
-
-            evt.message("Changed attributes: " + attrs);
-            evt.node(ctx.discovery().localNode());
-            evt.taskName(ses.getTaskName());
-            evt.taskClassName(ses.getTaskClassName());
-            evt.taskSessionId(ses.getId());
-            evt.type(EVT_TASK_SESSION_ATTR_SET);
+            GridEvent evt = new GridTaskEvent(
+                ctx.discovery().localNode(),
+                "Changed attributes: " + attrs,
+                EVT_TASK_SESSION_ATTR_SET,
+                ses.getId(),
+                ses.getTaskName(),
+                ses.getTaskClassName(),
+                false,
+                null);
 
             ctx.event().record(evt);
         }

@@ -46,7 +46,7 @@ import java.util.concurrent.*;
  */
 public class GridFileSystemLoad {
     /** */
-    private static final String DFLT_URL = "ggfs://ipc";
+    private static final String DFLT_URL = "ggfs:///";
 
     /** */
     private static final int DFLT_MIN_FILE_SIZE = 100 * 1024;

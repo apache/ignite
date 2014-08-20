@@ -351,9 +351,7 @@ public class GridJavadocAntTask extends MatchingTask {
      * @return {@code True} if it's a view-related HTML.
      */
     private boolean isViewHtml(String fileName) {
-        int sepIdx = fileName.lastIndexOf(File.separatorChar);
-
-        String baseName = sepIdx >= 0 && sepIdx < fileName.length() ? fileName.substring(sepIdx + 1) : fileName;
+        String baseName = new File(fileName).getName();
 
         return "index.html".equals(baseName) || baseName.contains("-");
     }

@@ -265,8 +265,15 @@ public class GridClientTopologyCacheSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(BINARY_PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(BINARY_PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
+
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(disco);
 

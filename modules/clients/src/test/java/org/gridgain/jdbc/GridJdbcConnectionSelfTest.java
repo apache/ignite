@@ -52,10 +52,14 @@ public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        if (!gridName.endsWith("0"))
-            cfg.setRestTcpPort(CUSTOM_PORT);
+        assert cfg.getClientConnectionConfiguration() == null;
 
-        cfg.setRestEnabled(true);
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        if (!gridName.endsWith("0"))
+            clientCfg.setRestTcpPort(CUSTOM_PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         return cfg;
     }

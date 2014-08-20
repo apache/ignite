@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -81,6 +82,28 @@ public class GridClientResponse extends GridClientAbstractMessage {
      */
     public void result(Object res) {
         this.res = res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        super.writePortable(writer);
+
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeInt(successStatus);
+        raw.writeString(errorMsg);
+        raw.writeObject(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        super.readPortable(reader);
+
+        GridPortableRawReader raw = reader.rawReader();
+
+        successStatus = raw.readInt();
+        errorMsg = raw.readString();
+        res = raw.readObject();
     }
 
     /** {@inheritDoc} */

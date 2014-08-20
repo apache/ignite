@@ -87,8 +87,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** Connection to the secondary file system. */
     private FileSystem secondaryFs;
 
-    /** Lock preventing any batch submission to workers in case GGFS is stopped. */
-    private final GridBusyLock workerLock = new GridBusyLock();
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
     private final ConcurrentHashMap8<GridGgfsPath, GridGgfsFileWorker> workerMap =
@@ -268,7 +268,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        workerLock.block();
+        busyLock.block();
 
         // Clear interrupted flag temporarily.
         boolean interrupted = Thread.interrupted();
@@ -310,7 +310,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         assert path != null;
         assert out != null;
 
-        if (workerLock.enterBusy()) {
+        if (busyLock.enterBusy()) {
             try {
                 GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
 
@@ -345,7 +345,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 return batch;
             }
             finally {
-                workerLock.leaveBusy();
+                busyLock.leaveBusy();
             }
         }
         else
@@ -479,38 +479,66 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public GridGgfsStatus globalSpace() throws GridException {
-        GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
-            new GgfsGlobalSpaceTask(name()), null).get();
+        if (busyLock.enterBusy()) {
+            try {
+                GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
+                    new GgfsGlobalSpaceTask(name()), null).get();
 
-        return new GridGgfsStatus(space.get1(), space.get2());
+                return new GridGgfsStatus(space.get1(), space.get2());
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get global space because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public void globalSampling(@Nullable Boolean val) throws GridException {
-        if (meta.sampling(val)) {
-            if (val == null)
-                log.info("Sampling flag has been cleared. All further file system connections will perform logging " +
-                    "depending on their configuration.");
-            else if (val)
-                log.info("Sampling flag has been set to \"true\". All further file system connections will perform " +
-                    "logging.");
-            else
-                log.info("Sampling flag has been set to \"false\". All further file system connections will not " +
-                    "perform logging.");
+        if (busyLock.enterBusy()) {
+            try {
+                if (meta.sampling(val)) {
+                    if (val == null)
+                        log.info("Sampling flag has been cleared. All further file system connections will perform " +
+                            "logging depending on their configuration.");
+                    else if (val)
+                        log.info("Sampling flag has been set to \"true\". All further file system connections will " +
+                            "perform logging.");
+                    else
+                        log.info("Sampling flag has been set to \"false\". All further file system connections will " +
+                            "not perform logging.");
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
+        else
+            throw new IllegalStateException("Failed to set global sampling flag because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public Boolean globalSampling() {
-        try {
-            return meta.sampling();
-        }
-        catch (GridException e) {
-            U.error(log, "Failed to get sampling state.", e);
+        if (busyLock.enterBusy()) {
+            try {
+                try {
+                    return meta.sampling();
+                }
+                catch (GridException e) {
+                    U.error(log, "Failed to get sampling state.", e);
 
-            return false;
+                    return false;
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
+        else
+            throw new IllegalStateException("Failed to get global sampling flag because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
@@ -567,233 +595,278 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
-        A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        if (log.isDebugEnabled())
-            log.debug("Get file info: " + path);
+                if (log.isDebugEnabled())
+                    log.debug("Get file info: " + path);
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-        GridGgfsFileInfo info = resolveFileInfo(path, mode);
+                GridGgfsFileInfo info = resolveFileInfo(path, mode);
 
-        if (info == null)
-            return null;
+                if (info == null)
+                    return null;
 
-        return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get path info because grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException {
-         A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        if (log.isDebugEnabled())
-            log.debug("Calculating path summary: " + path);
+                if (log.isDebugEnabled())
+                    log.debug("Calculating path summary: " + path);
 
-        GridUuid fileId = meta.fileId(path);
+                GridUuid fileId = meta.fileId(path);
 
-        if (fileId == null)
-            throw new GridGgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
+                if (fileId == null)
+                    throw new GridGgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
 
-        GridGgfsPathSummary sum = new GridGgfsPathSummary(path);
+                GridGgfsPathSummary sum = new GridGgfsPathSummary(path);
 
-        summary0(fileId, sum);
+                summary0(fileId, sum);
 
-        return sum;
+                return sum;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get path summary because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
-        A.notNull(path, "path");
-        A.notNull(props, "props");
-        A.ensure(!props.isEmpty(), "!props.isEmpty()");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
+                A.notNull(props, "props");
+                A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
-        if (log.isDebugEnabled())
-            log.debug("Set file properties [path=" + path + ", props=" + props + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Set file properties [path=" + path + ", props=" + props + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-        else if (mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                else if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            await(path);
+                    await(path);
 
-            GridGgfsFileInfo info = meta.updateDual(secondaryFs, path, props);
+                    GridGgfsFileInfo info = meta.updateDual(secondaryFs, path, props);
 
-            if (info == null)
-                return null;
+                    if (info == null)
+                        return null;
 
-            return new GridGgfsFileImpl(path, info, data.groupBlockSize());
-        }
+                    return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                }
 
-        List<GridUuid> fileIds = meta.fileIds(path);
+                List<GridUuid> fileIds = meta.fileIds(path);
 
-        GridUuid fileId = fileIds.get(fileIds.size() - 1);
+                GridUuid fileId = fileIds.get(fileIds.size() - 1);
 
-        if (fileId == null)
-            return null;
+                if (fileId == null)
+                    return null;
 
-        GridUuid parentId = fileIds.size() > 1 ? fileIds.get(fileIds.size() - 2) : null;
+                GridUuid parentId = fileIds.size() > 1 ? fileIds.get(fileIds.size() - 2) : null;
 
-        GridGgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
+                GridGgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
 
-        if (info != null) {
-            if (evts.isRecordable(EVT_GGFS_META_UPDATED))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
+                if (info != null) {
+                    if (evts.isRecordable(EVT_GGFS_META_UPDATED))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_META_UPDATED, props));
 
-            return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                    return new GridGgfsFileImpl(path, info, data.groupBlockSize());
+                }
+                else
+                    return null;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
         else
-            return null;
+            throw new IllegalStateException("Failed to update file because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
-        A.notNull(src, "src");
-        A.notNull(dest, "dest");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(src, "src");
+                A.notNull(dest, "dest");
 
-        if (log.isDebugEnabled())
-            log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(src);
-        Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
+                GridGgfsMode mode = modeRslvr.resolveMode(src);
+                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + src);
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + src);
 
-        if (src.equals(dest))
-            return; // Rename to itself is a no-op.
+                if (src.equals(dest))
+                    return; // Rename to itself is a no-op.
 
-        // Cannot rename root directory.
-        if (src.parent() == null)
-            throw new GridGgfsInvalidPathException("Failed to rename root directory.");
+                // Cannot rename root directory.
+                if (src.parent() == null)
+                    throw new GridGgfsInvalidPathException("Failed to rename root directory.");
 
-        // Cannot move directory of upper level to self sub-dir.
-        if (dest.isSubDirectoryOf(src))
-            throw new GridGgfsInvalidPathException("Failed to rename directory (cannot move directory of upper level " +
-                "to self sub-dir) [src=" + src + ", dest=" + dest + ']');
+                // Cannot move directory of upper level to self sub-dir.
+                if (dest.isSubDirectoryOf(src))
+                    throw new GridGgfsInvalidPathException("Failed to rename directory (cannot move directory of " +
+                        "upper level to self sub-dir) [src=" + src + ", dest=" + dest + ']');
 
-        if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
-            throw new GridGgfsInvalidPathException("Cannot move file to a path with different eviction exclude " +
-                "setting (need to copy and remove)");
+                if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
+                    throw new GridGgfsInvalidPathException("Cannot move file to a path with different eviction " +
+                        "exclude setting (need to copy and remove)");
 
-        if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            await(src, dest);
+                    await(src, dest);
 
-            meta.renameDual(secondaryFs, src, dest);
+                    meta.renameDual(secondaryFs, src, dest);
 
-            return;
-        }
+                    return;
+                }
 
-        GridGgfsPath destParent = dest.parent();
+                GridGgfsPath destParent = dest.parent();
 
-        // Resolve source file info.
-        FileDescriptor srcDesc = getFileDescriptor(src);
+                // Resolve source file info.
+                FileDescriptor srcDesc = getFileDescriptor(src);
 
-        // File not found.
-        if (srcDesc == null || srcDesc.parentId == null) {
-            if (mode == PRIMARY)
-                checkConflictWithPrimary(src);
+                // File not found.
+                if (srcDesc == null || srcDesc.parentId == null) {
+                    if (mode == PRIMARY)
+                        checkConflictWithPrimary(src);
 
-            throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
-        }
+                    throw new GridGgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                }
 
-        String srcFileName = src.name();
+                String srcFileName = src.name();
 
-        // Resolve destination file info.
-        FileDescriptor destDesc = getFileDescriptor(dest);
+                // Resolve destination file info.
+                FileDescriptor destDesc = getFileDescriptor(dest);
 
-        String destFileName;
+                String destFileName;
 
-        boolean newDest = destDesc == null;
+                boolean newDest = destDesc == null;
 
-        if (newDest) {
-            assert destParent != null;
+                if (newDest) {
+                    assert destParent != null;
 
-            // Use parent directory for destination parent and destination path name as destination name.
-            destDesc = getFileDescriptor(destParent);
+                    // Use parent directory for destination parent and destination path name as destination name.
+                    destDesc = getFileDescriptor(destParent);
 
-            // Destination directory doesn't exist.
-            if (destDesc == null)
-                throw new GridGgfsFileNotFoundException("Failed to rename (destination directory does not exist): " +
-                    dest);
+                    // Destination directory doesn't exist.
+                    if (destDesc == null)
+                        throw new GridGgfsFileNotFoundException("Failed to rename (destination directory does not " +
+                            "exist): " + dest);
 
-            destFileName = dest.name();
+                    destFileName = dest.name();
+                }
+                else
+                    // Use destination directory for destination parent and source path name as destination name.
+                    destFileName = srcFileName;
+
+                // Can move only into directory, but not into file.
+                if (destDesc.isFile)
+                    throw new GridGgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
+                        + dest);
+
+                meta.move(srcDesc.fileId, srcFileName, srcDesc.parentId, destFileName, destDesc.fileId);
+
+                if (srcDesc.isFile) { // Renamed a file.
+                    if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
+                        evts.record(new GridGgfsEvent(
+                            src,
+                            newDest ? dest : new GridGgfsPath(dest, destFileName),
+                            localNode(),
+                            EVT_GGFS_FILE_RENAMED));
+                }
+                else { // Renamed a directory.
+                    if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
+                        evts.record(new GridGgfsEvent(src, dest, localNode(), EVT_GGFS_DIR_RENAMED));
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
         else
-            // Use destination directory for destination parent and source path name as destination name.
-            destFileName = srcFileName;
-
-        // Can move only into directory, but not into file.
-        if (destDesc.isFile)
-            throw new GridGgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
-                + dest);
-
-        meta.move(srcDesc.fileId, srcFileName, srcDesc.parentId, destFileName, destDesc.fileId);
-
-        if (srcDesc.isFile) { // Renamed a file.
-            if (evts.isRecordable(EVT_GGFS_FILE_RENAMED))
-                evts.record(new GridGgfsEvent(
-                    src,
-                    newDest ? dest : new GridGgfsPath(dest, destFileName),
-                    localNode(),
-                    EVT_GGFS_FILE_RENAMED));
-        }
-        else { // Renamed a directory.
-            if (evts.isRecordable(EVT_GGFS_DIR_RENAMED))
-                evts.record(new GridGgfsEvent(src, dest, localNode(), EVT_GGFS_DIR_RENAMED));
-        }
+            throw new IllegalStateException("Failed to set rename path because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
-        A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        if (log.isDebugEnabled())
-            log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
-        Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-        boolean res = false;
+                boolean res = false;
 
-        FileDescriptor desc = getFileDescriptor(path);
+                FileDescriptor desc = getFileDescriptor(path);
 
-        if (childrenModes.contains(PRIMARY)) {
-            if (desc != null)
-                res = delete0(desc, path.parent(), recursive);
-            else if (mode == PRIMARY)
-                checkConflictWithPrimary(path);
-        }
+                if (childrenModes.contains(PRIMARY)) {
+                    if (desc != null)
+                        res = delete0(desc, path.parent(), recursive);
+                    else if (mode == PRIMARY)
+                        checkConflictWithPrimary(path);
+                }
 
-        if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-            assert secondaryFs != null;
+                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                    assert secondaryFs != null;
 
-            await(path);
+                    await(path);
 
-            res |= meta.deleteDual(secondaryFs, path, recursive);
-        }
+                    res |= meta.deleteDual(secondaryFs, path, recursive);
+                }
 
-        // Record event if needed.
-        if (res && desc != null) {
-            if (desc.isFile) {
-                if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                // Record event if needed.
+                if (res && desc != null) {
+                    if (desc.isFile) {
+                        if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
+                            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                    }
+                    else if (evts.isRecordable(EVT_GGFS_DIR_DELETED))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_DIR_DELETED));
+                }
+
+                return res;
             }
-            else if (evts.isRecordable(EVT_GGFS_DIR_DELETED))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_DIR_DELETED));
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        return res;
+        else
+            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
     }
 
     /**
@@ -845,202 +918,232 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException {
-        A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        if (log.isDebugEnabled())
-            log.debug("Make directories: " + path);
+                if (log.isDebugEnabled())
+                    log.debug("Make directories: " + path);
 
-        if (props == null)
-            props = DFLT_DIR_META;
+                if (props == null)
+                    props = DFLT_DIR_META;
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-        else if (mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                else if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            await(path);
+                    await(path);
 
-            meta.mkdirsDual(secondaryFs, path, props);
+                    meta.mkdirsDual(secondaryFs, path, props);
 
-            return;
-        }
-
-        List<GridUuid> ids = meta.fileIds(path);
-        List<String> components = path.components();
-
-        assert ids.size() == components.size() + 1 : "Components doesn't contain ROOT element" +
-            " [ids=" + ids + ", components=" + components + ']';
-
-        GridUuid parentId = ROOT_ID;
-
-        GridGgfsPath curPath = path.root();
-
-        for (int step = 0, size = components.size(); step < size; step++) {
-            GridUuid fileId = ids.get(step + 1); // Skip the first ROOT element.
-
-            if (fileId == null) {
-                GridGgfsFileInfo fileInfo = new GridGgfsFileInfo(true, props); // Create new directory.
-
-                String fileName = components.get(step); // Get current component name.
-
-                curPath = new GridGgfsPath(curPath, fileName);
-
-                try {
-                    // Fails only if parent is not a directory or if modified concurrently.
-                    GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, fileName, fileInfo);
-
-                    fileId = oldInfo == null ? fileInfo.id() : oldInfo.id(); // Update node ID.
-
-                    if (oldInfo == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
-                        evts.record(new GridGgfsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
+                    return;
                 }
-                catch (GridException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to create directory [path=" + path + ", parentId=" + parentId +
-                            ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
 
-                    // Check directory with such name already exists.
-                    GridGgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
+                List<GridUuid> ids = meta.fileIds(path);
+                List<String> components = path.components();
 
-                    if (stored == null)
-                        throw new GridGgfsException(e);
+                assert ids.size() == components.size() + 1 : "Components doesn't contain ROOT element" +
+                    " [ids=" + ids + ", components=" + components + ']';
 
-                    if (!stored.isDirectory())
-                        throw new GridGgfsParentNotDirectoryException("Failed to create directory (parent element " +
-                            "is not a directory)");
+                GridUuid parentId = ROOT_ID;
 
-                    fileId = stored.id(); // Update node ID.
+                GridGgfsPath curPath = path.root();
+
+                for (int step = 0, size = components.size(); step < size; step++) {
+                    GridUuid fileId = ids.get(step + 1); // Skip the first ROOT element.
+
+                    if (fileId == null) {
+                        GridGgfsFileInfo fileInfo = new GridGgfsFileInfo(true, props); // Create new directory.
+
+                        String fileName = components.get(step); // Get current component name.
+
+                        curPath = new GridGgfsPath(curPath, fileName);
+
+                        try {
+                            // Fails only if parent is not a directory or if modified concurrently.
+                            GridUuid oldId = meta.putIfAbsent(parentId, fileName, fileInfo);
+
+                            fileId = oldId == null ? fileInfo.id() : oldId; // Update node ID.
+
+                            if (oldId == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
+                                evts.record(new GridGgfsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
+                        }
+                        catch (GridException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to create directory [path=" + path + ", parentId=" + parentId +
+                                    ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
+
+                            // Check directory with such name already exists.
+                            GridGgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
+
+                            if (stored == null)
+                                throw new GridGgfsException(e);
+
+                            if (!stored.isDirectory())
+                                throw new GridGgfsParentNotDirectoryException("Failed to create directory (parent " +
+                                    "element is not a directory)");
+
+                            fileId = stored.id(); // Update node ID.
+                        }
+                    }
+
+                    assert fileId != null;
+
+                    parentId = fileId;
                 }
             }
-
-            assert fileId != null;
-
-            parentId = fileId;
+            finally {
+                busyLock.leaveBusy();
+            }
         }
+        else
+            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsPath> listPaths(final GridGgfsPath path) throws GridException {
-        A.notNull(path, "path");
-
-        if (log.isDebugEnabled())
-            log.debug("List directory: " + path);
-
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-
-        Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
-        Collection<String> files = new HashSet<>();
-
-        if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-            assert secondaryFs != null;
-
+        if (busyLock.enterBusy()) {
             try {
-                FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+                A.notNull(path, "path");
 
-                if (statuses == null)
+                if (log.isDebugEnabled())
+                    log.debug("List directory: " + path);
+
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
+
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+
+                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+
+                Collection<String> files = new HashSet<>();
+
+                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                    assert secondaryFs != null;
+
+                    try {
+                        FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+
+                        if (statuses == null)
+                            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+
+                        for (FileStatus status : statuses)
+                            files.add(status.getPath().getName());
+                    }
+                    catch (FileNotFoundException ignored) {
+                        throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    }
+                    catch (IOException e) {
+                        throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system " +
+                            "exception: " + path);
+                    }
+                }
+
+                GridUuid fileId = meta.fileId(path);
+
+                if (fileId != null)
+                    files.addAll(meta.directoryListing(fileId).keySet());
+                else if (mode == PRIMARY) {
+                    checkConflictWithPrimary(path);
+
                     throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                }
 
-                for (FileStatus status : statuses)
-                    files.add(status.getPath().getName());
+                return F.viewReadOnly(files, new C1<String, GridGgfsPath>() {
+                    @Override
+                    public GridGgfsPath apply(String e) {
+                        return new GridGgfsPath(path, e);
+                    }
+                });
             }
-            catch (FileNotFoundException ignored) {
-                throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-            }
-            catch (IOException e) {
-                throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
+            finally {
+                busyLock.leaveBusy();
             }
         }
-
-        GridUuid fileId = meta.fileId(path);
-
-        if (fileId != null)
-            files.addAll(meta.directoryListing(fileId).keySet());
-        else if (mode == PRIMARY) {
-            checkConflictWithPrimary(path);
-
-            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-        }
-
-        return F.viewReadOnly(files, new C1<String, GridGgfsPath>() {
-            @Override
-            public GridGgfsPath apply(String e) {
-                return new GridGgfsPath(path, e);
-            }
-        });
+        else
+            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsFile> listFiles(final GridGgfsPath path) throws GridException {
-        A.notNull(path, "path");
-
-        if (log.isDebugEnabled())
-            log.debug("List directory details: " + path);
-
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-
-        Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
-        Collection<GridGgfsFile> files = new HashSet<>();
-
-        if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-            assert secondaryFs != null;
-
+        if (busyLock.enterBusy()) {
             try {
-                FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+                A.notNull(path, "path");
 
-                if (statuses == null)
+                if (log.isDebugEnabled())
+                    log.debug("List directory details: " + path);
+
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
+
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+
+                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+
+                Collection<GridGgfsFile> files = new HashSet<>();
+
+                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                    assert secondaryFs != null;
+
+                    try {
+                        FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+
+                        if (statuses == null)
+                            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+
+                        for (FileStatus status : statuses) {
+                            GridGgfsFileInfo fsInfo = fileInfo(path, status);
+
+                            files.add(new GridGgfsFileImpl(primaryPath(path, status.getPath()), fsInfo,
+                                data.groupBlockSize()));
+                        }
+                    }
+                    catch (FileNotFoundException ignored) {
+                        throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    }
+                    catch (IOException e) {
+                        throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system " +
+                            "exception: " + path);
+                    }
+                }
+
+                GridUuid fileId = meta.fileId(path);
+
+                if (fileId != null) {
+                    GridGgfsFileInfo info = meta.info(fileId);
+
+                    // Handle concurrent deletion.
+                    if (info != null) {
+                        if (info.isFile())
+                            // If this is a file, return its description.
+                            return Collections.<GridGgfsFile>singleton(new GridGgfsFileImpl(path, info,
+                                data.groupBlockSize()));
+
+                        // Perform the listing.
+                        for (Map.Entry<String, GridGgfsListingEntry> e : info.listing().entrySet()) {
+                            GridGgfsPath p = new GridGgfsPath(path, e.getKey());
+
+                            files.add(new GridGgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                        }
+                    }
+                }
+                else if (mode == PRIMARY) {
+                    checkConflictWithPrimary(path);
+
                     throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-
-                for (FileStatus status : statuses) {
-                    GridGgfsFileInfo fsInfo = fileInfo(path, status);
-
-                    files.add(new GridGgfsFileImpl(primaryPath(path, status.getPath()), fsInfo, data.groupBlockSize()));
                 }
+
+                return files;
             }
-            catch (FileNotFoundException ignored) {
-                throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-            }
-            catch (IOException e) {
-                throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " +
-                    path);
+            finally {
+                busyLock.leaveBusy();
             }
         }
-
-        GridUuid fileId = meta.fileId(path);
-
-        if (fileId != null) {
-            GridGgfsFileInfo info = meta.info(fileId);
-
-            // Handle concurrent deletion.
-            if (info != null) {
-                if (info.isFile())
-                    // If this is a file, return its description.
-                    return Collections.<GridGgfsFile>singleton(new GridGgfsFileImpl(path, info, data.groupBlockSize()));
-
-                // Perform the listing.
-                for (Map.Entry<String, GridGgfsListingEntry> e : info.listing().entrySet()) {
-                    GridGgfsPath p = new GridGgfsPath(path, e.getKey());
-
-                    files.add(new GridGgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
-                }
-            }
-        }
-        else if (mode == PRIMARY) {
-            checkConflictWithPrimary(path);
-
-            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-        }
-
-        return files;
+        else
+            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
@@ -1056,53 +1159,62 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws GridException {
-        A.notNull(path, "path");
-        A.ensure(bufSize >= 0, "bufSize >= 0");
-        A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
+                A.ensure(bufSize >= 0, "bufSize >= 0");
+                A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
-        if (log.isDebugEnabled())
-            log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
-        if (bufSize == 0)
-            bufSize = cfg.getStreamBufferSize();
+                if (bufSize == 0)
+                    bufSize = cfg.getStreamBufferSize();
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-        else if (mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                else if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            GridGgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
+                    GridGgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
-            GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(), bufSize,
-                cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.wrapper(), metrics);
+                    GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.wrapper(), metrics);
 
-            if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+                    if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
 
-            return os;
+                    return os;
+                }
+
+                GridGgfsFileInfo info = meta.info(meta.fileId(path));
+
+                if (info == null) {
+                    checkConflictWithPrimary(path);
+
+                    throw new GridGgfsFileNotFoundException("File not found: " + path);
+                }
+
+                if (!info.isFile())
+                    throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+
+                // Input stream to read data from grid cache with separate blocks.
+                GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info,
+                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+
+                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
+                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
+
+                return os;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        GridGgfsFileInfo info = meta.info(meta.fileId(path));
-
-        if (info == null) {
-            checkConflictWithPrimary(path);
-
-            throw new GridGgfsFileNotFoundException("File not found: " + path);
-        }
-
-        if (!info.isFile())
-            throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
-
-        // Input stream to read data from grid cache with separate blocks.
-        GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info, bufSize,
-            cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
-
-        if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
-            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
-
-        return os;
+        else
+            throw new IllegalStateException("Failed to open file because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
@@ -1139,95 +1251,108 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable Map<String, String> props,
         final boolean simpleCreate
     ) throws GridException {
-        A.notNull(path, "path");
-        A.ensure(bufSize >= 0, "bufSize >= 0");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
+                A.ensure(bufSize >= 0, "bufSize >= 0");
 
-        if (log.isDebugEnabled())
-            log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" + overwrite +
-                ", props=" + props + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
+                        overwrite + ", props=" + props + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        GridGgfsFileWorkerBatch batch = null;
+                GridGgfsFileWorkerBatch batch = null;
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-        else if (mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                else if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            await(path);
+                    await(path);
 
-            GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props :
-                Collections.<String, String>emptyMap());
+                    GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props :
+                        Collections.<String, String>emptyMap());
 
-            GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                props0.permission(), overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                    GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
+                        props0.permission(), overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
-            batch = newBatch(path, desc.out());
+                    batch = newBatch(path, desc.out());
 
-            GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                    GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
+                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
-            if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+                    if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
 
-            return os;
+                    return os;
+                }
+
+                // Re-create parents when working in PRIMARY mode. In DUAL mode this is done by MetaManager.
+                GridGgfsPath parent = path.parent();
+
+                // Create missing parent directories if necessary.
+                if (parent != null)
+                    mkdirs(parent, props);
+
+                List<GridUuid> ids = meta.fileIds(path);
+
+                // Resolve parent ID for file.
+                GridUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
+
+                if (parentId == null)
+                    throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
+
+                String fileName = path.name();
+
+                // Constructs new file info.
+                GridGgfsFileInfo info = new GridGgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true),
+                    props);
+
+                // Add new file into tree structure.
+                while (true) {
+                    GridUuid oldId = meta.putIfAbsent(parentId, fileName, info);
+
+                    if (oldId == null)
+                        break;
+
+                    if (!overwrite)
+                        throw new GridGgfsPathAlreadyExistsException("Failed to create file (file already exists): " +
+                            path);
+
+                    GridGgfsFileInfo oldInfo = meta.info(oldId);
+
+                    if (oldInfo.isDirectory())
+                        throw new GridGgfsPathAlreadyExistsException("Failed to create file (path points to a " +
+                            "directory): " + path);
+
+                    // Remove old file from the tree.
+                    // Only one file is deleted, so we use internal data loader.
+                    deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
+
+                    if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
+                }
+
+                if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
+                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+
+                info = meta.lock(info.id());
+
+                GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, info, parentId,
+                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+
+                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
+                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+
+                return os;
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        // Re-create parents when working in PRIMARY mode. In DUAL mode this is the responsibility of MetaManager.
-        GridGgfsPath parent = path.parent();
-
-        // Create missing parent directories if necessary.
-        if (parent != null)
-            mkdirs(parent, props);
-
-        List<GridUuid> ids = meta.fileIds(path);
-
-        // Resolve parent ID for file.
-        GridUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
-
-        if (parentId == null)
-            throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
-
-        String fileName = path.name();
-
-        // Constructs new file info.
-        GridGgfsFileInfo info = new GridGgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true), props);
-
-        // Add new file into tree structure.
-        while (true) {
-            GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, fileName, info);
-
-            if (oldInfo == null)
-                break;
-
-            if (!overwrite)
-                throw new GridGgfsPathAlreadyExistsException("Failed to create file (file already exists): " + path);
-
-            if (oldInfo.isDirectory())
-                throw new GridGgfsPathAlreadyExistsException("Failed to create file (path points to a directory): " +
-                    path);
-
-            // Remove old file from the tree.
-            // Only one file is deleted, so we use internal data loader.
-            deleteFile(path, new FileDescriptor(parentId, fileName, oldInfo.id(), oldInfo.isFile()), false);
-
-            if (evts.isRecordable(EVT_GGFS_FILE_DELETED))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_DELETED));
-        }
-
-        if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
-
-        info = meta.lock(info.id());
-
-        GgfsEventAwareOutputStream os = new GgfsEventAwareOutputStream(path, info, parentId,
-            bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
-
-        if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
-
-        return os;
+        else
+            throw new IllegalStateException("Failed to create file times because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
@@ -1238,94 +1363,112 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsOutputStream append(final GridGgfsPath path, final int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException {
-        A.notNull(path, "path");
-        A.ensure(bufSize >= 0, "bufSize >= 0");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
+                A.ensure(bufSize >= 0, "bufSize >= 0");
 
-        if (log.isDebugEnabled())
-            log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
-                ", props=" + props + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
+                        ", props=" + props + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        GridGgfsFileWorkerBatch batch = null;
+                GridGgfsFileWorkerBatch batch = null;
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-        else if (mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                else if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-            await(path);
+                    await(path);
 
-            GridGgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize);
+                    GridGgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize);
 
-            batch = newBatch(path, desc.out());
+                    batch = newBatch(path, desc.out());
 
-            return new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
-        }
+                    return new GgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
+                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                }
 
-        List<GridUuid> ids = meta.fileIds(path);
+                List<GridUuid> ids = meta.fileIds(path);
 
-        GridGgfsFileInfo info = meta.info(ids.get(ids.size() - 1));
+                GridGgfsFileInfo info = meta.info(ids.get(ids.size() - 1));
 
-        // Resolve parent ID for the file.
-        GridUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
+                // Resolve parent ID for the file.
+                GridUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
 
-        if (info == null) {
-            if (!create) {
-                checkConflictWithPrimary(path);
+                if (info == null) {
+                    if (!create) {
+                        checkConflictWithPrimary(path);
 
-                throw new GridGgfsFileNotFoundException("File not found: " + path);
+                        throw new GridGgfsFileNotFoundException("File not found: " + path);
+                    }
+
+                    if (parentId == null)
+                        throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
+
+                    info = new GridGgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
+                        mode == PRIMARY), props);
+
+                    GridUuid oldId = meta.putIfAbsent(parentId, path.name(), info);
+
+                    if (oldId != null)
+                        info = meta.info(oldId);
+
+                    if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
+                        evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+                }
+
+                if (!info.isFile())
+                    throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+
+                info = meta.lock(info.id());
+
+                if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
+                    evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
+
+                return new GgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
+                    cfg.getStreamBufferSize() : bufSize, mode, batch);
             }
-
-            if (parentId == null)
-                throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
-
-            info = new GridGgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path, mode == PRIMARY),
-                props);
-
-            GridGgfsFileInfo oldInfo = meta.putIfAbsent(parentId, path.name(), info);
-
-            if (oldInfo != null)
-                info = oldInfo;
-
-            if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
-                evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_CREATED));
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        if (!info.isFile())
-            throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
-
-        info = meta.lock(info.id());
-
-        if (evts.isRecordable(EVT_GGFS_FILE_OPENED_WRITE))
-            evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_WRITE));
-
-        return new GgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ? cfg.getStreamBufferSize() : bufSize,
-            mode, batch);
+        else
+            throw new IllegalStateException("Failed to append file times because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public void setTimes(GridGgfsPath path, long accessTime, long modificationTime)
         throws GridException {
-        A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        if (accessTime == -1 && modificationTime == -1)
-            return;
+                if (accessTime == -1 && modificationTime == -1)
+                    return;
 
-        FileDescriptor desc = getFileDescriptor(path);
+                FileDescriptor desc = getFileDescriptor(path);
 
-        if (desc == null) {
-            checkConflictWithPrimary(path);
+                if (desc == null) {
+                    checkConflictWithPrimary(path);
 
-            throw new GridGgfsFileNotFoundException("Failed to update times (path not found): " + path);
+                    throw new GridGgfsFileNotFoundException("Failed to update times (path not found): " + path);
+                }
+
+                // Cannot update times for root.
+                if (desc.parentId == null)
+                    return;
+
+                meta.updateTimes(desc.parentId, desc.fileId, desc.fileName, accessTime, modificationTime);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        // Cannot update times for root.
-        if (desc.parentId == null)
-            return;
-
-        meta.updateTimes(desc.parentId, desc.fileId, desc.fileName, accessTime, modificationTime);
+        else
+            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
     }
 
     /**
@@ -1360,75 +1503,94 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
         throws GridException {
-        A.notNull(path, "path");
-        A.ensure(start >= 0, "start >= 0");
-        A.ensure(len >= 0, "len >= 0");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
+                A.ensure(start >= 0, "start >= 0");
+                A.ensure(len >= 0, "len >= 0");
 
-        if (log.isDebugEnabled())
-            log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+                GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                if (mode == PROXY)
+                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-        // Check memory first.
-        GridUuid fileId = meta.fileId(path);
-        GridGgfsFileInfo info = meta.info(fileId);
+                // Check memory first.
+                GridUuid fileId = meta.fileId(path);
+                GridGgfsFileInfo info = meta.info(fileId);
 
-        if (info == null && mode != PRIMARY) {
-            assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
-            assert secondaryFs != null;
+                if (info == null && mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert secondaryFs != null;
 
-            // Synchronize
-            info = meta.synchronizeFileDual(secondaryFs, path);
+                    // Synchronize
+                    info = meta.synchronizeFileDual(secondaryFs, path);
+                }
+
+                if (info == null)
+                    throw new GridGgfsFileNotFoundException("File not found: " + path);
+
+                if (!info.isFile())
+                    throw new GridGgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
+                        path);
+
+                return data.affinity(info, start, len, maxLen);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
-
-        if (info == null)
-            throw new GridGgfsFileNotFoundException("File not found: " + path);
-
-        if (!info.isFile())
-            throw new GridGgfsInvalidPathException("Failed to get affinity info for file (not a file): " + path);
-
-        return data.affinity(info, start, len, maxLen);
+        else
+            throw new IllegalStateException("Failed to get affinity because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsMetrics metrics() throws GridException {
-        GridGgfsPathSummary sum = new GridGgfsPathSummary();
-
-        summary0(ROOT_ID, sum);
-
-        long secondarySpaceSize = 0;
-
-        if (secondaryFs != null) {
+        if (busyLock.enterBusy()) {
             try {
-                secondarySpaceSize =
-                    secondaryFs.getContentSummary(secondaryPath(new GridGgfsPath())).getSpaceConsumed();
-            }
-            catch (IOException e) {
-                LT.warn(log, e, "Failed to get secondary file system consumed space size.");
+                GridGgfsPathSummary sum = new GridGgfsPathSummary();
 
-                secondarySpaceSize = -1;
+                summary0(ROOT_ID, sum);
+
+                long secondarySpaceSize = 0;
+
+                if (secondaryFs != null) {
+                    try {
+                        secondarySpaceSize =
+                            secondaryFs.getContentSummary(secondaryPath(new GridGgfsPath())).getSpaceConsumed();
+                    }
+                    catch (IOException e) {
+                        LT.warn(log, e, "Failed to get secondary file system consumed space size.");
+
+                        secondarySpaceSize = -1;
+                    }
+                }
+
+                return new GridGgfsMetricsAdapter(
+                    ggfsCtx.data().spaceSize(),
+                    ggfsCtx.data().maxSpaceSize(),
+                    secondarySpaceSize,
+                    sum.directoriesCount(),
+                    sum.filesCount(),
+                    metrics.filesOpenedForRead(),
+                    metrics.filesOpenedForWrite(),
+                    metrics.readBlocks(),
+                    metrics.readBlocksSecondary(),
+                    metrics.writeBlocks(),
+                    metrics.writeBlocksSecondary(),
+                    metrics.readBytes(),
+                    metrics.readBytesTime(),
+                    metrics.writeBytes(),
+                    metrics.writeBytesTime());
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
-
-        return new GridGgfsMetricsAdapter(
-            ggfsCtx.data().spaceSize(),
-            ggfsCtx.data().maxSpaceSize(),
-            secondarySpaceSize,
-            sum.directoriesCount(),
-            sum.filesCount(),
-            metrics.filesOpenedForRead(),
-            metrics.filesOpenedForWrite(),
-            metrics.readBlocks(),
-            metrics.readBlocksSecondary(),
-            metrics.writeBlocks(),
-            metrics.writeBlocksSecondary(),
-            metrics.readBytes(),
-            metrics.readBytesTime(),
-            metrics.writeBytes(),
-            metrics.writeBytesTime());
+        else
+            throw new IllegalStateException("Failed to get metrics because Grid is stopping.");
     }
 
     /** {@inheritDoc} */
@@ -1438,18 +1600,27 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public long size(GridGgfsPath path) throws GridException {
-        A.notNull(path, "path");
+        if (busyLock.enterBusy()) {
+            try {
+                A.notNull(path, "path");
 
-        GridUuid nextId = meta.fileId(path);
+                GridUuid nextId = meta.fileId(path);
 
-        if (nextId == null)
-            return 0;
+                if (nextId == null)
+                    return 0;
 
-        GridGgfsPathSummary sum = new GridGgfsPathSummary(path);
+                GridGgfsPathSummary sum = new GridGgfsPathSummary(path);
 
-        summary0(nextId, sum);
+                summary0(nextId, sum);
 
-        return sum.totalLength();
+                return sum.totalLength();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get path size because Grid is stopping.");
     }
 
     /**
@@ -1859,16 +2030,15 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param ggfsCtx GGFS context.
          * @param path Path to stored file.
          * @param fileInfo File info.
-         * @param bufSize The size of the buffer to be used.
          * @param prefetchBlocks Prefetch blocks.
          * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
          * @param inWrapper Optional secondary file system input stream wrapper.
          * @param metrics Metrics.
          */
-        GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int bufSize,
+        GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo,
             int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
             GridGgfsLocalMetrics metrics) {
-            super(ggfsCtx, path, fileInfo, bufSize, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
+            super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
 
             metrics.incrementFilesOpenedForRead();
         }
@@ -2030,5 +2200,27 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridUuid nextAffinityKey() {
+        if (busyLock.enterBusy()) {
+            try {
+                return data.nextAffinityKey(null);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to get next affinity key because Grid is stopping.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isProxy(URI path) {
+        GridGgfsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
+            modeRslvr.resolveMode(new GridGgfsPath(path));
+
+        return mode == PROXY;
     }
 }
