@@ -1157,20 +1157,21 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         Collection<String> msgs = new ArrayList<>();
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
-            msgs.add("Segmentation resolvers");
+            msgs.add("Network segmentation detection.");
 
         if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
-            msgs.add("Data replication");
+            msgs.add("Data center replication.");
 
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
-            msgs.add("Secure session SPI");
+            msgs.add("Secure session SPI.");
 
         if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
-            msgs.add("Authentication SPI");
+            msgs.add("Authentication SPI.");
 
         if (!F.isEmpty(msgs)) {
-            U.quietAndInfo(log, "The following configuration settings are not supported in open source edition " +
-                "and will be ignored (consider downloading enterprise edition from http://www.gridgain.com):");
+            U.quietAndInfo(log, "The following features are not supported in open source edition, " +
+                "related configuration settings will be ignored " +
+                "(consider downloading enterprise edition from http://www.gridgain.com):");
 
             for (String s : msgs)
                 U.quietAndInfo(log, "  ^-- " + s);
