@@ -550,7 +550,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     private class DemandWorker extends GridWorker {
         /** Worker ID. */
-        private int id = -1;
+        private int id;
 
         /** Partition-to-node assignments. */
         private final LinkedBlockingDeque<Assignments> assignQ = new LinkedBlockingDeque<>();
@@ -629,6 +629,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param pick Node picked for preloading.
          * @param p Partition.
          * @param entry Preloaded entry.
+         * @param topVer Topology version.
          * @return {@code False} if partition has become invalid during preloading.
          * @throws GridInterruptedException If interrupted.
          */
@@ -986,12 +987,21 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                 GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
 
+                boolean stopEvtFired = false;
+
                 while (!isCancelled()) {
                     try {
-                        // Barrier check must come first because we must always execute it.
-                        if (barrier.await() == 0 && exchFut != null && !exchFut.dummy() &&
-                            cctx.events().isRecordable(EVT_CACHE_PRELOAD_STOPPED))
-                            preloadEvent(EVT_CACHE_PRELOAD_STOPPED, exchFut.discoveryEvent());
+                        barrier.await();
+
+                        if (id == 0 && exchFut != null && !exchFut.dummy() &&
+                            cctx.events().isRecordable(EVT_CACHE_PRELOAD_STOPPED)) {
+
+                            if (!cctx.isReplicated() || !stopEvtFired) {
+                                preloadEvent(EVT_CACHE_PRELOAD_STOPPED, exchFut.discoveryEvent());
+
+                                stopEvtFired = true;
+                            }
+                        }
                     }
                     catch (BrokenBarrierException ignore) {
                         throw new InterruptedException("Demand worker stopped.");
@@ -1180,6 +1190,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             long delay = cctx.config().getPreloadPartitionedDelay();
 
+            boolean startEvtFired = false;
+
             while (!isCancelled()) {
                 GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
 
@@ -1236,8 +1248,13 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 resendPartitions(); // Force topology refresh.
 
                             // Preload event notification.
-                            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED))
-                                preloadEvent(EVT_CACHE_PRELOAD_STARTED, exchFut.discoveryEvent());
+                            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (!cctx.isReplicated() || !startEvtFired) {
+                                    preloadEvent(EVT_CACHE_PRELOAD_STARTED, exchFut.discoveryEvent());
+
+                                    startEvtFired = true;
+                                }
+                            }
                         }
                         else {
                             if (log.isDebugEnabled())

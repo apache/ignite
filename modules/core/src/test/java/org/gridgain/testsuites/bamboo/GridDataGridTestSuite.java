@@ -232,6 +232,7 @@ public class GridDataGridTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheReplicatedTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTtlSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
         // TODO: GG-7434
         // suite.addTestSuite(GridReplicatedTxPreloadTest.class);
 
