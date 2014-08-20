@@ -48,6 +48,8 @@ fi
 #
 . "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 
+. "${GRIDGAIN_HOME}"/os/bin/include/target-classpath.sh
+
 CP="${GRIDGAIN_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator)

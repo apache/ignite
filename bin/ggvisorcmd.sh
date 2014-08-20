@@ -42,6 +42,8 @@ setGridGainHome
 #
 . "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 
+. "${GRIDGAIN_HOME}"/os/bin/include/target-classpath.sh
+
 CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorcmd/*"
 
 #

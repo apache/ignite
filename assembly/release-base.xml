@@ -60,8 +60,8 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.bat</exclude>
-                <exclude>ggrebuild.bat</exclude>
                 <exclude>ggrouter.bat</exclude>
+                <exclude>**/target-classpath.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -74,8 +74,8 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.sh</exclude>
-                <exclude>ggrebuild.sh</exclude>
                 <exclude>ggrouter.bat</exclude>
+                <exclude>**/target-classpath.sh</exclude>
             </excludes>
         </fileSet>
 

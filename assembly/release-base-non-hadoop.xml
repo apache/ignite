@@ -47,9 +47,6 @@
             <includes>
                 <include>ggrouter.bat</include>
             </includes>
-            <excludes>
-                <exclude>ggrebuild.bat</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>
@@ -59,9 +56,6 @@
             <includes>
                 <include>ggrouter.sh</include>
             </includes>
-            <excludes>
-                <exclude>ggrebuild.sh</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>

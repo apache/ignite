@@ -91,6 +91,8 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
+call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
+
 set CP=%GRIDGAIN_LIBS%
 
 ::
@@ -117,7 +119,7 @@ set RESTART_SUCCESS_OPT=-DGRIDGAIN_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 ::
 :: You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
 ::
-for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp "%GRIDGAIN_HOME%\libs\*" org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
+for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
     set JMX_PORT=%%A
 )
 
