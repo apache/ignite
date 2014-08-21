@@ -245,10 +245,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
             return res;
         }
 
-        if (filter == null || filter.accept(file))
-            return F.asList(new VisorLogFile(file));
-
-        return Collections.emptyList();
+        return F.asList(new VisorLogFile(file));
     }
 
     public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
