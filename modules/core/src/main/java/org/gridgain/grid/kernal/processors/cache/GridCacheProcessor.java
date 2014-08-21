@@ -1186,8 +1186,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                             locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
-                            locAttr.storeClassName(), rmtAttr.storeClassName(), true);
+                        if (!skipStoreConsistencyCheck(locAttr, rmtAttr))
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
+                                locAttr.storeClassName(), rmtAttr.storeClassName(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cloner", "Cache cloner",
                             locAttr.clonerClassName(), rmtAttr.clonerClassName(), false);
@@ -1279,9 +1280,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeEnabled", "Store enabled",
-                            locAttr.storeEnabled(), rmtAttr.storeEnabled(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
                             "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
@@ -1398,6 +1396,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     locDepMode, rmtDepMode, true);
             }
         }
+    }
+
+    /**
+     * Checks if store check should be skipped for given nodes.
+     *
+     * @param locAttr Local node attributes.
+     * @param rmtAttr Remote node attributes.
+     * @return {@code True} if store check should be skipped.
+     */
+    private boolean skipStoreConsistencyCheck(GridCacheAttributes locAttr, GridCacheAttributes rmtAttr) {
+        return
+            // In atomic mode skip check if either local or remote node is client.
+            locAttr.atomicityMode() == ATOMIC &&
+                (locAttr.partitionedTaxonomy() == CLIENT_ONLY || locAttr.partitionedTaxonomy() == NEAR_ONLY ||
+                rmtAttr.partitionedTaxonomy() == CLIENT_ONLY || rmtAttr.partitionedTaxonomy() == NEAR_ONLY);
     }
 
     /**

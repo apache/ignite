@@ -752,6 +752,156 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testIgnoreStoreMismatchForAtomicClientCache() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(CLIENT_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        startGrid(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckAtomic() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckTransactional() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckTransactionalClient() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(CLIENT_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 

@@ -311,7 +311,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             if (id == null) {
                 if (GridPortableObject.class.isAssignableFrom(valCls)) {
-                    GridPortableObject portable = (GridPortableObject) val;
+                    GridPortableObject portable = (GridPortableObject)val;
 
                     String typeName = portableName(portable.typeId());
 
@@ -319,7 +319,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         return;
 
                     id = new TypeId(space, typeName);
-                } else
+                }
+                else
                     id = new TypeId(space, valCls);
             }
 

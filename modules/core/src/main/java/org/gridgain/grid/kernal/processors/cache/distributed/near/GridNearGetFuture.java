@@ -158,7 +158,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * Initializes future.
      */
     public void init() {
-        long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
