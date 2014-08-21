@@ -59,13 +59,5 @@
                 <exclude>config/example-streamer*</exclude>
             </excludes>
         </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>clients/**</include>
-            </includes>
-        </fileSet>
     </fileSets>
 </assembly>
