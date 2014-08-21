@@ -20,6 +20,9 @@ import java.util.*;
  * Closure that generates file path adding node id to filename as a suffix.
  */
 class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node id. */
     private final UUID nodeId;
 
