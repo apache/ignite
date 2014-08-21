@@ -1824,7 +1824,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 val = ctx.cloneOnFlag(val);
 
                                 if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val = ((GridPortableObject<V>)val).deserialize();
+                                    val = ((GridPortableObject)val).deserialize();
 
                                 map.put(key, val);
 
@@ -3886,10 +3886,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

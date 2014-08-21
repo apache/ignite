@@ -9,8 +9,19 @@
 
 package org.gridgain.grid.portables;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.sql.*;
+
 /**
- * Portable type configuration.
+ * Defines configuration properties for a specific portable type. Providing per-type
+ * configuration is optional, as it is generally enough to provide global
+ * portable configuration in {@link GridPortableConfiguration} instance. However,
+ * this class allows you to change configuration properties for a specific
+ * portable type without affecting configuration for other portable types.
+ * <p>
+ * Per-type portable configuration can be specified in
+ * {@link GridPortableConfiguration#getTypeConfigurations()} method.
  */
 public class GridPortableTypeConfiguration {
     /** Class name. */
@@ -23,7 +34,13 @@ public class GridPortableTypeConfiguration {
     private GridPortableSerializer serializer;
 
     /** Use timestamp flag. */
-    private boolean useTs = true;
+    private Boolean useTs;
+
+    /** Meta data enabled flag. */
+    private Boolean metaDataEnabled;
+
+    /** Affinity key field name. */
+    private String affKeyFieldName;
 
     /**
      */
@@ -93,19 +110,59 @@ public class GridPortableTypeConfiguration {
     }
 
     /**
-     * If {@code true} then date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * If {@code true} then date values converted to {@link Timestamp} during unmarshalling.
      * Default value is {@code true}.
      *
-     * @return Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
-    public boolean isUseTimestamp() {
+    public Boolean isUseTimestamp() {
         return useTs;
     }
 
     /**
-     * @param useTs Flag indicating whether date values converted to {@link java.sql.Timestamp} during unmarshalling.
+     * @param useTs Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
-    public void setUseTimestamp(boolean useTs) {
+    public void setUseTimestamp(Boolean useTs) {
         this.useTs = useTs;
+    }
+
+    /**
+     * Defines whether meta data is collected for this type. This value will override
+     * {@link GridPortableConfiguration#isMetaDataEnabled()} property.
+     *
+     * @return Whether meta data is collected.
+     */
+    public Boolean isMetaDataEnabled() {
+        return metaDataEnabled;
+    }
+
+    /**
+     * @param metaDataEnabled Whether meta data is collected.
+     */
+    public void setMetaDataEnabled(Boolean metaDataEnabled) {
+        this.metaDataEnabled = metaDataEnabled;
+    }
+
+    /**
+     * Gets affinity key field name.
+     *
+     * @return Affinity key field name.
+     */
+    public String getAffinityKeyFieldName() {
+        return affKeyFieldName;
+    }
+
+    /**
+     * Sets affinity key field name.
+     *
+     * @param affKeyFieldName Affinity key field name.
+     */
+    public void setAffinityFieldName(String affKeyFieldName) {
+        this.affKeyFieldName = affKeyFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridPortableTypeConfiguration.class, this, super.toString());
     }
 }

@@ -70,5 +70,22 @@
                 <include>clients/**</include>
             </includes>
         </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>*hadoop*.bat</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*hadoop*.sh</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>

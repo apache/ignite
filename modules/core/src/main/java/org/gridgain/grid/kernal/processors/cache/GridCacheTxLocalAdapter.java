@@ -1022,7 +1022,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             V val0 = val;
 
                             if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                val0 = ((GridPortableObject<V>)val).deserialize();
+                                val0 = ((GridPortableObject)val).deserialize();
 
                             map.put(key, val0);
                         }
@@ -1047,7 +1047,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     V val0 = val;
 
                                     if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                        val0 = ((GridPortableObject<V>)val).deserialize();
+                                        val0 = ((GridPortableObject)val).deserialize();
 
                                     map.put(key, val0);
                                 }
@@ -1110,7 +1110,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 V val0 = val;
 
                                 if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val0 = ((GridPortableObject<V>)val).deserialize();
+                                    val0 = ((GridPortableObject)val).deserialize();
 
                                 map.put(key, val0);
                             }
@@ -1442,7 +1442,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                         if (cctx.portableEnabled() && deserializePortable &&
                                             val instanceof GridPortableObject)
-                                            val = ((GridPortableObject<V>)val).deserialize();
+                                            val = ((GridPortableObject)val).deserialize();
 
                                         retMap.put(key, val);
                                     }

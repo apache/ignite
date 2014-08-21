@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -1693,10 +1694,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj == null)
             return null;
 
-        if (obj instanceof GridPortableObject)
+        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
             return obj;
 
-        return kernalContext().portable().marshalToPortable(obj);
+        GridPortableProcessor proc = kernalContext().portable();
+
+        assert proc != null;
+
+        return proc.marshalToPortable(obj);
     }
 
     /**
@@ -1742,12 +1747,12 @@ public class GridCacheContext<K, V> implements Externalizable {
             Object key = entry.getKey();
 
             if (key instanceof GridPortableObject && !portableKeys)
-                key = ((GridPortableObject<Object>)key).deserialize();
+                key = ((GridPortableObject)key).deserialize();
 
             Object val = entry.getValue();
 
             if (val instanceof GridPortableObject && !portableVals)
-                val = ((GridPortableObject<Object>)val).deserialize();
+                val = ((GridPortableObject)val).deserialize();
 
             return F.t(key, val);
         }
@@ -1755,7 +1760,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (o instanceof Collection)
                 return unwrapPortablesIfNeeded((Collection<Object>)o, portableKeys, portableVals);
             else if (o instanceof GridPortableObject)
-                return ((GridPortableObject<Object>)o).deserialize();
+                return ((GridPortableObject)o).deserialize();
             else
                 return o;
         }
@@ -1820,10 +1825,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

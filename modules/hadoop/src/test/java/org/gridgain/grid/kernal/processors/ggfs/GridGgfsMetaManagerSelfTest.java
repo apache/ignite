@@ -208,7 +208,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertNull(mgr.putIfAbsent(a.id(), "f2", f2));
         assertNull(mgr.putIfAbsent(b.id(), "f3", f3));
 
-        assertEquals(b, mgr.putIfAbsent(a.id(), "b", f3));
+        assertEquals(b.id(), mgr.putIfAbsent(a.id(), "b", f3));
         expectsPutIfAbsentFail(a.id(), "c", f3, "Failed to add file details into cache");
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),

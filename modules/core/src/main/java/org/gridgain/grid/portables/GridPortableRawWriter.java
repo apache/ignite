@@ -16,7 +16,9 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Writer for portable object.
+ * Raw writer for portable object. Raw writer does not write field name hash codes, therefore,
+ * making the format even more compact. However, if the raw writer is used,
+ * dynamic structure changes to the portable objects are not supported.
  */
 public interface GridPortableRawWriter {
     /**
@@ -180,4 +182,16 @@ public interface GridPortableRawWriter {
      * @throws GridPortableException In case of error.
      */
     public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnum(T val) throws GridPortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnumArray(T[] val) throws GridPortableException;
 }
