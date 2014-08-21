@@ -16,10 +16,10 @@ public final class GridNodeAttributes {
     /** Prefix for internally reserved attribute names. */
     static final String ATTR_PREFIX = "org.gridgain";
 
-    /** Internal attribute name constant. */
+    /** Node compound version. */
     public static final String ATTR_BUILD_VER = ATTR_PREFIX + ".build.ver";
 
-    /** Node version attribute name. */
+    /** Internal attribute name constant. */
     public static final String ATTR_BUILD_DATE = ATTR_PREFIX + ".build.date";
 
     /** Internal attribute name constant. */
