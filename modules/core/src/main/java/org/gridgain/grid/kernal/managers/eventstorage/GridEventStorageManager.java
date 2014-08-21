@@ -213,10 +213,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        Map<GridLocalEventListener, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+        Map<GridPredicate<? extends GridEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (GridLocalEventListener lsnr : evtLsnrs.keySet())
+            for (GridPredicate<? extends GridEvent> lsnr : evtLsnrs.keySet())
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
         }
 

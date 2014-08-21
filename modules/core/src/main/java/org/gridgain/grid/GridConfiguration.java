@@ -18,6 +18,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -452,7 +453,7 @@ public class GridConfiguration {
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<GridLocalEventListener, int[]> lsnrs;
+    private Map<GridPredicate<? extends GridEvent>, int[]> lsnrs;
 
     /** TCP host. */
     private String restTcpHost;
@@ -3148,7 +3149,7 @@ public class GridConfiguration {
      * @return Pre-configured event listeners map.
      * @see GridEventType
      */
-    @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {
+    @Nullable public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3158,7 +3159,7 @@ public class GridConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<GridLocalEventListener, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<GridPredicate<? extends GridEvent>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 
