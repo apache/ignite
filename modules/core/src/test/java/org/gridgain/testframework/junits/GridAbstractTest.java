@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -1066,6 +1067,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setStartSize(1024);
         cfg.setQueryIndexEnabled(true);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
