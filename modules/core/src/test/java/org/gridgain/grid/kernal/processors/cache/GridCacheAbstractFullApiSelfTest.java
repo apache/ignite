@@ -3298,11 +3298,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLockedByThread("key");
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return cache().lock("key", 100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return cache().lock("key", 100);
+                }
+            }).get();
 
             cache().unlock("key");
         }
@@ -3327,11 +3327,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e.isLocked();
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return e.lock(100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return e.lock(100);
+                }
+            }).get();
 
             e.unlock();
         }
@@ -3355,29 +3355,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch latch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        GridFuture<Boolean> f = cache().lockAsync("key", 1000);
+                @Override
+                public Boolean call() throws Exception {
+                    GridFuture<Boolean> f = cache().lockAsync("key", 1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        latch.countDown();
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            cache().unlock("key");
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    latch.countDown();
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        cache().unlock("key");
+                    }
+
+                    return true;
+                }
+            });
 
             // Let another thread start.
             latch.await();
@@ -3429,29 +3429,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        syncLatch.countDown();
+                @Override
+                public Boolean call() throws Exception {
+                    syncLatch.countDown();
 
-                        GridFuture<Boolean> f = e.lockAsync(1000);
+                    GridFuture<Boolean> f = e.lockAsync(1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            e.unlock();
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        e.unlock();
+                    }
+
+                    return true;
+                }
+            });
 
             syncLatch.await();
 
