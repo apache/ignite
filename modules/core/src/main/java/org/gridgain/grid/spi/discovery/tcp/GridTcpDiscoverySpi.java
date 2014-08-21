@@ -2886,6 +2886,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
+            if (log.isDebugEnabled())
+                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
+
             while (!isInterrupted()) {
                 GridTcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
 
@@ -3153,7 +3156,21 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 // If new node is next, then send topology to and all pending messages
                                 // as a part of message.
                                 if (nodeAddedMsg.node().equals(next)) {
-                                    nodeAddedMsg.topology(F.view(ring.allNodes(), F0.notEqualTo(nodeAddedMsg.node())));
+                                    Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
+                                    Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
+
+                                    for (GridTcpDiscoveryNode n0 : allNodes) {
+                                        assert n0.internalOrder() != 0 : n0;
+
+                                        // Skip next node and nodes added after next
+                                        // in case this message is resent due to failures/leaves.
+                                        // There will be separate messages for nodes with greater
+                                        // internal order.
+                                        if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
+                                            topToSend.add(n0);
+                                    }
+
+                                    nodeAddedMsg.topology(topToSend);
 
                                     nodeAddedMsg.messages(pendingMsgs.values());
 
@@ -3717,24 +3734,25 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified() && !locNodeId.equals(node.id())) {
+            if (msg.verified() && !locNodeId.equals(node.id()) && node.internalOrder() > locNode.internalOrder()) {
                 if (metricsStore != null) {
                     node.metricsStore(metricsStore);
 
                     node.logger(log);
                 }
 
-                List<Object> data = msg.newNodeDiscoveryData();
-
-                if (data != null)
-                    exchange.onExchange(data);
-
-                msg.addDiscoveryData(exchange.collect(node.id()));
-
                 boolean topChanged = ring.add(node);
 
-                if (topChanged)
+                if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
+
+                    List<Object> data = msg.newNodeDiscoveryData();
+
+                    if (data != null)
+                        exchange.onExchange(data);
+
+                    msg.addDiscoveryData(exchange.collect(node.id()));
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Added node to local ring [added=" + topChanged + ", node=" + node +
@@ -3884,7 +3902,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
-                assert node.internalOrder() > locNode.internalOrder();
+                assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
+                    ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
                 if (nodeVer.equals(node.version()))
                     node.version(nodeVer);

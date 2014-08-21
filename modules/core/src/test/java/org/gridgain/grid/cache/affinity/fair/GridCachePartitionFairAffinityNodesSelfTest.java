@@ -183,6 +183,8 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
                 info("Grid 0: " + grid(0).localNode().id());
 
+                ((GridKernal)grid(0)).internalCache().context().affinity().affinityReadyFuture(topVer).get();
+
                 for (int i : started) {
                     if (i != 0) {
                         GridEx grid = grid(i);
