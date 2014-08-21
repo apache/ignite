@@ -115,6 +115,8 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         if (obsoleteVer == null)
                             obsoleteVer = cctx.versions().next();
 
+                        System.out.println("Removing entry: " + wrapper.entry);
+
                         if (wrapper.entry.onTtlExpired(obsoleteVer))
                             wrapper.entry.context().cache().removeEntry(wrapper.entry);
 
