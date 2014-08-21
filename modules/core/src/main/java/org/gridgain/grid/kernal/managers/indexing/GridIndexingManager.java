@@ -108,7 +108,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             if (qryCfg != null) {
                 for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                    declaredTypes.put(new TypeId(ccfg.getName(), meta.getType()), meta);
+                    declaredTypes.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
 
                 if (qryCfg.getTypeResolver() != null)
                     typeResolvers.put(ccfg.getName(), qryCfg.getTypeResolver());
@@ -179,40 +179,68 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            final TypeDescriptor desc = types.get(new TypeId(space, valTypeName));
-
-            if (desc == null || !desc.registered())
-                return new GridFinishedFuture<Void>(ctx);
-
-            final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
-
-            GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
-                @Override protected void body() {
-                    try {
-                        getSpi(spi).rebuildIndexes(space, desc);
-
-                        fut.onDone();
-                    }
-                    catch (Exception e) {
-                        fut.onDone(e);
-                    }
-                    catch (Throwable e) {
-                        log.error("Failed to rebuild indexes for type: " + desc.name(), e);
-
-                        fut.onDone(e);
-                    }
-                }
-            };
-
-            fut.setWorker(w);
-
-            execSvc.execute(w);
-
-            return fut;
+            return rebuildIndexes(spi, space, findTypeDescriptor(space, valTypeName));
         }
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param space Space name.
+     * @param valTypeName Value type name.
+     * @return Type descriptor or {@code null} if descriptor not found.
+     */
+    @Nullable private TypeDescriptor findTypeDescriptor(@Nullable final String space, String valTypeName) {
+        for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
+            TypeId typeId = e.getKey();
+
+            if (!F.eq(space, typeId.space))
+                continue;
+
+            if (valTypeName.equals(typeId.typeName(this)))
+                return e.getValue();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param spi SPI name.
+     * @param space Space.
+     * @param desc Type descriptor.
+     * @return Future that will be completed when rebuilding of all indexes is finished.
+     */
+    private GridFuture<?> rebuildIndexes(@Nullable final String spi, @Nullable final String space,
+        @Nullable final TypeDescriptor desc) {
+        if (desc == null || !desc.registered())
+            return new GridFinishedFuture<Void>(ctx);
+
+        final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
+
+        GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
+            @Override protected void body() {
+                try {
+                    getSpi(spi).rebuildIndexes(space, desc);
+
+                    fut.onDone();
+                }
+                catch (Exception e) {
+                    fut.onDone(e);
+                }
+                catch (Throwable e) {
+                    log.error("Failed to rebuild indexes for type: " + desc.name(), e);
+
+                    fut.onDone(e);
+                }
+            }
+        };
+
+        fut.setWorker(w);
+
+        execSvc.execute(w);
+
+        return fut;
     }
 
     /**
@@ -229,8 +257,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         try {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
 
-            for (TypeId type : types.keySet())
-                fut.add((GridFuture)rebuildIndexes(spi, type.space, type.valTypeName));
+            for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
+                fut.add((GridFuture)rebuildIndexes(spi, e.getKey().space, e.getValue()));
 
             fut.markInitialized();
 
@@ -306,19 +334,21 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 String typeName = rslvr.resolveTypeName(key, val);
 
                 if (typeName != null)
-                    id = new TypeId(space, typeName);
+                    id = new TypeId(space, ctx.portable().typeId(typeName));
             }
 
             if (id == null) {
-                if (GridPortableObject.class.isAssignableFrom(valCls)) {
-                    GridPortableObject portable = (GridPortableObject) val;
+                if (val instanceof GridPortableObject) {
+                    GridPortableObject portable = (GridPortableObject)val;
 
-                    String typeName = portableName(portable.typeId());
+                    int typeId = portable.typeId();
+
+                    String typeName = portableName(typeId);
 
                     if (typeName == null)
                         return;
 
-                    id = new TypeId(space, typeName);
+                    id = new TypeId(space, typeId);
                 } else
                     id = new TypeId(space, valCls);
             }
@@ -342,20 +372,21 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         d.keyClass(keyCls);
                         d.valueClass(valCls);
 
-                        if (GridPortableObject.class.isAssignableFrom(keyCls)) {
+                        if (key instanceof GridPortableObject) {
                             GridPortableObject portableKey = (GridPortableObject)key;
 
                             String typeName = portableName(portableKey.typeId());
 
                             if (typeName != null) {
-                                GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, typeName));
+                                GridCacheQueryTypeMetadata keyMeta =
+                                    declaredTypes.get(new TypeId(space, portableKey.typeId()));
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
                             }
                         }
                         else {
-                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, keyCls.getName()));
+                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, keyCls));
 
                             if (keyMeta == null) {
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -365,13 +396,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             }
                         }
 
-                        if (GridPortableObject.class.isAssignableFrom(valCls)) {
+                        if (val instanceof GridPortableObject) {
                             GridPortableObject portableVal = (GridPortableObject)val;
 
                             String typeName = portableName(portableVal.typeId());
 
                             if (typeName != null) {
-                                GridCacheQueryTypeMetadata valMeta = declaredTypes.get(new TypeId(space, typeName));
+                                GridCacheQueryTypeMetadata valMeta =
+                                    declaredTypes.get(new TypeId(space, portableVal.typeId()));
 
                                 d.name(typeName);
 
@@ -384,7 +416,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             d.name(valTypeName);
 
-                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valCls.getName()));
+                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valCls));
 
                             if (typeMeta == null) {
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -458,7 +490,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                 if (qryCfg != null) {
                     for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata()) {
-                        declaredTypes.put(new TypeId(ccfg.getName(), meta.getType()), meta);
+                        declaredTypes.put(new TypeId(ccfg.getName(), typeId), meta);
 
                         portableIds.put(ctx.portable().typeId(meta.getType()), meta.getType());
                     }
@@ -544,6 +576,41 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            TypeDescriptor type = findTypeDescriptor(space, resType);
+
+            if (type == null || !type.registered())
+                return new GridEmptyCloseableIterator<>();
+
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
+
+            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).query(space, clause, params, type,
+                backupFilter != null ? F.concat(filters, backupFilter) : filters));
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+    /**
+     * @param spi SPI Name.
+     * @param space Space.
+     * @param clause Clause.
+     * @param params Parameters collection.
+     * @param resType Result type.
+     * @param includeBackups Include or exclude backup entries.
+     * @param filters Filters.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return Key/value rows.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
+        Collection<Object> params, Class<?> resType, boolean includeBackups,
+        GridIndexingQueryFilter<K, V>... filters) throws GridException {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
             TypeDescriptor type = types.get(new TypeId(space, resType));
 
             if (type == null || !type.registered())
@@ -579,7 +646,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            TypeDescriptor type = types.get(new TypeId(space, resType));
+            TypeDescriptor type = findTypeDescriptor(space, resType);
 
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
@@ -1576,8 +1643,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** */
         private final String space;
 
-        /** Value type name. */
-        private final String valTypeName;
+        /** Value type. */
+        private final Class<?> valType;
+
+        /** Value type ID. */
+        private final int valTypeId;
+
+        /** Type name. */
+        private String typeName;
 
         /**
          * Constructor.
@@ -1589,21 +1662,37 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             assert valType != null;
 
             this.space = space;
+            this.valType = valType;
 
-            String clsName = valType.getSimpleName();
+            valTypeId = 0;
+        }
 
-            valTypeName = CU.h2Escape(clsName);
+        /**
+         * @param mgr Indexing manager.
+         * @return Type name.
+         */
+        String typeName(GridIndexingManager mgr) {
+            if (typeName != null)
+                return typeName;
+
+            String name = valType != null ? valType.getSimpleName() : mgr.portableName(valTypeId);
+
+            typeName = CU.h2Escape(name);
+
+            return typeName;
         }
 
         /**
          * Constructor.
          *
          * @param space Space name.
-         * @param valTypeName Value type name.
+         * @param valTypeId Value type ID.
          */
-        private TypeId(String space, String valTypeName) {
+        private TypeId(String space, int valTypeId) {
             this.space = space;
-            this.valTypeName = CU.h2Escape(valTypeName);
+            this.valTypeId = valTypeId;
+
+            valType = null;
         }
 
         /** {@inheritDoc} */
@@ -1616,13 +1705,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             TypeId typeId = (TypeId)o;
 
-            return (space != null ? space.equals(typeId.space) : typeId.space == null) &&
-                valTypeName.equals(typeId.valTypeName);
+            return (valTypeId == typeId.valTypeId) &&
+                (valType != null ? valType == typeId.valType : typeId.valType == null) &&
+                (space != null ? space.equals(typeId.space) : typeId.space == null);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + valTypeName.hashCode();
+            return 31 * (space != null ? space.hashCode() : 0) + (valType != null ? valType.hashCode() : valTypeId);
         }
 
         /** {@inheritDoc} */

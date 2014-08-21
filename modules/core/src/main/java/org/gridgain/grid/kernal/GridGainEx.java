@@ -1767,7 +1767,8 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
-            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
+            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath() &&
+                GridComponentType.HADOOP.isRequiredClassesInClassPath();
 
             GridCacheConfiguration[] copies;
 

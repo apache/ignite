@@ -58,7 +58,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
         A.notNull(cls, "cls");
         A.notNull(clause, "clause");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), U.box(cls).getSimpleName(), clause, null, false,
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), cls, clause, null, false,
             prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
@@ -75,7 +75,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         A.notNull(qry, "qry");
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false,
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), (String)null, qry, null, false,
             prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
@@ -100,7 +100,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
-        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, (GridBiPredicate<Object, Object>)filter,
+        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), (String)null, null, (GridBiPredicate<Object, Object>)filter,
             false, prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
@@ -147,7 +147,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta,
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), (String)null, qry, null, incMeta,
             prj != null && prj.portableKeys(), prj != null && prj.portableValues());
     }
 
