@@ -272,11 +272,11 @@ public interface GridPortables {
     /**
      * Gets meta data for provided class name.
      *
-     * @param clsName Class name.
+     * @param typeName Type name.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(String clsName) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(String typeName) throws GridPortableException;
 
     /**
      * Gets meta data for provided type ID.

@@ -81,11 +81,11 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(String clsName) throws GridPortableException {
+    @Nullable @Override public GridPortableMetadata metadata(String typeName) throws GridPortableException {
         guard();
 
         try {
-            return proc.metaData(proc.typeId(clsName));
+            return proc.metaData(proc.typeId(typeName));
         }
         finally {
             unguard();

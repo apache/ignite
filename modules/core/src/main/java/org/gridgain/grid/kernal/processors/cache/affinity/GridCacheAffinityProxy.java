@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.affinity;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -24,9 +23,6 @@ import java.util.*;
 public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final ThreadLocal<GridCacheContext> stash = new ThreadLocal<>();
 
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
@@ -241,8 +237,9 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridCacheContext)in.readObject());
+        cctx = (GridCacheContext<K, V>)in.readObject();
     }
 
     /**
@@ -252,16 +249,6 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Exter
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridCacheContext cctx = stash.get();
-
-            return cctx.grid().cache(cctx.cache().name()).affinity();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return cctx.grid().cache(cctx.cache().name()).affinity();
     }
 }
