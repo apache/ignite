@@ -29,31 +29,25 @@ public class VisorQueryResultEx extends VisorQueryResult {
     /** Query columns descriptors.  */
     private final VisorFieldsQueryColumn[] colNames;
 
-    /** Query duration */
-    private final long duration;
-
     /**
      * @param resNodeId Node where query executed.
      * @param qryId Query ID for future extraction in nextPage() access.
      * @param colNames Columns types and names.
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
-     * @param duration Query duration.
      */
     public VisorQueryResultEx(
         UUID resNodeId,
         String qryId,
         VisorFieldsQueryColumn[] colNames,
         List<Object[]> rows,
-        Boolean hasMore,
-        long duration
+        Boolean hasMore
     ) {
         super(rows, hasMore);
 
         this.resNodeId = resNodeId;
         this.qryId = qryId;
         this.colNames = colNames;
-        this.duration = duration;
     }
 
     /**
@@ -75,13 +69,6 @@ public class VisorQueryResultEx extends VisorQueryResult {
      */
     public VisorFieldsQueryColumn[] columnNames() {
         return colNames;
-    }
-
-    /**
-     * @return Query duration
-     */
-    public long duration() {
-        return duration;
     }
 
     /** {@inheritDoc} */
