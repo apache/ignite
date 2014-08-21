@@ -1187,7 +1187,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         entry.transform(INCR_CLOS);
 
-        assertEquals((Integer) 2, entry.getValue());
+        assertEquals((Integer)2, entry.getValue());
     }
 
     /**
@@ -1208,7 +1208,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         fut2.get();
 
         assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer) 2, cache.get("key2"));
+        assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
         for (int i = 0; i < gridCount(); i++)
@@ -1231,7 +1231,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals("null", cache.transformAndCompute("k0", c));
 
-        assertEquals((Integer) 0, cache.get("k0"));
+        assertEquals((Integer)0, cache.get("k0"));
 
         assertEquals("0", cache.transformAndCompute("k0", c));
 
@@ -1241,7 +1241,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals("1", cache.transformAndCompute("k1", c));
 
-        assertEquals((Integer) 2, cache.get("k1"));
+        assertEquals((Integer)2, cache.get("k1"));
 
         assertEquals("2", cache.transformAndCompute("k1", c));
 
@@ -1640,9 +1640,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable
-            @Override
-            public Object call() throws Exception {
+            @Nullable @Override public Object call() throws Exception {
                 cache.put("key1", null);
 
                 return null;
@@ -1696,8 +1694,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         final CountDownLatch done = new CountDownLatch(threads);
 
         multithreadedAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 latch.await();
 
                 for (long start = ops.getAndAdd(size), op = start; op < start + size; op++)
@@ -1825,7 +1822,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 grid(i).cache(null).peek("key") + ']');
         }
 
-        assertEquals((Integer) 1, cache().putIfAbsent("key", 2));
+        assertEquals((Integer)1, cache().putIfAbsent("key", 2));
 
         assert cache().get("key") != null;
         assert cache().get("key") == 1;
@@ -1902,7 +1899,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Check db.
         putToStore("key3", 3);
 
-        assertEquals((Integer) 3, cache().putIfAbsentAsync("key3", 4).get());
+        assertEquals((Integer)3, cache().putIfAbsentAsync("key3", 4).get());
 
         cache().evict("key2");
         cache().clear("key3");
@@ -1911,8 +1908,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = txEnabled() ? cache().txStart() : null;
 
         try {
-            assertEquals((Integer) 1, cache().putIfAbsentAsync("key2", 3).get());
-            assertEquals((Integer) 3, cache().putIfAbsentAsync("key3", 4).get());
+            assertEquals((Integer)1, cache().putIfAbsentAsync("key2", 3).get());
+            assertEquals((Integer)3, cache().putIfAbsentAsync("key3", 4).get());
 
             if (tx != null)
                 tx.commit();
@@ -2728,7 +2725,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put(key, 1);
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         cache.clearAll();
 
@@ -3186,8 +3183,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
             grid(0).events().localListen(new GridPredicate<GridEvent>() {
-                @Override
-                public boolean apply(GridEvent evt) {
+                @Override public boolean apply(GridEvent evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:
                             lockCnt.countDown();
@@ -3302,11 +3298,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLockedByThread("key");
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return cache().lock("key", 100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return cache().lock("key", 100);
+                }
+            }).get();
 
             cache().unlock("key");
         }
@@ -3331,11 +3327,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e.isLocked();
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return e.lock(100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return e.lock(100);
+                }
+            }).get();
 
             e.unlock();
         }
@@ -3359,29 +3355,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch latch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        GridFuture<Boolean> f = cache().lockAsync("key", 1000);
+                @Override
+                public Boolean call() throws Exception {
+                    GridFuture<Boolean> f = cache().lockAsync("key", 1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        latch.countDown();
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            cache().unlock("key");
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    latch.countDown();
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        cache().unlock("key");
+                    }
+
+                    return true;
+                }
+            });
 
             // Let another thread start.
             latch.await();
@@ -3433,29 +3429,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        syncLatch.countDown();
+                @Override
+                public Boolean call() throws Exception {
+                    syncLatch.countDown();
 
-                        GridFuture<Boolean> f = e.lockAsync(1000);
+                    GridFuture<Boolean> f = e.lockAsync(1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            e.unlock();
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        e.unlock();
+                    }
+
+                    return true;
+                }
+            });
 
             syncLatch.await();
 
@@ -4033,7 +4029,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.reload(key);
 
-        assertEquals((Integer) 1, cache.peek(key));
+        assertEquals((Integer)1, cache.peek(key));
 
         cache.remove(key);
 
@@ -4042,7 +4038,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.projection(gte100).evict(key));
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         assertTrue(cache.projection(gte100).evict(key2));
 
@@ -4063,7 +4059,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put(key, 1);
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         GridCacheEntry<String, Integer> entry = cache.entry(key);
 
@@ -4353,8 +4349,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (tx != null)
                 tx.commit();
         }
-
-        System.out.println("Checking key in 2 seconds: " + key);
 
         U.sleep(2000);
 
