@@ -227,7 +227,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
      * @param filter file filter.
      */
     public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) {
-        if (maxDepth > 0 && file.isDirectory()) {
+        if (file.isDirectory()) {
             File[] files = (filter == null) ? file.listFiles() : file.listFiles(filter);
 
             if (files == null)
@@ -236,16 +236,19 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
             List<VisorLogFile> res = new ArrayList<>(files.length);
 
             for (File f : files) {
-                if (f.isDirectory())
-                    res.addAll(fileTree(f, maxDepth - 1, filter));
-                else
+                if (f.isFile())
                     res.add(new VisorLogFile(f));
+                else if (maxDepth > 1)
+                    res.addAll(fileTree(f, maxDepth - 1, filter));
             }
 
             return res;
         }
 
-        return F.asList(new VisorLogFile(file));
+        if (filter == null || filter.accept(file))
+            return F.asList(new VisorLogFile(file));
+
+        return Collections.emptyList();
     }
 
     public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
