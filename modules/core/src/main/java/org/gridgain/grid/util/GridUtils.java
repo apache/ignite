@@ -4267,6 +4267,25 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr, int maxLen) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            int len = Math.min(arr.length, maxLen);
+
+            out.writeInt(len);
+
+            out.write(arr, 0, len);
+        }
+    }
+
+    /**
      * Reads byte array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
