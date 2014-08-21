@@ -55,7 +55,7 @@ public class GridHadoopPopularWordsTest {
     private static final Path RESULT_DFS_DIR = new Path("tmp/word-count-example/out");
 
     /** Path to the distributed file system configuration. */
-    private static final String DFS_CFG = "examples/config/hadoop/core-site.xml";
+    private static final String DFS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Top N words to select **/
     private static final int POPULAR_WORDS_CNT = 10;

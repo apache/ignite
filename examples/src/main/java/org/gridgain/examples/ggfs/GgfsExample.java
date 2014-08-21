@@ -25,10 +25,10 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * files, create, list and delete directories).
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
+ * GGFS: {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
+ * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
 @GridOnlyAvailableIn(HADOOP)
 public final class GgfsExample {
@@ -39,7 +39,7 @@ public final class GgfsExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Grid g = GridGain.start("examples/config/example-ggfs.xml");
+        Grid g = GridGain.start("examples/config/filesystem/example-ggfs.xml");
 
         System.out.println();
         System.out.println(">>> GGFS example started.");
