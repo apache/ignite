@@ -157,7 +157,7 @@ public class GridPortableTypeConfiguration {
      *
      * @param affKeyFieldName Affinity key field name.
      */
-    public void setAffinityFieldName(String affKeyFieldName) {
+    public void setAffinityKeyFieldName(String affKeyFieldName) {
         this.affKeyFieldName = affKeyFieldName;
     }
 
