@@ -41,7 +41,7 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
  * Task for execute SCAN or SQL query and get first page of results.
  *
  * TODO GG-8942
- * @deprecated Should replace VisorQueryTask after compatibility breaking.
+ * @deprecated Should replace VisorQueryTask in compatibility breaking release.
  */
 @GridInternal
 public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask2.VisorQueryArg,

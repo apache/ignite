@@ -18,7 +18,7 @@ import java.util.UUID;
  * Result for cache query tasks 2.
  *
  * TODO GG-8942
- * @deprecated Should be united with VisorQueryResultEx after compatibility breaking.
+ * @deprecated Should be merged with VisorQueryResultEx in compatibility breaking release.
  */
 public class VisorQueryResultEx2 extends VisorQueryResultEx {
     /** */
