@@ -773,6 +773,20 @@
                                     </fileset>
                                 </replace>
 
+                                <replaceregexp byline="true">
+                                    <regexp pattern='\. "\$\{GRIDGAIN_HOME\}/os/bin/include/target-classpath.sh"'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replace dir="target/release-package/bin"
+                                         token='call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"'
+                                         value="">
+                                    <include name="**/*.bat"/>
+                                </replace>
+
                                 <replace token="os/" value="">
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
