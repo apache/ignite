@@ -4873,7 +4873,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
                         assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
-                        assert !e.deleted();
+                        assert !e.deleted() : "Entry is deleted: " + e;
 
                         size++;
                     }
