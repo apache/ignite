@@ -56,10 +56,10 @@ import java.util.Date;
  *     tx.addMeta("some.name", conn);
  * }
  * </pre>
- * <p>
- * When portables are enabled for cache ({@link GridCacheConfiguration#isPortableEnabled()} is
+ * <h1 class="header">Working With Portable Objects</h1>
+ * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
  * {@code true}), all portable keys and values are converted to instances of {@link GridPortableObject}.
- * Therefore, all cache store methods will take parameters in portable format. So to avoid class
+ * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
  * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
  * signature should be the following:
