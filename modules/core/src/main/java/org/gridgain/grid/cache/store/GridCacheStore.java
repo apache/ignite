@@ -15,7 +15,10 @@ import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * API for cache persistent storage for read-through and write-through behavior.
@@ -55,7 +58,7 @@ import java.util.*;
  * </pre>
  * <p>
  * When portables are enabled for cache ({@link GridCacheConfiguration#isPortableEnabled()} is
- * {@code true}), all non-primitive keys and values are converted to instances of {@link GridPortableObject}.
+ * {@code true}), all portable keys and values are converted to instances of {@link GridPortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. So to avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
  * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
@@ -69,6 +72,23 @@ import java.util.*;
  *     ...
  * }
  * </pre>
+ * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * types are stored in cache without changes and therefore should not affect cache store signature:
+ * <ul>
+ *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+ *     <li>Arrays of primitives (byte[], int[], ...)</li>
+ *     <li>{@link String} and array of {@link String}s</li>
+ *     <li>{@link UUID} and array of {@link UUID}s</li>
+ *     <li>{@link Date} and array of {@link Date}s</li>
+ *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+ *     <li>Enums and array of enums</li>
+ *     <li>
+ *         Maps, collections and array of objects (but objects inside
+ *         them will still be converted if they are portable)
+ *     </li>
+ * </ul>
+ *
+ * @see GridPortables
  */
 public interface GridCacheStore<K, V> {
     /**
