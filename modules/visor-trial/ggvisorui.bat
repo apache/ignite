@@ -111,10 +111,17 @@ if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g
 :: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
 
 ::
+:: Set Visor plugins directory.
+::
+set VISOR_PLUGINS_DIR=%GRIDGAIN_HOME%\bin\include\visorui\plugins
+
+::
 :: Starts Visor Dashboard.
 ::
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
--DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% -cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
+-DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% ^
+-Dpf4j.pluginsDir="%VISOR_PLUGINS_DIR%" ^
+-cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
 
 exit %ERRORLEVEL%
 

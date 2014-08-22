@@ -1628,6 +1628,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
                 else
                     LT.warn(log, null, "Node has not been connected to topology and will repeat join process. " +
+                        "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
                         "Increase 'netTimeout' configuration property if getting this message on starting nodes.");
             }
@@ -1827,7 +1828,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         int connectAttempts = 1;
 
+        boolean joinReqSent = false;
+
         for (int i = 0; i < reconCnt; i++) {
+            // Need to set to false on each new iteration,
+            // since remote node may leave in the middle of the first iteration.
+            joinReqSent = false;
+
             boolean openSock = false;
 
             try {
@@ -1861,6 +1868,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + res.creatorNodeId() + ']');
+
+                // Connection has been established, but
+                // join request may not be unmarshalled on remote host.
+                // E.g. due to class not found issue.
+                joinReqSent = msg instanceof GridTcpDiscoveryJoinRequestMessage;
 
                 return readReceipt(sock, ackTimeout0);
             }
@@ -1905,6 +1917,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             finally {
                 U.closeQuiet(sock);
             }
+        }
+
+        if (joinReqSent) {
+            if (log.isDebugEnabled())
+                log.debug("Join request has been sent, but receipt has not been read (returning RES_WAIT).");
+
+            return RES_WAIT;
         }
 
         throw new GridSpiException(
@@ -4923,6 +4942,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             "(consider increasing 'networkTimeout' configuration property) " +
                             "[netTimeout=" + netTimeout + ']');
 
+                    else if (e.hasCause(ClassNotFoundException.class))
+                        LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                            "(make sure same versions of all classes are available on all nodes) " +
+                            "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                            ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
+
                     // Always report marshalling problems.
                     else if (e.hasCause(ObjectStreamException.class) ||
                         (!sock.isClosed() && !e.hasCause(IOException.class)))
@@ -5081,6 +5106,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         if (isInterrupted() || sock.isClosed())
                             return;
+
+                        if (e.hasCause(ClassNotFoundException.class))
+                            LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                                "(make sure same versions of all classes are available on all nodes) " +
+                                "[rmtNodeId=" + nodeId +
+                                ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling errors.
                         boolean err = e.hasCause(ObjectStreamException.class) ||
