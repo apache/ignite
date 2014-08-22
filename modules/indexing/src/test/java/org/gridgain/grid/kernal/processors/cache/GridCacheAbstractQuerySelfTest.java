@@ -1197,6 +1197,36 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    public void testTwoAnonymousClasses() throws Exception {
+        GridCache<Integer, Object> cache = grid.cache(null);
+
+        Object val1 = new Object() {
+            @Override public String toString() {
+                return "Test anonymous object1.";
+            }
+        };
+
+        Object val2 = new Object() {
+            @Override public String toString() {
+                return "Test anonymous object2.";
+            }
+        };
+
+        assertTrue(cache.putx(1, val1));
+        assertTrue(cache.putx(2, val2));
+
+        GridCacheQuery<Map.Entry<Integer, Object>> q = cache.queries().createSqlQuery(val1.getClass(), "_key >= 0");
+
+        q.enableDedup(true);
+
+        Collection<Map.Entry<Integer, Object>> res = q.execute().get();
+
+        assertEquals(1, res.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testOrderByOnly() throws Exception {
         GridCache<Integer, Integer> cache = grid.cache(null);
 
