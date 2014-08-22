@@ -437,22 +437,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         switch (qry.type()) {
             case SQL:
-                if (qry.queryClass() != null)
-                    return idxMgr.query(spi,
-                        space,
-                        qry.clause(),
-                        F.asList(args),
-                        qry.queryClass(),
-                        qry.includeBackups(),
-                        projectionFilter(qry));
-                else
-                    return idxMgr.query(spi,
-                        space,
-                        qry.clause(),
-                        F.asList(args),
-                        qry.queryClassName(),
-                        qry.includeBackups(),
-                        projectionFilter(qry));
+                return idxMgr.query(spi, space, qry.clause(), F.asList(args),
+                    qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
 
             case SCAN:
                 return scanIterator(qry);

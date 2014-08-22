@@ -47,6 +47,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** Type descriptors. */
     private final ConcurrentMap<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
 
+    /** Type descriptors. */
+    private final ConcurrentMap<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
+
     /** */
     private final ConcurrentMap<Long, ClassLoader> ldrById = new ConcurrentHashMap8<>();
 
@@ -63,7 +66,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     private Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById;
 
     /** Configuration-declared types. */
-    private Map<TypeName, GridCacheQueryTypeMetadata> declaredTypesByName = new HashMap<>();
+    private final Map<TypeName, GridCacheQueryTypeMetadata> declaredTypesByName = new HashMap<>();
 
     /** Portable IDs. */
     private Map<Integer, String> portableIds;
@@ -120,41 +123,6 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
-    }
-
-    /**
-     * @param space Space name.
-     * @param cls Class.
-     * @return Type meta data if it was declared in configuration.
-     */
-    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, Class<?> cls) {
-        return declaredTypesByName.get(new TypeName(space, cls));
-    }
-
-    /**
-     * @param space Space name.
-     * @param typeId Type ID.
-     * @return Type meta data if it was declared in configuration.
-     */
-    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, int typeId) {
-        Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
-
-        if (declaredTypesById == null) {
-            declaredTypesById = new HashMap<>();
-
-            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
-
-                if (qryCfg != null) {
-                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
-                }
-            }
-
-            this.declaredTypesById = declaredTypesById;
-        }
-
-        return declaredTypesById.get(new TypeId(space, typeId));
     }
 
     /** {@inheritDoc} */
@@ -217,30 +185,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return rebuildIndexes(spi, space, findTypeDescriptor(space, valTypeName));
+            return rebuildIndexes(spi, space, typesByName.get(new TypeName(space, valTypeName)));
         }
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @param space Space name.
-     * @param valTypeName Value type name.
-     * @return Type descriptor or {@code null} if descriptor not found.
-     */
-    @Nullable private TypeDescriptor findTypeDescriptor(@Nullable final String space, String valTypeName) {
-        for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
-            TypeId typeId = e.getKey();
-
-            if (!F.eq(space, typeId.space))
-                continue;
-
-            if (valTypeName.equals(typeId.typeName(this)))
-                return e.getValue();
-        }
-
-        return null;
     }
 
     /**
@@ -387,7 +336,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         return;
 
                     id = new TypeId(space, typeId);
-                } else
+                }
+                else
                     id = new TypeId(space, valCls);
             }
 
@@ -423,7 +373,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             }
                         }
                         else {
-                            GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls);
+                            GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
                             if (keyMeta == null) {
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -452,7 +402,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             d.name(valTypeName);
 
-                            GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls);
+                            GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
                             if (typeMeta == null) {
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -463,6 +413,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         }
 
                         d.registered(getSpi(spi).registerType(space, d));
+
+                        typesByName.put(new TypeName(space, d.name()), d);
 
                         return null;
                     }
@@ -493,7 +445,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param cls Class.
      * @return Type name.
      */
-    private String typeName(Class<?> cls) {
+    public String typeName(Class<?> cls) {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
@@ -609,42 +561,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            TypeDescriptor type = findTypeDescriptor(space, resType);
-
-            if (type == null || !type.registered())
-                return new GridEmptyCloseableIterator<>();
-
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
-
-            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).query(space, clause, params, type,
-                backupFilter != null ? F.concat(filters, backupFilter) : filters));
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-    /**
-     * @param spi SPI Name.
-     * @param space Space.
-     * @param clause Clause.
-     * @param params Parameters collection.
-     * @param resType Result type.
-     * @param includeBackups Include or exclude backup entries.
-     * @param filters Filters.
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Key/value rows.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
-        Collection<Object> params, Class<?> resType, boolean includeBackups,
-        GridIndexingQueryFilter<K, V>... filters) throws GridException {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            TypeDescriptor type = types.get(new TypeId(space, resType));
+            TypeDescriptor type = typesByName.get(new TypeName(space, resType));
 
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
@@ -679,7 +596,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            TypeDescriptor type = findTypeDescriptor(space, resType);
+            TypeDescriptor type = typesByName.get(new TypeName(space, resType));
 
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
@@ -932,6 +849,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param cls Class to process.
      * @param meta Type metadata.
      * @param d Type descriptor.
+     * @throws GridException If failed.
      */
     static void processClassMeta(boolean key, Class<?> cls, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
         throws GridException {
@@ -1004,6 +922,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param key Key or value flag.
      * @param meta Declared metadata.
      * @param d Type descriptor.
+     * @throws GridException If failed.
      */
     static void processPortableMeta(boolean key, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
         throws GridException {
@@ -1157,6 +1076,41 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         return spaceTypes;
+    }
+
+    /**
+     * @param space Space name.
+     * @param typeName Type name.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, String typeName) {
+        return declaredTypesByName.get(new TypeName(space, typeName));
+    }
+
+    /**
+     * @param space Space name.
+     * @param typeId Type ID.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, int typeId) {
+        Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
+
+        if (declaredTypesById == null) {
+            declaredTypesById = new HashMap<>();
+
+            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+
+                if (qryCfg != null) {
+                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
+                }
+            }
+
+            this.declaredTypesById = declaredTypesById;
+        }
+
+        return declaredTypesById.get(new TypeId(space, typeId));
     }
 
     /**
@@ -1682,9 +1636,6 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** Value type ID. */
         private final int valTypeId;
 
-        /** Type name. */
-        private String typeName;
-
         /**
          * Constructor.
          *
@@ -1698,21 +1649,6 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             this.valType = valType;
 
             valTypeId = 0;
-        }
-
-        /**
-         * @param mgr Indexing manager.
-         * @return Type name.
-         */
-        String typeName(GridIndexingManager mgr) {
-            if (typeName != null)
-                return typeName;
-
-            String name = valType != null ? valType.getSimpleName() : mgr.portableName(valTypeId);
-
-            typeName = CU.h2Escape(name);
-
-            return typeName;
         }
 
         /**
@@ -1769,19 +1705,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         * @param typeName Type name.
         */
         private TypeName(@Nullable String space, String typeName) {
-            assert !F.isEmpty(typeName);
+            assert !F.isEmpty(typeName) : typeName;
 
             this.space = space;
             this.typeName = typeName;
-        }
-
-       /**
-        * @param space Space name.
-        * @param type Type.
-        */
-        private TypeName(@Nullable String space, Class<?> type) {
-            this.space = space;
-            typeName = CU.h2Escape(type.getSimpleName());
         }
 
         /** {@inheritDoc} */

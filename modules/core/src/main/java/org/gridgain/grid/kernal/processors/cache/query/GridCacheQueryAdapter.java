@@ -40,9 +40,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private final GridLogger log;
 
-    /** */
-    private final Class<?> cls;
-
     /** Class name in case of portable query. */
     private final String clsName;
 
@@ -100,45 +97,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.cctx = cctx;
         this.type = type;
         this.clsName = CU.h2Escape(clsName);
-        cls = null;
-        this.clause = clause;
-        this.prjPred = prjPred;
-        this.filter = filter;
-        this.incMeta = incMeta;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
-
-        log = cctx.logger(getClass());
-
-        pageSize = DFLT_PAGE_SIZE;
-        timeout = 0;
-        keepAll = true;
-        incBackups = false;
-        dedup = false;
-        prj = null;
-
-        metrics = new GridCacheQueryMetricsAdapter();
-    }
-
-    /**
-     * @param cctx Context.
-     * @param type Query type.
-     * @param clause Clause.
-     * @param filter Scan filter.
-     * @param incMeta Include metadata flag.
-     * @param prjPred Cache projection filter.
-     */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, Class<?> cls,
-        @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta,
-        boolean portableKeys, boolean portableVals) {
-        assert cctx != null;
-        assert type != null;
-
-        this.cctx = cctx;
-        this.type = type;
-        this.cls = cls;
-        clsName =  null;
         this.clause = clause;
         this.prjPred = prjPred;
         this.filter = filter;
@@ -189,45 +147,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.prj = prj;
         this.filter = filter;
         this.clsName = CU.h2Escape(clsName);
-        cls = null;
-        this.clause = clause;
-        this.incMeta = incMeta;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
-    }
-
-    /**
-     * @param cctx Context.
-     * @param prjPred Cache projection filter.
-     * @param type Query type.
-     * @param log Logger.
-     * @param pageSize Page size.
-     * @param timeout Timeout.
-     * @param keepAll Keep all flag.
-     * @param incBackups Include backups flag.
-     * @param dedup Enable dedup flag.
-     * @param prj Grid projection.
-     * @param filter Key-value filter.
-     * @param clause Clause.
-     * @param incMeta Include metadata flag.
-     */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
-        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, Class<?> cls,
-        String clause, boolean incMeta, boolean portableKeys, boolean portableVals) {
-        this.cctx = cctx;
-        this.prjPred = prjPred;
-        this.type = type;
-        this.log = log;
-        this.pageSize = pageSize;
-        this.timeout = timeout;
-        this.keepAll = keepAll;
-        this.incBackups = incBackups;
-        this.dedup = dedup;
-        this.prj = prj;
-        this.filter = filter;
-        clsName = null;
-        this.cls = cls;
         this.clause = clause;
         this.incMeta = incMeta;
         this.portableKeys = portableKeys;
@@ -253,13 +172,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     @Nullable public String queryClassName() {
         return clsName;
-    }
-
-    /**
-     * @return Class name.
-     */
-    @Nullable public Class<?> queryClass() {
-        return cls;
     }
 
     /**
