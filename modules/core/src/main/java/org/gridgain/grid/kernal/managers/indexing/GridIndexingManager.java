@@ -60,7 +60,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Configuration-declared types. */
-    private Map<TypeId, GridCacheQueryTypeMetadata> declaredTypes = new HashMap<>();
+    private Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById;
+
+    /** Configuration-declared types. */
+    private Map<TypeName, GridCacheQueryTypeMetadata> declaredTypesByName = new HashMap<>();
 
     /** Portable IDs. */
     private Map<Integer, String> portableIds;
@@ -108,7 +111,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             if (qryCfg != null) {
                 for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                    declaredTypes.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
+                    declaredTypesByName.put(new TypeName(ccfg.getName(), meta.getType()), meta);
 
                 if (qryCfg.getTypeResolver() != null)
                     typeResolvers.put(ccfg.getName(), qryCfg.getTypeResolver());
@@ -117,6 +120,41 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * @param space Space name.
+     * @param cls Class.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, Class<?> cls) {
+        return declaredTypesByName.get(new TypeName(space, cls));
+    }
+
+    /**
+     * @param space Space name.
+     * @param typeId Type ID.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, int typeId) {
+        Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
+
+        if (declaredTypesById == null) {
+            declaredTypesById = new HashMap<>();
+
+            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+
+                if (qryCfg != null) {
+                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
+                }
+            }
+
+            this.declaredTypesById = declaredTypesById;
+        }
+
+        return declaredTypesById.get(new TypeId(space, typeId));
     }
 
     /** {@inheritDoc} */
@@ -378,15 +416,14 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             String typeName = portableName(portableKey.typeId());
 
                             if (typeName != null) {
-                                GridCacheQueryTypeMetadata keyMeta =
-                                    declaredTypes.get(new TypeId(space, portableKey.typeId()));
+                                GridCacheQueryTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
                             }
                         }
                         else {
-                            GridCacheQueryTypeMetadata keyMeta = declaredTypes.get(new TypeId(space, keyCls));
+                            GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls);
 
                             if (keyMeta == null) {
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -402,8 +439,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                             String typeName = portableName(portableVal.typeId());
 
                             if (typeName != null) {
-                                GridCacheQueryTypeMetadata valMeta =
-                                    declaredTypes.get(new TypeId(space, portableVal.typeId()));
+                                GridCacheQueryTypeMetadata valMeta = declaredType(space, portableVal.typeId());
 
                                 d.name(typeName);
 
@@ -416,7 +452,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             d.name(valTypeName);
 
-                            GridCacheQueryTypeMetadata typeMeta = declaredTypes.get(new TypeId(space, valCls));
+                            GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls);
 
                             if (typeMeta == null) {
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -489,11 +525,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata()) {
-                        declaredTypes.put(new TypeId(ccfg.getName(), typeId), meta);
-
+                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
                         portableIds.put(ctx.portable().typeId(meta.getType()), meta.getType());
-                    }
                 }
             }
 
@@ -1718,6 +1751,61 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TypeId.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TypeName {
+       /** */
+       private final String space;
+
+       /** */
+       private final String typeName;
+
+       /**
+        * @param space Space name.
+        * @param typeName Type name.
+        */
+        private TypeName(@Nullable String space, String typeName) {
+            assert !F.isEmpty(typeName);
+
+            this.space = space;
+            this.typeName = typeName;
+        }
+
+       /**
+        * @param space Space name.
+        * @param type Type.
+        */
+        private TypeName(@Nullable String space, Class<?> type) {
+            this.space = space;
+            typeName = CU.h2Escape(type.getSimpleName());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TypeName other = (TypeName)o;
+
+            return (space != null ? space.equals(other.space) : other.space == null) &&
+                    typeName.equals(other.typeName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * (space != null ? space.hashCode() : 0) + typeName.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TypeName.class, this);
         }
     }
 
