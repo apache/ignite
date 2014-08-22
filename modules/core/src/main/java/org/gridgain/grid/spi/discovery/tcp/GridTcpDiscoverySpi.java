@@ -2886,6 +2886,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
+            if (log.isDebugEnabled())
+                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
+
             while (!isInterrupted()) {
                 GridTcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
 
@@ -3153,7 +3156,21 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 // If new node is next, then send topology to and all pending messages
                                 // as a part of message.
                                 if (nodeAddedMsg.node().equals(next)) {
-                                    nodeAddedMsg.topology(F.view(ring.allNodes(), F0.notEqualTo(nodeAddedMsg.node())));
+                                    Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
+                                    Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
+
+                                    for (GridTcpDiscoveryNode n0 : allNodes) {
+                                        assert n0.internalOrder() != 0 : n0;
+
+                                        // Skip next node and nodes added after next
+                                        // in case this message is resent due to failures/leaves.
+                                        // There will be separate messages for nodes with greater
+                                        // internal order.
+                                        if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
+                                            topToSend.add(n0);
+                                    }
+
+                                    nodeAddedMsg.topology(topToSend);
 
                                     nodeAddedMsg.messages(pendingMsgs.values());
 
@@ -3548,6 +3565,90 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                     if (!F.eq(rmtBuildVer, locBuildVer)) {
+                        final String osFlag = "-os";
+                        final String entFlag = "-ent";
+
+                        assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
+                        assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
+
+                        // OS and ENT nodes cannot join one topology.
+                        if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
+                            locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
+                            String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                "versions (node will not join, all nodes in topology should be of either " +
+                                "enterprise or open source version) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                    "versions (node will not join, all nodes in topology should be of either " +
+                                    "enterprise or open source version) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
+                        // OS nodes don't support rolling updates.
+                        if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
+                            !locBuildVer.equals(rmtBuildVer)) {
+                            String errMsg = "Local node and remote node have different version numbers " +
+                                "(node will not join, open source version does not support rolling updates, " +
+                                "so versions must be exactly the same) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Local node and remote node have different version numbers " +
+                                    "(node will not join, open source version does not support rolling updates, " +
+                                    "so versions must be exactly the same) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
                         Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
                         Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
 
@@ -3717,24 +3818,25 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified() && !locNodeId.equals(node.id())) {
+            if (msg.verified() && !locNodeId.equals(node.id()) && node.internalOrder() > locNode.internalOrder()) {
                 if (metricsStore != null) {
                     node.metricsStore(metricsStore);
 
                     node.logger(log);
                 }
 
-                List<Object> data = msg.newNodeDiscoveryData();
-
-                if (data != null)
-                    exchange.onExchange(data);
-
-                msg.addDiscoveryData(exchange.collect(node.id()));
-
                 boolean topChanged = ring.add(node);
 
-                if (topChanged)
+                if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
+
+                    List<Object> data = msg.newNodeDiscoveryData();
+
+                    if (data != null)
+                        exchange.onExchange(data);
+
+                    msg.addDiscoveryData(exchange.collect(node.id()));
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Added node to local ring [added=" + topChanged + ", node=" + node +
@@ -3884,7 +3986,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
-                assert node.internalOrder() > locNode.internalOrder();
+                assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
+                    ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
                 if (nodeVer.equals(node.version()))
                     node.version(nodeVer);
