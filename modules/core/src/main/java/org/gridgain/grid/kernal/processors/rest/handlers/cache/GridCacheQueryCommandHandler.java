@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheQueryRequest;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
@@ -124,7 +125,8 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).compute().broadcast(c);
+        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).
+            compute().withNoFailover().broadcast(c);
 
         return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
@@ -275,7 +277,16 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     throw new GridException("Unsupported query type: " + req.type());
             }
 
-            ((GridCacheQueryAdapter)qry).keepPortable(true);
+            boolean keepPortable = req.keepPortable();
+
+            if (!keepPortable) {
+                if (req.type() != GridClientCacheQueryRequest.GridQueryType.SCAN &&
+                    (req.remoteReducerClassName() == null && req.remoteTransformerClassName() == null))
+                    // Do not deserialize values on server if not needed.
+                    keepPortable = true;
+            }
+
+            ((GridCacheQueryAdapter)qry).keepPortable(keepPortable);
 
             if (req.pageSize() > 0)
                 qry = qry.pageSize(req.pageSize());

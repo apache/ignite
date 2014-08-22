@@ -13,7 +13,9 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Defines portable objects functionality. With portable objects you are able to:
@@ -232,6 +234,23 @@ import java.util.*;
  *     &lt;/property&gt;
  * &lt;/bean&gt;
  * </pre>
+ * <p>
+ * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
+ * object and instances of these classes will be stored in cache without changes):
+ * <ul>
+ *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+ *     <li>Arrays of primitives (byte[], int[], ...)</li>
+ *     <li>{@link String} and array of {@link String}s</li>
+ *     <li>{@link UUID} and array of {@link UUID}s</li>
+ *     <li>{@link Date} and array of {@link Date}s</li>
+ *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+ *     <li>Enums and array of enums</li>
+ *     <li>
+ *         Maps, collections and array of objects (but objects inside
+ *         them will still be converted if they are portable)
+ *     </li>
+ * </ul>
  */
 public interface GridPortables {
     /**

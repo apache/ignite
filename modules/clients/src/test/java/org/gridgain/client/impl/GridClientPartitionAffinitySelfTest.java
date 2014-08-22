@@ -38,9 +38,11 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * Test predefined affinity - must be ported to other clients.
      */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefined() {
+    public void testPredefined() throws Exception {
         // Use Md5 hasher for this test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
+
+        getTestResources().inject(aff);
 
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
@@ -140,9 +142,11 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * Test predefined affinity - must be ported to other clients.
      */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefinedHashIdResolver() {
+    public void testPredefinedHashIdResolver() throws Exception {
         // Use Md5 hasher for this test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
+
+        getTestResources().inject(aff);
 
         aff.setHashIdResolver(new GridClientPartitionAffinity.HashIdResolver() {
             @Override public Object getHashId(GridClientNode node) {
@@ -268,6 +272,8 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
 
         // Define affinities to test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
+
+        getTestResources().inject(aff);
 
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
