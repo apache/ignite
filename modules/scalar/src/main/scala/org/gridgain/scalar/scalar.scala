@@ -16,10 +16,8 @@ import org.jetbrains.annotations.Nullable
 import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid.util.{GridUtils => U}
 import query._
-import annotation.target.field
+import annotation.meta.field
 import org.gridgain.grid.dataload.GridDataLoader
 import org.gridgain.grid.kernal.GridProductImpl
 
