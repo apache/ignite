@@ -96,6 +96,12 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<GridDhtPartitionsExchangeFuture<K, V>> lastExchangeFut =
         new AtomicReference<>();
 
+    /** Atomic reference for pending timeout object. */
+    private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
+
+    /** Partition resend timeout after eviction. */
+    private final long partResendTimeout = getResendTimeout();
+
     /**
      * @param cctx Cache context.
      * @param busyLock Shutdown lock.
@@ -173,6 +179,11 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (log.isDebugEnabled())
             log.debug("After joining on demand workers: " + dmdWorkers);
 
+        ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
+
+        if (resendTimeoutObj != null)
+            cctx.time().removeTimeoutObject(resendTimeoutObj);
+
         top = null;
         lastExchangeFut.set(null);
         lastTimeoutObj.set(null);
@@ -231,7 +242,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     void resendPartitions() {
         try {
-            refreshPartitions(0);
+             refreshPartitions(0);
         }
         catch (GridInterruptedException e) {
             U.warn(log, "Partitions were not refreshed (thread got interrupted): " + e,
@@ -537,6 +548,33 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
         finally {
             demandLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Schedules next full partitions update.
+     */
+    public void scheduleResendPartitions() {
+        ResendTimeoutObject timeout = pendingResend.get();
+
+        if (timeout == null || timeout.started()) {
+            ResendTimeoutObject update = new ResendTimeoutObject();
+
+            if (pendingResend.compareAndSet(timeout, update))
+                cctx.time().addTimeoutObject(update);
+        }
+    }
+
+    /**
+     * @return Partition resend timeout get from system property.
+     */
+    private static long getResendTimeout() {
+        try {
+            return Long.parseLong(X.getSystemOrEnv(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
+                String.valueOf(GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT)));
+        }
+        catch (NumberFormatException ignored) {
+            return GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
         }
     }
 
@@ -1091,7 +1129,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         syncFut.onWorkerDone(this);
                     }
 
-                    resendPartitions();
+                     scheduleResendPartitions();
                 }
             }
             finally {
@@ -1244,7 +1282,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             // Just pick first worker to do this, so we don't
                             // invoke topology callback more than once for the
                             // same event.
-                            if (top.afterExchange(exchFut.exchangeId()))
+                            if (top.afterExchange(exchFut.exchangeId()) && futQ.isEmpty())
                                 resendPartitions(); // Force topology refresh.
 
                             // Preload event notification.
@@ -1353,6 +1391,55 @@ public class GridDhtPartitionDemandPool<K, V> {
             }
 
             return assigns;
+        }
+    }
+
+    /**
+     * Partition resend timeout object.
+     */
+    private class ResendTimeoutObject implements GridTimeoutObject {
+        /** Timeout ID. */
+        private final GridUuid timeoutId = GridUuid.randomUuid();
+
+        /** Timeout start time. */
+        private final long createTime = U.currentTimeMillis();
+
+        /** Started flag. */
+        private AtomicBoolean started = new AtomicBoolean();
+
+        /** {@inheritDoc} */
+        @Override public GridUuid timeoutId() {
+            return timeoutId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return createTime + partResendTimeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            if (!busyLock.readLock().tryLock())
+                return;
+
+            try {
+                if (started.compareAndSet(false, true))
+                    resendPartitions();
+            }
+            finally {
+                busyLock.readLock().unlock();
+
+                cctx.time().removeTimeoutObject(this);
+
+                pendingResend.compareAndSet(this, null);
+            }
+        }
+
+        /**
+         * @return {@code True} if timeout object started to run.
+         */
+        public boolean started() {
+            return started.get();
         }
     }
 

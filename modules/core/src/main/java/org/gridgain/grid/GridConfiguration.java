@@ -18,6 +18,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -451,6 +452,9 @@ public class GridConfiguration {
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
+    /** Local event listeners. */
+    private Map<GridPredicate<? extends GridEvent>, int[]> lsnrs;
+
     /** TCP host. */
     private String restTcpHost;
 
@@ -594,6 +598,7 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
+        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
@@ -3135,6 +3140,27 @@ public class GridConfiguration {
      */
     public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
+    }
+
+    /**
+     * Gets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @return Pre-configured event listeners map.
+     * @see GridEventType
+     */
+    @Nullable public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
+        return lsnrs;
+    }
+
+    /**
+     * Sets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @param lsnrs Pre-configured event listeners map.
+     */
+    public void setLocalEventListeners(Map<GridPredicate<? extends GridEvent>, int[]> lsnrs) {
+        this.lsnrs = lsnrs;
     }
 
     /** {@inheritDoc} */

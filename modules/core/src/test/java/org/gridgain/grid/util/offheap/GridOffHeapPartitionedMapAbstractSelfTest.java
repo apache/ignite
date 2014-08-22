@@ -196,6 +196,8 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         GridCacheAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(parts, null);
 
+        getTestResources().inject(aff);
+
         GridByteArrayWrapper[] keys = new GridByteArrayWrapper[512];
         Random rnd = new Random();
 
