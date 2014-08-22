@@ -966,8 +966,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         return res;
     }
 
+    public static final Set<GridTcpDiscoverySpi> spis = new GridConcurrentHashSet<>();
+
+
     /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {
+        spis.add(this);
+
         spiStart0(false);
     }
 
@@ -1226,6 +1231,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** {@inheritDoc} */
     @Override public void spiStop() throws GridSpiException {
         spiStop0(false);
+
+        spis.remove(this);
     }
 
     /**
@@ -2300,6 +2307,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
 
             Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+
+            for (GridNode gridNode : top) {
+                if (gridNode.order() == 0) {
+                    for (GridTcpDiscoverySpi spi : spis)
+                        spi.dumpDebugInfo();
+
+                    break;
+                }
+            }
 
             lsnr.onDiscovery(type, topVer, node, top, hist);
         }
