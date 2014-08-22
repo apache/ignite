@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
@@ -168,7 +167,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         assertTrue(rmv);
 
-        if (false) {
+        if (false) { // TODO GG-8962: enable check when fixed.
             int cnt = 0;
 
             Set<GridUuid> setIds = new HashSet<>();
@@ -213,7 +212,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                 while (!stop.get()) {
                     int idx = rnd.nextInt(1, gridCount());
 
-                    U.sleep(rnd.nextLong(3000, 4000));
+                    U.sleep(rnd.nextLong(2000, 3000));
 
                     log.info("Killing node: " + idx);
 
