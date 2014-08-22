@@ -3323,6 +3323,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         if (p != null && !p.apply(key, val))
                             return;
 
+                        if (ctx.portableEnabled()) {
+                            key = (K)ctx.marshalToPortable(key);
+                            val = (V)ctx.marshalToPortable(val);
+                        }
+
                         GridDrRawEntry<K, V> e = new GridDrRawEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
@@ -3345,12 +3350,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             // Version for all loaded entries.
             final GridCacheVersion ver0 = ctx.versions().next();
 
-            ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
-                @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
+            ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
+                @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
+                    throws GridPortableException {
                     assert ver == null;
 
                     if (p != null && !p.apply(key, val))
                         return;
+
+                    if (ctx.portableEnabled()) {
+                        key = (K)ctx.marshalToPortable(key);
+                        val = (V)ctx.marshalToPortable(val);
+                    }
 
                     GridCacheEntryEx<K, V> entry = entryEx(key, false);
 
