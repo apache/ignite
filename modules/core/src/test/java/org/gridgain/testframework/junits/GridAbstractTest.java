@@ -1102,40 +1102,43 @@ public abstract class GridAbstractTest extends TestCase {
             info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
                 ", stopped=" + cntrs.getStopped() + ']');
 
-        afterTest();
-
-        if (isLastTest()) {
-            info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
-
-            TestCounters counters = getTestCounters();
-
-            // Stop all threads started by runMultithreaded() methods.
-            GridTestUtils.stopThreads(log);
-
-            // Safety.
-            getTestResources().stopThreads();
-
-            // Set reset flags, so counters will be reset on the next setUp.
-            counters.setReset(true);
-
-            afterTestsStopped();
-
-            if (startGrid)
-                G.stop(getTestGridName(), true);
-
-            // Remove counters.
-            tests.remove(getClass());
-
-            // Remove resources cached in static, if any.
-            GridClassLoaderCache.clear();
-            GridOptimizedMarshaller.clearCache();
-            GridMarshallerExclusions.clearCache();
-            GridEnumCache.clear();
+        try {
+            afterTest();
         }
+        finally {
+            if (isLastTest()) {
+                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
-        Thread.currentThread().setContextClassLoader(clsLdr);
+                TestCounters counters = getTestCounters();
 
-        clsLdr = null;
+                // Stop all threads started by runMultithreaded() methods.
+                GridTestUtils.stopThreads(log);
+
+                // Safety.
+                getTestResources().stopThreads();
+
+                // Set reset flags, so counters will be reset on the next setUp.
+                counters.setReset(true);
+
+                afterTestsStopped();
+
+                if (startGrid)
+                    G.stop(getTestGridName(), true);
+
+                // Remove counters.
+                tests.remove(getClass());
+
+                // Remove resources cached in static, if any.
+                GridClassLoaderCache.clear();
+                GridOptimizedMarshaller.clearCache();
+                GridMarshallerExclusions.clearCache();
+                GridEnumCache.clear();
+            }
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+        }
     }
 
     /**
