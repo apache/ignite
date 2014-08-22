@@ -131,7 +131,7 @@ public enum GridComponentType {
      *
      * @return {@code True} if in classpath.
      */
-    public boolean isInClassPath() {
+    public boolean inClassPath() {
         try {
             Class.forName(clsName);
 
@@ -148,7 +148,7 @@ public enum GridComponentType {
      * @return {@code True} if required classes are in classpath.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    public boolean isRequiredClassesInClassPath() {
+    public boolean requiredClassesInClassPath() {
         try {
             for (String clsName : clsNames)
                 Class.forName(clsName);
