@@ -489,6 +489,41 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
+     * @param space Space name.
+     * @param typeId Type ID.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, int typeId) {
+        Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
+
+        if (declaredTypesById == null) {
+            declaredTypesById = new HashMap<>();
+
+            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+
+                if (qryCfg != null) {
+                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
+                }
+            }
+
+            this.declaredTypesById = declaredTypesById;
+        }
+
+        return declaredTypesById.get(new TypeId(space, typeId));
+    }
+
+    /**
+     * @param space Space name.
+     * @param typeName Type name.
+     * @return Type meta data if it was declared in configuration.
+     */
+    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, String typeName) {
+        return declaredTypesByName.get(new TypeName(space, typeName));
+    }
+
+    /**
      * @param spi SPI Name.
      * @param space Space.
      * @param key Key.
@@ -1076,41 +1111,6 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         return spaceTypes;
-    }
-
-    /**
-     * @param space Space name.
-     * @param typeName Type name.
-     * @return Type meta data if it was declared in configuration.
-     */
-    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, String typeName) {
-        return declaredTypesByName.get(new TypeName(space, typeName));
-    }
-
-    /**
-     * @param space Space name.
-     * @param typeId Type ID.
-     * @return Type meta data if it was declared in configuration.
-     */
-    @Nullable private GridCacheQueryTypeMetadata declaredType(String space, int typeId) {
-        Map<TypeId, GridCacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
-
-        if (declaredTypesById == null) {
-            declaredTypesById = new HashMap<>();
-
-            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
-
-                if (qryCfg != null) {
-                    for (GridCacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
-                }
-            }
-
-            this.declaredTypesById = declaredTypesById;
-        }
-
-        return declaredTypesById.get(new TypeId(space, typeId));
     }
 
     /**
