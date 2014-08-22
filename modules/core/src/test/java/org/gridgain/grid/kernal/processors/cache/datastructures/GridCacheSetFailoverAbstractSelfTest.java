@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Set failover tests.
@@ -66,6 +68,8 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setStore(null);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setDistributionMode(PARTITIONED_ONLY);
 
         return ccfg;
     }
@@ -78,8 +82,9 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        final GridCacheSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
+        GridCacheSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
 
         final int ITEMS = 10_000;
 
@@ -101,47 +106,56 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
         try {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            int iterCnt = 0;
-
             while (System.currentTimeMillis() < stopTime) {
-                if (++iterCnt % 100 == 0)
-                    log.info("Iteration: " + iterCnt);
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        int size = set.size();
 
-                try {
-                    int size = set.size();
-
-                    // TODO: GG-7952, check for equality when GG-7952 fixed.
-                    assertTrue(size > 0);
-                }
-                catch (GridRuntimeException ignore) {
-                    // No-op.
-                }
-
-                try {
-                    Iterator<Integer> iter = set.iterator();
-
-                    int cnt = 0;
-
-                    while (iter.hasNext()) {
-                        assertNotNull(iter.next());
-
-                        cnt++;
+                        // TODO: GG-7952, check for equality when GG-7952 fixed.
+                        assertTrue(size > 0);
+                    }
+                    catch (GridRuntimeException ignore) {
+                        // No-op.
                     }
 
-                    // TODO: GG-7952, check for equality when GG-7952 fixed.
-                    assertTrue(cnt > 0);
+                    try {
+                        Iterator<Integer> iter = set.iterator();
+
+                        int cnt = 0;
+
+                        while (iter.hasNext()) {
+                            assertNotNull(iter.next());
+
+                            cnt++;
+                        }
+
+                        // TODO: GG-7952, check for equality when GG-7952 fixed.
+                        assertTrue(cnt > 0);
+                    }
+                    catch (GridRuntimeException ignore) {
+                        // No-op.
+                    }
+
+                    int val = rnd.nextInt(ITEMS);
+
+                    assertTrue("Not contains: " + val, set.contains(val));
+
+                    val = ITEMS + rnd.nextInt(ITEMS);
+
+                    assertFalse("Contains: " + val, set.contains(val));
                 }
-                catch (GridRuntimeException ignore) {
-                    // No-op.
-                }
 
-                int val = rnd.nextInt(ITEMS);
+                log.info("Remove set.");
 
-                assertTrue("Not contains: " + val, set.contains(val));
+                boolean rmv = cache().dataStructures().removeSet(SET_NAME);
 
-                val = ITEMS + rnd.nextInt(ITEMS);
+                assertTrue(rmv);
 
-                assertFalse("Contains: " + val, set.contains(val));
+                log.info("Create new set.");
+
+                set = cache().dataStructures().set(SET_NAME, false, true);
+
+                set.addAll(items);
             }
         }
         finally {
@@ -149,6 +163,40 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
         }
 
         killFut.get();
+
+        boolean rmv = cache().dataStructures().removeSet(SET_NAME);
+
+        assertTrue(rmv);
+
+        if (false) {
+            int cnt = 0;
+
+            Set<GridUuid> setIds = new HashSet<>();
+
+            for (int i = 0; i < gridCount(); i++) {
+                Iterator<GridCacheEntryEx<Object, Object>> entries =
+                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+
+                while (entries.hasNext()) {
+                    GridCacheEntryEx<Object, Object> entry = entries.next();
+
+                    if (entry.hasValue()) {
+                        cnt++;
+
+                        if (entry.key() instanceof GridCacheSetItemKey) {
+                            GridCacheSetItemKey setItem = (GridCacheSetItemKey)entry.key();
+
+                            if (setIds.add(setItem.setId()))
+                                log.info("Unexpected set item [setId=" + setItem.setId() +
+                                    ", grid: " + grid(i).name() +
+                                    ", entry=" + entry + ']');
+                        }
+                    }
+                }
+            }
+
+            assertEquals("Found unexpected cache entries", 0, cnt);
+        }
     }
 
     /**
@@ -165,7 +213,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                 while (!stop.get()) {
                     int idx = rnd.nextInt(1, gridCount());
 
-                    U.sleep(rnd.nextLong(2000, 3000));
+                    U.sleep(rnd.nextLong(3000, 4000));
 
                     log.info("Killing node: " + idx);
 
