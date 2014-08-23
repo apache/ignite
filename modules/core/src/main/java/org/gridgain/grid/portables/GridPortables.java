@@ -39,11 +39,10 @@ import java.util.Date;
  * User can choose to work either with the portable format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
- * To work with the portable format directly, user should create a cache projection
- * over {@link GridPortableObject} class and then retrieve individual fields as needed:
+ * To work with the portable format directly, user should create a special cache projection
+ * using {@link GridCacheProjection#keepPortable()} method and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * GridCacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
- *     cache.projection(GridPortableObject.class, GridPortableObject.class);
+ * GridCacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj = cache.keepPortable();
  *
  * // Convert instance of MyKey to portable format.
  * // We could also use GridPortableBuilder to create
@@ -54,22 +53,8 @@ import java.util.Date;
  *
  * String field = val.field("myFieldName");
  * </pre>
- * Alternatively, we could also choose a hybrid approach, where, for example,
- * the keys are concrete deserialized objects and the values are returned in portable
- * format, like so:
- * <pre name=code class=java>
- * GridCacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
- *     cache.projection(MyKey.class, GridPortableObject.class);
- *
- * GridPortableObject val = prj.get(new MyKey());
- *
- * String field = val.field("myFieldName");
- * </pre>
- * We could also have the values as concrete deserialized objects and the keys in portable format,
- * but such use case is a lot less common because cache keys are usually a lot smaller than values, and
- * it may be very cheap to deserialize the keys, but not the values.
  * <p>
- * And finally, if we have class definitions in the classpath, we may choose to work with deserialized
+ * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost, however,
  * GridGain will only deserialize on the first access and will cache the deserialized object,
  * so it does not have to be deserialized again:
