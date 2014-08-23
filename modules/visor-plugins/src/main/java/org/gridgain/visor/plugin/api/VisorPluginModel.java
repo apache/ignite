@@ -13,14 +13,15 @@ package org.gridgain.visor.plugin.api;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.visor.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
  * Gateway to Visor functionality from plugins.
- *
- * Plugins will receive model instance from Visor.
+ * Plugins will receive model instance from Visor, usually passed
+ * into constructor, e.g. {@link VisorExtensionPoint#VisorExtensionPoint(VisorPluginModel)}.
  */
 public interface VisorPluginModel {
     /**
