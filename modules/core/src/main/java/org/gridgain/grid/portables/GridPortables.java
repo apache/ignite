@@ -133,26 +133,25 @@ import java.util.Date;
  * To make any object portable, you have to specify it in {@link GridPortableConfiguration}
  * at startup. The only requirement GridGain imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
- * you only need to list portable objects in configuration on client side. However, if you
- * list them on server side as well, then you get ability to deserialize portable objects
- * into concrete types on the server as well.
+ * you only need to list portable objects in configuration on the client side. However, if you
+ * list them on the server side as well, then you get the ability to deserialize portable objects
+ * into concrete types on the server as well as on the client.
  * <p>
  * Here is an example of portable configuration (note that star (*) notation is supported):
  * <pre name=code class=xml>
- *     ...
- *     &lt;!-- Portable objects configuration. --&gt;
- *     &lt;property name="portableConfiguration"&gt;
- *         &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
- *             &lt;property name="classNames"&gt;
- *                 &lt;list&gt;
- *                     &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
- *                     &lt;value&gt;org.gridgain.examples.client.portable.Employee&lt;/value&gt;
- *                     &lt;value&gt;org.gridgain.examples.client.portable.Address&lt;/value&gt;
- *                 &lt;/list&gt;
- *             &lt;/property&gt;
- *         &lt;/bean&gt;
- *     &lt;/property&gt;
- *     ...
+ * ...
+ * &lt;!-- Portable objects configuration. --&gt;
+ * &lt;property name="portableConfiguration"&gt;
+ *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *         &lt;property name="classNames"&gt;
+ *             &lt;list&gt;
+ *                 &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
+ *                 &lt;value&gt;org.gridgain.examples.client.portable.Employee&lt;/value&gt;
+ *             &lt;/list&gt;
+ *         &lt;/property&gt;
+ *     &lt;/bean&gt;
+ * &lt;/property&gt;
+ * ...
  * </pre>
  * or from code:
  * <pre name=code class=java>
@@ -170,6 +169,28 @@ import java.util.Date;
  * You can also specify class name for a portable object via {@link GridPortableTypeConfiguration}.
  * Do it in case if you need to override other configuration properties on per-type level, like
  * ID-mapper, or serializer.
+ * <h1 class="header">Custom Affinity Keys</h1>
+ * Often you need to specify an alternate key (not the cache key) for affinity routing whenever
+ * storing objects in cache. For example, if you are caching {@code Employee} object with
+ * {@code Organization}, and want to colocate employees with organization they work for,
+ * so you can process them together, you need to specify an alternate affinity key.
+ * With portable objects you would have to do it as following:
+ * <pre name=code class=xml>
+ * &lt;property name="portableConfiguration"&gt;
+ *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *         ...
+ *         &lt;property name="typeConfigurations"&gt;
+ *             &lt;list&gt;
+ *                 &lt;bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration"&gt;
+ *                     &lt;property name="className" value="org.gridgain.examples.client.portable.EmployeeKey"/&gt;
+ *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
+ *                 &lt;/bean&gt;
+ *             &lt;/list&gt;
+ *         &lt;/property&gt;
+ *         ...
+ *     &lt;/bean&gt;
+ * &lt;/property&gt;
+ * </pre>
  * <h1 class="header">Serialization</h1>
  * Once portable object is specified in {@link GridPortableConfiguration}, GridGain will
  * be able to serialize and deserialize it. However, you can provide your own custom
