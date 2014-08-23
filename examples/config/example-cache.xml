@@ -159,6 +159,11 @@
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
+                    <!--
+                        GridGain provides several options for automatic discovery that can be used
+                        instead os static IP based discovery. For information on all options refer
+                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
+                    -->
                     <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
                     <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">

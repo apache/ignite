@@ -1939,7 +1939,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         // one key in the keys collection.
                                         assert keys.size() == 1;
 
-                                        GridFuture<Boolean> fut = loadMissing(true, F.asList(key), !portableValues(),
+                                        GridFuture<Boolean> fut = loadMissing(
+                                            true, F.asList(key), deserializePortables(),
                                             new CI2<K, V>() {
                                                 @Override public void apply(K k, V v) {
                                                     if (log.isDebugEnabled())
@@ -2643,17 +2644,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /**
-     * Checks if portable values should be preserved.
+     * Checks if portable values should be deserialized.
      *
-     * @return {@code True} if portables should be preserved, {@code false} otherwise.
+     * @return {@code True} if portables should be deserialized, {@code false} otherwise.
      */
-    private boolean portableValues() {
-        GridCacheProjectionImpl<K, V> pimpl = cctx.projectionPerCall();
+    private boolean deserializePortables() {
+        GridCacheProjectionImpl<K, V> prj = cctx.projectionPerCall();
 
-        if (pimpl == null)
-            return false;
-
-        return pimpl.portableValues();
+        return prj == null || prj.deserializePortables();
     }
 
     /**

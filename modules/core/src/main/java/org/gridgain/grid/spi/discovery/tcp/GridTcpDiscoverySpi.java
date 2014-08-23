@@ -1630,7 +1630,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     LT.warn(log, null, "Node has not been connected to topology and will repeat join process. " +
                         "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
-                        "Increase 'netTimeout' configuration property if getting this message on starting nodes.");
+                        "Increase 'netTimeout' configuration property if getting this message on the starting nodes.");
             }
         }
 
@@ -1923,7 +1923,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (log.isDebugEnabled())
                 log.debug("Join request has been sent, but receipt has not been read (returning RES_WAIT).");
 
-            return RES_WAIT;
+            // Topology will not include this node,
+            // however, warning on timed out join will be output.
+            return RES_OK;
         }
 
         throw new GridSpiException(

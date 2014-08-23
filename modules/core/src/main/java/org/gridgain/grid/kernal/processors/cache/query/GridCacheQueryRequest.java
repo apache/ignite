@@ -101,11 +101,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectVersion(1)
-    private boolean portableKeys;
-
-    /** */
-    @GridDirectVersion(1)
-    private boolean portableVals;
+    private boolean keepPortable;
 
     /**
      * Required by {@link Externalizable}
@@ -134,8 +130,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
-     * @param portableKeys Whether to keep portable keys.
-     * @param portableVals Whether to keep portable values.
+     * @param keepPortable Whether to keep portables.
      */
     public GridCacheQueryRequest(
         long id,
@@ -144,16 +139,14 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incBackups,
         boolean fields,
         boolean all,
-        boolean portableKeys,
-        boolean portableVals) {
+        boolean keepPortable) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
+        this.keepPortable = keepPortable;
     }
 
     /**
@@ -187,8 +180,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incBackups,
         Object[] args,
         boolean incMeta,
-        boolean portableKeys,
-        boolean portableVals) {
+        boolean keepPortable) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
@@ -207,8 +199,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -397,17 +388,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
-     * @return Whether to keep keys as portable.
+     * @return Whether to keep portables.
      */
-    public boolean portableKeys() {
-        return portableKeys;
-    }
-
-    /**
-     * @return Whether to keep values as portables.
-     */
-    public boolean portableValues() {
-        return portableVals;
+    public boolean keepPortable() {
+        return keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -447,8 +431,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.cancel = cancel;
         _clone.incMeta = incMeta;
         _clone.all = all;
-        _clone.portableKeys = portableKeys;
-        _clone.portableVals = portableVals;
+        _clone.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -564,13 +547,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 18:
-                if (!commState.putBoolean(portableKeys))
-                    return false;
-
-                commState.idx++;
-
-            case 19:
-                if (!commState.putBoolean(portableVals))
+                if (!commState.putBoolean(keepPortable))
                     return false;
 
                 commState.idx++;
@@ -739,15 +716,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                portableKeys = commState.getBoolean();
-
-                commState.idx++;
-
-            case 19:
-                if (buf.remaining() < 1)
-                    return false;
-
-                portableVals = commState.getBoolean();
+                keepPortable = commState.getBoolean();
 
                 commState.idx++;
 
