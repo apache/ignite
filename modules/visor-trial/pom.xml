@@ -61,6 +61,12 @@
             <artifactId>gridgain-spring</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-visor-plugins</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
         <!-- Gridgain dependencies -->
 
         <!-- Third party dependencies -->
