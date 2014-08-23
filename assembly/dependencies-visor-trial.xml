@@ -45,6 +45,10 @@
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
+                <fileSet>
+                    <directory>target/libs</directory>
+                    <outputDirectory>/include/visorui</outputDirectory>
+                </fileSet>
                 <fileSets>
                     <fileSet>
                         <directory>${basedir}</directory>
