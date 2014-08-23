@@ -1923,7 +1923,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (log.isDebugEnabled())
                 log.debug("Join request has been sent, but receipt has not been read (returning RES_WAIT).");
 
-            return RES_WAIT;
+            // Topology will not include this node,
+            // however, warning on timed out join will be output.
+            return RES_OK;
         }
 
         throw new GridSpiException(
