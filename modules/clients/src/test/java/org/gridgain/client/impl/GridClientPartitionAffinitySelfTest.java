@@ -279,6 +279,8 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
 
         GridCacheConsistentHashAffinityFunction srvAff = new GridCacheConsistentHashAffinityFunction();
 
+        getTestResources().inject(srvAff);
+
         srvAff.setHashIdResolver(new GridCacheAffinityNodeIdHashResolver());
 
         // Define keys to test affinity for.
