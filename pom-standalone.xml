@@ -42,6 +42,7 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
+        <module>modules/visor-plugins</module>
         <module>modules/visor-trial</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
