@@ -63,8 +63,7 @@
                 <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
                 <exclude>config/example-cache*</exclude>
                 <exclude>config/hibernate/**</exclude>
-                <exclude>config/hadoop/**</exclude>
-                <exclude>config/example-ggfs*</exclude>
+                <exclude>config/filesystem/**</exclude>
                 <exclude>config/example-streamer*</exclude>
             </excludes>
         </fileSet>
