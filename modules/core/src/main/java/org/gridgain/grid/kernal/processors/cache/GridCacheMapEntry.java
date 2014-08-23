@@ -893,7 +893,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     long ttl = ttlExtras();
 
                     // Generate new version.
-                    GridCacheVersion nextVer = nextVersion();
+                    GridCacheVersion nextVer = cctx.versions().nextForLoad(ver);
 
                     // If entry was loaded during read step.
                     if (wasNew && !isNew())

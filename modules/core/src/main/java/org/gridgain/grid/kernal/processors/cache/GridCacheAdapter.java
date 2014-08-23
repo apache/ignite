@@ -3348,7 +3348,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
         else {
             // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().next();
+            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
 
             ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
                 @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
