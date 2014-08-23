@@ -12,7 +12,7 @@ package org.gridgain.visor.plugin.api;
 import java.util.*;
 
 /**
- * The listener interface for receiving "selection" events from standart Visor panels.
+ * The listener interface for receiving "selection" events from standard Visor panels.
  */
 public interface VisorSelectionListener<T> {
     /**

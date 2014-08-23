@@ -9,12 +9,15 @@
 
 package org.gridgain.visor.plugin.api;
 
+import org.gridgain.visor.plugin.*;
+
+import javax.swing.*;
 import java.util.*;
 
 /**
- * Factory for creating ready Visor UI blocks like nodes panel, log panel, ....
- *
- * Plugins will receive factory instance from Visor.
+ * Factory for creating ready Visor UI blocks like nodes panel, log panel, etc.
+ * Plugins will receive factory instance from
+ * {@link VisorPluggableTab#createPanel(VisorPluginComponentsFactory, JPanel)} method.
  */
 public interface VisorPluginComponentsFactory {
     /**
