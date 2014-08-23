@@ -27,7 +27,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>dependencies-visor-console</id>
+    <id>dependencies-visor-plugins</id>
 
     <formats>
         <format>dir</format>
@@ -38,27 +38,14 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.gridgain:gridgain-visor-console</include>
-                <include>org.gridgain:gridgain-ssh</include>
-                <include>org.gridgain:gridgain-scalar</include>
+                <include>org.gridgain:gridgain-visor-plugins</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
-                        <directory>${basedir}</directory>
-                        <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>licenses/**</include>
-                        </includes>
-                    </fileSet>
-                    <fileSet>
-                        <directory>target/libs</directory>
-                        <outputDirectory>/</outputDirectory>
-                    </fileSet>
-                    <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>/</outputDirectory>
+                        <directory>${basedir}/target</directory>
+                        <outputDirectory>/include/visorui</outputDirectory>
                         <includes>
                             <include>*.jar</include>
                         </includes>
@@ -67,6 +54,10 @@
                             <exclude>*-javadoc.jar</exclude>
                             <exclude>*-sources.jar</exclude>
                         </excludes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>${basedir}/target/libs</directory>
+                        <outputDirectory>/include/visorui</outputDirectory>
                     </fileSet>
                 </fileSets>
             </sources>
