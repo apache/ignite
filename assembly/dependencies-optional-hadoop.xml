@@ -53,6 +53,7 @@
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-visor-plugins</exclude>
+                <exclude>org.gridgain:gridgain-visor-trial</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
