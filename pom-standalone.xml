@@ -536,6 +536,10 @@
                                     <title>Marshallers</title>
                                     <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
                                 </group>
+                                <group>
+                                    <title>Visor Plugins</title>
+                                    <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
