@@ -302,9 +302,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * GridPortableObject po = prj.get(1);
      * </pre>
      * <p>
-     * Note that this method can be called only if cache is working in portable mode
-     * ({@link GridCacheConfiguration#isPortableEnabled()} returns {@code true}. Otherwise
-     * it will throw {@link IllegalStateException}.
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@link GridCacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.
      */

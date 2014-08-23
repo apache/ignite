@@ -552,21 +552,23 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
-        if (!cctx.portableEnabled())
-            throw new IllegalStateException("GridCacheProjection.keepPortable() is called for " +
-                "cache which doesn't work in portable mode. Consider enabling portable mode via " +
-                "GridCacheConfiguration.setPortableEnabled property.");
+        if (cctx.portableEnabled()) {
+            GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+                (GridCacheProjection<K1, V1>)this,
+                (GridCacheContext<K1, V1>)cctx,
+                (GridBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
+                (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
+                flags,
+                subjId,
+                true);
 
-        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
-            (GridCacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)cctx,
-            (GridBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
-            (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
-            flags,
-            subjId,
-            true);
-
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
+            return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
+        }
+        else
+            return new GridCacheProxyImpl<>(
+                (GridCacheContext<K1, V1>)cctx,
+                (GridCacheProjectionEx<K1, V1>)this,
+                (GridCacheProjectionImpl<K1, V1>)this);
     }
 
     /** {@inheritDoc} */
