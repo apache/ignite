@@ -72,6 +72,23 @@ import java.util.Date;
  * <pre name=code class=java>
  * GridCacheProjection&lt;Integer.class, GridPortableObject.class&gt; prj = cache.keepPortable();
  * </pre>
+ * <h1 class="header">Automatic Portable Types</h1>
+ * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
+ * object, and instances of these classes will be stored in cache without changes):
+ * <ul>
+ *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+ *     <li>Arrays of primitives (byte[], int[], ...)</li>
+ *     <li>{@link String} and array of {@link String}s</li>
+ *     <li>{@link UUID} and array of {@link UUID}s</li>
+ *     <li>{@link Date} and array of {@link Date}s</li>
+ *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+ *     <li>Enums and array of enums</li>
+ *     <li>
+ *         Maps, collections and array of objects (but objects inside
+ *         them will still be converted if they are portable)
+ *     </li>
+ * </ul>
  * <h1 class="header">Working With Maps and Collections</h1>
  * All maps and collections in the portable objects are serialized automatically. When working
  * with different platforms, e.g. C++ or .NET, GridGain will automatically pick the most
@@ -245,23 +262,6 @@ import java.util.Date;
  *     &lt;/property&gt;
  * &lt;/bean&gt;
  * </pre>
- * <p>
- * Note that only portable classes are converted to {@link GridPortableObject} format. Following
- * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
- * object and instances of these classes will be stored in cache without changes):
- * <ul>
- *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
- *     <li>Arrays of primitives (byte[], int[], ...)</li>
- *     <li>{@link String} and array of {@link String}s</li>
- *     <li>{@link UUID} and array of {@link UUID}s</li>
- *     <li>{@link Date} and array of {@link Date}s</li>
- *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
- *     <li>Enums and array of enums</li>
- *     <li>
- *         Maps, collections and array of objects (but objects inside
- *         them will still be converted if they are portable)
- *     </li>
- * </ul>
  */
 public interface GridPortables {
     /**
