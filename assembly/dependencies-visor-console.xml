@@ -27,7 +27,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>dependencies-visor</id>
+    <id>dependencies-visor-console</id>
 
     <formats>
         <format>dir</format>
@@ -39,8 +39,8 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-visor-console</include>
+                <include>org.gridgain:gridgain-spring</include>
                 <include>org.gridgain:gridgain-ssh</include>
-                <include>org.gridgain:gridgain-scalar</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
