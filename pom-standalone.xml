@@ -939,23 +939,6 @@
                     </execution>
 
                     <execution>
-                        <id>dependencies-visor-plugins</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/dependencies-visor-plugins.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}</outputDirectory>
-                            <finalName>bin</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
