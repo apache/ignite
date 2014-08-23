@@ -53,7 +53,6 @@ import java.util.Date;
  *
  * String field = val.field("myFieldName");
  * </pre>
- * <p>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost, however,
  * GridGain will only deserialize on the first access and will cache the deserialized object,
@@ -66,6 +65,12 @@ import java.util.Date;
  *
  * // Normal java getter.
  * String fieldVal = val.getMyFieldName();
+ * </pre>
+ * If we used, for example, one of the automatically handled portable types for a key, like integer,
+ * and still wanted to work with binary portable format for values, then we would declare cache projection
+ * as follows:
+ * <pre name=code class=java>
+ * GridCacheProjection&lt;Integer.class, GridPortableObject.class&gt; prj = cache.keepPortable();
  * </pre>
  * <h1 class="header">Working With Maps and Collections</h1>
  * All maps and collections in the portable objects are serialized automatically. When working
