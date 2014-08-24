@@ -419,11 +419,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
-        if (!ctx.portableEnabled())
-            throw new IllegalStateException("GridCacheProjection.keepPortable() is called for " +
-                "cache which doesn't work in portable mode. Consider enabling portable mode via " +
-                "GridCacheConfiguration.setPortableEnabled property.");
-
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
             (GridCacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)ctx,
@@ -431,7 +426,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             null,
             null,
             null,
-            true);
+            ctx.portableEnabled());
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }

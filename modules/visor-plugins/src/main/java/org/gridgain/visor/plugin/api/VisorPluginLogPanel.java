@@ -10,7 +10,7 @@
 package org.gridgain.visor.plugin.api;
 
 /**
- * Standart Visor panel with log entries.
+ * Standard Visor panel with log entries.
  *
  * This panel will be created by {@link VisorPluginComponentsFactory}.
  */

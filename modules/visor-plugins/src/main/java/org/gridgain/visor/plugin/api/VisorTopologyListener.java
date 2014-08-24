@@ -12,7 +12,7 @@ package org.gridgain.visor.plugin.api;
 import java.util.*;
 
 /**
- * Topology listener.
+ * Listener for grid node topology changes.
  */
 public interface VisorTopologyListener {
     /**
