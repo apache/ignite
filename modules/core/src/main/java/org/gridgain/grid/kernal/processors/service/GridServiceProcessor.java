@@ -940,15 +940,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
-                        try {
-                            for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
-                                if (!(e.getKey() instanceof GridServiceDeploymentKey))
-                                    continue;
+                            if (ctx.deploy().enabled())
+                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                                GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
+                            try {
+                                for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+                                    if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                                        continue;
 
-                                try {
-                                    svcName.set(dep.configuration().getName());
+                                    GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
                                     try {
                                         svcName.set(dep.configuration().getName());
