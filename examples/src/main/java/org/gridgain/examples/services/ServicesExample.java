@@ -24,9 +24,6 @@ import org.gridgain.grid.service.*;
  * NOTE:<br/>
  * Starting {@code ggstart.sh} directly will not work, as distributed services
  * cannot be peer-deployed and classes must be on the classpath for every node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ServicesExample {
     public static void main(String[] args) throws Exception {

@@ -57,11 +57,47 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPortableBuilder<T> builder() {
+    @Override public GridPortableBuilder builder() {
         guard();
 
         try {
             return proc.builder();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(cls.getName()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(String typeName) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(proc.typeId(typeName));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metaData(typeId);
         }
         finally {
             unguard();

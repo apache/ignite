@@ -635,7 +635,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /**
-     * Checks whether edition and build version of the local node are consistent with remote nodes.
+     * Checks whether attributes of the local node are consistent with remote nodes.
      *
      * @param nodes List of remote nodes to check attributes on.
      * @throws GridException In case of error.

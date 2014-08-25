@@ -154,59 +154,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExchangeFuturesGc() throws Exception {
-        try {
-            startGrid(0);
-            startGrid(1);
-
-            cacheEnabled = false;
-
-            for (int i = 10; i < 20; i++) {
-                try (Grid g = startGrid(i)) {
-                    assertEquals(3, g.nodes().size());
-                }
-            }
-
-            boolean recheck = false;
-
-            for (int i = 0; i < 3; i++) {
-                recheck = false;
-
-                for (Grid g : GridGain.allGrids()) {
-                    GridKernal g1 = (GridKernal)g;
-
-                    for (GridCache<?, ?> c : g1.caches()) {
-                        GridCacheAdapter<Object, Object> c0 = g1.internalCache(c.name());
-
-                        GridDhtCacheAdapter dht = c0 instanceof GridDhtCacheAdapter ? (GridDhtCacheAdapter)c0 :
-                            ((GridNearCacheAdapter)c0).dht();
-
-                        if (!((GridDhtPreloader)dht.preloader()).exchangeFutures().isEmpty()) {
-                            info("Check failed for [grid=" + g.name() + ", c=" + c.name() + ']');
-
-                            recheck = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (!recheck)
-                    break;
-
-                U.sleep(1000);
-            }
-
-            assertFalse("Check failed (see logs for details).", recheck);
-        }
-        finally {
-            G.stopAll(true);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");

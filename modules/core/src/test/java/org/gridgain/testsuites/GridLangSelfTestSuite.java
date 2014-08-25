@@ -47,7 +47,6 @@ public class GridLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridConcurrentLinkedHashMapMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentMapSelfTest.class));
         suite.addTest(new TestSuite(GridStripedLockSelfTest.class));
-        suite.addTest(new TestSuite(GridBitStreamsSelfTest.class));
 
         suite.addTest(new TestSuite(GridFutureAdapterSelfTest.class));
         suite.addTest(new TestSuite(GridFinishedFutureSelfTest.class));

@@ -993,6 +993,73 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    public void testGroupLockReadAffinityKeyPessimitsticRepeatableRead() throws Exception {
+        checkGroupLockReadAffinityKey(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyPessimitsticReadCommitted() throws Exception {
+        checkGroupLockReadAffinityKey(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyOptimisticRepeatableRead() throws Exception {
+        checkGroupLockReadAffinityKey(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyOptimisticReadCommitted() throws Exception {
+        checkGroupLockReadAffinityKey(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    private void checkGroupLockReadAffinityKey(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+        throws Exception {
+        UUID affinityKey = primaryKeyForCache(grid(0));
+
+        final GridCache<Object, String> cache = grid(0).cache(null);
+
+        final GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
+        final GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
+
+        cache.put(affinityKey, "0");
+        cache.put(key1, "0");
+        cache.put(key2, "0");
+
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 3)) {
+            assertEquals("0", cache.get(affinityKey));
+            assertEquals("0", cache.get(key1));
+            assertEquals("0", cache.get(key2));
+
+            cache.put(affinityKey, "1");
+            cache.put(key1, "1");
+            cache.put(key2, "1");
+
+            assertEquals("1", cache.get(affinityKey));
+            assertEquals("1", cache.get(key1));
+            assertEquals("1", cache.get(key2));
+
+            tx.commit();
+        }
+
+        assertEquals("1", cache.get(affinityKey));
+        assertEquals("1", cache.get(key1));
+        assertEquals("1", cache.get(key2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWriteThroughBatchUpdateOptimistic() throws Exception {
         // Configuration changed according to test name.
         assert batchUpdate();

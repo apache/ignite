@@ -270,7 +270,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      */
     public List<GridNode> assignPartition(int part, List<GridNode> nodes, int backups,
         @Nullable Map<UUID, Collection<GridNode>> neighborhoodCache) {
-        if (nodes.size() == 1)
+        if (nodes.size() <= 1)
             return nodes;
 
         List<GridBiTuple<Long, GridNode>> lst = new ArrayList<>();

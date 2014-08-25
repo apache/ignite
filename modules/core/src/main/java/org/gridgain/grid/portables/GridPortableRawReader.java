@@ -16,7 +16,9 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Reader for portable objects.
+ * Raw reader for portable objects. Raw reader does not use field name hash codes, therefore,
+ * making the format even more compact. However, if the raw reader is used,
+ * dynamic structure changes to the portable objects are not supported.
  */
 public interface GridPortableRawReader {
     /**
@@ -44,8 +46,8 @@ public interface GridPortableRawReader {
     public long readLong() throws GridPortableException;
 
     /**
-     * @throws GridPortableException In case of error.
      * @return Float value.
+     * @throws GridPortableException In case of error.
      */
     public float readFloat() throws GridPortableException;
 

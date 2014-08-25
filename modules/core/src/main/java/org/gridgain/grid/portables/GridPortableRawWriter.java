@@ -16,7 +16,9 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Writer for portable object.
+ * Raw writer for portable object. Raw writer does not write field name hash codes, therefore,
+ * making the format even more compact. However, if the raw writer is used,
+ * dynamic structure changes to the portable objects are not supported.
  */
 public interface GridPortableRawWriter {
     /**

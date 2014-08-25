@@ -42,6 +42,7 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
+        <module>modules/visor-plugins</module>
         <module>modules/visor-trial</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
@@ -211,6 +212,16 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
                             <windowtitle>GridGain ${gridgain.version}</windowtitle>
                             <breakiterator>true</breakiterator>
@@ -401,6 +412,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>core</destDir>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
@@ -515,6 +536,10 @@
                                     <title>Marshallers</title>
                                     <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
                                 </group>
+                                <group>
+                                    <title>Visor Plugins</title>
+                                    <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
@@ -593,6 +618,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>client</destDir>
                             <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>

@@ -63,24 +63,26 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         validate(cfg);
 
-        hctx = new GridHadoopContext(ctx,
-            cfg,
-            new GridHadoopJobTracker(),
-            cfg.isExternalExecution() ? new GridHadoopExternalTaskExecutor() : new GridHadoopEmbeddedTaskExecutor(),
-            new GridHadoopShuffle());
+        if (checkHadoopInstallation()) {
+            hctx = new GridHadoopContext(
+                ctx,
+                cfg,
+                new GridHadoopJobTracker(),
+                cfg.isExternalExecution() ? new GridHadoopExternalTaskExecutor() : new GridHadoopEmbeddedTaskExecutor(),
+                new GridHadoopShuffle());
 
-        for (GridHadoopComponent c : hctx.components())
-            c.start(hctx);
 
-        hadoop = new GridHadoopImpl(this);
+            for (GridHadoopComponent c : hctx.components())
+                c.start(hctx);
 
-        checkHadoopInstallation();
+            hadoop = new GridHadoopImpl(this);
+        }
     }
 
     /**
      * Checks Hadoop installation.
      */
-    private void checkHadoopInstallation() {
+    private boolean checkHadoopInstallation() {
         String hadoopHome = System.getenv("HADOOP_HOME");
 
         if (!F.isEmpty(hadoopHome))
@@ -93,18 +95,16 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
                 .getLocation();
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ++=========================   WARNING!!!   ==========================++ ");
-            U.quietAndWarn(log, "   !!  Apache Hadoop is not found in classpath! Check that HADOOP_HOME  !! ");
-            U.quietAndWarn(log, "   !!        points to valid Apache Hadoop installation directory!      !! ");
-            U.quietAndWarn(log, "   ++===================================================================++ ");
-            U.quietAndWarn(log, "   ");
-            U.quietAndWarn(log, "   ");
+            U.quietAndWarn(log, "Hadoop accelerator is disabled (Hadoop is not in classpath, " +
+                "is HADOOP_HOME environment variable set?)");
+
+            return false;
         }
 
         if (log.isDebugEnabled())
             log.debug("Hadoop classes are loaded from " + location);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -166,6 +166,10 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public GridHadoop hadoop() {
+        if (hadoop == null)
+            throw new IllegalStateException("Hadoop accelerator is disabled (Hadoop is not in classpath, " +
+                "is HADOOP_HOME environment variable set?)");
+
         return hadoop;
     }
 

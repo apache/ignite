@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -1693,30 +1694,33 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj == null)
             return null;
 
-        if (obj instanceof GridPortableObject)
+        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
             return obj;
 
-        return kernalContext().portable().marshalToPortable(obj);
+        GridPortableProcessor proc = kernalContext().portable();
+
+        assert proc != null;
+
+        return proc.marshalToPortable(obj);
     }
 
     /**
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param portableKeys Keep portable keys flag.
-     * @param portableVals Keep portable values flag.
+     * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
      * @throws GridException
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean portableKeys,
-        boolean portableVals) throws GridException {
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable)
+        throws GridException {
         if (!config().isPortableEnabled())
             return col;
 
         Collection<Object> unwrapped = new ArrayList<>(col.size());
 
         for (Object o : col) {
-            unwrapped.add(unwrapPortableIfNeeded(o, portableKeys, portableVals));
+            unwrapped.add(unwrapPortableIfNeeded(o, keepPortable));
         }
 
         return unwrapped;
@@ -1726,13 +1730,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps object for portables.
      *
      * @param o Object to unwrap.
-     * @param portableKeys Keep portable keys flag.
-     * @param portableVals Keep portable values flag.
+     * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
      * @throws GridException If failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean portableKeys, boolean portableVals) throws GridException {
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) throws GridException {
         if (!config().isPortableEnabled())
             return o;
 
@@ -1741,21 +1744,21 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             Object key = entry.getKey();
 
-            if (key instanceof GridPortableObject && !portableKeys)
-                key = ((GridPortableObject<Object>)key).deserialize();
+            if (key instanceof GridPortableObject && !keepPortable)
+                key = ((GridPortableObject)key).deserialize();
 
             Object val = entry.getValue();
 
-            if (val instanceof GridPortableObject && !portableVals)
-                val = ((GridPortableObject<Object>)val).deserialize();
+            if (val instanceof GridPortableObject && !keepPortable)
+                val = ((GridPortableObject)val).deserialize();
 
             return F.t(key, val);
         }
-        else if (!portableKeys || !portableVals) {
+        else if (!keepPortable) {
             if (o instanceof Collection)
-                return unwrapPortablesIfNeeded((Collection<Object>)o, portableKeys, portableVals);
+                return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable);
             else if (o instanceof GridPortableObject)
-                return ((GridPortableObject<Object>)o).deserialize();
+                return ((GridPortableObject)o).deserialize();
             else
                 return o;
         }
@@ -1820,10 +1823,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

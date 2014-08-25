@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -20,8 +19,6 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -126,56 +123,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         cache.get(300);
         assertEquals("load", store.getLastMethod());
-    }
-
-    /**
-     * @throws Exception If failed.
-     * TODO GG-8769 uncomment when fixed http://atlassian.gridgain.com/jira/browse/GG-8769
-     */
-    public void _testGetAndTransform() throws Exception {
-        final AtomicBoolean finish = new AtomicBoolean();
-
-        try {
-            startGrid(0);
-            startGrid(1);
-            startGrid(2);
-
-            final GridClosure<String, String> trans = new TransformClosure();
-
-            GridFuture<?> fut = multithreadedAsync(
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        GridCache<Integer, String> c = cache(ThreadLocalRandom.current().nextInt(3));
-
-                        while (!finish.get() && !Thread.currentThread().isInterrupted()) {
-                            c.get(ThreadLocalRandom.current().nextInt(100));
-                            c.put(ThreadLocalRandom.current().nextInt(100), "s");
-                            c.transform(
-                                ThreadLocalRandom.current().nextInt(100),
-                                trans);
-                        }
-
-                        return null;
-                    }
-                },
-                20);
-
-            Thread.sleep(15_000);
-
-            finish.set(true);
-
-            fut.get();
-        }
-        finally {
-            stopGrid(1);
-            stopGrid(2);
-            stopGrid(3);
-
-            while (!cache().isEmpty())
-                cache().globalClearAll(Long.MAX_VALUE);
-
-            store.reset();
-        }
     }
 
     /** @throws Exception If test fails. */
@@ -622,16 +569,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         else {
             assert lastMtd != null : "Last method must be not null";
             assert lastMtd.equals(mtd) : "Last method does not match [expected=" + mtd + ", lastMtd=" + lastMtd + ']';
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TransformClosure implements GridClosure<String, String> {
-        /** {@inheritDoc} */
-        @Override public String apply(String s) {
-            return "str";
         }
     }
 }
