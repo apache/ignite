@@ -635,15 +635,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         GridFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
 
-        if (beforePessimisticLock != null) {
-            keyFut = new GridEmbeddedFuture<>(true, keyFut,
-                new C2<Object, Exception, GridFuture<Object>>() {
-                    @Override public GridFuture<Object> apply(Object o, Exception e) {
-                        return beforePessimisticLock.apply(keys, tx != null);
-                    }
-                }, ctx.kernalContext());
-        }
-
         // Prevent embedded future creation if possible.
         if (keyFut.isDone()) {
             try {

@@ -74,28 +74,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void beforePessimisticLock(
-        GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock) {
-        dht().beforePessimisticLock(beforePessimisticLock);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock() {
-        return dht().beforePessimisticLock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterPessimisticUnlock(
-        GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock) {
-        dht().afterPessimisticUnlock(afterPessimisticUnlock);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock() {
-        return dht().afterPessimisticUnlock();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCachePreloader<K, V> preloader() {
         return dht().preloader();
     }

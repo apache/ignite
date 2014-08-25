@@ -1053,21 +1053,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     @SuppressWarnings({"unchecked"})
     protected final void processDhtTxFinishRequest(final UUID nodeId, final GridDhtTxFinishRequest<K, V> req) {
-        if (req.onePhaseCommit() && beforePessimisticLock != null) {
-            GridFuture<Object> f = beforePessimisticLock.apply(F.viewReadOnly(req.writes(), CU.<K, V>tx2key()), true);
-
-            if (f != null && !f.isDone()) {
-                f.listenAsync(new CI1<GridFuture<Object>>() {
-                    @Override public void apply(GridFuture<Object> t) {
-                        processDhtTxFinishRequest0(nodeId, req);
-                    }
-                });
-            }
-            else
-                processDhtTxFinishRequest0(nodeId, req);
-        }
-        else
-            processDhtTxFinishRequest0(nodeId, req);
+        processDhtTxFinishRequest0(nodeId, req);
     }
 
     /**
@@ -1148,17 +1134,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest<K, V> req) {
         GridFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
             ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
-
-        if (beforePessimisticLock != null) {
-            keyFut = keyFut == null ?
-                beforePessimisticLock.apply(req.keys(), req.inTx()) :
-                new GridEmbeddedFuture<>(true, keyFut,
-                    new C2<Object, Exception, GridFuture<Object>>() {
-                        @Override public GridFuture<Object> apply(Object o, Exception e) {
-                            return beforePessimisticLock.apply(req.keys(), req.inTx());
-                        }
-                    }, ctx.kernalContext());
-        }
 
         if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
@@ -1532,15 +1507,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         final List<K> keys = req.keys();
 
         GridFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, req.topologyVersion());
-
-        if (beforePessimisticLock != null) {
-            keyFut = new GridEmbeddedFuture<>(true, keyFut,
-                new C2<Object, Exception, GridFuture<Object>>() {
-                    @Override public GridFuture<Object> apply(Object o, Exception e) {
-                        return beforePessimisticLock.apply(keys, req.inTx());
-                    }
-                }, ctx.kernalContext());
-        }
 
         return new GridEmbeddedFuture<>(true, keyFut,
             new C2<Object, Exception, GridFuture<GridNearLockResponse<K,V>>>() {
@@ -2010,9 +1976,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         // as there is no point to reorder relative to the version
                         // we are about to remove.
                         if (entry.removeLock(req.version())) {
-                            if (afterPessimisticUnlock != null)
-                                afterPessimisticUnlock.apply(entry.key(), false, NOOP);
-
                             if (log.isDebugEnabled())
                                 log.debug("Removed lock [lockId=" + req.version() + ", key=" + key + ']');
                         }
@@ -2198,9 +2161,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
                     if (entry.removeLock(dhtVer)) {
-                        if (afterPessimisticUnlock != null)
-                            afterPessimisticUnlock.apply(entry.key(), false, NOOP);
-
                         // Map to backups and near readers.
                         map(nodeId, topVer, entry, readers, dhtMap, nearMap);
 

@@ -113,12 +113,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** Cache metrics. */
     protected volatile GridCacheMetricsAdapter metrics;
 
-    /** Before lock callback. */
-    protected GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock;
-
-    /** After lock callback. */
-    protected GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock;
-
     /** Logger. */
     protected GridLogger log;
 
@@ -393,23 +387,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             EnumSet.copyOf(F.asList(flags)), null, false);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
-    }
-
-    /**
-     * Sets callback that will be invoked before keys are locked. This callback may return future, in this
-     * case further locking process will be completed after this future completes.
-     *
-     * @param beforePessimisticLock Before lock callback.
-     */
-    public void beforePessimisticLock(GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock) {
-        this.beforePessimisticLock = beforePessimisticLock;
-    }
-
-    /**
-     * @return Before pessimistic lock callback.
-     */
-    public GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock() {
-        return beforePessimisticLock;
     }
 
     /** {@inheritDoc} */
@@ -3988,22 +3965,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean isDrSystemCache() {
         return drSysCache;
-    }
-
-    /**
-     * Sets callback that will be invoked after keys are unlocked.
-     *
-     * @param afterPessimisticUnlock After unlock callback.
-     */
-    public void afterPessimisticUnlock(GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock) {
-        this.afterPessimisticUnlock = afterPessimisticUnlock;
-    }
-
-    /**
-     * @return After pessimistic unlock request.
-     */
-    public GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock() {
-        return afterPessimisticUnlock;
     }
 
     /** {@inheritDoc} */
