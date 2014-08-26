@@ -373,7 +373,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             case ONHEAP_TIERED:
-                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null)
+                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
                     U.quietAndWarn(log, "Eviction policy not enabled with ONHEAP_TIERED mode for cache " +
                         "(entries will not be moved to off-heap store): " + cc.getName());
 
