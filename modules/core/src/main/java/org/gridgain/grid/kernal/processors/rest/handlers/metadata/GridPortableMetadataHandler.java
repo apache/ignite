@@ -83,7 +83,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
                 return new GridFinishedFuture<>(ctx, res);
             }
         }
-        catch (GridException e) {
+        catch (GridRuntimeException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
     }

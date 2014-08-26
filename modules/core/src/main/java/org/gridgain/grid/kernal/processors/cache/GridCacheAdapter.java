@@ -378,7 +378,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            null, subjId, false, false);
+            null, subjId, false);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -390,7 +390,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            EnumSet.copyOf(F.asList(flags)), null, false, false);
+            EnumSet.copyOf(F.asList(flags)), null, false);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -418,11 +418,29 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
+        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+            (GridCacheProjection<K1, V1>)this,
+            (GridCacheContext<K1, V1>)ctx,
+            null,
+            null,
+            null,
+            null,
+            ctx.portableEnabled());
+
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
         Class<? super K1> keyType,
         Class<? super V1> valType
     ) {
+        if (GridPortableObject.class.isAssignableFrom(keyType) || GridPortableObject.class.isAssignableFrom(valType))
+            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
+                "Use keepPortable() method instead.");
+
         if (ctx.deploymentEnabled()) {
             try {
                 ctx.deploy().registerClasses(keyType, valType);
@@ -434,8 +452,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((GridCacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null,
-            /*clientId*/null, GridPortableObject.class.isAssignableFrom(keyType),
-            GridPortableObject.class.isAssignableFrom(valType));
+            /*clientId*/null, false);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }
@@ -454,7 +471,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null, null, false, false);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null, null, false);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -474,7 +491,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(
-            this, ctx, null, filter, null, null, false, false);
+            this, ctx, null, filter, null, null, false);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -3323,6 +3340,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         if (p != null && !p.apply(key, val))
                             return;
 
+                        if (ctx.portableEnabled()) {
+                            key = (K)ctx.marshalToPortable(key);
+                            val = (V)ctx.marshalToPortable(val);
+                        }
+
                         GridDrRawEntry<K, V> e = new GridDrRawEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
@@ -3343,14 +3365,20 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
         else {
             // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().next();
+            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
 
-            ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
-                @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
+            ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
+                @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
+                    throws GridPortableException {
                     assert ver == null;
 
                     if (p != null && !p.apply(key, val))
                         return;
+
+                    if (ctx.portableEnabled()) {
+                        key = (K)ctx.marshalToPortable(key);
+                        val = (V)ctx.marshalToPortable(val);
+                    }
 
                     GridCacheEntryEx<K, V> entry = entryEx(key, false);
 
@@ -4026,14 +4054,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         checkDrEnabled();
 
         return ctx.dr().drPauseState();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<?, ?> forPortables() {
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            null, null, false, true);
-
-        return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
 
     /**

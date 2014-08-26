@@ -1628,8 +1628,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
                 else
                     LT.warn(log, null, "Node has not been connected to topology and will repeat join process. " +
+                        "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
-                        "Increase 'netTimeout' configuration property if getting this message on starting nodes.");
+                        "Increase 'netTimeout' configuration property if getting this message on the starting nodes.");
             }
         }
 
@@ -1827,7 +1828,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         int connectAttempts = 1;
 
+        boolean joinReqSent = false;
+
         for (int i = 0; i < reconCnt; i++) {
+            // Need to set to false on each new iteration,
+            // since remote node may leave in the middle of the first iteration.
+            joinReqSent = false;
+
             boolean openSock = false;
 
             try {
@@ -1861,6 +1868,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + res.creatorNodeId() + ']');
+
+                // Connection has been established, but
+                // join request may not be unmarshalled on remote host.
+                // E.g. due to class not found issue.
+                joinReqSent = msg instanceof GridTcpDiscoveryJoinRequestMessage;
 
                 return readReceipt(sock, ackTimeout0);
             }
@@ -1905,6 +1917,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             finally {
                 U.closeQuiet(sock);
             }
+        }
+
+        if (joinReqSent) {
+            if (log.isDebugEnabled())
+                log.debug("Join request has been sent, but receipt has not been read (returning RES_WAIT).");
+
+            // Topology will not include this node,
+            // however, warning on timed out join will be output.
+            return RES_OK;
         }
 
         throw new GridSpiException(
@@ -3565,6 +3586,90 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
                     if (!F.eq(rmtBuildVer, locBuildVer)) {
+                        final String osFlag = "-os";
+                        final String entFlag = "-ent";
+
+                        assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
+                        assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
+
+                        // OS and ENT nodes cannot join one topology.
+                        if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
+                            locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
+                            String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                "versions (node will not join, all nodes in topology should be of either " +
+                                "enterprise or open source version) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                    "versions (node will not join, all nodes in topology should be of either " +
+                                    "enterprise or open source version) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
+                        // OS nodes don't support rolling updates.
+                        if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
+                            !locBuildVer.equals(rmtBuildVer)) {
+                            String errMsg = "Local node and remote node have different version numbers " +
+                                "(node will not join, open source version does not support rolling updates, " +
+                                "so versions must be exactly the same) " +
+                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                            LT.warn(log, null, errMsg);
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug(errMsg);
+
+                            try {
+                                String sndMsg = "Local node and remote node have different version numbers " +
+                                    "(node will not join, open source version does not support rolling updates, " +
+                                    "so versions must be exactly the same) " +
+                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
+
+                                trySendMessageDirectly(node,
+                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send version check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Ignore join request.
+                            return;
+                        }
+
                         Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
                         Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
 
@@ -4839,6 +4944,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             "(consider increasing 'networkTimeout' configuration property) " +
                             "[netTimeout=" + netTimeout + ']');
 
+                    else if (e.hasCause(ClassNotFoundException.class))
+                        LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                            "(make sure same versions of all classes are available on all nodes) " +
+                            "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                            ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
+
                     // Always report marshalling problems.
                     else if (e.hasCause(ObjectStreamException.class) ||
                         (!sock.isClosed() && !e.hasCause(IOException.class)))
@@ -4997,6 +5108,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         if (isInterrupted() || sock.isClosed())
                             return;
+
+                        if (e.hasCause(ClassNotFoundException.class))
+                            LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                                "(make sure same versions of all classes are available on all nodes) " +
+                                "[rmtNodeId=" + nodeId +
+                                ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling errors.
                         boolean err = e.hasCause(ObjectStreamException.class) ||

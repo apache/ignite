@@ -349,7 +349,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             return resFut;
         }
-        catch (GridException e) {
+        catch (GridRuntimeException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
         finally {
