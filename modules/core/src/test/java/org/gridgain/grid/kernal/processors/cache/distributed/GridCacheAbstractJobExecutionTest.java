@@ -76,8 +76,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
             GridCache<String, int[]> c = g.cache(null);
 
-            assertEquals(0, c.size());
-            assertEquals(0, c.size());
+            assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
         }
     }
 
