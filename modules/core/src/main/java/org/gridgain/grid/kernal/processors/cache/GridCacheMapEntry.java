@@ -34,7 +34,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -3441,32 +3440,32 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMeta(String name, V val) {
+    @Nullable @Override public <V1> V1 addMeta(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
             ensureData(1);
 
-            return (V) attributeDataExtras().put(name, val);
+            return (V1)attributeDataExtras().put(name, val);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V meta(String name) {
+    @Nullable @Override public <V1> V1 meta(String name) {
         A.notNull(name, "name");
 
         synchronized (this) {
             GridLeanMap<String, Object> attrData = attributeDataExtras();
 
-            return attrData == null ? null : (V)attrData.get(name);
+            return attrData == null ? null : (V1)attrData.get(name);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Nullable
-    @Override public <V> V removeMeta(String name) {
+    @Override public <V1> V1 removeMeta(String name) {
         A.notNull(name, "name");
 
         synchronized (this) {
@@ -3475,7 +3474,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (attrData == null)
                 return null;
 
-            V old = (V)attrData.remove(name);
+            V1 old = (V1)attrData.remove(name);
 
             if (attrData.isEmpty())
                 attributeDataExtras(null);
@@ -3486,7 +3485,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> boolean removeMeta(String name, V val) {
+    @Override public <V1> boolean removeMeta(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
@@ -3495,7 +3494,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (attrData == null)
                 return false;
 
-            V old = (V)attrData.get(name);
+            V1 old = (V1)attrData.get(name);
 
             if (old != null && old.equals(val)) {
                 attrData.remove(name);
@@ -3512,7 +3511,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public synchronized  <V> Map<String, V> allMeta() {
+    @Override public synchronized  <V1> Map<String, V1> allMeta() {
         GridLeanMap<String, Object> attrData = attributeDataExtras();
 
         if (attrData == null)
@@ -3520,10 +3519,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         if (attrData.size() <= 5)
             // This is a singleton unmodifiable map.
-            return (Map<String, V>)attrData;
+            return (Map<String, V1>)attrData;
 
         // Return a copy.
-        return new HashMap<>((Map<String, V>)attrData);
+        return new HashMap<>((Map<String, V1>)attrData);
     }
 
     /** {@inheritDoc} */
@@ -3532,7 +3531,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
+    @Override public <V1> boolean hasMeta(String name, V1 val) {
         A.notNull(name, "name");
 
         Object v = meta(name);
@@ -3542,11 +3541,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+    @Nullable @Override public <V1> V1 putMetaIfAbsent(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 return addMeta(name, val);
@@ -3557,11 +3556,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "ClassReferencesSubclass"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+    @Nullable @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 try {
@@ -3577,11 +3576,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
+    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 addMeta(name, v = val);
@@ -3592,11 +3591,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null && c != null)
                 try {
@@ -3612,12 +3611,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+    @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
         A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
 
         synchronized (this) {
             if (hasMeta(name)) {
-                V val = this.<V>meta(name);
+                V1 val = this.<V1>meta(name);
 
                 if (val != null && val.equals(curVal)) {
                     addMeta(name, newVal);
