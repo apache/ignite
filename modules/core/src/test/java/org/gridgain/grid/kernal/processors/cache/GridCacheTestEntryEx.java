@@ -200,13 +200,6 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @return Any owner.
-     */
-    @Nullable public GridCacheMvccCandidate<K> anyOwner() {
-        return mvcc.anyOwner();
-    }
-
-    /**
      * @param ver Version.
      */
     public void doneRemote(GridCacheVersion ver) {
@@ -399,7 +392,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, String cloClsName,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return val;
     }
@@ -674,6 +667,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Override public GridCacheMvccCandidate<K> candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException {
         return mvcc.remoteCandidate(nodeId, threadId);
+    }
+
+    /** @inheritDoc */
+    @Override public GridCacheMvccCandidate<K> anyOwner() {
+        return mvcc.anyOwner();
     }
 
     /** @inheritDoc */

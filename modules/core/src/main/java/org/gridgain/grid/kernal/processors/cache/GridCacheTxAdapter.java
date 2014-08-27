@@ -30,6 +30,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
+import static org.gridgain.grid.events.GridEventType.EVT_CACHE_OBJECT_READ;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -1107,11 +1108,27 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*metrics*/metrics,
                         /*event*/false,
                         /*subjId*/null, // Passing null because event is not generated.
+                        /**closure name */null, // Passing null because event is not generated.
                         CU.<K, V>empty());
 
                 try {
-                    for (GridClosure<V, V> clos : txEntry.transformClosures())
-                        val = clos.apply(val);
+                    // TODO: GG-8999: Is it fine?
+                    boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+
+                    GridCacheMvccCandidate<K> owner = recordEvt ? txEntry.cached().anyOwner() : null;
+
+                    for (GridClosure<V, V> clos : txEntry.transformClosures()) {
+                        V newVal = clos.apply(val);
+
+                        if (recordEvt) {
+                            cctx.events().addEvent(txEntry.cached().partition(), txEntry.key(),
+                                this, owner, EVT_CACHE_OBJECT_READ,
+                                newVal, newVal != null, val, val != null,
+                                subjId, clos.getClass().getName());
+                        }
+
+                        val = newVal;
+                    }
                 }
                 catch (Throwable e) {
                     throw new GridRuntimeException("Transform closure must not throw any exceptions " +

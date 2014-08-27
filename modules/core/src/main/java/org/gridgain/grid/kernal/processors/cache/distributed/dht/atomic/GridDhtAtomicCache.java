@@ -728,7 +728,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             boolean isNew = entry.isNewLocked();
 
                             V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, subjId, filter);
+                                /*unmarshal*/true, /**update-metrics*/true, true, subjId, null, filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -1027,6 +1027,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 if (op == TRANSFORM) {
+                    GridClosure<V, V> transform = req.transformClosure(i);
+
                     V old = entry.innerGet(
                         null,
                         /*read swap*/true,
@@ -1036,9 +1038,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*metrics*/true,
                         /*event*/true,
                         req.subjectId(),
+                        transform.getClass().getName(),
                         CU.<K, V>empty());
-
-                    GridClosure<V, V> transform = req.transformClosure(i);
 
                     if (transformMap == null)
                         transformMap = new HashMap<>();
@@ -1141,6 +1142,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*event*/true,
                             req.subjectId(),
+                            null,
                             CU.<K, V>empty());
 
                         updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
@@ -1169,6 +1171,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*event*/true,
                             req.subjectId(),
+                            null,
                             CU.<K, V>empty());
 
                         GridBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
