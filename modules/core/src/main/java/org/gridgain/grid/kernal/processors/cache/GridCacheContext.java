@@ -1456,15 +1456,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty()) {
-            List<GridNode> owners = dht().topology().owners(entry.partition(), topVer);
-
-            assert dhtNodes.containsAll(owners) : "Invalid nodes resolving [dhtNodes=" + dhtNodes +
-                ", owners=" + owners + ']';
-
+        if (nearNodes != null && !nearNodes.isEmpty())
             // Exclude owner nodes.
-            ret |= map(entry, F.view(nearNodes, F.notIn(owners)), nearMap);
-        }
+            ret |= map(entry, nearNodes, nearMap);
 
         return ret;
     }
