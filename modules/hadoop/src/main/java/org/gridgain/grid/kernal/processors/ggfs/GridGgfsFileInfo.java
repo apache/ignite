@@ -95,7 +95,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
      */
-    GridGgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
+    public GridGgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
         this(isDir, null, isDir ? 0 : GridGgfsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
             System.currentTimeMillis(), false);
     }
@@ -132,8 +132,8 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
      */
-    GridGgfsFileInfo(int blockSize, long len, @Nullable GridUuid affKey, @Nullable GridUuid lockId,
-        boolean evictExclude, @Nullable Map<String, String> props) {
+    public GridGgfsFileInfo(int blockSize, long len, @Nullable GridUuid affKey, @Nullable GridUuid lockId,
+                            boolean evictExclude, @Nullable Map<String, String> props) {
         this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
     }
 

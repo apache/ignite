@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -352,7 +351,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @throws GridException If failed.
      */
     @Nullable public GridFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final GridGgfsPath path,
-        final long blockIdx, @Nullable final GridGgfsSecondaryInputStreamWrapper inWrapper)
+        final long blockIdx, @Nullable final GridGgfsReader inWrapper)
         throws GridException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -399,22 +398,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 int read = 0;
 
                                 synchronized (inWrapper) {
-                                    try {
-                                        // Delegate to the secondary file system.
-                                        FSDataInputStream in = inWrapper.in();
+                                    // Delegate to the secondary file system.
+                                    while (read < blockSize) {
+                                        int r = inWrapper.read(pos + read, res, read, blockSize - read);
 
-                                        while (read < blockSize) {
-                                            int r = in.read(pos + read, res, read, blockSize - read);
+                                        if (r < 0)
+                                            break;
 
-                                            if (r < 0)
-                                                break;
-
-                                            read += r;
-                                        }
-                                    }
-                                    catch (IOException e) {
-                                        throw new GridException("Failed to read data due to secondary file system " +
-                                            "exception: " + e.getMessage(), e);
+                                        read += r;
                                     }
                                 }
 

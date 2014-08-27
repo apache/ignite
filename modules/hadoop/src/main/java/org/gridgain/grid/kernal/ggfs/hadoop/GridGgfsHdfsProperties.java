@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.ggfs;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;

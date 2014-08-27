@@ -9,12 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
@@ -39,7 +37,7 @@ public class GridGgfsFileWorkerBatch {
     private final GridGgfsPath path;
 
     /** Output stream to the file. */
-    private final FSDataOutputStream out;
+    private final GridGgfsWriter out;
 
     /** Caught exception. */
     private volatile GridException err;
@@ -53,7 +51,7 @@ public class GridGgfsFileWorkerBatch {
      * @param path Path to the file in the primary file system.
      * @param out Output stream opened to that file.
      */
-    GridGgfsFileWorkerBatch(GridGgfsPath path, FSDataOutputStream out) {
+    GridGgfsFileWorkerBatch(GridGgfsPath path, GridGgfsWriter out) {
         assert path != null;
         assert out != null;
 
@@ -70,13 +68,7 @@ public class GridGgfsFileWorkerBatch {
     boolean write(final byte[] data) {
         return addTask(new GridGgfsFileWorkerTask() {
             @Override public void execute() throws GridException {
-                try {
-                    out.write(data);
-                }
-                catch (IOException e) {
-                    throw new GridException("Failed to write data to the file due to secondary file system " +
-                        "exception: " + path, e);
-                }
+                out.write(data);
             }
         });
     }

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.ggfs.*;
+
 /**
  * Descriptor of an input stream opened to the secondary file system.
  */
@@ -17,7 +19,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     private final GridGgfsFileInfo info;
 
     /** Secondary file system input stream wrapper. */
-    private final GridGgfsSecondaryInputStreamWrapper wrapper;
+    private final GridGgfsReader wrapper;
 
     /**
      * Constructor.
@@ -25,7 +27,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param wrapper Secondary file system input stream wrapper.
      */
-    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, GridGgfsSecondaryInputStreamWrapper wrapper) {
+    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, GridGgfsReader wrapper) {
         assert info != null;
         assert wrapper != null;
 
@@ -43,7 +45,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     /**
      * @return Secondary file system input stream wrapper.
      */
-    GridGgfsSecondaryInputStreamWrapper wrapper() {
+    GridGgfsReader wrapper() {
         return wrapper;
     }
 }

@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.ggfs;
+package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem;
+import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -20,10 +21,9 @@ import java.io.*;
  * Secondary file system input stream wrapper which actually opens input stream only in case it is explicitly
  * requested.
  * <p>
- * The class is expected to be used only from synchronized context (e.g. {@link GridGgfsInputStreamImpl}) and therefore
- * is not tread-safe.
+ * The class is expected to be used only from synchronized context and therefore is not tread-safe.
  */
-public class GridGgfsSecondaryInputStreamWrapper {
+public class GridGgfsHadoopReader implements GridGgfsReader {
     /** Secondary file system. */
     private final FileSystem fs;
 
@@ -53,7 +53,7 @@ public class GridGgfsSecondaryInputStreamWrapper {
      * @param bufSize Buffer size.
      * @param log Logger.
      */
-    GridGgfsSecondaryInputStreamWrapper(FileSystem fs, Path path, int bufSize, GridLogger log) {
+    GridGgfsHadoopReader(FileSystem fs, Path path, int bufSize, GridLogger log) {
         assert fs != null;
         assert path != null;
         assert log != null;
@@ -65,7 +65,7 @@ public class GridGgfsSecondaryInputStreamWrapper {
     }
 
     /** Get input stream. */
-    FSDataInputStream in() throws IOException {
+    private PositionedReadable in() throws IOException {
         if (opened) {
             if (err != null)
                 throw err;
@@ -77,8 +77,7 @@ public class GridGgfsSecondaryInputStreamWrapper {
                 in = fs.open(path, bufSize);
 
                 if (in == null)
-                    throw new IOException("Failed to open input stream (secondary file system returned null): " +
-                        path);
+                    throw new IOException("Failed to open input stream (secondary file system returned null): " + path);
             }
             catch (IOException e) {
                 err = e;
@@ -95,7 +94,16 @@ public class GridGgfsSecondaryInputStreamWrapper {
     /**
      * Close wrapped input stream in case it was previously opened.
      */
-    void close() {
+    @Override public void close() {
         U.closeQuiet(in);
+    }
+
+    @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
+        try {
+            return in().read(pos, buf, off, len);
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 }

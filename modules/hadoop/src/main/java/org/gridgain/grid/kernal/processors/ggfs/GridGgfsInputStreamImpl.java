@@ -37,7 +37,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
 
     /** Secondary file system input stream wrapper. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final GridGgfsSecondaryInputStreamWrapper inWrapper;
+    private final GridGgfsReader inWrapper;
 
     /** Logger. */
     private GridLogger log;
@@ -102,8 +102,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param metrics Local GGFS metrics.
      */
     GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
-        GridGgfsLocalMetrics metrics) {
+        int seqReadsBeforePrefetch, @Nullable GridGgfsReader inWrapper, GridGgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;

@@ -9,9 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
@@ -34,7 +31,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.ggfs.GridGgfs.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
@@ -1551,7 +1547,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fs File system.
      * @param path Path.
      * @param simpleCreate "Simple create" flag.
-     * @param perm Permission.
+     * @param props Properties..
      * @param overwrite Overwrite flag.
      * @param bufSize Buffer size.
      * @param replication Replication factor.
@@ -1560,8 +1556,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws GridException If file creation failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor createDual(final FileSystem fs, final GridGgfsPath path,
-        final boolean simpleCreate, @Nullable final FsPermission perm, final boolean overwrite, final int bufSize,
+    public GridGgfsSecondaryOutputStreamDescriptor createDual(final GridGgfsFileSystem fs, final GridGgfsPath path,
+        final boolean simpleCreate, @Nullable final Map<String, String> props, final boolean overwrite, final int bufSize,
         final short replication, final long blockSize, final GridUuid affKey)
         throws GridException {
         if (busyLock.enterBusy()) {
@@ -1575,7 +1571,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
                         /** Output stream to the secondary file system. */
-                        private FSDataOutputStream out;
+                        private GridGgfsWriter out;
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
                             GridGgfsFileInfo> infos) throws Exception {
@@ -1594,10 +1590,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo parentInfo = infos.get(parentPath);
 
                             // Delegate to the secondary file system.
-                            Path path0 = secondaryPath(path);
+                            GridGgfsPath path0 = secondaryPath(path);
 
-                            out = simpleCreate ? fs.create(secondaryPath(path), overwrite) :
-                                fs.create(path0, perm, overwrite, bufSize, replication, blockSize, null);
+                            out = simpleCreate ? fs.createFile(secondaryPath(path), overwrite) :
+                                fs.createFile(path0, props, overwrite, bufSize, replication, blockSize);
 
                             GridGgfsPath parent0 = path.parent();
 
@@ -1622,15 +1618,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             }
 
                             // Get created file info.
-                            FileStatus status;
-
-                            try {
-                                status = fs.getFileStatus(path0);
-                            }
-                            catch (IOException e) {
-                                throw new GridGgfsException("Failed to get status of the file created in the " +
-                                    "secondary file system: " + path, e);
-                            }
+                            GridGgfsFileStatus status = fs.getFileStatus(path0);
 
                             if (status == null)
                                 throw new GridGgfsException("Failed to open output stream to the file created in " +
@@ -1639,9 +1627,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because the path points to a directory: " + path);
 
-                            GridGgfsFileInfo newInfo = new GridGgfsFileInfo((int)status.getBlockSize(),
+                            GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.getBlockSize(),
                                 status.getLen(), affKey, GridUuid.randomUuid(),
-                                ggfsCtx.ggfs().evictExclude(path, false), properties(status));
+                                ggfsCtx.ggfs().evictExclude(path, false), status.properties());
 
                             // Add new file info to the listing optionally removing the previous one.
                             GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
@@ -1670,7 +1658,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                             }
                                             catch (GridException e) {
                                                 LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
-                                                    ", simpleCreate=" + simpleCreate + ", permission=" + perm +
+                                                    ", simpleCreate=" + simpleCreate + ", permission=" + props +
                                                     ", overwrite=" + overwrite + ", bufferSize=" + bufSize +
                                                     ", replication=" + replication + ", blockSize=" + blockSize + ']');
                                             }
@@ -1695,7 +1683,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             U.closeQuiet(out);
 
                             U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
-                                simpleCreate + ", permission=" + perm + ", overwrite=" + overwrite + ", bufferSize=" +
+                                simpleCreate + ", permission=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
                                 bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
 
                             if (err instanceof GridGgfsException)
@@ -1731,7 +1719,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws GridException If output stream open for append has failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor appendDual(final FileSystem fs, final GridGgfsPath path,
+    public GridGgfsSecondaryOutputStreamDescriptor appendDual(final GridGgfsFileSystem fs, final GridGgfsPath path,
         final int bufSize) throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1741,7 +1729,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
                         /** Output stream to the secondary file system. */
-                        private FSDataOutputStream out;
+                        private GridGgfsWriter out;
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
                             GridGgfsFileInfo> infos) throws Exception {
@@ -1751,9 +1739,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
-                            Path path0 = secondaryPath(path);
+                            GridGgfsPath path0 = secondaryPath(path);
 
-                            out = fs.append(path0, bufSize);
+                            out = fs.appendFile(path0, bufSize);
 
                             // Synchronize file ending.
                             long len = info.length();
@@ -1764,8 +1752,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (remainder > 0) {
                                 int blockIdx = (int)(len / blockSize);
 
-                                GridGgfsSecondaryInputStreamWrapper wrapper =
-                                    new GridGgfsSecondaryInputStreamWrapper(fs, path0, bufSize, log);
+                                GridGgfsReader wrapper = fs.openFile(path0, bufSize);
 
                                 try {
                                     ggfsCtx.data().dataBlock(info, path, blockIdx, wrapper).get();
@@ -1780,8 +1767,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                             metaCache.putx(info.id(), info);
 
-                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info,
-                                out);
+                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
                         }
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
@@ -1818,7 +1804,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Input stream descriptor.
      * @throws GridException If input stream open has failed.
      */
-    public GridGgfsSecondaryInputStreamDescriptor openDual(final FileSystem fs, final GridGgfsPath path,
+    public GridGgfsSecondaryInputStreamDescriptor openDual(final GridGgfsFileSystem fs, final GridGgfsPath path,
         final int bufSize)
         throws GridException {
         if (busyLock.enterBusy()) {
@@ -1834,7 +1820,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                     return new GridGgfsSecondaryInputStreamDescriptor(info,
-                        new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
+                        fs.openFile(secondaryPath(path), bufSize));
                 }
 
                 // If failed, try synchronize.
@@ -1850,7 +1836,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                             return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path),
-                                new GridGgfsSecondaryInputStreamWrapper(fs, secondaryPath(path), bufSize, log));
+                                fs.openFile(secondaryPath(path), bufSize));
                         }
 
                         @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
@@ -1884,7 +1870,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info or {@code null} if file not found.
      * @throws GridException If sync task failed.
      */
-    @Nullable public GridGgfsFileInfo synchronizeFileDual(final FileSystem fs, final GridGgfsPath path)
+    @Nullable public GridGgfsFileInfo synchronizeFileDual(final GridGgfsFileSystem fs, final GridGgfsPath path)
         throws GridException {
         assert fs != null;
         assert path != null;
@@ -1935,7 +1921,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} in case rename was successful.
      * @throws GridException If directory creation failed.
      */
-    public boolean mkdirsDual(final FileSystem fs, final GridGgfsPath path, final Map<String, String> props)
+    public boolean mkdirsDual(final GridGgfsFileSystem fs, final GridGgfsPath path, final Map<String, String> props)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -1951,8 +1937,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                        if (!fs.mkdirs(secondaryPath(path), new GridGgfsHdfsProperties(props).permission()))
-                            return false;
+                        fs.mkdirs(secondaryPath(path), props);
 
                         assert !infos.isEmpty();
 
@@ -2020,7 +2005,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Operation result.
      * @throws GridException If failed.
      */
-    public boolean renameDual(final FileSystem fs, final GridGgfsPath src, final GridGgfsPath dest) throws
+    public boolean renameDual(final GridGgfsFileSystem fs, final GridGgfsPath src, final GridGgfsPath dest) throws
         GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2050,9 +2035,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 dest);
 
                         // Delegate to the secondary file system.
-                        if (!fs.rename(secondaryPath(src), secondaryPath(dest)))
-                            throw new GridGgfsException("Failed to rename (secondary file system returned false) " +
-                                "[src=" + src + ", dest=" + dest + ']');
+                        fs.rename(secondaryPath(src), secondaryPath(dest));
 
                         // Rename was successful, perform compensation in the local file system.
                         if (destInfo == null) {
@@ -2123,7 +2106,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Operation result.
      * @throws GridException If delete failed.
      */
-    public boolean deleteDual(final FileSystem fs, final GridGgfsPath path, final boolean recursive)
+    public boolean deleteDual(final GridGgfsFileSystem fs, final GridGgfsPath path, final boolean recursive)
         throws GridException {
         if (busyLock.enterBusy()) {
             try {
@@ -2189,7 +2172,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Update file info.
      * @throws GridException If update failed.
      */
-    public GridGgfsFileInfo updateDual(final FileSystem fs, final GridGgfsPath path, final Map<String, String> props)
+    public GridGgfsFileInfo updateDual(final GridGgfsFileSystem fs, final GridGgfsPath path, final Map<String, String> props)
         throws GridException {
         assert fs != null;
         assert path != null;
@@ -2203,15 +2186,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         if (infos.get(path) == null)
                             return null;
 
-                        Path secondaryPath = secondaryPath(path);
-
-                        GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props);
-
-                        if (props0.userName() != null || props0.groupName() != null)
-                            fs.setOwner(secondaryPath, props0.userName(), props0.groupName());
-
-                        if (props0.permission() != null)
-                            fs.setPermission(secondaryPath, props0.permission());
+                        fs.update(secondaryPath(path), props);
 
                         assert path.parent() == null || infos.get(path.parent()) != null;
 
@@ -2236,8 +2211,6 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         }
         else
             throw new IllegalStateException("Failed to update in DUAL mode because Grid is stopping: " + path);
-
-
     }
 
     /**
@@ -2252,7 +2225,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info of the end path.
      * @throws GridException If failed.
      */
-    private GridGgfsFileInfo synchronize(FileSystem fs, GridGgfsPath startPath, GridGgfsFileInfo startPathInfo,
+    private GridGgfsFileInfo synchronize(GridGgfsFileSystem fs, GridGgfsPath startPath, GridGgfsFileInfo startPathInfo,
         GridGgfsPath endPath, boolean strict, @Nullable Map<GridGgfsPath, GridGgfsFileInfo> created)
         throws GridException {
         assert fs != null;
@@ -2274,15 +2247,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 parentInfo = created.get(curPath);
             else {
                 // Get file status from the secondary file system.
-                FileStatus status = null;
+                GridGgfsFileStatus status = null;
                 IOException err = null;
 
-                try {
-                    status = fs.getFileStatus(secondaryPath(curPath));
-                }
-                catch (IOException e) {
-                    err = e;
-                }
+                status = fs.getFileStatus(secondaryPath(curPath));
 
                 if (status != null) {
                     if (!status.isDir() && !curPath.equals(endPath))
@@ -2302,9 +2270,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 }
 
                 // Recreate the path locally.
-                GridGgfsFileInfo curInfo = status.isDir() ? new GridGgfsFileInfo(true, properties(status)) :
+                GridGgfsFileInfo curInfo = status.isDir() ? new GridGgfsFileInfo(true, status.properties()) :
                     new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.getLen(),
-                        ggfsCtx.ggfs().evictExclude(curPath, false), properties(status));
+                        ggfsCtx.ggfs().evictExclude(curPath, false), status.properties());
 
                 GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
@@ -2332,7 +2300,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws GridException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, FileSystem fs, boolean strict,
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, GridGgfsFileSystem fs, boolean strict,
         GridGgfsPath... paths)
         throws GridException {
         return synchronizeAndExecute(task, fs, strict, null, paths);
@@ -2350,7 +2318,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws GridException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, FileSystem fs, boolean strict,
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, GridGgfsFileSystem fs, boolean strict,
         @Nullable Collection<GridUuid> extraLockIds, GridGgfsPath... paths) throws GridException {
         assert task != null;
         assert fs != null;
@@ -2579,32 +2547,16 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     }
 
     /**
-     * Convert Hadoop FileStatus properties to map.
-     *
-     * @param status File status.
-     * @return GGFS attributes.
-     */
-    private Map<String, String> properties(FileStatus status) {
-        FsPermission perm = status.getPermission();
-
-        if (perm == null)
-            perm = FsPermission.getDefault();
-
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()), PROP_USER_NAME, status.getOwner(),
-            PROP_GROUP_NAME, status.getGroup());
-    }
-
-    /**
      * Convert local file system path to secondary file system path.
      *
      * @param path Local file system path.
      * @return Secondary file system path.
      */
-    private Path secondaryPath(GridGgfsPath path) {
+    private GridGgfsPath secondaryPath(GridGgfsPath path) {
         assert path != null;
         assert cfg.getSecondaryHadoopFileSystemUri() != null;
 
-        return new Path(cfg.getSecondaryHadoopFileSystemUri() +
+        return new GridGgfsPath(cfg.getSecondaryHadoopFileSystemUri() +
             path.toString().substring(path.root().toString().length()));
     }
 

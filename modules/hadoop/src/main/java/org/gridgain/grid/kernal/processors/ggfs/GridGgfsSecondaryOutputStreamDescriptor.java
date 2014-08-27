@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.ggfs.*;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.
@@ -23,7 +23,7 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
     private final GridGgfsFileInfo info;
 
     /** Output stream to the secondary file system. */
-    private final FSDataOutputStream out;
+    private final GridGgfsWriter out;
 
     /**
      * Constructor.
@@ -32,7 +32,7 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param out Output stream to the secondary file system.
      */
-    GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, FSDataOutputStream out) {
+    GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, GridGgfsWriter out) {
         assert parentId != null;
         assert info != null;
         assert out != null;
@@ -59,7 +59,7 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
     /**
      * @return Output stream to the secondary file system.
      */
-    FSDataOutputStream out() {
+    GridGgfsWriter out() {
         return out;
     }
 }

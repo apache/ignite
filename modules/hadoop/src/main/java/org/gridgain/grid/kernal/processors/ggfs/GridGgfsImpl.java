@@ -9,11 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.permission.*;
-import org.apache.hadoop.ipc.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -85,7 +80,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final GridGgfsModeResolver modeRslvr;
 
     /** Connection to the secondary file system. */
-    private FileSystem secondaryFs;
+    private GridGgfsFileSystem secondaryFs;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -219,18 +214,18 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 throw new GridException("Failed to resolve secondary file system config URL: " +
                     ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath());
 
-            Configuration hadoopCfg = new Configuration();
-
-            hadoopCfg.addResource(hadoopCfgUrl);
-
-            try {
-                secondaryFs = FileSystem.get(hadoopUri, hadoopCfg);
-            }
-            catch (IOException e) {
-                throw handleSecondaryFsError(e, "Failed to connect to the secondary Hadoop file system [uri=" +
-                    secUri + ", configPath=" +
-                    ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath() + ']');
-            }
+//            Configuration hadoopCfg = new Configuration();
+//
+//            hadoopCfg.addResource(hadoopCfgUrl);
+//
+//            try {
+//                secondaryFs = FileSystem.get(hadoopUri, hadoopCfg);
+//            }
+//            catch (IOException e) {
+//                throw handleSecondaryFsError(e, "Failed to connect to the secondary Hadoop file system [uri=" +
+//                    secUri + ", configPath=" +
+//                    ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath() + ']');
+//            }
         }
 
         secondaryPaths = new GridGgfsPaths(cfg.getSecondaryHadoopFileSystemUri(),
@@ -306,7 +301,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @return Created batch.
      * @throws GridException In case new batch cannot be created.
      */
-    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, FSDataOutputStream out) throws GridException {
+    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, GridGgfsWriter out) throws GridException {
         assert path != null;
         assert out != null;
 
@@ -408,17 +403,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param path Secondary HDFS path.
      * @return GGFS path.
      */
-    private GridGgfsPath primaryPath(GridGgfsPath parent, Path path) {
+    private GridGgfsPath primaryPath(GridGgfsPath parent, GridGgfsPath path) {
         assert cfg.getSecondaryHadoopFileSystemUri() != null;
 
         String root = path.toString();
 
-        Path curRoot = path.getParent();
+        GridGgfsPath curRoot = path.parent();
 
         while (curRoot != null) {
             root = curRoot.toString();
 
-            curRoot = curRoot.getParent();
+            curRoot = curRoot.parent();
         }
 
         return new GridGgfsPath(parent.root().toString() + path.toString().substring(root.length()));
@@ -430,27 +425,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param path Current path.
      * @return Path in secondary Hadoop FS.
      */
-    private Path secondaryPath(GridGgfsPath path) {
+    private GridGgfsPath secondaryPath(GridGgfsPath path) {
         assert cfg.getSecondaryHadoopFileSystemUri() != null;
 
-        return new Path(cfg.getSecondaryHadoopFileSystemUri() +
+        return new GridGgfsPath(cfg.getSecondaryHadoopFileSystemUri() +
             path.toString().substring(path.root().toString().length()));
-    }
-
-    /**
-     * Convert Hadoop FileStatus properties to map.
-     *
-     * @param status File status.
-     * @return GGFS attributes.
-     */
-    private Map<String, String> properties(FileStatus status) {
-        FsPermission perm = status.getPermission();
-
-        if (perm == null)
-            perm = FsPermission.getDefault();
-
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()), PROP_USER_NAME, status.getOwner(),
-            PROP_GROUP_NAME, status.getGroup());
     }
 
     /** {@inheritDoc} */
@@ -558,39 +537,33 @@ public final class GridGgfsImpl implements GridGgfsEx {
         if (log.isDebugEnabled())
             log.debug("Check file exists: " + path);
 
-        try {
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
+        GridGgfsMode mode = modeRslvr.resolveMode(path);
 
-            if (mode == PROXY)
-                throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+        if (mode == PROXY)
+            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-            boolean res = false;
+        boolean res = false;
 
-            switch (mode) {
-                case PRIMARY:
-                    res = meta.fileId(path) != null;
+        switch (mode) {
+            case PRIMARY:
+                res = meta.fileId(path) != null;
 
-                    break;
+                break;
 
-                case DUAL_SYNC:
-                case DUAL_ASYNC:
-                    res = meta.fileId(path) != null;
+            case DUAL_SYNC:
+            case DUAL_ASYNC:
+                res = meta.fileId(path) != null;
 
-                    if (!res)
-                        res = secondaryFs.exists(secondaryPath(path));
+                if (!res)
+                    res = secondaryFs.exists(secondaryPath(path));
 
-                    break;
+                break;
 
-                default:
-                    assert false : "Unknown mode.";
-            }
-
-            return res;
+            default:
+                assert false : "Unknown mode.";
         }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to check file existence due to secondary file system exception: " +
-                path);
-        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -1024,22 +997,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    try {
-                        FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+                    Collection<GridGgfsPath> children = secondaryFs.listPaths(secondaryPath(path));
 
-                        if (statuses == null)
-                            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-
-                        for (FileStatus status : statuses)
-                            files.add(status.getPath().getName());
-                    }
-                    catch (FileNotFoundException ignored) {
-                        throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-                    }
-                    catch (IOException e) {
-                        throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system " +
-                            "exception: " + path);
-                    }
+                    for (GridGgfsPath child : children)
+                        files.add(child.name());
                 }
 
                 GridUuid fileId = meta.fileId(path);
@@ -1088,25 +1049,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    try {
-                        FileStatus[] statuses = secondaryFs.listStatus(secondaryPath(path));
+                    Collection<GridGgfsFile> children = secondaryFs.listFiles(secondaryPath(path));
 
-                        if (statuses == null)
-                            throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    for (GridGgfsFile child : children) {
+                        GridGgfsFileInfo fsInfo = new GridGgfsFileInfo(cfg.getBlockSize(), child.length(),
+                            evictExclude(path, false), child.properties());
 
-                        for (FileStatus status : statuses) {
-                            GridGgfsFileInfo fsInfo = fileInfo(path, status);
-
-                            files.add(new GridGgfsFileImpl(primaryPath(path, status.getPath()), fsInfo,
-                                data.groupBlockSize()));
-                        }
-                    }
-                    catch (FileNotFoundException ignored) {
-                        throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
-                    }
-                    catch (IOException e) {
-                        throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system " +
-                            "exception: " + path);
+                        files.add(new GridGgfsFileImpl(primaryPath(path, child.path()), fsInfo, data.groupBlockSize()));
                     }
                 }
 
@@ -1144,6 +1093,77 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
         else
             throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsReader openFile(final GridGgfsPath path, final int bufSize) {
+        return new GridGgfsReader() {
+            private GridGgfsInputStreamAdapter in;
+
+            @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
+                if (in == null)
+                    in = open(path, bufSize);
+
+                try {
+                    return in.read(pos, buf, off, len);
+                }
+                catch (IOException e) {
+                    throw new GridException(e);
+                }
+            }
+
+            @Override public void close() throws IOException {
+                if (in != null)
+                    in.close();
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
+        int bufSize, short replication, long blockSize) throws GridException {
+        return new GridGgfsOutputStreamWriter(create0(path, bufSize, overwrite, null, replication, props, true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException {
+        return new GridGgfsOutputStreamWriter(create(path, overwrite));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException {
+        return new GridGgfsOutputStreamWriter(append(path, bufSize, false, null));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsFileStatus getFileStatus(final GridGgfsPath path) throws GridException {
+        final GridGgfsFile info = info(path);
+
+        if (info == null)
+            return null;
+
+        return new GridGgfsFileStatus() {
+            @Override public boolean isDir() {
+                return info.isDirectory();
+            }
+
+            @Override public int getBlockSize() {
+                return info.blockSize();
+            }
+
+            @Override public long getLen() {
+                return info.length();
+            }
+
+            @Override public Map<String, String> properties() {
+                return info.properties();
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public long usedSpaceSize() throws GridException {
+        return metrics().localSpaceSize();
     }
 
     /** {@inheritDoc} */
@@ -1226,7 +1246,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
         @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException {
-           return create0(path, bufSize, overwrite, affKey, replication, props, false);
+        return create0(path, bufSize, overwrite, affKey, replication, props, false);
     }
 
     /**
@@ -1271,11 +1291,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                     await(path);
 
-                    GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props :
-                        Collections.<String, String>emptyMap());
-
                     GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props0.permission(), overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                            props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
@@ -1478,19 +1495,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @throws GridException If path exists.
      */
     private void checkConflictWithPrimary(GridGgfsPath path) throws GridException {
-        try {
-            if (secondaryFs != null) {
-                if (secondaryFs.getFileStatus(secondaryPath(path)) != null) {
-                    throw new GridException("Path mapped to a PRIMARY mode found in secondary file " +
-                        "system. Remove path from secondary file system or change path mapping: " + path);
-                }
+        if (secondaryFs != null) {
+            if (secondaryFs.getFileStatus(secondaryPath(path)) != null) {
+                throw new GridException("Path mapped to a PRIMARY mode found in secondary file " +
+                     "system. Remove path from secondary file system or change path mapping: " + path);
             }
-        }
-        catch (FileNotFoundException ignored) {
-            // No-op.
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to get status from secondary file system for path: " + path);
         }
     }
 
@@ -1558,12 +1567,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 if (secondaryFs != null) {
                     try {
-                        secondarySpaceSize =
-                            secondaryFs.getContentSummary(secondaryPath(new GridGgfsPath())).getSpaceConsumed();
+                        secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
-                    catch (IOException e) {
-                        LT.warn(log, e, "Failed to get secondary file system consumed space size.");
-
+                    catch (GridException ignore) {
                         secondarySpaceSize = -1;
                     }
                 }
@@ -1713,47 +1719,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /**
-     * Get file status of the given path on remote HDFS.
-     *
-     * @param path Path.
-     * @return File status converted to GGFS file info or {@code null} in case such a file doesn't exists.
-     * @throws GridException If failed.
-     */
-    @Nullable private GridGgfsFileInfo hadoopFileStatus(GridGgfsPath path) throws GridException {
-        assert secondaryFs != null;
-
-        GridGgfsFileInfo info = null;
-
-        try {
-            info = fileInfo(path, secondaryFs.getFileStatus(secondaryPath(path)));
-        }
-        catch (FileNotFoundException ignore) {
-            // No-op.
-        }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed to get file status due to secondary file system exception: " + path);
-        }
-
-        return info;
-    }
-
-    /**
-     * Convert Hadoop file status for GGFS file info.
-     *
-     * @param path Primary path.
-     * @param status Hadoop file status.
-     * @return GGFS file info.
-     */
-    @SuppressWarnings("deprecation")
-    private GridGgfsFileInfo fileInfo(GridGgfsPath path, FileStatus status) {
-        assert status != null;
-
-        return status.isDir() ? new GridGgfsFileInfo(true, properties(status)) :
-            new GridGgfsFileInfo(cfg.getBlockSize(), status.getLen(), evictExclude(path, false),
-                properties(status));
-    }
-
-    /**
      * Get file descriptor for specified path.
      *
      * @param path Path to file.
@@ -1881,8 +1846,14 @@ public final class GridGgfsImpl implements GridGgfsEx {
             case DUAL_ASYNC:
                 info = meta.info(meta.fileId(path));
 
-                if (info == null)
-                    info = hadoopFileStatus(path);
+                if (info == null) {
+                    GridGgfsFileStatus status = secondaryFs.getFileStatus(secondaryPath(path));
+
+                    if (status != null)
+                        info = status.isDir() ? new GridGgfsFileInfo(true, status.properties()) :
+                            new GridGgfsFileInfo(status.getBlockSize(), status.getLen(), null, null, false,
+                            status.properties());
+                }
 
                 break;
 
@@ -1893,24 +1864,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
         return info;
     }
 
-    /**
-     * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
-     *
-     * @param e Exception to check.
-     * @param detailMsg Detailed error message.
-     * @return Appropriate exception.
-     */
-    private GridGgfsException handleSecondaryFsError(IOException e, String detailMsg) {
-        boolean wrongVer = X.hasCause(e, RemoteException.class) ||
-            (e.getMessage() != null && e.getMessage().contains("Failed on local"));
-
-        GridGgfsException ggfsErr = !wrongVer ? new GridGgfsException(detailMsg, e) :
-            new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
-                "version (start GGFS node with '-h1' option if using HDFS ver. 1.x)", e);
-
-        LT.error(log, ggfsErr, "Failed to connect to secondary Hadoop file system.");
-
-        return ggfsErr;
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        // No-op
     }
 
     /** Detailed file descriptor. */
@@ -2036,7 +1992,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param metrics Metrics.
          */
         GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo,
-            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsSecondaryInputStreamWrapper inWrapper,
+            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsReader inWrapper,
             GridGgfsLocalMetrics metrics) {
             super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
 

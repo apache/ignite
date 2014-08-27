@@ -24,6 +24,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -796,6 +797,37 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public GridGgfsReader openFile(GridGgfsPath path, int bufSize) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
+            int bufSize, short replication, long blockSize) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridGgfsFileStatus getFileStatus(GridGgfsPath path) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long usedSpaceSize() throws GridException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
             return null;
         }
@@ -873,6 +905,10 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         /** {@inheritDoc} */
         @Override public GridUuid nextAffinityKey() {
             return null;
+        }
+
+        @Override public void close() throws IOException {
+            // No-op.
         }
     }
 
