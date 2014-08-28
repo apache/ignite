@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -331,6 +332,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Portable processor.
      */
     public GridPortableProcessor portable();
+
+    /**
+     * Gets interop processor.
+     *
+     * @return Interop processor.
+     */
+    public GridInteropProcessor interop();
 
     /**
      * Gets deployment manager.
