@@ -2977,6 +2977,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
+    @Override public GridInteropProcessor interop() {
+        return ctx.interop();
+    }
+
+    /** {@inheritDoc} */
     @Override public <K> Map<GridNode, Collection<K>> mapKeysToNodes(String cacheName,
         @Nullable Collection<? extends K> keys) throws GridException {
         if (F.isEmpty(keys))

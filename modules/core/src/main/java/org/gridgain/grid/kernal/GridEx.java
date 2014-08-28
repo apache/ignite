@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -133,4 +134,11 @@ public interface GridEx extends Grid, GridProjectionEx {
      * @return GGFS.
      */
     @Nullable public GridGgfs ggfsx(@Nullable String name);
+
+    /**
+     * Get interop processor.
+     *
+     * @return Interop processor.
+     */
+    public GridInteropProcessor interop();
 }
