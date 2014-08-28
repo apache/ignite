@@ -860,7 +860,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>compile</phase>
+                        <phase>test-compile</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
