@@ -625,17 +625,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Nullable @Override public final V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap,
         boolean readThrough, boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
-        UUID subjId, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
-        GridCacheFilterFailedException {
+        UUID subjId, String cloClsName, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException,
+        GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
-        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, subjId, filter);
+        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, subjId, cloClsName,
+            filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments", "TooBroadScope"})
     private V innerGet0(GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough, boolean evt, boolean failFast,
-        boolean unmarshal, boolean updateMetrics, UUID subjId, GridPredicate<GridCacheEntry<K, V>>[] filter)
+        boolean unmarshal, boolean updateMetrics, UUID subjId, String cloClsName,
+        GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -762,7 +764,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_EXPIRED, null, false, expiredVal,
-                    expiredVal != null || hasOldBytes, subjId);
+                    expiredVal != null || hasOldBytes, subjId, cloClsName);
 
                 // No more notifications.
                 evt = false;
@@ -770,7 +772,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                 cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null, old,
-                    hasOldBytes || old != null, subjId);
+                    hasOldBytes || old != null, subjId, cloClsName);
 
                 // No more notifications.
                 evt = false;
@@ -793,7 +795,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return ret;
 
             // Try again (recursion).
-            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId, filter);
+            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId,
+                cloClsName, filter);
         }
 
         boolean loadedFromStore = false;
@@ -849,7 +852,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null,
-                        old, hasOldBytes, subjId);
+                        old, hasOldBytes, subjId, cloClsName);
             }
         }
 
@@ -857,7 +860,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return ret;
 
         // Try again (recursion).
-        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId, filter);
+        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId,
+            cloClsName, filter);
     }
 
     /** {@inheritDoc} */
@@ -1071,7 +1075,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                 cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(),
-                    newVer, EVT_CACHE_OBJECT_PUT, val, val != null, old, old != null || hasValueUnlocked(), subjId);
+                    newVer, EVT_CACHE_OBJECT_PUT, val, val != null, old, old != null || hasValueUnlocked(),
+                    subjId, null);
 
             GridCacheMode mode = cctx.config().getCacheMode();
 
@@ -1211,7 +1216,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
                     cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(), newVer,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hasValueUnlocked(), subjId);
+                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hasValueUnlocked(), subjId, null);
 
                 GridCacheMode mode = cctx.config().getCacheMode();
 
@@ -1339,10 +1344,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (metrics && needVal)
                 cctx.cache().metrics0().onRead(old != null);
 
+            String transformCloClsName = null;
+
             V updated;
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
+                transformCloClsName = writeObj.getClass().getName();
+
                 GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
 
                 assert transform != null;
@@ -1387,10 +1396,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(updated, null, newExpireTime, newTtl, ver);
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                if (evt) {
                     cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                        (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
-                        old != null || hadVal, subjId);
+                        (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                        old != null || hadVal, subjId, transformCloClsName);
+
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                            (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                            old != null || hadVal, subjId, null);
+                }
             }
             else {
                 if (writeThrough)
@@ -1403,9 +1418,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(null, null, 0, 0, ver);
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
-                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformCloClsName);
+
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+                            EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId, null);
+                }
 
                 res = hadVal;
             }
@@ -1481,6 +1503,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             boolean drNeedResolve = false;
 
+            String transformCloClsName = null;
+
             if (drResolve) {
                 GridCacheVersion oldDrVer = version().drVersion();
 
@@ -1493,8 +1517,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (writeObj == null && valBytes != null)
                         writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
 
-                    if (op == TRANSFORM)
-                        writeObj = ((GridClosure<V, V>)writeObj).apply(oldVal);
+                    if (op == TRANSFORM) {
+                        transformCloClsName = writeObj.getClass().getName();
+
+                        writeObj = ((GridClosure<V, V>) writeObj).apply(oldVal);
+                    }
 
                     K k = key();
 
@@ -1626,6 +1653,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
+                transformCloClsName = writeObj.getClass().getName();
+
                 GridClosure<V, V> transform = (GridClosure<V, V>) writeObj;
 
                 updated = transform.apply(old);
@@ -1694,10 +1723,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 recordNodeId(affNodeId);
 
-                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
-                    cctx.events().addEvent(partition(), key, evtNodeId, null,
-                        newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
-                        old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformCloClsName);
+
+                    if (newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                            old != null || hadVal, subjId, null);
+                }
             }
             else {
                 if (intercept) {
@@ -1745,9 +1781,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, null, null, newVer);
 
-                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
-                    cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformCloClsName);
+
+                    if (newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,
+                            EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId, null);
+                }
 
                 res = hadVal;
 
@@ -2940,6 +2983,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Override public synchronized GridCacheMvccCandidate<K> anyOwner() throws GridCacheEntryRemovedException {
+        checkObsolete();
+
+        GridCacheMvcc<K> mvcc = mvccExtras();
+
+        return mvcc == null ? null : mvcc.anyOwner();
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized GridCacheMvccCandidate<K> localOwner() throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -3014,7 +3066,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED))
                         cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, EVT_CACHE_OBJECT_EXPIRED,
-                            null, false, expiredVal, expiredVal != null || hasOldBytes, null);
+                            null, false, expiredVal, expiredVal != null || hasOldBytes, null, null);
                 }
 
 
