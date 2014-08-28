@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Internal task session interface.
  */
@@ -51,4 +53,9 @@ public interface GridTaskSessionInternal extends GridComputeTaskSession {
      * @return {@code True} if checkpoints and attributes are enabled.
      */
     public boolean isFullSupport();
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId();
 }
