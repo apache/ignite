@@ -82,12 +82,18 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metaData(int typeId) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
      * @throws GridPortableException In case of error.
      */
-    public Map<Integer, GridPortableMetadata> metaData(Collection<Integer> typeIds) throws GridPortableException;
+    public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) throws GridPortableException;
+
+    /**
+     * @return Metadata for all types.
+     * @throws GridPortableException In case of error.
+     */
+    public Collection<GridPortableMetadata> metadata() throws GridPortableException;
 }
