@@ -20,7 +20,7 @@ if "%OS%" == "Windows_NT" setlocal
 ::
 :: Set router service environment.
 ::
-set "DEFAULT_CONFIG=clients\java\config\router\default-router.xml"
+set "DEFAULT_CONFIG=config\router\default-router.xml"
 set MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 
 ::
