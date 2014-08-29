@@ -529,7 +529,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridException securityEx = null;
 
-        if (ctx.security().securityEnabled() && deployEx != null) {
+        if (ctx.security().securityEnabled() && deployEx == null) {
             try {
                 saveTaskMetadata(taskName);
             }

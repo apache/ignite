@@ -1116,16 +1116,17 @@ public class GridJobProcessor extends GridProcessorAdapter {
             rwLock.readUnlock();
         }
 
-        if (job != null) {
-            try {
-                currentSess.set(job.getSession());
+        if (job != null)
+            job.run();
+    }
 
-                job.run();
-            }
-            finally {
-                currentSess.set(null);
-            }
-        }
+    /**
+     * Callback from job worker to set current task session for execution.
+     *
+     * @param ses Session.
+     */
+    public void currentTaskSession(GridComputeTaskSession ses) {
+        currentSess.set(ses);
     }
 
     /**

@@ -628,6 +628,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.nearTransformClos = nearTransformClos;
         _clone.nearTransformClosBytes = nearTransformClosBytes;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -891,6 +892,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
             case 18:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -1205,6 +1212,15 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 subjId = subjId0;
 
                 commState.idx++;
+
+            case 19:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
+
+                commState.idx++;
+
         }
 
         return true;

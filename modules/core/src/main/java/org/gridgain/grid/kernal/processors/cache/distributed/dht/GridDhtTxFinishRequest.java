@@ -176,6 +176,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
      * @return Transaction isolation.
      */
     public GridCacheTxIsolation isolation() {
@@ -294,6 +301,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.writeVer = writeVer;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -410,6 +418,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 27:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -557,6 +571,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 28:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

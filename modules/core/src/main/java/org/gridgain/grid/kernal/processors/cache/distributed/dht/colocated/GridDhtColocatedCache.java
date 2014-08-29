@@ -91,8 +91,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         UUID subjId = prj == null ? null : prj.subjectId();
 
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridDhtColocatedTxLocal<>(implicit, implicitSingle, ctx, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
+            subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */

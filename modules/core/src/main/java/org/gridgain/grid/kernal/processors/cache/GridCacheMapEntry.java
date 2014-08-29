@@ -1079,7 +1079,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                 cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(),
                     newVer, EVT_CACHE_OBJECT_PUT, val, val != null, old, old != null || hasValueUnlocked(),
-                    subjId, taskName, null);
+                    subjId, null, taskName);
 
             GridCacheMode mode = cctx.config().getCacheMode();
 

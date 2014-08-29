@@ -226,6 +226,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         _clone.topVer = topVer;
         _clone.filter = filter;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -341,6 +342,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
             case 9:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 10:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -483,6 +490,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 10:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

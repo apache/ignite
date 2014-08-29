@@ -43,4 +43,22 @@ public class GridTaskNameHashKey implements Externalizable, GridCacheInternal {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         taskNameHash = in.readInt();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof GridTaskNameHashKey))
+            return false;
+
+        GridTaskNameHashKey that = (GridTaskNameHashKey)o;
+
+        return taskNameHash == that.taskNameHash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return taskNameHash;
+    }
 }

@@ -151,6 +151,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
      * @return Implicit transaction flag.
      */
     public boolean implicitTx() {
@@ -301,6 +308,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.dhtVers = dhtVers;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -417,6 +425,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 32:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 33:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -558,6 +572,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 33:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

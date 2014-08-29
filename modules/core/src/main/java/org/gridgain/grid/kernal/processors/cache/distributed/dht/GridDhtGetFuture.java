@@ -269,7 +269,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         final Collection<GridCacheEntryInfo<K, V>> infos = new LinkedList<>();
 
-        final String taskName = ctx.job().currentTaskName();
+        String taskName0 = ctx.job().currentTaskName();
+
+        if (taskName0 == null)
+            taskName0 = ctx.task().resolveTaskName(taskNameHash);
+
+        final String taskName = taskName0;
 
         GridCompoundFuture<Boolean, Boolean> txFut = null;
 

@@ -223,7 +223,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         assert xidVer != null;
         assert cctx != null;
@@ -242,6 +243,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         startVer = cctx.versions().last();
 
@@ -281,7 +283,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         this.cctx = cctx;
         this.nodeId = nodeId;
@@ -297,6 +300,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         implicit = false;
         implicitSingle = false;

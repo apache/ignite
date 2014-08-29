@@ -102,10 +102,12 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.versions().next(), implicit, implicitSingle, cctx, concurrency, isolation, timeout, invalidate,
-            syncCommit, syncRollback, false, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
+            syncCommit, syncRollback, false, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId,
+            taskNameHash);
     }
 
     /** {@inheritDoc} */

@@ -98,10 +98,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         long timeout,
         int txSize,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, nodeId, xidVer, ctx.versions().last(), Thread.currentThread().getId(), concurrency, isolation,
-            timeout, invalidate, false, false, txSize, grpLockKey, subjId);
+            timeout, invalidate, false, false, txSize, grpLockKey, subjId, taskNameHash);
 
         this.rmtThreadId = rmtThreadId;
 

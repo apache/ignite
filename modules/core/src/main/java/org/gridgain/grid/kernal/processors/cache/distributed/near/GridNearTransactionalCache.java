@@ -248,7 +248,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     ctx,
                     req.txSize(),
                     req.groupLockKey(),
-                    req.subjectId()
+                    req.subjectId(),
+                    req.taskNameHash()
                 );
 
                 if (!tx.empty()) {
@@ -344,7 +345,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         ctx,
                                         req.txSize(),
                                         req.groupLockKey(),
-                                        req.subjectId()
+                                        req.subjectId(),
+                                        req.taskNameHash()
                                     );
 
                                     if (req.groupLock())
@@ -510,7 +512,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     ctx,
                                     req.txSize(),
                                     req.groupLockKey(),
-                                    req.subjectId());
+                                    req.subjectId(),
+                                    req.taskNameHash());
 
                                 if (tx.empty())
                                     return tx;
@@ -655,8 +658,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         UUID subjId = prj == null ? null : prj.subjectId();
 
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
+            subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */

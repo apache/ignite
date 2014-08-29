@@ -718,6 +718,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheKey(key);
 
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
         GridCacheEntryEx<K, V> e = peekEx(key);
 
         try {
@@ -764,6 +766,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         assert keys != null;
 
         validateCacheKeys(keys);
+
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         Map<K, V> ret = new HashMap<>(keys.size(), 1.0f);
 
@@ -835,6 +839,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         A.notNull(key, "key");
 
         validateCacheKey(key);
+
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         GridCacheEntryEx<K, V> e = peekEx(key);
 
