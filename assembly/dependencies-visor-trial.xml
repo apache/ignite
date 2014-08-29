@@ -39,9 +39,6 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-visor-trial</include>
-                <include>org.gridgain:gridgain-visor-plugins</include>
-                <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-ssh</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
