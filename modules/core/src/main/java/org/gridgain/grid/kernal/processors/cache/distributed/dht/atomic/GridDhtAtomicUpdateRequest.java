@@ -130,6 +130,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(3)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(4)
+    private int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -157,7 +161,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         long topVer,
         long ttl,
         boolean forceTransformBackups,
-        UUID subjId
+        UUID subjId,
+        int taskNameHash
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -167,6 +172,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.topVer = topVer;
         this.forceTransformBackups = forceTransformBackups;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
@@ -299,6 +305,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**

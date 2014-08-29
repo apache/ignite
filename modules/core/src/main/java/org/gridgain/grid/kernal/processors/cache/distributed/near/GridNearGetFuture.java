@@ -84,6 +84,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Subject ID. */
     private UUID subjId;
 
+    /** Task name. */
+    private String taskName;
+
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
@@ -131,6 +134,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Nullable GridCacheTxLocalEx<K, V> tx,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
+        String taskName,
         boolean deserializePortable
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
@@ -145,6 +149,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.filters = filters;
         this.tx = tx;
         this.subjId = subjId;
+        this.taskName = taskName;
         this.deserializePortable = deserializePortable;
 
         futId = GridUuid.randomUuid();
@@ -305,7 +310,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, deserializePortable, filters);
+                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
+                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -353,7 +359,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
 
                 GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters, subjId);
+                    reload, topVer, filters, subjId, taskName == null ? 0 : taskName.hashCode());
 
                 add(fut); // Append new future.
 
@@ -397,7 +403,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 // First we peek into near cache.
                 if (isNear)
                     v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, subjId, null, filters);
+                        true/*metrics*/, true/*events*/, subjId, null, taskName, filters);
 
                 GridNode primary = null;
 
@@ -412,7 +418,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, subjId, null, filters);
+                                /*unmarshal*/true, /*update-metrics*/false, !isNear, subjId, null, taskName, filters);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))

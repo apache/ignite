@@ -181,6 +181,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Subject ID initiated this transaction. */
     protected UUID subjId;
 
+    /** Task name hash code. */
+    protected int taskNameHash;
+
+    /** Task name. */
+    protected String taskName;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -415,6 +421,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return subjId;
 
         return originatingNodeId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
+        return taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -1109,6 +1120,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*event*/false,
                         /*subjId*/null, // Passing null because event is not generated.
                         /**closure name */null, // Passing null because event is not generated.
+                        /**taskName*/null,// Passing null because event is not generated.
                         CU.<K, V>empty());
 
                 try {
@@ -1124,7 +1136,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                             cctx.events().addEvent(txEntry.cached().partition(), txEntry.key(),
                                 this, owner, EVT_CACHE_OBJECT_READ,
                                 newVal, newVal != null, val, val != null,
-                                subjId, clos.getClass().getName());
+                                subjId, clos.getClass().getName(), resolveTaskName());
                         }
 
                         val = newVal;
@@ -1145,6 +1157,16 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 return null;
             }
         }
+    }
+
+    /**
+     * @return Resolves task name.
+     */
+    public String resolveTaskName() {
+        if (taskName != null)
+            return taskName;
+
+        return (taskName = cctx.kernalContext().task().resolveTaskName(taskNameHash));
     }
 
     /**

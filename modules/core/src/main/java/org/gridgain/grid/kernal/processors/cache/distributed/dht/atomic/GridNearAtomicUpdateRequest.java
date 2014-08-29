@@ -109,6 +109,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     @GridDirectVersion(3)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(4)
+    private int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -142,7 +146,8 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean forceTransformBackups,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -157,6 +162,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.ttl = ttl;
         this.filter = filter;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         keys = new ArrayList<>();
         vals = new ArrayList<>();
@@ -186,6 +192,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**

@@ -41,6 +41,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -79,13 +83,15 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoverEntries,
         boolean reply,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
             writeEntries, recoverEntries, reply, null);
 
         this.explicitLock = explicitLock;
         this.topVer = topVer;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /**

@@ -603,12 +603,14 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         if (isSystemInvalidate() || (isInvalidate() && cctx.isNear()))
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                                 topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
-                                                near() ? null : explicitVer, CU.subjectId(this, cctx));
+                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                                resolveTaskName());
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
                                                 replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
-                                                near() ? null : explicitVer, CU.subjectId(this, cctx));
+                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                                resolveTaskName());
 
                                             // Keep near entry up to date.
                                             if (nearCached != null) {
@@ -634,7 +636,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     else if (op == DELETE) {
                                         cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                             topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
-                                            near() ? null : explicitVer, CU.subjectId(this, cctx));
+                                            near() ? null : explicitVer, CU.subjectId(this, cctx), resolveTaskName());
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)

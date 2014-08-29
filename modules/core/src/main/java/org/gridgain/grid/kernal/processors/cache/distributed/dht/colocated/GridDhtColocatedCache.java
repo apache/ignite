@@ -188,6 +188,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        String taskName,
         final boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
@@ -211,7 +212,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(keys, false, forcePrimary, topVer, subjId, deserializePortable, filter);
+        return loadAsync(keys, false, forcePrimary, topVer, subjId, taskName, deserializePortable, filter);
     }
 
     /** {@inheritDoc} */
@@ -251,7 +252,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, long topVer, @Nullable UUID subjId, boolean deserializePortable,
+        boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -285,6 +286,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*event*/true,
                                 subjId,
                                 null,
+                                taskName,
                                 filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -340,7 +342,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
-            filter, subjId, deserializePortable);
+            filter, subjId, taskName, deserializePortable);
 
         fut.init();
 

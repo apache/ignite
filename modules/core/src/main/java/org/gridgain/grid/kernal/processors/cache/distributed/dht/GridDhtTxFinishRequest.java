@@ -69,6 +69,10 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -123,7 +127,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         boolean reply,
         boolean onePhaseCommit,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
             writes, recoverWrites, reply, grpLockKey);
@@ -141,6 +146,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         this.sysInvalidate = sysInvalidate;
         this.onePhaseCommit = onePhaseCommit;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */

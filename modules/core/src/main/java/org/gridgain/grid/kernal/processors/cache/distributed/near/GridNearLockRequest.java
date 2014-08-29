@@ -67,6 +67,10 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -113,7 +117,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(nodeId, lockVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout, keyCnt,
             txSize, grpLockKey, partLock);
@@ -126,6 +131,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }

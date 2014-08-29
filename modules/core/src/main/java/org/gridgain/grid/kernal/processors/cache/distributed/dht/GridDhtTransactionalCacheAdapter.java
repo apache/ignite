@@ -1839,6 +1839,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             /*event notification*/req.returnValue(i),
                                             CU.subjectId(tx, ctx),
                                             null, // TODO: GG-8999: Is it fine?
+                                            tx != null ? tx.resolveTaskName() : null,
                                             CU.<K, V>empty());
 
                                     assert e.lockedBy(mappedVer) ||
