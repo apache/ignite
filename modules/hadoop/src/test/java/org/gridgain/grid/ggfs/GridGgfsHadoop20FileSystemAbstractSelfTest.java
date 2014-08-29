@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
@@ -251,10 +252,9 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
 
-        if (mode != PRIMARY) {
-            cfg.setSecondaryHadoopFileSystemUri(secondaryFileSystemUriPath());
-            cfg.setSecondaryHadoopFileSystemConfigPath(secondaryFileSystemConfigPath());
-        }
+        if (mode != PRIMARY)
+            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(secondaryFileSystemUriPath(),
+                secondaryFileSystemConfigPath()));
 
         cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);

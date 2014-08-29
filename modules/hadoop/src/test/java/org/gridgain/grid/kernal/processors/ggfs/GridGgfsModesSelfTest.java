@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -49,7 +50,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     private boolean setNullMode;
 
     /** Whether to set secondary file system URI. */
-    private boolean setSecondaryFsUri;
+    private boolean setSecondaryFs;
 
     /** Whether to set secondary file system config path. */
     private boolean setSecondaryFsCfg;
@@ -60,7 +61,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         pathModes = null;
 
         setNullMode = false;
-        setSecondaryFsUri = false;
+        setSecondaryFs = false;
         setSecondaryFsCfg = false;
     }
 
@@ -92,12 +93,11 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsCfg.setPathModes(pathModes);
 
-        if (setSecondaryFsUri)
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/");
-
-        if (setSecondaryFsCfg)
-            ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-                "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
+        if (setSecondaryFs) {
+            ggfsCfg.setSecondaryFileSystem(
+                new GridGgfsHadoopFileSystemWrapper("ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/",
+                setSecondaryFsCfg ? "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml" : null));
+        }
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -211,7 +211,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultFoldersPrimary() throws Exception {
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         mode = DUAL_ASYNC;
@@ -234,7 +234,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultFoldersNonPrimary() throws Exception {
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         mode = PRIMARY;
@@ -316,7 +316,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultFoldersOverride() throws Exception {
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         mode = DUAL_ASYNC;
@@ -338,7 +338,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testModeDefaultIsNotSet() throws Exception {
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         startUp();
@@ -354,7 +354,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     public void testModeDefaultIsSet() throws Exception {
         mode = DUAL_SYNC;
 
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         startUp();
@@ -382,7 +382,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         }
 
         assertTrue(errMsg.startsWith(
-            "Grid configuration parameter invalid: secondaryHadoopFileSystemUri cannot be null when mode is SECONDARY"));
+            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is SECONDARY"));
     }
 
     /**
@@ -390,24 +390,24 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testModeSecondaryNoCfg() throws Exception {
-        mode = PROXY;
-
-        setSecondaryFsUri = true;
-
-        String errMsg = null;
-
-        try {
-            startUp();
-        }
-        catch (GridException e) {
-            errMsg = e.getCause().getMessage();
-        }
-
-        assertTrue(errMsg.startsWith(
-            "Grid configuration parameter invalid: secondaryHadoopFileSystemConfigPath cannot be null " +
-                "when mode is SECONDARY"));
-    }
+//    public void testModeSecondaryNoCfg() throws Exception {
+//        mode = PROXY;
+//
+//        setSecondaryFs = true;
+//
+//        String errMsg = null;
+//
+//        try {
+//            startUp();
+//        }
+//        catch (GridException e) {
+//            errMsg = e.getCause().getMessage();
+//        }
+//
+//        assertTrue(errMsg.startsWith(
+//            "Grid configuration parameter invalid: secondaryHadoopFileSystemConfigPath cannot be null " +
+//                "when mode is SECONDARY"));
+//    }
 
     /**
      * Ensure that modes are resolved correctly when path modes are set.
@@ -420,7 +420,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         mode = DUAL_ASYNC;
 
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         startUp();
@@ -473,7 +473,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         }
 
         assertTrue(errMsg.startsWith(
-            "Grid configuration parameter invalid: secondaryHadoopFileSystemUri cannot be null when mode is SECONDARY"));
+            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is SECONDARY"));
     }
 
     /**
@@ -540,7 +540,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         U.arrayCopy(testData2, 0, testData, testData1.length, testData2.length);
 
-        setSecondaryFsUri = true;
+        setSecondaryFs = true;
         setSecondaryFsCfg = true;
 
         startUp();

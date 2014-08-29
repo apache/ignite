@@ -121,8 +121,8 @@ public class VisorGgfsConfig implements Serializable {
         cfg.streamBufferSize(ggfs.getStreamBufferSize());
         cfg.perNodeBatchSize(ggfs.getPerNodeBatchSize());
         cfg.perNodeParallelBatchCount(ggfs.getPerNodeParallelBatchCount());
-        cfg.secondaryHadoopFileSystemUri(ggfs.getSecondaryHadoopFileSystemUri());
-        cfg.secondaryHadoopFileSystemConfigPath(ggfs.getSecondaryHadoopFileSystemConfigPath());
+        //cfg.secondaryHadoopFileSystemUri(ggfs.getSecondaryHadoopFileSystemUri());
+        //cfg.secondaryHadoopFileSystemConfigPath(ggfs.getSecondaryHadoopFileSystemConfigPath());
         cfg.defaultMode(ggfs.getDefaultMode());
         cfg.pathModes(ggfs.getPathModes());
         cfg.dualModePutExecutorService(compactClass(ggfs.getDualModePutExecutorService()));

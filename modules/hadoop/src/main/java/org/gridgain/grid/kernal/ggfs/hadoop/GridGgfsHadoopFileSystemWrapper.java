@@ -1,5 +1,6 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.ipc.*;
@@ -21,17 +22,40 @@ import org.jetbrains.annotations.*;
  */
 public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
     /** */
+    public static final String SECONDARY_FILESYSTEM_CONFIG_PATH = "SECONDARY_FILESYSTEM_CONFIG_PATH";
+
+    /** */
     private FileSystem fileSys;
 
     /** */
-    private GridLogger log;
+    private String uri;
+
+    /** */
+    private String cfgPath;
 
     /**
      *
-     * @param fileSystem
+     * @param uri
+     * @param cfgPath
+     * @throws GridException
      */
-    public GridGgfsHadoopFileSystemWrapper(FileSystem fileSystem) {
-        fileSys = fileSystem;
+    public GridGgfsHadoopFileSystemWrapper(String uri, @Nullable String cfgPath) throws GridException {
+        assert uri != null;
+
+        this.uri = uri;
+        this.cfgPath = cfgPath;
+
+        Configuration cfg = new Configuration();
+
+        if (cfgPath != null)
+            cfg.addResource(U.resolveGridGainUrl(cfgPath));
+
+        try {
+            fileSys = FileSystem.get(new URI(uri), cfg);
+        }
+        catch (IOException | URISyntaxException e) {
+            throw new GridException(e);
+        }
     }
 
     /**
@@ -61,7 +85,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                 new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                         "version (start GGFS node with '-h1' option if using HDFS ver. 1.x)", e);
 
-        LT.error(log, ggfsErr, "Failed to connect to secondary Hadoop file system.");
+        //LT.error(log, ggfsErr, "Failed to connect to secondary Hadoop file system.");
 
         return ggfsErr;
     }
@@ -207,10 +231,12 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public GridGgfsReader openFile(GridGgfsPath path, int bufSize) {
-        return new GridGgfsHadoopReader(fileSys, convert(path), bufSize, log);
+        return new GridGgfsHadoopReader(fileSys, convert(path), bufSize);
     }
 
+    /** {@inheritDoc} */
     @Override public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException {
         try {
             return new GridGgfsOutputStreamWriter(fileSys.create(convert(path), overwrite));
@@ -220,6 +246,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
         int bufSize, short replication, long blockSize) throws GridException {
         GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props :
@@ -234,6 +261,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException {
         try {
             return new GridGgfsOutputStreamWriter(fileSys.append(convert(path), bufSize));
@@ -243,6 +271,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GridGgfsFileStatus getFileStatus(GridGgfsPath path) throws GridException {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
@@ -277,6 +306,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public long usedSpaceSize() throws GridException {
         try {
             return fileSys.getContentSummary(new Path(fileSys.getUri())).getSpaceConsumed();
@@ -286,6 +316,21 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
         }
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public String uri() {
+        return uri;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<String, String> properties() {
+        Map<String, String> res = new HashMap<>();
+
+        res.put(SECONDARY_FILESYSTEM_CONFIG_PATH, cfgPath);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         fileSys.close();
     }

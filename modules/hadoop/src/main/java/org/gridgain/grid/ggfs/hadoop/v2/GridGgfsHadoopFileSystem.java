@@ -261,7 +261,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             }
 
             if (initSecondary) {
-                if (paths.secondaryConfigurationPath() == null)
+                Map<String, String> props = paths.properties();
+
+                String secConfPath = props == null ? null :
+                        props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FILESYSTEM_CONFIG_PATH);
+
+                if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
                         "path is not provided.");
 
@@ -269,16 +274,14 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     throw new IOException("Failed to connect to the secondary file system because URI is not " +
                         "provided.");
 
-                String secondaryConfPath = paths.secondaryConfigurationPath();
 
                 try {
                     secondaryUri = new URI(paths.secondaryUri());
 
-                    URL secondaryCfgUrl = U.resolveGridGainUrl(secondaryConfPath);
+                    URL secondaryCfgUrl = U.resolveGridGainUrl(secConfPath);
 
                     if (secondaryCfgUrl == null)
-                        throw new IOException("Failed to resolve secondary file system config URL: " +
-                            secondaryConfPath);
+                        throw new IOException("Failed to resolve secondary file system config URL: " + secConfPath);
 
                     Configuration conf = new Configuration();
 

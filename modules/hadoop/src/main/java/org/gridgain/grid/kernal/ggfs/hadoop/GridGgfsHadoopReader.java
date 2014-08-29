@@ -33,9 +33,6 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
     /** Buffer size. */
     private final int bufSize;
 
-    /** Logger. */
-    private final GridLogger log;
-
     /** Actual input stream. */
     private FSDataInputStream in;
 
@@ -51,17 +48,14 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
      * @param fs Secondary file system.
      * @param path Path to the file to open.
      * @param bufSize Buffer size.
-     * @param log Logger.
      */
-    GridGgfsHadoopReader(FileSystem fs, Path path, int bufSize, GridLogger log) {
+    GridGgfsHadoopReader(FileSystem fs, Path path, int bufSize) {
         assert fs != null;
         assert path != null;
-        assert log != null;
 
         this.fs = fs;
         this.path = path;
         this.bufSize = bufSize;
-        this.log = log;
     }
 
     /** Get input stream. */
@@ -77,12 +71,10 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
                 in = fs.open(path, bufSize);
 
                 if (in == null)
-                    throw new IOException("Failed to open input stream (secondary file system returned null): " + path);
+                    throw new IOException("Failed to open input stream (file system returned null): " + path);
             }
             catch (IOException e) {
                 err = e;
-
-                U.error(log, "Failed to open secondary file system input stream: " + path, e);
 
                 throw err;
             }
@@ -103,7 +95,7 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
             return in().read(pos, buf, off, len);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new GridException("Failed to read data [path = " + path + "]");
         }
     }
 }

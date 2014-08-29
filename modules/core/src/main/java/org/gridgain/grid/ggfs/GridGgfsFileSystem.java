@@ -173,5 +173,24 @@ public interface GridGgfsFileSystem extends Closeable {
      */
     @Nullable GridGgfsFileStatus getFileStatus(GridGgfsPath path) throws GridException;
 
+    /**
+     *
+     *
+     * @return
+     * @throws GridException
+     */
     long usedSpaceSize() throws GridException;
+
+    /**
+     * Gets the file system URI.
+     *
+     * @return URI.
+     */
+    @Nullable String uri();
+
+    /**
+     *
+     * @return
+     */
+    @Nullable Map<String,String> properties();
 }

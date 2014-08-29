@@ -12,6 +12,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
@@ -97,9 +98,9 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
-            ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-                "modules/core/src/test/config/hadoop/core-site-secondary.xml");
+            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+                    "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
+                    "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
             return ggfsCfg;
         }
@@ -197,9 +198,9 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         @Override protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
-            ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/");
-            ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-                "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
+            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+                "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
             return ggfsCfg;
         }

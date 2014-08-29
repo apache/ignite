@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -102,8 +103,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setName(GGFS_PRIMARY);
         ggfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setSecondaryHadoopFileSystemUri(SECONDARY_URI);
-        ggfsCfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG);
+        ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG));
 
         Map<String, GridGgfsMode> pathModes = new HashMap<>();
 

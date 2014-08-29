@@ -27,8 +27,8 @@ public class GridGgfsPaths implements Externalizable {
     /** Secondary file system URI. */
     private String secondaryUri;
 
-    /** Secondary file system configuration. */
-    private String secondaryCfgPath;
+    /** Additional secondary file system properties. */
+    private Map<String, String> props;
 
     /** Default GGFS mode. */
     private GridGgfsMode dfltMode;
@@ -45,16 +45,15 @@ public class GridGgfsPaths implements Externalizable {
 
     /**
      * Constructor.
-     *
      * @param secondaryUri Secondary file system URI.
-     * @param secondaryCfgPath Secondary file system configuration path.
+     * @param props Additional secondary file system properties.
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsPaths(@Nullable String secondaryUri, @Nullable String secondaryCfgPath,
+    public GridGgfsPaths(@Nullable String secondaryUri, @Nullable Map<String, String> props,
         GridGgfsMode dfltMode, @Nullable List<T2<GridGgfsPath, GridGgfsMode>> pathModes) {
         this.secondaryUri = secondaryUri;
-        this.secondaryCfgPath = secondaryCfgPath;
+        this.props = props;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }
@@ -62,15 +61,15 @@ public class GridGgfsPaths implements Externalizable {
     /**
      * @return Secondary file system URI.
      */
-    public String secondaryUri() {
+    @Nullable public String secondaryUri() {
         return secondaryUri;
     }
 
     /**
-     * @return Secondary file system configuration.
+     * @return Secondary file system properties.
      */
-    public String secondaryConfigurationPath() {
-        return secondaryCfgPath;
+    @Nullable public Map<String, String> properties() {
+        return props;
     }
 
     /**
@@ -83,14 +82,14 @@ public class GridGgfsPaths implements Externalizable {
     /**
      * @return Path modes.
      */
-    public List<T2<GridGgfsPath, GridGgfsMode>> pathModes() {
+    @Nullable public List<T2<GridGgfsPath, GridGgfsMode>> pathModes() {
         return pathModes;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, secondaryUri);
-        U.writeString(out, secondaryCfgPath);
+        U.writeStringMap(out, props);
         U.writeEnum0(out, dfltMode);
 
         if (pathModes != null) {
@@ -109,7 +108,7 @@ public class GridGgfsPaths implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         secondaryUri = U.readString(in);
-        secondaryCfgPath = U.readString(in);
+        props = U.readStringMap(in);
         dfltMode = GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in));
 
         if (in.readBoolean()) {

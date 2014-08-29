@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -187,8 +188,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
         ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(restCfg));
-        ggfsCfg.setSecondaryHadoopFileSystemUri(secondaryFsUri);
-        ggfsCfg.setSecondaryHadoopFileSystemConfigPath(secondaryFsCfgPath);
+        if (secondaryFsUri != null)
+            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(secondaryFsUri, secondaryFsCfgPath));
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 

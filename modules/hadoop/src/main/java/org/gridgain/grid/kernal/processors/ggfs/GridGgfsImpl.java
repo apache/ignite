@@ -86,12 +86,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<GridGgfsPath, GridGgfsFileWorker> workerMap =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<GridGgfsPath, GridGgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
 
     /** Delete futures. */
-    private final ConcurrentHashMap8<GridUuid, GridFutureAdapter<Object>> delFuts =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<GridUuid, GridFutureAdapter<Object>> delFuts = new ConcurrentHashMap8<>();
 
     /** Delete message listener. */
     private final GridMessageListener delMsgLsnr = new FormatMessageListener();
@@ -127,37 +125,26 @@ public final class GridGgfsImpl implements GridGgfsEx {
         evts = ggfsCtx.kernalContext().event();
         meta = ggfsCtx.meta();
         data = ggfsCtx.data();
-
-        boolean dualToPrimary =
-            cfg.getSecondaryHadoopFileSystemConfigPath() == null && cfg.getSecondaryHadoopFileSystemUri() == null;
+        secondaryFs = cfg.getSecondaryFileSystem();
 
         /* Default GGFS mode. */
         GridGgfsMode dfltMode;
-        if (dualToPrimary) {
-            // When no Hadoop FS config is provided, mode cannot be SECONDARY.
-            assert ggfsCtx.configuration().getDefaultMode() != PROXY;
+
+        if (secondaryFs == null) {
+            // When no secondary file system is provided, mode cannot be SECONDARY.
+            assert cfg.getDefaultMode() != PROXY;
 
             dfltMode = PRIMARY;
         }
         else
-            dfltMode = ggfsCtx.configuration().getDefaultMode();
-
-        boolean initHdfs = dfltMode != PRIMARY;
+            dfltMode = cfg.getDefaultMode();
 
         Map<String, GridGgfsMode> cfgModes = new LinkedHashMap<>();
         Map<String, GridGgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
         dfltModes.put("/gridgain/primary", PRIMARY);
 
-        String secUri = ggfsCtx.configuration().getSecondaryHadoopFileSystemUri();
-
-        if (secUri != null) {
-            if (!secUri.endsWith("/")) {
-                secUri += "/";
-
-                ggfsCtx.configuration().setSecondaryHadoopFileSystemUri(secUri);
-            }
-
+        if (secondaryFs != null) {
             dfltModes.put("/gridgain/proxy", PROXY);
             dfltModes.put("/gridgain/sync", DUAL_SYNC);
             dfltModes.put("/gridgain/async", DUAL_ASYNC);
@@ -181,8 +168,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, GridGgfsMode> mode : cfgModes.entrySet()) {
-                GridGgfsMode mode0 =
-                    dualToPrimary ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
+                GridGgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
                     modes.add(new T2<>(new GridGgfsPath(mode.getKey()), mode0));
@@ -190,46 +176,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 catch (IllegalArgumentException e) {
                     throw new GridException("Invalid path found in mode pattern: " + mode.getKey(), e);
                 }
-
-                if (mode0 != PRIMARY)
-                    initHdfs = true;
             }
         }
 
         modeRslvr = new GridGgfsModeResolver(dfltMode, modes);
 
-        if (initHdfs) {
-            URI hadoopUri;
-
-            try {
-                hadoopUri = new URI(secUri);
-            }
-            catch (URISyntaxException ignore) {
-                throw new GridException("Failed to resolve secondary file system URI: " + secUri);
-            }
-
-            URL hadoopCfgUrl = U.resolveGridGainUrl(ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath());
-
-            if (hadoopCfgUrl == null)
-                throw new GridException("Failed to resolve secondary file system config URL: " +
-                    ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath());
-
-//            Configuration hadoopCfg = new Configuration();
-//
-//            hadoopCfg.addResource(hadoopCfgUrl);
-//
-//            try {
-//                secondaryFs = FileSystem.get(hadoopUri, hadoopCfg);
-//            }
-//            catch (IOException e) {
-//                throw handleSecondaryFsError(e, "Failed to connect to the secondary Hadoop file system [uri=" +
-//                    secUri + ", configPath=" +
-//                    ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath() + ']');
-//            }
-        }
-
-        secondaryPaths = new GridGgfsPaths(cfg.getSecondaryHadoopFileSystemUri(),
-            cfg.getSecondaryHadoopFileSystemConfigPath(), dfltMode, modeRslvr.modesOrdered());
+        secondaryPaths = new GridGgfsPaths(secondaryFileSystemUri(),
+            secondaryFs == null ? null : secondaryFs.properties(), dfltMode, modeRslvr.modesOrdered());
 
         // Check whether GGFS LRU eviction policy is set on data cache.
         String dataCacheName = ggfsCtx.configuration().getDataCacheName();
@@ -251,6 +204,23 @@ public final class GridGgfsImpl implements GridGgfsEx {
         ggfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
+    /**
+     * @return URI of the secondary file system or {@code null} if one hasn't been set.
+     */
+    private String secondaryFileSystemUri() {
+        if (secondaryFs == null)
+            return null;
+
+        String res = secondaryFs.uri();
+
+        assert res != null;
+
+        if (!res.endsWith("/"))
+            res += "/";
+
+        return res;
+    }
+    
     /**
      * @return Local node.
      */
@@ -396,42 +366,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
         return modeRslvr;
     }
 
-    /**
-     * Convert secondary HDFS path to GGFS path.
-     *
-     * @param parent Parent directory.
-     * @param path Secondary HDFS path.
-     * @return GGFS path.
-     */
-    private GridGgfsPath primaryPath(GridGgfsPath parent, GridGgfsPath path) {
-        assert cfg.getSecondaryHadoopFileSystemUri() != null;
-
-        String root = path.toString();
-
-        GridGgfsPath curRoot = path.parent();
-
-        while (curRoot != null) {
-            root = curRoot.toString();
-
-            curRoot = curRoot.parent();
-        }
-
-        return new GridGgfsPath(parent.root().toString() + path.toString().substring(root.length()));
-    }
-
-    /**
-     * Convert current GGFS path to secondary HDFS path.
-     *
-     * @param path Current path.
-     * @return Path in secondary Hadoop FS.
-     */
-    private GridGgfsPath secondaryPath(GridGgfsPath path) {
-        assert cfg.getSecondaryHadoopFileSystemUri() != null;
-
-        return new GridGgfsPath(cfg.getSecondaryHadoopFileSystemUri() +
-            path.toString().substring(path.root().toString().length()));
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public String name() {
         return cfg.getName();
@@ -555,7 +489,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 res = meta.fileId(path) != null;
 
                 if (!res)
-                    res = secondaryFs.exists(secondaryPath(path));
+                    res = secondaryFs.exists(path);
 
                 break;
 
@@ -997,7 +931,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<GridGgfsPath> children = secondaryFs.listPaths(secondaryPath(path));
+                    Collection<GridGgfsPath> children = secondaryFs.listPaths(path);
 
                     for (GridGgfsPath child : children)
                         files.add(child.name());
@@ -1049,13 +983,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<GridGgfsFile> children = secondaryFs.listFiles(secondaryPath(path));
+                    Collection<GridGgfsFile> children = secondaryFs.listFiles(path);
 
                     for (GridGgfsFile child : children) {
                         GridGgfsFileInfo fsInfo = new GridGgfsFileInfo(cfg.getBlockSize(), child.length(),
                             evictExclude(path, false), child.properties());
 
-                        files.add(new GridGgfsFileImpl(primaryPath(path, child.path()), fsInfo, data.groupBlockSize()));
+                        files.add(new GridGgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
                 }
 
@@ -1164,6 +1098,16 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() throws GridException {
         return metrics().localSpaceSize();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String uri() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<String, String> properties() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1496,7 +1440,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     private void checkConflictWithPrimary(GridGgfsPath path) throws GridException {
         if (secondaryFs != null) {
-            if (secondaryFs.getFileStatus(secondaryPath(path)) != null) {
+            if (secondaryFs.getFileStatus(path) != null) {
                 throw new GridException("Path mapped to a PRIMARY mode found in secondary file " +
                      "system. Remove path from secondary file system or change path mapping: " + path);
             }
@@ -1847,7 +1791,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 info = meta.info(meta.fileId(path));
 
                 if (info == null) {
-                    GridGgfsFileStatus status = secondaryFs.getFileStatus(secondaryPath(path));
+                    GridGgfsFileStatus status = secondaryFs.getFileStatus(path);
 
                     if (status != null)
                         info = status.isDir() ? new GridGgfsFileInfo(true, status.properties()) :

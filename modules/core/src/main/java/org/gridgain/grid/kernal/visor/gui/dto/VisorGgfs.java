@@ -66,7 +66,7 @@ public class VisorGgfs implements Serializable {
             ggfs.name(),
             ggfs.configuration().getDefaultMode(),
             VisorGgfsMetrics.from(ggfs.metrics()),
-            ggfs.configuration().getSecondaryHadoopFileSystemUri() != null
+            false //ggfs.configuration().getSecondaryHadoopFileSystemUri() != null
         );
     }
 

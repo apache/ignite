@@ -1590,10 +1590,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo parentInfo = infos.get(parentPath);
 
                             // Delegate to the secondary file system.
-                            GridGgfsPath path0 = secondaryPath(path);
-
-                            out = simpleCreate ? fs.createFile(secondaryPath(path), overwrite) :
-                                fs.createFile(path0, props, overwrite, bufSize, replication, blockSize);
+                            out = simpleCreate ? fs.createFile(path, overwrite) :
+                                fs.createFile(path, props, overwrite, bufSize, replication, blockSize);
 
                             GridGgfsPath parent0 = path.parent();
 
@@ -1618,7 +1616,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             }
 
                             // Get created file info.
-                            GridGgfsFileStatus status = fs.getFileStatus(path0);
+                            GridGgfsFileStatus status = fs.getFileStatus(path);
 
                             if (status == null)
                                 throw new GridGgfsException("Failed to open output stream to the file created in " +
@@ -1739,9 +1737,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
-                            GridGgfsPath path0 = secondaryPath(path);
-
-                            out = fs.appendFile(path0, bufSize);
+                            out = fs.appendFile(path, bufSize);
 
                             // Synchronize file ending.
                             long len = info.length();
@@ -1752,7 +1748,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (remainder > 0) {
                                 int blockIdx = (int)(len / blockSize);
 
-                                GridGgfsReader wrapper = fs.openFile(path0, bufSize);
+                                GridGgfsReader wrapper = fs.openFile(path, bufSize);
 
                                 try {
                                     ggfsCtx.data().dataBlock(info, path, blockIdx, wrapper).get();
@@ -1820,7 +1816,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                     return new GridGgfsSecondaryInputStreamDescriptor(info,
-                        fs.openFile(secondaryPath(path), bufSize));
+                        fs.openFile(path, bufSize));
                 }
 
                 // If failed, try synchronize.
@@ -1836,7 +1832,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
 
                             return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path),
-                                fs.openFile(secondaryPath(path), bufSize));
+                                fs.openFile(path, bufSize));
                         }
 
                         @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
@@ -1937,7 +1933,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
                     @Override public Boolean onSuccess(Map<GridGgfsPath, GridGgfsFileInfo> infos) throws Exception {
-                        fs.mkdirs(secondaryPath(path), props);
+                        fs.mkdirs(path, props);
 
                         assert !infos.isEmpty();
 
@@ -2035,7 +2031,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 dest);
 
                         // Delegate to the secondary file system.
-                        fs.rename(secondaryPath(src), secondaryPath(dest));
+                        fs.rename(src, dest);
 
                         // Rename was successful, perform compensation in the local file system.
                         if (destInfo == null) {
@@ -2120,7 +2116,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         if (info == null)
                             return false; // File doesn't exist in the secondary file system.
 
-                        if (!fs.delete(secondaryPath(path), recursive))
+                        if (!fs.delete(path, recursive))
                             return false; // Delete failed remotely.
 
                         if (path.parent() != null) {
@@ -2186,7 +2182,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         if (infos.get(path) == null)
                             return null;
 
-                        fs.update(secondaryPath(path), props);
+                        fs.update(path, props);
 
                         assert path.parent() == null || infos.get(path.parent()) != null;
 
@@ -2250,7 +2246,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridGgfsFileStatus status = null;
                 IOException err = null;
 
-                status = fs.getFileStatus(secondaryPath(curPath));
+                status = fs.getFileStatus(curPath);
 
                 if (status != null) {
                     if (!status.isDir() && !curPath.equals(endPath))
@@ -2547,19 +2543,25 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     }
 
     /**
-     * Convert local file system path to secondary file system path.
      *
-     * @param path Local file system path.
-     * @return Secondary file system path.
+     * @return
      */
-    private GridGgfsPath secondaryPath(GridGgfsPath path) {
-        assert path != null;
-        assert cfg.getSecondaryHadoopFileSystemUri() != null;
+    private String secondaryFileSystemUri() {
+        GridGgfsFileSystem secFs = cfg.getSecondaryFileSystem();
 
-        return new GridGgfsPath(cfg.getSecondaryHadoopFileSystemUri() +
-            path.toString().substring(path.root().toString().length()));
+        if (secFs == null)
+            return null;
+
+        String res = secFs.uri();
+
+        assert res != null;
+
+        if (!res.endsWith("/"))
+            res += "/";
+
+        return res;
     }
-
+    
     /**
      * Updates last access and last modification times.
      *

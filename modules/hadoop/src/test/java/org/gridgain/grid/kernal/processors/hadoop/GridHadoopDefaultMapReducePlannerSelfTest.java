@@ -828,6 +828,16 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public String uri() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<String, String> properties() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
             return null;
         }

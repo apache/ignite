@@ -239,46 +239,45 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
 
         g1GgfsCfg2.setDefaultMode(PROXY);
-        g1GgfsCfg2.setSecondaryHadoopFileSystemConfigPath("/");
 
-        checkGridStartFails(g1Cfg, "secondaryHadoopFileSystemUri cannot be null when mode is SECONDARY", true);
+        checkGridStartFails(g1Cfg, "secondaryFileSystem cannot be null when mode is SECONDARY", true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfNonPrimaryModeAndHadoopFileSystemConfigPathIsNull() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+//    public void testLocalIfNonPrimaryModeAndHadoopFileSystemConfigPathIsNull() throws Exception {
+//        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+//
+//        g1GgfsCfg2.setDefaultMode(PROXY);
+//        g1GgfsCfg2.setSecondaryHadoopFileSystemUri("/");
+//
+//        checkGridStartFails(g1Cfg, "secondaryHadoopFileSystemConfigPath cannot be null when mode is SECONDARY", true);
+//    }
 
-        g1GgfsCfg2.setDefaultMode(PROXY);
-        g1GgfsCfg2.setSecondaryHadoopFileSystemUri("/");
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testLocalIfHadoopFileSystemConfigPathIsNullAndUriIsNot() throws Exception {
+//        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+//
+//        g1GgfsCfg2.setSecondaryHadoopFileSystemUri("/");
+//
+//        checkGridStartFails(g1Cfg,
+//            "secondaryHadoopFileSystemConfigPath cannot be null when secondaryHadoopFileSystemUri is set", true);
+//    }
 
-        checkGridStartFails(g1Cfg, "secondaryHadoopFileSystemConfigPath cannot be null when mode is SECONDARY", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfHadoopFileSystemConfigPathIsNullAndUriIsNot() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-
-        g1GgfsCfg2.setSecondaryHadoopFileSystemUri("/");
-
-        checkGridStartFails(g1Cfg,
-            "secondaryHadoopFileSystemConfigPath cannot be null when secondaryHadoopFileSystemUri is set", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfHadoopFileSystemUriIsNullAndConfigPathIsNot() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-
-        g1GgfsCfg2.setSecondaryHadoopFileSystemConfigPath("/");
-
-        checkGridStartFails(g1Cfg,
-            "secondaryHadoopFileSystemUri cannot be null when secondaryHadoopFileSystemConfigPath is set", true);
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testLocalIfHadoopFileSystemUriIsNullAndConfigPathIsNot() throws Exception {
+//        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+//
+//        g1GgfsCfg2.setSecondaryHadoopFileSystemConfigPath("/");
+//
+//        checkGridStartFails(g1Cfg,
+//            "secondaryHadoopFileSystemUri cannot be null when secondaryHadoopFileSystemConfigPath is set", true);
+//    }
 
     /**
      * @throws Exception If failed.
