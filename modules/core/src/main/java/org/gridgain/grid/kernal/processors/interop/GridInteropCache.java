@@ -22,6 +22,16 @@ public interface GridInteropCache {
     public long get(long keyAddr);
 
     /**
+     * Get value from cache.
+     *
+     * @param keyAddr Address where key is stored in unmanaged memory.
+     * @param cbAddr Callback address.
+     * @return {@code 0} in case of success, positive value representing
+     *     unmanaged memory address in case of exception.
+     */
+    public long getAsync(long keyAddr, long cbAddr);
+
+    /**
      * Put value to cache.
      *
      * @param keyValAddr Address where key and value are stored in unmanaged memory.

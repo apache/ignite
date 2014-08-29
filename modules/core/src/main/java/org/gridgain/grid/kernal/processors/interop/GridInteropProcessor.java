@@ -18,6 +18,13 @@ import org.jetbrains.annotations.*;
  */
 public interface GridInteropProcessor extends GridProcessor {
     /**
+     * Gets memory allocator.
+     *
+     * @return Allocator.
+     */
+    public GridInteropMemoryAllocator allocator();
+
+    /**
      * Gets native wrapper for cache with the given name.
      *
      * @param name Cache name ({@code null} for default cache).

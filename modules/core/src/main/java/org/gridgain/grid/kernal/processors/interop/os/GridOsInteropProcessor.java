@@ -18,6 +18,9 @@ import org.jetbrains.annotations.*;
  * OS interop processor.
  */
 public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
+    /** Common error message. */
+    private final String ERR_MSG = "Interop feature is not supported in OS edition.";
+
     /**
      * Constructor.
      *
@@ -27,7 +30,13 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
         super(ctx);
     }
 
+    /** {@inheritDoc} */
+    @Override public GridInteropMemoryAllocator allocator() {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridInteropCache cache(@Nullable String name) throws GridException {
-        throw new UnsupportedOperationException("Interop feature is not supported in OS edition.");
+        throw new UnsupportedOperationException(ERR_MSG);
     }
 }
