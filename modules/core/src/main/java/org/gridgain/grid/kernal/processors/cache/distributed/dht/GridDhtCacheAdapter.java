@@ -45,6 +45,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public static final GridProductVersion SUBJECT_ID_EVENTS_SINCE_VER = GridProductVersion.fromString("6.1.7");
 
     /** */
+    public static final GridProductVersion TASK_NAME_HASH_SINCE_VER = GridProductVersion.fromString("6.2.1");
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology. */
@@ -801,6 +804,46 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
                         return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridTaskNameHashAddedMessageConverter621 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putInt(0))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.getInt();
 
                     commState.idx++;
                 }
