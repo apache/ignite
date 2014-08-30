@@ -110,7 +110,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
-                    if (grid(i).nodes().size() != gridCount()) return false;
+                    if (grid(i).nodes().size() != gridCount())
+                        return false;
                 }
 
                 return true;
@@ -1255,15 +1256,19 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cache.putx(1, 1);
 
         GridCacheProjection<Integer, Integer> prj = cache.projection(new P1<GridCacheEntry<Integer, Integer>>() {
-            @SuppressWarnings("ThrowableResultOfMethodCallIgnored") @Override public boolean apply(
-                final GridCacheEntry<Integer, Integer> e) {
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+            @Override public boolean apply(final GridCacheEntry<Integer, Integer> e) {
+                GridTestUtils.assertThrows(
+                    log,
+                    new Callable<Object>() {
                         @Override public Object call() throws Exception {
                             e.set(1000);
 
                             return null;
                         }
-                    }, GridCacheFlagException.class, null
+                    },
+                    GridCacheFlagException.class,
+                    null
                 );
 
                 return true;
