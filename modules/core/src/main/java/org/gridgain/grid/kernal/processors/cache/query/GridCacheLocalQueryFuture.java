@@ -121,7 +121,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
                 rdc,
                 qry.query(),
                 GridCacheLocalQueryFuture.this,
-                null,
+                ctx.localNodeId(),
                 -1,
                 qry.query().includeMetadata(),
                 true,

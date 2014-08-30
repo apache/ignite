@@ -17,6 +17,7 @@ interface GridCacheContinuousQueryListener<K, V> {
      * Entry update callback.
      *
      * @param e Entry.
+     * @param recordEvt Whether to record event.
      */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e);
+    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
 }

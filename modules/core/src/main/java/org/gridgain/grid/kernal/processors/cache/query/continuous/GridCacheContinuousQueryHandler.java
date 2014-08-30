@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -22,6 +23,8 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Continuous query handler.
@@ -116,7 +119,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
-            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e) {
+            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
                 boolean notify;
 
                 GridCacheFlag[] f = cacheContext(ctx).forceLocalRead();
@@ -156,6 +159,23 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
                         }
                     }
+
+                    if (recordEvt) {
+                        ctx.event().record(new GridCacheQueryReadEvent(
+                            ctx.discovery().localNode(),
+                            "Continuous query executed.",
+                            EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ,
+                            cacheName,
+                            null,
+                            null,
+                            null,
+                            null,
+                            nodeId,
+                            e.getKey(),
+                            e.getValue(),
+                            e.getOldValue()
+                        ));
+                    }
                 }
             }
 
@@ -180,7 +200,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         };
 
-        return manager(ctx).registerListener(routineId, lsnr, internal);
+        return manager(ctx).registerListener(nodeId, routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */
