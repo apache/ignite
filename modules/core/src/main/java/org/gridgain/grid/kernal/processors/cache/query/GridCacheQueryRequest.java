@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
@@ -103,6 +104,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     @GridDirectVersion(1)
     private boolean keepPortable;
 
+    /** */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -139,7 +144,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incBackups,
         boolean fields,
         boolean all,
-        boolean keepPortable) {
+        boolean keepPortable,
+        UUID subjId) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
@@ -147,6 +153,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.fields = fields;
         this.all = all;
         this.keepPortable = keepPortable;
+        this.subjId = subjId;
     }
 
     /**
@@ -180,7 +187,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incBackups,
         Object[] args,
         boolean incMeta,
-        boolean keepPortable) {
+        boolean keepPortable,
+        UUID subjId) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
@@ -200,6 +208,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.args = args;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -394,6 +403,13 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         return keepPortable;
     }
 
+    /**
+     * @return Security subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -432,6 +448,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.incMeta = incMeta;
         _clone.all = all;
         _clone.keepPortable = keepPortable;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -548,6 +565,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
             case 18:
                 if (!commState.putBoolean(keepPortable))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -717,6 +740,16 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                     return false;
 
                 keepPortable = commState.getBoolean();
+
+                commState.idx++;
+
+            case 19:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 

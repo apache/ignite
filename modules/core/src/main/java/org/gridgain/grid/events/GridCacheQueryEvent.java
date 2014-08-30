@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,7 +21,7 @@ import java.util.*;
 /**
  * Cache query event.
  */
-public class GridCacheQueryEvent extends GridEventAdapter {
+public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
     /** Cache name. */
     private final String cacheName;
 
@@ -32,7 +33,11 @@ public class GridCacheQueryEvent extends GridEventAdapter {
 
     /** Scan query filter. */
     @GridToStringInclude
-    private final GridBiPredicate<?, ?> scanFilter;
+    private final GridBiPredicate<K, V> scanQryFilter;
+
+    /** Continuous query filter. */
+    @GridToStringInclude
+    private final GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -48,19 +53,28 @@ public class GridCacheQueryEvent extends GridEventAdapter {
      * @param cacheName Cache name.
      * @param clsName Class name.
      * @param clause Clause.
-     * @param scanFilter Scan query filter.
+     * @param scanQryFilter Scan query filter.
      * @param args Query arguments.
      * @param subjId Security subject ID.
      */
-    public GridCacheQueryEvent(GridNode node, String msg, int type, @Nullable String cacheName,
-        @Nullable String clsName, @Nullable String clause, @Nullable GridBiPredicate<?, ?> scanFilter,
-        @Nullable Object[] args, @Nullable UUID subjId) {
+    public GridCacheQueryEvent(
+        GridNode node,
+        String msg,
+        int type,
+        @Nullable String cacheName,
+        @Nullable String clsName,
+        @Nullable String clause,
+        @Nullable GridBiPredicate<K, V> scanQryFilter,
+        @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
+        @Nullable Object[] args,
+        @Nullable UUID subjId) {
         super(node, msg, type);
 
         this.cacheName = cacheName;
         this.clsName = clsName;
         this.clause = clause;
-        this.scanFilter = scanFilter;
+        this.scanQryFilter = scanQryFilter;
+        this.contQryFilter = contQryFilter;
         this.args = args;
         this.subjId = subjId;
     }
@@ -97,14 +111,25 @@ public class GridCacheQueryEvent extends GridEventAdapter {
     }
 
     /**
-     * Gets query filter.
+     * Gets scan query filter.
      * <p>
-     * Applicable for {@code scan} and {@code continuous} queries.
+     * Applicable for {@code scan} queries.
      *
-     * @return Query filter.
+     * @return Scan query filter.
      */
-    @Nullable public GridBiPredicate<?, ?> scanFilter() {
-        return scanFilter;
+    @Nullable public GridBiPredicate<K, V> scanQueryFilter() {
+        return scanQryFilter;
+    }
+
+    /**
+     * Gets continuous query filter.
+     * <p>
+     * Applicable for {@code continuous} queries.
+     *
+     * @return Continuous query filter.
+     */
+    @Nullable public GridPredicate<GridCacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
+        return contQryFilter;
     }
 
     /**

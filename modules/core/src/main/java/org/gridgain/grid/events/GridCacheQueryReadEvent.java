@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,18 +21,18 @@ import java.util.*;
 /**
  * Cache query read event.
  */
-public class GridCacheQueryReadEvent extends GridCacheQueryEvent {
+public class GridCacheQueryReadEvent<K, V> extends GridCacheQueryEvent<K, V> {
     /** Key. */
     @GridToStringInclude
-    private final Object key;
+    private final K key;
 
     /** Value. */
     @GridToStringInclude
-    private final Object val;
+    private final V val;
 
     /** Old value. */
     @GridToStringInclude
-    private final Object oldVal;
+    private final V oldVal;
 
     /**
      * @param node Node where event was fired.
@@ -47,10 +48,21 @@ public class GridCacheQueryReadEvent extends GridCacheQueryEvent {
      * @param val Value.
      * @param oldVal Old value.
      */
-    public GridCacheQueryReadEvent(GridNode node, String msg, int type, @Nullable String cacheName,
-        @Nullable String clsName, @Nullable String clause, @Nullable GridBiPredicate<?, ?> scanFilter,
-        @Nullable Object[] args, @Nullable UUID subjId, Object key, @Nullable Object val, @Nullable Object oldVal) {
-        super(node, msg, type, cacheName, clsName, clause, scanFilter, args, subjId);
+    public GridCacheQueryReadEvent(
+        GridNode node,
+        String msg,
+        int type,
+        @Nullable String cacheName,
+        @Nullable String clsName,
+        @Nullable String clause,
+        @Nullable GridBiPredicate<K, V> scanFilter,
+        @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
+        @Nullable Object[] args,
+        @Nullable UUID subjId,
+        K key,
+        @Nullable V val,
+        @Nullable V oldVal) {
+        super(node, msg, type, cacheName, clsName, clause, scanFilter, contQryFilter, args, subjId);
 
         assert key != null;
 
@@ -64,8 +76,8 @@ public class GridCacheQueryReadEvent extends GridCacheQueryEvent {
      *
      * @return Key.
      */
-    public <K> K key() {
-        return (K)key;
+    public K key() {
+        return key;
     }
 
     /**
@@ -73,8 +85,8 @@ public class GridCacheQueryReadEvent extends GridCacheQueryEvent {
      *
      * @return Value.
      */
-    @Nullable public <V> V value() {
-        return (V)val;
+    @Nullable public V value() {
+        return val;
     }
 
     /**
@@ -82,8 +94,8 @@ public class GridCacheQueryReadEvent extends GridCacheQueryEvent {
      *
      * @return Old value.
      */
-    @Nullable public <V> V oldValue() {
-        return (V)oldVal;
+    @Nullable public V oldValue() {
+        return oldVal;
     }
 
     /** {@inheritDoc} */

@@ -161,7 +161,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
 
                     if (recordEvt) {
-                        ctx.event().record(new GridCacheQueryReadEvent(
+                        ctx.event().record(new GridCacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
                             EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ,
@@ -169,6 +169,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             null,
                             null,
                             null,
+                            filter,
                             null,
                             nodeId,
                             e.getKey(),
@@ -177,6 +178,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         ));
                     }
                 }
+            }
+
+            @Override public GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter() {
+                return filter;
             }
 
             private boolean checkProjection(GridCacheContinuousQueryEntry<K, V> e) {

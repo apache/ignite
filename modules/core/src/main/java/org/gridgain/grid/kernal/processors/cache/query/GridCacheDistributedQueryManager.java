@@ -202,7 +202,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
-                req.keepPortable()
+                req.keepPortable(),
+                req.subjectId()
             );
 
         return new GridCacheQueryInfo(
@@ -509,7 +510,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 false,
-                qry.query().keepPortable());
+                qry.query().keepPortable(),
+                qry.query().subjectId());
 
             addQueryFuture(req.id(), fut);
 
@@ -544,7 +546,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         try {
             GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.includeBackups(), fut.fields(), all, qry.keepPortable());
+                qry.includeBackups(), fut.fields(), all, qry.keepPortable(), qry.subjectId());
 
             sendRequest(fut, req, nodes);
         }
@@ -606,7 +608,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 qry.query().includeMetadata(),
-                qry.query().keepPortable());
+                qry.query().keepPortable(),
+                qry.query().subjectId());
 
             addQueryFuture(req.id(), fut);
 

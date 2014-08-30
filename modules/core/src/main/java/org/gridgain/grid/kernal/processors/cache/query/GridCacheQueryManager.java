@@ -20,7 +20,9 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
@@ -34,6 +36,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.nio.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,12 +45,19 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * Query and index manager.
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
+    /** */
+    public static final GridProductVersion QUERY_PORTABLES_SINCE = GridProductVersion.fromString("6.2.0");
+
+    /** */
+    public static final GridProductVersion QUERY_EVENTS_SINCE = GridProductVersion.fromString("6.2.1");
+
     /** */
     private static final Collection<String> IGNORED_FIELDS = F.asList(
         "_GG_VAL_STR__",
@@ -438,13 +448,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         switch (qry.type()) {
             case SQL:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent(
+                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
                         cctx.localNode(),
                         "SQL query executed.",
                         EVT_CACHE_SQL_QUERY_EXECUTED,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
+                        null,
                         null,
                         args,
                         subjId));
@@ -455,7 +466,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             case SCAN:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent(
+                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
                         cctx.localNode(),
                         "Scan query executed.",
                         EVT_CACHE_SCAN_QUERY_EXECUTED,
@@ -464,6 +475,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         null,
                         qry.scanFilter(),
                         null,
+                        null,
                         subjId));
                 }
 
@@ -471,13 +483,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             case TEXT:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent(
+                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
                         cctx.localNode(),
                         "Full text query executed.",
                         EVT_CACHE_FULL_TEXT_QUERY_EXECUTED,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
+                        null,
                         null,
                         null,
                         subjId));
@@ -521,13 +534,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert qry.type() == SQL_FIELDS;
 
         if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED)) {
-            cctx.gridEvents().record(new GridCacheQueryEvent(
+            cctx.gridEvents().record(new GridCacheQueryEvent<>(
                 cctx.localNode(),
                 "SQL fields query executed.",
                 EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED,
                 cctx.namex(),
                 null,
                 qry.clause(),
+                null,
                 null,
                 args,
                 subjId));
@@ -749,7 +763,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     entities = new ArrayList<>(pageSize);
 
                 GridIndexingFieldsResult res = qryInfo.local() ?
-                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(),qryInfo.senderId()) :
+                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId()) :
                     fieldsQueryResult(qryInfo);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
@@ -830,7 +844,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.namex(),
                             qry.clause(),
                             qryInfo.arguments(),
-                            qryInfo.senderId(),
+                            qry.subjectId(),
                             F.viewListReadOnly(row, new CX1<GridIndexingEntity<?>, Object>() {
                                 @Override public Object applyx(GridIndexingEntity<?> ent) throws GridException {
                                     return ent.value();
@@ -942,7 +956,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 boolean incBackups = qry.includeBackups();
 
                 GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
-                    loc ? executeQuery(qry, qryInfo.arguments(), loc, qryInfo.senderId()) : queryIterator(qryInfo);
+                    loc ? executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId()) : queryIterator(qryInfo);
 
                 GridCacheAdapter<K, V> cache = cctx.cache();
 
@@ -1002,7 +1016,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     if (qry.type() == SQL) {
                         if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent(
+                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                 cctx.localNode(),
                                 "SQL query entry read.",
                                 EVT_CACHE_SQL_QUERY_OBJECT_READ,
@@ -1010,8 +1024,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 qry.queryClassName(),
                                 qry.clause(),
                                 null,
+                                null,
                                 qryInfo.arguments(),
-                                qryInfo.senderId(),
+                                qry.subjectId(),
                                 key,
                                 val,
                                 null));
@@ -1019,7 +1034,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                     else if (qry.type() == TEXT) {
                         if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent(
+                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                 cctx.localNode(),
                                 "Full text query entry read.",
                                 EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ,
@@ -1028,7 +1043,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 qry.clause(),
                                 null,
                                 null,
-                                qryInfo.senderId(),
+                                null,
+                                qry.subjectId(),
                                 key,
                                 val,
                                 null));
@@ -1036,7 +1052,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                     else if (qry.type() == SCAN) {
                         if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent(
+                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                 cctx.localNode(),
                                 "Scan query entry read.",
                                 EVT_CACHE_SCAN_QUERY_OBJECT_READ,
@@ -1045,7 +1061,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 null,
                                 qry.scanFilter(),
                                 null,
-                                qryInfo.senderId(),
+                                null,
+                                qry.subjectId(),
                                 key,
                                 val,
                                 null));
@@ -1193,7 +1210,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.senderId()));
+                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.query().subjectId()));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1310,7 +1327,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.senderId()));
+                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.query().subjectId()));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1882,6 +1899,53 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheSqlIndexMetadata.class, this);
+        }
+    }
+
+    /**
+     * 6.1.9 -> 6.2.0 converter for {@link GridCacheQueryRequest}.
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridCacheQueryRequestPortablesConverter620 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            return commState.putBoolean(false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            if (buf.remaining() < 1)
+                return false;
+
+            commState.getBoolean();
+
+            return true;
+        }
+    }
+
+    /**
+     * 6.2.0 -> 6.2.1 converter for {@link GridCacheQueryRequest}.
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridCacheQueryRequestEventsConverter621 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            return commState.putUuid(null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            UUID subjId0 = commState.getUuid();
+
+            return subjId0 != UUID_NOT_READ;
         }
     }
 }

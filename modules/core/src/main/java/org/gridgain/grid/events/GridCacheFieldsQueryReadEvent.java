@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Cache query read event.
  */
-public class GridCacheFieldsQueryReadEvent extends GridCacheQueryEvent {
+public class GridCacheFieldsQueryReadEvent extends GridCacheQueryEvent<Object, Object> {
     /** Result row. */
     @GridToStringInclude
     private final List<?> row;
@@ -34,10 +34,18 @@ public class GridCacheFieldsQueryReadEvent extends GridCacheQueryEvent {
      * @param subjId Security subject ID.
      * @param row Result row.
      */
-    public GridCacheFieldsQueryReadEvent(GridNode node, String msg, int type, @Nullable String cacheName,
-        String clause, @Nullable Object[] args, @Nullable UUID subjId, List<?> row) {
-        super(node, msg, type, cacheName, null, clause, null, args, subjId);
+    public GridCacheFieldsQueryReadEvent(
+        GridNode node,
+        String msg,
+        int type,
+        @Nullable String cacheName,
+        String clause,
+        @Nullable Object[] args,
+        @Nullable UUID subjId,
+        List<?> row) {
+        super(node, msg, type, cacheName, null, clause, null, null, args, subjId);
 
+        assert clause != null;
         assert row != null;
 
         this.row = row;

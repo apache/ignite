@@ -613,6 +613,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
             GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
 
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestPortablesConverter620.class,
+            GridCacheQueryManager.QUERY_PORTABLES_SINCE);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
+            GridCacheQueryManager.QUERY_EVENTS_SINCE);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {

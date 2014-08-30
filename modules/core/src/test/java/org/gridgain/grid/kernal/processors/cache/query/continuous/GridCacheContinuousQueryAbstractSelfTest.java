@@ -1410,7 +1410,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 assertNull(qe.className());
                 assertNull(qe.clause());
-                assertNull(qe.scanFilter());
+                assertNull(qe.scanQueryFilter());
+                assertNotNull(qe.continuousQueryFilter());
                 assertNull(qe.arguments());
 
                 cnt.incrementAndGet();
@@ -1432,7 +1433,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 assertNull(qe.className());
                 assertNull(qe.clause());
-                assertNull(qe.scanFilter());
+                assertNull(qe.scanQueryFilter());
+                assertNotNull(qe.continuousQueryFilter());
                 assertNull(qe.arguments());
 
                 execLatch.countDown();

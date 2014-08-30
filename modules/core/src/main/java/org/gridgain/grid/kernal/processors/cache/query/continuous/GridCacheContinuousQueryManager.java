@@ -137,7 +137,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                 lsnrCnt.incrementAndGet();
 
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent(
+                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
                         cctx.localNode(),
                         "Continuous query executed.",
                         EVT_CACHE_CONTINUOUS_QUERY_EXECUTED,
@@ -145,6 +145,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         null,
                         null,
                         null,
+                        lsnr.filter(),
                         null,
                         nodeId
                     ));

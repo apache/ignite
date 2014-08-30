@@ -76,6 +76,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private boolean keepPortable;
 
+    /** */
+    private UUID subjId;
+
     /**
      * @param cctx Context.
      * @param type Query type.
@@ -130,7 +133,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
         boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, @Nullable String clsName,
-        String clause, boolean incMeta, boolean keepPortable) {
+        String clause, boolean incMeta, boolean keepPortable, UUID subjId) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -146,6 +149,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.clause = clause;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
+        this.subjId = subjId;
     }
 
     /**
@@ -197,6 +201,17 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     public void keepPortable(boolean keepPortable) {
         this.keepPortable = keepPortable;
+    }
+
+    /**
+     * @return Security subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    public void subjectId(UUID subjId) {
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -370,6 +385,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
             }
         }
+
+        if (subjId == null)
+            subjId = cctx.localNodeId();
 
         GridCacheQueryBean bean = new GridCacheQueryBean(this, (GridReducer<Object, Object>)rmtReducer,
             (GridClosure<Object, Object>)rmtTransform, args);
