@@ -178,6 +178,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param dep Deployed task.
      * @param evtLsnr Event listener.
      * @param thCtx Thread-local context from task processor.
+     * @param subjId Subject ID.
      */
     GridTaskWorker(
         GridKernalContext ctx,
@@ -188,7 +189,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         @Nullable GridComputeTask<T, R> task,
         GridDeployment dep,
         GridTaskEventListener evtLsnr,
-        @Nullable Map<GridTaskThreadContextKey, Object> thCtx) {
+        @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
+        UUID subjId) {
         super(ctx.config().getGridName(), "grid-task-worker", ctx.config().getGridLogger());
 
         assert ses != null;
@@ -205,6 +207,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         this.dep = dep;
         this.evtLsnr = evtLsnr;
         this.thCtx = thCtx;
+        this.subjId = subjId;
 
         log = U.logger(ctx, logRef, this);
 
@@ -215,10 +218,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
         this.noFailover = noFailover != null ? noFailover : false;
-
-        UUID subjId = getThreadContext(TC_SUBJ_ID);
-
-        this.subjId = subjId != null ? subjId : ctx.localNodeId();
     }
 
     /**
@@ -1135,7 +1134,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         dep.participants(),
                         forceLocDep,
                         ses.isFullSupport(),
-                        internal);
+                        internal,
+                        ses.subjectId());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
@@ -1262,6 +1262,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
+            evt.taskSubjectId(ses.subjectId());
 
             ctx.event().record(evt);
         }

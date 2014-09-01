@@ -484,6 +484,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         Collection<UUID> top = nodes != null ? F.nodeIds(nodes) : null;
 
+        UUID subjId = getThreadContext(TC_SUBJ_ID);
+
+        if (subjId == null)
+            subjId = ctx.localNodeId();
+
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
@@ -496,7 +501,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             endTime,
             Collections.<GridComputeJobSibling>emptyList(),
             Collections.emptyMap(),
-            fullSup);
+            fullSup,
+            subjId);
 
         GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
 
@@ -513,7 +519,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     task,
                     dep,
                     new TaskEventListener(),
-                    map);
+                    map,
+                    subjId);
 
                 if (task != null) {
                     // Check if someone reuses the same task instance by walking
