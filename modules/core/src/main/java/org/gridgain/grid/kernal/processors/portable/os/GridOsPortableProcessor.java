@@ -71,12 +71,17 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metaData(int typeId) {
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridPortableMetadata> metaData(Collection<Integer> typeIds) {
+    @Override public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridPortableMetadata> metadata() throws GridPortableException {
+        return Collections.emptyList();
     }
 }
