@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-visor</artifactId>
-            <version>RELEASE</version>
+            <version>${gridgain.version}</version>
         </dependency>
 
         <!-- Gridgain dependencies -->
