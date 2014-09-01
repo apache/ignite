@@ -773,7 +773,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                 cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null, old,
-                    hasOldBytes || old != null, subjId, transformClo.getClass().getName());
+                    hasOldBytes || old != null, subjId,
+                    transformClo != null ? transformClo.getClass().getName() : null);
 
                 // No more notifications.
                 evt = false;
@@ -853,7 +854,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null,
-                        old, hasOldBytes, subjId, transformClo.getClass().getName());
+                        old, hasOldBytes, subjId, transformClo != null ? transformClo.getClass().getName() : null);
             }
         }
 

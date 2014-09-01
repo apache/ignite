@@ -1110,7 +1110,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*metrics*/metrics,
                         /*event*/recordEvt,
                         /*subjId*/subjId,
-                        /**closure name */ recordEvt ? F.first(txEntry.transformClosures()) : null,
+                        /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
                         CU.<K, V>empty());
 
                 try {
