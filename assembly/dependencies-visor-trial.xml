@@ -51,10 +51,10 @@
                         </includes>
                     </fileSet>
                     <fileSet>
-                        <directory>${basedir}</directory>
-                        <outputDirectory>/include/visorui</outputDirectory>
+                        <directory>${basedir}licenses</directory>
+                        <outputDirectory>/include/visorui/licenses</outputDirectory>
                         <includes>
-                            <include>gridgain-visor-trial.jar</include>
+                            <include>*.txt</include>
                         </includes>
                     </fileSet>
                     <fileSet>
