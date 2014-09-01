@@ -229,7 +229,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(GridProductVersion.class, this);
+        return "GridProductVersion [ver=" + major + '.' + minor + '.' + maintenance + ", revTs=" + revTs + ']';
     }
 
     /**
