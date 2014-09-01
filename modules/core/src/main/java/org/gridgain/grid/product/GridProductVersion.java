@@ -14,6 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.text.*;
 import java.util.*;
 import java.util.regex.*;
 
@@ -225,7 +226,13 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** {@inheritDoc} */
     public String toString() {
-        return "GridProductVersion [ver=" + major + '.' + minor + '.' + maintenance + ", revTs=" + revTs + ']';
+        String revTsStr = new SimpleDateFormat("yyyyMMdd").format(new Date(revTs * 1000));
+
+        String hash = U.byteArray2HexString(revHash).toLowerCase();
+
+        hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
+
+        return major + "." + minor + "." + maintenance + "#" + revTsStr + "-sha1:" + hash;
     }
 
     /**
