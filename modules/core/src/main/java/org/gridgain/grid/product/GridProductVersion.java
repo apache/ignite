@@ -11,6 +11,7 @@ package org.gridgain.grid.product;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -157,19 +158,14 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
      */
     public boolean greaterThanEqual(int major, int minor, int maintenance) {
         // NOTE: Unknown version is less than any other version.
-        if (major == this.major) {
-            if (minor == this.minor) {
-                return this.maintenance >= maintenance;
-            }
-            else
-                return this.minor > minor;
-        }
+        if (major == this.major)
+            return minor == this.minor ? this.maintenance >= maintenance : this.minor > minor;
         else
             return this.major > major;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridProductVersion o) {
+    @Override public int compareTo(@NotNull GridProductVersion o) {
         // NOTE: Unknown version is less than any other version.
         if (major == o.major) {
             if (minor == o.minor) {
