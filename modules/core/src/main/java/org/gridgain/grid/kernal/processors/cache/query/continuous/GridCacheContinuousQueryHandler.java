@@ -134,7 +134,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 if (notify) {
                     if (loc) {
-                        if (!cb.apply(nodeId, F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
+                        if (!cb.apply(nodeId,
+                            F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
