@@ -25,7 +25,7 @@ import java.util.*;
  *
  * This is the minimum of functionality that is needed to work as secondary file system in dual modes of GGFS.
  */
-public interface GridGgfsFileSystem extends Closeable {
+public interface GridGgfsFileSystem {
     /** Property: user name. */
     public static final String PROP_USER_NAME = "usrName";
 
@@ -133,67 +133,66 @@ public interface GridGgfsFileSystem extends Closeable {
     public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException;
 
     /**
-     * Open file to read data through {@link GridGgfsReader} - the simplest data input interface.
+     * Opens a file for reading.
      *
-     * @param path Path to the file to open.
-     * @param bufSize Buffer size.
-     *
-     * @return Data reader.
+     * @param path File path to read.
+     * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
+     * @return File input stream to read data from.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsReader openFile(GridGgfsPath path, int bufSize);
+    public GridGgfsReader open(GridGgfsPath path, int bufSize) throws GridException;
 
     /**
-     * Create file to write data through {@link GridGgfsWriter}.
-     *
-     * @param path Path to the file to open.
-     * @param overwrite
-     * @return
-     * @throws GridException
-     */
-
-    /**
-     * Create file to write data through {@link GridGgfsWriter}.
+     * Creates a file and opens it for writing.
      *
      * @param path File path to create.
-     * @param overwrite Overwrite file if it already exists.
-     * @return File output writer to write data to.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException;
+    public OutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
 
     /**
-     * Create file to write data through {@link GridGgfsWriter}.
+     * Creates a file and opens it for writing.
      *
      * @param path File path to create.
-     * @param props File properties to set.
-     * @param overwrite Overwrite file if it already exists.
      * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @param affKey Affinity key used to store file blocks. If not {@code null}, the whole file will be
+     *      stored on node where {@code affKey} resides.
      * @param replication Replication factor.
      * @param blockSize Block size.
-     * @return File output writer to write data to.
+     * @param props File properties to set.
+     * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite, int bufSize,
-        short replication, long blockSize) throws GridException;
+    public OutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, @Nullable GridUuid affKey,
+       int replication, long blockSize, @Nullable Map<String, String> props)
+       throws GridException;
 
     /**
-     * Opens the simplest output writer to an existing file for appending data.
+     * Opens an output stream to an existing file for appending data.
      *
      * @param path File path to append.
      * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
-     * @return File output writer to write data to.
+     * @param create Create file if it doesn't exist yet.
+     * @param props File properties to set only in case it file was just created.
+     * @return File output stream to append data to.
      * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException;
+    public OutputStream append(GridGgfsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
+        throws GridException;
 
     /**
-     * Return a file status object that represents the path.
+     * Gets file information for the specified path.
      *
-     * @param path The path we want information from.
-     * @return FileStatus object or {@code null} if file not exists.
+     * @param path Path to get information for.
+     * @return File information for specified path or {@code null} if such path does not exist.
      * @throws GridException In case of error.
      */
-    @Nullable public GridGgfsFileStatus getFileStatus(GridGgfsPath path) throws GridException;
+    @Nullable public GridGgfsFile info(GridGgfsPath path) throws GridException;
 
     /**
      * Gets used space in bytes.
@@ -204,16 +203,9 @@ public interface GridGgfsFileSystem extends Closeable {
     public long usedSpaceSize() throws GridException;
 
     /**
-     * Gets the file system URI if this set.
-     *
-     * @return URI or {@code null}.
-     */
-    @Nullable public String uri();
-
-    /**
      * Gets the implementation specific properties of file system.
      *
      * @return
      */
-    @Nullable public Map<String,String> properties();
+    public Map<String,String> properties();
 }

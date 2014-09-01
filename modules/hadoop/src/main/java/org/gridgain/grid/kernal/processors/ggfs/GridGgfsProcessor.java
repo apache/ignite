@@ -364,17 +364,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                 // When working in any mode except of primary, secondary FS config must be provided.
                 assertParameter(cfg.getSecondaryFileSystem() != null,
                     "secondaryFileSystem cannot be null when mode is SECONDARY");
-
-//                assertParameter(cfg.getSecondaryHadoopFileSystemConfigPath() != null,
-//                    "secondaryHadoopFileSystemConfigPath cannot be null when mode is SECONDARY");
             }
-
-//            if (cfg.getSecondaryHadoopFileSystemConfigPath() != null && cfg.getSecondaryHadoopFileSystemUri() == null)
-//                throw new GridException("secondaryHadoopFileSystemUri cannot be null when " +
-//                    "secondaryHadoopFileSystemConfigPath is set.");
-//            if (cfg.getSecondaryHadoopFileSystemConfigPath() == null && cfg.getSecondaryHadoopFileSystemUri() != null)
-//                throw new GridException("secondaryHadoopFileSystemConfigPath cannot be null when " +
-//                    "secondaryHadoopFileSystemUri is set.");
 
             cfgNames.add(name);
         }

@@ -397,16 +397,21 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                                 int read = 0;
 
-                                synchronized (secReader) {
-                                    // Delegate to the secondary file system.
-                                    while (read < blockSize) {
-                                        int r = secReader.read(pos + read, res, read, blockSize - read);
+                                try {
+                                    synchronized (secReader) {
+                                        // Delegate to the secondary file system.
+                                        while (read < blockSize) {
+                                            int r = secReader.read(pos + read, res, read, blockSize - read);
 
-                                        if (r < 0)
-                                            break;
+                                            if (r < 0)
+                                                break;
 
-                                        read += r;
+                                            read += r;
+                                        }
                                     }
+                                }
+                                catch (IOException e) {
+                                    throw new GridException(e);
                                 }
 
                                 // If we did not read full block at the end of the file - trim it.

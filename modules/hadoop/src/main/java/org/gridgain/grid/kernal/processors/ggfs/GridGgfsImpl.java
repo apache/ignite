@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import com.google.common.collect.Maps;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -131,8 +132,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
         GridGgfsMode dfltMode;
 
         if (secondaryFs == null) {
-            // When no secondary file system is provided, mode cannot be SECONDARY.
-            assert cfg.getDefaultMode() != PROXY;
+            if (cfg.getDefaultMode() == PROXY)
+                throw new GridException("Mode cannot be PROXY if secondary file system hasn't been defined.");
 
             dfltMode = PRIMARY;
         }
@@ -164,7 +165,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         ArrayList<T2<GridGgfsPath, GridGgfsMode>> modes = null;
 
-        if (cfgModes != null && !cfgModes.isEmpty()) {
+        if (!cfgModes.isEmpty()) {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, GridGgfsMode> mode : cfgModes.entrySet()) {
@@ -181,8 +182,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         modeRslvr = new GridGgfsModeResolver(dfltMode, modes);
 
-        secondaryPaths = new GridGgfsPaths(secondaryFileSystemUri(),
-            secondaryFs == null ? null : secondaryFs.properties(), dfltMode, modeRslvr.modesOrdered());
+        secondaryPaths = new GridGgfsPaths(secondaryFs == null ? null : secondaryFs.properties(), dfltMode,
+            modeRslvr.modesOrdered());
 
         // Check whether GGFS LRU eviction policy is set on data cache.
         String dataCacheName = ggfsCtx.configuration().getDataCacheName();
@@ -202,24 +203,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         ggfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
         ggfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
-    }
-
-    /**
-     * @return URI of the secondary file system or {@code null} if one hasn't been set.
-     */
-    private String secondaryFileSystemUri() {
-        if (secondaryFs == null)
-            return null;
-
-        String res = secondaryFs.uri();
-
-        if (res == null)
-            return null;
-
-        if (!res.endsWith("/"))
-            res += "/";
-
-        return res;
     }
 
     /**
@@ -255,7 +238,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         workerMap.clear();
 
-        U.closeQuiet(secondaryFs);
+        if (secondaryFs instanceof Closeable)
+            U.closeQuiet((Closeable)secondaryFs);
 
         ggfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
         ggfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);
@@ -268,17 +252,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Create batch for the file.
      *
      * @param path File path in the secondary file system.
-     * @param writer Writer of that file.
+     * @param out Output stream of that file.
      * @return Created batch.
      * @throws GridException In case new batch cannot be created.
      */
-    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, GridGgfsWriter writer) throws GridException {
+    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, OutputStream out) throws GridException {
         assert path != null;
-        assert writer != null;
+        assert out != null;
 
         if (busyLock.enterBusy()) {
             try {
-                GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, writer);
+                GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
 
                 while (true) {
                     GridGgfsFileWorker worker = workerMap.get(path);
@@ -1031,87 +1015,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsReader openFile(final GridGgfsPath path, final int bufSize) {
-        return new GridGgfsReader() {
-            /** */
-            private GridGgfsInputStreamAdapter in;
-
-            /** {@inheritDoc} */
-            @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
-                if (in == null)
-                    in = open(path, bufSize);
-
-                try {
-                    return in.read(pos, buf, off, len);
-                }
-                catch (IOException e) {
-                    throw new GridException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws IOException {
-                if (in != null)
-                    in.close();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
-        int bufSize, short replication, long blockSize) throws GridException {
-        return new GridGgfsOutputStreamWriter(create0(path, bufSize, overwrite, null, replication, props, true));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException {
-        return new GridGgfsOutputStreamWriter(create(path, overwrite));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException {
-        return new GridGgfsOutputStreamWriter(append(path, bufSize, false, null));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsFileStatus getFileStatus(final GridGgfsPath path) throws GridException {
-        final GridGgfsFile info = info(path);
-
-        if (info == null)
-            return null;
-
-        return new GridGgfsFileStatus() {
-            @Override public boolean isDirectory() {
-                return info.isDirectory();
-            }
-
-            @Override public int blockSize() {
-                return info.blockSize();
-            }
-
-            @Override public long length() {
-                return info.length();
-            }
-
-            @Override public Map<String, String> properties() {
-                return info.properties();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public long usedSpaceSize() throws GridException {
         return metrics().localSpaceSize();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String uri() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<String, String> properties() {
-        return null;
+    @Override public Map<String, String> properties() {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -1444,7 +1354,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     private void checkConflictWithPrimary(GridGgfsPath path) throws GridException {
         if (secondaryFs != null) {
-            if (secondaryFs.getFileStatus(path) != null) {
+            if (secondaryFs.info(path) != null) {
                 throw new GridException("Path mapped to a PRIMARY mode found in secondary file " +
                      "system. Remove path from secondary file system or change path mapping: " + path);
             }
@@ -1517,7 +1427,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     try {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
-                    catch (GridException ignore) {
+                    catch (GridException e) {
+                        U.error(log, e);
+
                         secondarySpaceSize = -1;
                     }
                 }
@@ -1795,7 +1707,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 info = meta.info(meta.fileId(path));
 
                 if (info == null) {
-                    GridGgfsFileStatus status = secondaryFs.getFileStatus(path);
+                    GridGgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
                         info = status.isDirectory() ? new GridGgfsFileInfo(true, status.properties()) :
@@ -1810,11 +1722,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         return info;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IOException {
-        // No-op
     }
 
     /** Detailed file descriptor. */

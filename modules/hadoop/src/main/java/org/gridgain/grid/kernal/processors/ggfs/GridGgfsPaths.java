@@ -24,9 +24,6 @@ public class GridGgfsPaths implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Secondary file system URI. */
-    private String secondaryUri;
-
     /** Additional secondary file system properties. */
     private Map<String, String> props;
 
@@ -45,30 +42,21 @@ public class GridGgfsPaths implements Externalizable {
 
     /**
      * Constructor.
-     * @param secondaryUri Secondary file system URI.
      * @param props Additional secondary file system properties.
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsPaths(@Nullable String secondaryUri, @Nullable Map<String, String> props,
-        GridGgfsMode dfltMode, @Nullable List<T2<GridGgfsPath, GridGgfsMode>> pathModes) {
-        this.secondaryUri = secondaryUri;
+    public GridGgfsPaths(Map<String, String> props, GridGgfsMode dfltMode, @Nullable List<T2<GridGgfsPath,
+        GridGgfsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }
 
     /**
-     * @return Secondary file system URI.
-     */
-    @Nullable public String secondaryUri() {
-        return secondaryUri;
-    }
-
-    /**
      * @return Secondary file system properties.
      */
-    @Nullable public Map<String, String> properties() {
+    public Map<String, String> properties() {
         return props;
     }
 
@@ -88,7 +76,6 @@ public class GridGgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, secondaryUri);
         U.writeStringMap(out, props);
         U.writeEnum0(out, dfltMode);
 
@@ -107,7 +94,6 @@ public class GridGgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        secondaryUri = U.readString(in);
         props = U.readStringMap(in);
         dfltMode = GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in));
 

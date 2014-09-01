@@ -65,15 +65,6 @@ public interface GridGgfs extends GridGgfsFileSystem {
     public GridGgfsConfiguration configuration();
 
     /**
-     * Gets file information for the specified path.
-     *
-     * @param path Path to get information for.
-     * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws GridException In case of error.
-     */
-    @Nullable public GridGgfsFile info(GridGgfsPath path) throws GridException;
-
-    /**
      * Gets summary (total number of files, total number of directories and total length)
      * for a given path.
      *
@@ -103,7 +94,7 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
+    @Override public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -125,7 +116,7 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -141,7 +132,7 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
         @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException;
 
@@ -167,7 +158,7 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+    @Override public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException;
 
     /**

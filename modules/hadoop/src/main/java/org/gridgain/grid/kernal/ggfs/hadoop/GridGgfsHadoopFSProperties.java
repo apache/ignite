@@ -17,9 +17,9 @@ import java.util.*;
 import static org.gridgain.grid.ggfs.GridGgfs.*;
 
 /**
- * HDFS properties.
+ * Hadoop file system properties.
  */
-class GridGgfsHdfsProperties {
+class GridGgfsHadoopFSProperties {
     /** Username. */
     private String usrName;
 
@@ -35,7 +35,7 @@ class GridGgfsHdfsProperties {
      * @param props Properties.
      * @throws GridException In case of error.
      */
-    GridGgfsHdfsProperties(Map<String, String> props) throws GridException {
+    GridGgfsHadoopFSProperties(Map<String, String> props) throws GridException {
         usrName = props.get(PROP_USER_NAME);
         grpName = props.get(PROP_GROUP_NAME);
 

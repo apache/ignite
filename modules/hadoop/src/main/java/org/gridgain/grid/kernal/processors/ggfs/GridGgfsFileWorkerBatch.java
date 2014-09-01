@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
@@ -36,8 +38,8 @@ public class GridGgfsFileWorkerBatch {
     /** Path to the file in the primary file system. */
     private final GridGgfsPath path;
 
-    /** Writer of the file. */
-    private final GridGgfsWriter writer;
+    /** Output stream of the file. */
+    private final OutputStream out;
 
     /** Caught exception. */
     private volatile GridException err;
@@ -47,16 +49,15 @@ public class GridGgfsFileWorkerBatch {
 
     /**
      * Constructor.
-     *
      * @param path Path to the file in the primary file system.
-     * @param writer Writer opened to that file.
+     * @param out Output stream opened to that file.
      */
-    GridGgfsFileWorkerBatch(GridGgfsPath path, GridGgfsWriter writer) {
+    GridGgfsFileWorkerBatch(GridGgfsPath path, OutputStream out) {
         assert path != null;
-        assert writer != null;
+        assert out != null;
 
         this.path = path;
-        this.writer = writer;
+        this.out = out;
     }
 
     /**
@@ -68,7 +69,12 @@ public class GridGgfsFileWorkerBatch {
     boolean write(final byte[] data) {
         return addTask(new GridGgfsFileWorkerTask() {
             @Override public void execute() throws GridException {
-                writer.write(data);
+                try {
+                    out.write(data);
+                }
+                catch (IOException e) {
+                    throw new GridException(e);
+                }
             }
         });
     }
@@ -109,7 +115,7 @@ public class GridGgfsFileWorkerBatch {
                 onComplete();
             }
             finally {
-                U.closeQuiet(writer);
+                U.closeQuiet(out);
 
                 completeLatch.countDown();
             }

@@ -797,44 +797,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsReader openFile(GridGgfsPath path, int bufSize) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridGgfsWriter createFile(GridGgfsPath path, boolean overwrite) throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
-            int bufSize, short replication, long blockSize) throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridGgfsWriter appendFile(GridGgfsPath path, int bufSize) throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridGgfsFileStatus getFileStatus(GridGgfsPath path) throws GridException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public long usedSpaceSize() throws GridException {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String uri() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Map<String, String> properties() {
-            return null;
+        @Override public Map<String, String> properties() {
+            return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */

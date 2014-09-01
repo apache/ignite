@@ -90,12 +90,7 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
-        try {
-            return in().read(pos, buf, off, len);
-        }
-        catch (IOException e) {
-            throw new GridException("Failed to read data [path = " + path + "]", e);
-        }
+    @Override public int read(long pos, byte[] buf, int off, int len) throws IOException {
+        return in().read(pos, buf, off, len);
     }
 }
