@@ -53,7 +53,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(GG_JOBS_HISTORY_SIZE, 10240);
 
     /** Version when subject ID was added. */
-    public static final GridProductVersion SUBJECT_ID_ADDED_SINCE_VER = GridProductVersion.fromString("6.2.5");
+    public static final GridProductVersion SUBJECT_ID_ADDED_SINCE_VER = GridProductVersion.fromString("6.2.1");
 
     /** */
     private final GridMarshaller marsh;
@@ -178,7 +178,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         ctx.versionConverter().registerLocal(GridJobExecuteRequest.class,
-            SubjectIdAddedMessageConverter625.class, SUBJECT_ID_ADDED_SINCE_VER);
+            SubjectIdAddedMessageConverter621.class, SUBJECT_ID_ADDED_SINCE_VER);
 
         if (metricsUpdateFreq < -1)
             throw new GridException("Invalid value for 'metricsUpdateFrequency' configuration property " +
@@ -1829,10 +1829,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * GridDhtAtomicUpdateRequest converter for version 6.2.5
+     * GridDhtAtomicUpdateRequest converter for version 6.2.1.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class SubjectIdAddedMessageConverter625 extends GridVersionConverter {
+    public static class SubjectIdAddedMessageConverter621 extends GridVersionConverter {
         /**
          * {@inheritDoc}
          */
