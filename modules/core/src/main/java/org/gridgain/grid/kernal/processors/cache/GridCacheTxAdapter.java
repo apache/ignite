@@ -1099,6 +1099,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
+                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this,
                         /*swap*/false,
@@ -1106,29 +1108,14 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*fail fast*/true,
                         /*unmarshal*/true,
                         /*metrics*/metrics,
-                        /*event*/false,
-                        /*subjId*/null, // Passing null because event is not generated.
-                        /**closure name */null, // Passing null because event is not generated.
+                        /*event*/recordEvt,
+                        /*subjId*/subjId,
+                        /**closure name */ recordEvt ? F.first(txEntry.transformClosures()) : null,
                         CU.<K, V>empty());
 
                 try {
-                    // TODO: GG-8999: Is it fine?
-                    boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                    GridCacheMvccCandidate<K> owner = recordEvt ? txEntry.cached().anyOwner() : null;
-
-                    for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                        V newVal = clos.apply(val);
-
-                        if (recordEvt) {
-                            cctx.events().addEvent(txEntry.cached().partition(), txEntry.key(),
-                                this, owner, EVT_CACHE_OBJECT_READ,
-                                newVal, newVal != null, val, val != null,
-                                subjId, clos.getClass().getName());
-                        }
-
-                        val = newVal;
-                    }
+                    for (GridClosure<V, V> clos : txEntry.transformClosures())
+                        val = clos.apply(val);
                 }
                 catch (Throwable e) {
                     throw new GridRuntimeException("Transform closure must not throw any exceptions " +

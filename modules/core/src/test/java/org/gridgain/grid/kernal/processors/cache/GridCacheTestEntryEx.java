@@ -392,7 +392,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, String cloClsName,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return val;
     }
@@ -669,8 +669,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         return mvcc.remoteCandidate(nodeId, threadId);
     }
 
-    /** @inheritDoc */
-    @Override public GridCacheMvccCandidate<K> anyOwner() {
+    /**
+     * @return Any MVCC owner.
+     */
+    public GridCacheMvccCandidate<K> anyOwner() {
         return mvcc.anyOwner();
     }
 

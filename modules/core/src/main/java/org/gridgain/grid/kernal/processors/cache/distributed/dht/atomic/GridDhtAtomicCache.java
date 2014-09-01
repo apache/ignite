@@ -1038,7 +1038,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*metrics*/true,
                         /*event*/true,
                         req.subjectId(),
-                        transform.getClass().getName(),
+                        transform,
                         CU.<K, V>empty());
 
                     if (transformMap == null)

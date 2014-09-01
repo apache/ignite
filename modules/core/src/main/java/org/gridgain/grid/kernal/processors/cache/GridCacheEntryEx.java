@@ -268,14 +268,14 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param cloClsName Closure class name.
+     * @param transformClo Transform closure to record event.
      * @return Cached value.
      * @throws GridException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, String cloClsName,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException;
 
@@ -776,12 +776,6 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      */
     @Nullable public GridCacheMvccCandidate<K> candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException;
-
-    /**
-     * @return Any owner.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    @Nullable public GridCacheMvccCandidate<K> anyOwner() throws GridCacheEntryRemovedException;
 
     /**
      * @return Local owner.
