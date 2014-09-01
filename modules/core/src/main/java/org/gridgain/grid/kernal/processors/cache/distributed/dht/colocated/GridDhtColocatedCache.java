@@ -298,7 +298,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             }
                             else {
                                 if (ctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject<V>)v).deserialize();
+                                    v = ((GridPortableObject)v).deserialize();
 
                                 locVals.put(key, v);
                             }
@@ -338,8 +338,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, filter,
-            subjId, deserializePortable);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
+            filter, subjId, deserializePortable);
 
         fut.init();
 

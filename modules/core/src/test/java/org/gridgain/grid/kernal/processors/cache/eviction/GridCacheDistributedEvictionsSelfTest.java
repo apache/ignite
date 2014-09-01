@@ -18,16 +18,14 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
@@ -139,6 +137,29 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         }
         catch (GridException e) {
             info("Caught expected exception: " + e);
+        }
+    }
+
+    /**
+     * http://atlassian.gridgain.com/jira/browse/GG-9002
+     *
+     * @throws Throwable If failed.
+     */
+    public void testLocalSync() throws Throwable {
+        gridCnt = 1;
+        mode = LOCAL;
+        evictNearSync = true;
+        evictSync = true;
+        nearEnabled = true;
+
+        Grid g = startGrid(0);
+
+        final GridCache<Integer, Integer> cache = g.cache(null);
+
+        for (int i = 1; i < 20; i++) {
+            cache.putx(i * gridCnt, i * gridCnt);
+
+            info("Put to cache: " + i * gridCnt);
         }
     }
 

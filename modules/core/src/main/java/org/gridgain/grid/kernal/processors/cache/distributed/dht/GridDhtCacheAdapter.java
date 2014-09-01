@@ -351,7 +351,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.versions().next(topology().topologyVersion());
+        final GridCacheVersion ver0 = ctx.versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -372,6 +372,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         GridCacheEntryEx<K, V> entry = null;
 
                         try {
+                            if (ctx.portableEnabled()) {
+                                key = (K)ctx.marshalToPortable(key);
+                                val = (V)ctx.marshalToPortable(val);
+                            }
+
                             entry = entryEx(key, false);
 
                             entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);

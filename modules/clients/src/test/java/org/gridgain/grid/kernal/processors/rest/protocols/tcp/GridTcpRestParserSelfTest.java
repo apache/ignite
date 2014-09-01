@@ -286,7 +286,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * Tests correct parsing of client handshake packets.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testParseClientHandshake() throws Exception {
         for (int splitPos = 1; splitPos < 5; splitPos++) {
@@ -375,10 +375,10 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @return Raw message bytes.
      */
     private ByteBuffer clientHandshakePacket() {
-        ByteBuffer res = ByteBuffer.allocate(5);
+        ByteBuffer res = ByteBuffer.allocate(6);
 
         res.put(new byte[] {
-            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0
+            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0, 0
         });
 
         res.flip();

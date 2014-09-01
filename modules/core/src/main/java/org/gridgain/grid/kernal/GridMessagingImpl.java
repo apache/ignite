@@ -17,17 +17,28 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl implements GridMessaging {
+public class GridMessagingImpl implements GridMessaging, Externalizable {
     /** */
-    private final GridKernalContext ctx;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridProjection prj;
+    private GridKernalContext ctx;
+
+    /** */
+    private GridProjection prj;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridMessagingImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
@@ -170,5 +181,25 @@ public class GridMessagingImpl implements GridMessaging {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        prj = (GridProjection)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return prj.message();
     }
 }

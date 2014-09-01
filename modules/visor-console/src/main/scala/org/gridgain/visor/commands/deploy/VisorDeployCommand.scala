@@ -19,7 +19,6 @@ import com.jcraft.jsch._
 import org.gridgain.grid.util.io.GridFilenameUtils
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._

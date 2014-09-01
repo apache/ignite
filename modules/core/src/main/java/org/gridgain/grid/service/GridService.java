@@ -70,8 +70,8 @@ import java.io.*;
  * </pre>
  * <h1 class="header">Cancellation</h1>
  * Services can be cancelled by calling any of the {@code cancel} methods on {@link GridServices} API.
- * Whenever a deployed service is cancelled, GridGain will automatically call {
- * @link GridService#cancel(GridServiceContext)} method on that service.
+ * Whenever a deployed service is cancelled, GridGain will automatically call
+ * {@link GridService#cancel(GridServiceContext)} method on that service.
  * <p>
  * Note that GridGain cannot guarantee that the service exits from {@link GridService#execute(GridServiceContext)}
  * method whenever {@link #cancel(GridServiceContext)} is called. It is up to the user to

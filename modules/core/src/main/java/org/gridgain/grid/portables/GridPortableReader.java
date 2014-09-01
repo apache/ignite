@@ -11,10 +11,21 @@ package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
- * Reader for portable objects.
+ * Reader for portable objects used in {@link GridPortableMarshalAware} implementations.
+ * Useful for the cases when user wants a fine-grained control over serialization.
+ * <p>
+ * Note that GridGain never writes full strings for field or type names. Instead,
+ * for performance reasons, GridGain writes integer hash codes for type and field names.
+ * It has been tested that hash code conflicts for the type names or the field names
+ * within the same type are virtually non-existent and, to gain performance, it is safe
+ * to work with hash codes. For the cases when hash codes for different types or fields
+ * actually do collide, GridGain provides {@link GridPortableIdMapper} which
+ * allows to override the automatically generated hash code IDs for the type and field names.
  */
 public interface GridPortableReader {
     /**
@@ -93,6 +104,13 @@ public interface GridPortableReader {
      * @throws GridPortableException In case of error.
      */
     @Nullable public Date readDate(String fieldName) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Timestamp.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Timestamp readTimestamp(String fieldName) throws GridPortableException;
 
     /**
      * @param fieldName Field name.
@@ -218,7 +236,26 @@ public interface GridPortableReader {
         throws GridPortableException;
 
     /**
-     * Gets raw reader.
+     * @param fieldName Field name.
+     * @param enumCls Enum class.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T extends Enum<?>> T readEnum(String fieldName, Class<T> enumCls) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param enumCls Enum class.
+     * @return Value.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName, Class<T> enumCls)
+        throws GridPortableException;
+
+    /**
+     * Gets raw reader. Raw reader does not use field name hash codes, therefore,
+     * making the format even more compact. However, if the raw reader is used,
+     * dynamic structure changes to the portable objects are not supported.
      *
      * @return Raw reader.
      */

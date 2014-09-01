@@ -612,8 +612,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             private boolean checkPredicate(Map.Entry<K, V> e) {
                 try {
-                    Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.portableKeys(),
-                        qry.portableValues());
+                    Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
 
                     return keyValFilter == null || keyValFilter.apply(e0.getKey(), e0.getValue());
                 }
@@ -936,8 +935,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Unwrap entry for reducer or transformer only.
                     if (rdc != null || trans != null)
-                        entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(entry,
-                            qry.portableKeys(), qry.portableValues());
+                        entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(entry, qry.keepPortable());
 
                     // Reduce.
                     if (rdc != null) {

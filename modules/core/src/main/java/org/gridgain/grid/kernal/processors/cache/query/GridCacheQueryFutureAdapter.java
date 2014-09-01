@@ -161,6 +161,53 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Returns next page for the query.
+     *
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    public Collection<R> nextPage() throws GridException {
+        Collection<R> res = null;
+
+        while (res == null) {
+            synchronized (mux) {
+                res = queue.poll();
+            }
+
+            if (res == null) {
+                if (!isDone()) {
+                    loadPage();
+
+                    long timeout = qry.query().timeout();
+
+                    long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
+
+                    if (waitTime <= 0)
+                        break;
+
+                    synchronized (mux) {
+                        try {
+                            if (queue.isEmpty() && !isDone())
+                                mux.wait(waitTime);
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new GridException("Query was interrupted: " + qry, e);
+                        }
+                    }
+                }
+                else
+                    break;
+            }
+        }
+
+        checkError();
+
+        return res;
+    }
+
+    /**
      * @throws GridException If future is done with an error.
      */
     private void checkError() throws GridException {
@@ -305,8 +352,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                 data = dedupIfRequired((Collection<Object>)data);
 
-                data = cctx.unwrapPortablesIfNeeded((Collection<Object>)data, qry.query().portableKeys(),
-                    qry.query().portableValues());
+                data = cctx.unwrapPortablesIfNeeded((Collection<Object>)data, qry.query().keepPortable());
 
                 synchronized (mux) {
                     enqueue(data);

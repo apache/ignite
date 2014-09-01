@@ -705,6 +705,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        long topVer = ctx.affinity().affinityTopologyVersion();
+
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
@@ -712,8 +714,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             GridCacheVersion obsoleteVer = null;
 
             boolean success = true;
-
-            long topVer = ctx.affinity().affinityTopologyVersion();
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
@@ -742,7 +742,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             }
                             else {
                                 if (ctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject<V>)v).deserialize();
+                                    v = ((GridPortableObject)v).deserialize();
 
                                 locVals.put(key, v);
                             }
@@ -782,8 +782,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, filter,
-            subjId, deserializePortable);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
+            filter, subjId, deserializePortable);
 
         fut.init();
 

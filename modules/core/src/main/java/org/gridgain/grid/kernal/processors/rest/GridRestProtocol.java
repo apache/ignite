@@ -40,6 +40,11 @@ public interface GridRestProtocol {
     public abstract void start(GridRestProtocolHandler hnd) throws GridException;
 
     /**
+     * Grid start callback.
+     */
+    public abstract void onKernalStart();
+
+    /**
      * Stops protocol.
      */
     public abstract void stop();

@@ -14,11 +14,10 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -31,6 +30,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** Counter. */
     private static final AtomicInteger cnt = new AtomicInteger();
 
+    /** */
+    private String firstNodeVer;
+
+    /** */
+    private String secondNodeVer;
+
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
@@ -42,10 +47,10 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
-                if (idx == 0)
-                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, "edition-ent-1.0.0");
+                if (idx % 2 == 0)
+                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
                 else
-                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, "edition-os-1.0.0");
+                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
             }
         };
 
@@ -59,18 +64,62 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testErrorDuringStartingWithDifferentReleaseTypes() throws Exception {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try {
-                    startGrids(2);
-                }
-                finally {
-                    stopAllGrids();
-                }
+    public void testNodeJoinTopologyWithDifferentReleaseType() throws Exception {
+        firstNodeVer = "1.0.0-ent";
+        secondNodeVer = "1.0.0-os";
 
-                return null;
-            }
-        }, GridException.class, null);
+        try {
+            startGrids(2);
+        }
+        catch (GridException e) {
+            StringWriter errors = new StringWriter();
+
+            e.printStackTrace(new PrintWriter(errors));
+
+            String stackTrace = errors.toString();
+
+            assertTrue(
+                "Caught exception does not contain specified string.",
+                stackTrace.contains("Topology cannot contain nodes of both enterprise and open source")
+            );
+
+            return;
+        }
+        finally {
+            stopAllGrids();
+        }
+
+        fail("Exception has not been thrown.");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
+        firstNodeVer = "1.0.0-os";
+        secondNodeVer = "1.0.1-os";
+
+        try {
+            startGrids(2);
+        }
+        catch (GridException e) {
+            StringWriter errors = new StringWriter();
+
+            e.printStackTrace(new PrintWriter(errors));
+
+            String stackTrace = errors.toString();
+
+            assertTrue(
+                "Caught exception does not contain specified string.",
+                stackTrace.contains("Local node and remote node have different version numbers")
+            );
+
+            return;
+        }
+        finally {
+            stopAllGrids();
+        }
+
+        fail("Exception has not been thrown.");
     }
 }

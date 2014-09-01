@@ -33,14 +33,13 @@ import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
 import org.gridgain.grid.{GridException => GE, GridGain => G, _}
-import org.gridgain.scalar._
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Holder for command help information.
@@ -82,7 +81,7 @@ sealed case class VisorConsoleCommandHolder(
  *         else
  *             println("foo")
  *     }
- *     def foo(@Nullable args: Symbol*): Unit = foo(visor.flatSymbols(args: _*))
+ *     def foo(@Nullable args: Symbol*) = foo(visor.flatSymbols(args: _*))
  * }
  * object VisorCustomCommand {
  *     implicit def fromVisor(vs: VisorTag) = new VisorCustomCommand
@@ -992,9 +991,8 @@ object visor extends VisorTag {
      *
      * @param arg Argument to reconstruct.
      */
-    def makeArg(arg: Arg): String = {
+    @Nullable def makeArg(arg: Arg): String = {
         assert(arg != null)
-        assert(arg.isSome)
 
         var s = ""
 
@@ -1181,6 +1179,19 @@ object visor extends VisorTag {
         }
         else
             "0"
+    }
+
+    /**
+     * Returns string representation of the memory limit.
+     *
+     * @param n Memory size.
+     */
+    def formatMemoryLimit(n: Long): String = {
+        n match {
+            case -1 => "Disabled"
+            case 0 => "Unlimited"
+            case m => formatMemory(m)
+        }
     }
 
     /**
@@ -1557,43 +1568,42 @@ object visor extends VisorTag {
      * @param cfgPath Configuration path.
      */
     def open(cfg: GridConfiguration, cfgPath: String) {
-        val daemon = scalar.isDaemon
+        val daemon = G.isDaemon
 
         val shutdownHook = X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
-        scalar.daemon(true)
+        G.setDaemon(true)
 
         // Make sure visor starts without shutdown hook.
         System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
-             scalar.start(cfg).name
+             G.start(cfg).name
         }
         finally {
-            scalar.daemon(daemon)
+            G.setDaemon(daemon)
 
             System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
         }
 
         this.cfgPath = cfgPath
 
-        grid$(startedGridName) match {
-            case Some(g) => grid = g.asInstanceOf[GridEx]
-            case None =>
-                this.cfgPath = null
+        grid =
+            try
+                G.grid(startedGridName).asInstanceOf[GridEx]
+            catch {
+                case _: IllegalStateException =>
+                    this.cfgPath = null
 
-                throw new GE("Named grid unavailable: " + startedGridName)
-        }
+                    throw new GE("Named grid unavailable: " + startedGridName)
+            }
 
         assert(cfgPath != null)
 
         isCon = true
         conOwner = true
         conTs = System.currentTimeMillis
-
-        if (!grid.configuration().isPeerClassLoadingEnabled)
-            warn("Peer class loading is disabled (custom closures in shell mode will not work).")
 
         grid.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
@@ -1966,7 +1976,7 @@ object visor extends VisorTag {
 
             t #= ("#", "Configuration File")
 
-            (0 until files.size).foreach(i => t += (i, files(i)._1))
+            (0 until files.size).foreach(i => t += (i, files(i).get1()))
 
             println("Local configuration files:")
 
@@ -1978,7 +1988,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(files(a.toInt)._1)
+                    Some(files(a.toInt).get1())
                 catch {
                     case e: Throwable =>
                         nl()
@@ -2154,9 +2164,8 @@ object visor extends VisorTag {
                 G.removeListener(nodeStopLsnr)
 
             if (grid != null && conOwner)
-                try {
-                    scalar.stop(grid.name, true)
-                }
+                try
+                    G.stop(grid.name, true)
                 catch {
                     case e: Exception => warn(e.getMessage)
                 }
@@ -2603,5 +2612,51 @@ object visor extends VisorTag {
      */
     def nodeById8(id8: String) = {
         grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
+    }
+
+    /**
+     * Introduction of `^^` operator for `Any` type that will call `break`.
+     *
+     * @param v `Any` value.
+     */
+    implicit def toReturnable(v: Any) = new {
+        // Ignore the warning below.
+        def ^^ {
+            break()
+        }
+    }
+
+    /**
+     * Decode time frame from string.
+     *
+     * @param timeArg Optional time frame: &lt;num&gt;s|m|h|d
+     * @return Time in milliseconds.
+     */
+    def timeFilter(timeArg: Option[String]): Long = {
+        if (timeArg.nonEmpty) {
+            val s = timeArg.get
+
+            val n = try
+                s.substring(0, s.length - 1).toLong
+            catch {
+                case _: NumberFormatException =>
+                    throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
+            }
+
+            if (n <= 0)
+                throw new IllegalArgumentException("Time frame size is not positive in: " + s)
+
+            val timeUnit = s.last match {
+                case 's' => 1000L
+                case 'm' => 1000L * 60L
+                case 'h' => 1000L * 60L * 60L
+                case 'd' => 1000L * 60L * 60L * 24L
+                case _ => throw new IllegalArgumentException("Invalid time frame suffix in: " + s)
+            }
+
+            n * timeUnit
+        }
+        else
+            Long.MaxValue
     }
 }

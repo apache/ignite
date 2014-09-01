@@ -1767,7 +1767,8 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
-            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
+            boolean hasHadoop = GridComponentType.HADOOP.inClassPath() &&
+                GridComponentType.HADOOP.requiredClassesInClassPath();
 
             GridCacheConfiguration[] copies;
 
@@ -1952,7 +1953,7 @@ public class GridGainEx {
                     try {
                         log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
                     }
-                    catch (ClassNotFoundException ignored) {
+                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                         log4jCls = null;
                     }
 

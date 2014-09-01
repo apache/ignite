@@ -10,7 +10,18 @@
 package org.gridgain.grid.portables;
 
 /**
- * Field mapper.
+ * Type and field ID mapper for portable objects. GridGain never writes full
+ * strings for field or type names. Instead, for performance reasons, GridGain
+ * writes integer hash codes for type and field names. It has been tested that
+ * hash code conflicts for the type names or the field names
+ * within the same type are virtually non-existent and, to gain performance, it is safe
+ * to work with hash codes. For the cases when hash codes for different types or fields
+ * actually do collide {@code GridPortableIdMapper} allows to override the automatically
+ * generated hash code IDs for the type and field names.
+ * <p>
+ * Portable ID mapper can be configured for all portable objects via
+ * {@link GridPortableConfiguration#getIdMapper()} method, or for a specific
+ * portable type via {@link GridPortableTypeConfiguration#getIdMapper()} method.
  */
 public interface GridPortableIdMapper {
     /**

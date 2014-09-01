@@ -80,6 +80,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
 
+        Thread.sleep(5000);
+
         Collection<GridEvent> objEvts =
             g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
