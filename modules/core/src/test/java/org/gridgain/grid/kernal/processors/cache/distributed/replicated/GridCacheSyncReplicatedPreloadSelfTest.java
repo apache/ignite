@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -28,6 +29,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
     /** */
     private static final boolean DISCO_DEBUG_MODE = true;
+
 
     /**
      * Constructs test.
@@ -75,7 +77,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
+        return Long.MAX_VALUE;
     }
 
     /**
@@ -128,7 +130,8 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        multithreaded(new Callable() {
+        multithreaded(
+            new Callable() {
                 @Nullable @Override public Object call() throws Exception {
                     while (true) {
                         int c = cnt.incrementAndGet();
@@ -149,6 +152,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
                     return null;
                 }
-            }, threadCnt);
+            },
+            threadCnt);
     }
 }

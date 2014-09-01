@@ -548,6 +548,13 @@ public class GridTcpDiscoveryNodesRing {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNodesRing.class, this);
+        rwLock.readLock().lock();
+
+        try {
+            return S.toString(GridTcpDiscoveryNodesRing.class, this);
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
     }
 }

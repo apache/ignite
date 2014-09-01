@@ -421,11 +421,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private ConcurrentLinkedDeque<MessageLogEntry> rcvMsgs;
-
-    /** Sent messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private ConcurrentLinkedDeque<MessageLogEntry> sentMsgs;
+    private ConcurrentLinkedDeque<String> debugLog;
 
     /**
      * Sets local host IP address that discovery SPI uses.
@@ -966,12 +962,20 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         return res;
     }
 
-    public static final Set<GridTcpDiscoverySpi> spis = new GridConcurrentHashSet<>();
+    private static volatile GridTcpDiscoverySpi spi1;
+    private static volatile GridTcpDiscoverySpi spi2;
 
+    private static final GridBoundedConcurrentLinkedHashSet<GridTcpDiscoverySpi> spis =
+        new GridBoundedConcurrentLinkedHashSet<>(24);
 
     /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {
-        spis.add(this);
+        if (spi1 == null)
+            spi1 = this;
+        else if (spi2 == null)
+            spi2 = this;
+        else
+            spis.add(this);
 
         spiStart0(false);
     }
@@ -996,8 +1000,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 throw new GridSpiException("Info log level should be enabled for TCP discovery to work " +
                     "in debug mode.");
 
-            rcvMsgs = new ConcurrentLinkedDeque<>();
-            sentMsgs = new ConcurrentLinkedDeque<>();
+            debugLog = new ConcurrentLinkedDeque<>();
         }
 
         // Clear addresses collections.
@@ -1231,8 +1234,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** {@inheritDoc} */
     @Override public void spiStop() throws GridSpiException {
         spiStop0(false);
-
-        spis.remove(this);
     }
 
     /**
@@ -1922,7 +1923,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
                 if (debugMode)
-                    onMessageSent(res.senderNodeId(), msg);
+                    debugLog("Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
+                        ", rmtNodeId=" + res.creatorNodeId() + ']');
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
@@ -2324,25 +2326,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         GridTcpDiscoverySpiState spiState = spiStateCopy();
 
-        if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-            Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
+        try {
+            if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+                Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
 
-            Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+                Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
-            for (GridNode gridNode : top) {
-                if (gridNode.order() == 0) {
-                    for (GridTcpDiscoverySpi spi : spis)
-                        spi.dumpDebugInfo();
-
-                    break;
-                }
+                lsnr.onDiscovery(type, topVer, node, top, hist);
             }
-
-            lsnr.onDiscovery(type, topVer, node, top, hist);
+            else if (log.isDebugEnabled())
+                log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
+                    ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
         }
-        else if (log.isDebugEnabled())
-            log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
-                ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
+        catch (Throwable t) {
+            spi1.dumpDebugInfo(log);
+            spi2.dumpDebugInfo(log);
+
+            for (GridTcpDiscoverySpi spi : spis)
+                spi.dumpDebugInfo(log);
+
+            throw new RuntimeException(t);
+        }
     }
 
     /**
@@ -2669,6 +2673,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
+        dumpDebugInfo(log);
+    }
+
+    public void dumpDebugInfo(GridLogger log) {
         if (!debugMode) {
             U.quietAndWarn(log, "Failed to dump debug info (discovery SPI was not configured " +
                 "in debug mode, consider setting 'debugMode' configuration property to 'true').");
@@ -2708,16 +2716,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             b.append(U.nl());
 
-            b.append("Received messages: ").append(U.nl());
+            b.append("In-memory log messages: ").append(U.nl());
 
-            for (MessageLogEntry msg : rcvMsgs)
-                b.append("    ").append(msg).append(U.nl());
-
-            b.append(U.nl());
-
-            b.append("Sent messages: ").append(U.nl());
-
-            for (MessageLogEntry msg : sentMsgs)
+            for (String msg : debugLog)
                 b.append("    ").append(msg).append(U.nl());
 
             b.append(U.nl());
@@ -2738,45 +2739,26 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             b.append("Stats: ").append(stats).append(U.nl());
 
-            log.info(b.toString());
+            U.quietAndInfo(log, b.toString());
         }
     }
 
     /**
-     * @param otherParty Other party.
-     * @param rdrId Reader ID.
      * @param msg Message.
      */
-    private void onMessageReceived(UUID otherParty, long rdrId, GridTcpDiscoveryAbstractMessage msg) {
+    private void debugLog(String msg) {
         assert debugMode;
 
-        if (!recordable(msg))
-            return;
+        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+            '[' + Thread.currentThread().getName() + "] " +
+            msg;
 
-        rcvMsgs.add(MessageLogEntry.received(otherParty, rdrId, msg));
+        debugLog.add(msg0);
 
-        int delta = rcvMsgs.size() - debugMsgHist;
+        int delta = debugLog.size() - debugMsgHist;
 
-        for (int i = 0; i < delta && rcvMsgs.size() > debugMsgHist; i++)
-            rcvMsgs.poll();
-    }
-
-    /**
-     * @param otherParty Other party.
-     * @param msg Message.
-     */
-    private void onMessageSent(UUID otherParty, GridTcpDiscoveryAbstractMessage msg) {
-        assert debugMode;
-
-        if (!recordable(msg))
-            return;
-
-        sentMsgs.add(MessageLogEntry.sent(otherParty, msg));
-
-        int delta = sentMsgs.size() - debugMsgHist;
-
-        for (int i = 0; i < delta && sentMsgs.size() > debugMsgHist; i++)
-            sentMsgs.poll();
+        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
+            debugLog.poll();
     }
 
     /**
@@ -3067,8 +3049,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             new LinkedBlockingDeque<>();
 
         /** Pending messages. */
-        private final Map<GridUuid, GridTcpDiscoveryAbstractMessage> pendingMsgs =
-            new LinkedHashMap<>(128, 0.75f, true);
+        private final Queue<GridTcpDiscoveryAbstractMessage> pendingMsgs =
+            new LinkedList<>();
 
         /** Backed interrupted flag. */
         private volatile boolean interrupted;
@@ -3128,6 +3110,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         private void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             if (log.isDebugEnabled())
                 log.debug("Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
+
+            if (debugMode)
+                debugLog("Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
             stats.onMessageProcessingStarted(msg);
 
@@ -3193,9 +3178,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             bout.reset();
 
             GridTcpDiscoverySpi.this.writeToSocket(sock, msg, bout);
-
-            if (debugMode)
-                onMessageSent(next.id(), msg);
         }
 
         /**
@@ -3210,8 +3192,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             assert ring.hasRemoteNodes();
 
             onBeforeMessageSentAcrossRing(msg);
-
-            registerPendingMessage(msg);
 
             Collection<GridTcpDiscoveryNode> failedNodes;
 
@@ -3237,12 +3217,20 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         if (log.isDebugEnabled())
                             log.debug("No next node in topology.");
 
+                        if (debugMode)
+                            debugLog("No next node in topology.");
+
                         break;
                     }
 
                     if (!newNext.equals(next)) {
                         if (log.isDebugEnabled())
-                            log.debug("New next node [newNext=" + newNext + ", formerNext=" + next + ']');
+                            log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
+                                ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
+
+                        if (debugMode)
+                            debugLog("New next node [newNext=" + newNext + ", formerNext=" + next +
+                                ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
 
                         U.closeQuiet(nextNodeSock);
 
@@ -3307,6 +3295,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                         log.debug("Failed to restore ring because next node ID received is not as " +
                                             "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
 
+                                    if (debugMode)
+                                        debugLog("Failed to restore ring because next node ID received is not as " +
+                                            "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
+
                                     break;
                                 }
                                 else {
@@ -3322,12 +3314,20 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                                     "is not as expected [expected=" + next.internalOrder() +
                                                     ", rcvd=" + nextOrder + ", id=" + next.id() + ']');
 
+                                            if (debugMode)
+                                                debugLog("Failed to restore ring because next node order received " +
+                                                    "is not as expected [expected=" + next.internalOrder() +
+                                                    ", rcvd=" + nextOrder + ", id=" + next.id() + ']');
+
                                             break;
                                         }
                                     }
 
                                     if (log.isDebugEnabled())
                                         log.debug("Initialized connection with next node: " + next.id());
+
+                                    if (debugMode)
+                                        debugLog("Initialized connection with next node: " + next.id());
 
                                     errs = null;
 
@@ -3382,7 +3382,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", forceSndPending=" + forceSndPending + ']');
 
-                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.values()) {
+                                if (debugMode)
+                                    debugLog("Pending messages will be sent [failure=" + failure +
+                                        ", forceSndPending=" + forceSndPending + ']');
+
+                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
                                     prepareNodeAddedMessage(pendingMsg);
@@ -3400,26 +3404,42 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                                     if (log.isDebugEnabled())
                                         log.debug("Pending message has been sent to next node [msg=" + msg.id() +
-                                            ", pendingMsgId=" + pendingMsg.id() + ", next=" + next.id() +
+                                            ", pendingMsgId=" + pendingMsg + ", next=" + next.id() +
+                                            ", res=" + res + ']');
+
+                                    if (debugMode)
+                                        debugLog("Pending message has been sent to next node [msg=" + msg.id() +
+                                            ", pendingMsgId=" + pendingMsg + ", next=" + next.id() +
                                             ", res=" + res + ']');
                                 }
                             }
 
                             prepareNodeAddedMessage(msg);
 
-                            long tstamp = U.currentTimeMillis();
+                            try {
+                                long tstamp = U.currentTimeMillis();
 
-                            writeToSocket(nextNodeSock, msg);
+                                writeToSocket(nextNodeSock, msg);
 
-                            stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                                stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
-                            int res = readReceipt(nextNodeSock, ackTimeout0);
+                                int res = readReceipt(nextNodeSock, ackTimeout0);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Message has been sent to next node [msg=" + msg + ", next=" + next.id() +
-                                    ", res=" + res + ']');
+                                if (log.isDebugEnabled())
+                                    log.debug("Message has been sent to next node [msg=" + msg +
+                                        ", next=" + next.id() +
+                                        ", res=" + res + ']');
 
-                            clearNodeAddedMessage(msg);
+                                if (debugMode)
+                                    debugLog("Message has been sent to next node [msg=" + msg +
+                                        ", next=" + next.id() +
+                                        ", res=" + res + ']');
+                            }
+                            finally {
+                                clearNodeAddedMessage(msg);
+                            }
+
+                            registerPendingMessage(msg);
 
                             sent = true;
 
@@ -3587,14 +3607,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             assert msg != null;
 
             if (U.getAnnotation(msg.getClass(), GridTcpDiscoveryEnsureDelivery.class) != null) {
-                GridTcpDiscoveryAbstractMessage prev = pendingMsgs.put(msg.id(), msg);
+                pendingMsgs.add(msg);
 
-                if (prev == null) {
-                    stats.onPendingMessageRegistered();
+                stats.onPendingMessageRegistered();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Pending message has been registered: " + msg.id());
-                }
+                if (log.isDebugEnabled())
+                    log.debug("Pending message has been registered: " + msg.id());
             }
         }
 
@@ -4040,6 +4058,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             assert node != null;
 
+            if (node.internalOrder() < locNode.internalOrder()) {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node added message since local node's order is greater " +
+                        "[node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
+
+                return;
+            }
+
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
@@ -4054,7 +4080,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified() && !locNodeId.equals(node.id()) && node.internalOrder() > locNode.internalOrder()) {
+            if (msg.verified() && !locNodeId.equals(node.id())) {
                 if (metricsStore != null) {
                     node.metricsStore(metricsStore);
 
@@ -4081,10 +4107,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<List<Object>> dataList = null;
+                Collection<List<Object>> dataList;
 
                 synchronized (mux) {
-                    if (spiState == CONNECTING) {
+                    if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
                         // Initialize topology.
                         Collection<GridTcpDiscoveryNode> top = msg.topology();
 
@@ -4129,6 +4155,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             return;
                         }
                     }
+                    else  {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node added message (this message has already been processed) " +
+                                "[spiState=" + spiState +
+                                ", msg=" + msg +
+                                ", locNode=" + locNode + ']');
+
+                        return;
+                    }
                 }
 
                 // Notify outside of synchronized block.
@@ -4156,6 +4191,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
             GridTcpDiscoveryNode node = ring.node(nodeId);
 
+            if (node == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node add finished message since node is not found " +
+                        "[msg=" + msg + ']');
+
+                return;
+            }
+
             if (log.isDebugEnabled())
                 log.debug("Node to finish add: " + node);
 
@@ -4170,20 +4213,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     return;
                 }
 
-                if (node == null) {
+                if (node.visible() && node.order() != 0) {
                     if (log.isDebugEnabled())
-                        log.debug("Discarding node add finished message since node is not found " +
+                        log.debug("Discarding node add finished message since node has already been added " +
                             "[node=" + node + ", msg=" + msg + ']');
 
                     return;
-                }
-
-                if (node.visible() && node.order() != 0) {
-                    msg.topologyVersion(node.order());
-
-                    if (log.isDebugEnabled())
-                        log.debug("Reissuing node add finished message for node " +
-                            "[node=" + node + ", msg=" + msg + ']');
                 }
                 else
                     msg.topologyVersion(ring.incrementTopologyVersion());
@@ -4328,12 +4363,25 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 return;
             }
 
+            if (ring.node(msg.senderNodeId()) == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node left message since sender node is not in topology: " + msg);
+
+                return;
+            }
+
             GridTcpDiscoveryNode leavingNode = ring.node(leavingNodeId);
 
             if (leavingNode != null) {
                 synchronized (mux) {
                     leavingNodes.add(leavingNode);
                 }
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node left message since node was not found: " + msg);
+
+                return;
             }
 
             boolean locNodeCoord = isLocalNodeCoordinator();
@@ -4353,90 +4401,95 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (msg.verified() && !locNodeId.equals(leavingNodeId)) {
                 GridTcpDiscoveryNode leftNode = ring.removeNode(leavingNodeId);
 
-                if (leftNode != null) {
-                    // Clear pending messages map.
-                    if (!ring.hasRemoteNodes())
-                        pendingMsgs.clear();
+                assert leftNode != null;
 
-                    long topVer;
+                // Clear pending messages map.
+                if (!ring.hasRemoteNodes())
+                    pendingMsgs.clear();
 
-                    if (locNodeCoord) {
-                        if (ipFinder.isShared()) {
-                            try {
-                                ipFinder.unregisterAddresses(leftNode.socketAddresses());
-                            }
-                            catch (GridSpiException ignored) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to unregister left node address: " + leftNode);
-                            }
-                        }
+                long topVer;
 
-                        if (metricsStore != null) {
-                            try {
-                                metricsStore.removeMetrics(Collections.singletonList(leftNode.id()));
-                            }
-                            catch (GridSpiException ignored) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to remove left node metrics from store: " + leftNode.id());
-                            }
-                        }
-
-                        topVer = ring.incrementTopologyVersion();
-
-                        msg.topologyVersion(topVer);
-                    }
-                    else {
-                        topVer = msg.topologyVersion();
-
-                        assert topVer > 0 : "Topology version is empty for message: " + msg;
-
-                        boolean b = ring.topologyVersion(topVer);
-
-                        assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
-                            ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
-
-                        if (log.isDebugEnabled())
-                            log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');
-
-                        lastMsg = msg;
-                    }
-
-                    if (leftNode.equals(next) && nextNodeSock != null) {
+                if (locNodeCoord) {
+                    if (ipFinder.isShared()) {
                         try {
-                            writeToSocket(nextNodeSock, msg);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Sent verified node left message to leaving node: " + msg);
+                            ipFinder.unregisterAddresses(leftNode.socketAddresses());
                         }
-                        catch (GridException | IOException e) {
+                        catch (GridSpiException ignored) {
                             if (log.isDebugEnabled())
-                                log.debug("Failed to send verified node left message to leaving node [msg=" + msg +
-                                    ", err=" + e.getMessage() + ']');
-                        }
-                        finally {
-                            forceSndPending = true;
-
-                            next = null;
-
-                            U.closeQuiet(nextNodeSock);
+                                log.debug("Failed to unregister left node address: " + leftNode);
                         }
                     }
 
-                    stats.onNodeLeft();
-
-                    notifyDiscovery(EVT_NODE_LEFT, topVer, leftNode);
-
-                    synchronized (mux) {
-                        failedNodes.remove(leftNode);
-
-                        leavingNodes.remove(leftNode);
+                    if (metricsStore != null) {
+                        try {
+                            metricsStore.removeMetrics(Collections.singletonList(leftNode.id()));
+                        }
+                        catch (GridSpiException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to remove left node metrics from store: " + leftNode.id());
+                        }
                     }
+
+                    topVer = ring.incrementTopologyVersion();
+
+                    msg.topologyVersion(topVer);
                 }
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node left message since node was not found: " + msg);
+                    topVer = msg.topologyVersion();
 
-                    return;
+                    assert topVer > 0 : "Topology version is empty for message: " + msg;
+
+                    boolean b = ring.topologyVersion(topVer);
+
+                    try {
+                        assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
+                            ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
+                    }
+                    catch (Throwable t) {
+                        spi1.dumpDebugInfo(log);
+                        spi2.dumpDebugInfo(log);
+
+                        for (GridTcpDiscoverySpi spi : spis)
+                            spi.dumpDebugInfo(log);
+
+                        throw new RuntimeException(t);
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');
+
+                    lastMsg = msg;
+                }
+
+                if (leftNode.equals(next) && nextNodeSock != null) {
+                    try {
+                        writeToSocket(nextNodeSock, msg);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Sent verified node left message to leaving node: " + msg);
+                    }
+                    catch (GridException | IOException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send verified node left message to leaving node [msg=" + msg +
+                                ", err=" + e.getMessage() + ']');
+                    }
+                    finally {
+                        forceSndPending = true;
+
+                        next = null;
+
+                        U.closeQuiet(nextNodeSock);
+                    }
+                }
+
+                stats.onNodeLeft();
+
+                notifyDiscovery(EVT_NODE_LEFT, topVer, leftNode);
+
+                synchronized (mux) {
+                    failedNodes.remove(leftNode);
+
+                    leavingNodes.remove(leftNode);
                 }
             }
 
@@ -4511,6 +4564,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     failedNodes.add(node);
                 }
             }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node failed message since node was not found: " + msg);
+
+                return;
+            }
 
             boolean locNodeCoord = isLocalNodeCoordinator();
 
@@ -4529,74 +4588,68 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (msg.verified()) {
                 node = ring.removeNode(nodeId);
 
-                if (node != null) {
-                    // Clear pending messages map.
-                    if (!ring.hasRemoteNodes())
-                        pendingMsgs.clear();
+                assert node != null;
 
-                    long topVer;
+                // Clear pending messages map.
+                if (!ring.hasRemoteNodes())
+                    pendingMsgs.clear();
 
-                    if (locNodeCoord) {
-                        if (ipFinder.isShared()) {
-                            try {
-                                ipFinder.unregisterAddresses(node.socketAddresses());
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to unregister failed node address [node=" + node +
-                                        ", err=" + e.getMessage() + ']');
-                            }
+                long topVer;
+
+                if (locNodeCoord) {
+                    if (ipFinder.isShared()) {
+                        try {
+                            ipFinder.unregisterAddresses(node.socketAddresses());
                         }
-
-                        if (metricsStore != null) {
-                            Collection<UUID> ids = Collections.singletonList(node.id());
-
-                            try {
-                                metricsStore.removeMetrics(ids);
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to remove failed node metrics from store [node=" + node +
-                                        ", err=" + e.getMessage() + ']');
-                            }
+                        catch (GridSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to unregister failed node address [node=" + node +
+                                    ", err=" + e.getMessage() + ']');
                         }
-
-                        topVer = ring.incrementTopologyVersion();
-
-                        msg.topologyVersion(topVer);
-                    }
-                    else {
-                        topVer = msg.topologyVersion();
-
-                        assert topVer > 0 : "Topology version is empty for message: " + msg;
-
-                        boolean b = ring.topologyVersion(topVer);
-
-                        assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
-                            ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
-
-                        if (log.isDebugEnabled())
-                            log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');
-
-                        lastMsg = msg;
                     }
 
-                    synchronized (mux) {
-                        failedNodes.remove(node);
+                    if (metricsStore != null) {
+                        Collection<UUID> ids = Collections.singletonList(node.id());
 
-                        leavingNodes.remove(node);
+                        try {
+                            metricsStore.removeMetrics(ids);
+                        }
+                        catch (GridSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to remove failed node metrics from store [node=" + node +
+                                    ", err=" + e.getMessage() + ']');
+                        }
                     }
 
-                    notifyDiscovery(EVT_NODE_FAILED, topVer, node);
+                    topVer = ring.incrementTopologyVersion();
 
-                    stats.onNodeFailed();
+                    msg.topologyVersion(topVer);
                 }
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node failed message since node was not found: " + msg);
+                    topVer = msg.topologyVersion();
 
-                    return;
+                    assert topVer > 0 : "Topology version is empty for message: " + msg;
+
+                    boolean b = ring.topologyVersion(topVer);
+
+                    assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
+                        ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
+
+                    if (log.isDebugEnabled())
+                        log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');
+
+                    lastMsg = msg;
                 }
+
+                synchronized (mux) {
+                    failedNodes.remove(node);
+
+                    leavingNodes.remove(node);
+                }
+
+                notifyDiscovery(EVT_NODE_FAILED, topVer, node);
+
+                stats.onNodeFailed();
             }
 
             if (ring.hasRemoteNodes())
@@ -4886,25 +4939,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     return;
             }
 
-            if (msg.verified())
-                if (pendingMsgs.containsKey(msgId)) {
-                    for (Iterator<Map.Entry<GridUuid, GridTcpDiscoveryAbstractMessage>>
-                        iter = pendingMsgs.entrySet().iterator(); iter.hasNext(); ) {
-                        Map.Entry<GridUuid, GridTcpDiscoveryAbstractMessage> e = iter.next();
-
-                        iter.remove();
-
-                        stats.onPendingMessageDiscarded();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Removed pending message from map: " + e.getValue());
-
-                        if (msgId.equals(e.getValue().id()))
-                            break;
-                    }
-                }
-                else if (log.isDebugEnabled())
-                    log.debug("Pending messages map does not contain received id: " + msgId);
+            if (msg.verified()) {
+                for (GridTcpDiscoveryAbstractMessage m = pendingMsgs.poll();
+                     m != null && !msgId.equals(m.id());
+                     m = pendingMsgs.poll())
+                    ;
+            }
 
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
@@ -5116,16 +5156,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     this.nodeId = nodeId;
 
-                    if (debugMode)
-                        onMessageReceived(nodeId, getId(), req);
-
                     GridTcpDiscoveryHandshakeResponse res =
                         new GridTcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
                     writeToSocket(sock, res);
-
-                    if (debugMode)
-                        onMessageSent(nodeId, res);
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -5138,6 +5172,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     if (log.isDebugEnabled())
                         log.debug("Initialized connection with remote node: " + nodeId);
+
+                    if (debugMode)
+                        debugLog("Initialized connection with remote node: " + nodeId);
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
@@ -5187,8 +5224,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         stats.onMessageReceived(msg);
 
-                        if (debugMode)
-                            onMessageReceived(nodeId, getId(), msg);
+                        if (debugMode && recordable(msg))
+                            debugLog("Message has been received: " + msg);
 
                         if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
@@ -5726,105 +5763,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SocketTimeoutObject.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class MessageLogEntry {
-        /** Sent or received. */
-        private final boolean sent;
-
-        /** Vis-a-vis. */
-        private final UUID otherParty;
-
-        /** Timestamp. */
-        private final long tstamp;
-
-        /** Socket reader ID. */
-        private final long rdrId;
-
-        /** Message. */
-        private final GridTcpDiscoveryAbstractMessage msg;
-
-        /** Message as string. */
-        private final String msgStr;
-
-        /**
-         * @param sent Sent flag.
-         * @param otherParty Other party.
-         * @param tstamp Time.
-         * @param rdrId Reader name.
-         * @param msg Message.
-         */
-        private MessageLogEntry(boolean sent,
-            UUID otherParty,
-            long tstamp,
-            long rdrId,
-            GridTcpDiscoveryAbstractMessage msg
-        ) {
-            this.sent = sent;
-            this.otherParty = otherParty;
-            this.tstamp = tstamp;
-            this.rdrId = rdrId;
-            this.msg = msg;
-
-            msgStr = msg.toString();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            StringBuilder b = new StringBuilder();
-
-            if (sent) {
-                b.append("Sent message:").append(U.nl());
-                b.append("    ").append("rcv:    ").append(otherParty).append(U.nl());
-                b.append("    ").append("sent:   ").append(format(tstamp)).append(U.nl());
-            }
-            else {
-                b.append("Received message:").append(U.nl());
-                b.append("    ").append("snd:    ").append(otherParty).append(U.nl());
-                b.append("    ").append("rcvd:   ").append(format(tstamp)).append(U.nl());
-                b.append("    ").append("rdrId:  ").append(rdrId).append(U.nl());
-            }
-
-            // Block for alignment only.
-            {
-                b.append("    ").append("msgId:  ").append(msg.id()).append(U.nl());
-                b.append("    ").append("msg:    ").append(msg).append(U.nl());
-                b.append("    ").append("msgStr: ").append(msgStr).append(U.nl());
-                b.append(U.nl());
-            }
-
-            return b.toString();
-        }
-
-        /**
-         * @param tstamp Timestamp.
-         * @return Formatted string.
-         */
-        private static String format(long tstamp) {
-            return new SimpleDateFormat("HH:mm:ss,SSS").format(new Date(tstamp));
-        }
-
-        /**
-         * @param otherParty Other party.
-         * @param rdrId Reader name.
-         * @param msg Message.
-         * @return Log entry.
-         */
-        static MessageLogEntry received(UUID otherParty, long rdrId, GridTcpDiscoveryAbstractMessage msg) {
-            return new MessageLogEntry(false, otherParty, System.currentTimeMillis(), rdrId, msg);
-        }
-
-        /**
-         * @param otherParty Other party.
-         * @param msg Message.
-         * @return Log entry.
-         */
-        static MessageLogEntry sent(UUID otherParty, GridTcpDiscoveryAbstractMessage msg) {
-            return new MessageLogEntry(true, otherParty, System.currentTimeMillis(), -1, msg);
         }
     }
 }
