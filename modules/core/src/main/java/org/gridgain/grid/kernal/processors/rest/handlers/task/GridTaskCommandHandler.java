@@ -21,12 +21,12 @@ import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -19,6 +19,9 @@ import java.io.*;
  * Default Hadoop counter implementation.
  */
 public class GridHadoopCounterImpl implements GridHadoopCounter, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Counter group name. */
     private String group;
 

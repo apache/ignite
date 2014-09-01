@@ -15,12 +15,12 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -158,7 +158,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * Initializes future.
      */
     public void init() {
-        long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
@@ -442,7 +442,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 if (v != null && !reload) {
                     if (cctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
-                        v = ((GridPortableObject<V>)v).deserialize();
+                        v = ((GridPortableObject)v).deserialize();
 
                     add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key, v)));
                 }
@@ -570,7 +570,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     V val = info.value();
 
                     if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                        val = ((GridPortableObject<V>)val).deserialize();
+                        val = ((GridPortableObject)val).deserialize();
 
                     map.put(info.key(), val);
                 }

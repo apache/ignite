@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.event;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -55,7 +56,7 @@ public class VisorGridEvent implements Serializable {
      * @param message Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      */
-    public VisorGridEvent(int typeId, GridUuid id, String name, UUID nid, long timestamp, String message,
+    public VisorGridEvent(int typeId, GridUuid id, String name, UUID nid, long timestamp, @Nullable String message,
         String shortDisplay) {
         this.typeId = typeId;
         this.id = id;
@@ -104,7 +105,7 @@ public class VisorGridEvent implements Serializable {
     /**
      * @return Event message.
      */
-    public String message() {
+    @Nullable public String message() {
         return message;
     }
 

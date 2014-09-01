@@ -10,9 +10,10 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.portable.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * {@link GridPortables} implementation.
@@ -58,11 +59,59 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPortableBuilder<T> builder() {
+    @Override public GridPortableBuilder builder() {
         guard();
 
         try {
             return proc.builder();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata(proc.typeId(cls.getName()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(String typeName) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata(proc.typeId(typeName));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata(typeId);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridPortableMetadata> metadata() throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata();
         }
         finally {
             unguard();

@@ -15,9 +15,9 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -128,6 +128,9 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** Data source. */
     private DataSource dataSrc;
+
+    /** Flag for schema initialization. */
+    private boolean initSchema = true;
 
     /** Log. */
     @GridLoggerResource
@@ -361,47 +364,66 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @throws GridException If failed to initialize.
      */
     private void init() throws GridException {
-        if (initGuard.compareAndSet(false, true)) {
-            if (log.isDebugEnabled())
-                log.debug("Initializing cache store.");
+        if (initLatch.getCount() > 0) {
+            if (initGuard.compareAndSet(false, true)) {
+                if (log.isDebugEnabled())
+                    log.debug("Initializing cache store.");
 
-            if (F.isEmpty(connUrl))
-                throw new GridException("Failed to initialize cache store (connection URL is not provided).");
+                if (F.isEmpty(connUrl))
+                    throw new GridException("Failed to initialize cache store (connection URL is not provided).");
 
-            if (F.isEmpty(createTblQry))
-                throw new GridException("Failed to initialize cache store (create table query is not provided).");
+                if (!initSchema) {
+                    initLatch.countDown();
 
-            Connection conn = null;
+                    return;
+                }
 
-            Statement stmt = null;
+                if (F.isEmpty(createTblQry))
+                    throw new GridException("Failed to initialize cache store (create table query is not provided).");
 
-            try {
-                conn = openConnection(false);
+                Connection conn = null;
 
-                stmt = conn.createStatement();
+                Statement stmt = null;
 
-                stmt.execute(createTblQry);
+                try {
+                    conn = openConnection(false);
 
-                conn.commit();
+                    stmt = conn.createStatement();
 
-                initOk = true;
+                    stmt.execute(createTblQry);
+
+                    conn.commit();
+
+                    initOk = true;
+                }
+                catch (SQLException e) {
+                    throw new GridException("Failed to create database table.", e);
+                }
+                finally {
+                    U.closeQuiet(stmt);
+
+                    closeConnection(conn);
+
+                    initLatch.countDown();
+                }
             }
-            catch (SQLException e) {
-                throw new GridException("Failed to create database table.", e);
-            }
-            finally {
-                U.closeQuiet(stmt);
-
-                closeConnection(conn);
-
-                initLatch.countDown();
-            }
+            else
+                U.await(initLatch);
         }
-        else if (initLatch.getCount() > 0)
-            U.await(initLatch);
 
         if (!initOk)
             throw new GridException("Cache store was not properly initialized.");
+    }
+
+    /**
+     * Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+     * was explicitly created by user.
+     *
+     * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
+     *      {code @false} if schema was explicitly created by user.
+     */
+    public void setInitSchema(boolean initSchema) {
+        this.initSchema = initSchema;
     }
 
     /**

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;

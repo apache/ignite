@@ -145,7 +145,7 @@ public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple
                         (double)m.getHeapMemoryUsed() / m.getHeapMemoryMaximum() * 100.0,
                         m.getCurrentCpuLoad() * 100.0,
                         m.getUpTime(),
-                        caches.size(),
+                        c.size(),
                         cm.readTime(),
                         cm.writeTime(),
                         cm.hits(),

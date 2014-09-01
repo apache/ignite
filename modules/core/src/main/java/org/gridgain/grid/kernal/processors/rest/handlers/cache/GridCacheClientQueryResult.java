@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -18,6 +18,9 @@ import java.util.*;
  * Client query result.
  */
 public class GridCacheClientQueryResult implements GridPortableMarshalAware, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Query ID. */
     private long qryId;
 
@@ -90,19 +93,19 @@ public class GridCacheClientQueryResult implements GridPortableMarshalAware, Ser
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
 
-        rawWriter.writeLong(qryId);
-        rawWriter.writeCollection(items);
         rawWriter.writeBoolean(last);
+        rawWriter.writeLong(qryId);
         rawWriter.writeUuid(nodeId);
+        rawWriter.writeCollection(items);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         GridPortableRawReader rawReader = reader.rawReader();
 
-        qryId = rawReader.readLong();
-        items = rawReader.readCollection();
         last = rawReader.readBoolean();
+        qryId = rawReader.readLong();
         nodeId = rawReader.readUuid();
+        items = rawReader.readCollection();
     }
 }

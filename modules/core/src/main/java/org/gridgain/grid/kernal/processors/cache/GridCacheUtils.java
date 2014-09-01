@@ -220,6 +220,22 @@ public class GridCacheUtils {
     };
 
     /**
+     * List of keywords that can't be used as identifiers for H2 (table names, column names and so on),
+     * unless they are surrounded with double quotes.
+     */
+    private static final String[] H2_RESERVED_WORDS = {
+        "cross", "current_date", "current_time", "current_timestamp", "distinct", "except", "exists", "false", "for",
+        "from", "full", "group", "having", "inner", "intersect", "is", "join", "like", "limit", "minus", "natural",
+        "not", "null", "on", "order", "primary", "rownum", "select", "sysdate", "systime", "systimestamp", "today",
+        "true", "union", "unique", "where"
+    };
+
+    /** */
+    static {
+        Arrays.sort(H2_RESERVED_WORDS);
+    }
+
+    /**
      * Ensure singleton.
      */
     protected GridCacheUtils() {
@@ -595,7 +611,6 @@ public class GridCacheUtils {
      * @param ctx Cache context to check.
      * @return {@code True} if near cache is enabled, {@code false} otherwise.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(GridCacheContext ctx) {
         return isNearEnabled(ctx.config());
     }
@@ -807,8 +822,16 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    public static <K, V> GridBiPredicate<K, V> typeFilter(Class<?> keyType, Class<?> valType) {
-        return new TypeFilter<>(keyType, valType);
+    public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
+        return new P2<K, V>() {
+            @Override public boolean apply(K k, V v) {
+                return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
+            }
+
+            @Override public String toString() {
+                return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
+            }
+        };
     }
 
     /**
@@ -1611,32 +1634,20 @@ public class GridCacheUtils {
     }
 
     /**
-     * Type filter.
+     * Escapes specified string if it is keyword reserved by H2 or contains special characters
+     * (such strings should be surrounded with double quotes to be used as identifier).
+     *
+     * @param s String.
+     * @return Escaped string if specified string is keyword reserved by H2 or contains special characters,
+     *      original input otherwise.
      */
-    public static class TypeFilter<K, V> implements GridBiPredicate<K, V> {
-        /** */
-        private final Class<?> keyType;
+    public static String h2Escape(String s) {
+        if (s == null)
+            return null;
 
-        /** */
-        private final Class<?> valType;
+        if (s.contains("-") || Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
+            return "\"" + s + "\"";
 
-        /**
-         * @param keyType Key type.
-         * @param valType Value type.
-         */
-        public TypeFilter(Class<?> keyType, Class<?> valType) {
-            this.keyType = keyType;
-            this.valType = valType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(K k, V v) {
-            return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
-        }
+        return s;
     }
 }

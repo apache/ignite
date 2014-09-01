@@ -26,10 +26,10 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
+ * GGFS: {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
+ * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
 @GridOnlyAvailableIn(HADOOP)
 public class GgfsMapReduceExample {
@@ -45,7 +45,7 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
+            try (Grid g = GridGain.start("examples/config/filesystem/example-ggfs.xml")) {
                 System.out.println();
                 System.out.println(">>> GGFS map reduce example started.");
 

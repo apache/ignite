@@ -125,6 +125,8 @@
                         </bean>
                     </property>
 
+                    <property name="portableEnabled" value="true"/>
+
                     <!-- Enable queries for partitioned cache -->
                     <property name="queryIndexEnabled" value="true"/>
 
@@ -316,10 +318,10 @@
         <property name="systemExecutorServiceShutdown" value="true"/>
 
         <property name="portableConfiguration">
-            <bean class="org.gridgain.portable.GridPortableConfiguration">
+            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.gridgain.portable.GridPortableTypeConfiguration">
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
                     </list>

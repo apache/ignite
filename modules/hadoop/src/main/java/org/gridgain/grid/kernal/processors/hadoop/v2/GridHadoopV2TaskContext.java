@@ -145,6 +145,8 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment() throws GridException {
+        Thread.currentThread().setContextClassLoader(null);
+
         job().cleanupTaskEnvironment(taskInfo());
     }
 

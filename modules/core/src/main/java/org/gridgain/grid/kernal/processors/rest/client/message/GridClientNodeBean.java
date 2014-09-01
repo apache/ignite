@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 
 import java.io.*;
 import java.util.*;
@@ -286,6 +286,7 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(tcpPort);
+        out.writeInt(0); // Jetty port.
         out.writeInt(replicaCnt);
 
         U.writeString(out, dfltCacheMode);
@@ -295,6 +296,8 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
 
         U.writeCollection(out, tcpAddrs);
         U.writeCollection(out, tcpHostNames);
+        U.writeCollection(out, Collections.emptyList()); // Jetty addresses.
+        U.writeCollection(out, Collections.emptyList()); // Jetty host names.
 
         U.writeUuid(out, nodeId);
 
@@ -305,6 +308,7 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         tcpPort = in.readInt();
+        in.readInt(); // Jetty port.
         replicaCnt = in.readInt();
 
         dfltCacheMode = U.readString(in);
@@ -314,6 +318,8 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
 
         tcpAddrs = U.readCollection(in);
         tcpHostNames = U.readCollection(in);
+        U.readCollection(in); // Jetty addresses.
+        U.readCollection(in); // Jetty host names.
 
         nodeId = U.readUuid(in);
 

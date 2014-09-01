@@ -39,6 +39,11 @@
         </file>
 
         <file>
+            <source>config/java.util.logging.properties</source>
+            <outputDirectory>/config</outputDirectory>
+        </file>
+
+        <file>
             <source>docs/release_notes.pdf</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
@@ -52,9 +57,11 @@
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
                 <include>**/*.jar</include>
+                <include>**/*.txt</include>
             </includes>
             <excludes>
                 <exclude>*hadoop*.bat</exclude>
+                <exclude>ggrouter.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -67,6 +74,7 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.sh</exclude>
+                <exclude>ggrouter.bat</exclude>
             </excludes>
         </fileSet>
 

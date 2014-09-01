@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.cmd.dto.event;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -43,7 +44,7 @@ public class VisorGridLicenseEvent extends VisorGridEvent {
         String name,
         UUID nid,
         long timestamp,
-        String message,
+        @Nullable String message,
         String shortDisplay,
         UUID licenseId
     ) {

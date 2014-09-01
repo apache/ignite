@@ -161,7 +161,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (res != null)
             return res;
 
-        JobConf taskJobConf = new JobConf(jobInfo.configuration());
+        JobConf taskJobConf = new JobConf(jobConf);
 
         configureClassLoader(taskJobConf);
 

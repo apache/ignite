@@ -17,7 +17,6 @@ import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
 import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -87,18 +86,15 @@ class VisorLicenseCommand {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (grid.isEmpty)
+            if (grid.nodes().isEmpty)
                 scold("Topology is empty.")
             else {
-                 val sumT = new VisorTextTable()
-
-                sumT #= ("Node ID8(@)", "License ID")
-
                 val nodes = grid.nodes()
 
                 val lics = try
                     grid.forNodes(nodes).compute().execute(classOf[VisorLicenseCollectTask],
                         emptyTaskArgument(nodes.map(_.id()))).get
+                        .groupBy(n => Option(n.get2()).fold("Open source")(_.id().toString))
                 catch {
                     case _: GridException =>
                         warn("Failed to obtain license from grid.")
@@ -106,42 +102,52 @@ class VisorLicenseCommand {
                         return
                 }
 
-                lics.foreach(t => sumT += (nodeId8Addr(t.get1()), Option(t.get2()).fold("Open source")(_.id().toString)))
-
                 if (lics.nonEmpty) {
-                    sumT.render()
-
-                    for (p <- lics if p.get2() != null) {
-                        val l = p.get2()
+                    lics.foreach(e => {
+                        val l = e._2.head.get2()
 
                         nl()
 
-                        println("License '" + l.id + "':")
+                        println("License: '" + e._1 + "'")
 
-                        val licT = new VisorTextTable()
+                        if (l != null) {
+                            val licT = new VisorTextTable()
 
-                        licT += ("Version", safe(l.version(), "<n/a>"))
-                        licT += ("Version regular expression", safe(l.versionRegexp(), "<n/a>"))
-                        licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
-                        licT += ("Maintenance time",
-                            if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
-                        licT += ("Issue organization", safe(l.issueOrganization(), "<n/a>"))
-                        licT += ("User name", safe(l.userName(), "<n/a>"))
-                        licT += ("User organization", safe(l.userOrganization(), "<n/a>"))
-                        licT += ("User organization URL", safe(l.userWww(), "<n/a>"))
-                        licT += ("User organization e-mail", safe(l.userEmail(), "<n/a>"))
-                        licT += ("License note", safe(l.note(), "<n/a>"))
-                        licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
-                        licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
-                        licT += ("Maximum number of computers", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
-                        licT += ("Maximum number of CPUs", if (l.maxCpus() > 0) l.maxCpus() else "No restriction")
-                        licT += ("Maximum up time", if (l.maxUpTime() > 0) l.maxUpTime() + " min." else "No restriction")
-                        licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
-                        licT += ("Disabled subsystems", Option(l.disabledSubsystems()).
-                            fold("No disabled subsystems")(s => s.split(',').toList.toString()))
+                            licT += ("Version", safe(l.version(), "<n/a>"))
+                            licT += ("Version regular expression", safe(l.versionRegexp(), "<n/a>"))
+                            licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
+                            licT += ("Maintenance time",
+                                if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
+                            licT += ("Issue organization", safe(l.issueOrganization(), "<n/a>"))
+                            licT += ("User name", safe(l.userName(), "<n/a>"))
+                            licT += ("User organization", safe(l.userOrganization(), "<n/a>"))
+                            licT += ("User organization URL", safe(l.userWww(), "<n/a>"))
+                            licT += ("User organization e-mail", safe(l.userEmail(), "<n/a>"))
+                            licT += ("License note", safe(l.note(), "<n/a>"))
+                            licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
+                            licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
+                            licT += ("Maximum number of computers", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
+                            licT += ("Maximum number of CPUs", if (l.maxCpus() > 0) l.maxCpus() else "No restriction")
+                            licT += ("Maximum up time", if (l.maxUpTime() > 0) l.maxUpTime() + " min." else "No restriction")
+                            licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
+                            licT += ("Disabled subsystems", Option(l.disabledSubsystems()).
+                                fold("No disabled subsystems")(s => s.split(',').toList.toString()))
 
-                        licT.render()
-                    }
+                            licT.render()
+                        }
+
+                        nl()
+
+                        println("Nodes with license '" + e._1 + "':")
+
+                        val sumT = new VisorTextTable()
+
+                        sumT #= ("Node ID8(@)", "License ID")
+
+                        e._2.foreach(t => sumT += (nodeId8Addr(t.get1()), Option(t.get2()).fold("Open source")(_.id().toString)))
+
+                        sumT.render()
+                    })
                 }
             }
         }

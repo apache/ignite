@@ -13,6 +13,7 @@ package org.gridgain.visor.commands.top
 
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.typedef._
 
@@ -22,7 +23,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -218,7 +218,9 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = grid.forPredicate(f).nodes()
+        var nodes = grid.forPredicate(new GridPredicate[GridNode] {
+            override def apply(e: GridNode) = f(e)
+        }).nodes()
 
         if (hosts.nonEmpty)
             nodes = nodes.filter(n => {

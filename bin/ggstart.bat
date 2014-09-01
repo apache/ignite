@@ -115,6 +115,8 @@ set RESTART_SUCCESS_OPT=-DGRIDGAIN_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 ::
 :: Find available port for JMX
 ::
+:: You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
+::
 for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp "%GRIDGAIN_HOME%\libs\*" org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
     set JMX_PORT=%%A
 )
@@ -143,9 +145,9 @@ if "%JMX_PORT%" == "" (
 set BASE_JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
 
 if "%JVM_OPTS%" == "" (
-    :: Hadoop needs class unloading enabled
+    :: Hadoop needs class unloading enabled and large size of perm space.
     if defined GRIDGAIN_HADOOP_CLASSPATH (
-        set JVM_OPTS=%BASE_JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled
+        set JVM_OPTS=%BASE_JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m
     ) else (
         set JVM_OPTS=%BASE_JVM_OPTS%
     )
@@ -194,11 +196,11 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.gridgain.grid.startup.cmdline.GridCom
 ::
 
 if "%INTERACTIVE%" == "1" (
-    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% -DGRIDGAIN_SCRIPT ^
+    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
     -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="%GRIDGAIN_HOME%" -DGRIDGAIN_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS%
 ) else (
-    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% -DGRIDGAIN_SCRIPT ^
+    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
     -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="%GRIDGAIN_HOME%" -DGRIDGAIN_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% "%CONFIG%"
 )

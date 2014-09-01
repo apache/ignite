@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -22,7 +23,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -1012,7 +1012,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     V val = txEntry.value();
 
                     // Read value from locked entry in group-lock transaction as well.
-                    if (txEntry.hasValue() || (groupLock() && !txEntry.groupLockEntry())) {
+                    if (txEntry.hasValue()) {
                         if (!F.isEmpty(txEntry.transformClosures())) {
                             for (GridClosure<V, V> clos : txEntry.transformClosures())
                                 val = clos.apply(val);
@@ -1022,13 +1022,13 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             V val0 = val;
 
                             if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                val0 = ((GridPortableObject<V>)val).deserialize();
+                                val0 = ((GridPortableObject)val).deserialize();
 
                             map.put(key, val0);
                         }
                     }
                     else {
-                        assert txEntry.op() == TRANSFORM;
+                        assert txEntry.op() == TRANSFORM || (groupLock() && !txEntry.groupLockEntry());
 
                         while (true) {
                             try {
@@ -1047,7 +1047,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     V val0 = val;
 
                                     if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                        val0 = ((GridPortableObject<V>)val).deserialize();
+                                        val0 = ((GridPortableObject)val).deserialize();
 
                                     map.put(key, val0);
                                 }
@@ -1110,7 +1110,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 V val0 = val;
 
                                 if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val0 = ((GridPortableObject<V>)val).deserialize();
+                                    val0 = ((GridPortableObject)val).deserialize();
 
                                 map.put(key, val0);
                             }
@@ -1269,7 +1269,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         log.debug("Got removed entry in transaction getAll method " +
                                             "(will try again): " + e);
 
-                                    if (pessimistic() && !readCommitted() && !isRollbackOnly()) {
+                                    if (pessimistic() && !readCommitted() && !isRollbackOnly() &&
+                                        (!groupLock() || F.eq(e.key(), groupLockKey()))) {
                                         U.error(log, "Inconsistent transaction state (entry got removed while " +
                                             "holding lock) [entry=" + e + ", tx=" + GridCacheTxLocalAdapter.this + "]");
 
@@ -1442,7 +1443,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                         if (cctx.portableEnabled() && deserializePortable &&
                                             val instanceof GridPortableObject)
-                                            val = ((GridPortableObject<V>)val).deserialize();
+                                            val = ((GridPortableObject)val).deserialize();
 
                                         retMap.put(key, val);
                                     }
@@ -1938,7 +1939,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         // one key in the keys collection.
                                         assert keys.size() == 1;
 
-                                        GridFuture<Boolean> fut = loadMissing(true, F.asList(key), !portableValues(),
+                                        GridFuture<Boolean> fut = loadMissing(
+                                            true, F.asList(key), deserializePortables(),
                                             new CI2<K, V>() {
                                                 @Override public void apply(K k, V v) {
                                                     if (log.isDebugEnabled())
@@ -2642,17 +2644,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /**
-     * Checks if portable values should be preserved.
+     * Checks if portable values should be deserialized.
      *
-     * @return {@code True} if portables should be preserved, {@code false} otherwise.
+     * @return {@code True} if portables should be deserialized, {@code false} otherwise.
      */
-    private boolean portableValues() {
-        GridCacheProjectionImpl<K, V> pimpl = cctx.projectionPerCall();
+    private boolean deserializePortables() {
+        GridCacheProjectionImpl<K, V> prj = cctx.projectionPerCall();
 
-        if (pimpl == null)
-            return false;
-
-        return pimpl.portableValues();
+        return prj == null || prj.deserializePortables();
     }
 
     /**
