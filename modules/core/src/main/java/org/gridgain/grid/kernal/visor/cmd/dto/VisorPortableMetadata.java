@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
 /**
  * Portable object metadata to show in Visor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class VisorPortableMetadata implements Serializable {
     /** */
@@ -25,12 +24,13 @@ public class VisorPortableMetadata implements Serializable {
     /** Type name */
     private String typeName;
 
-    /** Type ID */
-    private Integer typeID;
+    /** Type Id */
+    private Integer typeId;
 
     /** Filed list */
-    private List<VisorPortableMetadataField> fields;
+    private Collection<VisorPortableMetadataField> fields;
 
+    /** Type name */
     public String typeName() {
         return typeName;
     }
@@ -39,19 +39,26 @@ public class VisorPortableMetadata implements Serializable {
         this.typeName = typeName;
     }
 
-    public Integer typeID() {
-        return typeID;
+    /** Type Id */
+    public Integer typeId() {
+        return typeId;
     }
 
-    public void typeID(Integer typeID) {
-        this.typeID = typeID;
+    public void typeId(Integer typeId) {
+        this.typeId = typeId;
     }
 
-    public List<VisorPortableMetadataField> fields() {
+    /** Filed list */
+    public Collection<VisorPortableMetadataField> fields() {
         return fields;
     }
 
-    public void fields(List<VisorPortableMetadataField> fields) {
+    public void fields(Collection<VisorPortableMetadataField> fields) {
         this.fields = fields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorPortableMetadata.class, this);
     }
 }

@@ -44,26 +44,24 @@ public class VisorPortableCollectMetadataTask extends VisorOneNodeTask<Long, Gri
 
         /** {@inheritDoc} */
         @Override protected GridBiTuple<Long, Collection<VisorPortableMetadata>> run(Long lastUpdate) throws GridException {
-            final List<VisorPortableMetadata> data = new ArrayList<>();
-            
-            final GridBiTuple<Long, Collection<VisorPortableMetadata>> res = new GridBiTuple<>(0L, (Collection<VisorPortableMetadata>) data);
+            final GridPortables p = g.portables();
 
-            GridPortables p = g.portables();
+            final Collection<VisorPortableMetadata> data = new ArrayList<>(p.metadata().size());
 
             for(GridPortableMetadata metadata: p.metadata()) {
-                VisorPortableMetadata type = new VisorPortableMetadata();
+                final VisorPortableMetadata type = new VisorPortableMetadata();
 
                 type.typeName(metadata.typeName());
 
-                type.typeID(p.typeId(metadata.typeName()));
+                type.typeId(p.typeId(metadata.typeName()));
 
-                final List<VisorPortableMetadataField> fields = new ArrayList<>();
+                final Collection<VisorPortableMetadataField> fields = new ArrayList<>(metadata.fields().size());
 
                 for (String fieldName: metadata.fields()) {
-                    VisorPortableMetadataField field = new VisorPortableMetadataField();
+                    final VisorPortableMetadataField field = new VisorPortableMetadataField();
 
-                    field.name(fieldName);
-                    field.fieldType(metadata.fieldTypeName(fieldName));
+                    field.fieldName(fieldName);
+                    field.fieldTypeName(metadata.fieldTypeName(fieldName));
 
                     fields.add(field);
                 }
@@ -73,7 +71,7 @@ public class VisorPortableCollectMetadataTask extends VisorOneNodeTask<Long, Gri
                 data.add(type);
             }
 
-            return res;
+            return new GridBiTuple<>(0L, data);
         }
 
         /** {@inheritDoc} */
