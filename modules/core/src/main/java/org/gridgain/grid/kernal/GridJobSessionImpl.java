@@ -284,6 +284,11 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        return ses.subjectId();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJobSessionImpl.class, this);
     }
