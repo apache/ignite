@@ -121,19 +121,19 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * Reads default JUL configuration.
      */
     private void defaultConfiguration() {
-        final URL configUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
+        final URL cfgUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
 
-        if (configUrl == null) {
+        if (cfgUrl == null) {
             error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);
 
             return;
         }
 
-        try (InputStream in = configUrl.openStream()) {
+        try (InputStream in = cfgUrl.openStream()) {
             LogManager.getLogManager().readConfiguration(in);
         }
         catch (IOException e) {
-            error("Failed to read logging configuration: " + configUrl, e);
+            error("Failed to read logging configuration: " + cfgUrl, e);
         }
     }
 
