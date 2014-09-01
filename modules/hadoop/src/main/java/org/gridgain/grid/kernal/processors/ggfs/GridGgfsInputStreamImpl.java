@@ -35,9 +35,9 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     /** Data manager. */
     private final GridGgfsDataManager data;
 
-    /** Secondary file system input stream wrapper. */
+    /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final GridGgfsReader inWrapper;
+    private final GridGgfsReader secReader;
 
     /** Logger. */
     private GridLogger log;
@@ -98,11 +98,11 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param fileInfo File info to write binary data to.
      * @param prefetchBlocks Number of blocks to prefetch.
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
-     * @param inWrapper Optional secondary file system input stream wrapper.
+     * @param secReader Optional secondary file system reader.
      * @param metrics Local GGFS metrics.
      */
     GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable GridGgfsReader inWrapper, GridGgfsLocalMetrics metrics) {
+        int seqReadsBeforePrefetch, @Nullable GridGgfsReader secReader, GridGgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;
@@ -112,7 +112,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
         this.fileInfo = fileInfo;
         this.prefetchBlocks = prefetchBlocks;
         this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
-        this.inWrapper = inWrapper;
+        this.secReader = secReader;
         this.metrics = metrics;
 
         meta = ggfsCtx.meta();
@@ -268,9 +268,9 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     /** {@inheritDoc} */
     @Override public synchronized void close() throws IOException {
         try {
-            if (inWrapper != null) {
+            if (secReader != null) {
                 // Close secondary input stream.
-                inWrapper.close();
+                secReader.close();
 
                 // Ensuring local cache futures completion.
                 for (GridFuture<byte[]> fut : locCache.values()) {
@@ -515,7 +515,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @throws GridException If failed.
      */
     @Nullable protected GridFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws GridException {
-        return data.dataBlock(fileInfo, path, blockIdx, inWrapper);
+        return data.dataBlock(fileInfo, path, blockIdx, secReader);
     }
 
     /** {@inheritDoc} */

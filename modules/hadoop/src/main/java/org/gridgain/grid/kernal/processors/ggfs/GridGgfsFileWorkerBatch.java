@@ -36,8 +36,8 @@ public class GridGgfsFileWorkerBatch {
     /** Path to the file in the primary file system. */
     private final GridGgfsPath path;
 
-    /** Output stream to the file. */
-    private final GridGgfsWriter out;
+    /** Writer of the file. */
+    private final GridGgfsWriter writer;
 
     /** Caught exception. */
     private volatile GridException err;
@@ -49,14 +49,14 @@ public class GridGgfsFileWorkerBatch {
      * Constructor.
      *
      * @param path Path to the file in the primary file system.
-     * @param out Output stream opened to that file.
+     * @param writer Writer opened to that file.
      */
-    GridGgfsFileWorkerBatch(GridGgfsPath path, GridGgfsWriter out) {
+    GridGgfsFileWorkerBatch(GridGgfsPath path, GridGgfsWriter writer) {
         assert path != null;
-        assert out != null;
+        assert writer != null;
 
         this.path = path;
-        this.out = out;
+        this.writer = writer;
     }
 
     /**
@@ -68,7 +68,7 @@ public class GridGgfsFileWorkerBatch {
     boolean write(final byte[] data) {
         return addTask(new GridGgfsFileWorkerTask() {
             @Override public void execute() throws GridException {
-                out.write(data);
+                writer.write(data);
             }
         });
     }
@@ -109,7 +109,7 @@ public class GridGgfsFileWorkerBatch {
                 onComplete();
             }
             finally {
-                U.closeQuiet(out);
+                U.closeQuiet(writer);
 
                 completeLatch.countDown();
             }

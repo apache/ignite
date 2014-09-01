@@ -85,6 +85,92 @@ public interface GridGgfs extends GridGgfsFileSystem {
     public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException;
 
     /**
+     * Opens a file for reading.
+     *
+     * @param path File path to read.
+     * @return File input stream to read data from.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     */
+    public GridGgfsInputStream open(GridGgfsPath path) throws GridException;
+
+    /**
+     * Opens a file for reading.
+     *
+     * @param path File path to read.
+     * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
+     * @return File input stream to read data from.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     */
+    public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
+
+    /**
+     * Opens a file for reading.
+     *
+     * @param path File path to read.
+     * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
+     * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is started.
+     * @return File input stream to read data from.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist.
+     */
+    public GridGgfsInputStream open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
+
+    /**
+     * Creates a file and opens it for writing.
+     *
+     * @param path File path to create.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @return File output stream to write data to.
+     * @throws GridException In case of error.
+     */
+    public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+
+    /**
+     * Creates a file and opens it for writing.
+     *
+     * @param path File path to create.
+     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @param affKey Affinity key used to store file blocks. If not {@code null}, the whole file will be
+     *      stored on node where {@code affKey} resides.
+     * @param replication Replication factor.
+     * @param blockSize Block size.
+     * @param props File properties to set.
+     * @return File output stream to write data to.
+     * @throws GridException In case of error.
+     */
+    public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+        @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
+        throws GridException;
+
+    /**
+     * Opens an output stream to an existing file for appending data.
+     *
+     * @param path File path to append.
+     * @param create Create file if it doesn't exist yet.
+     * @return File output stream to append data to.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     */
+    public GridGgfsOutputStream append(GridGgfsPath path, boolean create) throws GridException;
+
+    /**
+     * Opens an output stream to an existing file for appending data.
+     *
+     * @param path File path to append.
+     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
+     * @param create Create file if it doesn't exist yet.
+     * @param props File properties to set only in case it file was just created.
+     * @return File output stream to append data to.
+     * @throws GridException In case of error.
+     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     */
+    public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+        @Nullable Map<String, String> props) throws GridException;
+
+    /**
      * Sets last access time and last modification time for a given path. If argument is {@code null},
      * corresponding time will not be changed.
      *
@@ -125,6 +211,14 @@ public interface GridGgfs extends GridGgfsFileSystem {
      */
     public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
         throws GridException;
+
+    /**
+     * Gets metrics snapshot for this file system.
+     *
+     * @return Metrics.
+     * @throws GridException In case of error.
+     */
+    public GridGgfsMetrics metrics() throws GridException;
 
     /**
      * Resets metrics for this file system.
@@ -213,98 +307,4 @@ public interface GridGgfs extends GridGgfsFileSystem {
     public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
-
-    /**
-     * Opens a file for reading.
-     *
-     * @param path File path to read.
-     * @return File input stream to read data from.
-     * @throws org.gridgain.grid.GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    GridGgfsInputStream open(GridGgfsPath path) throws GridException;
-
-    /**
-     * Opens a file for reading.
-     *
-     * @param path File path to read.
-     * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
-     * @return File input stream to read data from.
-     * @throws org.gridgain.grid.GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
-
-    /**
-     * Opens a file for reading.
-     *
-     * @param path File path to read.
-     * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
-     * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is started.
-     * @return File input stream to read data from.
-     * @throws org.gridgain.grid.GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    GridGgfsInputStream open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
-
-    /**
-     * Creates a file and opens it for writing.
-     *
-     * @param path File path to create.
-     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
-     * @return File output stream to write data to.
-     * @throws org.gridgain.grid.GridException In case of error.
-     */
-    GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
-
-    /**
-     * Creates a file and opens it for writing.
-     *
-     * @param path File path to create.
-     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
-     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
-     * @param affKey Affinity key used to store file blocks. If not {@code null}, the whole file will be
-     *      stored on node where {@code affKey} resides.
-     * @param replication Replication factor.
-     * @param blockSize Block size.
-     * @param props File properties to set.
-     * @return File output stream to write data to.
-     * @throws org.gridgain.grid.GridException In case of error.
-     */
-    GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
-        @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-        throws GridException;
-
-    /**
-     * Opens an output stream to an existing file for appending data.
-     *
-     * @param path File path to append.
-     * @param create Create file if it doesn't exist yet.
-     * @return File output stream to append data to.
-     * @throws org.gridgain.grid.GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
-     */
-    GridGgfsOutputStream append(GridGgfsPath path, boolean create) throws GridException;
-
-    /**
-     * Opens an output stream to an existing file for appending data.
-     *
-     * @param path File path to append.
-     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
-     * @param create Create file if it doesn't exist yet.
-     * @param props File properties to set only in case it file was just created.
-     * @return File output stream to append data to.
-     * @throws org.gridgain.grid.GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
-     */
-    GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
-                                @Nullable Map<String, String> props) throws GridException;
-
-    /**
-     * Gets metrics snapshot for this file system.
-     *
-     * @return Metrics.
-     * @throws org.gridgain.grid.GridException In case of error.
-     */
-    GridGgfsMetrics metrics() throws GridException;
 }

@@ -19,20 +19,20 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     private final GridGgfsFileInfo info;
 
     /** Secondary file system input stream wrapper. */
-    private final GridGgfsReader wrapper;
+    private final GridGgfsReader secReader;
 
     /**
      * Constructor.
      *
      * @param info File info in the primary file system.
-     * @param wrapper Secondary file system input stream wrapper.
+     * @param secReader Secondary file system reader.
      */
-    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, GridGgfsReader wrapper) {
+    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, GridGgfsReader secReader) {
         assert info != null;
-        assert wrapper != null;
+        assert secReader != null;
 
         this.info = info;
-        this.wrapper = wrapper;
+        this.secReader = secReader;
     }
 
     /**
@@ -43,9 +43,9 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     }
 
     /**
-     * @return Secondary file system input stream wrapper.
+     * @return Secondary file system reader.
      */
-    GridGgfsReader wrapper() {
-        return wrapper;
+    GridGgfsReader reader() {
+        return secReader;
     }
 }

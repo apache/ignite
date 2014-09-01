@@ -14,7 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;

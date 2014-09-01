@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

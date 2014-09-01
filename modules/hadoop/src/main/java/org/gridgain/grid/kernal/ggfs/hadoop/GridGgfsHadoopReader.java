@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -90,12 +89,13 @@ public class GridGgfsHadoopReader implements GridGgfsReader {
         U.closeQuiet(in);
     }
 
+    /** {@inheritDoc} */
     @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
         try {
             return in().read(pos, buf, off, len);
         }
         catch (IOException e) {
-            throw new GridException("Failed to read data [path = " + path + "]");
+            throw new GridException("Failed to read data [path = " + path + "]", e);
         }
     }
 }

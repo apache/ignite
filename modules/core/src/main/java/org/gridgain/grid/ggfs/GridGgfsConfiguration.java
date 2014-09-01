@@ -118,11 +118,6 @@ public class GridGgfsConfiguration {
     /** Secondary file system */
     private GridGgfsFileSystem secondaryFs;
 
-    /** Hadoop file system URI. */
-    //private String hadoopUri;
-
-    /** Hadoop config path. */
-    //private String hadoopCfgPath;
 
     /** GGFS mode. */
     private GridGgfsMode dfltMode = DFLT_MODE;
@@ -194,8 +189,6 @@ public class GridGgfsConfiguration {
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
         secondaryFs = cfg.getSecondaryFileSystem();
-        //hadoopCfgPath = cfg.getSecondaryHadoopFileSystemConfigPath();
-        //hadoopUri = cfg.getSecondaryHadoopFileSystemUri();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
@@ -533,45 +526,6 @@ public class GridGgfsConfiguration {
     public void setSecondaryFileSystem(GridGgfsFileSystem fileSystem) {
         secondaryFs = fileSystem;
     }
-
-    /**
-     * Gets URI of the secondary Hadoop file system, like {@code HDFS}. Secondary Hadoop file system is provided
-     * for pass-through, write-through, and read-through purposes.
-     *
-     * @return URI of the secondary Hadoop file system.
-     */
-//    @Nullable public String getSecondaryHadoopFileSystemUri() {
-//        return hadoopUri;
-//    }
-
-    /**
-     * Sets URI of the secondary Hadoop file system, like {@code HDFS}. Secondary Hadoop
-     * file system is provided for pass-through, write-through, and read-through purposes.
-     *
-     * @param hadoopUri URI of the secondary Hadoop file system.
-     */
-//    public void setSecondaryHadoopFileSystemUri(String hadoopUri) {
-//        this.hadoopUri = hadoopUri;
-//    }
-
-    /**
-     * Gets path for the secondary hadoop file system config.
-     *
-     * @return Path for the secondary hadoop file system config.
-     */
-//    @Nullable public String getSecondaryHadoopFileSystemConfigPath() {
-//        return hadoopCfgPath;
-//    }
-
-    /**
-     * Sets path for the secondary hadoop file system config. Secondary Hadoop file system
-     * is provided for pass-through, write-through, and read-through purposes.
-     *
-     * @param hadoopCfgPath Path for the secondary hadoop file system config.
-     */
-//    public void setSecondaryHadoopFileSystemConfigPath(String hadoopCfgPath) {
-//        this.hadoopCfgPath = hadoopCfgPath;
-//    }
 
     /**
      * Gets map of path prefixes to {@code GGFS} modes used for them.

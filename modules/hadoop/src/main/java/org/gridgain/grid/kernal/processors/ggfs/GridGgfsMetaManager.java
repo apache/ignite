@@ -1571,7 +1571,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
                         /** Output stream to the secondary file system. */
-                        private GridGgfsWriter out;
+                        private GridGgfsWriter writer;
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
                             GridGgfsFileInfo> infos) throws Exception {
@@ -1590,7 +1590,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo parentInfo = infos.get(parentPath);
 
                             // Delegate to the secondary file system.
-                            out = simpleCreate ? fs.createFile(path, overwrite) :
+                            writer = simpleCreate ? fs.createFile(path, overwrite) :
                                 fs.createFile(path, props, overwrite, bufSize, replication, blockSize);
 
                             GridGgfsPath parent0 = path.parent();
@@ -1621,12 +1621,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (status == null)
                                 throw new GridGgfsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because it no longer exists: " + path);
-                            else if (status.isDir())
+                            else if (status.isDirectory())
                                 throw new GridGgfsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because the path points to a directory: " + path);
 
-                            GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.getBlockSize(),
-                                status.getLen(), affKey, GridUuid.randomUuid(),
+                            GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.blockSize(),
+                                status.length(), affKey, GridUuid.randomUuid(),
                                 ggfsCtx.ggfs().evictExclude(path, false), status.properties());
 
                             // Add new file info to the listing optionally removing the previous one.
@@ -1673,12 +1673,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (evts.isRecordable(EVT_GGFS_FILE_CREATED))
                                 pendingEvts.add(new GridGgfsEvent(path, locNode, EVT_GGFS_FILE_CREATED));
 
-                            return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
+                            return new GridGgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, writer);
                         }
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
                             throws GridException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(writer);
 
                             U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
                                 simpleCreate + ", permission=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
@@ -1726,8 +1726,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<GridGgfsSecondaryOutputStreamDescriptor>() {
-                        /** Output stream to the secondary file system. */
-                        private GridGgfsWriter out;
+                        /** Writer of the secondary file system. */
+                        private GridGgfsWriter writer;
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onSuccess(Map<GridGgfsPath,
                             GridGgfsFileInfo> infos) throws Exception {
@@ -1737,7 +1737,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 throw new GridGgfsException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
-                            out = fs.appendFile(path, bufSize);
+                            writer = fs.appendFile(path, bufSize);
 
                             // Synchronize file ending.
                             long len = info.length();
@@ -1748,13 +1748,13 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (remainder > 0) {
                                 int blockIdx = (int)(len / blockSize);
 
-                                GridGgfsReader wrapper = fs.openFile(path, bufSize);
+                                GridGgfsReader reader = fs.openFile(path, bufSize);
 
                                 try {
-                                    ggfsCtx.data().dataBlock(info, path, blockIdx, wrapper).get();
+                                    ggfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
                                 }
                                 finally {
-                                    wrapper.close();
+                                    reader.close();
                                 }
                             }
 
@@ -1763,12 +1763,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                             metaCache.putx(info.id(), info);
 
-                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
+                            return new GridGgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, writer);
                         }
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws GridException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(writer);
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
@@ -2249,7 +2249,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 status = fs.getFileStatus(curPath);
 
                 if (status != null) {
-                    if (!status.isDir() && !curPath.equals(endPath))
+                    if (!status.isDirectory() && !curPath.equals(endPath))
                         throw new GridException("Failed to create path the locally because secondary file system " +
                             "directory structure was modified concurrently and the path is not a directory as " +
                             "expected: " + curPath);
@@ -2266,8 +2266,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 }
 
                 // Recreate the path locally.
-                GridGgfsFileInfo curInfo = status.isDir() ? new GridGgfsFileInfo(true, status.properties()) :
-                    new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.getLen(),
+                GridGgfsFileInfo curInfo = status.isDirectory() ? new GridGgfsFileInfo(true, status.properties()) :
+                    new GridGgfsFileInfo(ggfsCtx.configuration().getBlockSize(), status.length(),
                         ggfsCtx.ggfs().evictExclude(curPath, false), status.properties());
 
                 GridUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
@@ -2542,26 +2542,6 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         return txState;
     }
 
-    /**
-     *
-     * @return
-     */
-    private String secondaryFileSystemUri() {
-        GridGgfsFileSystem secFs = cfg.getSecondaryFileSystem();
-
-        if (secFs == null)
-            return null;
-
-        String res = secFs.uri();
-
-        assert res != null;
-
-        if (!res.endsWith("/"))
-            res += "/";
-
-        return res;
-    }
-    
     /**
      * Updates last access and last modification times.
      *

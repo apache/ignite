@@ -22,24 +22,24 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
     /** File info in the primary file system. */
     private final GridGgfsFileInfo info;
 
-    /** Output stream to the secondary file system. */
-    private final GridGgfsWriter out;
+    /** Writer of the secondary file system. */
+    private final GridGgfsWriter writer;
 
     /**
      * Constructor.
      *
      * @param parentId Parent ID in the primary file system.
      * @param info File info in the primary file system.
-     * @param out Output stream to the secondary file system.
+     * @param writer Writer of the secondary file system.
      */
-    GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, GridGgfsWriter out) {
+    GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, GridGgfsWriter writer) {
         assert parentId != null;
         assert info != null;
-        assert out != null;
+        assert writer != null;
 
         this.parentId = parentId;
         this.info = info;
-        this.out = out;
+        this.writer = writer;
     }
 
     /**
@@ -60,6 +60,6 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
      * @return Output stream to the secondary file system.
      */
     GridGgfsWriter out() {
-        return out;
+        return writer;
     }
 }

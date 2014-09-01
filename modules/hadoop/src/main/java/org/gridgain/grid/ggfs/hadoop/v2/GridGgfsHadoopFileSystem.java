@@ -264,7 +264,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 Map<String, String> props = paths.properties();
 
                 String secConfPath = props == null ? null :
-                        props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FILESYSTEM_CONFIG_PATH);
+                    props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FILESYSTEM_CONFIG_PATH);
 
                 if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
@@ -273,7 +273,6 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 if (paths.secondaryUri() == null)
                     throw new IOException("Failed to connect to the secondary file system because URI is not " +
                         "provided.");
-
 
                 try {
                     secondaryUri = new URI(paths.secondaryUri());

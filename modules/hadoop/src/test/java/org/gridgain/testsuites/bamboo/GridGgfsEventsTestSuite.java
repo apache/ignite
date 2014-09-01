@@ -12,7 +12,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
@@ -99,8 +99,8 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
-                    "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
-                    "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
+                "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
             return ggfsCfg;
         }

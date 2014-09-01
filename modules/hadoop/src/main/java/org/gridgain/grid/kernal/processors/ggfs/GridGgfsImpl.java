@@ -213,14 +213,15 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         String res = secondaryFs.uri();
 
-        assert res != null;
+        if (res == null)
+            return null;
 
         if (!res.endsWith("/"))
             res += "/";
 
         return res;
     }
-    
+
     /**
      * @return Local node.
      */
@@ -267,17 +268,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Create batch for the file.
      *
      * @param path File path in the secondary file system.
-     * @param out Output stream to that file.
+     * @param writer Writer of that file.
      * @return Created batch.
      * @throws GridException In case new batch cannot be created.
      */
-    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, GridGgfsWriter out) throws GridException {
+    private GridGgfsFileWorkerBatch newBatch(final GridGgfsPath path, GridGgfsWriter writer) throws GridException {
         assert path != null;
-        assert out != null;
+        assert writer != null;
 
         if (busyLock.enterBusy()) {
             try {
-                GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
+                GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, writer);
 
                 while (true) {
                     GridGgfsFileWorker worker = workerMap.get(path);
@@ -1032,8 +1033,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsReader openFile(final GridGgfsPath path, final int bufSize) {
         return new GridGgfsReader() {
+            /** */
             private GridGgfsInputStreamAdapter in;
 
+            /** {@inheritDoc} */
             @Override public int read(long pos, byte[] buf, int off, int len) throws GridException {
                 if (in == null)
                     in = open(path, bufSize);
@@ -1046,6 +1049,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
             }
 
+            /** {@inheritDoc} */
             @Override public void close() throws IOException {
                 if (in != null)
                     in.close();
@@ -1077,15 +1081,15 @@ public final class GridGgfsImpl implements GridGgfsEx {
             return null;
 
         return new GridGgfsFileStatus() {
-            @Override public boolean isDir() {
+            @Override public boolean isDirectory() {
                 return info.isDirectory();
             }
 
-            @Override public int getBlockSize() {
+            @Override public int blockSize() {
                 return info.blockSize();
             }
 
-            @Override public long getLen() {
+            @Override public long length() {
                 return info.length();
             }
 
@@ -1145,7 +1149,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     GridGgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
 
                     GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, desc.info(),
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.wrapper(), metrics);
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     if (evts.isRecordable(EVT_GGFS_FILE_OPENED_READ))
                         evts.record(new GridGgfsEvent(path, localNode(), EVT_GGFS_FILE_OPENED_READ));
@@ -1236,7 +1240,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     await(path);
 
                     GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                            props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
@@ -1794,8 +1798,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     GridGgfsFileStatus status = secondaryFs.getFileStatus(path);
 
                     if (status != null)
-                        info = status.isDir() ? new GridGgfsFileInfo(true, status.properties()) :
-                            new GridGgfsFileInfo(status.getBlockSize(), status.getLen(), null, null, false,
+                        info = status.isDirectory() ? new GridGgfsFileInfo(true, status.properties()) :
+                            new GridGgfsFileInfo(status.blockSize(), status.length(), null, null, false,
                             status.properties());
                 }
 
@@ -1932,13 +1936,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param fileInfo File info.
          * @param prefetchBlocks Prefetch blocks.
          * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
-         * @param inWrapper Optional secondary file system input stream wrapper.
+         * @param secReader Optional secondary file system reader.
          * @param metrics Metrics.
          */
         GgfsEventAwareInputStream(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo,
-            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsReader inWrapper,
+            int prefetchBlocks, int seqReadsBeforePrefetch, @Nullable GridGgfsReader secReader,
             GridGgfsLocalMetrics metrics) {
-            super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, inWrapper, metrics);
+            super(ggfsCtx, path, fileInfo, prefetchBlocks, seqReadsBeforePrefetch, secReader, metrics);
 
             metrics.incrementFilesOpenedForRead();
         }

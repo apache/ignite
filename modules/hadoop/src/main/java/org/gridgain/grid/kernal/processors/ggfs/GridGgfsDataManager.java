@@ -346,12 +346,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileInfo File info.
      * @param path Path reading from.
      * @param blockIdx Block index.
-     * @param inWrapper Optional secondary file system input stream wrapper.
+     * @param secReader Optional secondary file system reader.
      * @return Requested data block or {@code null} if nothing found.
      * @throws GridException If failed.
      */
     @Nullable public GridFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final GridGgfsPath path,
-        final long blockIdx, @Nullable final GridGgfsReader inWrapper)
+        final long blockIdx, @Nullable final GridGgfsReader secReader)
         throws GridException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -373,7 +373,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         GridFuture<byte[]> fut = dataCachePrj.getAsync(key);
 
-        if (inWrapper != null) {
+        if (secReader != null) {
             fut = fut.chain(new CX1<GridFuture<byte[]>, byte[]>() {
                 @Override public byte[] applyx(GridFuture<byte[]> fut) throws GridException {
                     byte[] res = fut.get();
@@ -397,10 +397,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                                 int read = 0;
 
-                                synchronized (inWrapper) {
+                                synchronized (secReader) {
                                     // Delegate to the secondary file system.
                                     while (read < blockSize) {
-                                        int r = inWrapper.read(pos + read, res, read, blockSize - read);
+                                        int r = secReader.read(pos + read, res, read, blockSize - read);
 
                                         if (r < 0)
                                             break;

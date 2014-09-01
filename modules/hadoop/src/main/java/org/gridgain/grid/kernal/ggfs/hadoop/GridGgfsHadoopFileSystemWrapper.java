@@ -1,3 +1,12 @@
+/* @java.file.header */
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.conf.*;
@@ -12,36 +21,34 @@ import java.net.*;
 import java.util.*;
 
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- *
+ * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link GridGgfsFileSystem}.
  */
 public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
-    /** */
+    /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FILESYSTEM_CONFIG_PATH = "SECONDARY_FILESYSTEM_CONFIG_PATH";
 
-    /** */
-    private FileSystem fileSys;
+    /** Hadoop file system. */
+    private final FileSystem fileSys;
 
-    /** */
-    private String uri;
+    /** URI of file system. */
+    private final String uri;
 
-    /** */
-    private String cfgPath;
+    /** Additional path to Hadoop configuration. */
+    private final String cfgPath;
 
     /**
+     * Constructor.
      *
-     * @param uri
-     * @param cfgPath
-     * @throws GridException
+     * @param uri URI of file system.
+     * @param cfgPath Additional path to Hadoop configuration.
+     * @throws GridException In case of error.
      */
-    public GridGgfsHadoopFileSystemWrapper(String uri, @Nullable String cfgPath) throws GridException {
-        assert uri != null;
-
+    public GridGgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws GridException {
         this.uri = uri;
         this.cfgPath = cfgPath;
 
@@ -51,7 +58,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             cfg.addResource(U.resolveGridGainUrl(cfgPath));
 
         try {
-            fileSys = FileSystem.get(new URI(uri), cfg);
+            fileSys = uri == null ? FileSystem.get(cfg) : FileSystem.get(new URI(uri), cfg);
         }
         catch (IOException | URISyntaxException e) {
             throw new GridException(e);
@@ -79,13 +86,11 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
      */
     private GridGgfsException handleSecondaryFsError(IOException e, String detailMsg) {
         boolean wrongVer = X.hasCause(e, RemoteException.class) ||
-                (e.getMessage() != null && e.getMessage().contains("Failed on local"));
+            (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
         GridGgfsException ggfsErr = !wrongVer ? new GridGgfsException(detailMsg, e) :
-                new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
-                        "version (start GGFS node with '-h1' option if using HDFS ver. 1.x)", e);
-
-        //LT.error(log, ggfsErr, "Failed to connect to secondary Hadoop file system.");
+            new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
+                "version.", e);
 
         return ggfsErr;
     }
@@ -112,7 +117,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return fileSys.exists(convert(path));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to check file existence [path=" + path + "]");
         }
     }
 
@@ -128,10 +133,10 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                 fileSys.setPermission(convert(path), props0.permission());
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to update file properties [path=" + path + "]");
         }
 
-        //Is not used in secondary FS.
+        //Result is not used in case of secondary FS.
         return null;
     }
 
@@ -144,9 +149,8 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to rename file [src=" + src + ", dest=" + dest + ']');
         }
-
     }
 
     /** {@inheritDoc} */
@@ -155,7 +159,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return fileSys.delete(convert(path), recursive);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to delete file [path=" + path + ", recursive=" + recursive + "]");
         }
     }
 
@@ -166,7 +170,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                 throw new GridException("Failed to make directories [path=" + path + "]");
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + "]");
         }
     }
 
@@ -177,7 +181,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                 throw new GridException("Failed to make directories [path=" + path + ", props=" + props + "]");
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + ", props=" + props + "]");
         }
     }
 
@@ -242,22 +246,23 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return new GridGgfsOutputStreamWriter(fileSys.create(convert(path), overwrite));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsWriter createFile(GridGgfsPath path, Map<String, String> props, boolean overwrite,
         int bufSize, short replication, long blockSize) throws GridException {
-        GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props :
-            Collections.<String, String>emptyMap());
+        GridGgfsHdfsProperties props0 = new GridGgfsHdfsProperties(props != null ? props : Collections.<String, String>emptyMap());
 
         try {
             return new GridGgfsOutputStreamWriter(fileSys.create(convert(path), props0.permission(), overwrite,
                 bufSize, replication, blockSize, null));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", props=" + props +
+                ", overwrite=" + overwrite + ", bufSize=" + bufSize + ", replication=" + replication +
+                ", blockSize=" + blockSize + "]");
         }
     }
 
@@ -267,7 +272,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return new GridGgfsOutputStreamWriter(fileSys.append(convert(path), bufSize));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ", bufSize=" + bufSize + "]");
         }
     }
 
@@ -280,15 +285,15 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
                 return null;
 
             return new GridGgfsFileStatus() {
-                @Override public boolean isDir() {
+                @Override public boolean isDirectory() {
                     return status.isDirectory();
                 }
 
-                @Override public int getBlockSize() {
+                @Override public int blockSize() {
                     return (int)status.getBlockSize();
                 }
 
-                @Override public long getLen() {
+                @Override public long length() {
                     return status.getLen();
                 }
 
@@ -302,7 +307,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return null;
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to get file status [path=" + path + "]");
         }
     }
 
@@ -312,7 +317,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem {
             return fileSys.getContentSummary(new Path(fileSys.getUri())).getSpaceConsumed();
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
         }
     }
 

@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopFileSystemWrapper;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -384,30 +384,6 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         assertTrue(errMsg.startsWith(
             "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is SECONDARY"));
     }
-
-    /**
-     * Ensure that Grid doesn't start in case default mode is SECONDARY and secondary FS config path is not provided.
-     *
-     * @throws Exception If failed.
-     */
-//    public void testModeSecondaryNoCfg() throws Exception {
-//        mode = PROXY;
-//
-//        setSecondaryFs = true;
-//
-//        String errMsg = null;
-//
-//        try {
-//            startUp();
-//        }
-//        catch (GridException e) {
-//            errMsg = e.getCause().getMessage();
-//        }
-//
-//        assertTrue(errMsg.startsWith(
-//            "Grid configuration parameter invalid: secondaryHadoopFileSystemConfigPath cannot be null " +
-//                "when mode is SECONDARY"));
-//    }
 
     /**
      * Ensure that modes are resolved correctly when path modes are set.
