@@ -300,20 +300,29 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
         GridJavaLoggerFileHandler gridFileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
-            return gridFileHnd.pattern();
+            return gridFileHnd.fileName();
 
         FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
-        if (fileHnd != null) {
-            try {
-                return (String)U.field(fileHnd, "pattern");
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
+        return fileName(fileHnd);
+    }
 
-        return null;
+    /**
+     * @param fileHnd File handler.
+     * @return Current log file or {@code null} if it can not be retrieved from file handler.
+     */
+    @Nullable static String fileName(FileHandler fileHnd) {
+        if (fileHnd == null)
+            return null;
+
+        try {
+            File[] logFiles = U.field(fileHnd, "files");
+
+            return logFiles[0].getAbsolutePath();
+        }
+        catch (Exception ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */

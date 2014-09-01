@@ -112,15 +112,12 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
     }
 
     /**
-     * Returns file pattern.
+     * Returns current log file.
      *
      * @return Pattern or {@code null} if node id has not been set yet.
      */
-    @Nullable public String pattern() {
-        if (delegate == null)
-            return null;
-
-        return (String)U.field(delegate, "pattern");
+    @Nullable public String fileName() {
+        return GridJavaLogger.fileName(delegate);
     }
 
     /**
