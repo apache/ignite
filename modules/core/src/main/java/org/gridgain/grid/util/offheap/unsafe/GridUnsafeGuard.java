@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.concurrent.atomic.*;
@@ -41,12 +42,15 @@ import java.util.concurrent.atomic.*;
  */
 public class GridUnsafeGuard {
     /** */
+    @GridToStringInclude
     private final AtomicReference<Operation> head = new AtomicReference<>();
 
     /** */
+    @GridToStringInclude
     private final AtomicReference<Operation> tail = new AtomicReference<>();
 
     /** */
+    @GridToStringExclude
     private final ThreadLocal<Operation> currOp = new ThreadLocal<>();
 
     /**
@@ -108,17 +112,19 @@ public class GridUnsafeGuard {
 
         currOp.remove();
 
-        long curId = op.id;
-
         op.allowDeallocate();
 
         // Start deallocating from tail.
         op = tail.get();
 
-        // Go through the inactive ops until find thread-local one.
-        while (!op.isActive() && op.id <= curId) {
-            op.finish();
+        int state;
 
+        // Go through the inactive ops until find thread-local one.
+        while ((state = op.state) != Operation.STATE_ACTIVE) {
+            if (state == Operation.STATE_MAY_DEALLOCATE)
+                op.finish();
+
+            // We need to keep op non-null, so don't use op = op.next;
             Operation next = op.next;
 
             if (next == null)
@@ -161,6 +167,11 @@ public class GridUnsafeGuard {
         head.get().add(new Finalizer(finalizer));
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridUnsafeGuard.class, this, "currOp", currOp.get());
+    }
+
     /**
      * Memory operation which can be executed in parallel with other memory operations.
      */
@@ -194,9 +205,6 @@ public class GridUnsafeGuard {
         private int reentries;
 
         /** */
-        private volatile Operation next;
-
-        /** */
         private volatile int state;
 
         /** */
@@ -204,6 +212,10 @@ public class GridUnsafeGuard {
 
         /** */
         private volatile GridUnsafeCompoundMemory compound;
+
+        /** */
+        @GridToStringExclude
+        private volatile Operation next;
 
         /**
          * Adds runnable to the finalization queue.
@@ -291,13 +303,6 @@ public class GridUnsafeGuard {
         }
 
         /**
-         * @return flag indicating if memory may be deallocated for this operation.
-         */
-        private boolean isActive() {
-            return state == STATE_ACTIVE;
-        }
-
-        /**
          * @param next Next operation.
          */
         private void next(Operation next) {
@@ -306,7 +311,10 @@ public class GridUnsafeGuard {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Operation.class, this);
+            Operation next0 = next;
+
+            return S.toString(Operation.class, this, "identity", System.identityHashCode(this), "next", next0 == null ?
+                null : Math.random() < 0.03 ? "other..." : next0);
         }
     }
 
@@ -348,6 +356,11 @@ public class GridUnsafeGuard {
          */
         private void run() {
             delegate.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Finalizer.class, this);
         }
     }
 }

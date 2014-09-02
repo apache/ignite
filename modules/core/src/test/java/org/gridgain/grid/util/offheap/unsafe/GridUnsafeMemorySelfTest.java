@@ -11,6 +11,7 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 import org.gridgain.grid.GridFuture;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.X;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -217,10 +218,78 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testGuardedOpsSimple() throws Exception {
+        final GridUnsafeGuard guard = new GridUnsafeGuard();
+
+        final AtomicInteger i = new AtomicInteger();
+
+        guard.begin();
+
+        guard.finalizeLater(new Runnable() {
+            @Override
+            public void run() {
+                i.incrementAndGet();
+            }
+        });
+
+        guard.begin();
+        assertEquals(0, i.get());
+        guard.end();
+
+        assertEquals(0, i.get());
+        guard.end();
+
+        X.println("__ " + guard);
+
+        assertEquals(1, i.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testGuardedOpsPerformance() throws Exception {
+        final GridUnsafeGuard guard = new GridUnsafeGuard();
+
+        final AtomicInteger i = new AtomicInteger();
+
+        final AtomicBoolean run = new AtomicBoolean(true);
+
+        GridFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int x = 0;
+
+                while (run.get()) {
+                    guard.begin();
+                    guard.end();
+
+                    x++;
+                }
+
+                i.addAndGet(x);
+            }
+        }, 4);
+
+        int time = 60;
+
+        Thread.sleep(time * 1000);
+
+        run.set(false);
+
+        fut.get();
+
+        X.println("Op/sec: " + (float)i.get() / time);
+    }
+
+    /**
      * @throws Exception if failed.
      */
     public void testGuardedOps() throws Exception {
-        final AtomicReferenceArray<CmpMem> ptrs = new AtomicReferenceArray<>(4);
+        final int lineSize = 16;
+        final int ptrsCnt = 4;
+
+        final AtomicReferenceArray<CmpMem> ptrs = new AtomicReferenceArray<>(ptrsCnt * lineSize);
 
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -228,82 +297,103 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
         final GridUnsafeGuard guard = new GridUnsafeGuard();
 
-        GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Random rnd = new GridRandom();
+        GridRandom rnd = new GridRandom();
 
-                while (!finished.get()) {
-                    int idx = rnd.nextInt(ptrs.length());
+        for (int a = 0; a < 7; a++) {
+            finished.set(false);
 
-                    guard.begin();
+            int threads = 2 + rnd.nextInt(37);
+            int time = rnd.nextInt(5);
 
-                    try {
-                        final CmpMem old;
+            X.println("__ starting threads: " + threads + " time: " + time + " sec");
 
-                        CmpMem ptr = null;
+            final LongAdder locAdder = new LongAdder();
 
-                        switch(rnd.nextInt(10)) {
-                            case 0:
-                                ptr = new CmpMem(cntr);
+            GridFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Random rnd = new GridRandom();
 
-                                //noinspection fallthrough
-                            case 1:
-                                old = ptrs.getAndSet(idx, ptr);
+                    while (!finished.get()) {
+                        int idx = rnd.nextInt(ptrsCnt) * lineSize;
 
-                                if (old != null) {
-                                    guard.finalizeLater(new Runnable() {
-                                        @Override public void run() {
-                                            old.deallocate();
-                                        }
-                                    });
-                                }
+                        guard.begin();
 
-                                break;
+                        try {
+                            final CmpMem old;
 
-                            case 2:
-                                if (rnd.nextBoolean())
+                            CmpMem ptr = null;
+
+                            switch (rnd.nextInt(6)) {
+                                case 0:
                                     ptr = new CmpMem(cntr);
 
-                                old = ptrs.getAndSet(idx, ptr);
+                                    //noinspection fallthrough
+                                case 1:
+                                    old = ptrs.getAndSet(idx, ptr);
 
-                                if (old != null)
-                                    guard.releaseLater(old);
+                                    if (old != null) {
+                                        guard.finalizeLater(new Runnable() {
+                                            @Override public void run() {
+                                                old.deallocate();
+                                            }
+                                        });
+                                    }
 
-                                break;
+                                    break;
 
-                            default:
-                                old = ptrs.get(idx);
+                                case 2:
+                                    if (rnd.nextBoolean())
+                                        ptr = new CmpMem(cntr);
 
-                                if (old != null)
-                                    old.touch();
+                                    old = ptrs.getAndSet(idx, ptr);
+
+                                    if (old != null)
+                                        guard.releaseLater(old);
+
+                                    break;
+
+                                default:
+                                    old = ptrs.get(idx);
+
+                                    if (old != null)
+                                        old.touch();
+                            }
+                        }
+                        finally {
+                            guard.end();
+
+                            locAdder.increment();
                         }
                     }
-                    finally {
-                        guard.end();
-                    }
+
+                    return null;
                 }
+            }, threads);
 
-                return null;
+            Thread.sleep(1000 * time);
+
+            X.println("__ stopping ops...");
+
+            finished.set(true);
+
+            fut.get();
+
+            X.println("__ stopped, performed ops: " + locAdder.sum());
+
+            for (int i = 0; i < ptrs.length(); i++) {
+                CmpMem ptr = ptrs.getAndSet(i, null);
+
+                if (ptr != null) {
+                    ptr.touch();
+
+                    ptr.deallocate();
+                }
             }
-        }, 37);
 
-        Thread.sleep(60000);
+            X.println("__ " + guard);
 
-        finished.set(true);
-
-        fut.get();
-
-        for (int i = 0; i < ptrs.length(); i++) {
-            CmpMem ptr = ptrs.get(i);
-
-            if (ptr != null) {
-                ptr.touch();
-
-                ptr.deallocate();
-            }
+            assertEquals(0, cntr.sum());
         }
-
-        assertEquals(0, cntr.sum());
     }
 
     private static class CmpMem extends AtomicInteger implements GridUnsafeCompoundMemory {
