@@ -1196,7 +1196,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
                 return null;
             }
         }, IOException.class,
-            "Failed to read data [path = ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/dir/subdir/file]");
+            "Failed to read data due to secondary file system exception: /dir/subdir/file");
     }
 
     /**
@@ -1362,7 +1362,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
                 return null;
             }
         }, IOException.class,
-            "Failed to read data [path = ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/dir/subdir/file]");
+            "Failed to read data due to secondary file system exception: /dir/subdir/file");
     }
 
     /**

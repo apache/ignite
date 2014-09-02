@@ -308,7 +308,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Clos
                 }
 
                 @Override public int blockSize() {
-                    return 0;
+                    return (int)status.getBlockSize();
                 }
 
                 @Override public long groupBlockSize() {
