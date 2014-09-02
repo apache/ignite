@@ -276,20 +276,18 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.discovery().localNode();
                     }
 
-                    @Override public Collection<GridNode> daemonNodes(InclusionMode mode) {
-                        A.ensure(asList(InclusionMode.ALL, InclusionMode.NON_LOCAL).contains(mode),
-                            "mode " + mode + " is unsupported");
-
+                    @Override public Collection<GridNode> remoteDaemonNodes() {
                         final Collection<GridNode> all = ctx.discovery().daemonNodes();
 
-                        if (mode == InclusionMode.ALL)
+                        if (!localNode().isDaemon())
                             return all;
 
                         final Collection<GridNode> remotes = new LinkedList<>(all);
 
-                        for (Iterator<GridNode> iter = remotes.iterator(); iter.hasNext();)
+                        for (Iterator<GridNode> iter = remotes.iterator(); iter.hasNext();) {
                             if (F.eqNodes(iter.next(), localNode()))
                                 iter.remove();
+                        }
 
                         return remotes;
                     }

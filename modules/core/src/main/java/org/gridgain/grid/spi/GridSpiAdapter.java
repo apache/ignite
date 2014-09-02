@@ -150,8 +150,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
             }
         }, EVT_NODE_JOINED);
 
-        final Collection<GridNode> remotes =
-            F.concat(false, spiCtx.remoteNodes(), spiCtx.daemonNodes(GridSpiContext.InclusionMode.NON_LOCAL));
+        final Collection<GridNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
 
         for (GridNode node : remotes) {
             checkConfigurationConsistency(spiCtx, node, true);
@@ -351,7 +350,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     /**
      * @return {@code true} if this check is optional.
      */
-    private boolean checkDeamon() {
+    private boolean checkDaemon() {
         GridSpiConsistencyChecked ann = U.getAnnotation(getClass(), GridSpiConsistencyChecked.class);
 
         return ann != null && ann.checkDaemon();
@@ -391,7 +390,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         assert spiCtx != null;
         assert node != null;
 
-        if (node.isDaemon() && !checkDeamon()) {
+        if (node.isDaemon() && !checkDaemon()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping non-security configuration consistency check for daemon node: " + node);
 
@@ -637,9 +636,8 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridNode> daemonNodes(InclusionMode mode) {
-            return locNode == null || !locNode.isDaemon() || InclusionMode.NON_LOCAL.equals(mode) ?
-                Collections.<GridNode>emptyList() : Collections.singletonList(locNode);
+        @Override public Collection<GridNode> remoteDaemonNodes() {
+            return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
