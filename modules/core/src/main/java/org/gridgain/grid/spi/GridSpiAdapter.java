@@ -17,7 +17,6 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -350,19 +349,19 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
     }
 
     /**
+     * @return {@code true} if this check is optional.
+     */
+    private boolean checkDeamon() {
+        GridSpiConsistencyChecked ann = U.getAnnotation(getClass(), GridSpiConsistencyChecked.class);
+
+        return ann != null && ann.checkDaemon();
+    }
+
+    /**
      * @return {@code true} if this check is enabled.
      */
     private boolean checkEnabled() {
         return U.getAnnotation(getClass(), GridSpiConsistencyChecked.class) != null;
-    }
-
-    /**
-     * Tests whether this SPI is security-related.
-     *
-     * @return True if adapter belongs to security aspect and false otherwise.
-     */
-    private boolean isSecuritySpi() {
-        return GridAuthenticationSpi.class.isAssignableFrom(getClass());
     }
 
     /**
@@ -392,7 +391,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         assert spiCtx != null;
         assert node != null;
 
-        if (node.isDaemon() && !isSecuritySpi()) {
+        if (node.isDaemon() && !checkDeamon()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping non-security configuration consistency check for daemon node: " + node);
 
