@@ -1014,59 +1014,69 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         continue;
                     }
 
-                    if (qry.type() == SQL) {
-                        if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
-                                cctx.localNode(),
-                                "SQL query entry read.",
-                                EVT_CACHE_SQL_QUERY_OBJECT_READ,
-                                cctx.namex(),
-                                qry.queryClassName(),
-                                qry.clause(),
-                                null,
-                                null,
-                                qryInfo.arguments(),
-                                qry.subjectId(),
-                                key,
-                                val,
-                                null));
-                        }
-                    }
-                    else if (qry.type() == TEXT) {
-                        if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
-                                cctx.localNode(),
-                                "Full text query entry read.",
-                                EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ,
-                                cctx.namex(),
-                                qry.queryClassName(),
-                                qry.clause(),
-                                null,
-                                null,
-                                null,
-                                qry.subjectId(),
-                                key,
-                                val,
-                                null));
-                        }
-                    }
-                    else if (qry.type() == SCAN) {
-                        if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_OBJECT_READ)) {
-                            cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
-                                cctx.localNode(),
-                                "Scan query entry read.",
-                                EVT_CACHE_SCAN_QUERY_OBJECT_READ,
-                                cctx.namex(),
-                                null,
-                                null,
-                                qry.scanFilter(),
-                                null,
-                                null,
-                                qry.subjectId(),
-                                key,
-                                val,
-                                null));
-                        }
+                    switch (qry.type()) {
+                        case SQL:
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
+                                cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
+                                    cctx.localNode(),
+                                    "SQL query entry read.",
+                                    EVT_CACHE_SQL_QUERY_OBJECT_READ,
+                                    cctx.namex(),
+                                    qry.queryClassName(),
+                                    qry.clause(),
+                                    null,
+                                    null,
+                                    qryInfo.arguments(),
+                                    qry.subjectId(),
+                                    key,
+                                    val,
+                                    null));
+                            }
+
+                            break;
+
+                        case TEXT:
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ)) {
+                                cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
+                                    cctx.localNode(),
+                                    "Full text query entry read.",
+                                    EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ,
+                                    cctx.namex(),
+                                    qry.queryClassName(),
+                                    qry.clause(),
+                                    null,
+                                    null,
+                                    null,
+                                    qry.subjectId(),
+                                    key,
+                                    val,
+                                    null));
+                            }
+
+                            break;
+
+                        case SCAN:
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_OBJECT_READ)) {
+                                cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
+                                    cctx.localNode(),
+                                    "Scan query entry read.",
+                                    EVT_CACHE_SCAN_QUERY_OBJECT_READ,
+                                    cctx.namex(),
+                                    null,
+                                    null,
+                                    qry.scanFilter(),
+                                    null,
+                                    null,
+                                    qry.subjectId(),
+                                    key,
+                                    val,
+                                    null));
+                            }
+
+                            break;
+
+                        default:
+                            assert false : "Invalid query type: " + qry.type();
                     }
 
                     Map.Entry<K, V> entry = F.t(key, val);
