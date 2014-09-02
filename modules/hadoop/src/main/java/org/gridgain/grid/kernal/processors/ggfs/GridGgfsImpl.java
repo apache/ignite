@@ -1100,8 +1100,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
-        @Nullable Map<String, String> props) throws GridException {
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+        long blockSize, @Nullable Map<String, String> props) throws GridException {
         return create0(path, bufSize, overwrite, null, replication, props, false);
     }
 

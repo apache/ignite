@@ -373,7 +373,12 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IOException {
-        fileSys.close();
+    @Override public void close() throws GridException {
+        try {
+            fileSys.close();
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 }

@@ -411,7 +411,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                     }
                                     catch (IOException e) {
                                         throw new GridException("Failed to read data due to secondary file system " +
-                                                "exception: " + e.getMessage(), e);
+                                            "exception: " + e.getMessage(), e);
                                     }
                                 }
 

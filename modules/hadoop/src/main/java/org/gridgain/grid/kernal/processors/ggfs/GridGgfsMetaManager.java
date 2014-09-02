@@ -2242,8 +2242,6 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 // Get file status from the secondary file system.
                 GridGgfsFile status = fs.info(curPath);
 
-                IOException err = null;
-
                 if (status != null) {
                     if (!status.isDirectory() && !curPath.equals(endPath))
                         throw new GridException("Failed to create path the locally because secondary file system " +
@@ -2253,7 +2251,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 else {
                     if (strict) {
                         throw new GridException("Failed to create path locally due to secondary file system " +
-                            "exception: " + curPath, err);
+                            "exception: " + curPath);
                     }
                     else if (created != null)
                         created.put(curPath.parent(), parentInfo);

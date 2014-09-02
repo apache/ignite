@@ -1222,7 +1222,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 return null;
             }
-        }, GridException.class, null);
+        }, GridGgfsException.class, null);
     }
 
     /**
