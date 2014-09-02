@@ -1206,7 +1206,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         createFile(ggfs, FILE, false);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
                 GridGgfsOutputStream os1 = null;
                 GridGgfsOutputStream os2 = null;
@@ -1222,7 +1222,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, GridException.class, null);
     }
 
     /**

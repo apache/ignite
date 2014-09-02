@@ -147,14 +147,10 @@ public class GridGgfsEventsTestSuite extends TestSuite {
          * @throws Exception If failed.
          */
         @Nullable private GridGgfs startSecondary() throws Exception {
-            GridConfiguration cfg = getConfiguration("grid-secondary");
+            GridConfiguration cfg = getConfiguration("grid-secondary", getSecondaryGgfsConfiguration());
 
             cfg.setLocalHost("127.0.0.1");
             cfg.setPeerClassLoadingEnabled(false);
-
-            cfg.setCacheConfiguration(getCacheConfiguration("grid-secondary"));
-
-            cfg.setGgfsConfiguration(getSecondaryGgfsConfiguration());
 
             Grid secG = G.start(cfg);
 

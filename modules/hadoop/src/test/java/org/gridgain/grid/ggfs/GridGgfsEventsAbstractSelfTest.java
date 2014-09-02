@@ -90,6 +90,18 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        return getConfiguration(gridName, getGgfsConfiguration());
+    }
+
+    /**
+     * The same as getConfiguration(String gridName) but it sets custom GGFS configuration
+     *
+     * @param gridName Grid name.
+     * @param ggfsCfg GGFS configuration.
+     * @return Grid configuration.
+     * @throws Exception If failed.
+     */
+    protected GridConfiguration getConfiguration(String gridName, GridGgfsConfiguration ggfsCfg) throws Exception {
         GridConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
@@ -98,7 +110,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         cfg.setIncludeEventTypes(concat(EVTS_GGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
 
-        cfg.setGgfsConfiguration(getGgfsConfiguration());
+        cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
 
