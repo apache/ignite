@@ -21,6 +21,9 @@ import java.util.*;
  */
 public class GridMapEntry<K, V> implements Map.Entry<K, V>, Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private K key;
 
