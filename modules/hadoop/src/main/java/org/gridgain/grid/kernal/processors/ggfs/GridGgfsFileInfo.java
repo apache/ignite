@@ -133,7 +133,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * @param evictExclude Evict exclude flag.
      */
     public GridGgfsFileInfo(int blockSize, long len, @Nullable GridUuid affKey, @Nullable GridUuid lockId,
-                            boolean evictExclude, @Nullable Map<String, String> props) {
+        boolean evictExclude, @Nullable Map<String, String> props) {
         this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
     }
 

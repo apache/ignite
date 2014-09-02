@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import com.google.common.collect.Maps;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -252,7 +251,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Create batch for the file.
      *
      * @param path File path in the secondary file system.
-     * @param out Output stream of that file.
+     * @param out Output stream to that file.
      * @return Created batch.
      * @throws GridException In case new batch cannot be created.
      */
@@ -1101,6 +1100,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
+        @Nullable Map<String, String> props) throws GridException {
+        return create0(path, bufSize, overwrite, null, replication, props, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
         @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException {
@@ -1150,7 +1155,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     await(path);
 
                     GridGgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                        props, overwrite, bufSize, (short)replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
@@ -1428,7 +1433,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
                     catch (GridException e) {
-                        U.error(log, e);
+                        LT.warn(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
                     }

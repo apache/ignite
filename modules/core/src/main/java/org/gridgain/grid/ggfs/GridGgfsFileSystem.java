@@ -159,17 +159,14 @@ public interface GridGgfsFileSystem {
      * @param path File path to create.
      * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
-     * @param affKey Affinity key used to store file blocks. If not {@code null}, the whole file will be
-     *      stored on node where {@code affKey} resides.
      * @param replication Replication factor.
      * @param blockSize Block size.
      * @param props File properties to set.
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public OutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, @Nullable GridUuid affKey,
-       int replication, long blockSize, @Nullable Map<String, String> props)
-       throws GridException;
+    public OutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
+       @Nullable Map<String, String> props) throws GridException;
 
     /**
      * Opens an output stream to an existing file for appending data.

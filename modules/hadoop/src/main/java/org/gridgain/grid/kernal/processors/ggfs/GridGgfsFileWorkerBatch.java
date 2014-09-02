@@ -13,8 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
@@ -38,7 +37,7 @@ public class GridGgfsFileWorkerBatch {
     /** Path to the file in the primary file system. */
     private final GridGgfsPath path;
 
-    /** Output stream of the file. */
+    /** Output stream to the file. */
     private final OutputStream out;
 
     /** Caught exception. */
@@ -49,6 +48,7 @@ public class GridGgfsFileWorkerBatch {
 
     /**
      * Constructor.
+     *
      * @param path Path to the file in the primary file system.
      * @param out Output stream opened to that file.
      */
@@ -73,7 +73,8 @@ public class GridGgfsFileWorkerBatch {
                     out.write(data);
                 }
                 catch (IOException e) {
-                    throw new GridException(e);
+                    throw new GridException("Failed to write data to the file due to secondary file system " +
+                        "exception: " + path, e);
                 }
             }
         });

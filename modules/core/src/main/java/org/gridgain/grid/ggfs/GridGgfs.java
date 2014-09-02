@@ -124,6 +124,21 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @param path File path to create.
      * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @param replication Replication factor.
+     * @param blockSize Block size.
+     * @param props File properties to set.
+     * @return File output stream to write data to.
+     * @throws GridException In case of error.
+     */
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+        long blockSize, @Nullable Map<String, String> props) throws GridException;
+
+    /**
+     * Creates a file and opens it for writing.
+     *
+     * @param path File path to create.
+     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
      * @param affKey Affinity key used to store file blocks. If not {@code null}, the whole file will be
      *      stored on node where {@code affKey} resides.
      * @param replication Replication factor.
@@ -132,7 +147,7 @@ public interface GridGgfs extends GridGgfsFileSystem {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+    public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
         @Nullable GridUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException;
 

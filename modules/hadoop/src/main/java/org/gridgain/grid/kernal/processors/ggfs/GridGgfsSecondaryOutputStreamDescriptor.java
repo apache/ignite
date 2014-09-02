@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 
-import java.io.OutputStream;
+import java.io.*;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.
@@ -23,14 +23,15 @@ public class GridGgfsSecondaryOutputStreamDescriptor {
     /** File info in the primary file system. */
     private final GridGgfsFileInfo info;
 
-    /** Writer of the secondary file system. */
+    /** Output stream to the secondary file system. */
     private final OutputStream out;
 
     /**
      * Constructor.
-     *  @param parentId Parent ID in the primary file system.
+     *
+     * @param parentId Parent ID in the primary file system.
      * @param info File info in the primary file system.
-     * @param out Writer of the secondary file system.
+     * @param out Output stream to the secondary file system.
      */
     GridGgfsSecondaryOutputStreamDescriptor(GridUuid parentId, GridGgfsFileInfo info, OutputStream out) {
         assert parentId != null;

@@ -1591,7 +1591,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                             // Delegate to the secondary file system.
                             out = simpleCreate ? fs.create(path, overwrite) :
-                                fs.create(path, bufSize, overwrite, null, replication, blockSize, props);
+                                fs.create(path, bufSize, overwrite, replication, blockSize, props);
 
                             GridGgfsPath parent0 = path.parent();
 

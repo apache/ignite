@@ -118,7 +118,6 @@ public class GridGgfsConfiguration {
     /** Secondary file system */
     private GridGgfsFileSystem secondaryFs;
 
-
     /** GGFS mode. */
     private GridGgfsMode dfltMode = DFLT_MODE;
 

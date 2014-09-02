@@ -42,6 +42,7 @@ public class GridGgfsPaths implements Externalizable {
 
     /**
      * Constructor.
+     *
      * @param props Additional secondary file system properties.
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.

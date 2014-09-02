@@ -397,8 +397,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                                 int read = 0;
 
-                                try {
-                                    synchronized (secReader) {
+                                synchronized (secReader) {
+                                    try {
                                         // Delegate to the secondary file system.
                                         while (read < blockSize) {
                                             int r = secReader.read(pos + read, res, read, blockSize - read);
@@ -409,9 +409,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                             read += r;
                                         }
                                     }
-                                }
-                                catch (IOException e) {
-                                    throw new GridException(e);
+                                    catch (IOException e) {
+                                        throw new GridException("Failed to read data due to secondary file system " +
+                                                "exception: " + e.getMessage(), e);
+                                    }
                                 }
 
                                 // If we did not read full block at the end of the file - trim it.
