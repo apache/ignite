@@ -3058,6 +3058,21 @@ public abstract class GridUtils {
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
     public static void closeQuiet(@Nullable Closeable rsrc) {
         if (rsrc != null)
             try {

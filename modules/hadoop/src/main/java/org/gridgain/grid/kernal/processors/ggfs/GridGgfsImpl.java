@@ -237,8 +237,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         workerMap.clear();
 
-        if (secondaryFs instanceof Closeable)
-            U.closeQuiet((Closeable)secondaryFs);
+        if (secondaryFs instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)secondaryFs);
 
         ggfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
         ggfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);

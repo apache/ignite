@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 /**
  * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link GridGgfsFileSystem}.
  */
-public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Closeable {
+public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, AutoCloseable {
     /** Property name for path to Hadoop configuration. */
     public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
