@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.gridgain.grid.events.GridEventType.EVT_CACHE_OBJECT_READ;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
@@ -1020,33 +1020,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     // Read value from locked entry in group-lock transaction as well.
                     if (txEntry.hasValue()) {
                         if (!F.isEmpty(txEntry.transformClosures())) {
-                            // TODO: GG-8999: Is it fine?
-                            boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                            while (true) {
-                                try {
-                                    GridCacheMvccCandidate<K> owner = recordEvt ?
-                                        txEntry.cached().anyOwner() : null;
-
-                                    for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                                        V newVal = clos.apply(val);
-
-                                        if (recordEvt) {
-                                            cctx.events().addEvent(txEntry.cached().partition(), key,
-                                                this, owner, EVT_CACHE_OBJECT_READ,
-                                                newVal, newVal != null, val, val != null,
-                                                subjId, clos.getClass().getName(), resolveTaskName());
-                                        }
-
-                                        val = newVal;
-                                    }
-
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignored) {
-                                    txEntry.cached(entryEx(key, topVer), txEntry.keyBytes());
-                                }
-                            }
+                            for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                val = clos.apply(val);
                         }
 
                         if (val != null) {
@@ -1063,6 +1038,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         while (true) {
                             try {
+                                Object transformClo =
+                                    (txEntry.op() == TRANSFORM  && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                        F.first(txEntry.transformClosures()) : null;
+
                                 val = txEntry.cached().innerGet(this,
                                     true,
                                     /*no read-through*/false,
@@ -1071,7 +1050,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     true,
                                     true,
                                     CU.subjectId(this, cctx),
-                                    null,
+                                    transformClo,
                                     resolveTaskName(),
                                     filter);
 
@@ -1080,24 +1059,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.readValue(val);
 
                                     if (!F.isEmpty(txEntry.transformClosures())) {
-                                        // TODO: GG-8999: Is it fine?
-                                        boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                                        GridCacheMvccCandidate<K> owner = recordEvt ?
-                                            txEntry.cached().anyOwner() : null;
-
-                                        for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                                            V newVal = clos.apply(val);
-
-                                            if (recordEvt) {
-                                                cctx.events().addEvent(txEntry.cached().partition(), key,
-                                                    GridCacheTxLocalAdapter.this, owner, EVT_CACHE_OBJECT_READ,
-                                                    newVal, newVal != null, val, val != null,
-                                                    subjId, clos.getClass().getName(), resolveTaskName());
-                                            }
-
-                                            val = newVal;
-                                        }
+                                        for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                            val = clos.apply(val);
                                     }
 
                                     V val0 = val;
@@ -1478,6 +1441,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 GridCacheEntryEx<K, V> cached = txEntry.cached();
 
                                 try {
+                                    Object transformClo =
+                                        (!F.isEmpty(txEntry.transformClosures()) &&
+                                            cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                            F.first(txEntry.transformClosures()) : null;
+
                                     V val = cached.innerGet(GridCacheTxLocalAdapter.this,
                                         swapOrOffheapEnabled,
                                         /*read-through*/false,
@@ -1486,7 +1454,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*metrics*/true,
                                         /*events*/true,
                                         CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
-                                        null,
+                                        transformClo,
                                         resolveTaskName(),
                                         filter);
 
@@ -1497,23 +1465,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.setAndMarkValid(val);
 
                                         if (!F.isEmpty(txEntry.transformClosures())) {
-                                            // TODO: GG-8999: Is it fine?
-                                            boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                                            GridCacheMvccCandidate<K> owner = recordEvt ? cached.anyOwner() : null;
-
-                                            for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                                                V newVal = clos.apply(val);
-
-                                                if (recordEvt) {
-                                                    cctx.events().addEvent(cached.partition(), key,
-                                                        GridCacheTxLocalAdapter.this, owner, EVT_CACHE_OBJECT_READ,
-                                                        newVal, newVal != null, val, val != null,
-                                                        subjId, clos.getClass().getName(), resolveTaskName());
-                                                }
-
-                                                val = newVal;
-                                            }
+                                            for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                                val = clos.apply(val);
                                         }
 
                                         if (cctx.portableEnabled() && deserializePortable &&
@@ -1640,34 +1593,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.readValue(val);
 
                                     if (!F.isEmpty(txEntry.transformClosures())) {
-                                        while (true) {
-                                            try {
-                                                // TODO: GG-8999: Is it fine?
-                                                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                                                GridCacheMvccCandidate<K> owner = recordEvt ?
-                                                    txEntry.cached().anyOwner() : null;
-
-                                                for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                                                    V newVal = clos.apply(val);
-
-                                                    if (recordEvt) {
-                                                        cctx.events().addEvent(txEntry.cached().partition(),
-                                                            entry.getKey(), GridCacheTxLocalAdapter.this, owner,
-                                                            EVT_CACHE_OBJECT_READ, newVal, newVal != null,
-                                                            val, val != null, subjId, clos.getClass().getName(),
-                                                            resolveTaskName());
-                                                    }
-
-                                                    val = newVal;
-                                                }
-
-                                                break;
-                                            }
-                                            catch (GridCacheEntryRemovedException e) {
-                                                txEntry.cached(entryEx(entry.getKey()), txEntry.keyBytes());
-                                            }
-                                        }
+                                        for (GridClosure<V, V> clos : txEntry.transformClosures())
+                                            val = clos.apply(val);
                                     }
 
                                     retMap.put(entry.getKey(), val);
@@ -1909,7 +1836,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             for (K key : keys) {
                 V val = rmv || lookup == null ? null : lookup.get(key);
-                GridClosure<V, V> transformClos = transformMap == null ? null : transformMap.get(key);
+                GridClosure<V, V> transformClo = transformMap == null ? null : transformMap.get(key);
 
                 GridCacheVersion drVer;
                 long drTtl;
@@ -1940,7 +1867,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (key == null)
                     continue;
 
-                if (!rmv && val == null && transformClos == null) {
+                if (!rmv && val == null && transformClo == null) {
                     skipped = skip(skipped, key);
 
                     continue;
@@ -1988,7 +1915,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
-                                        null,
+                                        transformClo,
                                         resolveTaskName(),
                                         CU.<K, V>empty());
                                 }
@@ -2021,8 +1948,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 break; // While.
                             }
 
-                            txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClos != null ? TRANSFORM :
-                                old != null ? UPDATE : CREATE, val, transformClos, entry, ttl, filter, true, drTtl,
+                            txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClo != null ? TRANSFORM :
+                                old != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
                                 drExpireTime, drVer);
 
                             if (!implicit() && readCommitted())
@@ -2086,7 +2013,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     }
                 }
                 else {
-                    if (transformClos == null && txEntry.op() == TRANSFORM)
+                    if (transformClo == null && txEntry.op() == TRANSFORM)
                         throw new GridException("Failed to enlist write value for key (cannot have update value in " +
                             "transaction after transform closure is applied): " + key);
 
@@ -2105,8 +2032,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             continue;
                         }
 
-                        txEntry = addEntry(rmv ? DELETE : transformClos != null ? TRANSFORM :
-                            v != null ? UPDATE : CREATE, val, transformClos, entry, ttl, filter, true, drTtl,
+                        txEntry = addEntry(rmv ? DELETE : transformClo != null ? TRANSFORM :
+                            v != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
                             drExpireTime, drVer);
 
                         enlisted.add(key);
@@ -2192,9 +2119,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*failFast*/false,
                                         /*unmarshal*/retval,
                                         /*metrics*/true,
-                                        /*event*/!dht(),
+                                        /*event*/!dht() || transform,
                                         CU.subjectId(this, cctx),
-                                        null,
+                                        transform ? F.first(txEntry.transformClosures()) : null,
                                         resolveTaskName(),
                                         CU.<K, V>empty());
                             }
@@ -2214,23 +2141,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             V val = v;
 
-                            // TODO: GG-8999: Is it fine?
-                            boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
-
-                            GridCacheMvccCandidate<K> owner = recordEvt ? cached.anyOwner() : null;
-
-                            for (GridClosure<V, V> clos : txEntry.transformClosures()) {
-                                V newVal = clos.apply(val);
-
-                                if (recordEvt) {
-                                    cctx.events().addEvent(cached.partition(), cached.key(),
-                                        GridCacheTxLocalAdapter.this, owner, EVT_CACHE_OBJECT_READ,
-                                        newVal, newVal != null, val, val != null,
-                                        subjId, clos.getClass().getName(), resolveTaskName());
-                                }
-
-                                val = newVal;
-                            }
+                            for (GridClosure<V, V> transformer : txEntry.transformClosures())
+                                val = transformer.apply(val);
 
                             transformed.put(k, val);
                         }

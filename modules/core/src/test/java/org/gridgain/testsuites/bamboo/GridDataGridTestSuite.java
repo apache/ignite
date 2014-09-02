@@ -102,6 +102,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTtlSelfTest.class);
+        suite.addTestSuite(GridCacheTransformEventSelfTest.class);
 
         // Partitioned cache.
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));

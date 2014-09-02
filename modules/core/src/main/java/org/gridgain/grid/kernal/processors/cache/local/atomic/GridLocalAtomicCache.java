@@ -907,7 +907,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             true,
                             true,
                             subjId,
-                            transform.getClass().getName(),
+                            transform,
                             taskName,
                             CU.<K, V>empty());
 
@@ -1075,7 +1075,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param subjId Subject ID.
      * @return Partial update exception.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
     @Nullable private GridCachePartialUpdateException updatePartialBatch(List<GridCacheEntryEx<K, V>> entries,
         final GridCacheVersion ver,
         @Nullable Map<K, V> putMap,
