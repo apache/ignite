@@ -885,10 +885,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Override public GridUuid nextAffinityKey() {
             return null;
         }
-
-        @Override public void close() throws IOException {
-            // No-op.
-        }
     }
 
     /**
