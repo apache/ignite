@@ -185,9 +185,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId,
+        GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
         GridBiInClosure<K, V> vis) {
-        return (GridFuture)loadAsync(tx, keys, reload, false, filter, subjId, true);
+        return (GridFuture)loadAsync(tx, keys, reload, false, filter, subjId, taskName, true);
     }
 
     /** {@inheritDoc} */
@@ -273,14 +273,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx, @Nullable Collection<? extends K> keys,
         boolean reload, boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable UUID subjId, boolean deserializePortable) {
+        @Nullable UUID subjId, String taskName, boolean deserializePortable) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter,
-            subjId, deserializePortable);
+            subjId, taskName, deserializePortable);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();

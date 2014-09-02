@@ -454,6 +454,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridException ex = null;
 
         try {
+            ctx.job().currentTaskSession(ses);
+
             // If job has timed out, then
             // avoid computation altogether.
             if (isTimedOut())
@@ -515,6 +517,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             // Finish here only if not held by this thread.
             if (!HOLD.get())
                 finishJob(res, ex, sndRes);
+
+            ctx.job().currentTaskSession(null);
         }
     }
 

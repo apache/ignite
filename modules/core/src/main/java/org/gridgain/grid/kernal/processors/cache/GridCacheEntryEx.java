@@ -268,14 +268,15 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
+     * @param transformClo Transform closure to record event.
      * @return Cached value.
      * @throws GridException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
+        String taskName, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException;
 
     /**
@@ -325,7 +326,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -356,7 +358,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -410,7 +413,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         @Nullable GridCacheVersion drVer,
         boolean drResolve,
         boolean intercept,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
@@ -441,7 +445,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean metrics,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         boolean intercept,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException;
 
 
