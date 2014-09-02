@@ -50,6 +50,7 @@ public class GridComputeGridTestSuite {
         suite.addTestSuite(GridJobContextSelfTest.class);
         suite.addTestSuite(GridJobMasterLeaveAwareSelfTest.class);
         suite.addTestSuite(GridJobStealingSelfTest.class);
+        suite.addTestSuite(GridJobSubjectIdSelfTest.class);
         suite.addTestSuite(GridMultithreadedJobStealingSelfTest.class);
         suite.addTestSuite(GridAlwaysFailoverSpiFailSelfTest.class);
         suite.addTestSuite(GridTaskInstanceExecutionSelfTest.class);
