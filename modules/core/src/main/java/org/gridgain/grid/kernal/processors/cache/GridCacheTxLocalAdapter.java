@@ -545,12 +545,18 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 setRollbackOnly();
 
+                // Safe to remove transaction from committed tx list because nothing was committed yet.
+                cctx.tm().removeCommittedTx(this);
+
                 throw ex;
             }
             catch (Throwable ex) {
                 commitError(ex);
 
                 setRollbackOnly();
+
+                // Safe to remove transaction from committed tx list because nothing was committed yet.
+                cctx.tm().removeCommittedTx(this);
 
                 throw new GridException("Failed to commit transaction to database: " + this, ex);
             }
