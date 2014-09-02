@@ -232,7 +232,7 @@ public interface GridProjection {
      * node if the previous one leaves topology even after the projection has
      * been created.
      *
-     * @return Grid projection with one oldest node in the current projection.
+     * @return Grid projection with one oldest node from the current projection.
      */
     public GridProjection forOldest();
 
@@ -242,7 +242,7 @@ public interface GridProjection {
      * node in the topology, even if more nodes entered after the projection
      * has been created.
      *
-     * @return Grid projection with one youngest node in the current projection.
+     * @return Grid projection with one youngest node from the current projection.
      */
     public GridProjection forYoungest();
 

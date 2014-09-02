@@ -14,6 +14,7 @@ import org.gridgain.grid.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
+import java.util.*;
 
 /**
  * Component type.
@@ -23,63 +24,72 @@ public enum GridComponentType {
     GGFS(
         "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsProcessor",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor",
-        "gridgain-hadoop"
+        "gridgain-hadoop",
+        null
     ),
 
     /** Hadoop. */
     HADOOP(
         "org.gridgain.grid.kernal.processors.hadoop.GridHadoopNoopProcessor",
         "org.gridgain.grid.kernal.processors.hadoop.GridHadoopProcessor",
-        "gridgain-hadoop"
+        "gridgain-hadoop",
+        Arrays.asList("org.apache.hadoop.conf.Configuration")
     ),
 
     /** GGFS helper component. */
     GGFS_HELPER(
         "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
-        "gridgain-hadoop"
+        "gridgain-hadoop",
+        null
     ),
 
     /** Spring XML parsing. */
     SPRING(
         null,
         "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl",
-        "gridgain-spring"
+        "gridgain-spring",
+        null
     ),
 
     /** H2 indexing SPI. */
     H2_INDEXING(
         "org.gridgain.grid.spi.indexing.GridNoopIndexingSpi",
         "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi",
-        "gridgain-indexing"
+        "gridgain-indexing",
+        null
     ),
 
     /** Nodes starting using SSH. */
     SSH(
         null,
         "org.gridgain.grid.util.nodestart.GridSshProcessorImpl",
-        "gridgain-ssh"
+        "gridgain-ssh",
+        null
     ),
 
     /** Email sending. */
     EMAIL(
         "org.gridgain.grid.kernal.processors.email.GridNoopEmailProcessor",
         "org.gridgain.grid.kernal.processors.email.GridEmailProcessor",
-        "gridgain-email"
+        "gridgain-email",
+        null
     ),
 
     /** Integration of cache transactions with JTA. */
     JTA(
         "org.gridgain.grid.kernal.processors.cache.jta.GridCacheNoopJtaManager",
         "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager",
-        "gridgain-jta"
+        "gridgain-jta",
+        null
     ),
 
     /** Cron-based scheduling, see {@link GridScheduler}. */
     SCHEDULE(
         "org.gridgain.grid.kernal.processors.schedule.GridNoopScheduleProcessor",
         "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor",
-        "gridgain-schedule"
+        "gridgain-schedule",
+        null
     );
 
     /** No-op class name. */
@@ -91,17 +101,22 @@ public enum GridComponentType {
     /** Module name. */
     private final String module;
 
+    /** Required classes. */
+    private final Collection<String> clsNames;
+
     /**
      * Constructor.
      *
      * @param noOpClsName Class name for no-op implementation.
      * @param clsName Class name.
      * @param module Module name.
+     * @param clsNames Class names required for component.
      */
-    GridComponentType(String noOpClsName, String clsName, String module) {
+    GridComponentType(String noOpClsName, String clsName, String module, @Nullable Collection<String> clsNames) {
         this.noOpClsName = noOpClsName;
         this.clsName = clsName;
         this.module = module;
+        this.clsNames = clsNames == null ? Collections.<String>emptyList() : clsNames;
     }
 
     /**
@@ -116,13 +131,31 @@ public enum GridComponentType {
      *
      * @return {@code True} if in classpath.
      */
-    public boolean isInClassPath() {
+    public boolean inClassPath() {
         try {
             Class.forName(clsName);
 
             return true;
         }
         catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * Check whether required classes are in classpath.
+     *
+     * @return {@code True} if required classes are in classpath.
+     */
+    @SuppressWarnings("ErrorNotRethrown")
+    public boolean requiredClassesInClassPath() {
+        try {
+            for (String clsName : clsNames)
+                Class.forName(clsName);
+
+            return true;
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError ignore) {
             return false;
         }
     }

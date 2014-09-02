@@ -58,6 +58,8 @@ RESTART_SUCCESS_OPT="-DGRIDGAIN_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 #
 # Find available port for JMX
 #
+# You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
+#
 findAvailableJmxPort
 
 # Mac OS specific support to display correct name in the dock.

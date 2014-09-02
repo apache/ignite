@@ -62,8 +62,7 @@
                 <exclude>src/main/java/org/gridgain/examples/ggfs/**</exclude>
                 <exclude>config/example-cache*</exclude>
                 <exclude>config/hibernate/**</exclude>
-                <exclude>config/hadoop/**</exclude>
-                <exclude>config/example-ggfs*</exclude>
+                <exclude>config/filesystem/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>

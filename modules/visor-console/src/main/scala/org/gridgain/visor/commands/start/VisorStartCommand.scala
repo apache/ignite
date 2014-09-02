@@ -21,7 +21,6 @@ import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -279,10 +278,8 @@ class VisorStartCommand {
                 )
 
                 try
-                    res = grid.startNodes(
-                        toJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().map(t => {
-                            Result(t.get1, t.get2, t.get3)
-                        }).toSeq
+                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().
+                        map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
                     case e: GridException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^

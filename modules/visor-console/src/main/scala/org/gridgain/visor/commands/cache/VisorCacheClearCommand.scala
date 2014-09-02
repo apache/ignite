@@ -15,7 +15,6 @@ import java.util.Collections
 import org.gridgain.grid.GridNode
 import org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils._
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesClearTask
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._
 
@@ -96,7 +95,7 @@ class VisorCacheClearCommand {
 
         val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
 
-        if (prj.isEmpty) {
+        if (prj.nodes().isEmpty) {
             val msg =
                 if (cacheName == null)
                     "Can't find nodes with default cache."

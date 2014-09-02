@@ -139,17 +139,6 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.jdmk</groupId>
-                    <artifactId>jmxtools</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.jmx</groupId>
-                    <artifactId>jmxri</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -180,6 +169,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-schedule</artifactId>
+            <version>${gridgain.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_2.10</artifactId>
             <version>2.1.5</version>
@@ -191,21 +187,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- ENTERPRISE DEPENDENCIES START -->
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core-ent</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-visor</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <!-- ENTERPRISE DEPENDENCIES END -->
     </dependencies>
 
     <build>

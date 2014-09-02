@@ -337,11 +337,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            GridCacheProjectionEx<?, ?> prj =
-                (GridCacheProjectionEx<?, ?>)localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?,?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.forPortables();
+                prj = prj.keepPortable();
 
             return op.apply((GridCacheProjection<Object, Object>)prj, ctx).
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
@@ -687,11 +686,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            GridCacheProjectionEx<?, ?> prj =
-                (GridCacheProjectionEx<?, ?>)cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.forPortables();
+                prj = prj.keepPortable();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and

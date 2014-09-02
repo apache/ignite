@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0</gridgain.version>
+        <gridgain.version>6.2.1</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -42,6 +42,8 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
+        <module>modules/visor-plugins</module>
+        <module>modules/visor-trial</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -61,6 +63,26 @@
         <module>modules/jcl</module>
     </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.sun.jdmk</groupId>
+                        <artifactId>jmxtools</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jmx</groupId>
+                        <artifactId>jmxri</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -72,17 +94,6 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.jdmk</groupId>
-                    <artifactId>jmxtools</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.jmx</groupId>
-                    <artifactId>jmxri</artifactId>
-                </exclusion>
-            </exclusions>
             <scope>test</scope>
         </dependency>
 
@@ -201,6 +212,16 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
                             <windowtitle>GridGain ${gridgain.version}</windowtitle>
                             <breakiterator>true</breakiterator>
@@ -215,7 +236,6 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.portable:org.gridgain.grid.portable</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
@@ -391,6 +411,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>core</destDir>
                             <doctitle>GridGain ${gridgain.version}</doctitle>
@@ -505,6 +535,10 @@
                                     <title>Marshallers</title>
                                     <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
                                 </group>
+                                <group>
+                                    <title>Visor Plugins</title>
+                                    <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
@@ -583,6 +617,16 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
+                            <taglets>
+                                <taglet>
+                                    <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                    <tagletArtifact>
+                                        <groupId>org.gridgain</groupId>
+                                        <artifactId>gridgain-tools</artifactId>
+                                        <version>${gridgain.version}</version>
+                                    </tagletArtifact>
+                                </taglet>
+                            </taglets>
                             <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                             <destDir>client</destDir>
                             <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>
@@ -877,6 +921,23 @@
                     </execution>
 
                     <execution>
+                        <id>dependencies-visor-trial</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor-trial.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}</outputDirectory>
+                            <finalName>bin</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -928,7 +989,11 @@
                                 </fileset>
 
                                 <fileset>
-                                    <directory>bin/include/gridgain-visor-console</directory>
+                                    <directory>bin/include/visorcmd</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/visorui</directory>
                                 </fileset>
                             </filesets>
                         </configuration>

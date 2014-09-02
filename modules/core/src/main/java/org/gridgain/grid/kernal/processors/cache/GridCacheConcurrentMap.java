@@ -1780,10 +1780,10 @@ public class GridCacheConcurrentMap<K, V> {
         }
 
         /**
-         * Reconstructs object on demarshalling.
+         * Reconstructs object on unmarshalling.
          *
          * @return Reconstructed object.
-         * @throws ObjectStreamException Thrown in case of demarshalling error.
+         * @throws ObjectStreamException Thrown in case of unmarshalling error.
          */
         protected Object readResolve() throws ObjectStreamException {
             return new Iterator0<>(ctx.cache().map(), isVal, filter, id, totalCnt);
@@ -1961,10 +1961,10 @@ public class GridCacheConcurrentMap<K, V> {
         }
 
         /**
-         * Reconstructs object on demarshalling.
+         * Reconstructs object on unmarshalling.
          *
          * @return Reconstructed object.
-         * @throws ObjectStreamException Thrown in case of demarshalling error.
+         * @throws ObjectStreamException Thrown in case of unmarshalling error.
          */
         protected Object readResolve() throws ObjectStreamException {
             return new Set0<>(ctx.cache().map(), filter);
