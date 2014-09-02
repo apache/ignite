@@ -1380,7 +1380,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (updRes.newValue() != null || newValBytes != null) {
                                 GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId(), topVer);
 
-                                assert f == null : f;
+                                // TODO: GG-7419: Enable when fixed.
+                                // assert f == null : f;
                             }
                         }
                         else if (F.contains(readers, nodeId)) // Reader became primary or backup.
