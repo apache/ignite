@@ -25,9 +25,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.sql.*;
 import java.util.*;
-import java.util.Date;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -400,7 +398,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             throw new IllegalStateException("Failed to create cache projection for portable objects. " +
                 "Use keepPortable() method instead.");
 
-        if (keepPortable && (!isPortableType(keyType) || !isPortableType(valType)))
+        if (keepPortable && (!U.isPortableOrCollectionType(keyType) || !U.isPortableOrCollectionType(valType)))
             throw new IllegalStateException("Failed to create typed cache projection. If keepPortable() was " +
                 "called, projection can work only with portable classes (see GridPortables JavaDoc for details).");
 
@@ -423,43 +421,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             keepPortable);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
-    }
-
-    /**
-     * @param cls Class.
-     * @return Whether class is portable.
-     */
-    private boolean isPortableType(Class<?> cls) {
-        return
-            cls == Byte.class ||
-            cls == Short.class ||
-            cls == Integer.class ||
-            cls == Long.class ||
-            cls == Float.class ||
-            cls == Double.class ||
-            cls == Character.class ||
-            cls == Boolean.class ||
-            cls == String.class ||
-            cls == UUID.class ||
-            cls == Date.class ||
-            cls == Timestamp.class ||
-            cls == byte[].class ||
-            cls == short[].class ||
-            cls == int[].class ||
-            cls == long[].class ||
-            cls == float[].class ||
-            cls == double[].class ||
-            cls == char[].class ||
-            cls == boolean[].class ||
-            cls == String[].class ||
-            cls == UUID[].class ||
-            cls == Date[].class ||
-            cls == Timestamp[].class ||
-            GridPortableObject.class.isAssignableFrom(cls) ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls) ||
-            cls.isEnum();
     }
 
     /** {@inheritDoc} */

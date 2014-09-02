@@ -115,6 +115,10 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     @GridDirectCollection(UUID.class)
     private Collection<UUID> top;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      */
@@ -147,6 +151,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
+     * @param subjId Subject ID.
      */
     public GridJobExecuteRequest(
         GridUuid sesId,
@@ -171,7 +176,9 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         boolean dynamicSiblings,
         Map<UUID, GridUuid> ldrParticipants,
         boolean forceLocDep,
-        boolean sesFullSup, boolean internal) {
+        boolean sesFullSup,
+        boolean internal,
+        UUID subjId) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -207,6 +214,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
+        this.subjId = subjId;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
@@ -387,6 +395,13 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         return internal;
     }
 
+    /**
+     * @return Subject ID.
+     */
+    public UUID getSubjectId() {
+        return subjId;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -426,6 +441,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.sesFullSup = sesFullSup;
         _clone.internal = internal;
         _clone.top = top;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -616,6 +632,12 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
             case 20:
                 if (!commState.putString(userVer))
+                    return false;
+
+                commState.idx++;
+
+            case 21:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -875,6 +897,16 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                     return false;
 
                 userVer = userVer0;
+
+                commState.idx++;
+
+            case 21:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 
