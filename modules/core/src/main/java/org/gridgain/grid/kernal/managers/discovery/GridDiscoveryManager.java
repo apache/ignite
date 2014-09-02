@@ -108,9 +108,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Network segment check thread. */
     private GridThread segChkThread;
 
-    /** Reconnect worker. */
-    private ReconnectWorker reconWrk;
-
     /** Last logged topology. */
     private final AtomicLong lastLoggedTop = new AtomicLong();
 
@@ -150,7 +147,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridDiscoveryEvent locJoinEvt;
+    private GridFutureAdapterEx<GridDiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -269,13 +266,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
         });
 
-        // Start reconnect worker first.
-        // We should always start it, even if we have no resolvers.
-        if (ctx.config().getSegmentationPolicy() == RECONNECT) {
-            reconWrk = new ReconnectWorker();
-
-            new GridThread(reconWrk).start();
-        }
+        assert ctx.config().getSegmentationPolicy() != RECONNECT : ctx.config().getSegmentationPolicy();
 
         getSpi().setListener(new GridDiscoverySpiListener() {
             @Override public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
@@ -312,7 +303,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                             }
                         }, daemonFilter)));
 
-                    locJoinEvt = discoEvt;
+                    locJoinEvt.onDone(discoEvt);
 
                     return;
                 }
@@ -828,9 +819,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             U.join(segChkThread, log);
         }
 
-        // Stop reconnect worker.
-        U.cancel(reconWrk);
-        U.join(reconWrk, log);
+        if (!locJoinEvt.isDone())
+            locJoinEvt.onDone(new GridException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
@@ -1172,7 +1162,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** @return Event that represents a local node joined to topology. */
     public GridDiscoveryEvent localJoinEvent() {
-        return locJoinEvt;
+        try {
+            return locJoinEvt.get();
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /**
@@ -1280,61 +1275,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SegmentCheckWorker.class, this);
-        }
-    }
-
-    /** Worker for network segment checks. */
-    private class ReconnectWorker extends GridWorker {
-        /** */
-        private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
-
-        /**
-         *
-         */
-        private ReconnectWorker() {
-            super(ctx.gridName(), "disco-recon-worker", log);
-
-            assert ctx.config().getSegmentationPolicy() == RECONNECT;
-        }
-
-        /**
-         *
-         */
-        public void scheduleReconnect() {
-            queue.add(new Object());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            while (!isCancelled()) {
-                queue.take();
-
-                try {
-                    U.warn(log, "Will try to reconnect discovery SPI to topology " +
-                        "(according to configured segmentation policy).");
-
-                    // Check only if resolvers were configured.
-                    if (hasRslvrs)
-                        checkSegmentOnStart();
-
-                    topVer.set(0);
-
-                    getSpi().reconnect();
-
-                    // Refresh local node.
-                    locNode = getSpi().getLocalNode();
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to reconnect discovery SPI to topology (will stop node).", e);
-
-                    stopNode();
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ReconnectWorker.class, this);
         }
     }
 
@@ -1611,21 +1551,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             switch (segPlc) {
                 case RECONNECT:
-                    // Disconnect SPI synchronously to maintain consistent
-                    // local topology.
-                    try {
-                        getSpi().disconnect();
-
-                        discoCacheHist.clear();
-
-                        reconWrk.scheduleReconnect();
-                    }
-                    catch (GridSpiException e) {
-                        U.error(log, "Failed to disconnect discovery SPI (will stop node).", e);
-
-                        // Stop from separate thread only.
-                        stopNode();
-                    }
+                    assert false;
 
                     break;
 
