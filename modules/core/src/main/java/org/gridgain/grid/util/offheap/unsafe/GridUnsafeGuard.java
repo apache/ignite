@@ -119,7 +119,7 @@ public class GridUnsafeGuard {
 
         int state;
 
-        // Go through the inactive ops until find thread-local one.
+        // Go through the inactive ops and try to deallocate.
         while ((state = op.state) != Operation.STATE_ACTIVE) {
             if (state == Operation.STATE_MAY_DEALLOCATE)
                 op.finish();
