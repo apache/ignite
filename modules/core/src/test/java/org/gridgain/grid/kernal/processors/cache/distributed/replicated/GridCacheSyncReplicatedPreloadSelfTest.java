@@ -10,15 +10,21 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Multithreaded tests for replicated cache preloader.
@@ -28,7 +34,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final boolean DISCO_DEBUG_MODE = true;
+    private static final boolean DISCO_DEBUG_MODE = false;
 
 
     /**
@@ -49,19 +55,19 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(disco);
 
-//        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
-//
-//        cacheCfg.setCacheMode(REPLICATED);
-//        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-//        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-//
-//        // This property is essential for this test.
-//        cacheCfg.setPreloadMode(SYNC);
-//
-//        cacheCfg.setPreloadBatchSize(10000);
-//
-//        cfg.setCacheConfiguration(cacheCfg);
-//        cfg.setDeploymentMode(CONTINUOUS);
+        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setCacheMode(REPLICATED);
+        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        // This property is essential for this test.
+        cacheCfg.setPreloadMode(SYNC);
+
+        cacheCfg.setPreloadBatchSize(10000);
+
+        cfg.setCacheConfiguration(cacheCfg);
+        cfg.setDeploymentMode(CONTINUOUS);
 
         cfg.setCacheConfiguration();
 
@@ -122,11 +128,11 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Grid g0 = startGrid(0);
         Grid g1 = startGrid(1);
 
-//        for (int i = 0; i < keyCnt; i++)
-//            g0.cache(null).putx(i, i);
-//
-//        assertEquals(keyCnt, g0.cache(null).size());
-//        assertEquals(keyCnt, g1.cache(null).size());
+        for (int i = 0; i < keyCnt; i++)
+            g0.cache(null).putx(i, i);
+
+        assertEquals(keyCnt, g0.cache(null).size());
+        assertEquals(keyCnt, g1.cache(null).size());
 
         final AtomicInteger cnt = new AtomicInteger();
 

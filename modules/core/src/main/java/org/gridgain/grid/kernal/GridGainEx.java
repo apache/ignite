@@ -1770,65 +1770,64 @@ public class GridGainEx {
             boolean hasHadoop = GridComponentType.HADOOP.inClassPath() &&
                 GridComponentType.HADOOP.requiredClassesInClassPath();
 
-//            GridCacheConfiguration[] copies;
-//
-//            if (cacheCfgs != null && cacheCfgs.length > 0) {
-//                if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
-//                    throw new GridException("Discovery SPI implementation does not support node ordering and " +
-//                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
-//                        "like GridTcpDiscoverySpi)");
-//
-//                for (GridCacheConfiguration ccfg : cacheCfgs) {
-//                    if (CU.isDrSystemCache(ccfg.getName()))
-//                        throw new GridException("Cache name cannot start with \"" + CU.SYS_CACHE_DR_PREFIX +
-//                            "\" because this prefix is reserved for internal purposes.");
-//
-//                    if (CU.isHadoopSystemCache(ccfg.getName()))
-//                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-//                            "\" because it is reserved for internal purposes.");
-//
-//                    if (ccfg.getDrSenderConfiguration() != null)
-//                        drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
-//
-//                    if (CU.isUtilityCache(ccfg.getName()))
-//                        throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
-//                            "\" because this prefix is reserved for internal purposes.");
-//                }
-//
-//                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
-//
-//                int cloneIdx = 0;
-//
-//                if (hasHadoop)
-//                    copies[cloneIdx++] = CU.hadoopSystemCache();
-//
-//                for (String drSysCache : drSysCaches)
-//                    copies[cloneIdx++] = CU.drSystemCache(drSysCache);
-//
-//                for (GridCacheConfiguration ccfg : cacheCfgs)
-//                    copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
-//            }
-//            else if (!drSysCaches.isEmpty() || hasHadoop) {
-//                // Populate system caches
-//                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
-//
-//                int idx = 0;
-//
-//                if (hasHadoop)
-//                    copies[idx++] = CU.hadoopSystemCache();
-//
-//                for (String drSysCache : drSysCaches)
-//                    copies[idx++] = CU.drSystemCache(drSysCache);
-//            }
-//            else
-//                copies = new GridCacheConfiguration[1];
-//
-//            // Always add utility cache.
-//            copies[copies.length - 1] = utilitySystemCache();
-//
-//            myCfg.setCacheConfiguration(copies);
+            GridCacheConfiguration[] copies;
 
-            myCfg.setCacheConfiguration(new GridCacheConfiguration[] {});
+            if (cacheCfgs != null && cacheCfgs.length > 0) {
+                if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
+                    throw new GridException("Discovery SPI implementation does not support node ordering and " +
+                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
+                        "like GridTcpDiscoverySpi)");
+
+                for (GridCacheConfiguration ccfg : cacheCfgs) {
+                    if (CU.isDrSystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.SYS_CACHE_DR_PREFIX +
+                            "\" because this prefix is reserved for internal purposes.");
+
+                    if (CU.isHadoopSystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
+                            "\" because it is reserved for internal purposes.");
+
+                    if (ccfg.getDrSenderConfiguration() != null)
+                        drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
+
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
+                            "\" because this prefix is reserved for internal purposes.");
+                }
+
+                copies = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
+
+                int cloneIdx = 0;
+
+                if (hasHadoop)
+                    copies[cloneIdx++] = CU.hadoopSystemCache();
+
+                for (String drSysCache : drSysCaches)
+                    copies[cloneIdx++] = CU.drSystemCache(drSysCache);
+
+                for (GridCacheConfiguration ccfg : cacheCfgs)
+                    copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
+            }
+            else if (!drSysCaches.isEmpty() || hasHadoop) {
+                // Populate system caches
+                copies = new GridCacheConfiguration[drSysCaches.size() + (hasHadoop ? 1 : 0) + 1];
+
+                int idx = 0;
+
+                if (hasHadoop)
+                    copies[idx++] = CU.hadoopSystemCache();
+
+                for (String drSysCache : drSysCaches)
+                    copies[idx++] = CU.drSystemCache(drSysCache);
+            }
+            else
+                copies = new GridCacheConfiguration[1];
+
+            // Always add utility cache.
+            copies[copies.length - 1] = utilitySystemCache();
+
+            myCfg.setCacheConfiguration(copies);
+
             myCfg.setCacheSanityCheckEnabled(cfg.isCacheSanityCheckEnabled());
 
             try {

@@ -32,8 +32,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private GridTcpDiscoveryNode node;
 
     /** Pending messages from previous node. */
-    @Deprecated
-    private Collection<GridTcpDiscoveryAbstractMessage> msgs; // Not used any more.
+    private Collection<GridTcpDiscoveryAbstractMessage> msgs;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
@@ -91,6 +90,24 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      */
     public GridTcpDiscoveryNode node() {
         return node;
+    }
+
+    /**
+     * Gets pending messages sent to new node by its previous.
+     *
+     * @return Pending messages from previous node.
+     */
+    @Nullable public Collection<GridTcpDiscoveryAbstractMessage> messages() {
+        return msgs;
+    }
+
+    /**
+     * Sets pending messages to send to new node.
+     *
+     * @param msgs Pending messages to send to new node.
+     */
+    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+        this.msgs = msgs;
     }
 
     /**

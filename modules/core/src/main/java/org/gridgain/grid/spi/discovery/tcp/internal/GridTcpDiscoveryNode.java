@@ -74,6 +74,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     private volatile long order;
 
     /** Node order in the topology (internal). */
+    @GridToStringExclude
     private volatile long intOrder;
 
     /** The most recent time when heartbeat message was received from the node. */

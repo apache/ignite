@@ -107,7 +107,13 @@ public interface GridDiscoverySpi extends GridSpi {
     public void setMetricsProvider(GridDiscoveryMetricsProvider metricsProvider);
 
     /**
+     * Tells discovery SPI to disconnect from topology. This is very close to calling
+     * {@link #spiStop()} with accounting that it is not a full stop,
+     * but disconnect before reconnect (i.e. some internal threads and
+     * resources may be preserved on disconnect and reused on reconnect again).
      *
+     * @throws GridSpiException If any error occurs.
+     * @see #reconnect()
      */
     @Deprecated
     public void disconnect() throws GridSpiException;

@@ -10,9 +10,9 @@
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
 import org.gridgain.grid.spi.discovery.tcp.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -129,6 +129,9 @@ public class GridTcpDiscoveryNodesRing {
             if (nodesMap.containsKey(node.id()))
                 return false;
 
+            assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
+                "[ring=" + this + ", node=" + node + ']';
+
             nodesMap.put(node.id(), node);
 
             nodes = new TreeSet<>(nodes);
@@ -144,6 +147,22 @@ public class GridTcpDiscoveryNodesRing {
         }
 
         return true;
+    }
+
+    /**
+     * @return Max internal order.
+     */
+    public long maxInternalOrder() {
+        rwLock.readLock().lock();
+
+        try {
+            GridTcpDiscoveryNode last = nodes.last();
+
+            return last != null ? last.internalOrder() : -1;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     /**

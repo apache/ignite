@@ -417,7 +417,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private boolean debugMode;
 
     /** Debug messages history. */
-    private int debugMsgHist = 128;
+    private int debugMsgHist = 512;
 
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -962,21 +962,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         return res;
     }
 
-    private static volatile GridTcpDiscoverySpi spi1;
-    private static volatile GridTcpDiscoverySpi spi2;
-
-    private static final GridBoundedConcurrentLinkedHashSet<GridTcpDiscoverySpi> spis =
-        new GridBoundedConcurrentLinkedHashSet<>(24);
-
     /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {
-        if (spi1 == null)
-            spi1 = this;
-        else if (spi2 == null)
-            spi2 = this;
-        else
-            spis.add(this);
-
         spiStart0(false);
     }
 
@@ -2327,27 +2314,16 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         GridTcpDiscoverySpiState spiState = spiStateCopy();
 
-        try {
-            if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
+        if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+            Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
 
-                Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
+            Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
-                lsnr.onDiscovery(type, topVer, node, top, hist);
-            }
-            else if (log.isDebugEnabled())
-                log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
-                    ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
+            lsnr.onDiscovery(type, topVer, node, top, hist);
         }
-        catch (Throwable t) {
-            spi1.dumpDebugInfo(log);
-            spi2.dumpDebugInfo(log);
-
-            for (GridTcpDiscoverySpi spi : spis)
-                spi.dumpDebugInfo(log);
-
-            throw new RuntimeException(t);
-        }
+        else if (log.isDebugEnabled())
+            log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
+                ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
     }
 
     /**
@@ -2677,6 +2653,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         dumpDebugInfo(log);
     }
 
+    /**
+     * @param log Logger.
+     */
     public void dumpDebugInfo(GridLogger log) {
         if (!debugMode) {
             U.quietAndWarn(log, "Failed to dump debug info (discovery SPI was not configured " +
@@ -2751,7 +2730,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         assert debugMode;
 
         String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
-            '[' + Thread.currentThread().getName() + "] " +
+            '[' + Thread.currentThread().getName() + "][" + locNodeId + "-" + locNode.internalOrder() + "] " +
             msg;
 
         debugLog.add(msg0);
@@ -3051,7 +3030,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         /** Pending messages. */
         private final Queue<GridTcpDiscoveryAbstractMessage> pendingMsgs =
-            new LinkedList<>();
+            new ArrayDeque<>(256);
 
         /** Backed interrupted flag. */
         private volatile boolean interrupted;
@@ -3558,6 +3537,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 nodeAddedMsg.topology(null);
                 nodeAddedMsg.topologyHistory(null);
+                nodeAddedMsg.messages(null);
             }
         }
 
@@ -3587,6 +3567,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     }
 
                     nodeAddedMsg.topology(topToSend);
+                    nodeAddedMsg.messages(pendingMsgs);
 
                     Map<Long, Collection<GridNode>> hist;
 
@@ -4082,6 +4063,20 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
+                if (node.internalOrder() <= ring.maxInternalOrder()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node added message since new node's order is less than " +
+                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+                            ", msg=" + msg + ']');
+
+                    if (debugMode)
+                        debugLog("Discarding node added message since new node's order is less than " +
+                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+                            ", msg=" + msg + ']');
+
+                    return;
+                }
+
                 if (metricsStore != null) {
                     node.metricsStore(metricsStore);
 
@@ -4144,7 +4139,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
 
+                            // Restore pending messages.
+                            pendingMsgs.clear();
+                            pendingMsgs.addAll(msg.messages());
+
                             // Clear data to minimize message size.
+                            msg.messages(null);
                             msg.topology(null);
                             msg.topologyHistory(null);
                             msg.clearDiscoveryData();
@@ -4442,19 +4442,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     boolean b = ring.topologyVersion(topVer);
 
-                    try {
-                        assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
-                            ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
-                    }
-                    catch (Throwable t) {
-                        spi1.dumpDebugInfo(log);
-                        spi2.dumpDebugInfo(log);
-
-                        for (GridTcpDiscoverySpi spi : spis)
-                            spi.dumpDebugInfo(log);
-
-                        throw new RuntimeException(t);
-                    }
+                    assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
+                        ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ']';
 
                     if (log.isDebugEnabled())
                         log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');

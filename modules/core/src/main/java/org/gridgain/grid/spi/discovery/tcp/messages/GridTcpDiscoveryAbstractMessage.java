@@ -162,6 +162,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryAbstractMessage.class, this, "identity", System.identityHashCode(this));
+        return S.toString(GridTcpDiscoveryAbstractMessage.class, this);
     }
 }

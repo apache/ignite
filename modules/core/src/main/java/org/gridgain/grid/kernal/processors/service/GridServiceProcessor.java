@@ -107,9 +107,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        if (true)
-            return;
-
         if (ctx.isDaemon())
             return;
 
@@ -124,9 +121,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
-        if (true)
-            return;
-
         if (ctx.isDaemon())
             return;
 
@@ -175,9 +169,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (true)
-            return;
-
         if (ctx.isDaemon())
             return;
 
