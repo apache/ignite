@@ -10,8 +10,16 @@
 package org.gridgain.grid.portables;
 
 /**
- * Interface that allows to implement custom serialization/deserialization
- * logic for portable objects.
+ * Interface that allows to implement custom serialization
+ * logic for portable objects. Portable objects are not required
+ * to implement this interface, in which case GridGain will automatically
+ * serialize portable objects using reflection.
+ * <p>
+ * This interface, in a way, is analogous to {@link java.io.Externalizable}
+ * interface, which allows users to override default serialization logic,
+ * usually for performance reasons. The only difference here is that portable
+ * serialization is already very fast and implementing custom serialization
+ * logic for portables does not provide significant performance gains.
  */
 public interface GridPortableMarshalAware {
     /**

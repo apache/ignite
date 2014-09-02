@@ -59,19 +59,15 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients</directory>
-            <outputDirectory>/clients/java</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>readme.pdf</include>
-            </includes>
+            <directory>config/router</directory>
+            <outputDirectory>/config/router</outputDirectory>
         </fileSet>
 
         <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
             <includes>
-                <include>clients/**</include>
+                <include>rest/**</include>
             </includes>
         </fileSet>
 
@@ -83,11 +79,6 @@
         <fileSet>
             <directory>modules/scalar/target/site/scaladocs</directory>
             <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/client</directory>
-            <outputDirectory>/clients/java/javadoc</outputDirectory>
         </fileSet>
 
         <fileSet>

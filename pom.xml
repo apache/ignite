@@ -117,6 +117,7 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
                 <module>modules/visor-trial</module>
             </modules>
         </profile>

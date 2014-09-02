@@ -57,6 +57,7 @@
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
                 <include>**/*.jar</include>
+                <include>**/*.txt</include>
             </includes>
             <excludes>
                 <exclude>*hadoop*.bat</exclude>

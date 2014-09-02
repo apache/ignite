@@ -162,27 +162,32 @@ public class GridLuceneIndex implements Closeable {
             }
         }
 
-        if (!stringsFound)
-            return; // We did not find any strings to be indexed, will not store data at all.
-
-        doc.add(new Field(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key)), Field.Store.YES,
-            Field.Index.NOT_ANALYZED));
-
-        if (storeVal && type.valueClass() != String.class)
-            doc.add(new Field(VAL_FIELD_NAME, marshaller.marshal(val)));
-
-        doc.add(new Field(VER_FIELD_NAME, ver));
-
-        doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
-            DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        String keyStr = Base64.encodeBase64String(marshaller.marshal(key));
 
         try {
-            writer.addDocument(doc);
+            // Delete first to avoid duplicates.
+            writer.deleteDocuments(new Term(KEY_FIELD_NAME, keyStr));
 
-            updateCntr.incrementAndGet();
+            if (!stringsFound)
+                return; // We did not find any strings to be indexed, will not store data at all.
+
+            doc.add(new Field(KEY_FIELD_NAME, keyStr, Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+            if (storeVal && type.valueClass() != String.class)
+                doc.add(new Field(VAL_FIELD_NAME, marshaller.marshal(val)));
+
+            doc.add(new Field(VER_FIELD_NAME, ver));
+
+            doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
+                DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+            writer.addDocument(doc);
         }
         catch (IOException e) {
             throw new GridSpiException(e);
+        }
+        finally {
+            updateCntr.incrementAndGet();
         }
     }
 
@@ -195,11 +200,12 @@ public class GridLuceneIndex implements Closeable {
     public void remove(GridIndexingEntity<?> key) throws GridSpiException {
         try {
             writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
-
-            updateCntr.incrementAndGet();
         }
         catch (IOException e) {
             throw new GridSpiException(e);
+        }
+        finally {
+            updateCntr.incrementAndGet();
         }
     }
 

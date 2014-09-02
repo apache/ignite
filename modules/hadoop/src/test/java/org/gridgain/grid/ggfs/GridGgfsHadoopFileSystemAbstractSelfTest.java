@@ -71,7 +71,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     public static final int GRP_SIZE = 128;
 
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Thread count for multithreaded tests. */
     private static final int THREAD_CNT = 8;

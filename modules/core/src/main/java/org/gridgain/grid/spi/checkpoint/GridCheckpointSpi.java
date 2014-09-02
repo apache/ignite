@@ -43,7 +43,7 @@ import org.jetbrains.annotations.*;
  * <ul>
  * <li>{@link GridNoopCheckpointSpi} - default</li>
  * <li>{@link GridSharedFsCheckpointSpi}</li>
- * <li>{@code GridS3CheckpointSpi}</li>
+ * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
  * <li>{@link GridJdbcCheckpointSpi}</li>
  * <li>{@link GridCacheCheckpointSpi}</li>
  * </ul>
