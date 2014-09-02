@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.ggfs.common;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -339,11 +338,11 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
         else if (GridGgfsException.class.isInstance(e)) {
-            if (checkIo && e.hasCause(IOException.class)) {
-                IOException e0 = e.getCause(IOException.class);
-
-                return errorCode(GridGgfsHadoopUtils.cast(e0), false);
-            }
+//            if (checkIo && e.hasCause(IOException.class)) {
+//                IOException e0 = e.getCause(IOException.class);
+//
+//                return errorCode(GridGgfsHadoopUtils.cast(e0), false);
+//            }
 
             return ERR_GGFS_GENERIC;
         }

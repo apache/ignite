@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -58,6 +57,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     /** Primary GGFS instances. */
     private static GridGgfsImpl ggfsPrimary;
 
+    /** Secondary GGFS instance. */
+    private static GridGgfs secondaryFs;
+
     /** Primary file system data cache. */
     private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;
 
@@ -79,7 +81,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         ggfsCfg.setDefaultMode(PRIMARY);
         ggfsCfg.setPrefetchBlocks(1);
         ggfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
-        ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG));
+        ggfsCfg.setSecondaryFileSystem(secondaryFs);
 
         Map<String, GridGgfsMode> pathModes = new HashMap<>();
 
@@ -186,7 +188,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
         Grid g = G.start(cfg);
 
-        g.ggfs(GGFS_SECONDARY);
+        secondaryFs = g.ggfs(GGFS_SECONDARY);
     }
 
     /** {@inheritDoc} */

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import com.google.common.collect.*;
 import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -20,7 +19,9 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
-import static com.google.common.collect.ObjectArrays.*;
+import java.lang.reflect.Array;
+import java.util.*;
+
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
@@ -92,6 +93,24 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
+
+    /**
+     * Returns a new array that contains the concatenated contents of two arrays.
+     *
+     * @param first the first array of elements to concatenate.
+     * @param second the second array of elements to concatenate.
+     * @param cls
+     * @return Concatenated array.
+     */
+    private <T> T[] concat(T[] first, T[] second, Class<?> cls) {
+        Collection<T> res = new ArrayList<>();
+
+        res.addAll(Arrays.asList(first));
+        res.addAll(Arrays.asList(second));
+
+        return res.toArray((T[]) Array.newInstance(cls, res.size()));
+    }
+
 
     /**
      * @throws Exception If failed.
@@ -292,7 +311,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-            GridCacheConfiguration.class));
+             GridCacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -318,7 +337,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-                GridCacheConfiguration.class));
+             GridCacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -341,7 +360,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-            GridCacheConfiguration.class));
+             GridCacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -367,7 +386,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-                GridCacheConfiguration.class));
+             GridCacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -410,8 +429,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
         GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
 
-        g2GgfsCfg1.setPathModes(ImmutableMap.of("/somePath", DUAL_SYNC));
-        g2GgfsCfg2.setPathModes(ImmutableMap.of("/somePath", DUAL_SYNC));
+        g2GgfsCfg1.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
+        g2GgfsCfg2.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
@@ -48,20 +47,6 @@ public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externa
      */
     public GridGgfsBlockLocationImpl() {
         // No-op.
-    }
-
-    /**
-     * @param location HDFS block location.
-     * @throws IOException In case of any IO exception.
-     */
-    public GridGgfsBlockLocationImpl(BlockLocation location) throws IOException {
-        assert location != null;
-
-        start = location.getOffset();
-        len = location.getLength();
-
-        names = Arrays.asList(location.getNames());
-        hosts = Arrays.asList(location.getHosts());
     }
 
     /**

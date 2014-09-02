@@ -10,6 +10,8 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
@@ -26,6 +28,31 @@ public class GridHadoopTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
+
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class));
+
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class));
+
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemClientSelfTest.class));
+
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerStateSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerSelfTest.class));
+
+        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemHandshakeSelfTest.class));
+
+        suite.addTestSuite(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class);
+
+        suite.addTest(new TestSuite(GridGgfsDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsDualAsyncSelfTest.class));
+
+        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
 
         suite.addTest(new TestSuite(GridHadoopFileSystemsTest.class));
 

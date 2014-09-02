@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -148,11 +147,12 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Grid gridSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, null,
-            SECONDARY_REST_CFG);
-        Grid grid = startGridWithGgfs("grid", "ggfs", mode, SECONDARY_URI, SECONDARY_CFG, PRIMARY_REST_CFG);
+        Grid gridSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
         ggfsSecondary = (GridGgfsImpl)gridSecondary.ggfs("ggfs-secondary");
+
+        Grid grid = startGridWithGgfs("grid", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
+
         ggfs = (GridGgfsImpl)grid.ggfs("ggfs");
     }
 
@@ -172,14 +172,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param gridName Grid name.
      * @param ggfsName GGFS name
      * @param mode GGFS mode.
-     * @param secondaryFsUri Secondary file system UTI (optional).
-     * @param secondaryFsCfgPath Secondary file system configuration path (optional).
+     * @param secondaryFs Secondary file system (optional).
      * @param restCfg Rest configuration string (optional).
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    private Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode, @Nullable String secondaryFsUri,
-        @Nullable String secondaryFsCfgPath, @Nullable String restCfg) throws Exception {
+    private Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
+        @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -188,8 +187,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
         ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(restCfg));
-        if (secondaryFsUri != null)
-            ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(secondaryFsUri, secondaryFsCfgPath));
+        ggfsCfg.setSecondaryFileSystem(secondaryFs);
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 

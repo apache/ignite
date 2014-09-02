@@ -47,35 +47,11 @@ public class GridGgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridIpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class));
-
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class));
-
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemClientSelfTest.class));
-
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerStateSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerSelfTest.class));
-
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemHandshakeSelfTest.class));
-
         suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsPrimaryOffheapValuesSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsModeResolverSelfTest.class));
-
-        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
-
-        suite.addTestSuite(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class);
 
         suite.addTestSuite(GridGgfsFragmentizerSelfTest.class);
         suite.addTestSuite(GridGgfsFragmentizerTopologySelfTest.class);

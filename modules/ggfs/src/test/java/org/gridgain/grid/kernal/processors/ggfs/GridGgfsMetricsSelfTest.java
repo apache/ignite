@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -34,12 +33,6 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
     /** Primary GGFS name. */
     private static final String GGFS_SECONDARY = "ggfs-secondary";
-
-    /** Secondary file system URI. */
-    private static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
-
-    /** Secondary file system configuration path. */
-    private static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
 
     /** Secondary file system REST endpoint configuration string. */
     private static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
@@ -103,7 +96,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setName(GGFS_PRIMARY);
         ggfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG));
+        ggfsCfg.setSecondaryFileSystem(ggfsSecondary);
 
         Map<String, GridGgfsMode> pathModes = new HashMap<>();
 
