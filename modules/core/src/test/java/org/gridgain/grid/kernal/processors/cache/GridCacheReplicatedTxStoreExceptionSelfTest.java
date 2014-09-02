@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheDistributionMode.PARTITIONED_ONLY;
-import static org.gridgain.grid.cache.GridCacheMode.REPLICATED;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  *

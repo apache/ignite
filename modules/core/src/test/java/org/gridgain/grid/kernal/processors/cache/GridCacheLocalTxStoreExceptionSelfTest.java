@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.LOCAL;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  *
