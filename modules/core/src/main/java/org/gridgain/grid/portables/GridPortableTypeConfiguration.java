@@ -39,6 +39,9 @@ public class GridPortableTypeConfiguration {
     /** Meta data enabled flag. */
     private Boolean metaDataEnabled;
 
+    /** Keep deserialized flag. */
+    private Boolean keepDeserialized;
+
     /** Affinity key field name. */
     private String affKeyFieldName;
 
@@ -111,7 +114,6 @@ public class GridPortableTypeConfiguration {
 
     /**
      * If {@code true} then date values converted to {@link Timestamp} during unmarshalling.
-     * Default value is {@code true}.
      *
      * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
      */
@@ -127,7 +129,7 @@ public class GridPortableTypeConfiguration {
     }
 
     /**
-     * Defines whether meta data is collected for this type. This value will override
+     * Defines whether meta data is collected for this type. If provided, this value will override
      * {@link GridPortableConfiguration#isMetaDataEnabled()} property.
      *
      * @return Whether meta data is collected.
@@ -141,6 +143,23 @@ public class GridPortableTypeConfiguration {
      */
     public void setMetaDataEnabled(Boolean metaDataEnabled) {
         this.metaDataEnabled = metaDataEnabled;
+    }
+
+    /**
+     * Defines whether {@link GridPortableObject} should cache deserialized instance. If provided,
+     * this value will override {@link GridPortableConfiguration#isKeepDeserialized()} property.
+     *
+     * @return Whether deserialized value is kept.
+     */
+    public Boolean isKeepDeserialized() {
+        return keepDeserialized;
+    }
+
+    /**
+     * @param keepDeserialized Whether deserialized value is kept.
+     */
+    public void setKeepDeserialized(Boolean keepDeserialized) {
+        this.keepDeserialized = keepDeserialized;
     }
 
     /**

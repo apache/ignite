@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * Alternatively you can run routers as a standalone processes by executing
  * {@code GRIDGAIN_HOME/bin/ggrouter.sh} or {@code GRIDGAIN_HOME/bin/ggrouter.bat}.
  * They both accept path to a configuration file as first command line argument.
- * See {@code GRIDGAIN_HOME/clients/java/config/router/default-router.xml} for configuration example.
+ * See {@code GRIDGAIN_HOME/config/router/default-router.xml} for configuration example.
  *
  * @see GridTcpRouter
  */
