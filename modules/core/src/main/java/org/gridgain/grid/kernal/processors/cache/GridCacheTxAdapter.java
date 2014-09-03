@@ -30,6 +30,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -1098,6 +1099,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
+                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this,
                         /*swap*/false,
@@ -1105,8 +1108,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*fail fast*/true,
                         /*unmarshal*/true,
                         /*metrics*/metrics,
-                        /*event*/false,
-                        /*subjId*/null, // Passing null because event is not generated.
+                        /*event*/recordEvt,
+                        /*subjId*/subjId,
+                        /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
                         CU.<K, V>empty());
 
                 try {
