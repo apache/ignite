@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
@@ -543,12 +544,18 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 setRollbackOnly();
 
+                // Safe to remove transaction from committed tx list because nothing was committed yet.
+                cctx.tm().removeCommittedTx(this);
+
                 throw ex;
             }
             catch (Throwable ex) {
                 commitError(ex);
 
                 setRollbackOnly();
+
+                // Safe to remove transaction from committed tx list because nothing was committed yet.
+                cctx.tm().removeCommittedTx(this);
 
                 throw new GridException("Failed to commit transaction to database: " + this, ex);
             }
@@ -1032,8 +1039,20 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         while (true) {
                             try {
-                                val = txEntry.cached().innerGet(this, true, /*no read-through*/false, true, true, true,
-                                    true, CU.subjectId(this, cctx), filter);
+                                Object transformClo =
+                                    (txEntry.op() == TRANSFORM  && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                        F.first(txEntry.transformClosures()) : null;
+
+                                val = txEntry.cached().innerGet(this,
+                                    true,
+                                    /*no read-through*/false,
+                                    true,
+                                    true,
+                                    true,
+                                    true,
+                                    CU.subjectId(this, cctx),
+                                    transformClo,
+                                    filter);
 
                                 if (val != null) {
                                     if (!readCommitted())
@@ -1104,6 +1123,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 /*metrics*/true,
                                 /*event*/true,
                                 CU.subjectId(this, cctx),
+                                null,
                                 filter);
 
                             if (val != null) {
@@ -1420,6 +1440,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 GridCacheEntryEx<K, V> cached = txEntry.cached();
 
                                 try {
+                                    Object transformClo =
+                                        (!F.isEmpty(txEntry.transformClosures()) &&
+                                            cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                            F.first(txEntry.transformClosures()) : null;
+
                                     V val = cached.innerGet(GridCacheTxLocalAdapter.this,
                                         swapOrOffheapEnabled,
                                         /*read-through*/false,
@@ -1428,6 +1453,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*metrics*/true,
                                         /*events*/true,
                                         CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
+                                        transformClo,
                                         filter);
 
                                     // If value is in cache and passed the filter.
@@ -1808,7 +1834,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             for (K key : keys) {
                 V val = rmv || lookup == null ? null : lookup.get(key);
-                GridClosure<V, V> transformClos = transformMap == null ? null : transformMap.get(key);
+                GridClosure<V, V> transformClo = transformMap == null ? null : transformMap.get(key);
 
                 GridCacheVersion drVer;
                 long drTtl;
@@ -1839,7 +1865,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (key == null)
                     continue;
 
-                if (!rmv && val == null && transformClos == null) {
+                if (!rmv && val == null && transformClo == null) {
                     skipped = skip(skipped, key);
 
                     continue;
@@ -1887,6 +1913,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
+                                        transformClo,
                                         CU.<K, V>empty());
                                 }
                                 catch (GridCacheFilterFailedException e) {
@@ -1918,8 +1945,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 break; // While.
                             }
 
-                            txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClos != null ? TRANSFORM :
-                                old != null ? UPDATE : CREATE, val, transformClos, entry, ttl, filter, true, drTtl,
+                            txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClo != null ? TRANSFORM :
+                                old != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
                                 drExpireTime, drVer);
 
                             if (!implicit() && readCommitted())
@@ -1983,7 +2010,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     }
                 }
                 else {
-                    if (transformClos == null && txEntry.op() == TRANSFORM)
+                    if (transformClo == null && txEntry.op() == TRANSFORM)
                         throw new GridException("Failed to enlist write value for key (cannot have update value in " +
                             "transaction after transform closure is applied): " + key);
 
@@ -2002,8 +2029,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             continue;
                         }
 
-                        txEntry = addEntry(rmv ? DELETE : transformClos != null ? TRANSFORM :
-                            v != null ? UPDATE : CREATE, val, transformClos, entry, ttl, filter, true, drTtl,
+                        txEntry = addEntry(rmv ? DELETE : transformClo != null ? TRANSFORM :
+                            v != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
                             drExpireTime, drVer);
 
                         enlisted.add(key);
@@ -2089,8 +2116,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*failFast*/false,
                                         /*unmarshal*/retval,
                                         /*metrics*/true,
-                                        /*event*/!dht(),
+                                        /*event*/!dht() || transform,
                                         CU.subjectId(this, cctx),
+                                        transform ? F.first(txEntry.transformClosures()) : null,
                                         CU.<K, V>empty());
                             }
                             catch (GridCacheFilterFailedException e) {

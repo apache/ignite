@@ -1830,9 +1830,15 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     V val = null;
 
                                     if (ret)
-                                        val = e.innerGet(tx, true/*swap*/, true/*read-through*/, /*fail-fast.*/false,
-                                            /*unmarshal*/false, /*update-metrics*/true,
-                                            /*event notification*/req.returnValue(i), CU.subjectId(tx, ctx),
+                                        val = e.innerGet(tx,
+                                            /*swap*/true,
+                                            /*read-through*/true,
+                                            /*fail-fast.*/false,
+                                            /*unmarshal*/false,
+                                            /*update-metrics*/true,
+                                            /*event notification*/req.returnValue(i),
+                                            CU.subjectId(tx, ctx),
+                                            null,
                                             CU.<K, V>empty());
 
                                     assert e.lockedBy(mappedVer) ||

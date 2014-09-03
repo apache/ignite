@@ -284,6 +284,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /**update-metrics*/true,
                                 /*event*/true,
                                 subjId,
+                                null,
                                 filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.

@@ -1049,13 +1049,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
             ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (GridUuid)null, null,
-                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null);
 
         if (created != null) {
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(), created.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null);
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null);
 
             if (touch)
                 ctx.evicts().touch(cur, topVer);
@@ -1157,7 +1157,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
                 ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null);
+                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null);
         }
         else if (log.isDebugEnabled())
             log.debug("Remove will not be done for key (obsolete entry got replaced or removed): " + key);
@@ -1827,7 +1827,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         try {
                             V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
                                 /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, subjId, filter);
+                                /*update-metrics*/true, /*event*/true, subjId, null, filter);
 
                             GridCacheVersion ver = entry.version();
 
