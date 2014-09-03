@@ -392,7 +392,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
 
         if (node.isDaemon() && !checkDaemon()) {
             if (log.isDebugEnabled())
-                log.debug("Skipping non-security configuration consistency check for daemon node: " + node);
+                log.debug("Skipping configuration consistency check for daemon node: " + node);
 
             return;
         }

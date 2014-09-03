@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
@@ -279,17 +280,13 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     @Override public Collection<GridNode> remoteDaemonNodes() {
                         final Collection<GridNode> all = ctx.discovery().daemonNodes();
 
-                        if (!localNode().isDaemon())
-                            return all;
-
-                        final Collection<GridNode> remotes = new LinkedList<>(all);
-
-                        for (Iterator<GridNode> iter = remotes.iterator(); iter.hasNext();) {
-                            if (F.eqNodes(iter.next(), localNode()))
-                                iter.remove();
-                        }
-
-                        return remotes;
+                        return !localNode().isDaemon() ?
+                            all :
+                            F.view(all, new GridPredicate<GridNode>() {
+                                @Override public boolean apply(GridNode n) {
+                                    return n.isDaemon();
+                                }
+                            });
                     }
 
                     @Nullable @Override public GridNode node(UUID nodeId) {
