@@ -26,5 +26,5 @@ public interface GridGgfsReader extends Closeable {
      * @return Total number of bytes read into the buffer, or -1 if there is no more data (EOF).
      * @throws IOException In case of any exception.
      */
-    int read(long pos, byte[] buf, int off, int len) throws IOException;
+    public int read(long pos, byte[] buf, int off, int len) throws IOException;
 }
