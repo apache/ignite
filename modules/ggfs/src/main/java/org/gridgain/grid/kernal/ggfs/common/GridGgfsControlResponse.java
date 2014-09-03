@@ -337,15 +337,8 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (X.hasCause(e, GridGgfsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
-        else if (GridGgfsException.class.isInstance(e)) {
-//            if (checkIo && e.hasCause(IOException.class)) {
-//                IOException e0 = e.getCause(IOException.class);
-//
-//                return errorCode(GridGgfsHadoopUtils.cast(e0), false);
-//            }
-
+        else if (GridGgfsException.class.isInstance(e))
             return ERR_GGFS_GENERIC;
-        }
 
         return ERR_GENERIC;
     }

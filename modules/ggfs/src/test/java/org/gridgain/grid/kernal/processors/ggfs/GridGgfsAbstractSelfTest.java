@@ -65,12 +65,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     /** Primary file system REST endpoint configuration string. */
     protected static final String PRIMARY_REST_CFG = "{type:'tcp', port:10500}";
 
-    /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
-
-    /** Secondary file system configuration path. */
-    protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
-
     /** Secondary file system REST endpoint configuration string. */
     protected static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
 
@@ -177,8 +171,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    private Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
-        @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
+    protected Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
+                                     @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");

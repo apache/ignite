@@ -93,11 +93,32 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
         boolean wrongVer = X.hasCause(e, RemoteException.class) ||
             (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
-        GridGgfsException ggfsErr = !wrongVer ? new GridGgfsException(detailMsg, e) :
+        GridGgfsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
             new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                 "version.", e);
 
+
+
         return ggfsErr;
+    }
+
+    /**
+     * Cast IO exception to GGFS exception.
+     *
+     * @param e IO exception.
+     * @return GGFS exception.
+     */
+    public static GridGgfsException cast(String msg, IOException e) {
+        if (e instanceof FileNotFoundException)
+            return new GridGgfsFileNotFoundException(e);
+        else if (e instanceof ParentNotDirectoryException)
+            return new GridGgfsParentNotDirectoryException(msg, e);
+        else if (e instanceof PathIsNotEmptyDirectoryException)
+            return new GridGgfsDirectoryNotEmptyException(e);
+        else if (e instanceof PathExistsException)
+            return new GridGgfsPathAlreadyExistsException(msg, e);
+        else
+            return new GridGgfsException(msg, e);
     }
 
     /**

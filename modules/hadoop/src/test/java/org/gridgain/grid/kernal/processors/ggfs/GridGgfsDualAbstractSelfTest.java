@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
@@ -31,6 +32,12 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
 public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfTest {
+    /** Secondary file system URI. */
+    protected static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
+
+    /** Secondary file system configuration path. */
+    protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
+
     /**
      * Constructor.
      *
@@ -40,6 +47,23 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         super(mode);
 
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        chunk = new byte[128];
+
+        for (int i = 0; i < chunk.length; i++)
+            chunk[i] = (byte)i;
+
+        Grid gridSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+
+        GridGgfsFileSystem hadoopFs = new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG);
+
+        Grid grid = startGridWithGgfs("grid", "ggfs", mode, hadoopFs, PRIMARY_REST_CFG);
+
+        ggfsSecondary = (GridGgfsImpl)gridSecondary.ggfs("ggfs-secondary");
+        ggfs = (GridGgfsImpl)grid.ggfs("ggfs");
     }
 
     /**
