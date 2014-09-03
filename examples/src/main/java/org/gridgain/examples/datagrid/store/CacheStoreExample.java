@@ -39,7 +39,10 @@ public class CacheStoreExample {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 
-            GridCache<Long, Person> cache = GridGain.grid().cache(null);
+            GridCache<Long, Person> cache = g.cache(null);
+
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
 
             try (GridCacheTx tx = cache.txStart()) {
                 Person val = cache.get(id);
