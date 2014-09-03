@@ -47,5 +47,8 @@ public class GridJavaLoggerTest extends TestCase {
         assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof GridJavaLogger;
 
         assert log.fileName() != null;
+
+        // Ensure we don't get pattern, only actual file name is allowed here.
+        assert !log.fileName().contains("%");
     }
 }
