@@ -59,10 +59,11 @@ public class GridCacheQueryReadEvent<K, V> extends GridCacheQueryEvent<K, V> {
         @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
+        @Nullable String taskName,
         K key,
         @Nullable V val,
         @Nullable V oldVal) {
-        super(node, msg, type, cacheName, clsName, clause, scanFilter, contQryFilter, args, subjId);
+        super(node, msg, type, cacheName, clsName, clause, scanFilter, contQryFilter, args, subjId, taskName);
 
         assert key != null;
 

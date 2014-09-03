@@ -173,6 +173,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             filter,
                             null,
                             nodeId,
+                            null,
                             e.getKey(),
                             e.getValue(),
                             e.getOldValue()

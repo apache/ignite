@@ -42,8 +42,9 @@ public class GridCacheFieldsQueryReadEvent extends GridCacheQueryEvent<Object, O
         String clause,
         @Nullable Object[] args,
         @Nullable UUID subjId,
+        @Nullable String taskName,
         List<?> row) {
-        super(node, msg, type, cacheName, null, clause, null, null, args, subjId);
+        super(node, msg, type, cacheName, null, clause, null, null, args, subjId, taskName);
 
         assert clause != null;
         assert row != null;

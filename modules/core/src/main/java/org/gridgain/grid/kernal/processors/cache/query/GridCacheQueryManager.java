@@ -436,7 +436,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridException In case of error.
      */
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> executeQuery(GridCacheQueryAdapter<?> qry,
-        @Nullable Object[] args, boolean loc, @Nullable UUID subjId) throws GridException {
+        @Nullable Object[] args, boolean loc, @Nullable UUID subjId, @Nullable String taskName) throws GridException {
         if (qry.type() == null) {
             assert !loc;
 
@@ -458,7 +458,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         null,
                         null,
                         args,
-                        subjId));
+                        subjId,
+                        taskName));
                 }
 
                 return idxMgr.query(spi, space, qry.clause(), F.asList(args),
@@ -476,7 +477,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         qry.scanFilter(),
                         null,
                         null,
-                        subjId));
+                        subjId,
+                        taskName));
                 }
 
                 return scanIterator(qry);
@@ -493,7 +495,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         null,
                         null,
                         null,
-                        subjId));
+                        subjId,
+                        taskName));
                 }
 
                 return idxMgr.queryText(spi, space, qry.clause(), qry.queryClassName(),
@@ -520,7 +523,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridException In case of error.
      */
     private GridIndexingFieldsResult executeFieldsQuery(GridCacheQueryAdapter<?> qry, @Nullable Object[] args,
-        boolean loc, @Nullable UUID subjId) throws GridException {
+        boolean loc, @Nullable UUID subjId, @Nullable String taskName) throws GridException {
         assert qry != null;
 
         if (qry.clause() == null) {
@@ -544,7 +547,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 null,
                 null,
                 args,
-                subjId));
+                subjId,
+                taskName));
         }
 
         return idxMgr.queryFields(spi, space, qry.clause(), F.asList(args), qry.includeBackups(),
@@ -762,9 +766,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 else
                     entities = new ArrayList<>(pageSize);
 
+                String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
+
                 GridIndexingFieldsResult res = qryInfo.local() ?
-                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId()) :
-                    fieldsQueryResult(qryInfo);
+                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId(), taskName) :
+                    fieldsQueryResult(qryInfo, taskName);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
                 List<GridIndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
@@ -845,6 +851,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             qry.clause(),
                             qryInfo.arguments(),
                             qry.subjectId(),
+                            taskName,
                             F.viewListReadOnly(row, new CX1<GridIndexingEntity<?>, Object>() {
                                 @Override public Object applyx(GridIndexingEntity<?> ent) throws GridException {
                                     return ent.value();
@@ -955,8 +962,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 boolean incBackups = qry.includeBackups();
 
+                String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
+
                 GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
-                    loc ? executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId()) : queryIterator(qryInfo);
+                    loc ? executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName) :
+                        queryIterator(qryInfo, taskName);
 
                 GridCacheAdapter<K, V> cache = cctx.cache();
 
@@ -1028,6 +1038,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     qryInfo.arguments(),
                                     qry.subjectId(),
+                                    taskName,
                                     key,
                                     val,
                                     null));
@@ -1048,6 +1059,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     null,
                                     qry.subjectId(),
+                                    taskName,
                                     key,
                                     val,
                                     null));
@@ -1068,6 +1080,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     null,
                                     qry.subjectId(),
+                                    taskName,
                                     key,
                                     val,
                                     null));
@@ -1150,8 +1163,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws GridException In case of error.
      */
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryIterator(GridCacheQueryInfo qryInfo)
-        throws GridException {
+    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryIterator(GridCacheQueryInfo qryInfo,
+        String taskName) throws GridException {
         UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
@@ -1187,7 +1200,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 futs = old;
         }
 
-        return queryIterator(futs, qryInfo);
+        return queryIterator(futs, qryInfo, taskName);
     }
 
     /**
@@ -1200,7 +1213,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryIterator(
         Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs,
-        GridCacheQueryInfo qryInfo) throws GridException {
+        GridCacheQueryInfo qryInfo, String taskName) throws GridException {
         assert futs != null;
         assert qryInfo != null;
 
@@ -1220,7 +1233,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.query().subjectId()));
+                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
+                    qryInfo.query().subjectId(), taskName));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1264,7 +1278,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws GridException In case of error.
      */
-    private GridIndexingFieldsResult fieldsQueryResult(GridCacheQueryInfo qryInfo)
+    private GridIndexingFieldsResult fieldsQueryResult(GridCacheQueryInfo qryInfo, String taskName)
         throws GridException {
         UUID sndId = qryInfo.senderId();
 
@@ -1304,7 +1318,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 iters = old;
         }
 
-        return fieldsQueryResult(iters, qryInfo);
+        return fieldsQueryResult(iters, qryInfo, taskName);
     }
 
     /**
@@ -1316,7 +1330,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private GridIndexingFieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> resMap,
-        GridCacheQueryInfo qryInfo) throws GridException {
+        GridCacheQueryInfo qryInfo, String taskName) throws GridException {
         assert resMap != null;
         assert qryInfo != null;
 
@@ -1337,7 +1351,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false, qryInfo.query().subjectId()));
+                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
+                    qryInfo.query().subjectId(), taskName));
             }
             catch (GridException e) {
                 fut.onDone(e);

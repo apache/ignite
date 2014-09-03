@@ -60,7 +60,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private CI2<UUID, GridCacheQueryResponse<K, V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
+    private GridBiInClosure<UUID,GridCacheQueryResponse<K,V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
         @Override public void apply(UUID nodeId, GridCacheQueryResponse<K, V> res) {
             processQueryResponse(nodeId, res);
         }
@@ -203,7 +203,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.clause(),
                 req.includeMetaData(),
                 req.keepPortable(),
-                req.subjectId()
+                req.subjectId(),
+                req.taskHash()
             );
 
         return new GridCacheQueryInfo(
@@ -511,7 +512,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.arguments(),
                 false,
                 qry.query().keepPortable(),
-                qry.query().subjectId());
+                qry.query().subjectId(),
+                qry.query().taskHash());
 
             addQueryFuture(req.id(), fut);
 
@@ -546,7 +548,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         try {
             GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.includeBackups(), fut.fields(), all, qry.keepPortable(), qry.subjectId());
+                qry.includeBackups(), fut.fields(), all, qry.keepPortable(), qry.subjectId(), qry.taskHash());
 
             sendRequest(fut, req, nodes);
         }
@@ -609,7 +611,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.arguments(),
                 qry.query().includeMetadata(),
                 qry.query().keepPortable(),
-                qry.query().subjectId());
+                qry.query().subjectId(),
+                qry.query().taskHash());
 
             addQueryFuture(req.id(), fut);
 

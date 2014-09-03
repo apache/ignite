@@ -108,6 +108,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     @GridDirectVersion(2)
     private UUID subjId;
 
+    /** */
+    @GridDirectVersion(2)
+    private int taskHash;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -145,7 +149,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean fields,
         boolean all,
         boolean keepPortable,
-        UUID subjId) {
+        UUID subjId,
+        int taskHash) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
@@ -154,6 +159,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.all = all;
         this.keepPortable = keepPortable;
         this.subjId = subjId;
+        this.taskHash = taskHash;
     }
 
     /**
@@ -188,7 +194,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         Object[] args,
         boolean incMeta,
         boolean keepPortable,
-        UUID subjId) {
+        UUID subjId,
+        int taskHash) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
@@ -209,6 +216,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
         this.subjId = subjId;
+        this.taskHash = taskHash;
     }
 
     /** {@inheritDoc} */
@@ -410,6 +418,13 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         return subjId;
     }
 
+    /**
+     * @return Task hash.
+     */
+    public int taskHash() {
+        return taskHash;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -449,6 +464,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.all = all;
         _clone.keepPortable = keepPortable;
         _clone.subjId = subjId;
+        _clone.taskHash = taskHash;
     }
 
     /** {@inheritDoc} */
@@ -571,6 +587,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
             case 19:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 20:
+                if (!commState.putInt(taskHash))
                     return false;
 
                 commState.idx++;
@@ -750,6 +772,14 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 20:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskHash = commState.getInt();
 
                 commState.idx++;
 

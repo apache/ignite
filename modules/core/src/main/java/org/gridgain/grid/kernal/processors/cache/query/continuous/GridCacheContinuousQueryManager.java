@@ -147,7 +147,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         null,
                         lsnr.filter(),
                         null,
-                        nodeId
+                        nodeId,
+                        null
                     ));
                 }
             }

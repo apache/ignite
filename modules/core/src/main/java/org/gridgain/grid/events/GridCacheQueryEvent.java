@@ -43,8 +43,11 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
     @GridToStringInclude
     private final Object[] args;
 
-    /** */
+    /** Security subject ID. */
     private final UUID subjId;
+
+    /** Task name. */
+    private final String taskName;
 
     /**
      * @param node Node where event was fired.
@@ -67,7 +70,8 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
         @Nullable GridBiPredicate<K, V> scanQryFilter,
         @Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        @Nullable String taskName) {
         super(node, msg, type);
 
         this.cacheName = cacheName;
@@ -77,6 +81,7 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
         this.contQryFilter = contQryFilter;
         this.args = args;
         this.subjId = subjId;
+        this.taskName = taskName;
     }
 
     /**
@@ -150,6 +155,15 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
      */
     @Nullable public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * Gets the name of the task that executed the query (if any).
+     *
+     * @return Task name.
+     */
+    @Nullable public String taskName() {
+        return taskName;
     }
 
     /** {@inheritDoc} */
