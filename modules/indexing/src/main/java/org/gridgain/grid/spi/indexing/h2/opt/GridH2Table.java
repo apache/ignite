@@ -46,9 +46,6 @@ public class GridH2Table extends TableBase {
     private final ReadWriteLock lock;
 
     /** */
-    private final boolean manyUniqueIdxs;
-
-    /** */
     private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session, Boolean>());
 
     /** */
@@ -84,22 +81,6 @@ public class GridH2Table extends TableBase {
         assert idxs.size() >= 1;
 
         lock =  new ReentrantReadWriteLock();
-
-        if (idxs.size() > 1) {
-            int uniqueIndexesCnt = 0;
-
-            for (Index idx : idxs) {
-                if (idx.getIndexType().isUnique())
-                    uniqueIndexesCnt++;
-            }
-
-            assert uniqueIndexesCnt > 0;
-
-            // Because one of them is PK which can't cause conflicts.
-            manyUniqueIdxs = uniqueIndexesCnt > 2;
-        }
-        else
-            manyUniqueIdxs = false;
 
         // Add scan index at 0 which is required by H2.
         idxs.add(0, new ScanIndex(index(0)));
@@ -162,7 +143,8 @@ public class GridH2Table extends TableBase {
 
         lock.readLock().lock();
 
-        GridUnsafeMemory.Operation op = mem == null ? null : mem.begin(); // Begin concurrent unsafe memory operation.
+        if (mem != null)
+            desc.guard().begin();
 
         try {
             row = pk.findOne(row);
@@ -181,7 +163,7 @@ public class GridH2Table extends TableBase {
             lock.readLock().unlock();
 
             if (mem != null)
-                mem.end(op);
+                desc.guard().end();
         }
     }
 
@@ -356,95 +338,35 @@ public class GridH2Table extends TableBase {
 
         lock.readLock().lock();
 
-        GridUnsafeMemory.Operation op = null;
-
         if (mem != null)
-            op = mem.begin();
+            desc.guard().begin();
 
         try {
             GridH2TreeIndex pk = pk();
 
             if (!del) {
-                GridH2Row old = pk.put(row, false); // Put to PK.
-
-                // In which indexes row was added and in which it was replaced.
-                BitSet replaced = null;
+                GridH2Row old = pk.put(row); // Put to PK.
 
                 int len = idxs.size();
 
-                if (old != null) {
-                    replaced = new BitSet(len);
-
-                    replaced.set(1);
-                }
-
                 int i = 1;
 
-                try {
-                    // Put row if absent to all indexes sequentially.
-                    // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
-                    while (++i < len) {
-                        GridH2IndexBase idx = index(i);
+                // Put row if absent to all indexes sequentially.
+                // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
+                while (++i < len) {
+                    GridH2IndexBase idx = index(i);
 
-                        // For non-unique index we just do put.
-                        boolean ifAbsent = idx.getIndexType().isUnique();
+                    assert !idx.getIndexType().isUnique() : "Unique indexes are not supported.";
 
-                        GridH2Row old2 = idx.put(row, ifAbsent);
+                    GridH2Row old2 = idx.put(row);
 
-                        if (old2 != null) {
-                            if (eq(pk, old2, old)) {
-                                // Can safely replace since operations on single cache key
-                                // which is PK in table can't be concurrent.
-                                if (ifAbsent) {
-                                    old2 = idx.put(row, false);
-
-                                    assert eq(pk, old2, old);
-                                }
-
-                                replaced.set(i);
-
-                                continue;
-                            }
-
-                            assert ifAbsent : "\n" + row + "\n" + old + "\n" + old2;
-
-                            // Check if old2 is concurrently inserting row which can fail on some unique index.
-                            if (manyUniqueIdxs && !old2.waitInsertComplete()) {
-                                // Try again.
-                                i--;
-
-                                continue;
-                            }
-
-                            break; // Unique index violation.
-                        }
+                    if (old2 != null) { // Row was replaced in index.
+                        if (!eq(pk, old2, old))
+                            throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                                "not supported.");
                     }
-
-                    if (i == len) { // New row was added to all indexes, can remove old row where it was not replaced.
-                        if (old != null) {
-                            for (int j = 2; j < len; j++) {
-                                if (!replaced.get(j)) {
-                                    Row res =  index(j).remove(old);
-
-                                    assert eq(pk, res, old) : j + ") " + index(j) + "\n" + old + "\n" + res;
-                                }
-                            }
-                        }
-                    }
-                    else { // Not all indexes were updated, rollback to previous state and throw exception.
-                        for (int j = 1; j < i; j++) {
-                            // If replaced replace back, if added remove.
-                            Row res = replaced != null && replaced.get(j) ?
-                                index(j).put(old, false) : index(j).remove(row);
-
-                            assert eq(pk, res, row) : j + ") " + index(j) + "\n" + old + "\n" + res + "\n" + row;
-                        }
-
-                        throw new GridSpiException("Failed to update index [index=" + index(i) + ", row=" + row + "]");
-                    }
-                }
-                finally {
-                    row.finishInsert(i == len);
+                    else if (old != null) // Row was not replaced, need to remove manually.
+                        idx.remove(old);
                 }
             }
             else {
@@ -473,7 +395,7 @@ public class GridH2Table extends TableBase {
             lock.readLock().unlock();
 
             if (mem != null)
-                mem.end(op);
+                desc.guard().end();
         }
     }
 
@@ -516,7 +438,7 @@ public class GridH2Table extends TableBase {
                 actualSnapshot = takeIndexesSnapshot(); // Allow read access while we are rebuilding indexes.
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
-                GridH2IndexBase newIdx = index(i).rebuild(memory);
+                GridH2IndexBase newIdx = index(i).rebuild();
 
                 idxs.set(i, newIdx);
 
@@ -685,7 +607,6 @@ public class GridH2Table extends TableBase {
             spaceName = space;
 
             try {
-
                 try (Statement s = conn.createStatement()) {
                     s.execute(sql + " engine \"" + Engine.class.getName() + "\"");
                 }

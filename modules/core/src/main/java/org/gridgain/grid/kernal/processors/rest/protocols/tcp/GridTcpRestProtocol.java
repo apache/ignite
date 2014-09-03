@@ -168,10 +168,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             for (int port0 = cfg.getRestTcpPort(); port0 <= lastPort; port0++) {
                 if (startTcpServer(host, port0, lsnr, parser, sslCtx, cfg)) {
+                    port = port0;
+
                     if (log.isInfoEnabled())
                         log.info(startInfo());
-
-                    port = port0;
 
                     return;
                 }

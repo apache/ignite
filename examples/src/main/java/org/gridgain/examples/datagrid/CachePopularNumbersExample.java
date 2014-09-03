@@ -59,6 +59,9 @@ public class CachePopularNumbersExample {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
+
             GridProjection prj = g.forCache(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
@@ -75,15 +78,6 @@ public class CachePopularNumbersExample {
             task.run();
 
             popularNumbersQryTimer.cancel();
-
-            // Clean up caches on all nodes after run.
-            prj.compute().run(new Runnable() {
-                @Override public void run() {
-                    System.out.println("Clearing keys from cache: " + g.cache(CACHE_NAME).size());
-
-                    g.cache(CACHE_NAME).clearAll();
-                }
-            }).get();
         }
     }
 
