@@ -69,8 +69,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDeploymentMode(CONTINUOUS);
 
-        cfg.setCacheConfiguration();
-
         return cfg;
     }
 
@@ -79,11 +77,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         super.afterTest();
 
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 
     /**
@@ -122,7 +115,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TooBroadScope"})
     public void testNodeRestartMultithreaded() throws Exception {
         final int keyCnt = 1000;
-        final int retries = 10000;
+        final int retries = 300;
         int threadCnt = 5;
 
         Grid g0 = startGrid(0);
