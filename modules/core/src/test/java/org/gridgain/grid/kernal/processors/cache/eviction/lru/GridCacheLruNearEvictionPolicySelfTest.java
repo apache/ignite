@@ -34,10 +34,10 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     /** Maximum size for near eviction policy. */
     private static final int EVICTION_MAX_SIZE = 10;
 
-    /** Maximum size for near eviction policy. */
+    /** Grid count. */
     private static final int GRID_COUNT = 3;
 
-    /** */
+    /** Cache atomicity mode specified by test. */
     private GridCacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
