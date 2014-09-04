@@ -55,6 +55,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -79,7 +83,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, Object grpLockKey,
         boolean partLock, boolean syncCommit, boolean syncRollback,
-        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId) {
+        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId,
+        int taskNameHash) {
         super(tx, reads, writes, grpLockKey, partLock, txNodes);
 
         assert futId != null;
@@ -91,6 +96,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         this.last = last;
         this.lastBackups = lastBackups;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -133,6 +139,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     @Nullable public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -206,6 +219,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         _clone.last = last;
         _clone.lastBackups = lastBackups;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -289,6 +303,12 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
             case 27:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -395,6 +415,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 28:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

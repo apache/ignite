@@ -7,18 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.dht;
+package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests before/after lock callbacks in colocated cache.
+ *
  */
-public class GridCacheColocatedBeforeAfterLockSelfTest extends GridCacheAbstractBeforeAfterLockSelfTest {
+public class GridCacheColocatedTxStoreExceptionSelfTest extends GridCacheTxStoreExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;

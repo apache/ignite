@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0</gridgain.version>
+        <gridgain.version>6.2.1</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

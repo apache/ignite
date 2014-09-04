@@ -82,6 +82,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Subject ID. */
     private UUID subjId;
 
+    /** Task name. */
+    private String taskName;
+
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
@@ -129,6 +132,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean forcePrimary,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
+        String taskName,
         boolean deserializePortable
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
@@ -144,6 +148,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.filters = filters;
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
+        this.taskName = taskName;
 
         futId = GridUuid.randomUuid();
 
@@ -307,7 +312,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, deserializePortable, filters);
+                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
+                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -349,7 +355,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
 
                 GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters, subjId);
+                    reload, topVer, filters, subjId, taskName == null ? 0 : taskName.hashCode());
 
                 add(fut); // Append new future.
 
@@ -406,6 +412,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 /**update-metrics*/true,
                                 /*event*/true,
                                 subjId,
+                                null,
+                                taskName,
                                 filters);
 
                             colocated.context().evicts().touch(entry, topVer);
