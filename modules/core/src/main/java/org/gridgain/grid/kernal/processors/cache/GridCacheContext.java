@@ -1457,7 +1457,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
         if (nearNodes != null && !nearNodes.isEmpty())
-            // Exclude owner nodes.
             ret |= map(entry, nearNodes, nearMap);
 
         return ret;
