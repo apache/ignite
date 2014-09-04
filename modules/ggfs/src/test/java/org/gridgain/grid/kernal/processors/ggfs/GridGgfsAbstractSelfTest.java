@@ -172,7 +172,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     protected Grid startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
-                                     @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
+        @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -684,7 +684,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         // We have different results for dual and non-dual modes.
         if (dual)
-            assert !ggfs.delete(SUBDIR, false);
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    ggfs.delete(SUBDIR, false);
+
+                    return null;
+                }
+            }, GridException.class, "Failed to delete the path due to secondary file system exception:");
         else {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -693,7 +699,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     return null;
                 }
             }, GridGgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
-                "recursive flag is not set)");
+                   "recursive flag is not set)");
         }
 
         checkExist(ggfs, ggfsSecondary, SUBDIR, SUBSUBDIR, FILE);

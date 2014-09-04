@@ -11,11 +11,11 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.ggfs.GridGgfsDualAsyncSelfTest;
+import org.gridgain.grid.ggfs.GridGgfsDualSyncSelfTest;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
 
 /**

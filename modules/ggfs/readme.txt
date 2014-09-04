@@ -1,10 +1,11 @@
-GridGain Hadoop Module
+GridGain Filesystem Module
 ----------------------
 
-GridGain Hadoop module provides In-Memory Accelerator For Hadoop functionality which is based
-on GGFS - high-performance dual-mode in-memory file system that is 100% compatible with HDFS.
+GridGain Filesystem module (GGFS) is high-performance dual-mode in-memory file system. It may be used independently or
+as HDFS replacement in Apache Hadoop ecosystem via driver (is placed in gridgain-hadoop module). Also it may work in
+some dual modes as wrapper of HDFS or any other Hadoop-compatible file system.
 
-To enable Hadoop module when starting a standalone node, move 'optional/gridgain-hadoop' folder to
+To enable Hadoop module when starting a standalone node, move 'optional/gridgain-ggfs' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -24,7 +25,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hadoop</artifactId>
+            <artifactId>gridgain-filesystem</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
         ...

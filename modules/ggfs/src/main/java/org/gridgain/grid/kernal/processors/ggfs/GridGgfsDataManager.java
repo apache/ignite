@@ -419,9 +419,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 if (read != blockSize)
                                     res = Arrays.copyOf(res, read);
 
-                                rmtReadFut.onDone(res);
-
                                 putSafe(key, res);
+
+                                rmtReadFut.onDone(res);
 
                                 metrics.addReadBlocks(1, 1);
                             }
