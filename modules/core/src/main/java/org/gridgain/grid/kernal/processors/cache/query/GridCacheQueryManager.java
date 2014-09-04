@@ -448,7 +448,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         switch (qry.type()) {
             case SQL:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
+                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "SQL query executed.",
                         EVT_CACHE_SQL_QUERY_EXECUTED,
@@ -467,7 +467,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             case SCAN:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
+                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Scan query executed.",
                         EVT_CACHE_SCAN_QUERY_EXECUTED,
@@ -485,7 +485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             case TEXT:
                 if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
+                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Full text query executed.",
                         EVT_CACHE_FULL_TEXT_QUERY_EXECUTED,
@@ -537,7 +537,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert qry.type() == SQL_FIELDS;
 
         if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED)) {
-            cctx.gridEvents().record(new GridCacheQueryEvent<>(
+            cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                 cctx.localNode(),
                 "SQL fields query executed.",
                 EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED,
@@ -843,15 +843,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     assert qry.type() == SQL_FIELDS;
 
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ)) {
-                        cctx.gridEvents().record(new GridCacheFieldsQueryReadEvent(
+                        cctx.gridEvents().record(new GridCacheQueryReadEvent<K, V>(
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ,
                             cctx.namex(),
+                            null,
                             qry.clause(),
+                            null,
+                            null,
                             qryInfo.arguments(),
                             qry.subjectId(),
                             taskName,
+                            null,
+                            null,
+                            null,
                             F.viewListReadOnly(row, new CX1<GridIndexingEntity<?>, Object>() {
                                 @Override public Object applyx(GridIndexingEntity<?> ent) throws GridException {
                                     return ent.value();
@@ -1041,6 +1047,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     taskName,
                                     key,
                                     val,
+                                    null,
                                     null));
                             }
 
@@ -1062,6 +1069,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     taskName,
                                     key,
                                     val,
+                                    null,
                                     null));
                             }
 
@@ -1083,6 +1091,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     taskName,
                                     key,
                                     val,
+                                    null,
                                     null));
                             }
 

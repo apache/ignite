@@ -9,12 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
-import org.gridgain.grid.lang.*;
-
 /**
  * Continuous query listener.
  */
 interface GridCacheContinuousQueryListener<K, V> {
+    /**
+     *
+     */
+    public void onExecution();
+
     /**
      * Entry update callback.
      *
@@ -22,11 +25,4 @@ interface GridCacheContinuousQueryListener<K, V> {
      * @param recordEvt Whether to record event.
      */
     public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
-
-    /**
-     * Gets filter.
-     *
-     * @return Filter.
-     */
-    public GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter();
 }

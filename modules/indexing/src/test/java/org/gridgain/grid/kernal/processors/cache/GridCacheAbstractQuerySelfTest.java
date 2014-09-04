@@ -1319,9 +1319,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    assert evt instanceof GridCacheQueryEvent;
+                    assert evt instanceof GridCacheQueryExecutedEvent;
 
-                    GridCacheQueryEvent qe = (GridCacheQueryEvent)evt;
+                    GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
                     assertNull(qe.cacheName());
 
@@ -1411,9 +1411,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    assert evt instanceof GridCacheQueryEvent;
+                    assert evt instanceof GridCacheQueryExecutedEvent;
 
-                    GridCacheQueryEvent qe = (GridCacheQueryEvent)evt;
+                    GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
                     assertNull(qe.cacheName());
 
@@ -1507,9 +1507,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    assert evt instanceof GridCacheQueryEvent;
+                    assert evt instanceof GridCacheQueryExecutedEvent;
 
-                    GridCacheQueryEvent qe = (GridCacheQueryEvent)evt;
+                    GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
                     assertNull(qe.cacheName());
 
@@ -1575,9 +1575,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         for (int i = 0; i < gridCount(); i++) {
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    assert evt instanceof GridCacheFieldsQueryReadEvent;
+                    assert evt instanceof GridCacheQueryReadEvent;
 
-                    GridCacheFieldsQueryReadEvent qe = (GridCacheFieldsQueryReadEvent)evt;
+                    GridCacheQueryReadEvent qe = (GridCacheQueryReadEvent)evt;
 
                     assertNull(qe.cacheName());
 
@@ -1601,9 +1601,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    assert evt instanceof GridCacheQueryEvent;
+                    assert evt instanceof GridCacheQueryExecutedEvent;
 
-                    GridCacheQueryEvent qe = (GridCacheQueryEvent)evt;
+                    GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
                     assertNull(qe.cacheName());
 

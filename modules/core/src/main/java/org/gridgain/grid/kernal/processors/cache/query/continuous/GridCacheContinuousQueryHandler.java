@@ -119,6 +119,24 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
+            @Override public void onExecution() {
+                if (ctx.event().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_EXECUTED)) {
+                    ctx.event().record(new GridCacheQueryExecutedEvent<>(
+                        ctx.discovery().localNode(),
+                        "Continuous query executed.",
+                        EVT_CACHE_CONTINUOUS_QUERY_EXECUTED,
+                        cacheName,
+                        null,
+                        null,
+                        null,
+                        filter,
+                        null,
+                        nodeId,
+                        taskName()
+                    ));
+                }
+            }
+
             @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
                 boolean notify;
 
@@ -173,17 +191,14 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             filter,
                             null,
                             nodeId,
-                            null,
+                            taskName(),
                             e.getKey(),
                             e.getValue(),
-                            e.getOldValue()
+                            e.getOldValue(),
+                            null
                         ));
                     }
                 }
-            }
-
-            @Override public GridPredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter() {
-                return filter;
             }
 
             private boolean checkProjection(GridCacheContinuousQueryEntry<K, V> e) {
@@ -204,6 +219,20 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     ret = ret && entryFilter.apply(e);
 
                 return ret;
+            }
+
+            @Nullable private String taskName() {
+                String taskName = null;
+
+                if (ctx.security().securityEnabled()) {
+                    assert GridCacheContinuousQueryHandler.this instanceof GridCacheContinuousQueryHandlerV2;
+
+                    int taskHash = ((GridCacheContinuousQueryHandlerV2)GridCacheContinuousQueryHandler.this).taskHash();
+
+                    taskName = ctx.task().resolveTaskName(taskHash);
+                }
+
+                return taskName;
             }
         };
 

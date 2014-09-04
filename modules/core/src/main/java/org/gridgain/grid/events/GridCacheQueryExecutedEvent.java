@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Cache query event.
  */
-public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
+public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
     /** Cache name. */
     private final String cacheName;
 
@@ -60,7 +60,7 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
      * @param args Query arguments.
      * @param subjId Security subject ID.
      */
-    public GridCacheQueryEvent(
+    public GridCacheQueryExecutedEvent(
         GridNode node,
         String msg,
         int type,
@@ -168,7 +168,7 @@ public class GridCacheQueryEvent<K, V> extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryEvent.class, this,
+        return S.toString(GridCacheQueryExecutedEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

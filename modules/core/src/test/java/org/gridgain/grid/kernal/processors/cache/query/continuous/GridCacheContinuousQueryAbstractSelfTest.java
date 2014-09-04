@@ -1428,9 +1428,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         GridPredicate<GridEvent> execLsnr = new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
-                assert evt instanceof GridCacheQueryEvent;
+                assert evt instanceof GridCacheQueryExecutedEvent;
 
-                GridCacheQueryEvent qe = (GridCacheQueryEvent)evt;
+                GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
                 assertNull(qe.cacheName());
 

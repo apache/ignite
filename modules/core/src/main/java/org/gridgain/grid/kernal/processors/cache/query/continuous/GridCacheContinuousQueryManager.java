@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -136,21 +135,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             if (added) {
                 lsnrCnt.incrementAndGet();
 
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryEvent<>(
-                        cctx.localNode(),
-                        "Continuous query executed.",
-                        EVT_CACHE_CONTINUOUS_QUERY_EXECUTED,
-                        cctx.namex(),
-                        null,
-                        null,
-                        null,
-                        lsnr.filter(),
-                        null,
-                        nodeId,
-                        null
-                    ));
-                }
+                lsnr.onExecution();
             }
         }
 
