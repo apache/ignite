@@ -403,7 +403,9 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                 if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new GridException("Meta cache names should be different for different GGFS instances " +
-                            "configuration [metaCacheName=" + rmtAttr.metaCacheName() +
+                            "configuration (fix configuration or set " +
+                            "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
                             ", locGgfsName=" + locAttr.ggfsName() +
@@ -411,7 +413,9 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new GridException("Data cache names should be different for different GGFS instances " +
-                            "configuration [dataCacheName=" + rmtAttr.dataCacheName() +
+                            "configuration (fix configuration or set " +
+                            "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
                             ", locGgfsName=" + locAttr.ggfsName() +
@@ -421,54 +425,38 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                 }
 
                 // Compare other attributes only for GGFSes with same name.
-                if (!F.eq(rmtAttr.blockSize(), locAttr.blockSize()))
-                    throw new GridException("Data block size should be same on all nodes in grid " +
-                        "for GGFS configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtBlockSize=" + rmtAttr.blockSize() +
-                        ", locBlockSize=" + locAttr.blockSize() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Data block size", "BlockSize", rmtNode.id(), rmtAttr.blockSize(),
+                    locAttr.blockSize(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.groupSize(), locAttr.groupSize()))
-                    throw new GridException("Affinity mapper group size should be the same on all nodes in " +
-                        "grid for GGFS configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtGrpSize=" + rmtAttr.groupSize() +
-                        ", locGrpSize=" + locAttr.groupSize() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Affinity mapper group size", "GrpSize", rmtNode.id(), rmtAttr.groupSize(),
+                    locAttr.groupSize(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
-                    throw new GridException("Meta cache name should be the same on all nodes in grid for GGFS " +
-                        "configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtMetaCacheName=" + rmtAttr.metaCacheName() +
-                        ", locMetaCacheName=" + locAttr.metaCacheName() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Meta cache name", "MetaCacheName", rmtNode.id(), rmtAttr.metaCacheName(),
+                    locAttr.metaCacheName(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
-                    throw new GridException("Data cache name should be the same on all nodes in grid for GGFS " +
-                        "configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtDataCacheName=" + rmtAttr.dataCacheName() +
-                        ", locDataCacheName=" + locAttr.dataCacheName() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Data cache name", "DataCacheName", rmtNode.id(), rmtAttr.dataCacheName(),
+                    locAttr.dataCacheName(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.defaultMode(), locAttr.defaultMode()))
-                    throw new GridException("Default mode should be the same on all nodes in grid for GGFS " +
-                        "configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtDefaultMode=" + rmtAttr.defaultMode() +
-                        ", locDefaultMode=" + locAttr.defaultMode() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Default mode", "DefaultMode", rmtNode.id(), rmtAttr.defaultMode(),
+                    locAttr.defaultMode(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.pathModes(), locAttr.pathModes()))
-                    throw new GridException("Path modes should be the same on all nodes in grid for GGFS " +
-                        "configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtPathModes=" + rmtAttr.pathModes() +
-                        ", locPathModes=" + locAttr.pathModes() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Path modes", "PathModes", rmtNode.id(), rmtAttr.pathModes(),
+                    locAttr.pathModes(), rmtAttr.ggfsName());
 
-                if (!F.eq(rmtAttr.fragmentizerEnabled(), locAttr.fragmentizerEnabled()))
-                    throw new GridException("Fragmentizer should be either enabled or disabled on " +
-                        "all nodes in grid for GGFS configuration [rmtNodeId=" + rmtNode.id() +
-                        ", rmtFragmentizerEnabled=" + rmtAttr.fragmentizerEnabled() +
-                        ", locFragmentizerEnabled=" + locAttr.fragmentizerEnabled() +
-                        ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                checkSame("Fragmentizer enabled", "FragmentizerEnabled", rmtNode.id(), rmtAttr.fragmentizerEnabled(),
+                    locAttr.fragmentizerEnabled(), rmtAttr.ggfsName());
             }
+    }
+
+    private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String ggfsName)
+        throws GridException {
+        if (!F.eq(rmtVal, locVal))
+            throw new GridException(name + " should be the same on all node in grid for GGFS configuration " +
+                "(fix configuration or set " +
+                "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                "property ) [rmtNodeId=" + rmtNodeId +
+                ", rmt" + propName + "=" + rmtVal +
+                ", loc" + propName + "=" + locVal +
+                ", ggfName=" + ggfsName + ']');
     }
 }
