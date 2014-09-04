@@ -137,8 +137,10 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkGgfsOnRemoteNode(n);
+        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkGgfsOnRemoteNode(n);
+        }
 
         for (GridGgfsContext ggfsCtx : ggfsCache.values())
             for (GridGgfsManager mgr : ggfsCtx.managers())

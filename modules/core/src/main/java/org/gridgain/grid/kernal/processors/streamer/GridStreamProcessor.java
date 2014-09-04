@@ -55,8 +55,10 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         super.onKernalStart();
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkStreamer(n);
+        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkStreamer(n);
+        }
 
         for (GridStreamerImpl s : map.values()) {
             try {

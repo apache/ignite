@@ -17,6 +17,8 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -151,8 +153,13 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         }, EVT_NODE_JOINED);
 
         for (GridNode node : spiCtx.remoteNodes()) {
-            checkConfigurationConsistency(spiCtx, node, true);
-            checkConfigurationConsistency0(spiCtx, node, true);
+            // Always run consistency check for security SPIs.
+            if (GridAuthenticationSpi.class.isAssignableFrom(getClass()) ||
+                GridSecureSessionSpi.class.isAssignableFrom(getClass()) ||
+                !Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+                checkConfigurationConsistency(spiCtx, node, true);
+                checkConfigurationConsistency0(spiCtx, node, true);
+            }
         }
 
         onContextInitialized0(spiCtx);
