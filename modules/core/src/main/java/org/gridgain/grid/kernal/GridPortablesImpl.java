@@ -13,6 +13,8 @@ import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * {@link GridPortables} implementation.
  */
@@ -73,7 +75,7 @@ public class GridPortablesImpl implements GridPortables {
         guard();
 
         try {
-            return proc.metaData(proc.typeId(cls.getName()));
+            return proc.metadata(proc.typeId(cls.getName()));
         }
         finally {
             unguard();
@@ -85,7 +87,7 @@ public class GridPortablesImpl implements GridPortables {
         guard();
 
         try {
-            return proc.metaData(proc.typeId(typeName));
+            return proc.metadata(proc.typeId(typeName));
         }
         finally {
             unguard();
@@ -97,7 +99,19 @@ public class GridPortablesImpl implements GridPortables {
         guard();
 
         try {
-            return proc.metaData(typeId);
+            return proc.metadata(typeId);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridPortableMetadata> metadata() throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata();
         }
         finally {
             unguard();

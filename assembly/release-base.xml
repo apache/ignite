@@ -57,10 +57,12 @@
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
                 <include>**/*.jar</include>
+                <include>**/*.txt</include>
             </includes>
             <excludes>
                 <exclude>*hadoop*.bat</exclude>
                 <exclude>ggrouter.bat</exclude>
+                <exclude>**/target-classpath.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -73,7 +75,8 @@
             </includes>
             <excludes>
                 <exclude>*hadoop*.sh</exclude>
-                <exclude>ggrouter.bat</exclude>
+                <exclude>ggrouter.sh</exclude>
+                <exclude>**/target-classpath.sh</exclude>
             </excludes>
         </fileSet>
 

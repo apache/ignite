@@ -187,9 +187,18 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (cfg.getEvictSynchronizedKeyBufferSize() < 0)
             throw new GridException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
-        evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
+        if (!cctx.isLocal()) {
+            evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
-        nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
+            nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
+        }
+        else {
+            if (cfg.isEvictSynchronized())
+                U.warn(log, "Ignored 'evictSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
+
+            if (cfg.isEvictNearSynchronized())
+                U.warn(log, "Ignored 'evictNearSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
+        }
 
         if (cctx.isDht() && !nearSync && evictSync && isNearEnabled(cctx))
             throw new GridException("Illegal configuration (may lead to data inconsistency) " +
@@ -699,7 +708,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
-                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null);
+                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null);
 
             if (log.isDebugEnabled())
                 log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
@@ -980,7 +989,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                     if (recordable)
                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (GridUuid)null, null,
-                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null);
+                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null);
                 }
             }
         }

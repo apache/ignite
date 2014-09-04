@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.task;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -70,6 +71,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
+    /** Internal metadata cache. */
+    private GridCache<GridTaskNameHashKey, String> tasksMetaCache;
+
     /**
      * @param ctx Kernal context.
      */
@@ -79,6 +83,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
+
+        tasksMetaCache = ctx.security().securityEnabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */
@@ -312,6 +318,21 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Resolves task name by task name hash.
+     *
+     * @param taskNameHash Task name hash.
+     * @return Task name or {@code null} if not found.
+     */
+    public String resolveTaskName(int taskNameHash) {
+        if (taskNameHash == 0)
+            return null;
+
+        assert ctx.security().securityEnabled();
+
+        return tasksMetaCache.peek(new GridTaskNameHashKey(taskNameHash));
+    }
+
+    /**
      * @param taskName Task name.
      * @param arg Optional execution argument.
      * @return Task future.
@@ -484,6 +505,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         Collection<UUID> top = nodes != null ? F.nodeIds(nodes) : null;
 
+        UUID subjId = getThreadContext(TC_SUBJ_ID);
+
+        if (subjId == null)
+            subjId = ctx.localNodeId();
+
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
@@ -496,11 +522,23 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             endTime,
             Collections.<GridComputeJobSibling>emptyList(),
             Collections.emptyMap(),
-            fullSup);
+            fullSup,
+            subjId);
 
         GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
 
-        if (deployEx == null) {
+        GridException securityEx = null;
+
+        if (ctx.security().securityEnabled() && deployEx == null) {
+            try {
+                saveTaskMetadata(taskName);
+            }
+            catch (GridException e) {
+                securityEx = e;
+            }
+        }
+
+        if (deployEx == null && securityEx == null) {
             if (dep == null || !dep.acquire())
                 handleException(new GridDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
             else {
@@ -513,7 +551,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     task,
                     dep,
                     new TaskEventListener(),
-                    map);
+                    map,
+                    subjId);
 
                 if (task != null) {
                     // Check if someone reuses the same task instance by walking
@@ -554,8 +593,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     taskWorker.run();
             }
         }
-        else
-            handleException(deployEx, fut);
+        else {
+            if (deployEx != null)
+                handleException(deployEx, fut);
+            else
+                handleException(securityEx, fut);
+        }
 
         return fut;
     }
@@ -602,6 +645,32 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName = map.containsKey(TC_TASK_NAME) ? (String)map.get(TC_TASK_NAME) : cls.getName();
 
         return taskName;
+    }
+
+    /**
+     * Saves task name metadata to utility cache.
+     *
+     * @param taskName Task name.
+     */
+    private void saveTaskMetadata(String taskName) throws GridException {
+        assert ctx.security().securityEnabled();
+
+        int nameHash = taskName.hashCode();
+
+        // 0 is reserved for no task.
+        if (nameHash == 0)
+            nameHash = 1;
+
+        GridTaskNameHashKey key = new GridTaskNameHashKey(nameHash);
+
+        String existingName = tasksMetaCache.get(key);
+
+        if (existingName == null)
+            existingName = tasksMetaCache.putIfAbsent(key, taskName);
+
+        if (existingName != null && !F.eq(existingName, taskName))
+            throw new GridException("Task name hash collision for security-enabled node [taskName=" + taskName +
+                ", existing taskName=" + existingName + ']');
     }
 
     /**

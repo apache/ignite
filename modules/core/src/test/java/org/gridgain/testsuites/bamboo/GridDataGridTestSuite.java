@@ -77,6 +77,10 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
 
@@ -102,6 +106,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTtlSelfTest.class);
+        suite.addTestSuite(GridCacheTransformEventSelfTest.class);
 
         // Partitioned cache.
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
@@ -261,10 +266,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Write-behind.
         suite.addTest(GridCacheWriteBehindTestSuite.suite());
-
-        // Before-after lock-unlock.
-        suite.addTestSuite(GridCacheColocatedBeforeAfterLockSelfTest.class);
-        // suite.addTestSuite(GridCacheNearBeforeAfterLockSelfTest.class); TODO gg-6221
 
         // Transform.
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);

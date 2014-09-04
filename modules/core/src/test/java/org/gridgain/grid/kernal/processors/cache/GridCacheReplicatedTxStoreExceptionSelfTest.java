@@ -7,25 +7,24 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.near;
+package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests before/after lock callbacks in near cache.
+ *
  */
-public class GridCacheNearBeforeAfterLockSelfTest extends GridCacheAbstractBeforeAfterLockSelfTest {
+public class GridCacheReplicatedTxStoreExceptionSelfTest extends GridCacheTxStoreExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
-        return PARTITIONED;
+        return REPLICATED;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+        return PARTITIONED_ONLY;
     }
 }
