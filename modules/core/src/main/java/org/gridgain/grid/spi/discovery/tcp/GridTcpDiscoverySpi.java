@@ -33,12 +33,14 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -412,6 +414,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Start time of the very first grid node. */
     private volatile long gridStartTime;
+
+    /** Map with proceeding ping requests. */
+    private final ConcurrentMap<InetSocketAddress, GridFuture<UUID>> pingMap = new ConcurrentHashMap8<>();
 
     /** Debug mode. */
     private boolean debugMode;
@@ -1455,7 +1460,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 return node.id().equals(pingNode(addr));
             }
-            catch (GridSpiException e) {
+            catch (GridException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']');
 
@@ -1473,54 +1478,72 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      * @return ID of the remote node if node alive.
      * @throws GridSpiException If an error occurs.
      */
-    private UUID pingNode(InetSocketAddress addr) throws GridSpiException {
+    private UUID pingNode(InetSocketAddress addr) throws GridException {
         assert addr != null;
 
         if (F.contains(locNodeAddrs, addr))
             return locNodeId;
 
-        Collection<Throwable> errs = null;
+        GridFutureAdapter<UUID> fut = new GridFutureAdapter<>();
 
-        Socket sock = null;
+        GridFuture<UUID> oldFut = pingMap.putIfAbsent(addr, fut);
 
-        for (int i = 0; i < reconCnt; i++) {
-            try {
-                if (addr.isUnresolved())
-                    addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
+        if (oldFut != null)
+            return oldFut.get();
+        else {
+            Collection<Throwable> errs = null;
 
-                long tstamp = U.currentTimeMillis();
+            Socket sock = null;
 
-                sock = openSocket(addr);
+            for (int i = 0; i < reconCnt; i++) {
+                try {
+                    if (addr.isUnresolved())
+                        addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
 
-                // Handshake response will act as ping response.
-                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                    long tstamp = U.currentTimeMillis();
 
-                GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+                    sock = openSocket(addr);
 
-                if (locNodeId.equals(res.creatorNodeId())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Handshake response from local node: " + res);
+                    // Handshake response will act as ping response.
+                    writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
-                    break;
+                    GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+
+                    if (locNodeId.equals(res.creatorNodeId())) {
+                        if (log.isDebugEnabled())
+                            log.debug("Handshake response from local node: " + res);
+
+                        break;
+                    }
+
+                    stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                    fut.onDone(res.creatorNodeId());
+
+                    pingMap.remove(addr);
+
+                    return res.creatorNodeId();
                 }
+                catch (IOException | GridException e) {
+                    if (errs == null)
+                        errs = new ArrayList<>();
 
-                stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
+                    errs.add(e);
+                }
+                finally {
+                    U.closeQuiet(sock);
+                }
+            }
 
-                return res.creatorNodeId();
-            }
-            catch (IOException | GridException e) {
-                if (errs == null)
-                    errs = new ArrayList<>();
+            GridException e = new GridSpiException("Failed to ping node by address: " + addr,
+                U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
 
-                errs.add(e);
-            }
-            finally {
-                U.closeQuiet(sock);
-            }
+            fut.onDone(e);
+
+            pingMap.remove(addr);
+
+            throw e;
         }
-
-        throw new GridSpiException("Failed to ping node by address: " + addr,
-            U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
     }
 
     /** {@inheritDoc} */
@@ -2953,7 +2976,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 try {
                                     res = pingNode(addr) != null;
                                 }
-                                catch (GridSpiException e) {
+                                catch (GridException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to ping node [addr=" + addr +
                                             ", err=" + e.getMessage() + ']');
