@@ -1021,7 +1021,10 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     private final GridOffHeapSmartPointerFactory<V> valFactory;
 
     /** */
-    private final GridUnsafeMemory mem;
+    protected final GridUnsafeMemory mem;
+
+    /** */
+    protected final GridUnsafeGuard guard;
 
     /** */
     private final KeyLock lock = new KeyLock();
@@ -1043,28 +1046,32 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
      * @param keyFactory Key factory.
      * @param valFactory Value factory.
      * @param mem Unsafe memory.
+     * @param guard Guard.
      */
     public GridOffHeapSnapTreeMap(GridOffHeapSmartPointerFactory keyFactory, GridOffHeapSmartPointerFactory valFactory,
-        GridUnsafeMemory mem) {
-        this(keyFactory, valFactory, mem, null);
+        GridUnsafeMemory mem, GridUnsafeGuard guard) {
+        this(keyFactory, valFactory, mem, guard, null);
     }
 
     /**
      * @param keyFactory Key factory.
      * @param valFactory Value factory.
      * @param mem Unsafe memory.
+     * @param guard Guard.
      * @param comparator Comparator.
      */
     public GridOffHeapSnapTreeMap(GridOffHeapSmartPointerFactory keyFactory, GridOffHeapSmartPointerFactory valFactory,
-        GridUnsafeMemory mem, Comparator<? super K> comparator) {
+        GridUnsafeMemory mem, GridUnsafeGuard guard, Comparator<? super K> comparator) {
         assert keyFactory != null;
         assert valFactory != null;
         assert mem != null;
+        assert guard != null;
 
         this.comparator = comparator;
         this.keyFactory = keyFactory;
         this.valFactory = valFactory;
         this.mem = mem;
+        this.guard = guard;
         this.holderRef = rootHolder();
     }
 
@@ -1962,7 +1969,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         }
 
         if (toMem != null)
-            mem.releaseLater(toMem);
+            guard.releaseLater(toMem);
     }
 
     /**

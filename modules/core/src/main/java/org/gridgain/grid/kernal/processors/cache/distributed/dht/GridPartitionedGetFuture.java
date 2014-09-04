@@ -406,6 +406,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 /**update-metrics*/true,
                                 /*event*/true,
                                 subjId,
+                                null,
                                 filters);
 
                             colocated.context().evicts().touch(entry, topVer);

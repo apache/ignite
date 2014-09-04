@@ -48,6 +48,9 @@ public class CacheDataLoaderExample {
             System.out.println();
             System.out.println(">>> Cache data loader example started.");
 
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
+
             try (GridDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
