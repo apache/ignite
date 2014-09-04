@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.eviction.lru;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
+import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.GridCachePutArrayValueSelfTest.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -21,6 +23,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -35,7 +38,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     private static final int EVICTION_MAX_SIZE = 10;
 
     /** Grid count. */
-    private static final int GRID_COUNT = 3;
+    private static final int GRID_COUNT = 2;
 
     /** Cache atomicity mode specified by test. */
     private GridCacheAtomicityMode atomicityMode;
@@ -47,14 +50,14 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         GridCacheConfiguration cc = new GridCacheConfiguration();
 
         cc.setAtomicityMode(atomicityMode);
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setDistributionMode(NEAR_PARTITIONED);
-        cc.setPreloadMode(ASYNC);
+        cc.setPreloadMode(SYNC);
         cc.setNearEvictionPolicy(new GridCacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setQueryIndexEnabled(true);
-        cc.setBackups(1);
+        cc.setBackups(0);
 
         c.setCacheConfiguration(cc);
 
@@ -98,13 +101,9 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
 
             info("Inserting " + cnt + " keys to cache.");
 
-            for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
-
-                int key = i % 500;
-                String val = Integer.toString(key);
-
-                cache.put(key, val);
+            try (GridDataLoader<Integer, String> ldr = grid(0).dataLoader(null)) {
+                for (int i = 0; i < cnt; i++)
+                    ldr.addData(i, Integer.toString(i));
             }
 
             for (int i = 0; i < GRID_COUNT; i++)
@@ -116,11 +115,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             for (int i = 0; i < cnt; i++) {
                 GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
-                int key = i % 500;
-
-                String val = cache.get(key);
-
-                assertTrue(val == null || val.equals(Integer.toString(key)));
+                assertTrue(cache.get(i).equals(Integer.toString(i)));
             }
 
             for (int i = 0; i < GRID_COUNT; i++)
