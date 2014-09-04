@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0</gridgain.version>
+        <gridgain.version>6.2.1</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -236,7 +236,6 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.portable:org.gridgain.grid.portable</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
@@ -779,6 +778,32 @@
                                 </replace>
 
                                 <replaceregexp byline="true">
+                                    <regexp pattern='\. "\$\{GRIDGAIN_HOME\}/os/bin/include/target-classpath.sh"'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replace dir="target/release-package/bin"
+                                         token='call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"'
+                                         value="">
+                                    <include name="**/*.bat"/>
+                                </replace>
+
+                                <replace token="os/" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="os\" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
+
+                                <replaceregexp byline="true">
                                     <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                     <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
                                     <fileset dir="target/release-package/bin">
@@ -835,7 +860,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>prepare-package</phase>
+                        <phase>test-compile</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>

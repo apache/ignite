@@ -291,29 +291,37 @@ public interface GridPortables {
     public GridPortableBuilder builder();
 
     /**
-     * Gets meta data for provided class.
+     * Gets metadata for provided class.
      *
      * @param cls Class.
-     * @return Meta data.
+     * @return Metadata.
      * @throws GridPortableException In case of error.
      */
     @Nullable public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException;
 
     /**
-     * Gets meta data for provided class name.
+     * Gets metadata for provided class name.
      *
      * @param typeName Type name.
-     * @return Meta data.
+     * @return Metadata.
      * @throws GridPortableException In case of error.
      */
     @Nullable public GridPortableMetadata metadata(String typeName) throws GridPortableException;
 
     /**
-     * Gets meta data for provided type ID.
+     * Gets metadata for provided type ID.
      *
      * @param typeId Type ID.
-     * @return Meta data.
+     * @return Metadata.
      * @throws GridPortableException In case of error.
      */
     @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
+
+    /**
+     * Gets metadata for all known types.
+     *
+     * @return Metadata.
+     * @throws GridPortableException In case of error.
+     */
+    public Collection<GridPortableMetadata> metadata() throws GridPortableException;
 }

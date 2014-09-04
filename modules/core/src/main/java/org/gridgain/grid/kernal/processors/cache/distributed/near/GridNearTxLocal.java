@@ -101,10 +101,12 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled && !ctx.writeToStoreFromDht(), txSize, grpLockKey, partLock, subjId);
+            swapEnabled, storeEnabled && !ctx.writeToStoreFromDht(), txSize, grpLockKey, partLock, subjId,
+            taskNameHash);
 
         assert ctx != null;
 
