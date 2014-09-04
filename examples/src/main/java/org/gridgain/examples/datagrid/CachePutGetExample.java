@@ -35,6 +35,9 @@ public class CachePutGetExample {
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
+
             // Individual puts and gets.
             putGet();
 

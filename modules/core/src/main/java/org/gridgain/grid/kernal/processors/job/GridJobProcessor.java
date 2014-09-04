@@ -151,6 +151,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
     };
 
+    /** Current session. */
+    private final GridThreadLocal<GridComputeTaskSession> currentSess = new GridThreadLocal<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -1115,6 +1118,43 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (job != null)
             job.run();
+    }
+
+    /**
+     * Callback from job worker to set current task session for execution.
+     *
+     * @param ses Session.
+     */
+    public void currentTaskSession(GridComputeTaskSession ses) {
+        currentSess.set(ses);
+    }
+
+    /**
+     * Gets hash of task name executed by current thread.
+     *
+     * @return Task name hash or {@code 0} if security is disabled.
+     */
+    public int currentTaskNameHash() {
+        String name = currentTaskName();
+
+        return name == null ? 0 : name.hashCode();
+    }
+
+    /**
+     * Gets name task executed by current thread.
+     *
+     * @return Task name or {@code null} if security is disabled.
+     */
+    public String currentTaskName() {
+        if (!ctx.security().securityEnabled())
+            return null;
+
+        GridComputeTaskSession ses = currentSess.get();
+
+        if (ses == null)
+            return null;
+
+        return ses.getTaskName();
     }
 
     /**
