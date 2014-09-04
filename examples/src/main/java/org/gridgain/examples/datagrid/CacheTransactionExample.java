@@ -42,6 +42,9 @@ public class CacheTransactionExample {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
+
             GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
 
             // Initialize.

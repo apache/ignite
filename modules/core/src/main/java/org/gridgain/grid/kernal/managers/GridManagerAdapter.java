@@ -15,20 +15,22 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
+import static java.util.Arrays.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -275,6 +277,18 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.discovery().localNode();
                     }
 
+                    @Override public Collection<GridNode> remoteDaemonNodes() {
+                        final Collection<GridNode> all = ctx.discovery().daemonNodes();
+
+                        return !localNode().isDaemon() ?
+                            all :
+                            F.view(all, new GridPredicate<GridNode>() {
+                                @Override public boolean apply(GridNode n) {
+                                    return n.isDaemon();
+                                }
+                            });
+                    }
+
                     @Nullable @Override public GridNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
@@ -297,7 +311,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                             if (msg instanceof GridTcpCommunicationMessageAdapter)
                                 ctx.io().send(node, topic, (GridTcpCommunicationMessageAdapter)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(Arrays.asList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
                         catch (GridException e) {
                             throw unwrapException(e);
