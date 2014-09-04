@@ -41,6 +41,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         GridCacheConfiguration cc = new GridCacheConfiguration();
 
         cc.setAtomicityMode(ATOMIC);
+        //cc.setAtomicityMode(TRANSACTIONAL); // TODO add test
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setDistributionMode(NEAR_PARTITIONED);
@@ -62,20 +63,20 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testXxx() throws Exception {
+    public void testNearEvictionMaxSize() throws Exception {
         final int gridCnt = 3;
 
         startGridsMultiThreaded(gridCnt);
 
         try {
-            Random rand = new Random();
+            Random rand = new Random(0);
 
             int cnt = 10000;
 
             for (int i = 0; i < cnt; i++) {
                 GridCache<Integer, String> cache = grid(rand.nextInt(gridCnt)).cache(null);
 
-                int key = rand.nextInt(5000);
+                int key = i % 5000;
                 String val = Integer.toString(key);
 
                 cache.put(key, val);
@@ -87,7 +88,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             for (int i = 0; i < cnt; i++) {
                 GridCache<Integer, String> cache = grid(rand.nextInt(gridCnt)).cache(null);
 
-                int key = rand.nextInt(5000);
+                int key = i % 5000;
 
                 String val = cache.get(key);
 
