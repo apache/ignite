@@ -42,6 +42,9 @@ public class CacheContinuousQueryExample {
 
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
+
             int keyCnt = 20;
 
             for (int i = 0; i < keyCnt; i++)
