@@ -30,6 +30,7 @@ import java.nio.*;
 import java.text.*;
 import java.util.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
@@ -134,32 +135,36 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
 
         this.spiCtx = spiCtx;
 
-        spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
-                assert evt instanceof GridDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
-                    ", actual=" + evt.type() + ", evt=" + evt + ']';
+        // Always run consistency check for security SPIs.
+        final boolean secSpi = GridAuthenticationSpi.class.isAssignableFrom(getClass()) ||
+            GridSecureSessionSpi.class.isAssignableFrom(getClass());
 
-                GridNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
+        final boolean check = secSpi || !Boolean.getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
-                if (node != null)
-                    try {
-                        checkConfigurationConsistency(spiCtx, node, false);
-                        checkConfigurationConsistency0(spiCtx, node, false);
-                    }
-                    catch(GridSpiException e) {
-                        U.error(log, "Spi consistency check failed [node=" + node.id() + ", spi=" + getName() + ']', e);
-                    }
-            }
-        }, EVT_NODE_JOINED);
+        if (check) {
+            spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
+                @Override public void onEvent(GridEvent evt) {
+                    assert evt instanceof GridDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
+                        ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-        final Collection<GridNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
+                    GridNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
 
-        for (GridNode node : remotes) {
-            // Always run consistency check for security SPIs.
-            if (GridAuthenticationSpi.class.isAssignableFrom(getClass()) ||
-                GridSecureSessionSpi.class.isAssignableFrom(getClass()) ||
-                !Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-                checkConfigurationConsistency(spiCtx, node, true);
+                    if (node != null)
+                        try {
+                            checkConfigurationConsistency(spiCtx, node, false, !secSpi);
+                            checkConfigurationConsistency0(spiCtx, node, false);
+                        }
+                        catch (GridSpiException e) {
+                            U.error(log, "Spi consistency check failed [node=" + node.id() + ", spi=" + getName() + ']',
+                                e);
+                        }
+                }
+            }, EVT_NODE_JOINED);
+
+            final Collection<GridNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
+
+            for (GridNode node : remotes) {
+                checkConfigurationConsistency(spiCtx, node, true, !secSpi);
                 checkConfigurationConsistency0(spiCtx, node, true);
             }
         }
@@ -392,7 +397,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
      * @throws GridSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private void checkConfigurationConsistency(GridSpiContext spiCtx, GridNode node, boolean starting)
+    private void checkConfigurationConsistency(GridSpiContext spiCtx, GridNode node, boolean starting, boolean tip)
         throws GridSpiException {
         assert spiCtx != null;
         assert node != null;
@@ -433,16 +438,19 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
 
         boolean isSpiConsistent = false;
 
+        String tipStr = tip ? " (fix configuration or set " +
+            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)" : "";
+
         if (rmtCls == null) {
             if (!optional && starting)
-                throw new GridSpiException("Remote SPI with the same name is not configured [name=" + name +
+                throw new GridSpiException("Remote SPI with the same name is not configured" + tipStr + " [name=" + name +
                     ", loc=" + locCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }
         else if (!locCls.equals(rmtCls)) {
             if (!optional && starting)
-                throw new GridSpiException("Remote SPI with the same name is of different type [name=" + name +
+                throw new GridSpiException("Remote SPI with the same name is of different type" + tipStr + " [name=" + name +
                     ", loc=" + locCls + ", rmt=" + rmtCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is of different type: " + name, locCls, rmtCls));

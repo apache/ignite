@@ -1385,8 +1385,7 @@ public class GridCacheUtils {
                 assert log != null;
 
                 U.warn(log, attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
-                    "system property) [cacheName=" + cfgName +
+                    "configuration) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
