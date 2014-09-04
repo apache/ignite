@@ -1970,16 +1970,46 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override public boolean writeTo(ByteBuffer buf) {
             commState.setBuffer(buf);
 
-            return commState.putUuid(null);
+            switch (commState.idx) {
+                case 0:
+                    if (!commState.putUuid(null))
+                        return false;
+
+                    commState.idx++;
+
+                case 3:
+                    if (!commState.putInt(0))
+                        return false;
+
+                    commState.idx++;
+            }
+
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
             commState.setBuffer(buf);
 
-            UUID subjId0 = commState.getUuid();
+            switch (commState.idx) {
+                case 0:
+                    UUID subjId0 = commState.getUuid();
 
-            return subjId0 != UUID_NOT_READ;
+                    if (subjId0 == UUID_NOT_READ)
+                        return false;
+
+                    commState.idx++;
+
+                case 1:
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.getInt();
+
+                    commState.idx++;
+            }
+
+            return true;
         }
     }
 }

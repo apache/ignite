@@ -14,7 +14,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
  */
 interface GridCacheContinuousQueryListener<K, V> {
     /**
-     *
+     * Query execution callback.
      */
     public void onExecution();
 
