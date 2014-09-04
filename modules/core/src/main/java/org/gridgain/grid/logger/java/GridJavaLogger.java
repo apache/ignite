@@ -121,19 +121,19 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
      * Reads default JUL configuration.
      */
     private void defaultConfiguration() {
-        final URL configUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
+        final URL cfgUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
 
-        if (configUrl == null) {
+        if (cfgUrl == null) {
             error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);
 
             return;
         }
 
-        try (InputStream in = configUrl.openStream()) {
+        try (InputStream in = cfgUrl.openStream()) {
             LogManager.getLogManager().readConfiguration(in);
         }
         catch (IOException e) {
-            error("Failed to read logging configuration: " + configUrl, e);
+            error("Failed to read logging configuration: " + cfgUrl, e);
         }
     }
 
@@ -300,20 +300,29 @@ public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogg
         GridJavaLoggerFileHandler gridFileHnd = findHandler(impl, GridJavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
-            return gridFileHnd.pattern();
+            return gridFileHnd.fileName();
 
         FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
-        if (fileHnd != null) {
-            try {
-                return (String)U.field(fileHnd, "pattern");
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
+        return fileName(fileHnd);
+    }
 
-        return null;
+    /**
+     * @param fileHnd File handler.
+     * @return Current log file or {@code null} if it can not be retrieved from file handler.
+     */
+    @Nullable static String fileName(FileHandler fileHnd) {
+        if (fileHnd == null)
+            return null;
+
+        try {
+            File[] logFiles = U.field(fileHnd, "files");
+
+            return logFiles[0].getAbsolutePath();
+        }
+        catch (Exception ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */

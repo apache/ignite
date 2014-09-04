@@ -91,6 +91,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
         UUID subjId = prj == null ? null : prj.subjectId();
 
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridLocalTx<>(
             ctx,
             implicit,
@@ -102,7 +104,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             swapOrOffheapEnabled,
             storeEnabled,
             txSize,
-            subjId);
+            subjId,
+            taskNameHash);
     }
 
     /**
