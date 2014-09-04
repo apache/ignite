@@ -530,6 +530,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         try {
             for (int t : types) {
+                if (t == GridEventType.EVT_NODE_RECONNECTED)
+                    U.warn(log, "You try to add deprecated EVT_NODE_RECONNECT event to local listener " +
+                        "(this configuration has no effect in current version of GridGain).");
+
                 getOrCreate(t).add(lsnr);
 
                 if (!isRecordable(t))

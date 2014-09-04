@@ -149,7 +149,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
-@GridDiscoverySpiReconnectSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscoverySpi, GridTcpDiscoverySpiMBean {
     /** Default port to listen (value is <tt>47500</tt>). */
@@ -1530,7 +1529,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public void reconnect() throws GridSpiException {
-        spiStart0(true);
+        throw new UnsupportedOperationException("Reconnect is not supported in current version of GridGain.");
     }
 
     /** {@inheritDoc} */
@@ -1599,10 +1598,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
 
                 // Alter flag here and fire event here, since it has not been done in msgWorker.
-                if (recon)
-                    // Node has reconnected and it is the first.
-                    notifyDiscovery(EVT_NODE_RECONNECTED, 1, locNode);
-                else {
+                if (!recon) {
                     // This is initial start, node is the first.
                     recon = true;
 
@@ -4295,9 +4291,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     mux.notifyAll();
                 }
 
-                if (recon)
-                    notifyDiscovery(EVT_NODE_RECONNECTED, topVer, locNode);
-                else {
+                if (!recon) {
                     recon = true;
 
                     // Discovery manager must create local joined event before spiStart completes.
