@@ -49,7 +49,7 @@ import org.gridgain.grid.spi.authentication.noop.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-@GridSpiConsistencyChecked(optional = true)
+@GridSpiConsistencyChecked(optional = false, checkDaemon = true)
 public interface GridAuthenticationSpi extends GridSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next authentication SPI

@@ -267,10 +267,6 @@ public class GridDataGridTestSuite extends TestSuite {
         // Write-behind.
         suite.addTest(GridCacheWriteBehindTestSuite.suite());
 
-        // Before-after lock-unlock.
-        suite.addTestSuite(GridCacheColocatedBeforeAfterLockSelfTest.class);
-        // suite.addTestSuite(GridCacheNearBeforeAfterLockSelfTest.class); TODO gg-6221
-
         // Transform.
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughSingleUpdateSelfTest.class);

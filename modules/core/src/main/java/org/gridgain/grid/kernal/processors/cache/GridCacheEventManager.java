@@ -64,11 +64,13 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, GridCacheTx tx, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
-        String cloClsName) {
-        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName);
+        String cloClsName, String taskName) {
+        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
+            taskName);
     }
 
     /**
@@ -84,11 +86,13 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, UUID nodeId, GridCacheTx tx, GridCacheMvccCandidate<K> owner,
-        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName) {
+        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
+        String taskName) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
     }
 
     /**
@@ -103,13 +107,15 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName) {
+        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
+        String taskName) {
         GridCacheTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
     }
 
     /**
@@ -125,9 +131,23 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasOldVal Whether old value is present or not.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Task class name.
      */
-    public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridUuid xid, @Nullable Object lockId, int type,
-        @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId, String cloClsName) {
+    public void addEvent(
+        int part,
+        K key,
+        UUID evtNodeId,
+        @Nullable GridUuid xid,
+        @Nullable Object lockId,
+        int type,
+        @Nullable V newVal,
+        boolean hasNewVal,
+        @Nullable V oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        @Nullable String cloClsName,
+        @Nullable String taskName
+    ) {
         assert key != null;
 
         if (!cctx.events().isRecordable(type))
@@ -147,7 +167,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal,
-                subjId, cloClsName));
+                subjId, cloClsName, taskName));
         }
     }
 
