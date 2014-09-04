@@ -160,6 +160,7 @@ public interface GridEventType {
      *
      * @see GridDiscoveryEvent
      */
+    @Deprecated
     public static final int EVT_NODE_RECONNECTED = 15;
 
     /**
