@@ -139,7 +139,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             if (req.fields())
                 removeFieldsQueryResult(sndId, req.id());
             else
-                removeQueryIterator(sndId, req.id());
+                removeQueryResult(sndId, req.id());
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
@@ -301,8 +301,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeQueryIterator(@Nullable UUID sndId, long reqId) {
-        super.removeQueryIterator(sndId, reqId);
+    @Override protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+        super.removeQueryResult(sndId, reqId);
 
         if (sndId != null) {
             Object topic = topic(sndId, reqId);

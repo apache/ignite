@@ -81,8 +81,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
-        GridIndexingKeyValueRow<K, V>>>>> qryIters = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
+        new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridIndexingFieldsResult>>> fieldsQryRes =
@@ -102,16 +102,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             @Override public void onEvent(GridEvent evt) {
                 UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
-                Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs =
-                    qryIters.remove(nodeId);
+                Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.remove(nodeId);
 
                 if (futs != null) {
-                    for (GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>> fut : futs.values()) {
-                        fut.listenAsync(new CIX1<GridFuture<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>>() {
-                            @Override public void applyx(
-                                GridFuture<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>> f)
-                                throws GridException {
-                                f.get().close();
+                    for (GridFutureAdapter<QueryResult<K, V>> fut : futs.values()) {
+                        fut.listenAsync(new CIX1<GridFuture<QueryResult<K, V>>>() {
+                            @Override public void applyx(GridFuture<QueryResult<K, V>> f) throws GridException {
+                                f.get().iter.close();
                             }
                         });
                     }
@@ -840,8 +837,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             rowIt.remove();
                     }
 
-                    assert qry.type() == SQL_FIELDS;
-
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ)) {
                         cctx.gridEvents().record(new GridCacheQueryReadEvent<K, V>(
                             cctx.localNode(),
@@ -970,9 +965,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-                GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
-                    loc ? executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName) :
-                        queryIterator(qryInfo, taskName);
+                GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+                GridCacheQueryType type;
+
+                if (loc) {
+                    iter = executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName);
+                    type = qry.type();
+                }
+                else {
+                    QueryResult<K, V> res = queryResult(qryInfo, taskName);
+
+                    iter = res.iter;
+                    type = res.type;
+                }
 
                 GridCacheAdapter<K, V> cache = cctx.cache();
 
@@ -1030,7 +1035,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         continue;
                     }
 
-                    switch (qry.type()) {
+                    switch (type) {
                         case SQL:
                             if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
@@ -1098,7 +1103,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             break;
 
                         default:
-                            assert false : "Invalid query type: " + qry.type();
+                            assert false : "Invalid query type: " + type;
                     }
 
                     Map.Entry<K, V> entry = F.t(key, val);
@@ -1159,7 +1164,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
             finally {
                 if (rmvIter)
-                    removeQueryIterator(qryInfo.senderId(), qryInfo.requestId());
+                    removeQueryResult(qryInfo.senderId(), qryInfo.requestId());
             }
         }
         finally {
@@ -1172,26 +1177,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws GridException In case of error.
      */
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryIterator(GridCacheQueryInfo qryInfo,
-        String taskName) throws GridException {
+    private QueryResult<K, V> queryResult(GridCacheQueryInfo qryInfo, String taskName) throws GridException {
         UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
 
-        Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs = qryIters.get(sndId);
+        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new LinkedHashMap<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>>(
+            futs = new LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>>(
                 16, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<Long,
-                    GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> e) {
+                @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
                     if (rmv) {
                         try {
-                            GridCloseableIterator<GridIndexingKeyValueRow<K, V>> it = e.getValue().get();
-
-                            it.close();
+                            e.getValue().get().iter.close();
                         }
                         catch (GridException ex) {
                             U.error(log, "Failed to close query iterator.", ex);
@@ -1202,14 +1203,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> old =
-                qryIters.putIfAbsent(sndId, futs);
+            Map<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
         }
 
-        return queryIterator(futs, qryInfo, taskName);
+        return queryResult(futs, qryInfo, taskName);
     }
 
     /**
@@ -1220,13 +1220,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryIterator(
-        Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs,
+    private QueryResult<K, V> queryResult(Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs,
         GridCacheQueryInfo qryInfo, String taskName) throws GridException {
         assert futs != null;
         assert qryInfo != null;
 
-        GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>> fut;
+        GridFutureAdapter<QueryResult<K, V>> fut;
 
         boolean exec = false;
 
@@ -1242,8 +1241,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
-                    qryInfo.query().subjectId(), taskName));
+                fut.onDone(new QueryResult<>(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
+                    qryInfo.query().subjectId(), taskName), qryInfo.query().type()));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1258,14 +1257,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void removeQueryIterator(@Nullable UUID sndId, long reqId) {
+    protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
         if (sndId == null)
             return;
 
-        Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs = qryIters.get(sndId);
+        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs != null) {
-            GridFuture<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>> fut;
+            GridFuture<QueryResult<K, V>> fut;
 
             synchronized (futs) {
                 fut = futs.remove(reqId);
@@ -1273,7 +1272,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (fut != null) {
                 try {
-                    fut.get().close();
+                    fut.get().iter.close();
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to close iterator.", e);
@@ -1933,6 +1932,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheSqlIndexMetadata.class, this);
+        }
+    }
+
+    /**
+     */
+    private static class QueryResult<K, V> {
+        /** */
+        private final GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+
+        /** */
+        private final GridCacheQueryType type;
+
+        /**
+         * @param iter Iterator.
+         * @param type Query type.
+         */
+        private QueryResult(GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter, GridCacheQueryType type) {
+            this.iter = iter;
+            this.type = type;
         }
     }
 
