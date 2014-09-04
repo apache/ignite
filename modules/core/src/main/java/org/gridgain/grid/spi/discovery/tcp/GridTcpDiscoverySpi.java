@@ -988,6 +988,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     "in debug mode.");
 
             debugLog = new ConcurrentLinkedDeque<>();
+
+            U.quietAndWarn(log, "TCP discovery SPI is configured in debug mode.");
         }
 
         // Clear addresses collections.
