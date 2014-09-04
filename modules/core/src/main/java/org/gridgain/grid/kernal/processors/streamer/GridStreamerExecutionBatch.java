@@ -53,7 +53,7 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     private transient GridDeployment dep;
 
     /**
-     * Empty constructor required by Externalizable
+     * Empty constructor required by Externalizable.
      */
     public GridStreamerExecutionBatch() {
         // No-op.
