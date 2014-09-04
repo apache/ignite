@@ -130,6 +130,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(3)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(4)
+    private int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -157,7 +161,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         long topVer,
         long ttl,
         boolean forceTransformBackups,
-        UUID subjId
+        UUID subjId,
+        int taskNameHash
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -167,6 +172,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.topVer = topVer;
         this.forceTransformBackups = forceTransformBackups;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
@@ -299,6 +305,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -615,6 +628,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.nearTransformClos = nearTransformClos;
         _clone.nearTransformClosBytes = nearTransformClosBytes;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -878,6 +892,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
             case 18:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -1192,6 +1212,15 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 subjId = subjId0;
 
                 commState.idx++;
+
+            case 19:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
+
+                commState.idx++;
+
         }
 
         return true;

@@ -43,6 +43,9 @@ public class CacheApiExample {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
+
             // Demonstrate atomic map operations.
             atomicMapOperations();
 
