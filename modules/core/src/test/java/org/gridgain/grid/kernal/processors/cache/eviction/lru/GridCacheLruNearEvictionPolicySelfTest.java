@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -32,7 +31,14 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     /** */
     private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
-    private static final int EVICTION_MAX_SIZE = 100;
+    /** Maximum size for near eviction policy. */
+    private static final int EVICTION_MAX_SIZE = 10;
+
+    /** Maximum size for near eviction policy. */
+    private static final int GRID_COUNT = 3;
+
+    /** */
+    private GridCacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -40,21 +46,22 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
 
         GridCacheConfiguration cc = new GridCacheConfiguration();
 
-        cc.setAtomicityMode(ATOMIC);
-        //cc.setAtomicityMode(TRANSACTIONAL); // TODO add test
+        cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setPreloadMode(ASYNC);
         cc.setNearEvictionPolicy(new GridCacheLruEvictionPolicy(EVICTION_MAX_SIZE));
-        cc.setStartSize(500);
+        cc.setStartSize(100);
         cc.setQueryIndexEnabled(true);
         cc.setBackups(1);
 
         c.setCacheConfiguration(cc);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+
         disco.setIpFinder(ipFinder);
+
         c.setDiscoverySpi(disco);
 
         return c;
@@ -63,45 +70,60 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testNearEvictionMaxSize() throws Exception {
-        final int gridCnt = 3;
+    public void testAtomicNearEvictionMaxSize() throws Exception {
+        atomicityMode = ATOMIC;
 
-        startGridsMultiThreaded(gridCnt);
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransactionalNearEvictionMaxSize() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkNearEvictionMaxSize() throws Exception {
+        startGridsMultiThreaded(GRID_COUNT);
 
         try {
             Random rand = new Random(0);
 
-            int cnt = 10000;
+            int cnt = 1000;
+
+            info("Inserting " + cnt + " keys to cache.");
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(gridCnt)).cache(null);
+                GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
-                int key = i % 5000;
+                int key = i % 500;
                 String val = Integer.toString(key);
 
                 cache.put(key, val);
-
-                if (i % 1000 == 0)
-                    info("Stored cache object for key [key=" + key + ", idx=" + i + ']');
             }
 
-            for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(gridCnt)).cache(null);
+            for (int i = 0; i < GRID_COUNT; i++)
+                assertTrue("Near cache size " + near(i).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
+                    near(i).nearSize() <= EVICTION_MAX_SIZE);
 
-                int key = i % 5000;
+            info("Getting " + cnt + " keys from cache.");
+
+            for (int i = 0; i < cnt; i++) {
+                GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
+
+                int key = i % 500;
 
                 String val = cache.get(key);
 
                 assertTrue(val == null || val.equals(Integer.toString(key)));
-
-                if (i % 1000 == 0)
-                    info("Got cache object for key [key=" + key + ", idx=" + i + ']');
             }
 
-            for (int i = 0; i < gridCnt; i++)
-                X.println(" --> Near cache size for grid #" + i + ": " + near(i).nearSize());
-
-            for (int i = 0; i < gridCnt; i++)
+            for (int i = 0; i < GRID_COUNT; i++)
                 assertTrue("Near cache size " + near(i).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
                     near(i).nearSize() <= EVICTION_MAX_SIZE);
         }

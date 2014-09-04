@@ -565,6 +565,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             true,
                             topVer,
                             subjId);
+
+                        cctx.evicts().touch(entry, topVer);
                     }
 
                     V val = info.value();
