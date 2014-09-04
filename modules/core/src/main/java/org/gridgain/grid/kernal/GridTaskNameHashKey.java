@@ -17,6 +17,9 @@ import java.io.*;
  * Keys for task name hashing.
  */
 public class GridTaskNameHashKey implements Externalizable, GridCacheInternal {
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
+
     /** Task name hash. */
     private int taskNameHash;
 

@@ -669,7 +669,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             existingName = tasksMetaCache.putIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
-            throw new GridException("Task name collision for security-enabled node [taskName=" + taskName +
+            throw new GridException("Task name hash collision for security-enabled node [taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');
     }
 
@@ -1263,5 +1263,4 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             }
         }
     }
-
 }
