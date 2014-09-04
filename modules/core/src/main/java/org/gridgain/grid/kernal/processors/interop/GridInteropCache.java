@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.interop;
 
+import org.gridgain.grid.*;
+
 /**
  * Interop cache wrapper.
  */
@@ -39,4 +41,13 @@ public interface GridInteropCache {
      *     memory address in case of exception.
      */
     public long put(long keyValAddr);
+
+    /**
+     * Put using Java array.
+     *
+     * @param data
+     * @return
+     * @throws GridException
+     */
+    public int put1(byte[] data) throws GridException;
 }
