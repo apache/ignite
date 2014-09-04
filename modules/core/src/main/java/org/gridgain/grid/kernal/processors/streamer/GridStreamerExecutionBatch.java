@@ -53,7 +53,7 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     private transient GridDeployment dep;
 
     /**
-     * Empty constructor required by
+     * Empty constructor required by Externalizable
      */
     public GridStreamerExecutionBatch() {
         // No-op.
@@ -77,6 +77,9 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
         String stageName,
         Collection<Object> evts
     ) {
+        if (stageName == null)
+            throw new IllegalArgumentException("Stage name should have non-null value.");
+
         this.execId = execId;
         this.futId = futId;
         this.execStartTs = execStartTs;
@@ -100,7 +103,6 @@ public class GridStreamerExecutionBatch implements Externalizable, GridOptimized
     @Nullable GridDeployment deployment() {
         return dep;
     }
-
 
     /**
      * @return Execution ID.
