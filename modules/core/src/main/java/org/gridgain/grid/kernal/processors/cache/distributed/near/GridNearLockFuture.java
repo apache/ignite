@@ -843,7 +843,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             inTx() ? tx.groupLockKey() : null,
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
-                                            inTx() ? tx.taskNameHash() : null);
+                                            inTx() ? tx.taskNameHash() : 0);
 
                                         mapping.request(req);
                                     }
