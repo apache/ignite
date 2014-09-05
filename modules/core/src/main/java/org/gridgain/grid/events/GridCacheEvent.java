@@ -120,6 +120,10 @@ public class GridCacheEvent extends GridEventAdapter {
     @GridToStringInclude
     private String cloClsName;
 
+    /** Task name if update was initiated within task execution. */
+    @GridToStringInclude
+    private String taskName;
+
     /**
      * Constructs cache event.
      *
@@ -144,7 +148,7 @@ public class GridCacheEvent extends GridEventAdapter {
      */
     public GridCacheEvent(String cacheName, GridNode node, @Nullable GridNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
-        Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName) {
+        Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNode = evtNode;
@@ -159,6 +163,7 @@ public class GridCacheEvent extends GridEventAdapter {
         this.hasOldVal = hasOldVal;
         this.subjId = subjId;
         this.cloClsName = cloClsName;
+        this.taskName = taskName;
     }
 
     /**
@@ -288,6 +293,15 @@ public class GridCacheEvent extends GridEventAdapter {
      */
     @Nullable public String closureClassName() {
         return cloClsName;
+    }
+
+    /**
+     * Gets task name if cache event was caused by an operation initiated within task execution.
+     *
+     * @return Task name.
+     */
+    @Nullable public String taskName() {
+        return taskName;
     }
 
     /** {@inheritDoc} */
