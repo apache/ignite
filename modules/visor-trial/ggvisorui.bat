@@ -78,9 +78,22 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
+call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
 call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+
+::
+:: Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
+::
+if exist "%HADOOP_COMMON_HOME%" (
+    for /f %%f in ('dir /B %GRIDGAIN_HOME%\bin\include\visorui') do call :concat %%f
+
+    goto cp
+)
+
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+
+:cp
+set CP=%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
@@ -124,5 +137,13 @@ set VISOR_PLUGINS_DIR=%GRIDGAIN_HOME%\bin\include\visorui\plugins
 -cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
 
 exit %ERRORLEVEL%
+
+goto :eof
+
+:concat
+set file=%1
+
+if %file:~-0,5% neq slf4j if %file:~-0,5% neq log4j if %file% neq licenses if %file% neq plugins ^
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\%1
 
 goto :eof

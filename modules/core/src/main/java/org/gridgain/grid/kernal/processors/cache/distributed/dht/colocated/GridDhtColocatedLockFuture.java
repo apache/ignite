@@ -701,7 +701,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() ? tx.groupLockKey() : null,
                                         inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
-                                        inTx() ? tx.taskNameHash() : null);
+                                        inTx() ? tx.taskNameHash() : 0);
 
                                     mapping.request(req);
                                 }

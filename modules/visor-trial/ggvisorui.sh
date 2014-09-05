@@ -42,9 +42,27 @@ setGridGainHome
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
 . "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
-CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*"
+
+#
+# Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
+#
+if [ -d "$HADOOP_COMMON_HOME" ]
+    then
+        for file in ${GRIDGAIN_HOME}/bin/include/visorui/*
+        do
+            file_name=$(basename $file)
+
+            if [ -f ${file} ] && [[ "${file_name}" != slf4j*.jar ]] && [[ "${file_name}" != log4j*.jar ]] ; then
+                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}
+            fi
+        done
+    else
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*
+fi
+
+CP="${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp

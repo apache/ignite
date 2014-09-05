@@ -673,9 +673,11 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO: enable when GG-8495 will be fixed.
+     *
      * @throws Exception If failed.
      */
-    public void testBoundedTimeBatchDequeueWindowMultithreaded() throws Exception {
+    public void _testBoundedTimeBatchDequeueWindowMultithreaded() throws Exception {
         GridStreamerBoundedTimeBatchWindow<Integer> win = new GridStreamerBoundedTimeBatchWindow<>();
 
         win.setMaximumBatches(10);
