@@ -1101,9 +1101,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             }
 
                             break;
-
-                        default:
-                            assert false : "Invalid query type: " + type;
                     }
 
                     Map.Entry<K, V> entry = F.t(key, val);
