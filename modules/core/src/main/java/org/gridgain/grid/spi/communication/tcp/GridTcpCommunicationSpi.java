@@ -234,15 +234,13 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             }
 
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                if (!ses.accepted()) {
-                    UUID id = ses.meta(NODE_ID_META);
+                UUID id = ses.meta(NODE_ID_META);
 
-                    if (id != null) {
-                        GridCommunicationClient rmv = clients.remove(id);
+                if (id != null) {
+                    GridCommunicationClient rmv = clients.remove(id);
 
-                        if (rmv != null)
-                            rmv.forceClose();
-                    }
+                    if (rmv != null)
+                        rmv.forceClose();
                 }
             }
 
