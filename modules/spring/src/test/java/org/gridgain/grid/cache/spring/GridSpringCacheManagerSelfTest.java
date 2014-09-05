@@ -21,7 +21,7 @@ import org.springframework.context.support.*;
 /**
  * Spring cache test.
  */
-public class GridSpringCacheTest extends GridCommonAbstractTest {
+public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -157,5 +157,73 @@ public class GridSpringCacheTest extends GridCommonAbstractTest {
         }
 
         assertEquals(6, svc.called());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleKeyEvict() throws Exception {
+        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+
+        for (int i = 0; i < 3; i++)
+            c.putx(i, "value" + i);
+
+        assertEquals(3, c.size());
+
+        assertEquals("value0", c.get(0));
+        assertEquals("value1", c.get(1));
+        assertEquals("value2", c.get(2));
+
+        svc.simpleKeyEvict(2);
+
+        assertEquals(2, c.size());
+
+        assertEquals("value0", c.get(0));
+        assertEquals("value1", c.get(1));
+        assertNull(c.get(2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testComplexKeyEvict() throws Exception {
+        GridCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+
+        for (int i = 0; i < 3; i++)
+            c.putx(new GridSpringCacheTestKey(i, "suffix" + i), "value" + i);
+
+        assertEquals(3, c.size());
+
+        assertEquals("value0", c.get(new GridSpringCacheTestKey(0, "suffix" + 0)));
+        assertEquals("value1", c.get(new GridSpringCacheTestKey(1, "suffix" + 1)));
+        assertEquals("value2", c.get(new GridSpringCacheTestKey(2, "suffix" + 2)));
+
+        svc.complexKeyEvict(2, "suffix" + 2);
+
+        assertEquals(2, c.size());
+
+        assertEquals("value0", c.get(new GridSpringCacheTestKey(0, "suffix" + 0)));
+        assertEquals("value1", c.get(new GridSpringCacheTestKey(1, "suffix" + 1)));
+        assertNull(c.get(new GridSpringCacheTestKey(2, "suffix" + 2)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictAll() throws Exception {
+        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+
+        for (int i = 0; i < 3; i++)
+            c.putx(i, "value" + i);
+
+        assertEquals(3, c.size());
+
+        assertEquals("value0", c.get(0));
+        assertEquals("value1", c.get(1));
+        assertEquals("value2", c.get(2));
+
+        svc.evictAll();
+
+        assertEquals(0, c.size());
     }
 }

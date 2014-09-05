@@ -89,4 +89,28 @@ public class GridSpringCacheTestService {
 
         return "value" + p1 + p2 + (cnt0 % 2 == 0 ? "even" : "odd");
     }
+
+    /**
+     * @param key Key.
+     */
+    @CacheEvict("testCache")
+    public void simpleKeyEvict(Integer key) {
+        // No-op.
+    }
+
+    /**
+     * @param p1 Parameter 1.
+     * @param p2 Parameter 2.
+     */
+    @CacheEvict("testCache")
+    public void complexKeyEvict(Integer p1, String p2) {
+        // No-op.
+    }
+
+    /**
+     */
+    @CacheEvict(value = "testCache", allEntries = true)
+    public void evictAll() {
+        // No-op.
+    }
 }
