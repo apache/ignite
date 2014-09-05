@@ -501,7 +501,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                         if (rec)
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), (GridUuid)null,
                                 null, EVT_CACHE_PRELOAD_OBJECT_UNLOADED, null, false, cached.rawGet(),
-                                cached.hasValue(), null, null);
+                                cached.hasValue(), null, null, null);
                     }
                 }
             }

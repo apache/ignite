@@ -181,6 +181,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Subject ID initiated this transaction. */
     protected UUID subjId;
 
+    /** Task name hash code. */
+    protected int taskNameHash;
+
+    /** Task name. */
+    protected String taskName;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -217,7 +223,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         assert xidVer != null;
         assert cctx != null;
@@ -236,6 +243,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         startVer = cctx.versions().last();
 
@@ -275,7 +283,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         this.cctx = cctx;
         this.nodeId = nodeId;
@@ -291,6 +300,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         implicit = false;
         implicitSingle = false;
@@ -415,6 +425,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return subjId;
 
         return originatingNodeId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
+        return taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -1111,6 +1126,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*event*/recordEvt,
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
+                        resolveTaskName(),
                         CU.<K, V>empty());
 
                 try {
@@ -1132,6 +1148,16 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 return null;
             }
         }
+    }
+
+    /**
+     * @return Resolves task name.
+     */
+    public String resolveTaskName() {
+        if (taskName != null)
+            return taskName;
+
+        return (taskName = cctx.kernalContext().task().resolveTaskName(taskNameHash));
     }
 
     /**
