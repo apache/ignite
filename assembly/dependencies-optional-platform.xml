@@ -48,7 +48,6 @@
                 <exclude>org.gridgain:gridgain-extdata-uri</exclude>
                 <exclude>org.gridgain:gridgain-examples</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
-                <exclude>org.gridgain:gridgain-hadoop</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-visor-plugins</exclude>
                 <exclude>org.gridgain:gridgain-visor-trial</exclude>

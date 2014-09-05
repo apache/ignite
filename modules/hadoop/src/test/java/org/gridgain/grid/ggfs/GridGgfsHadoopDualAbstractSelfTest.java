@@ -30,6 +30,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsAbstractSelfTest.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -43,6 +44,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
 
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
+
     /** Secondary file system URI. */
     protected static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
 
@@ -91,7 +93,6 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         this.mode = mode;
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
-
 
     /**
      * Start grid with GGFS.
@@ -173,6 +174,17 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         ggfs = (GridGgfsImpl)grid.ggfs("ggfs");
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        clear(ggfs);
+        clear(ggfsSecondary);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        G.stopAll(true);
+    }
+
     /**
      * Convenient method to group paths.
      *
@@ -189,7 +201,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
      * @throws Exception IF failed.
      */
     public void testOpenPrefetchOverride() throws Exception {
-        GridGgfsAbstractSelfTest.create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+        create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
         // Write enough data to the secondary file system.
         final int blockSize = GGFS_BLOCK_SIZE;
@@ -206,7 +218,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
 
         out.close();
 
-        GridGgfsAbstractSelfTest.awaitFileClose(ggfsSecondary, FILE);
+        awaitFileClose(ggfsSecondary, FILE);
 
         // Instantiate file system with overridden "seq reads before prefetch" property.
         Configuration cfg = new Configuration();

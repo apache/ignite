@@ -155,16 +155,8 @@ public class GridHadoopSetup {
             }
         })));
 
-        File gridgainHadoopLibs = new File(gridgainLibs, "gridgain-hadoop");
-
-        if (!gridgainHadoopLibs.exists())
-            exit("Folder '" + gridgainHadoopLibs.getAbsolutePath() + "' is not found.", null);
-
-        jarFiles.addAll(Arrays.asList(gridgainHadoopLibs.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(".jar");
-            }
-        })));
+        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-filesystem"));
+        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-hadoop"));
 
         boolean jarsLinksCorrect = true;
 
@@ -240,6 +232,18 @@ public class GridHadoopSetup {
         }
 
         println("Apache Hadoop setup is complete.");
+    }
+
+    private static void addJarsInFolder(Collection<File> jarFiles, File folder) {
+        if (!folder.exists())
+            exit("Folder '" + folder.getAbsolutePath() + "' is not found.", null);
+
+        jarFiles.addAll(Arrays.asList(folder.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".jar");
+            }
+        })));
     }
 
     /**

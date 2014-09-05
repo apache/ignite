@@ -74,6 +74,7 @@
 
         <moduleSet>
             <includes>
+                <include>org.gridgain:gridgain-filesystem</include>
                 <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>

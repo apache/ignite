@@ -2416,7 +2416,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @throws Exception If failed.
      */
-    protected void clear(GridGgfs ggfs) throws Exception {
+    public static void clear(GridGgfs ggfs) throws Exception {
         Field workerMapFld = GridGgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);
