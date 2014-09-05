@@ -14,9 +14,15 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
  */
 interface GridCacheContinuousQueryListener<K, V> {
     /**
+     * Query execution callback.
+     */
+    public void onExecution();
+
+    /**
      * Entry update callback.
      *
      * @param e Entry.
+     * @param recordEvt Whether to record event.
      */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e);
+    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
 }

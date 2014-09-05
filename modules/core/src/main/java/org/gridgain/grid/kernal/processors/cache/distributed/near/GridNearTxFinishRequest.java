@@ -41,6 +41,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -79,13 +83,15 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoverEntries,
         boolean reply,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
             writeEntries, recoverEntries, reply, null);
 
         this.explicitLock = explicitLock;
         this.topVer = topVer;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -117,6 +123,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     }
 
     /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public long topologyVersion() {
@@ -143,6 +156,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         _clone.explicitLock = explicitLock;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -181,6 +195,12 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
             case 21:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 22:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -232,6 +252,14 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 22:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

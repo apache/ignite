@@ -61,6 +61,18 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridNode> remoteDaemonNodes() {
+        Collection<GridNode> daemons = new ArrayList<>();
+
+        for (GridNode node : rmtNodes) {
+            if (node.isDaemon())
+                daemons.add(node);
+        }
+
+        return daemons;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes() {
         Collection<GridNode> all = new ArrayList<>(rmtNodes);
 

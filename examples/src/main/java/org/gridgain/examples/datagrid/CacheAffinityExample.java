@@ -47,6 +47,9 @@ public final class CacheAffinityExample {
 
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
+
             for (int i = 0; i < KEY_CNT; i++)
                 cache.putx(i, Integer.toString(i));
 
