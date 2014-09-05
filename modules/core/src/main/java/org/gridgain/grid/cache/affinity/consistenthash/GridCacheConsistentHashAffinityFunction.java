@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.tostring.*;
@@ -94,6 +95,14 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     /** Injected grid. */
     @GridInstanceResource
     private Grid grid;
+
+    /** Injected cache name. */
+    @GridCacheNameResource
+    private String cacheName;
+
+    /** Injected logger. */
+    @GridLoggerResource
+    private GridLogger log;
 
     /** Initialization flag. */
     @SuppressWarnings("TransientFieldNotInitialized")
@@ -558,6 +567,11 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     /** {@inheritDoc} */
     private void initialize() {
         if (!init.get() && init.compareAndSet(false, true)) {
+            if (log.isInfoEnabled())
+                log.info("Consistent hash configuration [cacheName=" + cacheName + ", partitions=" + parts +
+                    ", excludeNeighbors=" + exclNeighbors + ", replicas=" + replicas +
+                    ", backupFilter=" + backupFilter + ", hashIdRslvr=" + hashIdRslvr + ']');
+
             nodeHash = new GridConsistentHash<>();
 
             initLatch.countDown();

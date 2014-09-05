@@ -37,7 +37,7 @@ getClassPathSeparator
 #
 # Set router service environment.
 #
-export DEFAULT_CONFIG=clients/java/config/router/default-router.xml
+export DEFAULT_CONFIG=config/router/default-router.xml
 export MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 
 #

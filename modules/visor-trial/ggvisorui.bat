@@ -6,7 +6,7 @@
 :: / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 :: \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 ::
-:: Version: 6.2.0
+:: Version: 6.2.1
 ::
 
 ::
@@ -80,7 +80,20 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+
+::
+:: Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
+::
+if exist "%HADOOP_COMMON_HOME%" (
+    for /f %%f in ('dir /B %GRIDGAIN_HOME%\bin\include\visorui') do call :concat %%f
+
+    goto cp
+)
+
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+
+:cp
+set CP=%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
@@ -108,14 +121,29 @@ if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g
 :: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Djava.net.preferIPv4Stack=true
 
 :: Force to use OpenGL
-set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
+:: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
+
+::
+:: Set Visor plugins directory.
+::
+set VISOR_PLUGINS_DIR=%GRIDGAIN_HOME%\bin\include\visorui\plugins
 
 ::
 :: Starts Visor Dashboard.
 ::
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
--DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% -cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
+-DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% ^
+-Dpf4j.pluginsDir="%VISOR_PLUGINS_DIR%" ^
+-cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
 
 exit %ERRORLEVEL%
+
+goto :eof
+
+:concat
+set file=%1
+
+if %file:~-0,5% neq slf4j if %file:~-0,5% neq log4j if %file% neq licenses if %file% neq plugins ^
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\%1
 
 goto :eof

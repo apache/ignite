@@ -7,7 +7,7 @@
 #  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 #  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 #
-# Version: 6.2.0
+# Version: 6.2.1
 #
 
 #
@@ -44,7 +44,25 @@ setGridGainHome
 #
 . "${GRIDGAIN_HOME}"/bin/include/setenv.sh
 
-CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*"
+
+#
+# Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
+#
+if [ -d "$HADOOP_COMMON_HOME" ]
+    then
+        for file in ${GRIDGAIN_HOME}/bin/include/visorui/*
+        do
+            file_name=$(basename $file)
+
+            if [ -f ${file} ] && [[ "${file_name}" != slf4j*.jar ]] && [[ "${file_name}" != log4j*.jar ]] ; then
+                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}
+            fi
+        done
+    else
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*
+fi
+
+CP="${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp
@@ -93,19 +111,26 @@ function restoreSttySettings() {
 trap restoreSttySettings INT
 
 #
+# Set Visor plugins directory.
+#
+VISOR_PLUGINS_DIR="${GRIDGAIN_HOME}/bin/include/visorui/plugins"
+
+#
 # Starts Visor Dashboard.
 #
 case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} ${MAC_OS_OPTS} "${DOCK_OPTS}" -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" \
+        -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
+        -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher
     ;;
 esac

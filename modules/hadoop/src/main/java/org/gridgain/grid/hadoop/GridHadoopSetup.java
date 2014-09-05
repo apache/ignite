@@ -147,11 +147,24 @@ public class GridHadoopSetup {
         if (!gridgainLibs.exists())
             exit("GridGain 'libs' folder is not found.", null);
 
-        File[] jarFiles = gridgainLibs.listFiles(new FilenameFilter() {
+        Collection<File> jarFiles = new ArrayList<>();
+
+        jarFiles.addAll(Arrays.asList(gridgainLibs.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
                 return name.endsWith(".jar");
             }
-        });
+        })));
+
+        File gridgainHadoopLibs = new File(gridgainLibs, "gridgain-hadoop");
+
+        if (!gridgainHadoopLibs.exists())
+            exit("Folder '" + gridgainHadoopLibs.getAbsolutePath() + "' is not found.", null);
+
+        jarFiles.addAll(Arrays.asList(gridgainHadoopLibs.listFiles(new FilenameFilter() {
+            @Override public boolean accept(File dir, String name) {
+                return name.endsWith(".jar");
+            }
+        })));
 
         boolean jarsLinksCorrect = true;
 

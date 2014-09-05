@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -1066,6 +1067,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setStartSize(1024);
         cfg.setQueryIndexEnabled(true);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -1102,39 +1104,43 @@ public abstract class GridAbstractTest extends TestCase {
             info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
                 ", stopped=" + cntrs.getStopped() + ']');
 
-        afterTest();
-
-        if (isLastTest()) {
-            info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
-
-            TestCounters counters = getTestCounters();
-
-            // Stop all threads started by runMultithreaded() methods.
-            GridTestUtils.stopThreads(log);
-
-            // Safety.
-            getTestResources().stopThreads();
-
-            // Set reset flags, so counters will be reset on the next setUp.
-            counters.setReset(true);
-
-            afterTestsStopped();
-
-            if (startGrid)
-                G.stop(getTestGridName(), true);
-
-            // Remove counters.
-            tests.remove(getClass());
-
-            // Remove resources cached in static, if any.
-            GridClassLoaderCache.clear();
-            GridOptimizedMarshaller.clearCache();
-            GridMarshallerExclusions.clearCache();
+        try {
+            afterTest();
         }
+        finally {
+            if (isLastTest()) {
+                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
-        Thread.currentThread().setContextClassLoader(clsLdr);
+                TestCounters counters = getTestCounters();
 
-        clsLdr = null;
+                // Stop all threads started by runMultithreaded() methods.
+                GridTestUtils.stopThreads(log);
+
+                // Safety.
+                getTestResources().stopThreads();
+
+                // Set reset flags, so counters will be reset on the next setUp.
+                counters.setReset(true);
+
+                afterTestsStopped();
+
+                if (startGrid)
+                    G.stop(getTestGridName(), true);
+
+                // Remove counters.
+                tests.remove(getClass());
+
+                // Remove resources cached in static, if any.
+                GridClassLoaderCache.clear();
+                GridOptimizedMarshaller.clearCache();
+                GridMarshallerExclusions.clearCache();
+                GridEnumCache.clear();
+            }
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+        }
     }
 
     /**

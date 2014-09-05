@@ -332,7 +332,8 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
                 commit && tx.pessimistic() ? m.writes() : null,
                 commit && tx.pessimistic() ? F.view(tx.writeEntries(), CU.<K, V>transferRequired()) : null,
                 commit ? tx.syncCommit() : tx.syncRollback(),
-                tx.subjectId()
+                tx.subjectId(),
+                tx.taskNameHash()
             );
 
             MiniFuture fut = new MiniFuture(m);

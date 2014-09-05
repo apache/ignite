@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.metadata.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
@@ -244,6 +245,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
+            addHandler(new GridPortableMetadataHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -254,6 +256,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         if (isRestEnabled()) {
+            for (GridRestProtocol proto : protos)
+                proto.onKernalStart();
+
             startLatch.countDown();
 
             if (log.isDebugEnabled())
@@ -581,6 +586,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case LOG:
             case NOOP:
             case QUIT:
+            case GET_PORTABLE_METADATA:
+            case PUT_PORTABLE_METADATA:
                 break;
 
             default:

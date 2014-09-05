@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -49,6 +50,7 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
+import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -141,6 +143,12 @@ public abstract class GridUtils {
 
     /** Indicates whether current OS is Windows 7. */
     private static boolean win7;
+
+    /** Indicates whether current OS is Windows 8. */
+    private static boolean win8;
+
+    /** Indicates whether current OS is Windows 8.1. */
+    private static boolean win81;
 
     /** Indicates whether current OS is some version of Windows. */
     private static boolean unknownWin;
@@ -264,6 +272,9 @@ public abstract class GridUtils {
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
         "Documentation Center: http://bit.ly/GridGain-Documentation");
 
+    /** Portable classes. */
+    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+
     /**
      * Initializes enterprise check.
      */
@@ -292,6 +303,10 @@ public abstract class GridUtils {
                 win2008 = true;
             else if (osLow.contains("7"))
                 win7 = true;
+            else if (osLow.contains("8.1"))
+                win81 = true;
+            else if (osLow.contains("8"))
+                win8 = true;
             else
                 unknownWin = true;
         }
@@ -495,6 +510,31 @@ public abstract class GridUtils {
         timer.setPriority(10);
 
         timer.start();
+
+        PORTABLE_CLS.add(Byte.class);
+        PORTABLE_CLS.add(Short.class);
+        PORTABLE_CLS.add(Integer.class);
+        PORTABLE_CLS.add(Long.class);
+        PORTABLE_CLS.add(Float.class);
+        PORTABLE_CLS.add(Double.class);
+        PORTABLE_CLS.add(Character.class);
+        PORTABLE_CLS.add(Boolean.class);
+        PORTABLE_CLS.add(String.class);
+        PORTABLE_CLS.add(UUID.class);
+        PORTABLE_CLS.add(Date.class);
+        PORTABLE_CLS.add(Timestamp.class);
+        PORTABLE_CLS.add(byte[].class);
+        PORTABLE_CLS.add(short[].class);
+        PORTABLE_CLS.add(int[].class);
+        PORTABLE_CLS.add(long[].class);
+        PORTABLE_CLS.add(float[].class);
+        PORTABLE_CLS.add(double[].class);
+        PORTABLE_CLS.add(char[].class);
+        PORTABLE_CLS.add(boolean[].class);
+        PORTABLE_CLS.add(String[].class);
+        PORTABLE_CLS.add(UUID[].class);
+        PORTABLE_CLS.add(Date[].class);
+        PORTABLE_CLS.add(Timestamp[].class);
     }
 
     /**
@@ -4257,6 +4297,25 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr, int maxLen) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            int len = Math.min(arr.length, maxLen);
+
+            out.writeInt(len);
+
+            out.write(arr, 0, len);
+        }
+    }
+
+    /**
      * Reads byte array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -5701,8 +5760,8 @@ public abstract class GridUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return winXp || win95 || win98 || winNt || win2k ||
-            win2003 || win2008 || winVista || win7 || unknownWin;
+        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
+            win2003 || win2008 || winVista || unknownWin;
     }
 
     /**
@@ -5721,6 +5780,24 @@ public abstract class GridUtils {
      */
     public static boolean isWindows7() {
         return win7;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.
+     *
+     * @return {@code true} if current OS is Windows 8 - {@code false} otherwise.
+     */
+    public static boolean isWindows8() {
+        return win8;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 8.1.
+     *
+     * @return {@code true} if current OS is Windows 8.1 - {@code false} otherwise.
+     */
+    public static boolean isWindows81() {
+        return win81;
     }
 
     /**
@@ -5784,8 +5861,9 @@ public abstract class GridUtils {
      */
     public static boolean isSufficientlyTestedOs() {
         return
-            win2k ||
-                win7 ||
+            win7 ||
+                win8 ||
+                win81 ||
                 winXp ||
                 winVista ||
                 mac ||
@@ -6923,6 +7001,7 @@ public abstract class GridUtils {
 
     /**
      * Gets cache attributes from the given node for the given cache name.
+     *
      * @param n Node.
      * @param cacheName Cache name.
      * @return Attributes.
@@ -6934,6 +7013,19 @@ public abstract class GridUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Gets portable enabled flag from the given node for the given cache name.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @return Portable enabled flag.
+     */
+    @Nullable public static Boolean portableEnabled(GridNode n, @Nullable String cacheName) {
+        Map<String, Boolean> map = n.attribute(ATTR_CACHE_PORTABLE);
+
+        return map == null ? null : map.get(cacheName);
     }
 
     /**
@@ -8477,5 +8569,35 @@ public abstract class GridUtils {
         }
 
         return youngest;
+    }
+
+    /**
+     * Tells whether provided type is portable.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable.
+     */
+    public static boolean isPortableType(Class<?> cls) {
+        assert cls != null;
+
+        return GridPortableObject.class.isAssignableFrom(cls) ||
+            PORTABLE_CLS.contains(cls) ||
+            cls.isEnum() ||
+            (cls.isArray() && cls.getComponentType().isEnum());
+    }
+    /**
+     * Tells whether provided type is portable or a collection.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable or a collection.
+     */
+    public static boolean isPortableOrCollectionType(Class<?> cls) {
+        assert cls != null;
+
+        return isPortableType(cls) ||
+            cls == Object[].class ||
+            Collection.class.isAssignableFrom(cls) ||
+            Map.class.isAssignableFrom(cls) ||
+            Map.Entry.class.isAssignableFrom(cls);
     }
 }

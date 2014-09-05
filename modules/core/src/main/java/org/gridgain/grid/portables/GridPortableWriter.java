@@ -16,7 +16,16 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Writer for portable object.
+ * Writer for portable object used in {@link GridPortableMarshalAware} implementations.
+ * Useful for the cases when user wants a fine-grained control over serialization.
+ * <p>
+ * Note that GridGain never writes full strings for field or type names. Instead,
+ * for performance reasons, GridGain writes integer hash codes for type and field names.
+ * It has been tested that hash code conflicts for the type names or the field names
+ * within the same type are virtually non-existent and, to gain performance, it is safe
+ * to work with hash codes. For the cases when hash codes for different types or fields
+ * actually do collide, GridGain provides {@link GridPortableIdMapper} which
+ * allows to override the automatically generated hash code IDs for the type and field names.
  */
 public interface GridPortableWriter {
     /**
@@ -209,7 +218,23 @@ public interface GridPortableWriter {
     public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws GridPortableException;
 
     /**
-     * Gets raw writer.
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws GridPortableException;
+
+    /**
+     * Gets raw writer. Raw writer does not write field name hash codes, therefore,
+     * making the format even more compact. However, if the raw writer is used,
+     * dynamic structure changes to the portable objects are not supported.
      *
      * @return Raw writer.
      */

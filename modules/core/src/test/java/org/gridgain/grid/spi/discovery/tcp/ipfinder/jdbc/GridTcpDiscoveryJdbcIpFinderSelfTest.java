@@ -55,6 +55,9 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
         return finder;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInitSchemaFlag() throws Exception {
         initSchema = false;
 

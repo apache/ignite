@@ -38,6 +38,7 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Grid service processor.
@@ -53,11 +54,25 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
-    /** Service configuration cache. */
-    private GridCacheProjectionEx<GridServiceDeploymentKey, GridServiceDeployment> depCache;
+    /**
+     * Service configuration cache.
+     *
+     * @deprecated Object are used for projection for preserving backward compatibility.
+     *      Need to return strongly-typed projection (GridServiceDeploymentKey -> GridServiceDeployment)
+     *      in the next major release.
+     */
+    @Deprecated
+    private GridCacheProjectionEx<Object, Object> depCache;
 
-    /** Service assignments cache. */
-    private GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> assignCache;
+    /**
+     * Service assignments cache.
+     *
+     * @deprecated Object are used for projection for preserving backward compatibility.
+     *      Need to return strongly-typed projection (GridServiceAssignmentsKey -> GridServiceAssignments)
+     *      in the next major release.
+     */
+    @Deprecated
+    private GridCacheProjectionEx<Object, Object> assignCache;
 
     /** Local service instances. */
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
@@ -66,10 +81,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private GridLocalEventListener topLsnr = new TopologyListener();
 
     /** Deployment listener. */
-    private GridCacheContinuousQueryAdapter<GridServiceDeploymentKey, GridServiceDeployment> cfgQry;
+    private GridCacheContinuousQueryAdapter<Object, Object> cfgQry;
 
     /** Assignment listener. */
-    private GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments> assignQry;
+    private GridCacheContinuousQueryAdapter<Object, Object> assignQry;
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridFutureAdapter<?>> depFuts = new ConcurrentHashMap8<>();
@@ -92,6 +107,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
+        if (ctx.isDaemon())
+            return;
+
         GridConfiguration cfg = ctx.config();
 
         GridDeploymentMode depMode = cfg.getDeploymentMode();
@@ -106,24 +124,31 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        depCache = ctx.cache().utilityCache(GridServiceDeploymentKey.class, GridServiceDeployment.class);
-        assignCache = ctx.cache().utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
+        depCache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
+        assignCache = (GridCacheProjectionEx<Object, Object>)ctx.cache().utilityCache();
 
         ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
-        cfgQry = (GridCacheContinuousQueryAdapter<GridServiceDeploymentKey, GridServiceDeployment>)
-            depCache.queries().createContinuousQuery();
+        try {
+            if (ctx.deploy().enabled())
+                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-        cfgQry.localCallback(new DeploymentListener());
+            cfgQry = (GridCacheContinuousQueryAdapter<Object, Object>)depCache.queries().createContinuousQuery();
 
-        cfgQry.execute(ctx.grid().forLocal(), true);
+            cfgQry.localCallback(new DeploymentListener());
 
-        assignQry = (GridCacheContinuousQueryAdapter<GridServiceAssignmentsKey, GridServiceAssignments>)
-            assignCache.queries().createContinuousQuery();
+            cfgQry.execute(ctx.grid().forLocal(), true);
 
-        assignQry.localCallback(new AssignmentListener());
+            assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)assignCache.queries().createContinuousQuery();
 
-        assignQry.execute(ctx.grid().forLocal(), true);
+            assignQry.localCallback(new AssignmentListener());
+
+            assignQry.execute(ctx.grid().forLocal(), true);
+        }
+        finally {
+            if (ctx.deploy().enabled())
+                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
+        }
 
         GridServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
@@ -336,22 +361,32 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else {
                     GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
-                    GridServiceDeployment dep;
+                    if (ctx.deploy().enabled())
+                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                    if ((dep = depCache.putIfAbsent(key, new GridServiceDeployment(ctx.localNodeId(), cfg))) != null) {
-                        // Remove future from local map.
-                        depFuts.remove(cfg.getName());
+                    try {
+                        GridServiceDeployment dep = (GridServiceDeployment)depCache.putIfAbsent(key,
+                            new GridServiceDeployment(ctx.localNodeId(), cfg));
 
-                        if (failDups)
-                            fut.onDone(new GridException("Failed to deploy service " +
-                                "(service already exists and must be undeployed first): " + cfg.getName()));
-                        else {
-                            fut.onDone();
+                        if (dep != null) {
+                            // Remove future from local map.
+                            depFuts.remove(cfg.getName());
 
-                            if (!dep.configuration().equals(cfg))
-                                U.warn(log, "Service already deployed with different configuration (will ignore) " +
-                                    "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                            if (failDups)
+                                fut.onDone(new GridException("Failed to deploy service " +
+                                    "(service already exists and must be undeployed first): " + cfg.getName()));
+                            else {
+                                fut.onDone();
+
+                                if (!dep.configuration().equals(cfg))
+                                    U.warn(log, "Service already deployed with different configuration (will ignore) " +
+                                        "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
+                            }
                         }
+                    }
+                    finally {
+                        if (ctx.deploy().enabled())
+                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
                     }
                 }
 
@@ -414,8 +449,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public GridFuture<?> cancelAll() {
         Collection<GridFuture<?>> futs = new ArrayList<>();
 
-        for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
-            GridServiceDeployment dep = e.getValue();
+        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+            if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                continue;
+
+            GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
             // Cancel each service separately.
             futs.add(cancel(dep.configuration().getName()));
@@ -430,13 +468,16 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<GridServiceDescriptor> deployedServices() {
         Collection<GridServiceDescriptor> descs = new ArrayList<>();
 
-        for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
-            GridServiceDeployment dep = e.getValue();
+        for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+            if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                continue;
+
+            GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
+                GridServiceAssignments assigns = (GridServiceAssignments)assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
                     get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
@@ -473,7 +514,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             try (GridCacheTx tx = assignCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
-                GridServiceAssignments oldAssigns = assignCache.get(key);
+                GridServiceAssignments oldAssigns = (GridServiceAssignments)assignCache.get(key);
 
                 GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
                     cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
@@ -629,12 +670,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 int createCnt = assignCnt - ctxs.size();
 
                 for (int i = 0; i < createCnt; i++) {
-                    final GridService copy = copyAndInject(svc);
+                    final GridService cp = copyAndInject(svc);
 
                     final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
 
                     final GridServiceContextImpl svcCtx = new GridServiceContextImpl(assigns.name(),
-                        UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), copy, exe);
+                        UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), cp, exe);
 
                     ctxs.add(svcCtx);
 
@@ -646,7 +687,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     exe.submit(new Runnable() {
                         @Override public void run() {
                             try {
-                                copy.execute(svcCtx);
+                                cp.execute(svcCtx);
                             }
                             catch (InterruptedException | GridInterruptedException ignore) {
                                 if (log.isDebugEnabled())
@@ -674,7 +715,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 exe.shutdownNow();
 
                                 try {
-                                    ctx.resource().cleanup(copy);
+                                    ctx.resource().cleanup(cp);
                                 }
                                 catch (GridException e) {
                                     log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
@@ -697,11 +738,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         try {
             byte[] bytes = m.marshal(svc);
 
-            GridService copy = m.unmarshal(bytes, svc.getClass().getClassLoader());
+            GridService cp = m.unmarshal(bytes, svc.getClass().getClassLoader());
 
-            ctx.resource().inject(copy);
+            ctx.resource().inject(cp);
 
-            return copy;
+            return cp;
         }
         catch (GridException e) {
             log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
@@ -749,18 +790,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener
-        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>>> {
+        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<GridCacheContinuousQueryEntry<GridServiceDeploymentKey, GridServiceDeployment>> deps) {
+            final Collection<GridCacheContinuousQueryEntry<Object, Object>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Entry<GridServiceDeploymentKey, GridServiceDeployment> e : deps) {
-                        GridServiceDeployment dep = e.getValue();
+                    for (Entry<Object, Object> e : deps) {
+                        if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                            continue;
+
+                        GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
                         if (dep != null) {
                             svcName.set(dep.configuration().getName());
@@ -775,7 +819,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
                         // Handle undeployment.
                         else {
-                            String name = e.getKey().name();
+                            String name = ((GridServiceDeploymentKey)e.getKey()).name();
 
                             svcName.set(name);
 
@@ -792,13 +836,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
 
                             // Finish deployment futures if undeployment happened.
-                            GridFutureAdapter<?> fut = depFuts.remove(e.getKey().name());
+                            GridFutureAdapter<?> fut = depFuts.remove(name);
 
                             if (fut != null)
                                 fut.onDone();
 
                             // Complete undeployment future.
-                            fut = undepFuts.remove(e.getKey().name());
+                            fut = undepFuts.remove(name);
 
                             if (fut != null)
                                 fut.onDone();
@@ -874,40 +918,61 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
         @Override public void onEvent(final GridEvent evt) {
-            depExe.submit(new BusyRunnable() {
-                @Override public void run0() {
-                    long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
+            if (!busyLock.enterBusy())
+                return;
 
-                    GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+            try {
+                depExe.submit(new BusyRunnable() {
+                    @Override public void run0() {
+                        long topVer = ((GridDiscoveryEvent)evt).topologyVersion();
 
-                    if (oldest.isLocal()) {
-                        final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
+                        GridNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
-                        for (GridCacheEntry<GridServiceDeploymentKey, GridServiceDeployment> e : depCache.entrySetx()) {
-                            GridServiceDeployment dep = e.getValue();
+                        if (oldest.isLocal()) {
+                            final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
+
+                            if (ctx.deploy().enabled())
+                                ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
                             try {
-                                svcName.set(dep.configuration().getName());
+                                for (GridCacheEntry<Object, Object> e : depCache.entrySetx()) {
+                                    if (!(e.getKey() instanceof GridServiceDeploymentKey))
+                                        continue;
 
-                                ctx.cache().internalCache(CU.UTILITY_CACHE_NAME).context().affinity().
-                                    affinityReadyFuture(topVer).get();
+                                    GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
-                                reassign(dep, topVer);
+                                    try {
+                                        svcName.set(dep.configuration().getName());
+
+                                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
+                                            affinityReadyFuture(topVer).get();
+
+                                        reassign(dep, topVer);
+                                    }
+                                    catch (GridException ex) {
+                                        if (!(e instanceof GridTopologyException))
+                                            LT.error(log, ex, "Failed to do service reassignment (will retry): " +
+                                                dep.configuration().getName());
+
+                                        retries.add(dep);
+                                    }
+                                }
                             }
-                            catch (GridException ex) {
-                                if (!(e instanceof GridTopologyException))
-                                    LT.error(log, ex, "Failed to do service reassignment (will retry): " +
-                                        dep.configuration().getName());
-
-                                retries.add(dep);
+                            finally {
+                                if (ctx.deploy().enabled())
+                                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy()
+                                        .ignoreOwnership(false);
                             }
+
+                            if (!retries.isEmpty())
+                                onReassignmentFailed(topVer, retries);
                         }
-
-                        if (!retries.isEmpty())
-                            onReassignmentFailed(topVer, retries);
                     }
-                }
-            });
+                });
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /**
@@ -972,18 +1037,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener
-        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>>> {
+        implements GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<GridCacheContinuousQueryEntry<GridServiceAssignmentsKey, GridServiceAssignments>> assignCol) {
+            final Collection<GridCacheContinuousQueryEntry<Object, Object>> assignCol) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
-                    for (Entry<GridServiceAssignmentsKey, GridServiceAssignments> e : assignCol) {
-                        GridServiceAssignments assigns = e.getValue();
+                    for (Entry<Object, Object> e : assignCol) {
+                        if (!(e.getKey() instanceof GridServiceAssignmentsKey))
+                            continue;
+
+                        GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
                         if (assigns != null) {
                             svcName.set(assigns.name());
@@ -1000,7 +1068,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
                         // Handle undeployment.
                         else {
-                            String name = e.getKey().name();
+                            String name = ((GridServiceAssignmentsKey)e.getKey()).name();
 
                             svcName.set(name);
 

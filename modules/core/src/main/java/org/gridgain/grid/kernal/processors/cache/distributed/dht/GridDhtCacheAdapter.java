@@ -45,6 +45,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public static final GridProductVersion SUBJECT_ID_EVENTS_SINCE_VER = GridProductVersion.fromString("6.1.7");
 
     /** */
+    public static final GridProductVersion TASK_NAME_HASH_SINCE_VER = GridProductVersion.fromString("6.2.1");
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology. */
@@ -351,7 +354,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.versions().next(topology().topologyVersion());
+        final GridCacheVersion ver0 = ctx.versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -372,6 +375,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         GridCacheEntryEx<K, V> entry = null;
 
                         try {
+                            if (ctx.portableEnabled()) {
+                                key = (K)ctx.marshalToPortable(key);
+                                val = (V)ctx.marshalToPortable(val);
+                            }
+
                             entry = entryEx(key, false);
 
                             entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
@@ -418,7 +426,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, boolean, GridPredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, GridPredicate[])}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -433,10 +441,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        String taskName,
         boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, deserializePortable,
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable,
             forcePrimary, filter);
     }
 
@@ -457,8 +466,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@inheritDoc}
      */
     GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
-        boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, deserializePortable, false, filter);
+        String taskName, boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
+            filter);
     }
 
     /**
@@ -472,9 +482,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
         LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
-        boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        int taskNameHash, boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
-            topVer, filter, subjId, deserializePortable);
+            topVer, filter, subjId, taskNameHash, deserializePortable);
 
         fut.init();
 
@@ -490,7 +500,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
-                false, req.filter());
+                req.taskNameHash(), false, req.filter());
 
         fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
@@ -794,6 +804,46 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
                         return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridTaskNameHashAddedMessageConverter621 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putInt(0))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.getInt();
 
                     commState.idx++;
                 }

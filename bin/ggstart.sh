@@ -47,7 +47,7 @@ fi
 # Set GRIDGAIN_LIBS.
 #
 . "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
-
+. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
 CP="${GRIDGAIN_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator)
@@ -57,6 +57,8 @@ RESTART_SUCCESS_OPT="-DGRIDGAIN_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 
 #
 # Find available port for JMX
+#
+# You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
 #
 findAvailableJmxPort
 

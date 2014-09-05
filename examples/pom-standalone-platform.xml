@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.2.0</gridgain.version>
+        <gridgain.version>6.2.1</gridgain.version>
         <src.dir>src/main/java</src.dir>
     </properties>
 

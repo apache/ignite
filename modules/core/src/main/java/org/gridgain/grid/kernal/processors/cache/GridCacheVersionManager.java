@@ -37,6 +37,9 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
      */
     private final AtomicLong order = new AtomicLong(U.currentTimeMillis());
 
+    /** Current order for store operations. */
+    private final AtomicLong loadOrder = new AtomicLong(0);
+
     /** Last version. */
     private volatile GridCacheVersion last;
 
@@ -142,7 +145,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
      * @return Next version based on current topology.
      */
     public GridCacheVersion next() {
-        return next(cctx.kernalContext().discovery().topologyVersion(), true);
+        return next(cctx.kernalContext().discovery().topologyVersion(), true, false);
     }
 
     /**
@@ -154,7 +157,34 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
      * @return Next version based on given topology version.
      */
     public GridCacheVersion next(long topVer) {
-        return next(topVer, true);
+        return next(topVer, true, false);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad() {
+        return next(cctx.kernalContext().discovery().topologyVersion(), true, true);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad(long topVer) {
+        return next(topVer, true, true);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad(GridCacheVersion ver) {
+        return next(ver.topologyVersion(), false, true);
     }
 
     /**
@@ -164,7 +194,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
      * @return Next version based on given cache version.
      */
     public GridCacheVersion next(GridCacheVersion ver) {
-        return next(ver.topologyVersion(), false);
+        return next(ver.topologyVersion(), false, false);
     }
 
     /**
@@ -178,7 +208,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
      *        from the start time of the first grid node.
      * @return New lock order.
      */
-    private GridCacheVersion next(long topVer, boolean addTime) {
+    private GridCacheVersion next(long topVer, boolean addTime, boolean forLoad) {
         if (topVer == -1)
             topVer = cctx.kernalContext().discovery().topologyVersion();
 
@@ -196,10 +226,12 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
 
         if (txSerEnabled) {
             synchronized (this) {
+                long ord = forLoad ? loadOrder.incrementAndGet() : order.incrementAndGet();
+
                 GridCacheVersion next = new GridCacheVersion(
                     (int)topVer,
                     globalTime,
-                    order.incrementAndGet(),
+                    ord,
                     locNodeOrder,
                     dataCenterId);
 
@@ -209,10 +241,12 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
             }
         }
         else {
+            long ord = forLoad ? loadOrder.incrementAndGet() : order.incrementAndGet();
+
             GridCacheVersion next = new GridCacheVersion(
                 (int)topVer,
                 globalTime,
-                order.incrementAndGet(),
+                ord,
                 locNodeOrder,
                 dataCenterId);
 

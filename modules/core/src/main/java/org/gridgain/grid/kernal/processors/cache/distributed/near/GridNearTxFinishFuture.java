@@ -328,7 +328,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             commit && tx.pessimistic() ? m.writes() : null,
             commit && tx.pessimistic() ? F.view(tx.writeEntries(), CU.<K, V>transferRequired()) : null,
             commit ? tx.syncCommit() : tx.syncRollback(),
-            tx.subjectId()
+            tx.subjectId(),
+            tx.taskNameHash()
         );
 
         // If this is the primary node for the keys.

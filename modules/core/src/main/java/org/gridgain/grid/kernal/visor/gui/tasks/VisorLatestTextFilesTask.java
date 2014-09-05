@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
@@ -50,9 +51,12 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<GridBiTuple<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorLogFile> run(final GridBiTuple<String, String> arg) throws GridException {
+        @Nullable @Override protected Collection<VisorLogFile> run(final GridBiTuple<String, String> arg) throws GridException {
             String path = arg.get1();
             String regexp = arg.get2();
+
+            assert path != null;
+            assert regexp != null;
 
             URL url = U.resolveGridGainUrl(path);
 
@@ -64,7 +68,13 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<GridBiTuple<Strin
 
                 List<VisorLogFile> files = matchedFiles(folder, regexp);
 
-                return files.isEmpty() ? null : files;
+                if (files.isEmpty())
+                    return null;
+
+                if (files.size() > LOG_FILES_COUNT_LIMIT)
+                    files = new ArrayList<>(files.subList(0, LOG_FILES_COUNT_LIMIT));
+
+                return files;
             }
             catch (Exception ignored) {
                 return null;
