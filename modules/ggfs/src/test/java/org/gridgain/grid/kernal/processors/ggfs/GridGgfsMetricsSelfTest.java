@@ -460,6 +460,8 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfs.delete(fileRemote, false);
 
+        U.sleep(300);
+        
         assert ggfs.metrics().secondarySpaceSize() == 0;
 
         // Write partial block to the first file.
