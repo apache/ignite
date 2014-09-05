@@ -867,6 +867,24 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 cctx.tm().txContextReset();
             }
         }
+        else {
+            GridCacheStoreManager<K, V> store = cctx.store();
+
+            if (store.configured() && storeEnabled && (!internal() || groupLock())) {
+                try {
+                    store.txEnd(this, true);
+                }
+                catch (GridException e) {
+                    commitError(e);
+
+                    setRollbackOnly();
+
+                    cctx.tm().removeCommittedTx(this);
+
+                    throw e;
+                }
+            }
+        }
 
         // Do not unlock transaction entries if one-phase commit.
         if (!onePhaseCommit()) {
