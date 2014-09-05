@@ -12,13 +12,13 @@ package org.gridgain.grid.ggfs;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
- * Tests for DUAL_SYNC mode.
+ * Tests for DUAL_ASYNC mode.
  */
-public class GridGgfsDualSyncSelfTest extends GridGgfsDualAbstractSelfTest {
+public class GridGgfsHadoopDualAsyncSelfTest extends GridGgfsHadoopDualAbstractSelfTest {
     /**
      * Constructor.
      */
-    public GridGgfsDualSyncSelfTest() {
-        super(DUAL_SYNC);
+    public GridGgfsHadoopDualAsyncSelfTest() {
+        super(DUAL_ASYNC);
     }
 }

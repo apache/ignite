@@ -12,8 +12,6 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.ggfs.GridGgfsDualAsyncSelfTest;
-import org.gridgain.grid.ggfs.GridGgfsDualSyncSelfTest;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
@@ -49,8 +47,8 @@ public class GridHadoopTestSuite extends TestSuite {
 
         suite.addTestSuite(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class);
 
-        suite.addTest(new TestSuite(GridGgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(GridGgfsHadoopDualAsyncSelfTest.class));
 
         suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
 

@@ -427,8 +427,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 secondaryFs.setPermission(toSecondary(p), perm);
             }
             else if (rmtClient.update(convert(p), permission(perm)) == null) {
-                    throw new IOException("Failed to set file permission (file not found?)" +
-                        " [path=" + p + ", perm=" + perm + ']');
+                throw new IOException("Failed to set file permission (file not found?)" +
+                    " [path=" + p + ", perm=" + perm + ']');
             }
         }
         finally {

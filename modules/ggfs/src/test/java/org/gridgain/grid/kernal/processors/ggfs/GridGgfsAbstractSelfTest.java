@@ -56,12 +56,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
-    /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "ggfs://ggfs:grid@/";
-
-    /** Primary file system configuration path. */
-    protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
-
     /** Primary file system REST endpoint configuration string. */
     protected static final String PRIMARY_REST_CFG = "{type:'tcp', port:10500}";
 
@@ -1104,7 +1098,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final AtomicInteger createCtr = new AtomicInteger(); // How many tmies the file was re-created.
+        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         ggfs.create(FILE, false).close();
@@ -1131,7 +1125,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (GridInterruptedException ignore0) {
+                        catch (GridInterruptedException ignored) {
                             // nO-op.
                         }
                     }
@@ -1450,7 +1444,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (GridInterruptedException ignore0) {
+                        catch (GridInterruptedException ignored) {
                             // nO-op.
                         }
                     }
@@ -1909,7 +1903,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         final Map<Integer, List<GridGgfsPath>> dirPaths = new HashMap<>();
         final Map<Integer, List<GridGgfsPath>> filePaths = new HashMap<>();
 
-        Deque<GridBiTuple<Integer, GridGgfsPath>> queue = new ArrayDeque<>();
+        Queue<GridBiTuple<Integer, GridGgfsPath>> queue = new ArrayDeque<>();
 
         queue.add(F.t(0, new GridGgfsPath())); // Add root directory.
 
@@ -2127,7 +2121,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param files Files.
      * @throws Exception If failed.
      */
-    protected void create(GridGgfsImpl ggfs, @Nullable GridGgfsPath[] dirs, @Nullable GridGgfsPath[] files)
+    public static void create(GridGgfsFileSystem ggfs, @Nullable GridGgfsPath[] dirs, @Nullable GridGgfsPath[] files)
         throws Exception {
         if (dirs != null) {
             for (GridGgfsPath dir : dirs)
@@ -2136,7 +2130,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         if (files != null) {
             for (GridGgfsPath file : files) {
-                GridGgfsOutputStream os = ggfs.create(file, true);
+                OutputStream os = ggfs.create(file, true);
 
                 os.close();
             }
@@ -2153,9 +2147,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws IOException In case of IO exception.
      * @throws GridException In case of Grid exception.
      */
-    protected void createFile(GridGgfsImpl ggfs, GridGgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
-        throws IOException, GridException {
-        GridGgfsOutputStream os = null;
+    protected static void createFile(GridGgfsFileSystem ggfs, GridGgfsPath file, boolean overwrite,
+        @Nullable byte[]... chunks) throws IOException, GridException {
+        OutputStream os = null;
 
         try {
             os = ggfs.create(file, overwrite);
@@ -2179,7 +2173,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(GridGgfsImpl ggfs, GridGgfsPath file, boolean overwrite, long blockSize,
+    protected void createFile(GridGgfs ggfs, GridGgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2203,7 +2197,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(GridGgfsImpl ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
+    protected void appendFile(GridGgfs ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2226,7 +2220,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws IOException If failed.
      */
-    protected void writeFileChunks(GridGgfsOutputStream os, @Nullable byte[]... chunks) throws IOException {
+    protected static void writeFileChunks(OutputStream os, @Nullable byte[]... chunks) throws IOException {
         if (chunks != null && chunks.length > 0) {
             for (byte[] chunk : chunks)
                 os.write(chunk);
@@ -2239,7 +2233,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @param file File.
      */
-    protected void awaitFileClose(GridGgfsImpl ggfs, GridGgfsPath file) {
+    public static void awaitFileClose(GridGgfsFileSystem ggfs, GridGgfsPath file) {
         try {
             ggfs.update(file, Collections.singletonMap("prop", "val"));
         }
@@ -2409,7 +2403,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfsSecondary Second GGFS.
      * @throws Exception If failed.
      */
-    protected void clear(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary) throws Exception {
+    protected void clear(GridGgfs ggfs, GridGgfs ggfsSecondary) throws Exception {
         clear(ggfs);
 
         if (dual)
@@ -2422,7 +2416,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @throws Exception If failed.
      */
-    protected void clear(GridGgfsImpl ggfs) throws Exception {
+    protected void clear(GridGgfs ggfs) throws Exception {
         Field workerMapFld = GridGgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);

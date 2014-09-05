@@ -10,10 +10,13 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.testframework.GridTestUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1112,6 +1115,160 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         createFile(ggfsSecondary, FILE, true, chunk);
 
         checkFileContent(ggfs, FILE, chunk);
+    }
+
+    /**
+     * Ensure that no prefetch occurs in case not enough block are read sequentially.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOpenNoPrefetch() throws Exception {
+        create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+
+        // Write enough data to the secondary file system.
+        final int blockSize = GGFS_BLOCK_SIZE;
+
+        GridGgfsOutputStream out = ggfsSecondary.append(FILE, false);
+
+        int totalWritten = 0;
+
+        while (totalWritten < blockSize * 2 + chunk.length) {
+            out.write(chunk);
+
+            totalWritten += chunk.length;
+        }
+
+        out.close();
+
+        awaitFileClose(ggfsSecondary, FILE);
+
+        // Read the first block.
+        int totalRead = 0;
+
+        GridGgfsInputStream in = ggfs.open(FILE, blockSize);
+
+        final byte[] readBuf = new byte[1024];
+
+        while (totalRead + readBuf.length <= blockSize) {
+            in.read(readBuf);
+
+            totalRead += readBuf.length;
+        }
+
+        // Now perform seek.
+        in.seek(blockSize * 2);
+
+        // Read the third block.
+        totalRead = 0;
+
+        while (totalRead < totalWritten - blockSize * 2) {
+            in.read(readBuf);
+
+            totalRead += readBuf.length;
+        }
+
+        // Let's wait for a while because prefetch occurs asynchronously.
+        U.sleep(300);
+
+        // Remove the file from the secondary file system.
+        ggfsSecondary.delete(FILE, false);
+
+        // Let's wait for file will be deleted.
+        U.sleep(300);
+
+        final GridGgfsInputStream in0 = in;
+
+        // Try reading the second block. Should fail.
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                in0.seek(blockSize);
+
+                try {
+                    in0.read(readBuf);
+                } finally {
+                    U.closeQuiet(in0);
+                }
+
+                return null;
+            }
+        }, IOException.class, "Failed to read data due to secondary file system exception: " +
+            "Failed to retrieve file's data block (corrupted file?) [path=/dir/subdir/file, blockIdx=1");
+    }
+
+    /**
+     * Ensure that prefetch occurs in case several blocks are read sequentially.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOpenPrefetch() throws Exception {
+        create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+
+        // Write enough data to the secondary file system.
+        final int blockSize = ggfs.info(FILE).blockSize();
+
+        GridGgfsOutputStream out = ggfsSecondary.append(FILE, false);
+
+        int totalWritten = 0;
+
+        while (totalWritten < blockSize * 2 + chunk.length) {
+            out.write(chunk);
+
+            totalWritten += chunk.length;
+        }
+
+        out.close();
+
+        awaitFileClose(ggfsSecondary, FILE);
+
+        // Read the first two blocks.
+        int totalRead = 0;
+
+        GridGgfsInputStream in = ggfs.open(FILE, blockSize);
+
+        final byte[] readBuf = new byte[1024];
+
+        while (totalRead + readBuf.length <= blockSize * 2) {
+            in.read(readBuf);
+
+            totalRead += readBuf.length;
+        }
+
+        // Wait for a while for prefetch to finish.
+        GridGgfsMetaManager meta = ggfs.context().meta();
+
+        GridGgfsFileInfo info = meta.info(meta.fileId(FILE));
+
+        GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
+
+        GridCache<GridGgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
+            ggfs.configuration().getDataCacheName());
+
+        for (int i = 0; i < 10; i++) {
+            if (dataCache.containsKey(key))
+                break;
+            else
+                U.sleep(100);
+        }
+
+        // Remove the file from the secondary file system.
+        ggfsSecondary.delete(FILE, false);
+
+        // Let's wait for file will be deleted.
+        U.sleep(300);
+
+        // Read the third block.
+        totalRead = 0;
+
+        in.seek(blockSize * 2);
+
+        while (totalRead + readBuf.length <= blockSize) {
+            in.read(readBuf);
+
+            totalRead += readBuf.length;
+        }
+
+        in.close();
     }
 
     /**

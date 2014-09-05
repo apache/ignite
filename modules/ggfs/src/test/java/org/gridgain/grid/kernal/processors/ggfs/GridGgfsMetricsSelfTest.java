@@ -16,6 +16,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.testframework.*;
 
 import java.util.*;
@@ -429,6 +430,9 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         is.close();
 
         checkBlockMetrics(initMetrics, ggfs.metrics(), 4, 1, blockSize * 3 + rmtBlockSize, 3, 0, blockSize * 3);
+
+        // Lets wait for blocks will be placed to cache
+        U.sleep(300);
 
         // Read remote file again.
         is = ggfs.open(fileRemote);
