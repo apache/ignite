@@ -22,7 +22,7 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -37,13 +37,13 @@ setGridGainHome
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/bin/include/parseargs.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
-
+. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
 CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*"
 
 #
@@ -103,14 +103,14 @@ VISOR_PLUGINS_DIR="${GRIDGAIN_HOME}/bin/include/visorui/plugins"
 case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} ${MAC_OS_OPTS} "${DOCK_OPTS}" -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" \
         -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
         -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher

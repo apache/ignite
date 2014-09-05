@@ -78,14 +78,14 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
-
+call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
+call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
 set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
 
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\bin\include\parseargs.bat" %*
+call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
