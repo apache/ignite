@@ -653,6 +653,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
             GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
 
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestPortablesConverter620.class,
+            GridCacheQueryManager.QUERY_PORTABLES_SINCE);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
+            GridCacheQueryManager.QUERY_EVENTS_SINCE);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -1492,8 +1500,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkCache(n);
+        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkCache(n);
+        }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();

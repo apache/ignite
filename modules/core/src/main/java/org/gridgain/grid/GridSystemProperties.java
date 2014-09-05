@@ -428,6 +428,12 @@ public final class GridSystemProperties {
     public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "GRIDGAIN_PORTABLE_ARRAY_INITIAL_CAPACITY";
 
     /**
+     * Property allowing to skip configuration consistency checks.
+     */
+    public static final String GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
+        "GRIDGAIN_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
