@@ -1375,7 +1375,8 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration) [cacheName=" + cfgName +
+                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');

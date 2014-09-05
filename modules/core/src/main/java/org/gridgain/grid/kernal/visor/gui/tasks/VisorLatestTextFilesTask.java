@@ -68,7 +68,13 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<GridBiTuple<Strin
 
                 List<VisorLogFile> files = matchedFiles(folder, regexp);
 
-                return files.isEmpty() ? null : files;
+                if (files.isEmpty())
+                    return null;
+
+                if (files.size() > LOG_FILES_COUNT_LIMIT)
+                    files = new ArrayList<>(files.subList(0, LOG_FILES_COUNT_LIMIT));
+
+                return files;
             }
             catch (Exception ignored) {
                 return null;
