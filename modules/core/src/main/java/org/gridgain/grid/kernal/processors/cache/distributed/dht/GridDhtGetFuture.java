@@ -78,6 +78,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Subject ID. */
     private UUID subjId;
 
+    /** Task name. */
+    private int taskNameHash;
+
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
@@ -108,6 +111,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         long topVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
+        int taskNameHash,
         boolean deserializePortable) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
@@ -124,6 +128,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.topVer = topVer;
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
+        this.taskNameHash = taskNameHash;
 
         futId = GridUuid.randomUuid();
 
@@ -264,6 +269,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         final Collection<GridCacheEntryInfo<K, V>> infos = new LinkedList<>();
 
+        String taskName0 = ctx.job().currentTaskName();
+
+        if (taskName0 == null)
+            taskName0 = ctx.task().resolveTaskName(taskNameHash);
+
+        final String taskName = taskName0;
+
         GridCompoundFuture<Boolean, Boolean> txFut = null;
 
         for (Map.Entry<? extends K, Boolean> k : keys.entrySet()) {
@@ -315,9 +327,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         if (txFut == null || txFut.isDone()) {
             if (reload && cctx.isStoreEnabled() && cctx.store().configured())
-                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
+                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
             else
-                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, deserializePortable, filters) :
+                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
                     tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
         }
         else {
@@ -332,10 +344,10 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             throw new GridClosureException(e);
 
                         if (reload)
-                            return cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
+                            return cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
                         else
                             return tx == null ?
-                                cache().getDhtAllAsync(keys.keySet(), subjId, deserializePortable, filters) :
+                                cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
                                 tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
                     }
                 },

@@ -42,7 +42,8 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private Map<Long, Collection<GridNode>> topHist;
 
     /** If {@code true} messages will be processed, otherwise registered. */
-    private boolean procPendingMsgs;
+    @Deprecated
+    private boolean procPendingMsgs; // Not used any more.
 
     /** Discovery data from new node. */
     private List<Object> newNodeDiscoData;
@@ -143,20 +144,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      */
     public void topologyHistory(@Nullable Map<Long, Collection<GridNode>> topHist) {
         this.topHist = topHist;
-    }
-
-    /**
-     * @return {@code True} if pending messages should be processed on receive.
-     */
-    public boolean processPendingMessages() {
-        return procPendingMsgs;
-    }
-
-    /**
-     * @param procPendingMsgs {@code True} if pending messages should be processed on receive.
-     */
-    public void processPendingMessages(boolean procPendingMsgs) {
-        this.procPendingMsgs = procPendingMsgs;
     }
 
     /**
