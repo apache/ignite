@@ -23,7 +23,106 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Cache manager implementation.
+ * Implementation of Spring cache abstraction based on GridGain cache.
+ * <h1>Overview</h1>
+ * Spring cache abstraction allows to enable caching for Java methods
+ * so that result of a method execution is stored in some storage. If
+ * later the same method is called with the same set of parameters,
+ * the result will be retrieved from that storage instead of actually
+ * executing the method. For more information, refer to
+ * <a href="http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html">
+ * Spring Cache Abstraction documentation</a>.
+ * <h1 class="header">How To Enable Caching</h1>
+ * To enable caching based on GridGain cache in your Spring application,
+ * you will need to do the following:
+ * <ul>
+ *     <li>
+ *         Start a properly configured GridGain node in the same JVM
+ *         where you application is running.
+ *     </li>
+ *     <li>
+ *         Configure {@code GridSpringCacheManager} as a cache provider
+ *         in Spring application context.
+ *     </li>
+ * </ul>
+ * {@code GridSpringCacheManager} can start a node itself on its startup
+ * based on provided GridGain configuration. You can provide path to a
+ * Spring configuration XML file, like below (path can be absolute or
+ * relative to {@code GRIDGAIN_HOME}):
+ * <pre>
+ * &lt;beans xmlns="http://www.springframework.org/schema/beans"
+ *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ *        xmlns:cache="http://www.springframework.org/schema/cache"
+ *        xsi:schemaLocation="
+ *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+ *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
+ *     &lt;-- Provide configuration file path --&gt;
+ *     &lt;bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager"&gt;
+ *         &lt;property name="configurationPath" value="examples/config/spring-cache.xml"/&gt;
+ *     &lt;/bean>
+ *
+ *     &lt;-- Use annotation-driven caching configuration. --&gt;
+ *     &lt;cache:annotation-driven/&gt;
+ * &lt;/beans&gt;
+ * </pre>
+ * Or you can provide a {@link GridConfiguration} bean, like below:
+ * <pre>
+ * &lt;beans xmlns="http://www.springframework.org/schema/beans"
+ *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ *        xmlns:cache="http://www.springframework.org/schema/cache"
+ *        xsi:schemaLocation="
+ *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+ *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
+ *     &lt;-- Provide configuration bean. --&gt;
+ *     &lt;bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager"&gt;
+ *         &lt;property name="configuration"&gt;
+ *             &lt;bean id="gridCfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *                 ...
+ *             &lt;/bean&gt;
+ *         &lt;/property&gt;
+ *     &lt;/bean&gt;
+ *
+ *     &lt;-- Use annotation-driven caching configuration. --&gt;
+ *     &lt;cache:annotation-driven/&gt;
+ * &lt;/beans&gt;
+ * </pre>
+ * Note that providing both configuration path and configuration bean is illegal
+ * and results in {@link IllegalArgumentException}.
+ * <p>
+ * If you already have GridGain node running within your application,
+ * simply provide correct Grid name, like below (if there is no Grid
+ * instance with such name, exception will be thrown):
+ * <pre>
+ * &lt;beans xmlns="http://www.springframework.org/schema/beans"
+ *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ *        xmlns:cache="http://www.springframework.org/schema/cache"
+ *        xsi:schemaLocation="
+ *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+ *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
+ *     &lt;-- Provide configuration file path --&gt;
+ *     &lt;bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager"&gt;
+ *         &lt;property name="gridName" value="myGrid"/&gt;
+ *     &lt;/bean>
+ *
+ *     &lt;-- Use annotation-driven caching configuration. --&gt;
+ *     &lt;cache:annotation-driven/&gt;
+ * &lt;/beans&gt;
+ * </pre>
+ * This can be used, for example, when you are running your application
+ * in a J2EE Web container and use {@gglink org.gridgain.grid.startup.servlet.GridServletContextListenerStartup}
+ * for node startup.
+ * <p>
+ * If neither {@link #setConfigurationPath(String) configurationPath},
+ * {@link #setConfiguration(GridConfiguration) configuration}, nor
+ * {@link #setGridName(String) gridName} are provided, cache manager
+ * will try to use default Grid instance (the one with the {@code null}
+ * name). If it doesn't exist, exception will be thrown.
+ * <h1>Starting Remote Nodes</h1>
+ * Remember that the node started inside your application is an entry point
+ * to the whole topology it connects to. You can start as many remote standalone
+ * nodes as you need using {@code bin/ggstart.{sh|bat}} scripts provided in
+ * GridGain distribution. If properly configured, all these nodes will participate
+ * in caching you data.
  */
 public class GridSpringCacheManager implements InitializingBean, CacheManager {
     /** Grid configuration file path. */
@@ -39,6 +138,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     private Grid grid;
 
     /**
+     * Gets configuration file path.
+     *
      * @return Grid configuration file path.
      */
     public String getConfigurationPath() {
@@ -46,6 +147,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     }
 
     /**
+     * Sets configuration file path.
+     *
      * @param cfgPath Grid configuration file path.
      */
     public void setConfigurationPath(String cfgPath) {
@@ -53,20 +156,26 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     }
 
     /**
-     * @return Grid configuration.
+     * Gets configuration bean.
+     *
+     * @return Grid configuration bean.
      */
     public GridConfiguration getConfiguration() {
         return cfg;
     }
 
     /**
-     * @param cfg Grid configuration.
+     * Sets configuration bean.
+     *
+     * @param cfg Grid configuration bean.
      */
     public void setConfiguration(GridConfiguration cfg) {
         this.cfg = cfg;
     }
 
     /**
+     * Gets grid name.
+     *
      * @return Grid name.
      */
     public String getGridName() {
@@ -74,6 +183,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     }
 
     /**
+     * Sets grid name.
+     *
      * @param gridName Grid name.
      */
     public void setGridName(String gridName) {
@@ -81,10 +192,23 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("IfMayBeConditional")
     @Override public void afterPropertiesSet() throws Exception {
         assert grid == null;
 
-        grid = GridGain.grid(gridName);
+        if (cfgPath != null && cfg != null) {
+            throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
+                "provided. Set only one of these properties if you need to start a GridGain node inside of " +
+                "GridSpringCacheManager. If you already have a node running, omit both of them and set" +
+                "'gridName' property.");
+        }
+
+        if (cfgPath != null)
+            grid = GridGain.start(cfgPath);
+        else if (cfg != null)
+            grid = GridGain.start(cfg);
+        else
+            grid = GridGain.grid(gridName);
     }
 
     /** {@inheritDoc} */
