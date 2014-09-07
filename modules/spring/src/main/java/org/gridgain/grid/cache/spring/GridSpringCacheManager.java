@@ -26,7 +26,7 @@ import java.util.*;
  * Implementation of Spring cache abstraction based on GridGain cache.
  * <h1>Overview</h1>
  * Spring cache abstraction allows to enable caching for Java methods
- * so that result of a method execution is stored in some storage. If
+ * so that the result of a method execution is stored in some storage. If
  * later the same method is called with the same set of parameters,
  * the result will be retrieved from that storage instead of actually
  * executing the method. For more information, refer to
@@ -37,7 +37,7 @@ import java.util.*;
  * you will need to do the following:
  * <ul>
  *     <li>
- *         Start a properly configured GridGain node in the same JVM
+ *         Start a GridGain node with configured cache in the same JVM
  *         where you application is running.
  *     </li>
  *     <li>
@@ -121,8 +121,8 @@ import java.util.*;
  * Remember that the node started inside your application is an entry point
  * to the whole topology it connects to. You can start as many remote standalone
  * nodes as you need using {@code bin/ggstart.{sh|bat}} scripts provided in
- * GridGain distribution. If properly configured, all these nodes will participate
- * in caching you data.
+ * GridGain distribution, and all these nodes will participate
+ * in caching data.
  */
 public class GridSpringCacheManager implements InitializingBean, CacheManager {
     /** Grid configuration file path. */
