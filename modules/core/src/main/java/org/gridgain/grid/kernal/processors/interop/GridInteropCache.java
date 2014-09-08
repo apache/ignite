@@ -22,6 +22,9 @@ public interface GridInteropCache {
     /** Operation type: PUT. */
     public static final int OP_PUT = 1;
 
+    /** Operation type: GET_ASYNC. */
+    public static final int OP_GET_ASYNC = 2;
+
     /**
      * Get value from cache.
      *
