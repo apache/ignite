@@ -71,10 +71,9 @@ public interface GridInteropCache {
      * @param opType Operation type.
      * @param in Input stream.
      * @param out Output stream.
-     * @return Value specific for the given operation otherwise.
      * @throws GridException In case of failure.
      */
-    public int inOutOp(int opType, GridPortableInputStream in, GridPortableOutputStream out) throws GridException;
+    public void inOutOp(int opType, GridPortableInputStream in, GridPortableOutputStream out) throws GridException;
 
     /**
      * Asynchronous IN-OUT operation.
