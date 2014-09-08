@@ -42,7 +42,7 @@ setGridGainHome
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 . "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
 
 #
