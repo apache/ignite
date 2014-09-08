@@ -411,6 +411,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         new GridThread(discoWrk).start();
 
         ctx.versionConverter().onStart(discoCache().remoteNodes());
+        ctx.versionConverter().onStart(discoCache().daemonNodes());
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
