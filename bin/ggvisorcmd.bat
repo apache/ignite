@@ -42,7 +42,7 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if not "%GRIDGAIN_HOME%" == "" goto checkGridGainHome2
-    pushd "%~dp0"/../..
+    pushd "%~dp0"/../.. :: Will be replaced by pushd "%~dp0"/..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -71,9 +71,6 @@ if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :run
-
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
 
 ::
 :: Set GRIDGAIN_LIBS

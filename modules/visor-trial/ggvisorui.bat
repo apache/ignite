@@ -72,9 +72,6 @@ if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
 
 :run
 
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
-
 ::
 :: Set GRIDGAIN_LIBS
 ::
