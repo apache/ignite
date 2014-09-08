@@ -53,6 +53,16 @@ public interface GridInteropCache {
     public int inOp(int opType, GridPortableInputStream in) throws GridException;
 
     /**
+     * Asynchronous IN operation.
+     *
+     * @param opType Operation type.
+     * @param in Input stream.
+     * @param futId Future ID.
+     * @throws GridException In case of failure.
+     */
+    public void inOpAsync(int opType, GridPortableInputStream in, long futId) throws GridException;
+
+    /**
      * Synchronous IN-OUT operation.
      *
      * @param opType Operation type.
@@ -62,4 +72,16 @@ public interface GridInteropCache {
      * @throws GridException In case of failure.
      */
     public int inOutOp(int opType, GridPortableInputStream in, GridPortableOutputStream out) throws GridException;
+
+    /**
+     * Asynchronous IN-OUT operation.
+     *
+     * @param opType Operation type.
+     * @param in Input stream.
+     * @param out Output stream.
+     * @param futId Future ID.
+     * @throws GridException In case of failure.
+     */
+    public void inOutOpAsync(int opType, GridPortableInputStream in, GridPortableOutputStream out, long futId)
+        throws GridException;
 }
