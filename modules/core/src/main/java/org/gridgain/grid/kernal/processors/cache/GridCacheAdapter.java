@@ -69,6 +69,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** clearAll() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** Maximum number of key checks (approximate value). */
+    private static final int MAX_KEY_CHECKS = 100;
+
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String,
             String>>() {
@@ -78,7 +81,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     };
 
     /** */
-    private boolean keyCheck = true;
+    private int keyChecks;
 
     /** */
     private boolean valCheck = true;
@@ -2144,6 +2147,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
+        validateCacheKeys(drMap.keySet());
+
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
         ctx.denyOnLocalRead();
@@ -2164,6 +2169,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         throws GridException {
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
+
+        validateCacheKeys(drMap.keySet());
 
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2831,6 +2838,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
+        validateCacheKeys(drMap.keySet());
+
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
         syncOp(new SyncInOp(false) {
@@ -2851,6 +2860,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
+
+        validateCacheKeys(drMap.keySet());
 
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
@@ -4577,11 +4588,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param key Cache key.
      * @throws IllegalArgumentException If validation fails.
      */
-    private void validateCacheKey(Object key) {
-        if (keyCheck) {
+    protected void validateCacheKey(Object key) {
+        if (keyChecks <= MAX_KEY_CHECKS) {
             CU.validateCacheKey(log, key);
 
-            keyCheck = false;
+            keyChecks++;
         }
     }
 
@@ -4592,15 +4603,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param keys Cache keys.
      * @throws GridRuntimeException If validation fails.
      */
-    private void validateCacheKeys(Iterable<?> keys) {
-        if (keyCheck) {
+    protected void validateCacheKeys(Iterable<?> keys) {
+        if (keyChecks <= MAX_KEY_CHECKS) {
             for (Object key : keys) {
                 if (key == null)
                     continue;
 
+                if (keyChecks > MAX_KEY_CHECKS)
+                    return;
+
                 CU.validateCacheKey(log, key);
 
-                keyCheck = false;
+                keyChecks++;
             }
         }
     }
