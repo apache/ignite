@@ -26,26 +26,6 @@ public interface GridInteropCache {
     public static final int OP_GET_ASYNC = 2;
 
     /**
-     * Get value from cache.
-     *
-     * @param keyAddr Address where key is stored in unmanaged memory.
-     * @return Address where value is stored in unmanaged memory.
-     */
-    public long get(long keyAddr);
-
-    /**
-     * Get value from cache.
-     *
-     * @param keyAddr Address where key is stored in unmanaged memory.
-     * @param cbAddr Callback address.
-     * @return {@code 0} in case of success, positive value representing
-     *     unmanaged memory address in case of exception.
-     */
-    public long getAsync(long keyAddr, long cbAddr);
-
-    /** NEW DESIGN. */
-
-    /**
      * Synchronous IN operation.
      *
      * @param opType Operation type.
