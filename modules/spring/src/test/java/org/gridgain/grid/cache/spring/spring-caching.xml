@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
+    <!--
+        Test service with cacheable methods.
+    -->
+    <bean id="testService" class="org.gridgain.grid.cache.spring.GridSpringCacheTestService"/>
+
+    <!--
+        Cache manager.
+    -->
+    <bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager">
+        <property name="gridName" value="testGrid"/>
+    </bean>
+
+    <!--
+        Key generator.
+    -->
+    <bean id="keyGenerator" class="org.gridgain.grid.cache.spring.GridSpringCacheTestKeyGenerator"/>
+
+    <!--
+        Enable annotation-driver configuration for caching.
+    -->
+    <cache:annotation-driven key-generator="keyGenerator"/>
+</beans>
