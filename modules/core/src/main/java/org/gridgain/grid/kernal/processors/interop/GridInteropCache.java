@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.interop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 
 /**
  * Interop cache wrapper.
@@ -50,4 +51,26 @@ public interface GridInteropCache {
      * @throws GridException
      */
     public int put1(byte[] data) throws GridException;
+
+    /** NEW DESIGN. */
+
+    /**
+     * Synchronous IN operation.
+     *
+     * @param opType Operation type.
+     * @param in Input stream.
+     * @return -1 in case of exception, non-negative value specific for the given operation otherwise.
+     */
+    public int inOp(int opType, GridPortableInputStream in);
+
+    /**
+     * Synchronous IN-OUT operation.
+     *
+     * @param opType Operation type.
+     * @param in Input stream.
+     * @param out Output stream.
+     * @return -1 in case of exception, non-negative value specific for the given operation otherwise.
+     */
+    public int inOutOp(int opType, GridPortableInputStream in, GridPortableOutputStream out);
+
 }
