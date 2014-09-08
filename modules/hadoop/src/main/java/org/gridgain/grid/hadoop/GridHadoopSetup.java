@@ -155,7 +155,7 @@ public class GridHadoopSetup {
             }
         })));
 
-        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-filesystem"));
+        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-ggfs"));
         addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-hadoop"));
 
         boolean jarsLinksCorrect = true;
