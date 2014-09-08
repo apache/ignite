@@ -653,6 +653,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param taskName Task name.
      */
     private void saveTaskMetadata(String taskName) throws GridException {
+        if (ctx.isDaemon())
+            return;
+
         assert ctx.security().securityEnabled();
 
         int nameHash = taskName.hashCode();
