@@ -47,6 +47,7 @@
                 <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
                 <exclude>org.gridgain:gridgain-extdata-uri</exclude>
                 <exclude>org.gridgain:gridgain-examples</exclude>
+                <exclude>org.gridgain:gridgain-ggfs</exclude>
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
