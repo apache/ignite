@@ -607,8 +607,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     @Nullable public V put(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
-    @Nullable public V put(K key, V val) throws GridException;
-
     /**
      * Asynchronously stores given key-value pair in cache. If filters are provided, then entries will
      * be stored in cache only if they pass the filter. Note that filter check is atomic,
