@@ -19,20 +19,17 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -180,9 +177,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        ctx.versionConverter().registerLocal(GridJobExecuteRequest.class,
-            SubjectIdAddedMessageConverter621.class, SUBJECT_ID_ADDED_SINCE_VER);
-
         if (metricsUpdateFreq < -1)
             throw new GridException("Invalid value for 'metricsUpdateFrequency' configuration property " +
                 "(should be greater than or equals to -1): " + metricsUpdateFreq);
@@ -1865,50 +1859,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
          */
         @Override public int size() {
             return sizex();
-        }
-    }
-
-    /**
-     * GridDhtAtomicUpdateRequest converter for version 6.2.1.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class SubjectIdAddedMessageConverter621 extends GridVersionConverter {
-        /**
-         * {@inheritDoc}
-         */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (!commState.putUuid(GridTcpCommunicationMessageAdapter.UUID_NOT_READ))
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    UUID subjId0 = commState.getUuid();
-
-                    if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
         }
     }
 }
