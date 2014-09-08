@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
@@ -571,6 +572,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             true,
                             topVer,
                             subjId);
+
+                        cctx.evicts().touch(entry, topVer);
                     }
 
                     V val = info.value();
@@ -683,14 +686,30 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
             long updTopVer = ctx.discovery().topologyVersion();
 
-            assert updTopVer > topVer : "Got topology exception but topology version did " +
-                "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                ", nodeId=" + node.id() + ']';
+            if (updTopVer > topVer) {
+                // Remap.
+                map(keys.keySet(), F.t(node, keys), updTopVer);
 
-            // Remap.
-            map(keys.keySet(), F.t(node, keys), updTopVer);
+                onDone(Collections.<K, V>emptyMap());
+            }
+            else {
+                final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
 
-            onDone(Collections.<K, V>emptyMap());
+                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<GridFuture<Long>>() {
+                    @Override public void apply(GridFuture<Long> longGridFuture) {
+                        if (timeout.finish()) {
+                            ctx.timeout().removeTimeoutObject(timeout);
+
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), cctx.affinity().affinityTopologyVersion());
+
+                            onDone(Collections.<K, V>emptyMap());
+                        }
+                    }
+                });
+
+                ctx.timeout().addTimeoutObject(timeout);
+            }
         }
 
         /**
@@ -751,6 +770,46 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this);
+        }
+
+        /**
+         * Remap timeout object.
+         */
+        private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
+            /** Finished flag. */
+            private AtomicBoolean finished = new AtomicBoolean();
+
+            /** Topology version to wait. */
+            private long topVer;
+
+            /** Exception cause. */
+            private GridException e;
+
+            /**
+             * @param timeout Timeout.
+             * @param topVer Topology version timeout was created on.
+             */
+            private RemapTimeoutObject(long timeout, long topVer, GridException e) {
+                super(timeout);
+
+                this.topVer = topVer;
+                this.e = e;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onTimeout() {
+                if (finish())
+                    // Fail the whole get future.
+                    onDone(new GridException("Failed to wait for topology version to change: " + (topVer + 1), e));
+                // else remap happened concurrently.
+            }
+
+            /**
+             * @return Guard against concurrent completion.
+             */
+            public boolean finish() {
+                return finished.compareAndSet(false, true);
+            }
         }
     }
 }
