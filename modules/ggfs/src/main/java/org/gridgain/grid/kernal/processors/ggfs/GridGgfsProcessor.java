@@ -441,7 +441,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String ggfsName)
         throws GridException {
         if (!F.eq(rmtVal, locVal))
-            throw new GridException(name + " should be the same on all node in grid for GGFS configuration " +
+            throw new GridException(name + " should be the same on all nodes in grid for GGFS configuration " +
                 "(fix configuration or set " +
                 "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                 "property ) [rmtNodeId=" + rmtNodeId +

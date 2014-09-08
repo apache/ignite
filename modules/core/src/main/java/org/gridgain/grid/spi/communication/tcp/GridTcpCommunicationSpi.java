@@ -234,15 +234,15 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             }
 
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                if (!ses.accepted()) {
-                    UUID id = ses.meta(NODE_ID_META);
+                UUID id = ses.meta(NODE_ID_META);
 
-                    if (id != null) {
-                        GridCommunicationClient rmv = clients.remove(id);
+                if (id != null) {
+                    GridCommunicationClient rmv = clients.get(id);
 
-                        if (rmv != null)
-                            rmv.forceClose();
-                    }
+                    if (rmv instanceof GridTcpNioCommunicationClient &&
+                        ((GridTcpNioCommunicationClient)rmv).session() == ses &&
+                        clients.remove(id, rmv))
+                        rmv.forceClose();
                 }
             }
 
@@ -1410,8 +1410,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            boolean closeOnRelease = true;
-
             try {
                 client = reserveClient(node);
 
@@ -1422,23 +1420,18 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                 client.sendMessage(nodeId, msg);
 
-                sentMsgsCnt.increment();
+                client.release();
 
-                closeOnRelease = false;
+                client = null;
+
+                sentMsgsCnt.increment();
             }
             catch (GridException e) {
                 throw new GridSpiException("Failed to send message to remote node: " + node, e);
             }
             finally {
-                if (client != null) {
-                    if (closeOnRelease) {
-                        client.forceClose();
-
-                        clients.remove(node.id(), client);
-                    }
-                    else
-                        client.release();
-                }
+                if (client != null && clients.remove(node.id(), client))
+                    client.forceClose();
             }
         }
     }
