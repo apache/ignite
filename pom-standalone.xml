@@ -539,6 +539,10 @@
                                     <title>Visor Plugins</title>
                                     <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
                                 </group>
+                                <group>
+                                    <title>Spring Caching</title>
+                                    <packages>org.gridgain.grid.cache.spring</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
