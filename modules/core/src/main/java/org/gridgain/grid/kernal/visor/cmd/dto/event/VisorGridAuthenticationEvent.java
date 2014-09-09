@@ -27,7 +27,7 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
     private final GridSecuritySubjectType subjType;
 
     /** Subject ID. */
-    private final UUID subjID;
+    private final UUID subjId;
 
     /** Login. */
     private final Object login;
@@ -61,7 +61,7 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
         super(typeId, id, name, nid, timestamp, message, shortDisplay);
 
         this.subjType = subjType;
-        this.subjID = subjId;
+        this.subjId = subjId;
         this.login = login;
     }
 
@@ -70,8 +70,8 @@ public class VisorGridAuthenticationEvent extends VisorGridEvent {
      *
      * @return Subject ID that triggered the event.
      */
-    public UUID subjID() {
-        return subjID;
+    public UUID subjId() {
+        return subjId;
     }
 
     /**
