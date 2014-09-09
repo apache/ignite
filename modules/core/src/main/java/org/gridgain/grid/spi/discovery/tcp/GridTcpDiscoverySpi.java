@@ -1484,7 +1484,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         if (F.contains(locNodeAddrs, addr))
             return locNodeId;
 
-        GridFutureAdapter<UUID> fut = new GridFutureAdapter<>();
+        GridFutureAdapterEx<UUID> fut = new GridFutureAdapterEx<>();
 
         GridFuture<UUID> oldFut = pingMap.putIfAbsent(addr, fut);
 
@@ -1493,56 +1493,62 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         else {
             Collection<Throwable> errs = null;
 
-            Socket sock = null;
+            try {
+                Socket sock = null;
 
-            for (int i = 0; i < reconCnt; i++) {
-                try {
-                    if (addr.isUnresolved())
-                        addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
+                for (int i = 0; i < reconCnt; i++) {
+                    try {
+                        if (addr.isUnresolved())
+                            addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
 
-                    long tstamp = U.currentTimeMillis();
+                        long tstamp = U.currentTimeMillis();
 
-                    sock = openSocket(addr);
+                        sock = openSocket(addr);
 
-                    // Handshake response will act as ping response.
-                    writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                        // Handshake response will act as ping response.
+                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
-                    GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+                        GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
 
-                    if (locNodeId.equals(res.creatorNodeId())) {
-                        if (log.isDebugEnabled())
-                            log.debug("Handshake response from local node: " + res);
+                        if (locNodeId.equals(res.creatorNodeId())) {
+                            if (log.isDebugEnabled())
+                                log.debug("Handshake response from local node: " + res);
 
-                        break;
+                            break;
+                        }
+
+                        stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                        fut.onDone(res.creatorNodeId());
+
+                        return res.creatorNodeId();
                     }
+                    catch (IOException | GridException e) {
+                        if (errs == null)
+                            errs = new ArrayList<>();
 
-                    stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
-
-                    fut.onDone(res.creatorNodeId());
-
-                    pingMap.remove(addr);
-
-                    return res.creatorNodeId();
-                }
-                catch (IOException | GridException e) {
-                    if (errs == null)
-                        errs = new ArrayList<>();
-
-                    errs.add(e);
-                }
-                finally {
-                    U.closeQuiet(sock);
+                        errs.add(e);
+                    }
+                    finally {
+                        U.closeQuiet(sock);
+                    }
                 }
             }
+            catch (Throwable t) {
+                fut.onDone(t);
 
-            GridException e = new GridSpiException("Failed to ping node by address: " + addr,
-                U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
+                throw U.cast(t);
+            }
+            finally {
+                if (!fut.isDone())
+                    fut.onDone(U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
 
-            fut.onDone(e);
+                boolean b = pingMap.remove(addr, fut);
 
-            pingMap.remove(addr);
+                assert b;
+            }
 
-            throw e;
+            return fut.get();
         }
     }
 
