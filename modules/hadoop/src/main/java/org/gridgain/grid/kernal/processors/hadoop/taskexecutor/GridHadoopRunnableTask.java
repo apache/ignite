@@ -19,13 +19,15 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.concurrent.Callable;
+
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 
 /**
  * Runnable task.
  */
-public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> {
+public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** */
     private final GridUnsafeMemory mem;
 
