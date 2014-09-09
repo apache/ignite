@@ -210,7 +210,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Returning finished future for readyFuture [head=" + aff.topologyVersion() +
                     ", topVer=" + topVer + ']');
 
-            return new GridFinishedFutureEx<>(topVer);
+            return null;
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
@@ -336,7 +336,10 @@ public class GridAffinityAssignmentCache {
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
-            readyFuture(topVer).get();
+            GridFuture<Long> fut = readyFuture(topVer);
+
+            if (fut != null)
+                fut.get();
         }
         catch (GridException e) {
             throw new GridRuntimeException("Failed to wait for affinity ready future for topology version: " + topVer,

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -22,6 +23,8 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Continuous query handler.
@@ -116,7 +119,25 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
-            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e) {
+            @Override public void onExecution() {
+                if (ctx.event().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_EXECUTED)) {
+                    ctx.event().record(new GridCacheQueryExecutedEvent<>(
+                        ctx.discovery().localNode(),
+                        "Continuous query executed.",
+                        EVT_CACHE_CONTINUOUS_QUERY_EXECUTED,
+                        cacheName,
+                        null,
+                        null,
+                        null,
+                        filter,
+                        null,
+                        nodeId,
+                        taskName()
+                    ));
+                }
+            }
+
+            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
                 boolean notify;
 
                 GridCacheFlag[] f = cacheContext(ctx).forceLocalRead();
@@ -131,7 +152,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 if (notify) {
                     if (loc) {
-                        if (!cb.apply(nodeId, F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
+                        if (!cb.apply(nodeId,
+                            F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
@@ -156,6 +178,26 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
                         }
                     }
+
+                    if (recordEvt) {
+                        ctx.event().record(new GridCacheQueryReadEvent<>(
+                            ctx.discovery().localNode(),
+                            "Continuous query executed.",
+                            EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ,
+                            cacheName,
+                            null,
+                            null,
+                            null,
+                            filter,
+                            null,
+                            nodeId,
+                            taskName(),
+                            e.getKey(),
+                            e.getValue(),
+                            e.getOldValue(),
+                            null
+                        ));
+                    }
                 }
             }
 
@@ -178,9 +220,23 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 return ret;
             }
+
+            @Nullable private String taskName() {
+                String taskName = null;
+
+                if (ctx.security().securityEnabled()) {
+                    assert GridCacheContinuousQueryHandler.this instanceof GridCacheContinuousQueryHandlerV2;
+
+                    int taskHash = ((GridCacheContinuousQueryHandlerV2)GridCacheContinuousQueryHandler.this).taskHash();
+
+                    taskName = ctx.task().resolveTaskName(taskHash);
+                }
+
+                return taskName;
+            }
         };
 
-        return manager(ctx).registerListener(routineId, lsnr, internal);
+        return manager(ctx).registerListener(nodeId, routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */

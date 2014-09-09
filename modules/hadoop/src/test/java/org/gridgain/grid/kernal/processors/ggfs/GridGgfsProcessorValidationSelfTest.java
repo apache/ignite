@@ -297,7 +297,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data block size should be same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Data block size should be the same on all nodes in grid for GGFS", false);
     }
 
     /**

@@ -1524,17 +1524,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
             }
         }
-
-        if (tx.pessimistic() && !tx.near()) {
-            GridInClosure3<K, Boolean, GridCacheOperation> clos = cctx.cache().afterPessimisticUnlock();
-
-            if (clos != null) {
-                for (GridCacheTxEntry<K, V> entry : entries) {
-                    if (!entry.cached().detached())
-                        clos.apply(entry.key(), true, entry.op());
-                }
-            }
-        }
     }
 
     /**
