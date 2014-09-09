@@ -16,14 +16,17 @@ import org.gridgain.grid.kernal.processors.portable.*;
  * Interop cache wrapper.
  */
 public interface GridInteropCache {
-    /** Operation type: GET. */
+    /** */
     public static final int OP_GET = 0;
 
-    /** Operation type: PUT. */
+    /** */
     public static final int OP_PUT = 1;
 
-    /** Operation type: GET_ASYNC. */
+    /** */
     public static final int OP_GET_ASYNC = 2;
+
+    /** */
+    public static final int OP_PUTX_ASYNC = 3;
 
     /**
      * Synchronous IN operation.
