@@ -609,7 +609,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        validateCacheKeys(map.keySet());
+        if (map != null)
+            validateCacheKeys(map.keySet());
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
@@ -666,7 +667,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert keys != null || drMap != null;
 
         validateCacheKeys(keys);
-        validateCacheKeys(drMap.keySet());
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 

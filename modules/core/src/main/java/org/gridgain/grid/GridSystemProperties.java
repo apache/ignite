@@ -434,6 +434,11 @@ public final class GridSystemProperties {
         "GRIDGAIN_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
 
     /**
+     * Maximum number of key validation checks.
+     */
+    public static final String GG_CACHE_KEY_VALIDATION_CHECKS = "GRIDGAIN_CACHE_KEY_VALIDATION_CHECKS";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {

@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
@@ -48,13 +48,14 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
@@ -70,7 +71,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
     /** Maximum number of key checks (approximate value). */
-    private static final int MAX_KEY_CHECKS = 100;
+    private static final int MAX_KEY_CHECKS = Integer.getInteger(GG_CACHE_KEY_VALIDATION_CHECKS, 100);
 
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String,
@@ -743,8 +744,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
-        assert keys != null;
-
         validateCacheKeys(keys);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -883,8 +882,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxEx<K, V> tx, @Nullable Collection<K> skipped) throws GridException {
         if (F.isEmpty(keys))
             return emptyMap();
-
-        assert keys != null;
 
         validateCacheKeys(keys);
 
@@ -1224,9 +1221,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param readers Readers flag.
      */
     public void clearAll(Collection<? extends K> keys, boolean readers) {
-        if (F.isEmpty(keys)) {
+        if (F.isEmpty(keys))
             return;
-        }
 
         validateCacheKeys(keys);
 
@@ -2147,8 +2143,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
-        validateCacheKeys(drMap.keySet());
-
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
         ctx.denyOnLocalRead();
@@ -2169,8 +2163,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         throws GridException {
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
-
-        validateCacheKeys(drMap.keySet());
 
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2838,8 +2830,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(drMap))
             return;
 
-        validateCacheKeys(drMap.keySet());
-
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
         syncOp(new SyncInOp(false) {
@@ -2860,8 +2850,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
-
-        validateCacheKeys(drMap.keySet());
 
         metrics.onReceiveCacheEntriesReceived(drMap.size());
 
@@ -4076,9 +4064,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
-        if (F.isEmpty(keys)) {
+        if (F.isEmpty(keys))
             return;
-        }
 
         validateCacheKeys(keys);
 
@@ -4212,8 +4199,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return true;
 
-        assert keys != null;
-
         validateCacheKeys(keys);
 
         for (K k : keys)
@@ -4232,8 +4217,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         if (F.isEmpty(keys))
             return true;
-
-        assert keys != null;
 
         validateCacheKeys(keys);
 
@@ -4588,7 +4571,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param key Cache key.
      * @throws IllegalArgumentException If validation fails.
      */
-    protected void validateCacheKey(Object key) {
+    private void validateCacheKey(Object key) {
         if (keyChecks <= MAX_KEY_CHECKS) {
             CU.validateCacheKey(log, key);
 
