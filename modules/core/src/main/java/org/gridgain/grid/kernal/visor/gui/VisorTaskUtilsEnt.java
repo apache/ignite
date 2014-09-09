@@ -75,6 +75,9 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
         EVT_AUTHENTICATION_FAILED
     };
 
+    /** Only non task event types that Visor should collect. */
+    private static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
+
     /**
      * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
      */
@@ -164,8 +167,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
 
                 // Retains events by lastOrder, period and type.
                 return e.localOrder() > lastOrder && e.timestamp() > notOlderThan &&
-                        all ? (F.contains(VISOR_TASK_EVTS, e.type()) || F.contains(VISOR_NON_TASK_EVTS, e.type()))
-                            : F.contains(VISOR_NON_TASK_EVTS, e.type());
+                    (all ? F.contains(VISOR_ALL_EVTS, e.type()) : F.contains(VISOR_NON_TASK_EVTS, e.type()));
             }
         };
 
