@@ -530,14 +530,14 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         try {
             for (int t : types) {
-                if (t == GridEventType.EVT_NODE_RECONNECTED)
-                    U.warn(log, "You try to add deprecated EVT_NODE_RECONNECT event to local listener " +
-                        "(this configuration has no effect in current version of GridGain).");
-
                 getOrCreate(t).add(lsnr);
 
                 if (!isRecordable(t))
                     U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
+
+                if (t == GridEventType.EVT_NODE_RECONNECTED)
+                    U.warn(log, "Added local listener for deprecated EVT_NODE_RECONNECT event " +
+                        "(local listener will never get called).");
             }
         }
         finally {
@@ -570,6 +570,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
                     if (!isRecordable(t))
                         U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
+
+                    if (t == GridEventType.EVT_NODE_RECONNECTED)
+                        U.warn(log, "Added local listener for deprecated EVT_NODE_RECONNECT event " +
+                            "(local listener will never get called).");
                 }
             }
         }
