@@ -56,7 +56,7 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        return new GridHadoopV2Job(jobId, jobInfo, log);
+        return new GridHadoopV2Job(jobId, jobInfo, null, log);
     }
 
     /** {@inheritDoc} */

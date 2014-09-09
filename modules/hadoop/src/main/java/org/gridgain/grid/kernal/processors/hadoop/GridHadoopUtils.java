@@ -46,13 +46,13 @@ public class GridHadoopUtils {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
-        GridHadoopDefaultJobInfo jobInfo = (GridHadoopDefaultJobInfo)meta.jobInfo();
+        GridHadoopJobInfo jobInfo = meta.jobInfo();
 
         return new GridHadoopJobStatus(
             meta.jobId(),
             meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            jobInfo.configuration().getJobName(),
-            jobInfo.configuration().getUser(),
+            "Job name", /*jobInfo.configuration().getJobName(),*/
+            "User name", /*jobInfo.configuration().getUser(),*/
             meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
             meta.mapReducePlan().mappers(),

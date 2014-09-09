@@ -55,7 +55,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final GridHadoopJobId jobId;
 
     /** Job info. */
-    protected GridHadoopDefaultJobInfo jobInfo;
+    protected GridHadoopJobInfo jobInfo;
 
     /** */
     private final JobID hadoopJobID;
@@ -69,9 +69,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
+     * @param cfgSrc
      * @param log Logger.
      */
-    public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo, GridLogger log) {
+    public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo, DataInput cfgSrc, GridLogger log) throws GridException {
         assert jobId != null;
         assert jobInfo != null;
 
@@ -80,7 +81,15 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        jobConf = new JobConf(jobInfo.configuration());
+        jobConf = new JobConf();
+
+        try {
+            jobConf.readFields(cfgSrc);
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);

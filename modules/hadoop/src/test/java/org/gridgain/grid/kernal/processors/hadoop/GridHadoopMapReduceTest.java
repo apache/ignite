@@ -36,6 +36,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
+        //System.out.println(JobConf.class.getClassLoader());
+
         GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);

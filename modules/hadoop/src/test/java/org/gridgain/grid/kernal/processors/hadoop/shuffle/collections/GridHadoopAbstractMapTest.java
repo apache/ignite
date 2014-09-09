@@ -42,7 +42,7 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(jobCtx.getConfiguration());
 
-        return new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10), jobInfo, log);
+        return new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10), jobInfo, null, log);
     }
 
     public GridHadoopTaskContext mockTaskContext(GridHadoopJob job) throws GridException {

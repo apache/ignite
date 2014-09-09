@@ -63,7 +63,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         validate(cfg);
 
-        if (checkHadoopInstallation()) {
+        if (true /*checkHadoopInstallation()*/) {
             hctx = new GridHadoopContext(
                 ctx,
                 cfg,

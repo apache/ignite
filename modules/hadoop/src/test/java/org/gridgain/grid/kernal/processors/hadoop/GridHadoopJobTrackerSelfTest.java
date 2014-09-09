@@ -279,7 +279,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) {
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
             return new HadoopTestJob(jobId, this, log);
         }
     }
@@ -292,13 +292,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
          */
-        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) {
-            super(jobId, jobInfoImpl, log);
+        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) throws GridException {
+            super(jobId, jobInfoImpl, null, log);
         }
 
         /** {@inheritDoc} */
         @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-            int blocks = jobInfo.configuration().getInt(BLOCK_CNT, 0);
+            int blocks = 0; //jobInfo.configuration().getInt(BLOCK_CNT, 0);
 
             Collection<GridHadoopInputSplit> res = new ArrayList<>(blocks);
 

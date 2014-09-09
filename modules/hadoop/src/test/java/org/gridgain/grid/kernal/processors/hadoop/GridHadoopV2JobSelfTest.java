@@ -58,7 +58,7 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
         GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(cfg), log);
+            new GridHadoopDefaultJobInfo(cfg), null, log);
 
         GridHadoopTaskContext taskCtx = job.getTaskContext(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, null, 0,
             0, null));

@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.logger.*;
 import org.jetbrains.annotations.*;
@@ -117,8 +118,23 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) {
-        return new GridHadoopV2Job(jobId, this, log);
+    @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        try {
+            cfg.write(new DataOutputStream(buf));
+
+            DataInput cfgSrc = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
+
+            return new GridHadoopV2Job(jobId, this, cfgSrc, log);
+
+//            GridHadoopClassLoader ldr = new GridHadoopClassLoader();
+//
+//            Class<?> jobCls = ldr.loadClassExplicitly(GridHadoopV2Job.class.getName());
+        }
+        catch (Exception e) {
+            throw new GridException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -132,10 +148,8 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
         return reducers() > 0;
     }
 
-    /**
-     * @return Number of reducers configured for job.
-     */
-    public int reducers() {
+    /** {@inheritDoc} */
+    @Override public int reducers() {
         return cfg.getNumReduceTasks();
     }
 
