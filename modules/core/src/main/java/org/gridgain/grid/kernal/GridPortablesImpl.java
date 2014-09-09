@@ -118,6 +118,10 @@ public class GridPortablesImpl implements GridPortables {
         }
     }
 
+    public GridPortableProcessor processor() {
+        return proc;
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
