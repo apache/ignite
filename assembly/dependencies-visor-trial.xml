@@ -39,9 +39,6 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-visor-trial</include>
-                <include>org.gridgain:gridgain-visor-plugins</include>
-                <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-ssh</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -54,10 +51,10 @@
                         </includes>
                     </fileSet>
                     <fileSet>
-                        <directory>${basedir}</directory>
-                        <outputDirectory>/include/visorui</outputDirectory>
+                        <directory>${basedir}licenses</directory>
+                        <outputDirectory>/include/visorui/licenses</outputDirectory>
                         <includes>
-                            <include>gridgain-visor-trial.jar</include>
+                            <include>*.txt</include>
                         </includes>
                     </fileSet>
                     <fileSet>
