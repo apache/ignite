@@ -162,15 +162,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_val";
 
-    /** Field name for string representation of value. */
-    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
-
-    /** Field name for value version. */
-    public static final String VER_FIELD_NAME = "_gg_ver__";
-
-    /** Field name for value expiration time. */
-    public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
-
     /** */
     private static final GridIndexingQueryFilter[] EMPTY_FILTER = new GridIndexingQueryFilter[0];
 
@@ -1175,11 +1166,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
 
         for (String name : names) {
-            if (name.equals(KEY_FIELD_NAME) ||
-                name.equals(VAL_FIELD_NAME) ||
-                name.equals(VAL_STR_FIELD_NAME) ||
-                name.equals(VER_FIELD_NAME) ||
-                name.equals(EXPIRATION_TIME_FIELD_NAME))
+            if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
                 throw new GridSpiException(MessageFormat.format(ptrn, name));
         }
 
@@ -1242,7 +1229,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (")
             .a(KEY_FIELD_NAME).a(' ').a(keyType).a(" NOT NULL");
 
-        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(',').a(VAL_STR_FIELD_NAME).a(' ').a("VARCHAR");
+        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
 
         for (Map.Entry<String, Class<?>> e: tbl.type().keyFields().entrySet())
             sql.a(',').a(escapeName(e.getKey())).a(' ').a(dbTypeFromClass(e.getValue()));
@@ -2082,8 +2069,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL,
-                offheap, tbl.indexColumn(0, ASCENDING)));
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -2121,7 +2107,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     }
 
                     if (idx.type() == SORTED)
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, offheap, cols));
+                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(new GridH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
@@ -2317,6 +2303,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         /** */
         private final int keyCols;
 
+        /** */
+        private final GridUnsafeGuard guard = offheap == null ? null : new GridUnsafeGuard();
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -2349,6 +2338,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             keyType = keyAsObj ? Value.JAVA_OBJECT : DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridUnsafeGuard guard() {
+            return guard;
         }
 
         /** {@inheritDoc} */

@@ -43,6 +43,9 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
     /** Empty buffer for file block. */
     private static final byte[] EMPTY_FILE_BUF = new byte[0];
 
+    /** Log files count limit */
+    public static final int LOG_FILES_COUNT_LIMIT = 5000;
+
     /** Only task event types that Visor should collect. */
     public static final int[] VISOR_TASK_EVTS = {
         EVT_JOB_STARTED,
@@ -251,7 +254,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
             List<VisorLogFile> res = new ArrayList<>(files.length);
 
             for (File f : files) {
-                if (f.isFile())
+                if (f.isFile() && f.length() > 0)
                     res.add(new VisorLogFile(f));
                 else if (maxDepth > 1)
                     res.addAll(fileTree(f, maxDepth - 1, filter));

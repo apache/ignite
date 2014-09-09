@@ -539,6 +539,10 @@
                                     <title>Visor Plugins</title>
                                     <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
                                 </group>
+                                <group>
+                                    <title>Spring Caching</title>
+                                    <packages>org.gridgain.grid.cache.spring</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
@@ -778,6 +782,32 @@
                                 </replace>
 
                                 <replaceregexp byline="true">
+                                    <regexp pattern='\. "\$\{GRIDGAIN_HOME\}/os/bin/include/target-classpath.sh"'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replace dir="target/release-package/bin"
+                                         token='call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"'
+                                         value="">
+                                    <include name="**/*.bat"/>
+                                </replace>
+
+                                <replace token="os/" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="os\" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
+
+                                <replaceregexp byline="true">
                                     <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                     <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
                                     <fileset dir="target/release-package/bin">
@@ -834,7 +864,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>prepare-package</phase>
+                        <phase>test-compile</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>

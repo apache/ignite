@@ -772,14 +772,32 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     @Override public GridDhtFuture<Object> request(Collection<? extends K> keys, long topVer) {
         final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
-        if (startFut.isDone())
+        GridFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
+
+        if (startFut.isDone() && topReadyFut == null)
             fut.init();
-        else
-            startFut.listenAsync(new CI1<GridFuture<?>>() {
-                @Override public void apply(GridFuture<?> syncFut) {
-                    fut.init();
-                }
-            });
+        else {
+            if (topReadyFut == null)
+                startFut.listenAsync(new CI1<GridFuture<?>>() {
+                    @Override public void apply(GridFuture<?> syncFut) {
+                        fut.init();
+                    }
+                });
+            else {
+                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
+
+                compound.add((GridFuture<Object>)startFut);
+                compound.add((GridFuture<Object>)topReadyFut);
+
+                compound.markInitialized();
+
+                compound.listenAsync(new CI1<GridFuture<?>>() {
+                    @Override public void apply(GridFuture<?> syncFut) {
+                        fut.init();
+                    }
+                });
+            }
+        }
 
         return (GridDhtFuture)fut;
     }

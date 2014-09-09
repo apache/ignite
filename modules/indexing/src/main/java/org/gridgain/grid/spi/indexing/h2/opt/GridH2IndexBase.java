@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.indexing.h2.opt;
 
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.engine.*;
@@ -40,7 +39,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param keyCol Key column.
      * @param valCol Value column.
      */
-    public GridH2IndexBase(int keyCol, int valCol) {
+    protected GridH2IndexBase(int keyCol, int valCol) {
         this.keyCol = keyCol;
         this.valCol = valCol;
     }
@@ -57,11 +56,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * If the index supports rebuilding it has to creates its own copy.
      *
-     * @param memory Memory.
      * @return Rebuilt copy.
      * @throws InterruptedException If interrupted.
      */
-    public GridH2IndexBase rebuild(GridUnsafeMemory memory) throws InterruptedException {
+    public GridH2IndexBase rebuild() throws InterruptedException {
         return this;
     }
 
@@ -69,10 +67,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Put row if absent.
      *
      * @param row Row.
-     * @param ifAbsent Put only if such a row does not exist.
-     * @return Existing row or null.
+     * @return Existing row or {@code null}.
      */
-    public abstract GridH2Row put(GridH2Row row, boolean ifAbsent);
+    public abstract GridH2Row put(GridH2Row row);
 
     /**
      * Remove row from index.

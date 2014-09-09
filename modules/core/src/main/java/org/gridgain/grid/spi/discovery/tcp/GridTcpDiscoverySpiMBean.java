@@ -261,4 +261,10 @@ public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
      */
     @GridMBeanDescription("Join timeout.")
     public long getJoinTimeout();
+
+    /**
+     * Dumps debug info using configured logger.
+     */
+    @GridMBeanDescription("Dump debug info.")
+    public void dumpDebugInfo();
 }

@@ -115,6 +115,7 @@ public interface GridDiscoverySpi extends GridSpi {
      * @throws GridSpiException If any error occurs.
      * @see #reconnect()
      */
+    @Deprecated
     public void disconnect() throws GridSpiException;
 
     /**
@@ -129,6 +130,7 @@ public interface GridDiscoverySpi extends GridSpi {
      * @throws GridSpiException If any error occurs.
      * @see #disconnect()
      */
+    @Deprecated
     public void reconnect() throws GridSpiException;
 
     /**

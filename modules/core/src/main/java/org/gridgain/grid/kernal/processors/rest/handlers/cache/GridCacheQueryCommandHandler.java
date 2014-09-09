@@ -287,6 +287,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             }
 
             ((GridCacheQueryAdapter)qry).keepPortable(keepPortable);
+            ((GridCacheQueryAdapter)qry).subjectId(req.clientId());
 
             if (req.pageSize() > 0)
                 qry = qry.pageSize(req.pageSize());
