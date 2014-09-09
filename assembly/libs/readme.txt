@@ -22,28 +22,18 @@ Importing GridGain Dependencies In Maven Project
 
 If you are using Maven to manage dependencies of your project, there are two options:
 
-1. Import one of the following predefined GridGain editions:
-  - gridgain-fabric
-  - gridgain-hadoop2 (includes In-Memory Accelerator for Hadoop)
-
+1. Import gridgain-fabric edition
 2. Or import individual GridGain modules a la carte.
 
 
-Importing GridGain Edition Dependencies
----------------------------------------
+Importing GridGain Fabric Dependency
+------------------------------------
 
-When importing editions, each edition automatically imports GridGain core module and
+GridGain Fabric automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
 
-- gridgain-fabric
-  - gridgain-core
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-hadoop2
-  - gridgain-core
-  - gridgain-hadoop2-integration
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
+- gridgain-core
+- gridgain-spring (optional, add if you plan to use Spring configuration)
 
 Here is how 'gridgain-fabric' can be added to your POM file (replace '${gridgain.version}'
 with actual GridGain version you are interested in):
