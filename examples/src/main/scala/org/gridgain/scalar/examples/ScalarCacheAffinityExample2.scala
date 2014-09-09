@@ -16,7 +16,6 @@ import scalar._
 import org.gridgain.grid._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 /**
  * Note that affinity routing is enabled for all caches.
@@ -25,7 +24,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinityExample2 {
     /** Configuration file name. */
     private val CONFIG = "examples/config/example-cache.xml" // Cache.

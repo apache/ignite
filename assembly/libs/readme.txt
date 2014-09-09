@@ -23,12 +23,8 @@ Importing GridGain Dependencies In Maven Project
 If you are using Maven to manage dependencies of your project, there are two options:
 
 1. Import one of the following predefined GridGain editions:
-  - gridgain-hpc
-  - gridgain-datagrid
-  - gridgain-streaming
-  - gridgain-hadoop1
-  - gridgain-hadoop2
-  - gridgain-platform (all inclusive)
+  - gridgain-fabric
+  - gridgain-hadoop2 (includes In-Memory Accelerator for Hadoop)
 
 2. Or import individual GridGain modules a la carte.
 
@@ -39,22 +35,8 @@ Importing GridGain Edition Dependencies
 When importing editions, each edition automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
 
-- gridgain-hpc
+- gridgain-fabric
   - gridgain-core
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-datagrid
-  - gridgain-core
-  - gridgain-indexing (optional, add if you need SQL indexing)
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-streaming
-  - gridgain-core
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-hadoop1
-  - gridgain-core
-  - gridgain-hadoop1-integration
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
 - gridgain-hadoop2
@@ -62,10 +44,8 @@ a set of additional modules needed for this edition to work. Specifically:
   - gridgain-hadoop2-integration
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-platform
-  - (all dependencies included in other editions)
 
-Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'
+Here is how 'gridgain-fabric' can be added to your POM file (replace '${gridgain.version}'
 with actual GridGain version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -77,7 +57,7 @@ with actual GridGain version you are interested in):
         ...
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-datagrid</artifactId>
+            <artifactId>gridgain-fabric</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
         ...

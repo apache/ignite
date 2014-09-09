@@ -18,7 +18,6 @@ import cache._
 import GridCacheMode._
 import affinity._
 import java.util._
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
@@ -27,7 +26,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheQueryExample {
     /** Cache name. */
     private val CACHE_NAME = "partitioned" // "replicated"

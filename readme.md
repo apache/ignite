@@ -22,57 +22,20 @@ Combination of In-Memory File System 100% compatible with Hadoop HDFS and In-Mem
 ## Maven Install
 The easiest way to get started with GridGain in your project is to use Maven dependency management:
 
-### Platform Edition (includes everything)
-`Platform` edition includes all GridGain editions: `data grid`, `streaming`, and `hadoop accelerator`. This
-edition is required in order to compile and build GridGain source code.
+### Fabric Edition
+`Fabric` edition includes all GridGain functionality excluding `In-Memory Accelerator for Hadoop`.
 
 ```xml
 <dependency>
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-platform</artifactId>
+    <artifactId>gridgain-fabric</artifactId>
     <version>${gridgain.version}</version>
     <type>pom</type>
 </dependency>
 ```
 
-### HPC Edition
-`HPC` edition includes all GridGain functionality except for `data grid`, `streaming` and `hadoop accelerator`.
-
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-hpc</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
-
-### Data Grid Edition
-`Data Grid` edition includes all GridGain functionality except for `streaming` and `hadoop accelerator`.
-
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-datagrid</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
-
-### Streaming Edition
-`Streaming` edition includes all GridGain functionality except for `data grid` and `hadoop accelerator`.
-
-```xml
-<dependency>
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-streaming</artifactId>
-    <version>${gridgain.version}</version>
-    <type>pom</type>
-</dependency>
-```
-
-### Apache Hadoop Accelerator
-`Hadoop Accelerator` edition includes all GridGain functionality except for `data grid` and `streaming`.
+### Hadoop Edition
+`Hadoop` edition includes only `In-Memory Accelerator for Hadoop`.
 
 ```xml
 <dependency>
