@@ -27,7 +27,7 @@ public class VisorPortableMetadataField implements Serializable {
     private String fieldTypeName;
 
     /** Field id. */
-    private String fieldId;
+    private Integer fieldId;
 
     /** Field name. */
     public String fieldName() {
@@ -48,11 +48,11 @@ public class VisorPortableMetadataField implements Serializable {
     }
 
     /** Field id. */
-    public String fieldId() {
+    public Integer fieldId() {
         return fieldId;
     }
 
-    public void fieldId(String fieldId) {
+    public void fieldId(Integer fieldId) {
         this.fieldId = fieldId;
     }
 
