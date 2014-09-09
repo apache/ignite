@@ -56,8 +56,11 @@ public class GridHadoopExecutorService {
             @Override public void onStopped(GridWorker w) {
                 workers.remove(w);
 
-                if (shutdown)
+                if (shutdown) {
+                    active.decrementAndGet();
+
                     return;
+                }
 
                 GridHadoopRunnableTask task = queue.poll();
 
