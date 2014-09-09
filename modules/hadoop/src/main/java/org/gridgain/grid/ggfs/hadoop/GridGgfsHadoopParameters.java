@@ -37,7 +37,7 @@ import org.gridgain.grid.ggfs.*;
  *         to a single data node. Default value is {@code true}.
  *     </li>
  *     <li>
- *         {@code fs.ggfs.[name].prefer.local.writes} - specifies whether file preferably should be written to
+ *         {@code fs.ggfs.prefer.local.writes} - specifies whether file preferably should be written to
  *         local data node if it has enough free space. After some time it can be redistributed across nodes though.
  *     </li>
  * </ul>
@@ -84,5 +84,5 @@ public class GridGgfsHadoopParameters {
     public static final String PARAM_GGFS_LOG_ENABLED = "fs.ggfs.%s.log.enabled";
 
     /** Parameter name for prefer local writes flag. */
-    public static final String PARAM_GGFS_PREFER_LOCAL_WRITES = "fs.ggfs.%s.prefer.local.writes";
+    public static final String PARAM_GGFS_PREFER_LOCAL_WRITES = "fs.ggfs.prefer.local.writes";
 }

@@ -224,7 +224,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             // Get file colocation control flag.
             colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
-            preferLocFileWrites = parameter(cfg, PARAM_GGFS_PREFER_LOCAL_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);

@@ -32,6 +32,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+
 /**
  * Hadoop job implementation for v2 API.
  */
@@ -81,6 +83,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
         jobConf = new JobConf(jobInfo.configuration());
+
+        jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
+
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
