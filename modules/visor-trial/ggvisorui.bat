@@ -1,12 +1,12 @@
 ::
-:: Copyright (C) GridGain Systems. All Rights Reserved.
+:: @bat.file.header
 :: _________        _____ __________________        _____
 :: __  ____/___________(_)______  /__  ____/______ ____(_)_______
 :: _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
 :: / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 :: \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 ::
-:: Version: 6.2.1
+:: Version: @bat.file.version
 ::
 
 ::
@@ -72,11 +72,13 @@ if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
 
 :run
 
+set SCRIPTS_HOME="%GRIDGAIN_HOME%\os\bin" :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
-
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" :: Will be removed in release.
 
 ::
 :: Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
@@ -95,7 +97,7 @@ set CP=%GRIDGAIN_LIBS%
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\bin\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
