@@ -4587,6 +4587,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @throws GridRuntimeException If validation fails.
      */
     protected void validateCacheKeys(Iterable<?> keys) {
+        if (keys == null)
+            return;
+
         if (keyChecks <= MAX_KEY_CHECKS) {
             for (Object key : keys) {
                 if (key == null)
