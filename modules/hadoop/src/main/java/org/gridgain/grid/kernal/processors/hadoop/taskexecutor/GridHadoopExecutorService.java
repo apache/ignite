@@ -31,7 +31,7 @@ import static java.util.Collections.*;
  */
 public class GridHadoopExecutorService {
     /** */
-    private final LinkedBlockingQueue<GridHadoopRunnableTask> queue;
+    private final LinkedBlockingQueue<Callable<?>> queue;
 
     /** */
     private final Collection<GridWorker> workers = newSetFromMap(new ConcurrentHashMap8<GridWorker, Boolean>());
@@ -62,7 +62,7 @@ public class GridHadoopExecutorService {
                     return;
                 }
 
-                GridHadoopRunnableTask task = queue.poll();
+                Callable<?> task = queue.poll();
 
                 if (task != null)
                     startThread(task);
@@ -92,11 +92,18 @@ public class GridHadoopExecutorService {
     }
 
     /**
+     * @return Number of active workers.
+     */
+    public int active() {
+        return workers.size();
+    }
+
+    /**
      * Submit task.
      *
      * @param task Task.
      */
-    public void submit(GridHadoopRunnableTask task) {
+    public void submit(Callable<?> task) {
         while (queue.isEmpty()) {
             int active0 = active.get();
 
@@ -106,17 +113,27 @@ public class GridHadoopExecutorService {
             if (active.compareAndSet(active0, active0 + 1)) {
                 startThread(task);
 
-                return;
+                return; // Started in new thread bypassing queue.
             }
         }
 
-        queue.add(task);
+        try {
+            while (!queue.offer(task, 100, TimeUnit.MILLISECONDS)) {
+                if (shutdown)
+                    return; // Rejected due to shutdown.
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            return;
+        }
 
         startFromQueue();
     }
 
     /**
-     *
+     * Attempts to start task from queue.
      */
     private void startFromQueue() {
         do {
@@ -126,7 +143,7 @@ public class GridHadoopExecutorService {
                 break;
 
             if (active.compareAndSet(active0, active0 + 1)) {
-                GridHadoopRunnableTask task = queue.poll();
+                Callable<?> task = queue.poll();
 
                 if (task == null) {
                     int res = active.decrementAndGet();
@@ -145,17 +162,24 @@ public class GridHadoopExecutorService {
     /**
      * @param task Task.
      */
-    private void startThread(final GridHadoopRunnableTask task) {
-        final GridHadoopTaskInfo i = task.taskInfo();
+    private void startThread(final Callable<?> task) {
+        String workerName;
 
-        GridWorker w = new GridWorker(gridName, "Hadoop-task-" + i.jobId() + "-" + i.type() + "-" + i.taskNumber() +
-            "-" + i.attempt(), log, lsnr) {
+        if (task instanceof GridHadoopRunnableTask) {
+            final GridHadoopTaskInfo i = ((GridHadoopRunnableTask)task).taskInfo();
+
+            workerName = "Hadoop-task-" + i.jobId() + "-" + i.type() + "-" + i.taskNumber() + "-" + i.attempt();
+        }
+        else
+            workerName = task.toString();
+
+        GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
             @Override protected void body() throws InterruptedException, GridInterruptedException {
                 try {
                     task.call();
                 }
-                catch (GridException e) {
-                    log.error("Failed to execute task: " + i, e);
+                catch (Exception e) {
+                    log.error("Failed to execute task: " + task, e);
                 }
             }
         };
@@ -163,7 +187,7 @@ public class GridHadoopExecutorService {
         workers.add(w);
 
         if (shutdown)
-            return;
+            w.cancel();
 
         new GridThread(w).start();
     }
@@ -180,7 +204,7 @@ public class GridHadoopExecutorService {
         for (GridWorker w : workers)
             w.cancel();
 
-        while (awaitTimeMillis > 0 && active.get() != 0) {
+        while (awaitTimeMillis > 0 && !workers.isEmpty()) {
             try {
                 Thread.sleep(100);
 
@@ -191,6 +215,13 @@ public class GridHadoopExecutorService {
             }
         }
 
-        return active.get() == 0;
+        return workers.isEmpty();
+    }
+
+    /**
+     * @return {@code true} If method {@linkplain #shutdown(long)} was already called.
+     */
+    public boolean isShutdown() {
+        return shutdown;
     }
 }
