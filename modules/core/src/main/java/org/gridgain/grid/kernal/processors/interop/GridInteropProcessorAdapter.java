@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.interop;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 
@@ -28,5 +29,10 @@ public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter i
     /** {@inheritDoc} */
     @Override public String gridName() {
         return ctx.gridName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close(boolean cancel) {
+        GridGain.stop(ctx.gridName(), cancel);
     }
 }

@@ -30,4 +30,11 @@ public interface GridInteropProcessor extends GridProcessor {
      * @return Grid name.
      */
     public String gridName();
+
+    /**
+     * Stops grid.
+     *
+     * @param cancel Cancel flag.
+     */
+    public void close(boolean cancel);
 }
