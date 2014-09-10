@@ -162,6 +162,8 @@ public interface GridEventType {
      * internal GridGain events and should not be used by user-defined events.
      *
      * @see GridDiscoveryEvent
+     * @deprecated This event has no effect in current version of GridGain and
+     *      will be removed in the next major release.
      */
     @Deprecated
     public static final int EVT_NODE_RECONNECTED = 15;
@@ -1032,7 +1034,6 @@ public interface GridEventType {
         EVT_NODE_LEFT,
         EVT_NODE_FAILED,
         EVT_NODE_SEGMENTED,
-        EVT_NODE_RECONNECTED
     };
 
     /**
@@ -1048,7 +1049,6 @@ public interface GridEventType {
         EVT_NODE_FAILED,
         EVT_NODE_METRICS_UPDATED,
         EVT_NODE_SEGMENTED,
-        EVT_NODE_RECONNECTED
     };
 
     /**

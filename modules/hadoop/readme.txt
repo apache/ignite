@@ -1,8 +1,8 @@
 GridGain Hadoop Module
 ----------------------
 
-GridGain Hadoop module provides In-Memory Accelerator For Hadoop functionality which is based
-on GGFS - high-performance dual-mode in-memory file system that is 100% compatible with HDFS.
+GridGain Hadoop module provides In-Memory MapReduce engine and driver to use GGFS as Hadoop file system
+which are 100% compatible with HDFS and YARN.
 
 To enable Hadoop module when starting a standalone node, move 'optional/gridgain-hadoop' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will

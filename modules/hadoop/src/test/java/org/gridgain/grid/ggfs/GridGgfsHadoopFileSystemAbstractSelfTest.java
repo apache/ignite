@@ -315,10 +315,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
 
-        if (mode != PRIMARY) {
-            cfg.setSecondaryHadoopFileSystemUri(SECONDARY_URI);
-            cfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG_PATH);
-        }
+        if (mode != PRIMARY)
+            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
 
         cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);
