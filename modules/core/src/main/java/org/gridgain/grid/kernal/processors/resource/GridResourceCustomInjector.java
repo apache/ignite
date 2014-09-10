@@ -16,6 +16,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import javax.management.*;
@@ -67,6 +68,9 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
+
+    /** Service injector. */
+    private GridResourceBasicInjector<Collection<GridService>> srvcInjector;
 
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
@@ -182,6 +186,14 @@ class GridResourceCustomInjector implements GridResourceInjector {
      */
     public void setLogInjector(GridResourceBasicInjector<GridLogger> logInjector) {
         this.logInjector = logInjector;
+    }
+    /**
+     * Sets injector for grid services.
+     *
+     * @param srvcInjector Service injector.
+     */
+    public void setSrvcInjector(GridResourceBasicInjector<Collection<GridService>> srvcInjector) {
+        this.srvcInjector = srvcInjector;
     }
 
     /** {@inheritDoc} */
@@ -446,6 +458,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
             ioc.inject(rsrc, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
             ioc.inject(rsrc, GridSpringResource.class, springBeanInjector, dep, depCls);
             ioc.inject(rsrc, GridLoggerResource.class, logInjector, dep, depCls);
+            ioc.inject(rsrc, GridServiceResource.class, srvcInjector, dep, depCls);
 
             for (Method mtd : getMethodsWithAnnotation(rsrcCls, GridUserResourceOnDeployed.class)) {
                 mtd.setAccessible(true);
