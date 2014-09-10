@@ -18,18 +18,26 @@ import org.jetbrains.annotations.*;
  */
 public interface GridInteropProcessor extends GridProcessor {
     /**
+     * @return Grid name.
+     */
+    public String gridName();
+
+    /**
+     * Gets native wrapper for compute.
+     *
+     * @return Native compute wrapper.
+     * @throws GridException If failed.
+     */
+    public GridInteropTarget compute() throws GridException;
+
+    /**
      * Gets native wrapper for cache with the given name.
      *
      * @param name Cache name ({@code null} for default cache).
      * @return Native cache wrapper.
      * @throws GridException If failed.
      */
-    public GridInteropCache cache(@Nullable String name) throws GridException;
-
-    /**
-     * @return Grid name.
-     */
-    public String gridName();
+    public GridInteropTarget cache(@Nullable String name) throws GridException;
 
     /**
      * Stops grid.
