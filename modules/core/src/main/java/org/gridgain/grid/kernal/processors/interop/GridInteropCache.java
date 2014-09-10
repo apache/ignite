@@ -165,10 +165,11 @@ public interface GridInteropCache {
      * Synchronous OUT operation.
      *
      * @param opType Operation type.
-     * @param out Output stream.
-     * @throws GridException If case of failure.
+     * @param stream Native stream address.
+     * @param arr Native array address.
+     * @param cap Capacity.
      */
-    public void outOp(int opType, GridPortableOutputStream out) throws GridException;
+    public void outOp(int opType, long stream, long arr, int cap) throws GridException;
 
     /**
      * Synchronous IN-OUT operation.
