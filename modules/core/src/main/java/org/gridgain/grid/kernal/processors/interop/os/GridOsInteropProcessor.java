@@ -31,11 +31,6 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridInteropMemoryAllocator allocator() {
-        throw new UnsupportedOperationException(ERR_MSG);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridInteropCache cache(@Nullable String name) throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
