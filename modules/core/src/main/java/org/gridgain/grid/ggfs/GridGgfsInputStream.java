@@ -15,7 +15,7 @@ import java.io.*;
  * {@code GGFS} input stream to read data from the file system.
  * It provides several additional methods for asynchronous access.
  */
-public abstract class GridGgfsInputStream extends InputStream {
+public abstract class GridGgfsInputStream extends InputStream implements GridGgfsReader {
     /**
      * Gets file length during file open.
      *
@@ -68,5 +68,5 @@ public abstract class GridGgfsInputStream extends InputStream {
      * @return Total number of bytes read into the buffer, or -1 if there is no more data (EOF).
      * @throws IOException In case of IO exception.
      */
-    public abstract int read(long pos, byte[] buf, int off, int len) throws IOException;
+    @Override public abstract int read(long pos, byte[] buf, int off, int len) throws IOException;
 }

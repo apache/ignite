@@ -115,25 +115,6 @@ public class GridGgfsHadoopUtils {
     }
 
     /**
-     * Cast IO exception to GGFS exception.
-     *
-     * @param e IO exception.
-     * @return GGFS exception.
-     */
-    public static GridGgfsException cast(IOException e) {
-        if (e instanceof FileNotFoundException)
-            return new GridGgfsFileNotFoundException(e);
-        else if (e instanceof ParentNotDirectoryException)
-            return new GridGgfsParentNotDirectoryException(e);
-        else if (e instanceof PathIsNotEmptyDirectoryException)
-            return new GridGgfsDirectoryNotEmptyException(e);
-        else if (e instanceof PathExistsException)
-            return new GridGgfsPathAlreadyExistsException(e);
-        else
-            return new GridGgfsException(e);
-    }
-
-    /**
      * Constructor.
      */
     private GridGgfsHadoopUtils() {

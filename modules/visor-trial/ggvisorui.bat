@@ -97,7 +97,7 @@ set CP=%GRIDGAIN_LIBS%
 ::
 :: Parse command line parameters.
 ::
-call "%SCRIPTS_HOME%\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%

@@ -195,10 +195,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
-        // TODO: Enable when GG-9045 will be fixed
-        if (cacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         final int kv = 1;
 
         final CountDownLatch l1 = new CountDownLatch(1);
