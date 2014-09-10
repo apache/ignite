@@ -21,6 +21,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v2.
  */
@@ -52,11 +54,11 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
 
         Job hadoopJob = GridHadoopWordCount2.getJob(inFile, outFile);
 
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
+        GridHadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration());
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        return new GridHadoopV2Job(jobId, jobInfo, null, log);
+        return new GridHadoopV2Job(jobId, jobInfo, log);
     }
 
     /** {@inheritDoc} */

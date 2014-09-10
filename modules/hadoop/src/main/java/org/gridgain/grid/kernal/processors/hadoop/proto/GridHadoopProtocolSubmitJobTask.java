@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils;
 
 import java.util.*;
 
@@ -39,15 +40,15 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
-        GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(conf.get());
+        GridHadoopDefaultJobInfo info = GridHadoopUtils.createJobInfo(conf.get());
 
         hadoop.submit(jobId, info);
 
         GridHadoopJobStatus res = hadoop.status(jobId);
 
         if (res == null) { // Submission failed.
-            res = new GridHadoopJobStatus(jobId, STATE_FAILED, info.configuration().getJobName(),
-                info.configuration().getUser(), 0, 0, 0, 0, 0, -1, -1, PHASE_CANCELLING, SPECULATIVE_CONCURRENCY, 1);
+            res = new GridHadoopJobStatus(jobId, STATE_FAILED, "Job info", /*info.configuration().getJobName(),*/
+                "User name", /*info.configuration().getUser(),*/ 0, 0, 0, 0, 0, -1, -1, PHASE_CANCELLING, SPECULATIVE_CONCURRENCY, 1);
         }
 
         return res;

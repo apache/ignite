@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Tests map-reduce task execution basics.
  */
@@ -125,7 +127,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setJarByClass(getClass());
 
         GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration()));
 
         fut.get();
 
@@ -170,8 +172,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
 
-        GridFuture<?> fut = grid(0).hadoop().submit(jobId,
-                new GridHadoopDefaultJobInfo(job.getConfiguration()));
+        GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
         fut.get();
 
@@ -209,7 +210,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setJarByClass(getClass());
 
         final GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 3),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -280,7 +281,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-        final GridFuture<?> fut = grid(0).hadoop().submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+        final GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(cfg));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -321,7 +322,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         assertFalse(killRes);
 
-        final GridFuture<?> fut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+        final GridFuture<?> fut = hadoop.submit(jobId, createJobInfo(cfg));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

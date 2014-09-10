@@ -321,22 +321,10 @@ public class GridHadoopV2JobResourceManager {
      * @throws GridException If fails.
      */
     public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        GridHadoopRawLocalFileSystem fs;
-
         File locDir = taskLocalDir(info);
 
-        try {
-            if (locDir.exists())
-                U.delete(locDir);
-
-            fs = (GridHadoopRawLocalFileSystem)FileSystem.getLocal(ctx.getJobConf()).getRaw();
-        }
-        catch (IOException e) {
-            throw new GridException("Unable to release local working directory of the task " +
-                 "[path=" + locDir + ", jobId=" + jobId + ", task=" + info + ']', e);
-        }
-
-        fs.setWorkingDirectory(fs.getInitialWorkingDirectory());
+        if (locDir.exists())
+            U.delete(locDir);
     }
 
     /**

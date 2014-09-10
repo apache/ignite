@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Job tracker self test.
  */
@@ -263,12 +265,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * Test job info.
      */
     private static class GridHadoopTestJobInfo extends GridHadoopDefaultJobInfo {
+        private Configuration cfg;
+
         /**
          * @param cfg Config.
-         * @throws GridException If failed.
          */
-        GridHadoopTestJobInfo(Configuration cfg) throws GridException {
-            super(cfg);
+        GridHadoopTestJobInfo(Configuration cfg) {
+            this.cfg = cfg;
         }
 
         /**
@@ -280,7 +283,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
-            return new HadoopTestJob(jobId, this, log);
+            return new HadoopTestJob(jobId, createJobInfo(cfg), log);
         }
     }
 
@@ -293,7 +296,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
          * @param jobInfoImpl Job info.
          */
         private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) throws GridException {
-            super(jobId, jobInfoImpl, null, log);
+            super(jobId, jobInfoImpl, log);
         }
 
         /** {@inheritDoc} */
@@ -311,11 +314,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             catch (URISyntaxException e) {
                 throw new GridException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return new HadoopTestTask(taskInfo);
         }
     }
 

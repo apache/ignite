@@ -17,6 +17,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
@@ -50,18 +51,116 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         COMBINE_KEY_GROUPING_SUPPORTED = ok;
     }
 
+    /** Flag is set if new context-object code is used for running the mapper. */
+    private final boolean useNewMapper;
+
+    /** Flag is set if new context-object code is used for running the reducer. */
+    private final boolean useNewReducer;
+
+    /** Flag is set if new context-object code is used for running the combiner. */
+    private final boolean useNewCombiner;
+
     /** */
     private final JobContextImpl jobCtx;
 
     /**
      * @param taskInfo Task info.
      * @param job Job.
-     * @param jobCtx Job context.
+     * @param jobId Job ID.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, JobContextImpl jobCtx) {
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, final GridHadoopJob job, GridHadoopJobId jobId) {
         super(taskInfo, job);
 
-        this.jobCtx = jobCtx;
+        // Before create JobConf instance we should set new context class loader.
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+
+        JobConf jobConf = new JobConf() {
+            {
+                getProps().putAll(((GridHadoopDefaultJobInfo)job.info()).properties());
+            }
+        };
+
+        jobCtx = new JobContextImpl(jobConf, new JobID(jobId.globalId().toString(), jobId.localId()));
+
+        useNewMapper = jobConf.getUseNewMapper();
+        useNewReducer = jobConf.getUseNewReducer();
+        useNewCombiner = jobConf.getCombinerClass() == null;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private GridHadoopTask createTask() {
+        boolean isAbort = taskInfo().type() == GridHadoopTaskType.ABORT;
+
+        switch (taskInfo().type()) {
+            case SETUP:
+                return useNewMapper ? new GridHadoopV2SetupTask(taskInfo()) : new GridHadoopV1SetupTask(taskInfo());
+
+            case MAP:
+                return useNewMapper ? new GridHadoopV2MapTask(taskInfo()) : new GridHadoopV1MapTask(taskInfo());
+
+            case REDUCE:
+                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo(), true) :
+                        new GridHadoopV1ReduceTask(taskInfo(), true);
+
+            case COMBINE:
+                return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo(), false) :
+                        new GridHadoopV1ReduceTask(taskInfo(), false);
+
+            case COMMIT:
+            case ABORT:
+                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo(), isAbort) :
+                        new GridHadoopV1CleanupTask(taskInfo(), isAbort);
+
+            default:
+                return null;
+        }
+    }
+
+    @Override public void run() throws GridException {
+        GridHadoopTask task = createTask();
+
+//        if (cancelled)
+//            throw new GridHadoopTaskCancelledException("Task cancelled.");
+
+        task.run(this);
+    }
+
+    /**
+     * Creates Hadoop attempt ID.
+     *
+     * @return Attempt ID.
+     */
+    public TaskAttemptID attemptId() {
+        TaskID tid = new TaskID(jobCtx.getJobID(), taskType(taskInfo().type()), taskInfo().taskNumber());
+
+        return new TaskAttemptID(tid, taskInfo().attempt());
+    }
+
+    /**
+     * @param type Task type.
+     * @return Hadoop task type.
+     */
+    private TaskType taskType(GridHadoopTaskType type) {
+        switch (type) {
+            case SETUP:
+                return TaskType.JOB_SETUP;
+            case MAP:
+            case COMBINE:
+                return TaskType.MAP;
+
+            case REDUCE:
+                return TaskType.REDUCE;
+
+            case COMMIT:
+            case ABORT:
+                return TaskType.JOB_CLEANUP;
+
+            default:
+                return null;
+        }
     }
 
     /**
@@ -134,20 +233,6 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** {@inheritDoc} */
     @Override public Comparator<Object> sortComparator() {
         return (Comparator<Object>)jobCtx.getSortComparator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareTaskEnvironment() throws GridException {
-        job().prepareTaskEnvironment(taskInfo());
-
-        Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cleanupTaskEnvironment() throws GridException {
-        Thread.currentThread().setContextClassLoader(null);
-
-        job().cleanupTaskEnvironment(taskInfo());
     }
 
     /** {@inheritDoc} */
@@ -229,10 +314,5 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         catch (IOException | ClassNotFoundException e) {
             throw new GridException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopV2Job job() {
-        return (GridHadoopV2Job)super.job();
     }
 }

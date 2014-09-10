@@ -34,7 +34,7 @@ public abstract class GridHadoopTaskContext {
 
     /**
      * @param taskInfo Task info.
-     * @param job Job.
+     * @param job      Job.
      */
     protected GridHadoopTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job) {
         this.taskInfo = taskInfo;
@@ -87,7 +87,7 @@ public abstract class GridHadoopTaskContext {
     /**
      * Gets counter for the given name.
      *
-     * @param grp Counter group's name.
+     * @param grp  Counter group's name.
      * @param name Counter name.
      * @return Counter.
      */
@@ -169,17 +169,5 @@ public abstract class GridHadoopTaskContext {
      */
     public abstract Comparator<Object> groupComparator();
 
-    /**
-     * Prepare local environment for the task.
-     *
-     * @throws GridException If failed.
-     */
-    public abstract void prepareTaskEnvironment() throws GridException;
-
-    /**
-     * Cleans up local environment of the task.
-     *
-     * @throws GridException If failed.
-     */
-    public abstract void cleanupTaskEnvironment() throws GridException;
+    public abstract void run() throws GridException;
 }

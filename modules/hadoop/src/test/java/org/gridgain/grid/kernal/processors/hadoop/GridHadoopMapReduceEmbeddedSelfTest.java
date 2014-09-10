@@ -24,6 +24,8 @@ import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Tests map-reduce execution with embedded mode.
  */
@@ -116,7 +118,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
             job.setJarByClass(GridHadoopWordCount2.class);
 
             GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                    new GridHadoopDefaultJobInfo(job.getConfiguration()));
+                    createJobInfo(job.getConfiguration()));
 
             fut.get();
 

@@ -51,7 +51,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private GridHadoopMultimap local;
 
     /** */
-    private volatile GridHadoopTask task;
+    //private volatile GridHadoopTask task;
 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
@@ -97,7 +97,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
         Throwable err = null;
 
         try {
-            ctx.prepareTaskEnvironment();
+            job.prepareTaskEnvironment(info);
 
             runTask(ctx);
 
@@ -130,7 +130,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (local != null)
                 local.close();
 
-            ctx.cleanupTaskEnvironment();
+            job.cleanupTaskEnvironment(info);
         }
 
         return null;
@@ -140,8 +140,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx)
-        throws GridException {
+    private void runTask(GridHadoopTaskContext ctx) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -151,12 +150,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             ctx.input(in);
             ctx.output(out);
 
-            task = job.createTask(ctx.taskInfo());
-
-            if (cancelled)
-                throw new GridHadoopTaskCancelledException("Task cancelled.");
-
-            task.run(ctx);
+            ctx.run();
         }
     }
 
@@ -166,8 +160,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     public void cancel() {
         cancelled = true;
 
-        if (task != null)
-            task.cancel();
+//        if (task != null)
+//            task.cancel();
     }
 
     /**

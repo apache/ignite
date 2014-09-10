@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -19,6 +21,8 @@ import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -185,8 +189,6 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.
             class.getName());
-
-        GridHadoopFileSystemsUtils.setupFileSystems(cfg);
     }
 
     /**

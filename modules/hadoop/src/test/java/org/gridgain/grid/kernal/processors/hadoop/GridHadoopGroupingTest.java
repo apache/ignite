@@ -19,6 +19,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Grouping test.
  */
@@ -101,7 +103,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(30000);
+                createJobInfo(job.getConfiguration())).get(30000);
 
         assertTrue(vals.isEmpty());
     }

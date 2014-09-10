@@ -20,6 +20,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Self test of {@link GridHadoopV2Job}.
  */
@@ -58,7 +60,7 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
         GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(cfg), null, log);
+            createJobInfo(cfg), log);
 
         GridHadoopTaskContext taskCtx = job.getTaskContext(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, null, 0,
             0, null));
