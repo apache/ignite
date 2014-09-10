@@ -830,28 +830,15 @@
                                     </fileset>
                                 </replace>
 
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-win.zip"
+                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}.zip"
                                      encoding="UTF-8">
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-win">
-                                        <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.so"/>
-                                        <exclude name="**/*.dylib"/>
-                                        <exclude name="**/*.sl"/>
-                                    </zipfileset>
-                                </zip>
-
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-nix.zip"
-                                     encoding="UTF-8">
-                                    <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix"
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
                                                 includes="**/*.sh"
                                                 filemode="755"/>
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix">
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
                                         <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.bat"/>
-                                        <exclude name="**/*.exe"/>
                                     </zipfileset>
                                 </zip>
                             </target>
