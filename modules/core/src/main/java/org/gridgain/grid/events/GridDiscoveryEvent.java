@@ -51,7 +51,6 @@ import java.util.*;
  * @see GridEventType#EVT_NODE_FAILED
  * @see GridEventType#EVT_NODE_JOINED
  * @see GridEventType#EVT_NODE_LEFT
- * @see GridEventType#EVT_NODE_RECONNECTED
  * @see GridEventType#EVT_NODE_SEGMENTED
  * @see GridEventType#EVTS_DISCOVERY_ALL
  * @see GridEventType#EVTS_DISCOVERY

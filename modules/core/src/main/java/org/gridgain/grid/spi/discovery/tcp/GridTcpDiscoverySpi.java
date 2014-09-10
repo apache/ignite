@@ -149,7 +149,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
-@GridDiscoverySpiReconnectSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscoverySpi, GridTcpDiscoverySpiMBean {
     /** Default port to listen (value is <tt>47500</tt>). */
@@ -393,9 +392,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Addresses that incoming join requests send were send from (for resolving concurrent start). */
     private final Collection<SocketAddress> fromAddrs = new GridConcurrentHashSet<>();
-
-    /** SPI reconnect flag to filter initial node connected event. */
-    private volatile boolean recon;
 
     /** Response on join request from coordinator (in case of duplicate ID or auth failure). */
     private final GridTuple<GridTcpDiscoveryAbstractMessage> joinRes = F.t1();
@@ -1530,7 +1526,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public void reconnect() throws GridSpiException {
-        spiStart0(true);
+        throw new UnsupportedOperationException("Reconnect is not supported in current version of GridGain.");
     }
 
     /** {@inheritDoc} */
@@ -1598,16 +1594,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     mux.notifyAll();
                 }
 
-                // Alter flag here and fire event here, since it has not been done in msgWorker.
-                if (recon)
-                    // Node has reconnected and it is the first.
-                    notifyDiscovery(EVT_NODE_RECONNECTED, 1, locNode);
-                else {
-                    // This is initial start, node is the first.
-                    recon = true;
-
-                    notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
-                }
+                notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
 
                 break;
             }
@@ -4295,14 +4282,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     mux.notifyAll();
                 }
 
-                if (recon)
-                    notifyDiscovery(EVT_NODE_RECONNECTED, topVer, locNode);
-                else {
-                    recon = true;
-
-                    // Discovery manager must create local joined event before spiStart completes.
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
-                }
+                // Discovery manager must create local joined event before spiStart completes.
+                notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
             }
 
             if (ring.hasRemoteNodes())
