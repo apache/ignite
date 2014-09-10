@@ -25,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -797,7 +798,23 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public long usedSpaceSize() throws GridException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, String> properties() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
         @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+            long blockSize, @Nullable Map<String, String> props) throws GridException {
             return null;
         }
 

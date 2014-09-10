@@ -49,7 +49,7 @@ import java.util.*;
  * based on provided GridGain configuration. You can provide path to a
  * Spring configuration XML file, like below (path can be absolute or
  * relative to {@code GRIDGAIN_HOME}):
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
@@ -66,7 +66,7 @@ import java.util.*;
  * &lt;/beans&gt;
  * </pre>
  * Or you can provide a {@link GridConfiguration} bean, like below:
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
@@ -92,7 +92,7 @@ import java.util.*;
  * If you already have GridGain node running within your application,
  * simply provide correct Grid name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
