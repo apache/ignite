@@ -496,6 +496,54 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Service by specified service name.
+     */
+    public <T> T service(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+            ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            if (ctxs.isEmpty())
+                return null;
+
+            return (T)ctxs.iterator().next().service();
+        }
+    }
+
+    /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Services by specified service name.
+     */
+    public <T> Collection<T> services(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+             ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            Collection<T> res = new ArrayList<>(ctxs.size());
+
+            for (GridServiceContextImpl ctx : ctxs)
+                res.add((T)ctx.service());
+
+            return res;
+        }
+    }
+
+    /**
      * Reassigns service to nodes.
      *
      * @param dep Service deployment.
