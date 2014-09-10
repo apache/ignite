@@ -283,7 +283,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         pingingNode.events().localListen(
             new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent gridEvent) {
+                @Override public boolean apply(GridEvent evt) {
                     cnt.countDown();
 
                     return true;

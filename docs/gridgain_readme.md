@@ -4,19 +4,22 @@
 
 <div style="height: 40px"></div>
 
-## 1. GridGain In-Memory Fabric
+## 1. GridGain In-Memory Data Fabric
 
-GridGain’s In-Memory Fabric is designed to deliver uncompromised performance for the widest array of in-memory computing use cases.
+GridGain’s In-Memory Data Fabric is designed to deliver uncompromised performance for the widest array of in-memory computing use cases.
 
-Following components are included:
+Following components are included in the fabric:
 * `In-Memory High Performance Computing (HPC)` - includes distributed clustering, messaging, events, and computational features.
 * `In-Memory Data Grid` - partitioned in-memory key-value store with support for ACID transactions, off-heap memory, SQL, and more.
 * `In-Memory Streaming` - supports event workflow, rolling data windows and indexing, continuous querying, and more.
 
 Enterprise Features:
+* Portable Objects
+* Dynamic data structure changes without restarting cluster
+* Cross-language support, including Java (JVM), .NET (C#), C++
 * Datacenter replication
 * Rolling production updates
-* Local restartable store
+* Local recoverable store
 * Network segmentation protection
 * Secure authentication and Secure client sessions
 * GUI Management & Monitoring
@@ -75,10 +78,8 @@ GridGain provides repository for its Maven artifacts.
 * GridGain Enterprise repository is located at http://www.gridgainsystems.com/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
-To import GridGain Fabric to your Maven project, use one of the following artifacts:
-
-* `gridgain-fabric` for Open Source edition
-* `gridgain-fabric-ent` for Enterprise edition (GridGain Enterprise repository needs to be configured)
+* `gridgain-fabric` - contains jars and dependencies for GridGain Open Source In-Memory Data Fabric.
+* `gridgain-fabric-ent` - contains jars and dependencies for GridGain Enterprise In-Memory Data Fabric.
 
 ### 3.2 Maven Example
 
