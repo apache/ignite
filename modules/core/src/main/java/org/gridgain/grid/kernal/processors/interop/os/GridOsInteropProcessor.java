@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
  */
 public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     /** Common error message. */
-    private final String ERR_MSG = "Interop feature is not supported in OS edition.";
+    private static final String ERR_MSG = "Interop feature is not supported in OS edition.";
 
     /**
      * Constructor.

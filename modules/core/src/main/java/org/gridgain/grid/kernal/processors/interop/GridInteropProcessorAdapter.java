@@ -24,4 +24,9 @@ public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter i
     protected GridInteropProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
+
+    /** {@inheritDoc} */
+    @Override public String gridName() {
+        return ctx.gridName();
+    }
 }

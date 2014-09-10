@@ -32,4 +32,9 @@ public interface GridInteropProcessor extends GridProcessor {
      * @throws GridException If failed.
      */
     public GridInteropCache cache(@Nullable String name) throws GridException;
+
+    /**
+     * @return Grid name.
+     */
+    public String gridName();
 }
