@@ -420,4 +420,11 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Primary entry set.
      */
     public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * Whether "keepPortable" enabled.
+     *
+     * @return {@code True} if keep portable is enabled.
+     */
+    public boolean isKeepPortableEnabled();
 }

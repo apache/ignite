@@ -927,6 +927,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isKeepPortableEnabled() {
+        return keepPortable;
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
         // TODO pass entry filter.
         return cache.entrySet(part);
