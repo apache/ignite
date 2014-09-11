@@ -70,9 +70,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** clearAll() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
-    /** Maximum number of key checks (approximate value). */
-    private static final int MAX_KEY_CHECKS = Integer.getInteger(GG_CACHE_KEY_VALIDATION_CHECKS, 100);
-
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String,
             String>>() {
@@ -82,7 +79,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     };
 
     /** */
-    private int keyChecks;
+    private boolean keyCheck = !Boolean.getBoolean(GG_CACHE_KEY_VALIDATION_DISABLED);
 
     /** */
     private boolean valCheck = true;
@@ -4572,10 +4569,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @throws IllegalArgumentException If validation fails.
      */
     private void validateCacheKey(Object key) {
-        if (keyChecks <= MAX_KEY_CHECKS) {
+        if (keyCheck) {
             CU.validateCacheKey(log, key);
 
-            keyChecks++;
+            keyCheck = false;
         }
     }
 
@@ -4590,17 +4587,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keys == null)
             return;
 
-        if (keyChecks <= MAX_KEY_CHECKS) {
+        if (keyCheck) {
             for (Object key : keys) {
-                if (key == null)
+                if (key == null || key instanceof GridCacheInternal)
                     continue;
-
-                if (keyChecks > MAX_KEY_CHECKS)
-                    return;
 
                 CU.validateCacheKey(log, key);
 
-                keyChecks++;
+                keyCheck = false;
             }
         }
     }
