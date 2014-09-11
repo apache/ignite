@@ -22,20 +22,38 @@ Importing GridGain Dependencies In Maven Project
 
 If you are using Maven to manage dependencies of your project, there are two options:
 
-1. Import gridgain-fabric edition
+1. Import one of the following predefined GridGain editions:
+  - gridgain-hpc
+  - gridgain-datagrid
+  - gridgain-streaming
+  - gridgain-fabric (all inclusive)
+
 2. Or import individual GridGain modules a la carte.
 
 
-Importing GridGain Fabric Dependency
-------------------------------------
+Importing GridGain Edition Dependencies
+---------------------------------------
 
-GridGain Fabric automatically imports GridGain core module and
+When importing editions, each edition automatically imports GridGain core module and
 a set of additional modules needed for this edition to work. Specifically:
 
-- gridgain-core
-- gridgain-spring (optional, add if you plan to use Spring configuration)
+- gridgain-hpc
+  - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-Here is how 'gridgain-fabric' can be added to your POM file (replace '${gridgain.version}'
+- gridgain-datagrid
+  - gridgain-core
+  - gridgain-indexing (optional, add if you need SQL indexing)
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-streaming
+  - gridgain-core
+  - gridgain-spring (optional, add if you plan to use Spring configuration)
+
+- gridgain-fabric
+  - (all dependencies included in other editions)
+
+Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'
 with actual GridGain version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -47,7 +65,7 @@ with actual GridGain version you are interested in):
         ...
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-fabric</artifactId>
+            <artifactId>gridgain-datagrid</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
         ...
