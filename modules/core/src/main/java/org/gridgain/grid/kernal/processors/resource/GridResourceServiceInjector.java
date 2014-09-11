@@ -13,7 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
+import org.gridgain.grid.util.typedef.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -36,7 +38,17 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
 
         Collection<GridService> srvcs = grid.services().services(ann.serviceName());
 
-        GridResourceUtils.inject(field.getField(), target, srvcs);
+        Field f = field.getField();
+
+        if (Collection.class.equals(f.getType()))
+            GridResourceUtils.inject(f, target, srvcs);
+        else {
+            if (Collection.class.isAssignableFrom(f.getType()))
+                throw new GridException("Failed to inject resource because target field should have " +
+                    "'Collection' type (no descendant classes are allowed).");
+
+            GridResourceUtils.inject(f, target, F.isEmpty(srvcs) ? null : srvcs.iterator().next());
+        }
     }
 
     /** {@inheritDoc} */
@@ -46,6 +58,20 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
 
         Collection<GridService> srvcs = grid.services().services(ann.serviceName());
 
-        GridResourceUtils.inject(mtd.getMethod(), target, srvcs);
+        Class<?>[] types = mtd.getMethod().getParameterTypes();
+
+        if (types.length != 1)
+            throw new GridException("Setter does not have single parameter of required type [type=" +
+                srvcs.getClass().getName() + ", setter=" + mtd + ']');
+
+        if (Collection.class.equals(types[0]))
+            GridResourceUtils.inject(mtd.getMethod(), target, srvcs);
+        else {
+            if (Collection.class.isAssignableFrom(types[0]))
+                throw new GridException("Failed to inject resource because target parameter should have " +
+                    "'Collection' type (no descendant classes are allowed).");
+
+            GridResourceUtils.inject(mtd.getMethod(), target, F.isEmpty(srvcs) ? null : srvcs.iterator().next());
+        }
     }
 }

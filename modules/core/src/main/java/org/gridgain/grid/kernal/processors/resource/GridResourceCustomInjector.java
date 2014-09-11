@@ -205,9 +205,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
                 @Override public void apply(Map<Class<?>, Map<String, CachedResource>> map) {
                     if (map != null) {
                         for (Map<String, CachedResource> m : map.values()) {
-                            if (m != null) {
+                            if (m != null)
                                 undeploy(m.values());
-                            }
                         }
                     }
                 }
@@ -219,9 +218,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
             Map<Class<?>, Map<Class<?>, Map<String, CachedResource>>> clsRsrcs = dep.removeMeta(CLS_RSRC_CACHE);
 
-            if (clsRsrcs != null) {
+            if (clsRsrcs != null)
                 F.forEach(clsRsrcs.values(), x);
-            }
         }
         finally {
             lock.writeLock().unlock();
@@ -316,9 +314,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
         GridUserResource ann = (GridUserResource)mtd.getAnnotation();
 
-        if (mtd.getMethod().getParameterTypes().length != 1) {
+        if (mtd.getMethod().getParameterTypes().length != 1)
             throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());
-        }
 
         Class<?> rsrcCls = !ann.resourceClass().equals(Void.class) ? ann.resourceClass() :
             mtd.getMethod().getParameterTypes()[0];
@@ -357,26 +354,23 @@ class GridResourceCustomInjector implements GridResourceInjector {
                 if (m != null) {
                     Map<Class<?>, Map<String, CachedResource>> m1 = m.get(depCls);
 
-                    if (m1 != null) {
+                    if (m1 != null)
                         map = m1.get(rsrcCls);
-                    }
                 }
             }
             else {
                 Map<Class<?>, Map<String, CachedResource>> m = dep.meta(CLS_LDR_RSRC_CACHE);
 
-                if (m != null) {
+                if (m != null)
                     map = m.get(rsrcCls);
-                }
             }
 
             if (map != null) {
                 CachedResource rsrc = map.get(rsrcName);
 
                 if (rsrc != null) {
-                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled())
                         log.debug("Read resource from cache: [rsrcCls=" + rsrcCls + ", rsrcName=" + rsrcName + ']');
-                    }
 
                     return rsrc.getResource();
                 }

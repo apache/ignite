@@ -300,6 +300,7 @@ public interface GridServices {
 
     /**
      * Gets all deployed services with specified name.
+     *
      * @param name Service name.
      * @param <T> Service type.
      * @return all deployed services with specified name.

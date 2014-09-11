@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
@@ -49,6 +50,22 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     public void testClosureField() throws Exception {
         grid(0).compute().call(new GridCallable<Object>() {
             @GridServiceResource(serviceName = "testService")
+            private DummyService srvc;
+
+            @Override public Object call() throws Exception {
+                assertNotNull(srvc);
+
+                return null;
+            }
+        }).get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureFieldMultipleServices() throws Exception {
+        grid(0).compute().call(new GridCallable<Object>() {
+            @GridServiceResource(serviceName = "testService")
             private Collection<DummyService> srvcs;
 
             @Override public Object call() throws Exception {
@@ -66,7 +83,65 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    public void testClosureFieldWithIncorrectType() throws Exception {
+        try {
+            grid(0).compute().call(new GridCallable<Object>() {
+                @GridServiceResource(serviceName = "testService")
+                private String srvcName;
+
+                @Override public Object call() throws Exception {
+                    fail();
+
+                    return null;
+                }
+            }).get();
+
+            fail();
+        }
+        catch (GridException e) {
+            assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
+        }
+    }
+
+    public void testClosureFieldWithCollectionDescendantType() throws Exception {
+        try {
+            grid(0).compute().call(new GridCallable<Object>() {
+                @GridServiceResource(serviceName = "testService")
+                private LinkedList<DummyService> srvcs;
+
+                @Override public Object call() throws Exception {
+                    return null;
+                }
+            }).get();
+
+            fail();
+        }
+        catch (GridException e) {
+            assertTrue(e.getCause().getMessage().startsWith(
+                "Failed to inject resource because target field should have 'Collection' type"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClosureMethod() throws Exception {
+        grid(0).compute().call(new GridCallable<Object>() {
+            @GridServiceResource(serviceName = "testService")
+            private void service(DummyService srvc) {
+                assertNotNull(srvc);
+            }
+
+            @Override public Object call() throws Exception {
+                return null;
+            }
+        }).get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureMethodWithMultipleServices() throws Exception {
         grid(0).compute().call(new GridCallable<Object>() {
             @GridServiceResource(serviceName = "testService")
             private void service(Collection<DummyService> srvcs) {
@@ -81,6 +156,53 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 return null;
             }
         }).get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureMethodWithIncorrectType() throws Exception {
+        try {
+            grid(0).compute().call(new GridCallable<Object>() {
+                @GridServiceResource(serviceName = "testService")
+                private void service(String srvcs) {
+                    fail();
+                }
+
+                @Override public Object call() throws Exception {
+                    return null;
+                }
+            }).get();
+
+            fail();
+        }
+        catch (GridException e) {
+            assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureMethodWithCollectionDescendantType() throws Exception {
+        try {
+            grid(0).compute().call(new GridCallable<Object>() {
+                @GridServiceResource(serviceName = "testService")
+                private void service(LinkedList<DummyService> srvcs) {
+                    fail();
+                }
+
+                @Override public Object call() throws Exception {
+                    return null;
+                }
+            }).get();
+
+            fail();
+        }
+        catch (GridException e) {
+            assertTrue(e.getCause().getMessage().startsWith(
+                "Failed to inject resource because target parameter should have 'Collection' type"));
+        }
     }
 
     /**
