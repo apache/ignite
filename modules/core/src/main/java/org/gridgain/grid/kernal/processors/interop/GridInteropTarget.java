@@ -33,6 +33,7 @@ public interface GridInteropTarget {
      * @param stream Native stream address.
      * @param arr Native array address.
      * @param cap Capacity.
+     * @throws GridException In case of failure.
      */
     public void outOp(int type, long stream, long arr, int cap) throws GridException;
 
@@ -44,7 +45,7 @@ public interface GridInteropTarget {
      * @param outStream Native stream address.
      * @param outArr Native array address.
      * @param outCap Capacity.
-     * @throws GridException
+     * @throws GridException In case of failure.
      */
     public void inOutOp(int type, GridPortableInputStream inStream, long outStream, long outArr, int outCap)
         throws GridException;
@@ -52,22 +53,24 @@ public interface GridInteropTarget {
     /**
      * Asynchronous IN operation.
      *
-     * @param opType Operation type.
-     * @param in Input stream.
+     * @param type Operation type.
      * @param futId Future ID.
+     * @param in Input stream.
      * @throws GridException In case of failure.
      */
-    public void inOpAsync(int opType, GridPortableInputStream in, long futId) throws GridException;
+    public void inOpAsync(int type, long futId, GridPortableInputStream in) throws GridException;
 
     /**
      * Asynchronous IN-OUT operation.
      *
-     * @param opType Operation type.
-     * @param in Input stream.
-     * @param out Output stream.
+     * @param type Operation type.
      * @param futId Future ID.
+     * @param in Input stream.
+     * @param outStream Native stream address.
+     * @param outArr Native array address.
+     * @param outCap Capacity.
      * @throws GridException In case of failure.
      */
-    public void inOutOpAsync(int opType, GridPortableInputStream in, GridPortableOutputStream out, long futId)
+    public void inOutOpAsync(int type, long futId, GridPortableInputStream in, long outStream, long outArr, int outCap)
         throws GridException;
 }
