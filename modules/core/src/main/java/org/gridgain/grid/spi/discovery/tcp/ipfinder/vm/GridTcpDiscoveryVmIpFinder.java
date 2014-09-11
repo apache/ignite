@@ -159,13 +159,13 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 else
                     throw new GridSpiException(errMsg);
             }
-        } else {
+        }
+        else {
             // IPv4 address.
             if (ipStr.endsWith(":"))
                 ipStr = ipStr.substring(0, ipStr.length() - 1);
-            else if (ipStr.indexOf(':') >= 0) {
+            else if (ipStr.indexOf(':') >= 0)
                 return addresses(ipStr, "\\:", errMsg);
-            }
         }
 
         // Provided address does not contain port (will use default one).
