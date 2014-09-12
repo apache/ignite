@@ -356,7 +356,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      * @return Flag indicating whether near cache should be updated.
      */
-    protected boolean updateNearCache() {
+    protected boolean updateNearCache(K key, long topVer) {
         return false;
     }
 

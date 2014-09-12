@@ -1727,7 +1727,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param nearXidVer Near tx ID.
      * @return Near local or colocated local transaction.
      */
-    @Nullable public GridCacheTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer) {
+    @Nullable public GridCacheTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
         // First check if we have near transaction with this ID.
         GridCacheTxEx<K, V> tx = idMap.get(nearXidVer);
 
@@ -1735,7 +1735,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
             // Check all local transactions and mark them as waiting for recovery to prevent finish race.
             for (GridCacheTxEx<K, V> txEx : idMap.values()) {
                 if (nearXidVer.equals(txEx.nearXidVersion())) {
-                    if (!txEx.markFinalizing(RECOVERY_WAIT))
+                    if (!markFinalizing || !txEx.markFinalizing(RECOVERY_WAIT))
                         tx = txEx;
                 }
             }
