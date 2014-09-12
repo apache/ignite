@@ -11,8 +11,6 @@
 
 package org.gridgain.visor.plugin;
 
-import org.gridgain.visor.plugin.api.*;
-
 import javax.swing.*;
 
 /**
