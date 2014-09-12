@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,48 +9,55 @@
 
 package org.gridgain.grid.kernal.visor.cmd.dto;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
  * Portable object metadata field information.
- *
- * @author @java.author
- * @version @java.version
  */
 public class VisorPortableMetadataField implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Field name */
-    private String name;
+    /** Field name. */
+    private String fieldName;
 
-    /** Field fieldType name */
-    private String fieldType;
+    /** Field type name. */
+    private String fieldTypeName;
 
-    /** Field hash code */
-    private String hash;
+    /** Field id. */
+    private Integer fieldId;
 
-    public String name() {
-        return name;
+    /** Field name. */
+    public String fieldName() {
+        return fieldName;
     }
 
-    public void name(String name) {
-        this.name = name;
+    public void fieldName(String fieldName) {
+        this.fieldName = fieldName;
     }
 
-    public String fieldType() {
-        return fieldType;
+    /** Field type name. */
+    public String fieldTypeName() {
+        return fieldTypeName;
     }
 
-    public void fieldType(String fieldType) {
-        this.fieldType = fieldType;
+    public void fieldTypeName(String fieldTypeName) {
+        this.fieldTypeName = fieldTypeName;
     }
 
-    public String hash() {
-        return hash;
+    /** Field id. */
+    public Integer fieldId() {
+        return fieldId;
     }
 
-    public void hash(String hash) {
-        this.hash = hash;
+    public void fieldId(Integer fieldId) {
+        this.fieldId = fieldId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorPortableMetadataField.class, this);
     }
 }

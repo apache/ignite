@@ -24,9 +24,9 @@ import java.util.*;
  * Alternatively you can run node and router instances from command line.
  * To do so you need to execute commands
  * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-cache.xml}
- * and {@code GRIDGAIN_HOME/bin/ggrouter.sh clients/java/config/router/default-router.xml}
+ * and {@code GRIDGAIN_HOME/bin/ggrouter.sh config/router/default-router.xml}
  * For more details on how to configure standalone router instances please refer to
- * configuration file {@code GRIDGAIN_HOME/clients/java/config/router/default-router.xml}.
+ * configuration file {@code GRIDGAIN_HOME/config/router/default-router.xml}.
  * <p>
  * This example creates client, configured to work with router and runs an example task
  * calculating number of nodes in grid.

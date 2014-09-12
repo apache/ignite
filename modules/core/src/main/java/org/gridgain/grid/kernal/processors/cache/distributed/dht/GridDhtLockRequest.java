@@ -63,6 +63,10 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -107,7 +111,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
@@ -122,6 +127,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         this.miniId = miniId;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -141,6 +147,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -288,6 +301,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.ownedBytes = ownedBytes;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -359,6 +373,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
             case 28:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -451,6 +471,14 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 29:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

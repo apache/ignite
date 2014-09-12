@@ -59,6 +59,11 @@
         </fileSet>
 
         <fileSet>
+            <directory>config/router</directory>
+            <outputDirectory>/config/router</outputDirectory>
+        </fileSet>
+
+        <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
             <includes>

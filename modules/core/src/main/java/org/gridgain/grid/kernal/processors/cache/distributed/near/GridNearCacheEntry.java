@@ -310,8 +310,8 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected V readThrough(GridCacheTxEx<K, V> tx, K key, boolean reload,
-        GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId) throws GridException {
-        return cctx.near().loadAsync(tx, F.asList(key), reload, /*force primary*/false, filter, subjId, true).
+        GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws GridException {
+        return cctx.near().loadAsync(tx, F.asList(key), reload, /*force primary*/false, filter, subjId, taskName, true).
             get().get(key);
     }
 
@@ -382,7 +382,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null || valBytes != null, old, hasVal, subjId);
+                        val, val != null || valBytes != null, old, hasVal, subjId, null, null);
 
                 return ret;
             }
