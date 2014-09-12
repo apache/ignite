@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.2.1</gridgain.version>
+        <gridgain.version>6.5.0</gridgain.version>
         <src.dir>src/main/java</src.dir>
     </properties>
 
@@ -32,6 +32,18 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-hadoop2-integration</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-hibernate</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
@@ -50,6 +62,12 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-log4j</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-indexing</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 

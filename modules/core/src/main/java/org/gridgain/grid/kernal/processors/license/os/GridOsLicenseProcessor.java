@@ -42,7 +42,7 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enabled(GridProductEdition ed) {
+    @Override public boolean enabled(GridLicenseSubsystem ed) {
         return true;
     }
 
