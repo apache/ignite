@@ -67,7 +67,7 @@
             <directory>bin</directory>
             <outputDirectory>/bin</outputDirectory>
             <includes>
-                <include>*hadoop*.bat</include>
+                <include>**/*hadoop*.bat</include>
             </includes>
         </fileSet>
 
@@ -76,7 +76,8 @@
             <outputDirectory>/bin</outputDirectory>
             <fileMode>0755</fileMode>
             <includes>
-                <include>*hadoop*.sh</include>
+                <include>**/*hadoop*.sh</include>
+                <include>**/service.sh</include>
             </includes>
         </fileSet>
     </fileSets>

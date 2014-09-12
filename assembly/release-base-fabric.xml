@@ -29,7 +29,7 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>examples/pom-standalone-${gridgain.edition}.xml</source>
+            <source>examples/pom-standalone.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>

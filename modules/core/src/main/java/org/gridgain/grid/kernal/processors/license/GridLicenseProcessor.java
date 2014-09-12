@@ -46,7 +46,7 @@ public interface GridLicenseProcessor extends GridProcessor {
      * @param ed Edition to check.
      * @return {@code True} if enabled.
      */
-    public boolean enabled(GridProductEdition ed);
+    public boolean enabled(GridLicenseSubsystem ed);
 
     /**
      * Gets license descriptor.
