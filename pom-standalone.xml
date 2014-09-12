@@ -20,7 +20,7 @@
 
     <properties>
         <gridgain.version>6.2.1</gridgain.version>
-        <gridgain.edition>platform</gridgain.edition>
+        <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -61,6 +61,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>modules/ggfs</module>
     </modules>
 
     <dependencyManagement>
@@ -380,7 +381,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>
@@ -590,7 +591,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>

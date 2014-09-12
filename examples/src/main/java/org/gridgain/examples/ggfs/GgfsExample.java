@@ -11,13 +11,10 @@ package org.gridgain.examples.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example that shows usage of {@link GridGgfs} API. It starts a GridGain node with {@code GGFS}
@@ -30,7 +27,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
-@GridOnlyAvailableIn(HADOOP)
 public final class GgfsExample {
     /**
      * Executes example.

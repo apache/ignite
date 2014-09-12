@@ -17,7 +17,6 @@ import org.gridgain.grid.cache._
 import org.gridgain.grid.events.{GridEventType, GridEvent}
 import GridEventType._
 import collection.JavaConversions._
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 import org.gridgain.grid.lang.GridPredicate
 
 /**
@@ -27,7 +26,6 @@ import org.gridgain.grid.lang.GridPredicate
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheExample extends App {
     scalar("examples/config/example-cache.xml") {
         registerListener()

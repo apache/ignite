@@ -14,11 +14,8 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Real time popular numbers counter.
@@ -29,7 +26,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CachePopularNumbersExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
