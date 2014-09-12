@@ -42,7 +42,7 @@ public class GridOsInteropProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridInteropTarget compute() throws GridException {
+    @Override public GridInteropTarget projection() throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 

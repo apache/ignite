@@ -27,6 +27,16 @@ public interface GridInteropTarget {
     public int inOp(int type, GridPortableInputStream stream) throws GridException;
 
     /**
+     * Synchronous IN operation which returns managed object as result.
+     *
+     * @param type Operation type.
+     * @param stream Input stream.
+     * @return Managed result.
+     * @throws GridException If case of failure.
+     */
+    public Object inOpObject(int type, GridPortableInputStream stream) throws GridException;
+
+    /**
      * Synchronous OUT operation.
      *
      * @param type Operation type.

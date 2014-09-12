@@ -23,12 +23,12 @@ public interface GridInteropProcessor extends GridProcessor {
     public String gridName();
 
     /**
-     * Gets native wrapper for compute.
+     * Gets native wrapper for default Grid projection.
      *
      * @return Native compute wrapper.
      * @throws GridException If failed.
      */
-    public GridInteropTarget compute() throws GridException;
+    public GridInteropTarget projection() throws GridException;
 
     /**
      * Gets native wrapper for cache with the given name.
