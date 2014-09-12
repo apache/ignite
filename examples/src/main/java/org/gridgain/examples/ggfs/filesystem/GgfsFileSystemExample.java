@@ -13,12 +13,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example shows usage of {@code GridGgfsHadoopFileSystem Hadoop FS driver}.
@@ -26,7 +23,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Before running this example you must start at least one remote node using
  * {@link GgfsFileSystemNodeStartup}.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemExample {
     /** Path to hadoop configuration file (will be resolved from application {@code CLASSPATH}). */
     private static final String HADOOP_FS_CFG = "filesystem/core-site.xml";
