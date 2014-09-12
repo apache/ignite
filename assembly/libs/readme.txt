@@ -26,9 +26,7 @@ If you are using Maven to manage dependencies of your project, there are two opt
   - gridgain-hpc
   - gridgain-datagrid
   - gridgain-streaming
-  - gridgain-hadoop1
-  - gridgain-hadoop2
-  - gridgain-platform (all inclusive)
+  - gridgain-fabric (all inclusive)
 
 2. Or import individual GridGain modules a la carte.
 
@@ -52,17 +50,7 @@ a set of additional modules needed for this edition to work. Specifically:
   - gridgain-core
   - gridgain-spring (optional, add if you plan to use Spring configuration)
 
-- gridgain-hadoop1
-  - gridgain-core
-  - gridgain-hadoop1-integration
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-hadoop2
-  - gridgain-core
-  - gridgain-hadoop2-integration
-  - gridgain-spring (optional, add if you plan to use Spring configuration)
-
-- gridgain-platform
+- gridgain-fabric
   - (all dependencies included in other editions)
 
 Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'

@@ -60,7 +60,7 @@
                 <include>**/*.txt</include>
             </includes>
             <excludes>
-                <exclude>*hadoop*.bat</exclude>
+                <exclude>**/*hadoop*.bat</exclude>
                 <exclude>ggrouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
             </excludes>
@@ -74,9 +74,10 @@
                 <include>**/*.sh</include>
             </includes>
             <excludes>
-                <exclude>*hadoop*.sh</exclude>
+                <exclude>**/*hadoop*.sh</exclude>
                 <exclude>ggrouter.sh</exclude>
                 <exclude>**/target-classpath.sh</exclude>
+                <exclude>**/service.sh</exclude>
             </excludes>
         </fileSet>
 
