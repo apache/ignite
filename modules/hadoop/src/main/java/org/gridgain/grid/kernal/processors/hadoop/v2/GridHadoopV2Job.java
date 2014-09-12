@@ -15,22 +15,18 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.JobID;
-import org.apache.hadoop.mapred.TaskAttemptID;
-import org.apache.hadoop.mapred.TaskID;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.net.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -76,11 +72,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
         // Before create JobConf instance we should set new context class loader.
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
-        jobConf = new JobConf() {
-            {
-                getProps().putAll(jobInfo.properties());
-            }
-        };
+        jobConf = new JobConf();
+
+        for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
+            jobConf.set(e.getKey(), e.getValue());
 
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 

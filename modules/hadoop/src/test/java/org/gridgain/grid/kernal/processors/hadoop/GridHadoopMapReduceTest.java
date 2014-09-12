@@ -46,7 +46,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 8; i++) {
             ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
@@ -78,7 +78,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1), 
+            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
                 createJobInfo(job.getConfiguration()));
 
             fut.get();

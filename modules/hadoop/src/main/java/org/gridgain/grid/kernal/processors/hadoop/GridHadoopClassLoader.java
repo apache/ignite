@@ -264,7 +264,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job")) {
             loadDefault();
 
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job$1");
+            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job$1");
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
 
@@ -278,7 +278,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
             loadDefault();
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$2");
+            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$2");
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context$1");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context");
@@ -290,6 +290,8 @@ public class GridHadoopClassLoader extends URLClassLoader {
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2SetupTask");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2CleanupTask");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Partitioner");
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopWritableSerialization");
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Counter");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task");

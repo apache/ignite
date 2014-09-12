@@ -103,7 +103,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
-                createJobInfo(job.getConfiguration())).get(30000);
+            createJobInfo(job.getConfiguration())).get(30000);
 
         assertTrue(vals.isEmpty());
     }

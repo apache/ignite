@@ -33,6 +33,12 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     /** Configuration. */
     private Map<String,String> props = new HashMap<>();
 
+    /** Job name. */
+    private String jobName;
+
+    /** User name. */
+    private String user;
+
     /**
      * Default constructor required by {@link Externalizable}.
      */
@@ -43,11 +49,16 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     /**
      * Constructor.
      *
+     * @param jobName Job name.
+     * @param user User name.
      * @param hasCombiner {@code true} If job has combiner.
      * @param numReduces Number of reducers configured for job.
      * @param props All other properties of the job.
      */
-    public GridHadoopDefaultJobInfo(boolean hasCombiner, int numReduces, Map<String, String> props) {
+    public GridHadoopDefaultJobInfo(String jobName, String user, boolean hasCombiner, int numReduces,
+        Map<String, String> props) {
+        this.jobName = jobName;
+        this.user = user;
         this.hasCombiner = hasCombiner;
         this.numReduces = numReduces;
         this.props = props;
@@ -91,7 +102,20 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     }
 
     /** {@inheritDoc} */
+    @Override public String jobName() {
+        return jobName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String user() {
+        return user;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, jobName);
+        U.writeString(out, user);
+
         out.writeBoolean(hasCombiner);
         out.writeInt(numReduces);
 
@@ -100,6 +124,9 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobName = U.readString(in);
+        user = U.readString(in);
+
         hasCombiner = in.readBoolean();
         numReduces = in.readInt();
 

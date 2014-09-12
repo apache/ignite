@@ -9,7 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.fs;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.hdfs.protocol.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 
 /**
@@ -28,5 +30,20 @@ public class GridHadoopFileSystemsUtils {
     public static void setUser(FileSystem fs, String userName) {
         if (fs instanceof GridGgfsHadoopFileSystem)
             ((GridGgfsHadoopFileSystem)fs).setUser(userName);
+        else if (fs instanceof GridHadoopDistributedFileSystem)
+            ((GridHadoopDistributedFileSystem)fs).setUser(userName);
+    }
+
+    /**
+     * Setup wrappers of filesystems to support the separate working directory.
+     *
+     * @param cfg Config for setup.
+     */
+    public static void setupFileSystems(Configuration cfg) {
+        cfg.set("fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl", GridHadoopLocalFileSystemV1.class.getName());
+        cfg.set("fs.AbstractFileSystem." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl",
+                GridHadoopLocalFileSystemV2.class.getName());
+
+        cfg.set("fs." + HdfsConstants.HDFS_URI_SCHEME + ".impl", GridHadoopDistributedFileSystem.class.getName());
     }
 }

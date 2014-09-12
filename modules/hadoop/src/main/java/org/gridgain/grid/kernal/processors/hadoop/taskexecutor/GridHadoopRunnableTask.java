@@ -51,7 +51,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private GridHadoopMultimap local;
 
     /** */
-    //private volatile GridHadoopTask task;
+    private volatile GridHadoopTaskContext ctx;
 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
@@ -89,7 +89,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
+        ctx = job.getTaskContext(info);
 
         ctx.counters(counters);
 
@@ -160,8 +160,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     public void cancel() {
         cancelled = true;
 
-//        if (task != null)
-//            task.cancel();
+        if (ctx != null)
+            ctx.cancel();
     }
 
     /**

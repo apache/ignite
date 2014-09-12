@@ -61,8 +61,8 @@ public class GridHadoopUtils {
         return new GridHadoopJobStatus(
             meta.jobId(),
             meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            "Job name", /*jobInfo.configuration().getJobName(),*/
-            "User name", /*jobInfo.configuration().getUser(),*/
+            jobInfo.jobName(),
+            jobInfo.user(),
             meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
             meta.mapReducePlan().mappers(),
@@ -366,9 +366,8 @@ public class GridHadoopUtils {
         for (Map.Entry<String, String> entry : jobConf)
             props.put(entry.getKey(), entry.getValue());
 
-        return new GridHadoopDefaultJobInfo(hasCombiner, numReduces, props);
+        return new GridHadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
     }
-
 
     /**
      * Constructor.
