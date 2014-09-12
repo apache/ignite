@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
+
 /**
  * Tests for streamer eviction logic.
  */
@@ -30,8 +32,8 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private boolean atLeastOnce = true;
+    /** Number of events used in test. */
+    private static final int EVENTS_COUNT = 10;
 
     /** Test stages. */
     private Collection<GridStreamerStage> stages;
@@ -62,13 +64,12 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     private GridStreamerConfiguration streamerConfiguration() {
         GridStreamerConfiguration cfg = new GridStreamerConfiguration();
 
-        cfg.setAtLeastOnce(atLeastOnce);
-
         cfg.setRouter(router);
 
         GridStreamerBoundedTimeWindow window = new GridStreamerBoundedTimeWindow();
+
         window.setName("window1");
-        window.setTimeInterval(5 * 60000);
+        window.setTimeInterval(60000);
 
         cfg.setWindows(F.asList((GridStreamerWindow)window));
 
@@ -81,83 +82,71 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testContextNextStage() throws Exception {
-        atLeastOnce = true;
         router = new GridTestStreamerEventRouter();
 
-        final CountDownLatch finishLatch = new CountDownLatch(100);
-        final AtomicReference<GridException> err = new AtomicReference<>();
+        final CountDownLatch finishLatch = new CountDownLatch(EVENTS_COUNT);
+        final AtomicReference<AssertionError> err = new AtomicReference<>();
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
                 Collection<Object> evts) throws GridException {
-                GridStreamerWindow win = ctx.window("window1");
-                String nextStage = ctx.nextStageName();
+                assert evts.size() == 1;
 
-                if (nextStage == null) {
+                if (ctx.nextStageName() == null) {
                     finishLatch.countDown();
 
                     return null;
                 }
 
-                assert evts.size() == 1;
+                GridStreamerWindow win = ctx.window("window1");
 
                 // Add new events to the window.
                 win.enqueueAll(evts);
 
-                // Evict outdated events from the window.
-                Collection c = win.pollEvictedAll();
-                System.out.println(" --> evicted: " + c.size());
+                try {
+                    assertEquals(0, win.evictionQueueSize());
+                }
+                catch (AssertionError e) {
+                    err.compareAndSet(null, e);
+                }
 
+                // Evict outdated events from the window.
+                Collection evictedEvts = win.pollEvictedAll();
+
+                try {
+                    assertEquals(0, evictedEvts.size());
+                }
+                catch (AssertionError e) {
+                    err.compareAndSet(null, e);
+                }
 
                 Integer val = (Integer)F.first(evts);
 
-                val++;
-
-                try {
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace(); // TODO implement.
-                }
-
-
-                return (Map)F.asMap(ctx.nextStageName(), F.asList(val));
+                return (Map)F.asMap(ctx.nextStageName(), F.asList(++val));
             }
         };
 
-        stages = F.asList(
-            (GridStreamerStage)new GridTestStage("0", stage),
-            new GridTestStage("1", stage),
-            new GridTestStage("2", stage),
-            new GridTestStage("3", stage),
-            new GridTestStage("4", stage)
-        );
+        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
 
-        startGrids(4);
+        startGrids(2);
 
         try {
-            GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
+            GridTestStreamerEventRouter router = (GridTestStreamerEventRouter)this.router;
 
-            router0.put("0", grid(1).localNode().id());
-            router0.put("1", grid(2).localNode().id());
-            router0.put("2", grid(3).localNode().id());
-            router0.put("3", grid(0).localNode().id());
-            router0.put("4", grid(1).localNode().id());
+            router.put("0", grid(0).localNode().id());
+            router.put("1", grid(1).localNode().id());
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < EVENTS_COUNT; i++)
                 grid(0).streamer(null).addEvent(i);
 
-                Collection<GridStreamerWindow> win = grid(0).streamer(null).configuration().getWindows();
-
-                System.out.println(" --> " + win.iterator().next().evictionQueueSize());
-            }
-
-            finishLatch.await();
-
+            boolean await = finishLatch.await(5, SECONDS);
 
             if (err.get() != null)
                 throw err.get();
+
+            if (!await)
+                fail("Some events didn't finished.");
         }
         finally {
             stopAllGrids(false);
