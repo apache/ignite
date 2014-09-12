@@ -53,7 +53,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     private GridHadoopMultimap local;
 
     /** */
-    private volatile GridHadoopTask task;
+    private volatile GridHadoopTaskContext ctx;
 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
@@ -91,7 +91,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
+        ctx = job.getTaskContext(info);
 
         ctx.counters(counters);
 
@@ -99,7 +99,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
         Throwable err = null;
 
         try {
-            ctx.prepareTaskEnvironment();
+            job.prepareTaskEnvironment(info);
 
             runTask(ctx);
 
@@ -132,7 +132,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             if (local != null)
                 local.close();
 
-            ctx.cleanupTaskEnvironment();
+            job.cleanupTaskEnvironment(info);
         }
 
         return null;
@@ -142,8 +142,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
      * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx)
-        throws GridException {
+    private void runTask(GridHadoopTaskContext ctx) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -153,12 +152,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             ctx.input(in);
             ctx.output(out);
 
-            task = job.createTask(ctx.taskInfo());
-
-            if (cancelled)
-                throw new GridHadoopTaskCancelledException("Task cancelled.");
-
-            task.run(ctx);
+            ctx.run();
         }
     }
 
@@ -168,8 +162,8 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     public void cancel() {
         cancelled = true;
 
-        if (task != null)
-            task.cancel();
+        if (ctx != null)
+            ctx.cancel();
     }
 
     /**

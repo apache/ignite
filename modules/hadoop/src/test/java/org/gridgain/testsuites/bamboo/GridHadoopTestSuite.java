@@ -19,7 +19,7 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 public class GridHadoopTestSuite extends TestSuite {
     /** */
     private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException, GridException {
-        GridHadoopClassLoader ldr = new GridHadoopClassLoader();
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
         return ldr.loadClassExplicitly(cls.getName());
     }

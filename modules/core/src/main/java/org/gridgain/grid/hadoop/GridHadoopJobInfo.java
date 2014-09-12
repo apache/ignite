@@ -59,4 +59,18 @@ public interface GridHadoopJobInfo extends Serializable {
      * @return Number of reducers configured for job.
      */
     public int reducers();
+
+    /**
+     * Gets job name.
+     *
+     * @return Job name.
+     */
+    public String jobName();
+
+    /**
+     * Gets user name.
+     *
+     * @return User name.
+     */
+    public String user();
 }

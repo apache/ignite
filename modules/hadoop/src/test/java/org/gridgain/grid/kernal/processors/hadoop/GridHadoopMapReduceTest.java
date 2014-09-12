@@ -22,6 +22,8 @@ import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Test of whole cycle of map-reduce processing via Job tracker.
  */
@@ -36,8 +38,6 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
-        //System.out.println(JobConf.class.getClassLoader());
-
         GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);
@@ -79,7 +79,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setJarByClass(GridHadoopWordCount2.class);
 
             GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration()));
 
             fut.get();
 

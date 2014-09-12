@@ -22,9 +22,6 @@ import java.util.*;
  */
 public class GridHadoopClassLoader extends URLClassLoader {
     /** */
-    public static final String PACKAGE_PREFIX = "org.gridgain.grid.kernal.processors.hadoop.";
-
-    /** */
     private static volatile URL[] hadoopUrls;
 
     //private static volatile URL[] mainUrls;
@@ -33,9 +30,14 @@ public class GridHadoopClassLoader extends URLClassLoader {
      * Constructor.
      *
      * @throws GridException
+     * @param urls
      */
-    public GridHadoopClassLoader() throws GridException {
+    public GridHadoopClassLoader(URL[] urls) throws GridException {
         super(getHadoopUrls(), getAppClassLoader());
+
+        if (urls != null)
+            for (URL url : urls)
+               addURL(url);
 
 //        printUrls(this);
     }
@@ -195,54 +197,110 @@ public class GridHadoopClassLoader extends URLClassLoader {
         }
     }
 
+    private void loadDefault() throws ClassNotFoundException {
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$1");
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$2");
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$3");
+        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$4");
+
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream$FetchBufferPart");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream$DoubleFetchBuffer");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopProxyInputStream");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$FileSystemClosure");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$1");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$2");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$3");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$4");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$5");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$6");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$7");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$8");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$9");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$10");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$11");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$12");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$13");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$14");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$15");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$Delegate");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper");
+
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc$1");
+        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc");
+
+
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Mapper");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Reducer");
+    }
+
     /** */
     private void loadDependencies(String name) throws ClassNotFoundException {
-        if (name.equals(PACKAGE_PREFIX + "GridHadoopMapReduceTest")) {
-            loadClassExplicitly(PACKAGE_PREFIX + "GridHadoopAbstractWordCountTest");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Mapper");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Reducer");
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopMapReduceTest")) {
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractWordCountTest");
 
             return;
         }
 
-        if (name.equals(PACKAGE_PREFIX + "GridHadoopAbstractWordCountTest")) {
-            loadClassExplicitly(PACKAGE_PREFIX + "GridHadoopAbstractSelfTest");
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractWordCountTest")) {
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractSelfTest");
 
             return;
         }
 
-        if (name.equals(PACKAGE_PREFIX + "GridHadoopAbstractSelfTest")) {
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractSelfTest")) {
+            loadDefault();
+
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopLocalFileSystemV1");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopLocalFileSystemV2");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopDistributedFileSystem");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem");
 
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem$InStream");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem$1");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils");
+        }
 
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$1");
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$2");
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$3");
-            loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$4");
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job")) {
+            loadDefault();
 
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopProxyInputStream");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$FileSystemClosure");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$Delegate");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper");
+            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job$1");
 
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
 
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2JobResourceManager$1");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2JobResourceManager");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Splitter");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Splitter");
+        }
 
-            loadClassExplicitly("org.gridgain.grid.hadoop.GridHadoopDefaultJobInfo");
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext")) {
+            loadDefault();
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$1");
+            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$2");
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context$1");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context");
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Counter");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Task");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2MapTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2ReduceTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2SetupTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2CleanupTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Partitioner");
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopWritableSerialization");
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Counter");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task$1");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1MapTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1ReduceTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1SetupTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1CleanupTask");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Partitioner");
         }
     }
 
