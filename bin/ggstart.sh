@@ -42,7 +42,7 @@ checkJava
 setGridGainHome
 
 if [ "${DEFAULT_CONFIG}" == "" ]; then
-    DEFAULT_CONFIG="${GRIDGAIN_HOME}/os/config/default-config.xml"
+    DEFAULT_CONFIG=config/default-config.xml
 fi
 
 #

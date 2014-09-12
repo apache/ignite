@@ -95,7 +95,7 @@ set CP=%GRIDGAIN_LIBS%
 ::
 :: Parse command line parameters.
 ::
-if not defined DEFAULT_CONFIG set "DEFAULT_CONFIG=%GRIDGAIN_HOME%\os\config\default-config.xml"
+if not defined DEFAULT_CONFIG set "DEFAULT_CONFIG=config\default-config.xml"
 call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
