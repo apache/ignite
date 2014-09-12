@@ -12,15 +12,12 @@ package org.gridgain.examples.streaming;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.router.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example to demonstrate streamer with multiple stages. This example builds price
@@ -51,7 +48,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streamer.xml} configuration.
  */
-@GridOnlyAvailableIn(STREAMING)
 public class StreamingPriceBarsExample {
     /** Random number generator. */
     private static final Random RAND = new Random();

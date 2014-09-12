@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.product;
+package org.gridgain.grid.kernal.processors.license;
 
 import org.jetbrains.annotations.*;
 
 /**
  * Different GridGain editions.
  */
-public enum GridProductEdition {
+public enum GridLicenseSubsystem {
     /** In-Memory HPC. */
     HPC,
 
@@ -34,7 +34,7 @@ public enum GridProductEdition {
     PLATFORM;
 
     /** Enumerated values. */
-    private static final GridProductEdition[] VALS = values();
+    private static final GridLicenseSubsystem[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -42,7 +42,7 @@ public enum GridProductEdition {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridProductEdition fromOrdinal(int ord) {
+    @Nullable public static GridLicenseSubsystem fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }
