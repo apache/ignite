@@ -22,6 +22,9 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
 SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
 
 source "${SCRIPTS_HOME}"/include/functions.sh

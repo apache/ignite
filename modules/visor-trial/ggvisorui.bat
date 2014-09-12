@@ -72,6 +72,9 @@ if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
 
 :run
 
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
 set SCRIPTS_HOME="%GRIDGAIN_HOME%\os\bin" :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
 
 ::
