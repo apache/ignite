@@ -609,7 +609,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        if (map != null)
+        if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
@@ -666,7 +666,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         assert keys != null || drMap != null;
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
@@ -717,7 +718,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 

@@ -579,7 +579,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         boolean success = true;
 
@@ -741,7 +742,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean rawRetval,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         boolean storeEnabled) throws GridException {
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         if (op == DELETE)
             ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
