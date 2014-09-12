@@ -10,9 +10,6 @@
 package org.gridgain.examples.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with GGFS configuration.
@@ -23,7 +20,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
