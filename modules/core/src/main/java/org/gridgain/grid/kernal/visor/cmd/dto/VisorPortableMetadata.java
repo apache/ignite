@@ -48,7 +48,7 @@ public class VisorPortableMetadata implements Serializable {
         this.typeId = typeId;
     }
 
-    /** Filed list */
+    /** Fields list */
     public Collection<VisorPortableMetadataField> fields() {
         return fields;
     }
