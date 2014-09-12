@@ -28,15 +28,18 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringExclude
     private final GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
 
     /** */
+    @GridToStringExclude
     private final Collection<Runnable> lsnrs = new GridSetWrapper<>(new IdentityHashMap<Runnable, Object>());
 
     /** */
     private volatile GridKernalState state = STOPPED;
 
     /** */
+    @GridToStringExclude
     private final String gridName;
 
     /**
