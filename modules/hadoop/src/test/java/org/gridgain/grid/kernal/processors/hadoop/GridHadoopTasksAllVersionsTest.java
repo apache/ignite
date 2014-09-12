@@ -81,32 +81,17 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         ctx.mockOutput().clear();
 
-        createAndExecuteTask(gridJob, taskInfo, ctx);
+        ctx.run();
 
         assertEquals("hello0,1; world0,1; world1,1; hello1,1", Joiner.on("; ").join(ctx.mockOutput()));
 
         ctx.mockOutput().clear();
 
-        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2);
+        ctx.taskInfo(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2));
 
-        createAndExecuteTask(gridJob, taskInfo, ctx);
+        ctx.run();
 
         assertEquals("hello2,1; world2,1; world3,1; hello3,1", Joiner.on("; ").join(ctx.mockOutput()));
-    }
-
-    /**
-     * Create and execute task.
-     *
-     * @param gridJob Job.
-     * @param taskInfo Task info.
-     * @param ctx Task context.
-     * @throws GridException If fails.
-     */
-    private void createAndExecuteTask(GridHadoopJob gridJob, GridHadoopTaskInfo taskInfo, GridHadoopTestTaskContext ctx)
-        throws GridException {
-        GridHadoopTask task = gridJob.createTask(taskInfo);
-
-        task.run(ctx);
     }
 
     /**
@@ -134,7 +119,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
             ctx.mockInput().put(new Text(words[i]), valList);
         }
 
-        createAndExecuteTask(gridJob, taskInfo, ctx);
+        ctx.run();
 
         return ctx;
     }
@@ -197,7 +182,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
-        createAndExecuteTask(gridJob, taskInfo, mapCtx);
+        mapCtx.run();
 
         //Prepare input for combine
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
@@ -206,7 +191,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         combineCtx.makeTreeOfWritables(mapCtx.mockOutput());
 
-        createAndExecuteTask(gridJob, taskInfo, combineCtx);
+        combineCtx.run();
 
         return combineCtx;
     }
@@ -251,18 +236,18 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
         reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());
 
-        createAndExecuteTask(gridJob, taskInfo, reduceCtx);
+        reduceCtx.run();
 
-        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
+        reduceCtx.taskInfo(new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null));
 
-        createAndExecuteTask(gridJob, taskInfo, reduceCtx);
+        reduceCtx.run();
 
         assertEquals(
-                "blue\t200\n" +
-                        "green\t150\n" +
-                        "red\t100\n" +
-                        "yellow\t70\n",
-                readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
+            "blue\t200\n" +
+            "green\t150\n" +
+            "red\t100\n" +
+            "yellow\t70\n",
+            readAndSortFile(PATH_OUTPUT + "/" + getOutputFileNamePrefix() + "00000")
         );
     }
 }

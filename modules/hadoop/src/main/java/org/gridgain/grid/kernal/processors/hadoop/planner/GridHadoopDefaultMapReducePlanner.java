@@ -48,14 +48,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, job.input());
 
-        int rdcCnt = 0;
+        int rdcCnt = job.info().reducers();
 
-        if (job.info().hasReducer()) {
-            rdcCnt = job.info().reducers();
-
-            if (rdcCnt < 1)
-                throw new GridException("Number of reducers must be positive, actual: " + rdcCnt);
-        }
+        if (rdcCnt < 1)
+            throw new GridException("Number of reducers must be positive, actual: " + rdcCnt);
 
         Map<UUID, int[]> reducers = reducers(top, mappers, rdcCnt);
 

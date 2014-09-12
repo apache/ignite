@@ -618,17 +618,22 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public void initialize(boolean external, UUID nodeId) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void dispose(boolean external) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
             // No-op.
         }
 

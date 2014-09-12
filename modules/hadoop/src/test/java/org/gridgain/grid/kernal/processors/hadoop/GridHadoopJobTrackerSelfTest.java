@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Job tracker self test.
  */
@@ -263,12 +265,14 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * Test job info.
      */
     private static class GridHadoopTestJobInfo extends GridHadoopDefaultJobInfo {
+        /** */
+        private Configuration cfg;
+
         /**
          * @param cfg Config.
-         * @throws GridException If failed.
          */
-        GridHadoopTestJobInfo(Configuration cfg) throws GridException {
-            super(cfg);
+        GridHadoopTestJobInfo(Configuration cfg) {
+            this.cfg = cfg;
         }
 
         /**
@@ -280,7 +284,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
-            return new HadoopTestJob(jobId, this, log);
+            return new HadoopTestJob(jobId, createJobInfo(cfg), log);
         }
     }
 
@@ -292,13 +296,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.
          */
-        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) throws GridException {
-            super(jobId, jobInfoImpl, null, log);
+        private HadoopTestJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfoImpl, GridLogger log) {
+            super(jobId, jobInfoImpl, log);
         }
 
         /** {@inheritDoc} */
         @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-            int blocks = 0; //jobInfo.configuration().getInt(BLOCK_CNT, 0);
+            int blocks = Integer.parseInt(jobInfo.property(BLOCK_CNT));
 
             Collection<GridHadoopInputSplit> res = new ArrayList<>(blocks);
 
@@ -311,11 +315,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             catch (URISyntaxException e) {
                 throw new GridException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return new HadoopTestTask(taskInfo);
         }
     }
 

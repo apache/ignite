@@ -50,42 +50,36 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-common</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-core</artifactId>
             <version>${hadoop.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -180,7 +174,7 @@
                         <classpathDependencyExcludes>tomcat:jasper-runtime</classpathDependencyExcludes>
                         <classpathDependencyExcludes>javax.servlet.jsp:jsp-api</classpathDependencyExcludes>
                         <classpathDependencyExcludes>commons-el:commons-el</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>commons-logging:commons-logging</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-logging:commons-logging</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>net.java.dev.jets3t:jets3t</classpathDependencyExcludes>
                         <classpathDependencyExcludes>com.jamesmurty.utils:java-xmlbuilder</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.codehaus.jackson:jackson-core-asl</classpathDependencyExcludes>
