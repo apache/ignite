@@ -294,6 +294,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopWritableSerialization");
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Counter");
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task$1");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1MapTask");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1ReduceTask");
