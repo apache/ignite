@@ -14,7 +14,6 @@ import org.gridgain.grid.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
-import java.util.*;
 
 /**
  * Component type.

@@ -163,8 +163,10 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     @Override public void cancel() {
         cancelled = true;
 
-        if (task != null)
-            task.cancel();
+        GridHadoopTask t = task;
+
+        if (t != null)
+            t.cancel();
     }
 
     /**

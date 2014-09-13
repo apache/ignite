@@ -55,8 +55,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>>
-        ctxs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>> ctxs =
+        new ConcurrentHashMap8<>();
 
     /**
      * @param jobId Job ID.
@@ -144,21 +144,26 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
                     return res;
                 }
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 throw transformException(e);
             }
-        } finally {
+        }
+        finally {
             Thread.currentThread().setContextClassLoader(null);
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
-        GridFutureAdapter<GridHadoopTaskContext> fut = new GridFutureAdapter<>();
-
         T2<GridHadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
-        GridFutureAdapter<GridHadoopTaskContext> old = ctxs.putIfAbsent(locTaskId, fut);
+        GridFutureAdapter<GridHadoopTaskContext> fut = ctxs.get(locTaskId);
+
+        if (fut != null)
+            return fut.get();
+
+        GridFutureAdapter<GridHadoopTaskContext> old = ctxs.putIfAbsent(locTaskId, fut = new GridFutureAdapter<>());
 
         if (old != null)
             return old.get();
