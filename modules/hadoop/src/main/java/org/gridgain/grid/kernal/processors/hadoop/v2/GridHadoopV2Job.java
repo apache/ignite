@@ -25,12 +25,11 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 
-import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.throwException;
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
  * Hadoop job implementation for v2 API.

@@ -18,8 +18,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;

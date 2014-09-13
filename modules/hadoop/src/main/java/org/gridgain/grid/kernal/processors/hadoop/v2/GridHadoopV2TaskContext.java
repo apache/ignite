@@ -27,7 +27,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.throwException;
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
  * Context for task execution.
