@@ -18,16 +18,16 @@ import java.util.Set;
 /**
  * Fake manager for shutdown hooks.
  */
-public class ShutdownHookManager {
+public class GridHadoopShutdownHookManager {
     /** */
-    private static final ShutdownHookManager MGR = new ShutdownHookManager();
+    private static final GridHadoopShutdownHookManager MGR = new GridHadoopShutdownHookManager();
 
     /**
      * Return <code>ShutdownHookManager</code> singleton.
      *
      * @return <code>ShutdownHookManager</code> singleton.
      */
-    public static ShutdownHookManager get() {
+    public static GridHadoopShutdownHookManager get() {
         return MGR;
     }
 
@@ -40,7 +40,7 @@ public class ShutdownHookManager {
     /**
      * Singleton.
      */
-    private ShutdownHookManager() {
+    private GridHadoopShutdownHookManager() {
         // No-op.
     }
 

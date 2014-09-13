@@ -15,6 +15,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.springframework.asm.*;
+import org.springframework.asm.commons.*;
 
 import java.io.*;
 import java.net.*;
@@ -38,6 +39,9 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
     /** */
     private static final Map<String, Boolean> cache = new ConcurrentHashMap8<>();
+
+    /** */
+    private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
 
     /**
      * @param urls Urls.
@@ -72,8 +76,8 @@ public class GridHadoopClassLoader extends URLClassLoader {
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (name.endsWith(".util.ShutdownHookManager")) // Dirty hack to get rid of Hadoop shutdown hooks.
-                name = ShutdownHookManager.class.getName();
+            if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
+                return loadFromBytes(name, GridHadoopShutdownHookManager.class.getName());
 
             return loadClassExplicitly(name, resolve);
         }
@@ -92,6 +96,59 @@ public class GridHadoopClassLoader extends URLClassLoader {
         }
 
         return super.loadClass(name, resolve);
+    }
+
+    /**
+     * @param name Name.
+     * @param replace Replacement.
+     * @return Class.
+     */
+    private Class<?> loadFromBytes(final String name, final String replace) {
+        synchronized (getClassLoadingLock(name)) {
+            // First, check if the class has already been loaded
+            Class c = findLoadedClass(name);
+
+            if (c != null)
+                return c;
+
+            byte[] bytes = bytesCache.get(name);
+
+            if (bytes == null) {
+                InputStream in = loadClassBytes(getParent(), replace);
+
+                ClassReader rdr;
+
+                try {
+                    rdr = new ClassReader(in);
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                ClassWriter w = new ClassWriter(Opcodes.ASM4);
+
+                rdr.accept(new RemappingClassAdapter(w, new Remapper() {
+                    /** */
+                    String replaceType = replace.replace('.', '/');
+
+                    /** */
+                    String nameType = name.replace('.', '/');
+
+                    @Override public String map(String type) {
+                        if (type.equals(replaceType))
+                            return nameType;
+
+                        return type;
+                    }
+                }), ClassReader.EXPAND_FRAMES);
+
+                bytes = w.toByteArray();
+
+                bytesCache.put(name, bytes);
+            }
+
+            return defineClass(name, bytes, 0, bytes.length);
+        }
     }
 
     /**
@@ -123,6 +180,15 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
+     * @param ldr Loader.
+     * @param clsName Class.
+     * @return Input stream.
+     */
+    @Nullable private InputStream loadClassBytes(ClassLoader ldr, String clsName) {
+        return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
+    }
+
+    /**
      * @param clsName Class name.
      * @return {@code true} If the class has external dependencies.
      */
@@ -131,7 +197,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
             return true;
 
         // Try to get from parent to check if the type accessible.
-        InputStream in = getParent().getResourceAsStream(clsName.replace('.', '/') + ".class");
+        InputStream in = loadClassBytes(getParent(), clsName);
 
         if (in == null) // The class is external itself, it must be loaded from this class loader.
             return true;
