@@ -91,14 +91,15 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        ctx = job.getTaskContext(info);
-
-        ctx.counters(counters);
-
-        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
 
+        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
+
         try {
+            ctx = job.getTaskContext(info);
+
+            ctx.counters(counters);
+
             job.prepareTaskEnvironment(info);
 
             runTask(ctx);

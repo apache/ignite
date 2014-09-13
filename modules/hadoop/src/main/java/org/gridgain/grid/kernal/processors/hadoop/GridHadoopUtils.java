@@ -18,6 +18,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
@@ -368,6 +369,22 @@ public class GridHadoopUtils {
 
         return new GridHadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
     }
+
+    /**
+     * Throws new {@link GridException} with original exception is serialized into string.
+     * This is needed to transfer error outside the current class loader.
+     *
+     * @param e Original exception.
+     * @throws GridException New exception.
+     */
+    public static GridException transformException(Throwable e) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        e.printStackTrace(new PrintStream(os, true));
+
+        return new GridException(os.toString());
+    }
+
 
     /**
      * Constructor.
