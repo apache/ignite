@@ -22,6 +22,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 
@@ -54,7 +55,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridHadoopTaskContext> ctxs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>>
+        ctxs = new ConcurrentHashMap8<>();
 
     /**
      * @param jobId Job ID.
@@ -142,26 +144,24 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
                     return res;
                 }
+            } catch (Throwable e) {
+                throw transformException(e);
             }
-            catch (Throwable e) {
-                throwException(e);
-            }
-        }
-        finally {
+        } finally {
             Thread.currentThread().setContextClassLoader(null);
         }
-
-        return null;
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
-        T2<GridHadoopTaskType, Integer> locTaskId =  new T2<>(info.type(),  info.taskNumber());
+        GridFutureAdapter<GridHadoopTaskContext> fut = new GridFutureAdapter<>();
 
-        GridHadoopTaskContext res = ctxs.get(locTaskId);
+        T2<GridHadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
-        if (res != null)
-            return res;
+        GridFutureAdapter<GridHadoopTaskContext> old = ctxs.putIfAbsent(locTaskId, fut);
+
+        if (old != null)
+            return old.get();
 
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
 
@@ -170,15 +170,19 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
             Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class, GridHadoopJobId.class);
 
-            res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId);
+            GridHadoopTaskContext res = (GridHadoopTaskContext) ctr.newInstance(info, this, jobId);
+
+            fut.onDone(res);
+
+            return res;
         }
         catch (Throwable e) {
-            throwException(e);
+            GridException te = transformException(e);
+
+            fut.onDone(te);
+
+            throw te;
         }
-
-        GridHadoopTaskContext old = ctxs.putIfAbsent(locTaskId, res);
-
-        return old == null ? res : old;
     }
 
     /** {@inheritDoc} */

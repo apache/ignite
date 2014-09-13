@@ -377,12 +377,12 @@ public class GridHadoopUtils {
      * @param e Original exception.
      * @throws GridException New exception.
      */
-    public static void throwException(Throwable e) throws GridException {
+    public static GridException transformException(Throwable e) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         e.printStackTrace(new PrintStream(os, true));
 
-        throw new GridException(os.toString());
+        return new GridException(os.toString());
     }
 
 

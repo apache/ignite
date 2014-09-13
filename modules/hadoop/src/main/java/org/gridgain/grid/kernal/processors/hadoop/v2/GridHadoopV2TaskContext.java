@@ -139,7 +139,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
                 task = createTask();
             }
             catch (Throwable e) {
-                throwException(e);
+                throw transformException(e);
             }
 
             if (cancelled)
@@ -149,7 +149,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
                 task.run(this);
             }
             catch (Throwable e) {
-                throwException(e);
+                throw transformException(e);
             }
         }
         finally {
