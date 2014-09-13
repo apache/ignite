@@ -9,8 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.jdk8.backport.ConcurrentHashMap8;
-
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import java.util.Collections;
@@ -33,7 +32,7 @@ public class ShutdownHookManager {
     }
 
     /** */
-    private Set<Runnable> hooks = Collections.newSetFromMap(new ConcurrentHashMap8<Runnable, Boolean>());
+    private Set<Runnable> hooks = Collections.synchronizedSet(new HashSet<Runnable>());
 
     /** */
     private AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
