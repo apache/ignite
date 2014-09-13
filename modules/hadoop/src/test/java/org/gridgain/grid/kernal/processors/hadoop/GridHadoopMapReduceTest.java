@@ -46,7 +46,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 1; i++) {
             ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;

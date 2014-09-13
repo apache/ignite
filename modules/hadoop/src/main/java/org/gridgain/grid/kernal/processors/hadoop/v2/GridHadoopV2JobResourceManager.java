@@ -74,10 +74,17 @@ public class GridHadoopV2JobResourceManager {
     private void setLocalFSWorkingDirectory(File dir) throws IOException {
         JobConf cfg = ctx.getJobConf();
 
-        cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY, dir.getAbsolutePath());
+        Thread.currentThread().setContextClassLoader(cfg.getClassLoader());
 
-        if(!cfg.getBoolean("fs.file.impl.disable.cache", false))
-            FileSystem.getLocal(cfg).setWorkingDirectory(new Path(dir.getAbsolutePath()));
+        try {
+            cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY, dir.getAbsolutePath());
+
+            if(!cfg.getBoolean("fs.file.impl.disable.cache", false))
+                FileSystem.getLocal(cfg).setWorkingDirectory(new Path(dir.getAbsolutePath()));
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
+        }
     }
 
     /**
