@@ -11,303 +11,393 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
-import sun.misc.*;
+import org.jdk8.backport.ConcurrentHashMap8;
+import org.jetbrains.annotations.*;
+import org.springframework.asm.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
- * GridHadoopClassLoader
+ * Class loader allowing explicitly load classes without delegation to parent class loader.
+ * Also supports class parsing for finding dependencies which contain transitive dependencies
+ * unavailable for parent.
  */
 public class GridHadoopClassLoader extends URLClassLoader {
     /** */
-    private static volatile URL[] hadoopUrls;
+    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)GridHadoopClassLoader.class.getClassLoader();
 
-    //private static volatile URL[] mainUrls;
+    /** */
+    private static final Collection<URL> appJars = F.asList(APP_CLS_LDR.getURLs());
+
+    /** */
+    private static volatile Collection<URL> hadoopJars;
+
+    /** */
+    private static final Map<String, Boolean> cache = new ConcurrentHashMap8<>();
 
     /**
-     * Constructor.
-     *
-     * @throws GridException
-     * @param urls
+     * @param urls Urls.
      */
-    public GridHadoopClassLoader(URL[] urls) throws GridException {
-        super(getHadoopUrls(), getAppClassLoader());
+    public GridHadoopClassLoader(URL[] urls) {
+        super(addHadoopUrls(urls), APP_CLS_LDR);
 
-        if (urls != null)
-            for (URL url : urls)
-               addURL(url);
-
-//        printUrls(this);
+        assert !(getParent() instanceof GridHadoopClassLoader);
     }
 
-    /** */
-    private static ClassLoader getAppClassLoader() {
-        return GridHadoopClassLoader.class.getClassLoader();
-/*
-        prepareUrls();
+    /**
+     * Need to check only GridGain Hadoop and GGFS classes.
+     *
+     * @param cls Class name.
+     * @return {@code true} if we need to check this class.
+     */
+    private static boolean mustCheck(String cls) {
+        String gg = "org.gridgain.grid.";
+        int len = gg.length();
 
-        return new URLClassLoader(mainUrls, GridHadoopClassLoader.class.getClassLoader().getParent()) {
-
-            @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                if ("junit.framework.Test".equals(name))
-                    return GridHadoopClassLoader.class.getClassLoader().loadClass(name);
-
-                try {
-                    return super.loadClass(name, resolve);
-                }
-                catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-
-                    throw e;
-                }
-            }
-        };
-*/
+        return cls.startsWith(gg) && (cls.indexOf("ggfs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
     }
 
-    /** */
-    private static void prepareUrls() throws GridException {
-        if (hadoopUrls != null)
-            return;
+    /**
+     * @param cls Class name.
+     * @return {@code true} If this is Hadoop class.
+     */
+    private static boolean isHadoop(String cls) {
+        return cls.startsWith("org.apache.hadoop.");
+    }
 
-        synchronized (GridHadoopClassLoader.class) {
-            URLClassLoader appLdr = (URLClassLoader)GridHadoopClassLoader.class.getClassLoader();
+    /** {@inheritDoc} */
+    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        if (mustCheck(name)) {
+            Boolean hasDeps = cache.get(name);
 
-//            printUrls(appLdr);
+            if (hasDeps == null) {
+                hasDeps = hasExternalDependencies(name, new HashSet<String>());
 
-            List<URL> hadoopUrlLst = new ArrayList<>();
-//            List<URL> mainUrlsLst = new ArrayList<>();
-
-            // Move all (exclude gridgain) maven dependencies into separate class loader
-            for (URL url : appLdr.getURLs()) {
-                String normUrl = url.toString().replace('\\', '/');
-
-                hadoopUrlLst.add(url);
-
-//                if (!normUrl.contains("m2/repository") || (
-//                        normUrl.contains("/org/gridgain") ||
-//                                normUrl.contains("/org/springframework") ||
-//                                normUrl.contains("/repository/log4j") ||
-//                                normUrl.contains("/org/slf4j") ||
-//                                normUrl.contains("/repository/junit") ||
-//                                normUrl.contains("/org/apache/maven"))) {
-//                    mainUrlsLst.add(url);
-//                }
+                cache.put(name, hasDeps);
             }
 
-
-            String hadoopPrefix = getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
-
-            if (F.isEmpty(hadoopPrefix))
-                throw new GridException("Hadoop is not found");
-
-            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
-            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
-            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
-
-            try {
-                addUrls(hadoopUrlLst, new File(commonHome + "/lib"), null);
-                addUrls(hadoopUrlLst, new File(hdfsHome + "/lib"), null);
-                addUrls(hadoopUrlLst, new File(mapredHome + "/lib"), null);
-
-                addUrls(hadoopUrlLst, new File(hdfsHome), "hadoop-hdfs-");
-
-                addUrls(hadoopUrlLst, new File(commonHome), "hadoop-common-");
-                addUrls(hadoopUrlLst, new File(commonHome), "hadoop-auth-");
-                addUrls(hadoopUrlLst, new File(commonHome + "/lib"), "hadoop-auth-");
-
-                addUrls(hadoopUrlLst, new File(mapredHome), "hadoop-mapreduce-client-common");
-                addUrls(hadoopUrlLst, new File(mapredHome), "hadoop-mapreduce-client-core");
-
-            }
-            catch (MalformedURLException e) {
-                throw new GridException("", e);
-            }
-
-            hadoopUrls = hadoopUrlLst.toArray(new URL[hadoopUrlLst.size()]);
-//            mainUrls = mainUrlsLst.toArray(new URL[mainUrlsLst.size()]);
+            if (hasDeps)
+                return loadClassExplicitly(name, resolve);
         }
+
+        return super.loadClass(name, resolve);
     }
 
-    /** */
-    private static void printUrls(ClassLoader appLdr) {
-        if (appLdr.getParent() != null)
-            printUrls(appLdr.getParent());
-
-        System.out.println(appLdr);
-        if (appLdr instanceof URLClassLoader) {
-            for (URL url : ((URLClassLoader)appLdr).getURLs()) {
-                System.out.println("\t" + url);
-            }
-
-        }
-    }
-
-    /** */
-    private static String getEnv(String name, String def) {
-        String res = System.getenv(name);
-
-        if (F.isEmpty(res))
-            return def;
-
-        return res;
-    }
-
-    /** */
-    private static URL[] getHadoopUrls() throws GridException {
-        prepareUrls();
-
-        return hadoopUrls;
-    }
-
-    /** */
-    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws MalformedURLException {
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return startsWith == null || name.startsWith(startsWith);
-            }
-        });
-
-        for (File file : files)
-            res.add(file.toURI().toURL());
-    }
-
-    /** */
-    public Class<?> loadClassExplicitly(String name) throws ClassNotFoundException {
-        //System.out.println("[LOAD CLASS] " + name);
-
-        loadDependencies(name);
-
+    /**
+     * @param name Class name.
+     * @param resolve Resolve class.
+     * @return Class.
+     * @throws ClassNotFoundException If failed.
+     */
+    private Class<?> loadClassExplicitly(String name, boolean resolve) throws ClassNotFoundException {
         synchronized (getClassLoadingLock(name)) {
             // First, check if the class has already been loaded
             Class c = findLoadedClass(name);
 
             if (c == null) {
                 long t1 = System.nanoTime();
+
                 c = findClass(name);
 
                 // this is the defining class loader; record the stats
-                PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                PerfCounter.getFindClasses().increment();
+                sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+                sun.misc.PerfCounter.getFindClasses().increment();
             }
+
+            if (resolve)
+                resolveClass(c);
 
             return c;
         }
     }
 
-    private void loadDefault() throws ClassNotFoundException {
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
+    /**
+     * @param clsName Class name.
+     * @return {@code true} If the class has external dependencies.
+     */
+    boolean hasExternalDependencies(String clsName, final Set<String> visited) {
+        if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
+            return true;
 
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$1");
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$2");
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$3");
-        loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem$4");
+        // Try to get from parent to check if the type accessible.
+        InputStream in = getParent().getResourceAsStream(clsName.replace('.', '/') + ".class");
 
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream$FetchBufferPart");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream$DoubleFetchBuffer");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopProxyInputStream");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopInputStream");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$FileSystemClosure");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$1");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$2");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$3");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$4");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$5");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$6");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$7");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$8");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$9");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$10");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$11");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$12");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$13");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$14");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$15");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper$Delegate");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopWrapper");
+        if (in == null) // The class is external itself, it must be loaded from this class loader.
+            return true;
 
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc$1");
-        loadClassExplicitly("org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopOutProc");
+        if (!mustCheck(clsName)) // Other classes should not have external dependencies.
+            return false;
 
+        ClassReader rdr;
 
-        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2");
-        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Mapper");
-        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.examples.GridHadoopWordCount2Reducer");
+        try {
+            rdr = new ClassReader(in);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Failed to read class: " + clsName, e);
+        }
+
+        visited.add(clsName);
+
+        final AtomicBoolean hasDeps = new AtomicBoolean();
+
+        rdr.accept(new ClassVisitor(Opcodes.ASM4) {
+            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
+                // TODO
+            };
+
+            FieldVisitor fv = new FieldVisitor(Opcodes.ASM4) {
+                @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
+                    onType(desc, true);
+
+                    return av;
+                }
+            };
+
+            MethodVisitor mv = new MethodVisitor(Opcodes.ASM4) {
+                @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
+                    onType(desc, true);
+
+                    return av;
+                }
+
+                @Override public AnnotationVisitor visitParameterAnnotation(int i, String desc, boolean b) {
+                    onType(desc, true);
+
+                    return av;
+                }
+
+                @Override public AnnotationVisitor visitAnnotationDefault() {
+                    return av;
+                }
+
+                @Override public void visitFieldInsn(int i, String owner, String name, String desc) {
+                    onType(owner, false);
+                    onType(desc, true);
+                }
+
+                @Override public void visitFrame(int i, int i2, Object[] localTypes, int i3, Object[] stackTypes) {
+                    for (Object o : localTypes) {
+                        if (o instanceof String)
+                            onType((String)o, false);
+                    }
+
+                    for (Object o : stackTypes) {
+                        if (o instanceof String)
+                            onType((String)o, false);
+                    }
+                }
+
+                @Override public void visitLocalVariable(String name, String desc, String signature, Label label,
+                    Label label2, int i) {
+                    onType(desc, true);
+                }
+
+                @Override public void visitMethodInsn(int i, String owner, String name, String desc) {
+                    onType(owner, false);
+                }
+
+                @Override public void visitMultiANewArrayInsn(String desc, int dim) {
+                    onType(desc, true);
+                }
+
+                @Override public void visitTryCatchBlock(Label label, Label label2, Label label3, String exception) {
+                    onType(exception, false);
+                }
+            };
+
+            void onClass(String depCls) {
+                if (depCls.startsWith("java.")) // Filter out platform classes.
+                    return;
+
+                if (visited.contains(depCls))
+                    return;
+
+                Boolean res = cache.get(depCls);
+
+                if (res == Boolean.TRUE || (res == null && hasExternalDependencies(depCls, visited)))
+                    hasDeps.set(true);
+            }
+
+            void onType(String type, boolean internal) {
+                if (type == null)
+                    return;
+
+                if (internal) {
+                    int off = 0;
+
+                    while (type.charAt(off) == '[')
+                        off++; // Handle arrays.
+
+                    if (type.charAt(off) != 'L')
+                        return; // Skip primitives.
+
+                    type = type.substring(off + 1, type.length() - 1);
+                }
+
+                type = type.replace('/', '.');
+
+                onClass(type);
+            }
+
+            @Override public void visit(int i, int i2, String name, String signature, String superName,
+                String[] ifaces) {
+                onType(superName, true);
+
+                if (ifaces != null) {
+                    for (String iface : ifaces)
+                        onType(iface, true);
+                }
+            }
+
+            @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                onType(desc, true);
+
+                return av;
+            }
+
+            @Override public void visitInnerClass(String name, String outerName, String innerName, int i) {
+                onType(name, false);
+            }
+
+            @Override public FieldVisitor visitField(int i, String name, String desc, String signature, Object val) {
+                onType(desc, true);
+
+                return fv;
+            }
+
+            @Override public MethodVisitor visitMethod(int i, String name, String desc, String signature,
+                String[] exceptions) {
+                if (exceptions != null) {
+                    for (String e : exceptions)
+                        onType(e, false);
+                }
+
+                return mv;
+            }
+        }, 0);
+
+        return hasDeps.get();
     }
 
-    /** */
-    private void loadDependencies(String name) throws ClassNotFoundException {
-        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopMapReduceTest")) {
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractWordCountTest");
+    /**
+     * @param name Variable name.
+     * @param dflt Default.
+     * @return Value.
+     */
+    private static String getEnv(String name, String dflt) {
+        String res = System.getProperty(name);
 
-            return;
-        }
+        if (F.isEmpty(res))
+            res = System.getenv(name);
 
-        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractWordCountTest")) {
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractSelfTest");
-
-            return;
-        }
-
-        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractSelfTest")) {
-            loadDefault();
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils");
-        }
-
-        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job")) {
-            loadDefault();
-
-            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job$1");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2JobResourceManager$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2JobResourceManager");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Splitter");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Splitter");
-        }
-
-        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext")) {
-            loadDefault();
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$1");
-            //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$2");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Context");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Counter");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Task");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2MapTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2ReduceTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2SetupTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2CleanupTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Partitioner");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopWritableSerialization");
-
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Counter");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task$1");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Task");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1MapTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1ReduceTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1SetupTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1CleanupTask");
-            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Partitioner");
-        }
+        return F.isEmpty(res) ? dflt : res;
     }
 
-    /** {@inheritDoc} */
-    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        //System.out.println("[LOAD CLASS] " + name);
+    /**
+     * @param res Result.
+     * @param dir Directory.
+     * @param startsWith Starts with prefix.
+     * @throws MalformedURLException If failed.
+     */
+    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws Exception {
+        File[] files = dir.listFiles(new FilenameFilter() {
+            @Override public boolean accept(File dir, String name) {
+                return startsWith == null || name.startsWith(startsWith);
+            }
+        });
 
-        return super.loadClass(name, resolve);
+        if (files == null)
+            throw new IOException("Path is not a directory: " + dir);
+
+        for (File file : files)
+            res.add(file.toURI().toURL());
+    }
+
+    /**
+     * @param urls URLs.
+     * @return URLs.
+     */
+    private static URL[] addHadoopUrls(URL[] urls) {
+        Collection<URL> hadoopJars;
+
+        try {
+            hadoopJars = hadoopUrls();
+        }
+        catch (GridException e) {
+            throw new RuntimeException(e);
+        }
+
+        ArrayList<URL> list = new ArrayList<>(hadoopJars.size() + appJars.size() + (urls == null ? 0 : urls.length));
+
+        list.addAll(appJars);
+        list.addAll(hadoopJars);
+
+        if (!F.isEmpty(urls))
+            list.addAll(F.asList(urls));
+
+        return list.toArray(new URL[list.size()]);
+    }
+
+    /**
+     * @return HADOOP_HOME Variable.
+     */
+    @Nullable public static String hadoopHome() {
+        return getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
+    }
+
+    /**
+     * @return Collection of jar URLs.
+     * @throws GridException If failed.
+     */
+    public static Collection<URL> hadoopUrls() throws GridException {
+        Collection<URL> hadoopUrls = hadoopJars;
+
+        if (hadoopUrls != null)
+            return hadoopUrls;
+
+        synchronized (GridHadoopClassLoader.class) {
+            hadoopUrls = hadoopJars;
+
+            if (hadoopUrls != null)
+                return hadoopUrls;
+
+            hadoopUrls = new ArrayList<>();
+
+            String hadoopPrefix = hadoopHome();
+
+            if (F.isEmpty(hadoopPrefix))
+                throw new GridException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
+                    "HADOOP_HOME environment variables must be set.");
+
+            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
+            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
+            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
+
+            try {
+                addUrls(hadoopUrls, new File(commonHome + "/lib"), null);
+                addUrls(hadoopUrls, new File(hdfsHome + "/lib"), null);
+                addUrls(hadoopUrls, new File(mapredHome + "/lib"), null);
+
+                addUrls(hadoopUrls, new File(hdfsHome), "hadoop-hdfs-");
+
+                addUrls(hadoopUrls, new File(commonHome), "hadoop-common-");
+                addUrls(hadoopUrls, new File(commonHome), "hadoop-auth-");
+                addUrls(hadoopUrls, new File(commonHome + "/lib"), "hadoop-auth-");
+
+                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-common");
+                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-core");
+            }
+            catch (Exception e) {
+                throw new GridException(e);
+            }
+
+            hadoopJars = hadoopUrls;
+
+            return hadoopUrls;
+        }
     }
 }

@@ -154,7 +154,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
 
         try {
-            Class<?> cls = ldr.loadClassExplicitly(GridHadoopV2TaskContext.class.getName());
+            Class<?> cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
 
             Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class, GridHadoopJobId.class);
 

@@ -21,7 +21,7 @@ public class GridHadoopTestSuite extends TestSuite {
     private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException, GridException {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        return ldr.loadClassExplicitly(cls.getName());
+        return ldr.loadClass(cls.getName());
     }
 
     /**
