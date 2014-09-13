@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
-import org.jdk8.backport.ConcurrentHashMap8;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.springframework.asm.*;
 
@@ -48,12 +48,12 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * Need to check only GridGain Hadoop and GGFS classes.
+     * Need to parse only GridGain Hadoop and GGFS classes.
      *
      * @param cls Class name.
      * @return {@code true} if we need to check this class.
      */
-    private static boolean mustCheck(String cls) {
+    private static boolean isGgfsOrGgHadoop(String cls) {
         String gg = "org.gridgain.grid.";
         int len = gg.length();
 
@@ -70,7 +70,10 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (mustCheck(name)) {
+        if (isHadoop(name)) // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
+            return loadClassExplicitly(name, resolve);
+
+        if (isGgfsOrGgHadoop(name)) { // For GG Hadoop and GGFS classes we have to check if they depend on Hadoop.
             Boolean hasDeps = cache.get(name);
 
             if (hasDeps == null) {
@@ -128,7 +131,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         if (in == null) // The class is external itself, it must be loaded from this class loader.
             return true;
 
-        if (!mustCheck(clsName)) // Other classes should not have external dependencies.
+        if (!isGgfsOrGgHadoop(clsName)) // Other classes should not have external dependencies.
             return false;
 
         ClassReader rdr;
@@ -225,6 +228,9 @@ public class GridHadoopClassLoader extends URLClassLoader {
             void onType(String type, boolean internal) {
                 if (type == null)
                     return;
+
+                if (!internal && type.charAt(0) == '[')
+                    internal = true;
 
                 if (internal) {
                     int off = 0;
