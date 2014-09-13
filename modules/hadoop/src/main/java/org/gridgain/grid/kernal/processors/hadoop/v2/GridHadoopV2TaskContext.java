@@ -27,6 +27,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.throwException;
+
 /**
  * Context for task execution.
  */
@@ -67,6 +69,9 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
 
+    /** Current task. */
+    private volatile GridHadoopTask task;
+
     /**
      * @param taskInfo Task info.
      * @param job Job.
@@ -88,6 +93,8 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         useNewMapper = jobConf.getUseNewMapper();
         useNewReducer = jobConf.getUseNewReducer();
         useNewCombiner = jobConf.getCombinerClass() == null;
+
+        Thread.currentThread().setContextClassLoader(null);
     }
 
     /**
@@ -125,20 +132,39 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public void run() throws GridException {
-        Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
+        try {
+            Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
 
-        GridHadoopTask task = createTask();
+            try {
+                task = createTask();
+            }
+            catch (Throwable e) {
+                throwException(e);
+            }
 
-        if (cancelled)
-            throw new GridHadoopTaskCancelledException("Task cancelled.");
+            if (cancelled)
+                throw new GridHadoopTaskCancelledException("Task cancelled.");
 
-        task.run(this);
+            try {
+                task.run(this);
+            }
+            catch (Throwable e) {
+                throwException(e);
+            }
+        }
+        finally {
+            task = null;
+
+            Thread.currentThread().setContextClassLoader(null);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
         cancelled = true;
 
+        if (task != null)
+            task.cancel();
     }
 
     /**

@@ -174,9 +174,16 @@ public class GridHadoopClassLoader extends URLClassLoader {
             res.add(file.toURI().toURL());
     }
 
+    /** {@inheritDoc} */
+    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+//        System.out.println("[LOAD CLASS] " + name);
+
+        return super.loadClass(name, resolve);
+    }
+
     /** */
     public Class<?> loadClassExplicitly(String name) throws ClassNotFoundException {
-        //System.out.println("[LOAD CLASS] " + name);
+//        System.out.println("[LOAD CLASS] " + name);
 
         loadDependencies(name);
 
@@ -198,6 +205,13 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     private void loadDefault() throws ClassNotFoundException {
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopLocalFileSystemV1");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopLocalFileSystemV2");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopDistributedFileSystem");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem$1");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem$InStream");
+        loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopRawLocalFileSystem");
+
         loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
         loadClassExplicitly("org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem");
 
@@ -253,6 +267,10 @@ public class GridHadoopClassLoader extends URLClassLoader {
             return;
         }
 
+        if (name.equals("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils")) {
+
+        }
+
         if (name.equals("org.gridgain.grid.kernal.processors.hadoop.GridHadoopAbstractSelfTest")) {
             loadDefault();
 
@@ -276,6 +294,8 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
         if (name.equals("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext")) {
             loadDefault();
+
+            loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils");
 
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$1");
             //loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2TaskContext$2");
@@ -302,12 +322,5 @@ public class GridHadoopClassLoader extends URLClassLoader {
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1CleanupTask");
             loadClassExplicitly("org.gridgain.grid.kernal.processors.hadoop.v1.GridHadoopV1Partitioner");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        //System.out.println("[LOAD CLASS] " + name);
-
-        return super.loadClass(name, resolve);
     }
 }
