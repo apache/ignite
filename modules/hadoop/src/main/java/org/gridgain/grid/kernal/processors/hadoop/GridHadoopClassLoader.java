@@ -286,7 +286,26 @@ public class GridHadoopClassLoader extends URLClassLoader {
             }
         }, 0);
 
-        return hasDeps.get();
+        if (hasDeps.get()) // We already know that we have dependencies, no need to check parent.
+            return true;
+
+        // Here we are known to not have any dependencies but possibly we have a parent which have them.
+        int idx = clsName.lastIndexOf('$');
+
+        if (idx == -1) // No parent class.
+            return false;
+
+        String parentCls = clsName.substring(0, idx);
+
+        if (visited.contains(parentCls))
+            return false;
+
+        Boolean res = cache.get(parentCls);
+
+        if (res == null)
+            res = hasExternalDependencies(parentCls, visited);
+
+        return res;
     }
 
     /**
