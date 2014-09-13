@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -70,8 +71,12 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (isHadoop(name)) // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
+        if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
+            if (name.endsWith(".util.ShutdownHookManager")) // Dirty hack to get rid of Hadoop shutdown hooks.
+                name = ShutdownHookManager.class.getName();
+
             return loadClassExplicitly(name, resolve);
+        }
 
         if (isGgfsOrGgHadoop(name)) { // For GG Hadoop and GGFS classes we have to check if they depend on Hadoop.
             Boolean hasDeps = cache.get(name);
