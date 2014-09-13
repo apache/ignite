@@ -10,10 +10,10 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.GridException;
+import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.

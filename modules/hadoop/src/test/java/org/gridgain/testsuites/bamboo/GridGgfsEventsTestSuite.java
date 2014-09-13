@@ -13,7 +13,7 @@ import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
