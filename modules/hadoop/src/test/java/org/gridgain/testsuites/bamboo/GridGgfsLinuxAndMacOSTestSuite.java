@@ -10,14 +10,23 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.gridgain.grid.GridException;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
 public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
+    /** */
+    private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException, GridException {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+
+        return ldr.loadClassExplicitly(cls.getName());
+    }
+
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -25,21 +34,21 @@ public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
 
-        suite.addTest(new TestSuite(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class));
+        suite.addTest(new TestSuite(loadClass(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class)));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemExternalPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemExternalSecondarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemExternalDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemExternalDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemExternalPrimarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemExternalSecondarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemExternalDualSyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemExternalDualAsyncSelfTest.class)));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedPrimarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedSecondarySelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest.class));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemEmbeddedPrimarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemEmbeddedSecondarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemEmbeddedDualSyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemShmemEmbeddedDualAsyncSelfTest.class)));
 
-        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemIpcCacheSelfTest.class));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemIpcCacheSelfTest.class)));
 
-        suite.addTestSuite(GridGgfsHadoop20FileSystemShmemPrimarySelfTest.class);
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoop20FileSystemShmemPrimarySelfTest.class)));
 
         suite.addTest(GridGgfsEventsTestSuite.suite());
 
