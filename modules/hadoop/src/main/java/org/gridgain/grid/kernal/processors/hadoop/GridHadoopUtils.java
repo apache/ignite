@@ -11,11 +11,13 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -75,6 +77,46 @@ public class GridHadoopUtils {
             SPECULATIVE_CONCURRENCY,
             meta.version()
         );
+    }
+
+    /**
+     * Wraps native split.
+     *
+     * @param id Split ID.
+     * @param split Split.
+     * @param hosts Hosts.
+     * @throws IOException If failed.
+     */
+    public static GridHadoopSplitWrapper wrapSplit(int id, Object split, String[] hosts) throws IOException {
+        ByteArrayOutputStream arr = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(arr);
+
+        assert split instanceof Writable;
+
+        ((Writable)split).write(out);
+
+        out.flush();
+
+        return new GridHadoopSplitWrapper(id, split.getClass().getName(), arr.toByteArray(), hosts);
+    }
+
+    /**
+     * Unwraps native split.
+     *
+     * @param o Wrapper.
+     * @return Split.
+     */
+    public static Object unwrapSplit(GridHadoopSplitWrapper o) {
+        try {
+            Writable w = (Writable)GridHadoopUtils.class.getClassLoader().loadClass(o.className()).newInstance();
+
+            w.readFields(new ObjectInputStream(new ByteArrayInputStream(o.bytes())));
+
+            return w;
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -375,7 +417,7 @@ public class GridHadoopUtils {
      * This is needed to transfer error outside the current class loader.
      *
      * @param e Original exception.
-     * @throws GridException New exception.
+     * @return GridException New exception.
      */
     public static GridException transformException(Throwable e) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();

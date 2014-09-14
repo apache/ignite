@@ -313,7 +313,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
             return readExternalSplit((GridHadoopExternalSplit)split);
 
         if (split instanceof GridHadoopSplitWrapper)
-            return ((GridHadoopSplitWrapper)split).innerSplit();
+            return unwrapSplit((GridHadoopSplitWrapper)split);
 
         throw new IllegalStateException("Unknown split: " + split);
     }
