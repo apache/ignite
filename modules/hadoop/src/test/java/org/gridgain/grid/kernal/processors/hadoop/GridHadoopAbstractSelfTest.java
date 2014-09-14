@@ -109,7 +109,11 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      * @return Hadoop configuration.
      */
     public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        return new GridHadoopConfiguration();
+        GridHadoopConfiguration cfg = new GridHadoopConfiguration();
+
+        cfg.setMaxParallelTasks(3);
+
+        return cfg;
     }
 
     /**

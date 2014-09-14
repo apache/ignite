@@ -208,6 +208,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        ctxs.remove(new T2<>(info.type(), info.taskNumber()));
+
         rsrcMgr.cleanupTaskEnvironment(info);
     }
 
