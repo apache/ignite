@@ -58,6 +58,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>> ctxs =
         new ConcurrentHashMap8<>();
 
+    /** */
+    private final Queue<GridHadoopClassLoader> clsLdrPool = new ConcurrentLinkedQueue<>();
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -72,8 +75,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
+        GridHadoopClassLoader clsLdr = (GridHadoopClassLoader)getClass().getClassLoader();
+
+        clsLdrPool.add(clsLdr);
+
         // Before create JobConf instance we should set new context class loader.
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+        Thread.currentThread().setContextClassLoader(clsLdr);
 
         jobConf = new JobConf();
 
@@ -168,7 +175,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (old != null)
             return old.get();
 
-        GridHadoopClassLoader ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
+        GridHadoopClassLoader ldr = clsLdrPool.poll();
+
+        if (ldr == null)
+            ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
 
         try {
             Class<?> cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
@@ -208,7 +218,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        ctxs.remove(new T2<>(info.type(), info.taskNumber()));
+        GridHadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
+
+        clsLdrPool.offer((GridHadoopClassLoader)ctx.getClass().getClassLoader());
 
         rsrcMgr.cleanupTaskEnvironment(info);
     }
