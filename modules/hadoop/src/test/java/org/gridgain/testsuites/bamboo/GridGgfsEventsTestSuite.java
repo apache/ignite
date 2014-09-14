@@ -13,6 +13,7 @@ import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
@@ -25,6 +26,13 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  */
 @SuppressWarnings("PublicInnerClass")
 public class GridGgfsEventsTestSuite extends TestSuite {
+    /** */
+    private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException, GridException {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+
+        return ldr.loadClassExplicitly(cls.getName());
+    }
+
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -32,13 +40,13 @@ public class GridGgfsEventsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
 
-        suite.addTestSuite(ShmemPrivate.class);
-        suite.addTestSuite(ShmemDualSync.class);
-        suite.addTestSuite(ShmemDualAsync.class);
+        suite.addTest(new TestSuite(loadClass(ShmemPrivate.class)));
+        suite.addTest(new TestSuite(loadClass(ShmemDualSync.class)));
+        suite.addTest(new TestSuite(loadClass(ShmemDualAsync.class)));
 
-        suite.addTestSuite(LoopbackPrivate.class);
-        suite.addTestSuite(LoopbackDualSync.class);
-        suite.addTestSuite(LoopbackDualAsync.class);
+        suite.addTest(new TestSuite(loadClass(LoopbackPrivate.class)));
+        suite.addTest(new TestSuite(loadClass(LoopbackDualSync.class)));
+        suite.addTest(new TestSuite(loadClass(LoopbackDualAsync.class)));
 
         return suite;
     }
@@ -50,9 +58,9 @@ public class GridGgfsEventsTestSuite extends TestSuite {
     public static TestSuite suiteNoarchOnly() throws Exception {
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
 
-        suite.addTestSuite(LoopbackPrivate.class);
-        suite.addTestSuite(LoopbackDualSync.class);
-        suite.addTestSuite(LoopbackDualAsync.class);
+        suite.addTest(new TestSuite(loadClass(LoopbackPrivate.class)));
+        suite.addTest(new TestSuite(loadClass(LoopbackDualSync.class)));
+        suite.addTest(new TestSuite(loadClass(LoopbackDualAsync.class)));
 
         return suite;
     }
