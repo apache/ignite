@@ -80,11 +80,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
     static {
         GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
-        GridTestUtils.setFieldValue(PLANNER, "log", new GridJavaLogger());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        GridTestUtils.setFieldValue(PLANNER, "log", log());
+
         BLOCK_MAP.clear();
         PROXY_MAP.clear();
     }

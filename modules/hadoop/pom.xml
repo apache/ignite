@@ -211,14 +211,14 @@
                         <classpathDependencyExcludes>com.google.inject.extensions:guice-servlet</classpathDependencyExcludes>
                         <classpathDependencyExcludes>io.netty:netty</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-core</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>commons-beanutils:commons-beanutils</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>net.sf.json-lib:json-lib</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>net.sf.ezmorph:ezmorph</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-beanutils:commons-beanutils</classpathDependencyExcludes>-->
+                        <!--<classpathDependencyExcludes>net.sf.json-lib:json-lib</classpathDependencyExcludes>-->
+                        <!--<classpathDependencyExcludes>net.sf.ezmorph:ezmorph</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>org.hamcrest:hamcrest-core</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>commons-collections:commons-collections</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-collections:commons-collections</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-http</classpathDependencyExcludes>
                         <classpathDependencyExcludes>commons-io:commons-io</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>commons-lang:commons-lang</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-lang:commons-lang</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>commons-configuration:commons-configuration</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-server</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-util</classpathDependencyExcludes>
