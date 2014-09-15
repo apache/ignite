@@ -13,6 +13,7 @@ import org.gridgain.grid.util.*;
 import sun.misc.*;
 
 /**
+ * Direct byte buffer.
  */
 public class GridDirectByteBuffer {
     /** */
