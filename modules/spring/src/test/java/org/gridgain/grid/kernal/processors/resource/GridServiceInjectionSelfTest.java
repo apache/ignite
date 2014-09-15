@@ -209,6 +209,38 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClosureFieldWithNonExistentService() throws Exception {
+        grid(0).compute().call(new GridCallable<Object>() {
+            @GridServiceResource(serviceName = "nonExistentService")
+            private DummyService srvc;
+
+            @Override public Object call() throws Exception {
+                assertNull(srvc);
+
+                return null;
+            }
+        }).get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureMethodWithNonExistentService() throws Exception {
+        grid(0).compute().call(new GridCallable<Object>() {
+            @GridServiceResource(serviceName = "nonExistentService")
+            private void service(DummyService srvc) {
+                assertNull(srvc);
+            }
+
+            @Override public Object call() throws Exception {
+                return null;
+            }
+        }).get();
+    }
+
+    /**
      * No-op test service.
      */
     private static class DummyService implements GridService {
