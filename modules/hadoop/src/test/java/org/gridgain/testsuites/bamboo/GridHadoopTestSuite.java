@@ -35,66 +35,66 @@ public class GridHadoopTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
 
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemClientSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoggerStateSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoggerSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemHandshakeSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopDualSyncSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopDualAsyncSelfTest.class)));
-//
-//        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopFileSystemsTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopValidationSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopDefaultMapReducePlannerSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemClientSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoggerStateSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemLoggerSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopFileSystemHandshakeSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopDualSyncSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridGgfsHadoopDualAsyncSelfTest.class)));
+
+        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopFileSystemsTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopValidationSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopDefaultMapReducePlannerSelfTest.class)));
         suite.addTest(new TestSuite(loadClass(GridHadoopJobTrackerSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopHashMapSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopDataStreamSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopConcurrentHashMultimapSelftest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopSkipListSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopTaskExecutionSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopV2JobSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopSerializationWrapperSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopSplitWrapperSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopTasksV1Test.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopTasksV2Test.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopMapReduceTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopMapReduceEmbeddedSelfTest.class)));
-//
-//        //TODO: GG-8936 Fix and uncomment ExternalExecution tests
-//        //suite.addTest(new TestSuite(loadClass(GridHadoopExternalTaskExecutionSelfTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopExternalCommunicationSelfTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopSortingTest.class)));
-//        suite.addTest(new TestSuite(loadClass(GridHadoopSortingExternalTest.class)));
-//
-//        suite.addTest(new TestSuite(loadClass(GridHadoopGroupingTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopHashMapSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopDataStreamSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopConcurrentHashMultimapSelftest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopSkipListSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopTaskExecutionSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopV2JobSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopSerializationWrapperSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopSplitWrapperSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopTasksV1Test.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopTasksV2Test.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopMapReduceTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopMapReduceEmbeddedSelfTest.class)));
+
+        //TODO: GG-8936 Fix and uncomment ExternalExecution tests
+        //suite.addTest(new TestSuite(loadClass(GridHadoopExternalTaskExecutionSelfTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopExternalCommunicationSelfTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopSortingTest.class)));
+        suite.addTest(new TestSuite(loadClass(GridHadoopSortingExternalTest.class)));
+
+        suite.addTest(new TestSuite(loadClass(GridHadoopGroupingTest.class)));
 
         return suite;
     }
