@@ -787,8 +787,8 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='set SCRIPTS_HOME="%GRIDGAIN_HOME%\\os\\bin"\s*::.*'/>
-                                    <substitution expression='set SCRIPTS_HOME="%GRIDGAIN_HOME%\\\\bin"'/>
+                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin\s*::.*'/>
+                                    <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
                                     </fileset>
