@@ -30,10 +30,12 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /** Atomicity mode. */
     private GridCacheAtomicityMode atomicityMode;
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
