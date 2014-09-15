@@ -37,7 +37,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.management.*;
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -57,11 +56,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
-
-    /** Dynamically proxy-enabled methods for shadow. */
-    private static final String[] SHADOW_PROXY_METHODS = new String[] {
-        "id", "attribute", "attributes", "order"
-    };
 
     /** */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -160,29 +154,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** Metrics update worker. */
     private final MetricsUpdater metricsUpdater = new MetricsUpdater();
-
-    /**
-     * Checks that node shadow has all methods used in proxy.
-     */
-    static {
-        Method[] mtds = GridNodeShadow.class.getDeclaredMethods();
-
-        for (String mtd : SHADOW_PROXY_METHODS) {
-            boolean found = false;
-
-            for (Method clsMtd : mtds) {
-                if (clsMtd.getName().equals(mtd)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (!found)
-                throw new GridRuntimeException(GridNodeShadow.class.getSimpleName() + " class does not implement " +
-                    "proxy method (were methods renamed?): " + mtd);
-        }
-    }
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -842,16 +813,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-    }
-
-    /**
-     * Gets node shadow.
-     *
-     * @param node Node.
-     * @return Node's shadow.
-     */
-    public GridNodeShadow shadow(GridNode node) {
-        return new GridDiscoveryNodeShadowAdapter(node);
     }
 
     /**
