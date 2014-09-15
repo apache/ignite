@@ -7,18 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
-
-import java.util.*;
+package org.gridgain.visor.plugin;
 
 /**
- * The listener interface for receiving "selection" events from standard Visor panels.
+ * Standard Visor panel with log entries.
+ *
+ * This panel will be created by {@link VisorPluginComponentsFactory}.
  */
-public interface VisorSelectionListener<T> {
-    /**
-     * On selection changed.
-     *
-     * @param selected Selected elements. If nothing selected return all.
-     */
-    public void onChange(Collection<T> selected);
+public interface VisorPluginLogPanel extends VisorPluginComponent {
 }
