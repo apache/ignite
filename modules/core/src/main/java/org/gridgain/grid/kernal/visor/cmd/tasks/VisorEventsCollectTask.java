@@ -106,7 +106,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
             return new VisorEventsCollectArgs(null,
-                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
+                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION,
+                        GridEventType.EVTS_AUTHENTICATION, GridEventType.EVTS_AUTHORIZATION),
                 timeArg, taskName, taskSessionId);
         }
 
@@ -312,6 +313,18 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
 
                     res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
                         node.id(), addr, node.isDaemon()));
+                }
+                else if (e instanceof GridAuthenticationEvent) {
+                    GridAuthenticationEvent ae = (GridAuthenticationEvent)e;
+
+                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
+                        ae.subjectId(), ae.login()));
+                }
+                else if (e instanceof GridAuthorizationEvent) {
+                    GridAuthorizationEvent ae = (GridAuthorizationEvent)e;
+
+                    res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
+                        ae.subject()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
