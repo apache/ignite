@@ -66,7 +66,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     );
 
     /** */
-    private GridIndexingManager idxMgr;
+    protected GridIndexingManager idxMgr;
 
     /** Indexing SPI name. */
     private String spi;
