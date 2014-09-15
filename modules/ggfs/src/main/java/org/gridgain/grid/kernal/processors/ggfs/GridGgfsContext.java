@@ -163,25 +163,6 @@ public class GridGgfsContext {
     }
 
     /**
-     * Checks if given node represented by node shadow is a GGFS node.
-     *
-     * @param node Node shadow to check.
-     * @return {@code True} if node has GGFS with this name, {@code false} otherwise.
-     */
-    public boolean ggfsNode(GridNodeShadow node) {
-        assert node != null;
-
-        GridGgfsAttributes[] ggfs = node.attribute(ATTR_GGFS);
-
-        if (ggfs != null)
-            for (GridGgfsAttributes attrs : ggfs)
-                if (F.eq(cfg.getName(), attrs.ggfsName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
      * Checks if given node is a GGFS node.
      *
      * @param node Node to check.
