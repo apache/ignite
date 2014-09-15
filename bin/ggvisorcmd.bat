@@ -67,7 +67,13 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :run
@@ -75,14 +81,14 @@ if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
-call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" :: Will be removed in release.
 set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorcmd\*
 
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
@@ -125,6 +131,7 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
  org.gridgain.visor.commands.VisorConsole
 
 :error_finish
-:error_finish
+
+if not "%NO_PAUSE%" == "1" pause
 
 goto :eof

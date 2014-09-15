@@ -71,7 +71,13 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto setProgName
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :setProgName
@@ -82,8 +88,6 @@ set PROG_NAME=ggstart.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
-
-set SCRIPTS_HOME="%GRIDGAIN_HOME%\os\bin" :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
 
 ::
 :: Set GRIDGAIN_LIBS
@@ -219,7 +223,6 @@ goto run_java
 if not exist %RESTART_SUCCESS_FILE% goto error_finish
 del %RESTART_SUCCESS_FILE%
 
-:error_finish
 :error_finish
 
 if not "%NO_PAUSE%" == "1" pause
