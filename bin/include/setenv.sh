@@ -56,7 +56,7 @@ do
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
     fi
 
-    if [[ "${file}" == "${GRIDGAIN_HOME}"/libs/gridgain-hadoop*.jar ]]; then
+    if [ -d ${file} ] && [ "${file}" == "${GRIDGAIN_HOME}"/libs/gridgain-hadoop ]; then
         HADOOP_EDITION=1
     fi
 done
