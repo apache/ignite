@@ -17,7 +17,7 @@ import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopConsts.*;
 
 /**
  * Submit job task.
@@ -31,15 +31,13 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
         GridHadoopProtocolTaskArguments args) throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);
-        GridHadoopProtocolConfigurationWrapper conf = args.get(2);
+        GridHadoopDefaultJobInfo info = args.get(2);
 
         assert nodeId != null;
         assert id != null;
-        assert conf != null;
+        assert info != null;
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
-
-        GridHadoopDefaultJobInfo info = createJobInfo(conf.get());
 
         hadoop.submit(jobId, info);
 

@@ -16,7 +16,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -30,9 +29,6 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
-    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
-    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
-
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
@@ -50,34 +46,6 @@ public class GridHadoopUtils {
 
     /** Old reducer class attribute. */
     private static final String OLD_REDUCE_CLASS_ATTR = "mapred.reducer.class";
-
-    /**
-     * Convert Hadoop job metadata to job status.
-     *
-     * @param meta Metadata.
-     * @return Status.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
-        GridHadoopJobInfo jobInfo = meta.jobInfo();
-
-        return new GridHadoopJobStatus(
-            meta.jobId(),
-            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            jobInfo.jobName(),
-            jobInfo.user(),
-            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
-            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.mapReducePlan().mappers(),
-            meta.mapReducePlan().reducers(),
-            meta.startTimestamp(),
-            meta.setupCompleteTimestamp(),
-            meta.mapCompleteTimestamp(),
-            meta.phase(),
-            SPECULATIVE_CONCURRENCY,
-            meta.version()
-        );
-    }
 
     /**
      * Wraps native split.

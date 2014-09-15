@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Fake manager for shutdown hooks.

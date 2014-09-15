@@ -32,8 +32,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopConsts.*;
 
 /**
  * Hadoop job tracker.
@@ -245,6 +247,34 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Convert Hadoop job metadata to job status.
+     *
+     * @param meta Metadata.
+     * @return Status.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
+        GridHadoopJobInfo jobInfo = meta.jobInfo();
+
+        return new GridHadoopJobStatus(
+            meta.jobId(),
+            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
+            jobInfo.jobName(),
+            jobInfo.user(),
+            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
+            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
+            meta.mapReducePlan().mappers(),
+            meta.mapReducePlan().reducers(),
+            meta.startTimestamp(),
+            meta.setupCompleteTimestamp(),
+            meta.mapCompleteTimestamp(),
+            meta.phase(),
+            SPECULATIVE_CONCURRENCY,
+            meta.version()
+        );
+    }
+
+    /**
      * Gets hadoop job status for given job ID.
      *
      * @param jobId Job ID to get status for.
@@ -257,7 +287,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
 
-            return meta != null ? GridHadoopUtils.status(meta) : null;
+            return meta != null ? status(meta) : null;
         }
         finally {
             busyLock.readUnlock();
