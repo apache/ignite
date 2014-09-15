@@ -316,6 +316,66 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testNullStageName() throws Exception {
+        atLeastOnce = true;
+        router = new GridTestStreamerEventRouter();
+        p2pEnabled = false;
+
+        SC stage = new SC() {
+            @SuppressWarnings("unchecked")
+            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+                Collection<Object> evts) {
+                String nextStage = ctx.nextStageName();
+
+                if (nextStage == null)
+                    return null;
+
+                Integer val = (Integer)F.first(evts);
+
+                return (Map)F.asMap(ctx.nextStageName(), F.asList(++val));
+            }
+        };
+
+        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
+
+        startGrids(2);
+
+        try {
+            GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
+
+            router0.put("0", grid(0).localNode().id());
+            router0.put("1", grid(1).localNode().id());
+
+            try {
+                grid(0).streamer(null).addEventToStage(null, 0);
+
+                fail();
+            }
+            catch (NullPointerException e) {
+                assertTrue(e.getMessage().contains("Argument cannot be null: stageName"));
+
+                info("Caught expected exception: " + e.getMessage());
+            }
+
+            try {
+                grid(0).streamer(null).addEventsToStage(null, Collections.singletonList(0));
+
+                fail();
+            }
+            catch (NullPointerException e) {
+                assertTrue(e.getMessage().contains("Argument cannot be null: stageName"));
+
+                info("Caught expected exception: " + e.getMessage());
+            }
+        }
+        finally {
+            stopAllGrids(false);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPeerDeployment() throws Exception {
         URL[] urls = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
 

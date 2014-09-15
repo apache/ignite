@@ -1303,6 +1303,9 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
                     if (res != null) {
                         for (Map.Entry<String, Collection<?>> entry : res.entrySet()) {
+                            if (entry.getKey() == null)
+                                throw new GridException("Stage name should have non-null value.");
+
                             GridStreamerStageExecutionFuture part = addEvents0(
                                 batch.executionId(),
                                 0,
