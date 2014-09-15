@@ -105,4 +105,81 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
 
         assert finder.getRegisteredAddresses().size() == 10 : finder.getRegisteredAddresses();
     }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testIpV6AddressesInitialization() throws Exception {
+        GridTcpDiscoveryVmIpFinder finder = ipFinder();
+
+        try {
+            finder.setAddresses(Arrays.asList("[::1]:475000001"));
+
+            fail();
+        }
+        catch (GridSpiException e) {
+            info("Caught expected exception: " + e);
+        }
+
+        try {
+            finder.setAddresses(Arrays.asList("[::1]:-2"));
+
+            fail();
+        }
+        catch (GridSpiException e) {
+            info("Caught expected exception: " + e);
+        }
+
+        finder.setAddresses(Arrays.asList("[::1]:45555", "8.8.8.8", "some-dns-name", "some-dns-name1:200", "::1"));
+
+        info("IP finder initialized: " + finder);
+
+        assertEquals(5, finder.getRegisteredAddresses().size());
+
+        finder = ipFinder();
+
+        try {
+            finder.setAddresses(Collections.singleton("[::1]:555..444"));
+
+            fail();
+        }
+        catch (GridSpiException e) {
+            info("Caught expected exception: " + e);
+        }
+
+        try {
+            finder.setAddresses(Collections.singleton("[::1]:0..444"));
+
+            fail();
+        }
+        catch (GridSpiException e) {
+            info("Caught expected exception: " + e);
+        }
+
+        try {
+            finder.setAddresses(Collections.singleton("[::1]:-8080..-80"));
+
+            fail();
+        }
+        catch (GridSpiException e) {
+            info("Caught expected exception: " + e);
+        }
+
+        finder.setAddresses(Collections.singleton("0:0:0:0:0:0:0:1"));
+
+        assertEquals(1, finder.getRegisteredAddresses().size());
+
+        finder.setAddresses(Collections.singleton("[0:0:0:0:0:0:0:1]"));
+
+        assertEquals(1, finder.getRegisteredAddresses().size());
+
+        finder.setAddresses(Collections.singleton("[0:0:0:0:0:0:0:1]:47509"));
+
+        assertEquals(1, finder.getRegisteredAddresses().size());
+
+        finder.setAddresses(Collections.singleton("[::1]:47500..47509"));
+
+        assertEquals("Registered addresses: " + finder.getRegisteredAddresses().toString(),
+            10, finder.getRegisteredAddresses().size());
+    }
 }
