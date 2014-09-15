@@ -9,11 +9,10 @@
  *
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.visor.plugin;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.visor.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
