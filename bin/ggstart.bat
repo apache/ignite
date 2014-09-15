@@ -225,6 +225,9 @@ del %RESTART_SUCCESS_FILE%
 
 :error_finish
 
-if not "%NO_PAUSE%" == "1" pause
+if %ERRORLEVEL% neq 0 (
+    echo Visor exit with error
+    exit /b %ERRORLEVEL%
+)
 
 goto :eof
