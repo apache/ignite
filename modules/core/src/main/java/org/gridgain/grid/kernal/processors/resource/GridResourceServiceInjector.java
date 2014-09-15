@@ -25,6 +25,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
     /** */
     private Grid grid;
 
+    /**
+     * @param grid Grid.
+     */
     public GridResourceServiceInjector(Grid grid) {
         super(null);
 

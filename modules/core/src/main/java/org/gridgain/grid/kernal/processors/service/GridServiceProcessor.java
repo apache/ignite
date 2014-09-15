@@ -195,9 +195,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<GridServiceContextImpl> ctxs = new ArrayList<>();
 
         synchronized (locSvcs) {
-            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values()) {
+            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
-            }
         }
 
         for (GridServiceContextImpl ctx : ctxs) {
@@ -877,7 +876,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctxs = locSvcs.remove(name);
                             }
 
-                            if (ctx != null) {
+                            if (ctxs != null) {
                                 synchronized (ctxs) {
                                     cancel(ctxs, ctxs.size());
                                 }
@@ -1126,7 +1125,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctxs = locSvcs.remove(name);
                             }
 
-                            if (ctx != null) {
+                            if (ctxs != null) {
                                 synchronized (ctxs) {
                                     cancel(ctxs, ctxs.size());
                                 }

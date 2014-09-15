@@ -19,6 +19,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
 import javax.management.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -187,6 +188,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     public void setLogInjector(GridResourceBasicInjector<GridLogger> logInjector) {
         this.logInjector = logInjector;
     }
+
     /**
      * Sets injector for grid services.
      *
