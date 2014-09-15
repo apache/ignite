@@ -55,7 +55,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
 
                 GridRestResponse res = new GridRestResponse();
 
-                Map<Integer, GridPortableMetadata> meta = ctx.portable().metaData(metaReq.typeIds());
+                Map<Integer, GridPortableMetadata> meta = ctx.portable().metadata(metaReq.typeIds());
 
                 GridClientMetaDataResponse metaRes = new GridClientMetaDataResponse();
 
@@ -83,7 +83,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
                 return new GridFinishedFuture<>(ctx, res);
             }
         }
-        catch (GridException e) {
+        catch (GridRuntimeException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
     }

@@ -9,30 +9,22 @@
 
 package org.gridgain.grid.kernal.visor.cmd.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridNodeLocalMap;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.cache.query.GridCacheQueryFuture;
 import org.gridgain.grid.kernal.GridKernal;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueriesEx;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryMetadataAware;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
-import org.gridgain.grid.kernal.visor.cmd.VisorJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorFieldsQueryColumn;
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorQueryResultEx;
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorQueryResultEx2;
+import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.cmd.dto.*;
+import org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.S;
 
-import java.io.Serializable;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
@@ -43,8 +35,8 @@ import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
  * TODO GG-8942
  * @deprecated Should replace VisorQueryTask in compatibility breaking release.
  */
-@GridInternal
-public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask2.VisorQueryArg,
+@Deprecated @GridInternal
+public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask.VisorQueryArg,
     GridBiTuple<? extends Exception, VisorQueryResultEx>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -52,120 +44,6 @@ public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask2.VisorQuery
     /** {@inheritDoc} */
     @Override protected VisorQueryJob job(VisorQueryArg arg) {
         return new VisorQueryJob(arg);
-    }
-
-    /**
-     * Arguments for {@link org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask2}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorQueryArg implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Node ids for query. */
-        private final Collection<UUID> proj;
-
-        /** Cache name for query. */
-        private final String cacheName;
-
-        /** Query text. */
-        private final String qryTxt;
-
-        /** Result batch size. */
-        private final Integer pageSize;
-
-        /**
-         * @param proj Node ids for query.
-         * @param cacheName Cache name for query.
-         * @param qryTxt Query text.
-         * @param pageSize Result batch size.
-         */
-        public VisorQueryArg(Collection<UUID> proj, String cacheName, String qryTxt, Integer pageSize) {
-            this.proj = proj;
-            this.cacheName = cacheName;
-            this.qryTxt = qryTxt;
-            this.pageSize = pageSize;
-        }
-
-        /**
-         * @return Proj.
-         */
-        public Collection<UUID> proj() {
-            return proj;
-        }
-
-        /**
-         * @return Cache name.
-         */
-        public String cacheName() {
-            return cacheName;
-        }
-
-        /**
-         * @return Query txt.
-         */
-        public String queryTxt() {
-            return qryTxt;
-        }
-
-        /**
-         * @return Page size.
-         */
-        public Integer pageSize() {
-            return pageSize;
-        }
-    }
-
-    /**
-     * ResultSet future holder.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorFutureResultSetHolder<R> implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Future with query results. */
-        private final GridCacheQueryFuture<R> fut;
-
-        /** Next record from future. */
-        private final R next;
-
-        /** Flag indicating that this furure was read from last check. */
-        private Boolean accessed;
-
-        public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {
-            this.fut = fut;
-            this.next = next;
-            this.accessed = accessed;
-        }
-
-        /**
-         * @return Future with query results.
-         */
-        public GridCacheQueryFuture<R> future() {
-            return fut;
-        }
-
-        /**
-         * @return Next record from future.
-         */
-        public R next() {
-            return next;
-        }
-
-        /**
-         * @return Flag indicating that this furure was read from last check..
-         */
-        public Boolean accessed() {
-            return accessed;
-        }
-
-        /**
-         * @param accessed New accessed.
-         */
-        public void accessed(Boolean accessed) {
-            this.accessed = accessed;
-        }
     }
 
     /**

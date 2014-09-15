@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
+import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Command handler for API requests.
@@ -337,11 +337,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            GridCacheProjectionEx<?, ?> prj =
-                (GridCacheProjectionEx<?, ?>)localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?,?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.forPortables();
+                prj = prj.keepPortable();
 
             return op.apply((GridCacheProjection<Object, Object>)prj, ctx).
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
@@ -687,11 +686,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            GridCacheProjectionEx<?, ?> prj =
-                (GridCacheProjectionEx<?, ?>)cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
+            GridCacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
 
             if (portable)
-                prj = prj.forPortables();
+                prj = prj.keepPortable();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and

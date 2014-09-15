@@ -71,7 +71,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     public static final int GRP_SIZE = 128;
 
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Thread count for multithreaded tests. */
     private static final int THREAD_CNT = 8;
@@ -315,10 +315,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
 
-        if (mode != PRIMARY) {
-            cfg.setSecondaryHadoopFileSystemUri(SECONDARY_URI);
-            cfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG_PATH);
-        }
+        if (mode != PRIMARY)
+            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
 
         cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);

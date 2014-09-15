@@ -62,10 +62,11 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         boolean swapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, null, false, subjId);
+            swapEnabled, storeEnabled, txSize, null, false, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */

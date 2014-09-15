@@ -12,14 +12,11 @@ package org.gridgain.examples.streaming;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Real time streaming popular numbers counter. This example receives a constant stream of
@@ -40,7 +37,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streamer.xml} configuration.
  */
-@GridOnlyAvailableIn(STREAMING)
 public class StreamingPopularNumbersExample {
     /** Count of most popular numbers to retrieve from grid. */
     private static final int POPULAR_NUMBERS_CNT = 10;

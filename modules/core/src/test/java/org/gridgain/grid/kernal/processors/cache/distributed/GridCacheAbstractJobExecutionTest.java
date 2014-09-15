@@ -76,8 +76,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
             GridCache<String, int[]> c = g.cache(null);
 
-            assertEquals(0, c.size());
-            assertEquals(0, c.size());
+            assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
         }
     }
 
@@ -103,6 +102,12 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
      */
     private void checkTransactions(final GridCacheTxConcurrency concur, final GridCacheTxIsolation isolation,
         final int jobCnt) throws Exception {
+
+        info("Grid 0: " + grid(0).localNode().id());
+        info("Grid 1: " + grid(1).localNode().id());
+        info("Grid 2: " + grid(2).localNode().id());
+        info("Grid 3: " + grid(3).localNode().id());
+
         Grid grid = grid(0);
 
         Collection<GridFuture<?>> futs = new LinkedList<>();

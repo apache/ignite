@@ -17,9 +17,9 @@ package org.gridgain.grid.portables;
  * <p>
  * This interface, in a way, is analogous to {@link java.io.Externalizable}
  * interface, which allows users to override default serialization logic,
- * usually for performance reasons. The only difference here is that
- * implementing custom serialization logic for portables does not provide
- * significant performance gains.
+ * usually for performance reasons. The only difference here is that portable
+ * serialization is already very fast and implementing custom serialization
+ * logic for portables does not provide significant performance gains.
  */
 public interface GridPortableMarshalAware {
     /**

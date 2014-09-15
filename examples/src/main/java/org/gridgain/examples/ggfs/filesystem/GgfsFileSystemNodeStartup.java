@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
@@ -24,7 +23,6 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with GGFS configuration with configured endpoint.
@@ -32,7 +30,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.

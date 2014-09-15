@@ -14,7 +14,6 @@ package org.gridgain.scalar.examples
 import org.gridgain.grid.GridException
 import org.gridgain.grid.cache.GridCache
 import org.gridgain.grid.dataload.GridDataLoadCacheUpdater
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 import java.util
 import java.util.Timer
@@ -37,7 +36,6 @@ import scala.util.Random
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the grid.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCachePopularNumbersExample extends App {
     /** Cache name. */
     private final val CACHE_NAME = "partitioned"

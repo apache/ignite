@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Copyright (C) GridGain Systems. All Rights Reserved.
+# @sh.file.header
 #  _________        _____ __________________        _____
 #  __  ____/___________(_)______  /__  ____/______ ____(_)_______
 #  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
 #  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 #  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 #
-# Version: 6.2.0
+# Version: @sh.file.version
 #
 
 #
@@ -22,7 +22,7 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -37,14 +37,32 @@ setGridGainHome
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/bin/include/parseargs.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
 
-CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*"
+#
+# Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
+#
+if [ -d "$HADOOP_COMMON_HOME" ]
+    then
+        for file in ${GRIDGAIN_HOME}/bin/include/visorui/*
+        do
+            file_name=$(basename $file)
+
+            if [ -f ${file} ] && [[ "${file_name}" != slf4j*.jar ]] && [[ "${file_name}" != log4j*.jar ]] ; then
+                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}
+            fi
+        done
+    else
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*
+fi
+
+CP="${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp

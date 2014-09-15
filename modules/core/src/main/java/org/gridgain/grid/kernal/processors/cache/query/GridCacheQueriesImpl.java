@@ -65,8 +65,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             clause,
             null,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -81,8 +80,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             clause,
             null,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -96,8 +94,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             qry,
             null,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -112,8 +109,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             search,
             null,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -128,8 +124,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             search,
             null,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -142,8 +137,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             null,
             (GridBiPredicate<Object, Object>)filter,
             false,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -196,8 +190,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             qry,
             null,
             incMeta,
-            prj != null && prj.portableKeys(),
-            prj != null && prj.portableValues());
+            prj != null && prj.isKeepPortable());
     }
 
     /**

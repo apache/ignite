@@ -68,6 +68,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -89,7 +90,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
+import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
 /**
@@ -131,30 +132,38 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+    @GridToStringExclude
     private GridLoggerProxy log;
 
     /** */
     private String gridName;
 
     /** */
+    @GridToStringExclude
     private ObjectName kernalMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName locNodeMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName pubExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName sysExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName mgmtExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName p2PExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName restExecSvcMBean;
 
     /** Kernal start timestamp. */
@@ -164,45 +173,59 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private GridSpringResourceContext rsrcCtx;
 
     /** */
+    @GridToStringExclude
     private Timer updateNtfTimer;
 
     /** */
+    @GridToStringExclude
     private Timer starveTimer;
 
     /** */
+    @GridToStringExclude
     private Timer licTimer;
 
     /** */
+    @GridToStringExclude
     private Timer metricsLogTimer;
 
     /** Indicate error on grid stop. */
+    @GridToStringExclude
     private boolean errOnStop;
 
     /** Node local store. */
+    @GridToStringExclude
     private GridNodeLocalMap nodeLoc;
 
     /** Scheduler. */
+    @GridToStringExclude
     private GridScheduler scheduler;
 
     /** Grid security instance. */
+    @GridToStringExclude
     private GridSecurity security;
 
     /** Portables instance. */
+    @GridToStringExclude
     private GridPortables portables;
 
     /** DR pool. */
+    @GridToStringExclude
     private ExecutorService drPool;
 
     /** Kernal gateway. */
+    @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
     /** Data Grid edition usage registered flag. */
+    @GridToStringExclude
     private volatile boolean dbUsageRegistered;
 
     /** */
+    @GridToStringExclude
     private final Collection<String> compatibleVers;
 
     /** Stop guard. */
+    @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
     /**

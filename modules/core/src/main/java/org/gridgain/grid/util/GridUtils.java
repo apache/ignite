@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
@@ -49,6 +50,7 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
+import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -269,6 +271,9 @@ public abstract class GridUtils {
     public static final List<String> DFLT_HELP_LINKS = Arrays.asList(
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
         "Documentation Center: http://bit.ly/GridGain-Documentation");
+
+    /** Portable classes. */
+    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /**
      * Initializes enterprise check.
@@ -505,6 +510,31 @@ public abstract class GridUtils {
         timer.setPriority(10);
 
         timer.start();
+
+        PORTABLE_CLS.add(Byte.class);
+        PORTABLE_CLS.add(Short.class);
+        PORTABLE_CLS.add(Integer.class);
+        PORTABLE_CLS.add(Long.class);
+        PORTABLE_CLS.add(Float.class);
+        PORTABLE_CLS.add(Double.class);
+        PORTABLE_CLS.add(Character.class);
+        PORTABLE_CLS.add(Boolean.class);
+        PORTABLE_CLS.add(String.class);
+        PORTABLE_CLS.add(UUID.class);
+        PORTABLE_CLS.add(Date.class);
+        PORTABLE_CLS.add(Timestamp.class);
+        PORTABLE_CLS.add(byte[].class);
+        PORTABLE_CLS.add(short[].class);
+        PORTABLE_CLS.add(int[].class);
+        PORTABLE_CLS.add(long[].class);
+        PORTABLE_CLS.add(float[].class);
+        PORTABLE_CLS.add(double[].class);
+        PORTABLE_CLS.add(char[].class);
+        PORTABLE_CLS.add(boolean[].class);
+        PORTABLE_CLS.add(String[].class);
+        PORTABLE_CLS.add(UUID[].class);
+        PORTABLE_CLS.add(Date[].class);
+        PORTABLE_CLS.add(Timestamp[].class);
     }
 
     /**
@@ -3020,6 +3050,21 @@ public abstract class GridUtils {
             }
             catch (IOException e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
             }
     }
 
@@ -8539,5 +8584,35 @@ public abstract class GridUtils {
         }
 
         return youngest;
+    }
+
+    /**
+     * Tells whether provided type is portable.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable.
+     */
+    public static boolean isPortableType(Class<?> cls) {
+        assert cls != null;
+
+        return GridPortableObject.class.isAssignableFrom(cls) ||
+            PORTABLE_CLS.contains(cls) ||
+            cls.isEnum() ||
+            (cls.isArray() && cls.getComponentType().isEnum());
+    }
+    /**
+     * Tells whether provided type is portable or a collection.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable or a collection.
+     */
+    public static boolean isPortableOrCollectionType(Class<?> cls) {
+        assert cls != null;
+
+        return isPortableType(cls) ||
+            cls == Object[].class ||
+            Collection.class.isAssignableFrom(cls) ||
+            Map.class.isAssignableFrom(cls) ||
+            Map.Entry.class.isAssignableFrom(cls);
     }
 }

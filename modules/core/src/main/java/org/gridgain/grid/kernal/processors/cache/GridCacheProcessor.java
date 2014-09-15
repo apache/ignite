@@ -373,7 +373,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             case ONHEAP_TIERED:
-                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null)
+                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
                     U.quietAndWarn(log, "Eviction policy not enabled with ONHEAP_TIERED mode for cache " +
                         "(entries will not be moved to off-heap store): " + cc.getName());
 
@@ -612,6 +612,54 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
             GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
             GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtAtomicCache.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearGetRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestPortablesConverter620.class,
+            GridCacheQueryManager.QUERY_PORTABLES_SINCE);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
+            GridCacheQueryManager.QUERY_EVENTS_SINCE);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
@@ -1452,8 +1500,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkCache(n);
+        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkCache(n);
+        }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();

@@ -13,12 +13,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example shows usage of {@code GridGgfsHadoopFileSystem Hadoop FS driver}.
@@ -26,10 +23,9 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Before running this example you must start at least one remote node using
  * {@link GgfsFileSystemNodeStartup}.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemExample {
     /** Path to hadoop configuration file (will be resolved from application {@code CLASSPATH}). */
-    private static final String HADOOP_FS_CFG = "hadoop/core-site.xml";
+    private static final String HADOOP_FS_CFG = "filesystem/core-site.xml";
 
     /** Flag to mark HDFS installation is configured, started and available for this example. */
     private static final boolean USE_HDFS = false;
@@ -38,13 +34,13 @@ public class GgfsFileSystemExample {
      * Default path to the folder related to application {@code CLASSPATH}. This folder will be used to copy
      * in case it is not specified explicitly in arguments.
      */
-    private static final String DFLT_PATH = "hadoop";
+    private static final String DFLT_PATH = "filesystem";
 
     /**
      * Executes example.
      *
      * @param args Command line arguments. Expected 1 argument - absolute path to folder to copy.
-     *             If this argument is not defined than {@code GRIDGAIN_HOME/examples/config/hadoop} will be used.
+     *             If this argument is not defined than {@code GRIDGAIN_HOME/examples/config/filesystem} will be used.
      * @throws IOException If failed.
      */
     @SuppressWarnings("TooBroadScope")
