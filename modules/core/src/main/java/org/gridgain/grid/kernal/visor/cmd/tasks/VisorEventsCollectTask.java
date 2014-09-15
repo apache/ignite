@@ -107,7 +107,7 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
             @Nullable GridUuid taskSessionId) {
             return new VisorEventsCollectArgs(null,
                 VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION,
-                        GridEventType.EVTS_AUTHENTICATION, GridEventType.EVTS_AUTHORIZATION),
+                    GridEventType.EVTS_AUTHENTICATION, GridEventType.EVTS_AUTHORIZATION, GridEventType.EVTS_SECURE_SESSION),
                 timeArg, taskName, taskSessionId);
         }
 
@@ -325,6 +325,12 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
 
                     res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                         ae.subject()));
+                }
+                else if (e instanceof GridSecureSessionEvent) {
+                    GridSecureSessionEvent se = (GridSecureSessionEvent) e;
+
+                    res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
+                        se.subjectId()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));

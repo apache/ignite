@@ -72,7 +72,9 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
         EVT_LIC_GRACE_EXPIRED,
 
         EVT_AUTHORIZATION_FAILED,
-        EVT_AUTHENTICATION_FAILED
+        EVT_AUTHENTICATION_FAILED,
+
+        EVT_SECURE_SESSION_VALIDATION_FAILED
     };
 
     /** Only non task event types that Visor should collect. */
@@ -233,6 +235,12 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
 
                 res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
                     ae.subjectId(), ae.login()));
+            }
+            else if (e instanceof GridSecureSessionEvent) {
+                GridSecureSessionEvent se = (GridSecureSessionEvent)e;
+
+                res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
+                    se.subjectId()));
             }
         }
 
