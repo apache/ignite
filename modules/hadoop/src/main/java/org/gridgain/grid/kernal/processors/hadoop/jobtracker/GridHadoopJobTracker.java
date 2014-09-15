@@ -42,15 +42,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /** */
     private final GridMutex mux = new GridMutex();
 
-    /**
-     * System cache.
-     *
-     * @deprecated Object are used for projection for preserving backward compatibility.
-     *      Need to return strongly-typed projection (GridHadoopJobId -> GridHadoopJobMetadata)
-     *      in the next major release.
-     */
-    @Deprecated
-    private volatile GridCacheProjection<Object, Object> jobMetaPrj;
+    /** */
+    private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
 
     /** Map-reduce execution planner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -97,13 +90,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Job meta projection.
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    private GridCacheProjection<Object, Object> jobMetaCache() {
-        GridCacheProjection<Object, Object> prj = jobMetaPrj;
+    private GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaCache() {
+        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> prj = jobMetaPrj;
 
         if (prj == null) {
             synchronized (mux) {
                 if ((prj = jobMetaPrj) == null) {
-                    GridCache<Object, Object> sysCache = ctx.kernalContext().cache().cache(CU.SYS_CACHE_HADOOP_MR);
+                    GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> sysCache = ctx.kernalContext().cache()
+                        .cache(CU.SYS_CACHE_HADOOP_MR);
 
                     assert sysCache != null;
 
@@ -131,12 +125,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
-        GridCacheContinuousQuery<Object, Object> qry = jobMetaCache().queries().createContinuousQuery();
+        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
         qry.callback(new GridBiPredicate<UUID,
-            Collection<Map.Entry<Object, Object>>>() {
+            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
             @Override public boolean apply(UUID nodeId,
-                final Collection<Map.Entry<Object, Object>> evts) {
+                final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 if (!busyLock.tryReadLock())
                     return false;
 
@@ -144,7 +138,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     // Must process query callback in a separate thread to avoid deadlocks.
                     evtProcSvc.submit(new EventHandler() {
                         @Override protected void body() throws GridException {
-                            processJobMetadata(evts);
+                            processJobMetadataUpdates(evts);
                         }
                     });
 
@@ -255,7 +249,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             return meta != null ? GridHadoopUtils.status(meta) : null;
         }
@@ -276,7 +270,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta == null)
                 return null;
@@ -295,7 +289,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 new GridFutureAdapter<GridHadoopJobId>());
 
             // Get meta from cache one more time to close the window.
-            meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            meta = jobMetaCache().get(jobId);
 
             if (log.isTraceEnabled())
                 log.trace("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
@@ -330,7 +324,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null;
 
         try {
-            GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta != null)
                 return meta.mapReducePlan();
@@ -400,7 +394,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 case COMMIT:
                 case ABORT: {
-                    GridCacheEntry<Object, Object> entry = jobMetaCache().entry(info.jobId());
+                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaCache().entry(info.jobId());
 
                     entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
 
@@ -419,7 +413,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job id.
      * @param c Closure of operation.
      */
-    private void transform(GridHadoopJobId jobId, GridClosure<Object, Object> c) {
+    private void transform(GridHadoopJobId jobId, GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> c) {
         jobMetaCache().transformAsync(jobId, c).listenAsync(failsLogger);
     }
 
@@ -549,13 +543,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * @param updated Updated cache entries.
      */
-    private void processJobMetadata(Iterable<Map.Entry<Object, Object>> updated)
-        throws GridException {
+    private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) throws GridException {
         UUID locNodeId = ctx.localNodeId();
 
-        for (Map.Entry<Object, Object> entry : updated) {
-            GridHadoopJobId jobId = (GridHadoopJobId)entry.getKey();
-            GridHadoopJobMetadata meta = (GridHadoopJobMetadata)entry.getValue();
+        boolean jobComplete = false;
+
+        for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
+            GridHadoopJobId jobId = entry.getKey();
+            GridHadoopJobMetadata meta = entry.getValue();
 
             if (meta == null || !ctx.isParticipating(meta))
                 continue;
@@ -566,166 +561,180 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             try {
                 ctx.taskExecutor().onJobStateChanged(meta);
+
+                processJobMetaUpdate(jobId, meta, locNodeId);
+
+                jobComplete |= meta.phase() == PHASE_COMPLETE;
             }
-            catch (GridException e) {
+            catch (Throwable e) {
                 U.error(log, "Failed to process job state changed callback (will fail the job) " +
                     "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
 
                 transform(jobId, new CancelJobClosure(null, e));
+            }
+        }
 
-                continue;
+        // One or more jobs are complete and removed, helping to GC class loaders to avoid PermGen pollution.
+        // Preferable to run CMS collector with flag -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses
+        // to avoid full GC pauses. To disable use -XX:+DisableExplicitGC flag.
+        if (jobComplete)
+            System.gc();
+    }
+
+    /**
+     * @param jobId Job ID.
+     * @param meta Job metadata.
+     * @param locNodeId Local node ID.
+     * @throws GridException If failed.
+     */
+    private void processJobMetaUpdate(GridHadoopJobId jobId, GridHadoopJobMetadata meta, UUID locNodeId)
+        throws GridException {
+        JobLocalState state = activeJobs.get(jobId);
+
+        GridHadoopJob job = job(jobId, meta.jobInfo());
+
+        GridHadoopMapReducePlan plan = meta.mapReducePlan();
+
+        switch (meta.phase()) {
+            case PHASE_SETUP: {
+                if (ctx.jobUpdateLeader()) {
+                    Collection<GridHadoopTaskInfo> setupTask = setupTask(jobId);
+
+                    if (setupTask != null)
+                        ctx.taskExecutor().run(job, setupTask);
+                }
+
+                break;
             }
 
-            JobLocalState state = activeJobs.get(jobId);
+            case PHASE_MAP: {
+                // Check if we should initiate new task on local node.
+                Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), meta);
 
-            GridHadoopJob job = job(jobId, meta.jobInfo());
+                if (tasks != null)
+                    ctx.taskExecutor().run(job, tasks);
 
-            GridHadoopMapReducePlan plan = meta.mapReducePlan();
+                break;
+            }
 
-            switch (meta.phase()) {
-                case PHASE_SETUP: {
-                    if (ctx.jobUpdateLeader()) {
-                        Collection<GridHadoopTaskInfo> setupTask = setupTask(jobId);
+            case PHASE_REDUCE: {
+                if (meta.pendingReducers().isEmpty() && ctx.jobUpdateLeader()) {
+                    GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMMIT, jobId, 0, 0, null);
 
-                        if (setupTask != null)
-                            ctx.taskExecutor().run(job, setupTask);
-                    }
-
-                    break;
-                }
-
-                case PHASE_MAP: {
-                    // Check if we should initiate new task on local node.
-                    Collection<GridHadoopTaskInfo> tasks = mapperTasks(plan.mappers(locNodeId), meta);
-
-                    if (tasks != null)
-                        ctx.taskExecutor().run(job, tasks);
-
-                    break;
-                }
-
-                case PHASE_REDUCE: {
-                    if (meta.pendingReducers().isEmpty() && ctx.jobUpdateLeader()) {
-                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMMIT, jobId, 0, 0, null);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
+                    if (log.isDebugEnabled())
+                        log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
                                 ", jobId=" + jobId + ']');
 
-                        ctx.taskExecutor().run(job, Collections.singletonList(info));
-
-                        return;
-                    }
-
-                    Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job);
-
-                    if (tasks != null)
-                        ctx.taskExecutor().run(job, tasks);
+                    ctx.taskExecutor().run(job, Collections.singletonList(info));
 
                     break;
                 }
 
-                case PHASE_CANCELLING: {
-                    // Prevent multiple task executor notification.
-                    if (state != null && state.onCancel()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Cancelling local task execution for job: " + meta);
+                Collection<GridHadoopTaskInfo> tasks = reducerTasks(plan.reducers(locNodeId), job);
 
-                        ctx.taskExecutor().cancelTasks(jobId);
-                    }
+                if (tasks != null)
+                    ctx.taskExecutor().run(job, tasks);
 
-                    if (meta.pendingSplits().isEmpty() && meta.pendingReducers().isEmpty()) {
-                        if (ctx.jobUpdateLeader()) {
-                            if (state == null)
-                                state = initState(jobId);
+                break;
+            }
 
-                            // Prevent running multiple abort tasks.
-                            if (state.onAborted()) {
-                                GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), ABORT, jobId, 0, 0,
+            case PHASE_CANCELLING: {
+                // Prevent multiple task executor notification.
+                if (state != null && state.onCancel()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Cancelling local task execution for job: " + meta);
+
+                    ctx.taskExecutor().cancelTasks(jobId);
+                }
+
+                if (meta.pendingSplits().isEmpty() && meta.pendingReducers().isEmpty()) {
+                    if (ctx.jobUpdateLeader()) {
+                        if (state == null)
+                            state = initState(jobId);
+
+                        // Prevent running multiple abort tasks.
+                        if (state.onAborted()) {
+                            GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), ABORT, jobId, 0, 0,
                                     null);
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
+                            if (log.isDebugEnabled())
+                                log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
                                         ", jobId=" + jobId + ']');
 
-                                ctx.taskExecutor().run(job, Collections.singletonList(info));
-                            }
+                            ctx.taskExecutor().run(job, Collections.singletonList(info));
                         }
-
-                        return;
-                    }
-                    else {
-                        // Check if there are unscheduled mappers or reducers.
-                        Collection<GridHadoopInputSplit> cancelMappers = new ArrayList<>();
-                        Collection<Integer> cancelReducers = new ArrayList<>();
-
-                        Collection<GridHadoopInputSplit> mappers = plan.mappers(ctx.localNodeId());
-
-                        if (mappers != null) {
-                            for (GridHadoopInputSplit b : mappers) {
-                                if (state == null || !state.mapperScheduled(b))
-                                    cancelMappers.add(b);
-                            }
-                        }
-
-                        int[] rdc = plan.reducers(ctx.localNodeId());
-
-                        if (rdc != null) {
-                            for (int r : rdc) {
-                                if (state == null || !state.reducerScheduled(r))
-                                    cancelReducers.add(r);
-                            }
-                        }
-
-                        if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
-                            transform(jobId, new CancelJobClosure(null, cancelMappers, cancelReducers));
                     }
 
                     break;
                 }
+                else {
+                    // Check if there are unscheduled mappers or reducers.
+                    Collection<GridHadoopInputSplit> cancelMappers = new ArrayList<>();
+                    Collection<Integer> cancelReducers = new ArrayList<>();
 
-                case PHASE_COMPLETE: {
-                    if (log.isDebugEnabled())
-                        log.debug("Job execution is complete, will remove local state from active jobs " +
+                    Collection<GridHadoopInputSplit> mappers = plan.mappers(ctx.localNodeId());
+
+                    if (mappers != null) {
+                        for (GridHadoopInputSplit b : mappers) {
+                            if (state == null || !state.mapperScheduled(b))
+                                cancelMappers.add(b);
+                        }
+                    }
+
+                    int[] rdc = plan.reducers(ctx.localNodeId());
+
+                    if (rdc != null) {
+                        for (int r : rdc) {
+                            if (state == null || !state.reducerScheduled(r))
+                                cancelReducers.add(r);
+                        }
+                    }
+
+                    if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
+                        transform(jobId, new CancelJobClosure(null, cancelMappers, cancelReducers));
+                }
+
+                break;
+            }
+
+            case PHASE_COMPLETE: {
+                if (log.isDebugEnabled())
+                    log.debug("Job execution is complete, will remove local state from active jobs " +
                             "[jobId=" + jobId + ", meta=" + meta +
                             ", setupTime=" + meta.setupTime() +
                             ", mapTime=" + meta.mapTime() +
                             ", reduceTime=" + meta.reduceTime() +
                             ", totalTime=" + meta.totalTime() + ']');
 
-                    if (state != null) {
-                        state = activeJobs.remove(jobId);
+                if (state != null) {
+                    state = activeJobs.remove(jobId);
 
-                        assert state != null;
+                    assert state != null;
 
-                        ctx.shuffle().jobFinished(jobId);
-                    }
-
-                    GridFutureAdapter<GridHadoopJobId> finishFut = activeFinishFuts.remove(jobId);
-
-                    if (finishFut != null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Completing job future [locNodeId=" + locNodeId + ", meta=" + meta + ']');
-
-                        finishFut.onDone(jobId, meta.failCause());
-                    }
-
-                    if (ctx.jobUpdateLeader())
-                        job.cleanupStagingDirectory();
-
-                    GridFutureAdapterEx<GridHadoopJob> jobFut = jobs.get(jobId);
-
-                    if (jobFut.get() == job && jobs.remove(jobId, jobFut))
-                        job.dispose(false);
-                    else
-                        assert false;
-
-                    break;
+                    ctx.shuffle().jobFinished(jobId);
                 }
 
-                default:
-                    assert false;
+                GridFutureAdapter<GridHadoopJobId> finishFut = activeFinishFuts.remove(jobId);
+
+                if (finishFut != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing job future [locNodeId=" + locNodeId + ", meta=" + meta + ']');
+
+                    finishFut.onDone(jobId, meta.failCause());
+                }
+
+                if (ctx.jobUpdateLeader())
+                    job.cleanupStagingDirectory();
+
+                jobs.remove(jobId);
+
+                job.dispose(false);
+
+                break;
             }
+
+            default:
+                throw new IllegalStateException("Unknown phase: " + meta.phase());
         }
     }
 
@@ -852,7 +861,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         try {
             if (jobInfo == null) {
-                GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+                GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
                 if (meta == null)
                     throw new GridException("Failed to find job metadata for ID: " + jobId);
@@ -898,7 +907,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return false; // Grid is stopping.
 
         try {
-            GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             if (meta != null && meta.phase() != PHASE_COMPLETE && meta.phase() != PHASE_CANCELLING) {
                 GridHadoopTaskCancelledException err = new GridHadoopTaskCancelledException("Job cancelled.");
@@ -915,7 +924,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (fut != null) {
             try {
                 fut.get();
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 if (e.getCause() instanceof GridHadoopTaskCancelledException)
                     return true;
             }
@@ -936,7 +946,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             return null;
 
         try {
-            final GridHadoopJobMetadata meta = (GridHadoopJobMetadata)jobMetaCache().get(jobId);
+            final GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
             return meta != null ? meta.counters() : null;
         }
@@ -1444,7 +1454,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * Abstract stacked closure.
      */
-    private abstract static class StackedClosure implements GridClosure<Object, Object> {
+    private abstract static class StackedClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1459,13 +1469,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         /** {@inheritDoc} */
-        @Override public final GridHadoopJobMetadata apply(Object meta) {
+        @Override public final GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
             if (meta == null)
                 return null;
 
-            GridHadoopJobMetadata cp = prev != null ? prev.apply(meta) : new GridHadoopJobMetadata((GridHadoopJobMetadata)meta);
+            GridHadoopJobMetadata cp = prev != null ? prev.apply(meta) : new GridHadoopJobMetadata(meta);
 
-            update((GridHadoopJobMetadata)meta, cp);
+            update(meta, cp);
 
             return cp;
         }
