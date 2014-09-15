@@ -27,6 +27,7 @@ public class GridStreamerSelfTestSuite {
 
         // Streamer.
         suite.addTestSuite(GridStreamerWindowSelfTest.class);
+        suite.addTestSuite(GridStreamerEvictionSelfTest.class);
         suite.addTestSuite(GridStreamerSelfTest.class);
         suite.addTestSuite(GridStreamerFailoverSelfTest.class);
         suite.addTestSuite(GridStreamerIndexSelfTest.class);
