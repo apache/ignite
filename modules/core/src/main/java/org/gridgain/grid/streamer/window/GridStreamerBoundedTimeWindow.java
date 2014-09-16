@@ -130,6 +130,8 @@ public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<
 
         GridConcurrentSkipListSet<Holder<E>> evtsQueue = tup.collection();
 
+        boolean sizeCheck = maxSize != 0;
+
         int overflow = tup.size().get() - maxSize;
 
         long timeBound = U.currentTimeMillis() - timeInterval;
@@ -138,9 +140,11 @@ public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<
         int cnt = 0;
 
         for (Holder holder : evtsQueue) {
-            if (idx < overflow || holder.ts < timeBound)
+            if ((idx < overflow && sizeCheck) || holder.ts < timeBound)
                 cnt++;
-            else if (idx >= overflow && holder.ts >= timeBound)
+            else if ((idx >= overflow && sizeCheck) && holder.ts >= timeBound)
+                break;
+            else if (!sizeCheck && holder.ts >= timeBound)
                 break;
 
             idx++;

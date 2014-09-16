@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.visor.plugin;
 
 import java.util.*;
 
