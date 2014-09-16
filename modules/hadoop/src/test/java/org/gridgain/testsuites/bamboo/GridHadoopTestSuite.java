@@ -12,6 +12,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.apache.commons.compress.archivers.tar.*;
 import org.apache.commons.compress.compressors.gzip.*;
+import org.gridgain.client.hadoop.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
@@ -101,6 +102,9 @@ public class GridHadoopTestSuite extends TestSuite {
         //suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSortingExternalTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopGroupingTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopClientProtocolSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopClientProtocolEmbeddedSelfTest.class.getName())));
 
         return suite;
     }

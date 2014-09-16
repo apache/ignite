@@ -57,6 +57,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
 
+
     /** {@inheritDoc} */
     @Override public GridGgfsConfiguration ggfsConfiguration() {
         GridGgfsConfiguration cfg = super.ggfsConfiguration();
@@ -94,6 +95,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
+        cfg.setMaxParallelTasks(5);
         cfg.setExternalExecution(false);
 
         return cfg;
@@ -431,8 +433,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      */
     private static class FailMapper extends Mapper<Object, Text, Text, IntWritable> {
         /** {@inheritDoc} */
-        @Override protected void map(Object key, Text val, Context ctx)
-            throws IOException, InterruptedException {
+        @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
             throw new IOException("Expected");
         }
     }

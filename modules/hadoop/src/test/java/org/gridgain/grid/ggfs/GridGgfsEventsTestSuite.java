@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.testsuites.bamboo;
+package org.gridgain.grid.ggfs;
 
 import junit.framework.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
@@ -52,7 +51,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static TestSuite suiteNoarchOnly() throws Exception {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-        
+
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
 
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
