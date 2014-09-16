@@ -18,13 +18,13 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -978,6 +978,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridProjectionEx forSubjectId(UUID subjId) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridInteropProcessor interop() {
             return null;
         }
     }
