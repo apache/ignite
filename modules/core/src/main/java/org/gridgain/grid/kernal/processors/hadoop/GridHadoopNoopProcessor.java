@@ -51,6 +51,11 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopCounters counters(GridHadoopJobId jobId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
         return null;
     }

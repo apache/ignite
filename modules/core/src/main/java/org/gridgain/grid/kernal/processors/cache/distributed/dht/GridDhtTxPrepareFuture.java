@@ -620,7 +620,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     txNodes,
                     tx.nearXidVersion(),
                     lastBackup(n.id()),
-                    tx.subjectId());
+                    tx.subjectId(),
+                    tx.taskNameHash());
 
                 int idx = 0;
 
@@ -703,7 +704,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         tx.nearXidVersion(),
                         false,
-                        tx.subjectId());
+                        tx.subjectId(),
+                        tx.taskNameHash());
 
                     for (GridCacheTxEntry<K, V> entry : nearMapping.writes()) {
                         try {

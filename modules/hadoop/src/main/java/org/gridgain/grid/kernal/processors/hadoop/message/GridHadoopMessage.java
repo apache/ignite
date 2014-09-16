@@ -14,6 +14,6 @@ import java.io.*;
 /**
  * Marker interface for all hadoop messages.
  */
-public interface GridHadoopMessage extends Serializable {
+public interface GridHadoopMessage extends Externalizable {
     // No-op.
 }

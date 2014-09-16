@@ -73,11 +73,14 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private volatile GridProjection prj;
 
-    /** Portable key. */
-    private boolean portableKeys;
+    /** */
+    private boolean keepPortable;
 
-    /** Portable val. */
-    private boolean portableVals;
+    /** */
+    private UUID subjId;
+
+    /** */
+    private int taskHash;
 
     /**
      * @param cctx Context.
@@ -90,19 +93,18 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable String clsName,
         @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta,
-        boolean portableKeys, boolean portableVals) {
+        boolean keepPortable) {
         assert cctx != null;
         assert type != null;
 
         this.cctx = cctx;
         this.type = type;
-        this.clsName = clsName;
+        this.clsName = CU.h2Escape(clsName);
         this.clause = clause;
         this.prjPred = prjPred;
         this.filter = filter;
         this.incMeta = incMeta;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
+        this.keepPortable = keepPortable;
 
         log = cctx.logger(getClass());
 
@@ -134,7 +136,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
         boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, @Nullable String clsName,
-        String clause, boolean incMeta, boolean portableKeys, boolean portableVals) {
+        String clause, boolean incMeta, boolean keepPortable, UUID subjId, int taskHash) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -146,11 +148,12 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
-        this.clsName = clsName;
+        this.clsName = CU.h2Escape(clsName);
         this.clause = clause;
         this.incMeta = incMeta;
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
+        this.keepPortable = keepPortable;
+        this.subjId = subjId;
+        this.taskHash = taskHash;
     }
 
     /**
@@ -189,29 +192,37 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /**
-     * @return {@code True} if key should be left portable.
+     * @return {@code True} if portable should not be deserialized.
      */
-    public boolean portableKeys() {
-        return portableKeys;
-    }
-
-    /**
-     * @return {@code True} if value should be left portable.
-     */
-    public boolean portableValues() {
-        return portableVals;
+    public boolean keepPortable() {
+        return keepPortable;
     }
 
     /**
      * Forces query to keep portable object representation even if query was created on plain projection.
      *
-     * @param keep Keep portable flag.
+     * @param keepPortable Keep portable flag.
      */
-    public void keepPortable(boolean keep) {
-        if (keep) {
-            portableKeys = true;
-            portableVals = true;
-        }
+    public void keepPortable(boolean keepPortable) {
+        this.keepPortable = keepPortable;
+    }
+
+    /**
+     * @return Security subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task hash.
+     */
+    public int taskHash() {
+        return taskHash;
+    }
+
+    public void subjectId(UUID subjId) {
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -385,6 +396,11 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
             }
         }
+
+        if (subjId == null)
+            subjId = cctx.localNodeId();
+
+        taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         GridCacheQueryBean bean = new GridCacheQueryBean(this, (GridReducer<Object, Object>)rmtReducer,
             (GridClosure<Object, Object>)rmtTransform, args);

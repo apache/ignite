@@ -108,7 +108,7 @@ public abstract class GridClientUtils {
      *  {@code false} otherwise.
      */
     public static boolean restAvailable(GridClientNode node, GridClientProtocol p) {
-        return !node.availableAddresses(p).isEmpty();
+        return !node.availableAddresses(p, false).isEmpty();
     }
 
     /**
@@ -168,6 +168,8 @@ public abstract class GridClientUtils {
      *
      * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
      * @return Comparator.
+     * @throws NullPointerException If address to compare is unresolved ( {@link InetSocketAddress#isUnresolved()}
+     * returns {@code True} ).
      */
     public static Comparator<InetSocketAddress> inetSocketAddressesComparator(final boolean sameHost) {
         return new Comparator<InetSocketAddress>() {

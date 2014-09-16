@@ -23,6 +23,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.service.*;
@@ -51,8 +52,6 @@ import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
-import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -452,6 +451,9 @@ public class GridConfiguration {
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
+    /** Local event listeners. */
+    private Map<GridPredicate<? extends GridEvent>, int[]> lsnrs;
+
     /** TCP host. */
     private String restTcpHost;
 
@@ -598,6 +600,7 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
+        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
@@ -678,7 +681,7 @@ public class GridConfiguration {
      * @return Custom license file URL or {@code null} to use the default
      *      {@code $GRIDGAIN_HOME}-related location.
      */
-    @Nullable public String getLicenseUrl() {
+    public String getLicenseUrl() {
         return licUrl;
     }
 
@@ -734,7 +737,7 @@ public class GridConfiguration {
      * @return SMTP host name or {@code null} if SMTP is not configured.
      * @see GridSystemProperties#GG_SMTP_HOST
      */
-    @Nullable public String getSmtpHost() {
+    public String getSmtpHost() {
         return smtpHost;
     }
 
@@ -771,7 +774,7 @@ public class GridConfiguration {
      * @return SMTP username or {@code null}.
      * @see GridSystemProperties#GG_SMTP_USERNAME
      */
-    @Nullable public String getSmtpUsername() {
+    public String getSmtpUsername() {
         return smtpUsername;
     }
 
@@ -789,7 +792,7 @@ public class GridConfiguration {
      * @return SMTP password or {@code null}.
      * @see GridSystemProperties#GG_SMTP_PWD
      */
-    @Nullable public String getSmtpPassword() {
+    public String getSmtpPassword() {
         return smtpPwd;
     }
 
@@ -819,7 +822,7 @@ public class GridConfiguration {
      * @see #DFLT_SMTP_FROM_EMAIL
      * @see GridSystemProperties#GG_SMTP_FROM
      */
-    @Nullable public String getSmtpFromEmail() {
+    public String getSmtpFromEmail() {
         return smtpFromEmail;
     }
 
@@ -1074,7 +1077,8 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return an instance of logger to use in grid. If not provided, {@code GridLog4jLogger}
+     * Should return an instance of logger to use in grid. If not provided,
+     * {@gglink org.gridgain.grid.logger.log4j.GridLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -1358,7 +1362,7 @@ public class GridConfiguration {
      *      infer it automatically.
      * @see GridSystemProperties#GG_HOME
      */
-    @Nullable public String getGridGainHome() {
+    public String getGridGainHome() {
         return ggHome;
     }
 
@@ -1384,7 +1388,7 @@ public class GridConfiguration {
      * @see GridConfiguration#getGridGainHome()
      * @see GridSystemProperties#GG_HOME
      */
-    @Nullable public String getWorkDirectory() {
+    public String getWorkDirectory() {
         return ggWork;
     }
 
@@ -1433,7 +1437,7 @@ public class GridConfiguration {
      * @param nodeId Unique identifier for local node.
      * @see GridConfiguration#getNodeId()
      */
-    public void setNodeId(@Nullable UUID nodeId) {
+    public void setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -1898,7 +1902,7 @@ public class GridConfiguration {
      *
      * @return Segmentation resolvers.
      */
-    @Nullable public GridSegmentationResolver[] getSegmentationResolvers() {
+    public GridSegmentationResolver[] getSegmentationResolvers() {
         return segResolvers;
     }
 
@@ -1907,7 +1911,7 @@ public class GridConfiguration {
      *
      * @param segResolvers Segmentation resolvers.
      */
-    public void setSegmentationResolvers(@Nullable GridSegmentationResolver... segResolvers) {
+    public void setSegmentationResolvers(GridSegmentationResolver... segResolvers) {
         this.segResolvers = segResolvers;
     }
 
@@ -2171,7 +2175,7 @@ public class GridConfiguration {
 
     /**
      * Should return fully configured indexing SPI implementations. If not provided,
-     * {@code GridH2IndexingSpi} will be used.
+     * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).
@@ -2306,7 +2310,7 @@ public class GridConfiguration {
      *
      * @return Include event types.
      */
-    @Nullable public int[] getIncludeEventTypes() {
+    public int[] getIncludeEventTypes() {
         return inclEvtTypes;
     }
 
@@ -2811,7 +2815,7 @@ public class GridConfiguration {
      *
      * @return Local address or host to bind to.
      */
-    @Nullable public String getLocalHost() {
+    public String getLocalHost() {
         return locHost;
     }
 
@@ -2861,7 +2865,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#setRestSecretKey(String)}.
      */
     @Deprecated
-    public void setRestSecretKey(@Nullable String restSecretKey) {
+    public void setRestSecretKey(String restSecretKey) {
         this.restSecretKey = restSecretKey;
     }
 
@@ -2874,7 +2878,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#getRestSecretKey()}.
      */
     @Deprecated
-    @Nullable public String getRestSecretKey() {
+    public String getRestSecretKey() {
         return restSecretKey;
     }
 
@@ -2887,7 +2891,7 @@ public class GridConfiguration {
      *
      * @return Array of system or environment properties to include into node attributes.
      */
-    @Nullable public String[] getIncludeProperties() {
+    public String[] getIncludeProperties() {
         return includeProps;
     }
 
@@ -2943,7 +2947,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
     @Deprecated
-    @Nullable public GridClientMessageInterceptor getClientMessageInterceptor() {
+    public GridClientMessageInterceptor getClientMessageInterceptor() {
         return clientMsgInterceptor;
     }
 
@@ -2968,7 +2972,7 @@ public class GridConfiguration {
      *
      * @return GGFS configurations.
      */
-    @Nullable public GridGgfsConfiguration[] getGgfsConfiguration() {
+    public GridGgfsConfiguration[] getGgfsConfiguration() {
         return ggfsCfg;
     }
 
@@ -2986,7 +2990,7 @@ public class GridConfiguration {
      *
      * @return Streamers configurations.
      */
-    @Nullable public GridStreamerConfiguration[] getStreamerConfiguration() {
+    public GridStreamerConfiguration[] getStreamerConfiguration() {
         return streamerCfg;
     }
 
@@ -3004,7 +3008,7 @@ public class GridConfiguration {
      *
      * @return Data center receiver hub configuration.
      */
-    @Nullable public GridDrReceiverHubConfiguration getDrReceiverHubConfiguration() {
+    public GridDrReceiverHubConfiguration getDrReceiverHubConfiguration() {
         return drRcvHubCfg;
     }
 
@@ -3022,7 +3026,7 @@ public class GridConfiguration {
      *
      * @return Data center sender hub configuration.
      */
-    @Nullable public GridDrSenderHubConfiguration getDrSenderHubConfiguration() {
+    public GridDrSenderHubConfiguration getDrSenderHubConfiguration() {
         return drSndHubCfg;
     }
 
@@ -3139,6 +3143,27 @@ public class GridConfiguration {
      */
     public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
+    }
+
+    /**
+     * Gets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @return Pre-configured event listeners map.
+     * @see GridEventType
+     */
+    public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
+        return lsnrs;
+    }
+
+    /**
+     * Sets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @param lsnrs Pre-configured event listeners map.
+     */
+    public void setLocalEventListeners(Map<GridPredicate<? extends GridEvent>, int[]> lsnrs) {
+        this.lsnrs = lsnrs;
     }
 
     /**

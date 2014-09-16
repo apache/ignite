@@ -15,8 +15,8 @@ import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.concurrent.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 
 /**
@@ -89,22 +89,22 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
             assert info != null;
 
             GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info) {
-                @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
+                @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
                     if (log.isDebugEnabled())
                         log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +
                                 "waitTime=" + waitTime() + ", execTime=" + executionTime() + ']');
 
                     finalExecutedTasks.remove(this);
 
-                    jobTracker.onTaskFinished(info, new GridHadoopTaskStatus(state, err));
+                    jobTracker.onTaskFinished(info, status);
                 }
 
-                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info) throws GridException {
-                    return ctx.shuffle().input(info);
+                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext taskCtx) throws GridException {
+                    return ctx.shuffle().input(taskCtx);
                 }
 
-                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info) throws GridException {
-                    return ctx.shuffle().output(info);
+                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext taskCtx) throws GridException {
+                    return ctx.shuffle().output(taskCtx);
                 }
             };
 

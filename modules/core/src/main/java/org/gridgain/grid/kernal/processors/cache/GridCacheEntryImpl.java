@@ -255,7 +255,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
-        return peek0(modes, CU.<K, V>empty(), ctx.tm().localTxx());
+        return peek0(modes, CU.<K, V>empty(), ctx.atomic() ? null : ctx.tm().localTxx());
     }
 
     /**

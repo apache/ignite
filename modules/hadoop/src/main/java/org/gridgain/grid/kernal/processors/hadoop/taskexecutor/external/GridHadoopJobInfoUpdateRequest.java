@@ -10,8 +10,11 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Job info update request.
@@ -21,13 +24,23 @@ public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
     private static final long serialVersionUID = 0L;
 
     /** Job ID. */
+    @GridToStringInclude
     private GridHadoopJobId jobId;
 
     /** Job phase. */
+    @GridToStringInclude
     private GridHadoopJobPhase jobPhase;
 
     /** Reducers addresses. */
+    @GridToStringInclude
     private GridHadoopProcessDescriptor[] reducersAddrs;
+
+    /**
+     * Constructor required by {@link Externalizable}.
+     */
+    public GridHadoopJobInfoUpdateRequest() {
+        // No-op.
+    }
 
     /**
      * @param jobId Job ID.
@@ -36,6 +49,8 @@ public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
      */
     public GridHadoopJobInfoUpdateRequest(GridHadoopJobId jobId, GridHadoopJobPhase jobPhase,
         GridHadoopProcessDescriptor[] reducersAddrs) {
+        assert jobId != null;
+
         this.jobId = jobId;
         this.jobPhase = jobPhase;
         this.reducersAddrs = reducersAddrs;
@@ -60,5 +75,27 @@ public class GridHadoopJobInfoUpdateRequest implements GridHadoopMessage {
      */
     public GridHadoopProcessDescriptor[] reducersAddresses() {
         return reducersAddrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        jobId.writeExternal(out);
+
+        out.writeObject(jobPhase);
+        U.writeArray(out, reducersAddrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = new GridHadoopJobId();
+        jobId.readExternal(in);
+
+        jobPhase = (GridHadoopJobPhase)in.readObject();
+        reducersAddrs = (GridHadoopProcessDescriptor[])U.readArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopJobInfoUpdateRequest.class, this);
     }
 }

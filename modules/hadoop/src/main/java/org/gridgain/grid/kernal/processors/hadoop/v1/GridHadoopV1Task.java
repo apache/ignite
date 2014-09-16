@@ -12,10 +12,11 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.GridHadoopTaskCancelledException;
-import org.jetbrains.annotations.Nullable;
+import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.jetbrains.annotations.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.text.*;
 
 /**
@@ -58,7 +59,7 @@ public abstract class GridHadoopV1Task extends GridHadoopTask {
      * @return Collector.
      * @throws IOException In case of IO exception.
      */
-    protected GridHadoopV1OutputCollector collector(JobConf jobConf, GridHadoopTaskContext taskCtx,
+    protected GridHadoopV1OutputCollector collector(JobConf jobConf, GridHadoopV2TaskContext taskCtx,
         boolean directWrite, @Nullable String fileName, TaskAttemptID attempt) throws IOException {
         GridHadoopV1OutputCollector collector = new GridHadoopV1OutputCollector(jobConf, taskCtx, directWrite,
             fileName, attempt) {

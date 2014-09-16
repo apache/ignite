@@ -37,9 +37,6 @@ public class GridH2IndexingSpiTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridH2IndexingSpiOffheapStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridH2IndexingSpiOffheapSelfTest.class));
 
-        // Result set iterator.
-        suite.addTest(new TestSuite(GridH2ResultSetIteratorSelfTest.class));
-
         // Index rebuilding.
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
 

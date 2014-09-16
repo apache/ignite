@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
@@ -36,16 +37,17 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
-        throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
         OutputFormat outputFormat = null;
         Exception err = null;
 
+        JobContextImpl jobCtx = taskCtx.jobContext();
+
         try {
+            outputFormat = reduce || !taskCtx.job().info().hasReducer() ? prepareWriter(jobCtx) : null;
+
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
                 jobCtx.getConfiguration());
-
-            outputFormat = reduce || !jobImpl.info().hasReducer() ? prepareWriter(jobCtx) : null;
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));

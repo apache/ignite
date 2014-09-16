@@ -14,11 +14,11 @@ import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Multimap for hadoop intermediate results.
  */
+@SuppressWarnings("PublicInnerClass")
 public interface GridHadoopMultimap extends AutoCloseable {
     /**
      * Incrementally visits all the keys and values in the map.
@@ -30,17 +30,19 @@ public interface GridHadoopMultimap extends AutoCloseable {
     public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException;
 
     /**
+     * @param ctx Task context.
      * @return Adder.
      * @throws GridException If failed.
      */
-    public Adder startAdding() throws GridException;
+    public Adder startAdding(GridHadoopTaskContext ctx) throws GridException;
 
     /**
-     * @param groupCmp Optional grouping comparator.
+     * @param taskCtx Task context.
      * @return Task input.
      * @throws GridException If failed.
      */
-    public GridHadoopTaskInput input(@Nullable Comparator<Object> groupCmp) throws GridException;
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx)
+        throws GridException;
 
     /** {@inheritDoc} */
     @Override public void close();

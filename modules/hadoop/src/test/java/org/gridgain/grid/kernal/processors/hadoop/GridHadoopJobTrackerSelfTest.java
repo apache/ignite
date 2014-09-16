@@ -155,20 +155,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testTaskWithCombinerPerMap() throws Exception {
-        checkTaskWithCombiner(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskWithCombinerPerNode() throws Exception {
-        checkTaskWithCombiner(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void checkTaskWithCombiner(boolean singleCombiner) throws Exception {
         try {
             UUID globalId = UUID.randomUUID();
 
@@ -179,8 +165,6 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             cfg.setInt(BLOCK_CNT, cnt);
 
             cfg.setClass(MRJobConfig.COMBINE_CLASS_ATTR, TestCombiner.class, Reducer.class);
-
-            cfg.setBoolean(GridHadoopJobProperty.SINGLE_COMBINER_FOR_ALL_MAPPERS.propertyName(), singleCombiner);
 
             GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
@@ -234,7 +218,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
             }
 
             assertEquals(10, maps);
-            assertEquals(singleCombiner ? 3 : 10, combines);
+            assertEquals(10, combines);
             assertEquals(1, reduces);
         }
         finally {

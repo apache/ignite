@@ -49,11 +49,6 @@ public enum GridHadoopJobProperty {
     JOB_STATUS_POLL_DELAY,
 
     /**
-     * Use single combiner for all mappers running in current process. By default is {@code false}.
-     */
-    SINGLE_COMBINER_FOR_ALL_MAPPERS,
-
-    /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
      * By default is {@code 16 * 1024}.

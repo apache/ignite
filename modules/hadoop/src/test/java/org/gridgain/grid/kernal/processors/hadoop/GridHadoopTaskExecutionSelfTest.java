@@ -252,7 +252,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        setupFileSystems(cfg);
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);

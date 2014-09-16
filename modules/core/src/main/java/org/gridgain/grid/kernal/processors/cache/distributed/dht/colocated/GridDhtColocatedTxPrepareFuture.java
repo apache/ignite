@@ -404,7 +404,8 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
                 txMapping.transactionNodes(),
                 m.last(),
                 m.lastBackups(),
-                tx.subjectId());
+                tx.subjectId(),
+                tx.taskNameHash());
 
             for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
                 assert txEntry.cached().detached() : "Expected detached entry while preparign transaction " +

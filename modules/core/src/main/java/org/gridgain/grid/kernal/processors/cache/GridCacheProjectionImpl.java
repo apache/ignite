@@ -16,12 +16,12 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -71,10 +71,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     private UUID subjId;
 
     /** */
-    private boolean portableKeys;
-
-    /** */
-    private boolean portableVals;
+    private boolean keepPortable;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -98,8 +95,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         @Nullable GridPredicate<? super GridCacheEntry<K, V>> entryFilter,
         @Nullable Set<GridCacheFlag> flags,
         @Nullable UUID subjId,
-        boolean portableKeys,
-        boolean portableVals) {
+        boolean keepPortable) {
         assert parent != null;
         assert cctx != null;
 
@@ -128,8 +124,16 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         qry = new GridCacheQueriesImpl<>(cctx, this);
 
-        this.portableKeys = portableKeys;
-        this.portableVals = portableVals;
+        this.keepPortable = keepPortable;
+    }
+
+    /**
+     * Gets cache context.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<K, V> context() {
+        return cctx;
     }
 
     /**
@@ -149,17 +153,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /**
-     * @return {@code True} if keys should be left as portables.
+     * @return Keep portable flag.
      */
-    public boolean portableKeys() {
-        return portableKeys;
+    public boolean isKeepPortable() {
+        return keepPortable;
     }
 
     /**
-     * @return {@code True} if values should be left as portables.
+     * @return {@code True} if portables should be deserialized.
      */
-    public boolean portableValues() {
-        return portableVals;
+    public boolean deserializePortables() {
+        return !keepPortable;
     }
 
     /**
@@ -367,7 +371,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         A.notNull(subjId, "subjId");
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, portableKeys, portableVals);
+            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -389,6 +393,15 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
+        if (!keepPortable && (GridPortableObject.class.isAssignableFrom(keyType) ||
+            GridPortableObject.class.isAssignableFrom(valType)))
+            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
+                "Use keepPortable() method instead.");
+
+        if (keepPortable && (!U.isPortableOrCollectionType(keyType) || !U.isPortableOrCollectionType(valType)))
+            throw new IllegalStateException("Failed to create typed cache projection. If keepPortable() was " +
+                "called, projection can work only with portable classes (see GridPortables JavaDoc for details).");
+
         if (cctx.deploymentEnabled()) {
             try {
                 cctx.deploy().registerClasses(keyType, valType);
@@ -405,8 +418,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
             flags,
             subjId,
-            GridPortableObject.class.isAssignableFrom(keyType),
-            GridPortableObject.class.isAssignableFrom(valType));
+            keepPortable);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
@@ -431,7 +443,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, portableKeys, portableVals);
+            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -455,7 +467,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            filter, flags, subjId, portableKeys, portableVals);
+            filter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -475,7 +487,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, portableKeys, portableVals);
+            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -494,9 +506,30 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, portableKeys, portableVals);
+            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
+        if (cctx.portableEnabled()) {
+            GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+                (GridCacheProjection<K1, V1>)this,
+                (GridCacheContext<K1, V1>)cctx,
+                (GridBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
+                (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
+                flags,
+                subjId,
+                true);
+
+            return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
+        }
+        else
+            return new GridCacheProxyImpl<>(
+                (GridCacheContext<K1, V1>)cctx,
+                (GridCacheProjectionEx<K1, V1>)this,
+                (GridCacheProjectionImpl<K1, V1>)this);
     }
 
     /** {@inheritDoc} */
@@ -582,7 +615,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V get(K key) throws GridException {
-        return cache.get(key, !portableVals, entryFilter(false));
+        return cache.get(key, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -593,7 +626,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> getAsync(K key) {
-        return cache.getAsync(key, !portableVals, entryFilter(false));
+        return cache.getAsync(key, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -648,12 +681,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
-        return cache.getAll(keys, !portableVals, entryFilter(false));
+        return cache.getAll(keys, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, !portableVals, entryFilter(false));
+        return cache.getAllAsync(keys, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -894,14 +927,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<?, ?> forPortables() {
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, portableKeys, true);
-
-        return new GridCacheProxyImpl<>(cctx, prj, prj);
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
         // TODO pass entry filter.
         return cache.entrySet(part);
@@ -988,6 +1013,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public void globalClearAll() throws GridException {
         cache.globalClearAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalClearAll(long timeout) throws GridException {
+        cache.globalClearAll(timeout);
     }
 
     /** {@inheritDoc} */
@@ -1258,8 +1288,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         U.writeCollection(out, flags);
 
-        out.writeBoolean(portableKeys);
-        out.writeBoolean(portableVals);
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -1279,8 +1308,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         qry = new GridCacheQueriesImpl<>(cctx, this);
 
-        portableKeys = in.readBoolean();
-        portableVals = in.readBoolean();
+        keepPortable = in.readBoolean();
     }
 
     /** {@inheritDoc} */

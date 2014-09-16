@@ -1369,7 +1369,7 @@ public class GridHadoopExternalCommunication {
      * Process ID message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class ProcessHandshakeMessage implements GridHadoopMessage, Externalizable {
+    public static class ProcessHandshakeMessage implements GridHadoopMessage {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1403,6 +1403,11 @@ public class GridHadoopExternalCommunication {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             procDesc = (GridHadoopProcessDescriptor)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ProcessHandshakeMessage.class, this);
         }
     }
 }

@@ -299,6 +299,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
+        return delegate.keepPortable();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         return delegate.isEmpty();
     }
@@ -1077,18 +1082,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<?, ?> forPortables() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.forPortables();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> primaryEntrySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1265,7 +1258,19 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll();
+            delegate.globalClearAll(0);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalClearAll(long timeout) throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.globalClearAll(timeout);
         }
         finally {
             gate.leave(prev);

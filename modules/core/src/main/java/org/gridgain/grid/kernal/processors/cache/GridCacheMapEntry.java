@@ -34,7 +34,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -155,6 +154,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         this.cctx = cctx;
 
         ttlAndExpireTimeExtras(ttl, toExpireTime(ttl));
+
+        if (cctx.portableEnabled())
+            val = (V)cctx.kernalContext().portable().detachPortable(val);
 
         synchronized (this) {
             value(val, null);
@@ -471,10 +473,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     long delta = e.expireTime() == 0 ? 0 : e.expireTime() - U.currentTimeMillis();
 
                     if (delta >= 0) {
-                        // Set unswapped value.
-                        update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.version());
+                        V val = e.value();
 
-                        return e.value();
+                        if (cctx.portableEnabled())
+                            val = (V)cctx.kernalContext().portable().detachPortable(val);
+
+                        // Set unswapped value.
+                        update(val, e.valueBytes(), e.expireTime(), e.ttl(), e.version());
+
+                        return val;
                     }
                     else
                         clearIndex(e.value());
@@ -582,6 +589,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                                 long expTime = toExpireTime(ttl);
 
+                                // Detach value before index update.
+                                if (cctx.portableEnabled())
+                                    val = (V)cctx.kernalContext().portable().detachPortable(val);
+
                                 updateIndex(val, null, expTime, ver, prev);
 
                                 // Don't change version for read-through.
@@ -607,24 +618,26 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected V readThrough(@Nullable GridCacheTxEx<K, V> tx, K key, boolean reload,
-        GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws GridException {
         return cctx.store().loadFromStore(tx, key);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public final V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap,
         boolean readThrough, boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
-        UUID subjId, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
-        GridCacheFilterFailedException {
+        UUID subjId, Object transformClo, String taskName, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException,
+        GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
-        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, subjId, filter);
+        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, subjId, transformClo,
+            taskName, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments", "TooBroadScope"})
     private V innerGet0(GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough, boolean evt, boolean failFast,
-        boolean unmarshal, boolean updateMetrics, UUID subjId, GridPredicate<GridCacheEntry<K, V>>[] filter)
+        boolean unmarshal, boolean updateMetrics, UUID subjId, Object transformClo, String taskName,
+        GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -751,7 +764,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_EXPIRED, null, false, expiredVal,
-                    expiredVal != null || hasOldBytes, subjId);
+                    expiredVal != null || hasOldBytes, subjId, null, taskName);
 
                 // No more notifications.
                 evt = false;
@@ -759,7 +772,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                 cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null, old,
-                    hasOldBytes || old != null, subjId);
+                    hasOldBytes || old != null, subjId,
+                    transformClo != null ? transformClo.getClass().getName() : null, taskName);
 
                 // No more notifications.
                 evt = false;
@@ -782,7 +796,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return ret;
 
             // Try again (recursion).
-            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId, filter);
+            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId,
+                transformClo, taskName, filter);
         }
 
         boolean loadedFromStore = false;
@@ -800,7 +815,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            ret = readThrough(tx0, key, false, filter, subjId);
+            ret = readThrough(tx0, key, false, filter, subjId, taskName);
 
             loadedFromStore = true;
         }
@@ -815,19 +830,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 match = true;
 
                 if (ret != null) {
+                    // Detach value before index update.
+                    if (cctx.portableEnabled())
+                        ret = (V)cctx.kernalContext().portable().detachPortable(ret);
+
                     GridCacheVersion nextVer = nextVersion();
 
                     V prevVal = rawGetOrUnmarshalUnlocked();
 
                     long expTime = toExpireTime(ttl);
 
-                    if (loadedFromStore) {
+                    if (loadedFromStore)
                         // Update indexes before actual write to entry.
-                        if (ret != null)
-                            updateIndex(ret, null, expTime, nextVer, prevVal);
-                        else
-                            clearIndex(prevVal);
-                    }
+                        updateIndex(ret, null, expTime, nextVer, prevVal);
 
                     // Don't change version for read-through.
                     update(ret, null, expTime, ttl, nextVer);
@@ -838,7 +853,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null,
-                        old, hasOldBytes, subjId);
+                        old, hasOldBytes, subjId, transformClo != null ? transformClo.getClass().getName() : null,
+                        taskName);
             }
         }
 
@@ -846,7 +862,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return ret;
 
         // Try again (recursion).
-        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId, filter);
+        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, subjId,
+            transformClo, taskName, filter);
     }
 
     /** {@inheritDoc} */
@@ -870,9 +887,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             wasNew = isNew();
         }
 
+        String taskName = cctx.kernalContext().job().currentTaskName();
+
         // Check before load.
         if (cctx.isAll(this, filter)) {
-            V ret = readThrough(null, key, true, filter, cctx.localNodeId());
+            V ret = readThrough(null, key, true, filter, cctx.localNodeId(), taskName);
 
             boolean touch = false;
 
@@ -881,7 +900,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     long ttl = ttlExtras();
 
                     // Generate new version.
-                    GridCacheVersion nextVer = nextVersion();
+                    GridCacheVersion nextVer = cctx.versions().nextForLoad(ver);
 
                     // If entry was loaded during read step.
                     if (wasNew && !isNew())
@@ -895,6 +914,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         V old = rawGetOrUnmarshalUnlocked();
 
                         long expTime = toExpireTime(ttl);
+
+                        // Detach value before index update.
+                        if (cctx.portableEnabled())
+                            ret = (V)cctx.kernalContext().portable().detachPortable(ret);
 
                         // Update indexes.
                         if (ret != null) {
@@ -962,7 +985,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException {
         V old;
 
@@ -1032,6 +1056,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             long expireTime = drExpireTime < 0L ? toExpireTime(ttl) : drExpireTime;
 
+            // Detach value before index update.
+            if (cctx.portableEnabled())
+                val = (V)cctx.kernalContext().portable().detachPortable(val);
+
             // Update index inside synchronization since it can be updated
             // in load methods without actually holding entry lock.
             if (val != null || valBytes != null) {
@@ -1052,7 +1080,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                 cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(),
-                    newVer, EVT_CACHE_OBJECT_PUT, val, val != null, old, old != null || hasValueUnlocked(), subjId);
+                    newVer, EVT_CACHE_OBJECT_PUT, val, val != null, old, old != null || hasValueUnlocked(),
+                    subjId, null, taskName);
 
             GridCacheMode mode = cctx.config().getCacheMode();
 
@@ -1090,7 +1119,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
@@ -1192,7 +1222,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
                     cctx.events().addEvent(partition(), key, evtNodeId, tx == null ? null : tx.xid(), newVer,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hasValueUnlocked(), subjId);
+                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hasValueUnlocked(), subjId, null,
+                        taskName);
 
                 GridCacheMode mode = cctx.config().getCacheMode();
 
@@ -1263,7 +1294,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean metrics,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         boolean intercept,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
@@ -1294,7 +1326,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
             if (needVal && old == null) {
-                old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
+                old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
+
+                // Detach value before index update.
+                if (cctx.portableEnabled())
+                    old = (V)cctx.kernalContext().portable().detachPortable(old);
+
+                if (old != null)
+                    updateIndex(old, null, expireTime(), ver, null);
+                else
+                    clearIndex(null);
 
                 update(old, null, 0, 0, ver);
             }
@@ -1311,10 +1352,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (metrics && needVal)
                 cctx.cache().metrics0().onRead(old != null);
 
+            String transformCloClsName = null;
+
             V updated;
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
+                transformCloClsName = writeObj.getClass().getName();
+
                 GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
 
                 assert transform != null;
@@ -1345,6 +1390,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
+                // Detach value before index update.
+                if (cctx.portableEnabled())
+                    updated = (V)cctx.kernalContext().portable().detachPortable(updated);
+
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().putToStore(null, key, updated, ver);
@@ -1355,10 +1404,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(updated, null, newExpireTime, newTtl, ver);
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                if (evt) {
                     cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                        (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
-                        old != null || hadVal, subjId);
+                        (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                        old != null || hadVal, subjId, transformCloClsName, taskName);
+
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                            (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                            old != null || hadVal, subjId, null, taskName);
+                }
             }
             else {
                 if (writeThrough)
@@ -1371,9 +1426,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(null, null, 0, 0, ver);
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
-                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                            (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformCloClsName, taskName);
+
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+                            EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId, null, taskName);
+                }
 
                 res = hadVal;
             }
@@ -1418,7 +1480,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable GridCacheVersion drVer,
         boolean drResolve,
         boolean intercept,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        String taskName
     ) throws GridException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
@@ -1449,6 +1512,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             boolean drNeedResolve = false;
 
+            Object transformClo = null;
+
             if (drResolve) {
                 GridCacheVersion oldDrVer = version().drVersion();
 
@@ -1461,8 +1526,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (writeObj == null && valBytes != null)
                         writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
 
-                    if (op == TRANSFORM)
-                        writeObj = ((GridClosure<V, V>)writeObj).apply(oldVal);
+                    if (op == TRANSFORM) {
+                        transformClo = writeObj;
+
+                        writeObj = ((GridClosure<V, V>) writeObj).apply(oldVal);
+                    }
 
                     K k = key();
 
@@ -1563,7 +1631,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
             if (needVal && old == null) {
-                old = readThrough(null, key, false, CU.<K, V>empty(), subjId);
+                old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
+
+                // Detach value before index update.
+                if (cctx.portableEnabled())
+                    old = (V)cctx.kernalContext().portable().detachPortable(old);
+
+                if (old != null)
+                    updateIndex(old, null, expireTime(), ver, null);
+                else
+                    clearIndex(null);
 
                 update(old, null, 0, 0, ver);
 
@@ -1585,6 +1662,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
+                transformClo = writeObj;
+
                 GridClosure<V, V> transform = (GridClosure<V, V>) writeObj;
 
                 updated = transform.apply(old);
@@ -1640,6 +1719,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     // Do not change size;
                 }
 
+                if (cctx.portableEnabled())
+                    updated = (V)cctx.kernalContext().portable().detachPortable(updated);
+
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
                 updateIndex(updated, valBytes, newExpireTime, newVer, old);
@@ -1650,10 +1732,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 recordNodeId(affNodeId);
 
-                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
-                    cctx.events().addEvent(partition(), key, evtNodeId, null,
-                        newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
-                        old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformClo.getClass().getName(), taskName);
+
+                    if (newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                            old != null || hadVal, subjId, null, taskName);
+                }
             }
             else {
                 if (intercept) {
@@ -1701,9 +1790,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, null, null, newVer);
 
-                if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
-                    cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,
-                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId);
+                if (evt) {
+                    if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null,
+                            newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
+                            old != null || hadVal, subjId, transformClo.getClass().getName(), taskName);
+
+                    if (newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                        cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,
+                            EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal, subjId, null, taskName);
+                }
 
                 res = hadVal;
 
@@ -2298,9 +2394,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        if (cctx.peekModeExcluded(mode))
-            return null;
-
         switch (mode) {
             case TX:
                 return peekTx(failFast, filter, tx);
@@ -2365,6 +2458,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // in load methods without actually holding entry lock.
             long expireTime = expireTimeExtras();
 
+            if (cctx.portableEnabled())
+                val = (V)cctx.kernalContext().portable().detachPortable(val);
+
             updateIndex(val, null, expireTime, nextVer, old);
 
             update(val, null, expireTime, ttlExtras(), nextVer);
@@ -2406,17 +2502,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, GridException {
-        if (!cctx.peekModeExcluded(TX)) {
-            GridTuple<V> peek = peekTx(failFast, filter, tx);
+        GridTuple<V> peek = peekTx(failFast, filter, tx);
 
-            // If transaction has value (possibly null, which means value is to be deleted).
-            if (peek != null)
-                return peek;
-        }
+        // If transaction has value (possibly null, which means value is to be deleted).
+        if (peek != null)
+            return peek;
 
         long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        return !cctx.peekModeExcluded(GLOBAL) ? peekGlobal(failFast, topVer, filter) : null;
+        return peekGlobal(failFast, topVer, filter);
     }
 
     /**
@@ -2631,6 +2725,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isNew() || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? toExpireTime(ttl) : expireTime;
 
+                if (cctx.portableEnabled())
+                    val = (V)cctx.kernalContext().portable().detachPortable(val);
+
                 if (val != null || valBytes != null)
                     updateIndex(val, valBytes, expTime, ver, null);
 
@@ -2674,6 +2771,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         checkObsolete();
 
         if (isNew()) {
+            if (cctx.portableEnabled())
+                val = (V)cctx.kernalContext().portable().detachPortable(val);
+
             // Version does not change for load ops.
             update(unswapped.value(),
                 unswapped.valueBytes(),
@@ -2703,6 +2803,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 long ttl = ttlExtras();
 
                 long expTime = toExpireTime(ttl);
+
+                // Detach value before index update.
+                if (cctx.portableEnabled())
+                    val = (V)cctx.kernalContext().portable().detachPortable(val);
 
                 if (val != null) {
                     updateIndex(val, null, expTime, newVer, old);
@@ -2962,7 +3066,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED))
                         cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, EVT_CACHE_OBJECT_EXPIRED,
-                            null, false, expiredVal, expiredVal != null || hasOldBytes, null);
+                            null, false, expiredVal, expiredVal != null || hasOldBytes, null, null, null);
                 }
 
 
@@ -3388,32 +3492,32 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMeta(String name, V val) {
+    @Nullable @Override public <V1> V1 addMeta(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
             ensureData(1);
 
-            return (V) attributeDataExtras().put(name, val);
+            return (V1)attributeDataExtras().put(name, val);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V meta(String name) {
+    @Nullable @Override public <V1> V1 meta(String name) {
         A.notNull(name, "name");
 
         synchronized (this) {
             GridLeanMap<String, Object> attrData = attributeDataExtras();
 
-            return attrData == null ? null : (V)attrData.get(name);
+            return attrData == null ? null : (V1)attrData.get(name);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Nullable
-    @Override public <V> V removeMeta(String name) {
+    @Override public <V1> V1 removeMeta(String name) {
         A.notNull(name, "name");
 
         synchronized (this) {
@@ -3422,7 +3526,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (attrData == null)
                 return null;
 
-            V old = (V)attrData.remove(name);
+            V1 old = (V1)attrData.remove(name);
 
             if (attrData.isEmpty())
                 attributeDataExtras(null);
@@ -3433,7 +3537,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> boolean removeMeta(String name, V val) {
+    @Override public <V1> boolean removeMeta(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
@@ -3442,7 +3546,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (attrData == null)
                 return false;
 
-            V old = (V)attrData.get(name);
+            V1 old = (V1)attrData.get(name);
 
             if (old != null && old.equals(val)) {
                 attrData.remove(name);
@@ -3459,7 +3563,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public synchronized  <V> Map<String, V> allMeta() {
+    @Override public synchronized  <V1> Map<String, V1> allMeta() {
         GridLeanMap<String, Object> attrData = attributeDataExtras();
 
         if (attrData == null)
@@ -3467,10 +3571,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         if (attrData.size() <= 5)
             // This is a singleton unmodifiable map.
-            return (Map<String, V>)attrData;
+            return (Map<String, V1>)attrData;
 
         // Return a copy.
-        return new HashMap<>((Map<String, V>)attrData);
+        return new HashMap<>((Map<String, V1>)attrData);
     }
 
     /** {@inheritDoc} */
@@ -3479,7 +3583,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
+    @Override public <V1> boolean hasMeta(String name, V1 val) {
         A.notNull(name, "name");
 
         Object v = meta(name);
@@ -3489,11 +3593,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+    @Nullable @Override public <V1> V1 putMetaIfAbsent(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 return addMeta(name, val);
@@ -3504,11 +3608,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "ClassReferencesSubclass"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+    @Nullable @Override public <V1> V1 putMetaIfAbsent(String name, Callable<V1> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 try {
@@ -3524,11 +3628,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
+    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null)
                 addMeta(name, v = val);
@@ -3539,11 +3643,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (this) {
-            V v = meta(name);
+            V1 v = meta(name);
 
             if (v == null && c != null)
                 try {
@@ -3559,12 +3663,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+    @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
         A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
 
         synchronized (this) {
             if (hasMeta(name)) {
-                V val = this.<V>meta(name);
+                V1 val = this.<V1>meta(name);
 
                 if (val != null && val.equals(curVal)) {
                     addMeta(name, newVal);

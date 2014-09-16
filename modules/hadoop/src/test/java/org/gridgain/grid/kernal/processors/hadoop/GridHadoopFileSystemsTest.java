@@ -56,7 +56,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
     private void testFileSystem(final URI uri) throws Exception {
         final Configuration cfg = new Configuration();
 
-        setupFileSytems(cfg);
+        setupFileSystems(cfg);
 
         cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY,
                 new Path(new Path(uri), "user/" + System.getProperty("user.name")).toString());

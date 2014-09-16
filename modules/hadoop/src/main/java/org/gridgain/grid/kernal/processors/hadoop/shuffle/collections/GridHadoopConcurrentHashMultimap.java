@@ -63,7 +63,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         int res = keys.get();
 
         for (AdderImpl adder : adders)
-            res += adder.localKeys.get();
+            res += adder.locKeys.get();
 
         return res;
     }
@@ -71,21 +71,22 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * @return Current table capacity.
      */
-    public int capacity() {
+    @Override public int capacity() {
         return oldTbl.length();
     }
 
     /**
      * @return Adder object.
+     * @param ctx Task context.
      */
-    @Override public Adder startAdding() throws GridException {
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
         if (state.get() == State.CLOSING)
             throw new IllegalStateException("Closed.");
 
-        return new AdderImpl();
+        return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +154,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())
@@ -166,7 +167,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
         assert s != State.REHASHING;
 
-        return new Input() {
+        return new Input(taskCtx) {
             @Override public void close() throws GridException {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
@@ -295,7 +296,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @return Value pointer.
      */
-    protected long value(long meta) {
+    @Override protected long value(long meta) {
         return mem.readLongVolatile(meta + 16);
     }
 
@@ -313,7 +314,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @return Collision pointer.
      */
-    protected long collision(long meta) {
+    @Override protected long collision(long meta) {
         return mem.readLongVolatile(meta + 24);
     }
 
@@ -321,7 +322,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param meta Meta pointer.
      * @param collision Collision pointer.
      */
-    protected void collision(long meta, long collision) {
+    @Override protected void collision(long meta, long collision) {
         assert meta != collision : meta;
 
         mem.writeLongVolatile(meta + 24, collision);
@@ -346,20 +347,23 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * Adder. Must not be shared between threads.
      */
-    public class AdderImpl extends AdderBase {
+    private class AdderImpl extends AdderBase {
         /** */
         private final Reader keyReader;
 
         /** */
-        private final AtomicInteger localKeys = new AtomicInteger();
+        private final AtomicInteger locKeys = new AtomicInteger();
 
         /** */
         private final Random rnd = new GridRandom();
 
         /**
+         * @param ctx Task context.
          * @throws GridException If failed.
          */
-        public AdderImpl() throws GridException {
+        private AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+            super(ctx);
+
             keyReader = new Reader(keySer);
 
             rehashIfNeeded(oldTbl);
@@ -394,7 +398,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
          * @param tbl Table.
          */
         private void incrementKeys(AtomicLongArray tbl) {
-            localKeys.lazySet(localKeys.get() + 1);
+            locKeys.lazySet(locKeys.get() + 1);
 
             if (rnd.nextInt(tbl.length()) < 512)
                 rehashIfNeeded(tbl);
@@ -534,7 +538,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
             if (!adders.remove(this))
                 throw new IllegalStateException();
 
-            keys.addAndGet(localKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
+            keys.addAndGet(locKeys.get()); // Here we have race and #keys() method can return wrong result but it is ok.
 
             super.close();
         }
@@ -542,7 +546,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         /**
          * Key.
          */
-        public class KeyImpl implements Key {
+        private class KeyImpl implements Key {
             /** */
             private long meta;
 
@@ -583,7 +587,17 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     /**
      * Current map state.
      */
-    private static enum State {
-        REHASHING, VISITING, READING_WRITING, CLOSING
+    private enum State {
+        /** */
+        REHASHING,
+
+        /** */
+        VISITING,
+
+        /** */
+        READING_WRITING,
+
+        /** */
+        CLOSING
     }
 }

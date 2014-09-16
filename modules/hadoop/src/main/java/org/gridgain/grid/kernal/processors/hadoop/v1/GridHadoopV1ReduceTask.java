@@ -15,7 +15,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop reduce task implementation for v1 API.
@@ -41,32 +40,37 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
+        GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
-            jobConf);
-
-        assert reducer != null;
+        JobConf jobConf = ctx.jobConf();
 
         GridHadoopTaskInput input = taskCtx.input();
 
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, taskCtx, reduce || !jobImpl.info().hasReducer(), fileName(),
+            collector = collector(jobConf, ctx, reduce || !jobImpl.info().hasReducer(), fileName(),
                 jobImpl.attemptId(info()));
 
-            try {
-                while (input.next()) {
-                    if (isCancelled())
-                        throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
+            Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
+                jobConf);
 
-                    reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+            assert reducer != null;
+
+            try {
+                try {
+                    while (input.next()) {
+                        if (isCancelled())
+                            throw new GridHadoopTaskCancelledException("Reduce task cancelled.");
+
+                        reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                    }
+                }
+                finally {
+                    reducer.close();
                 }
             }
             finally {
-                U.closeQuiet(reducer);
-
                 collector.closeWriter();
             }
 

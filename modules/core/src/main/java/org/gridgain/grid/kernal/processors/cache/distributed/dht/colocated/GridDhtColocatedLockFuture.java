@@ -700,15 +700,15 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() ? tx.groupLockKey() : null,
                                         inTx() && tx.partitionLock(),
-                                        inTx() ? tx.subjectId() : null);
+                                        inTx() ? tx.subjectId() : null,
+                                        inTx() ? tx.taskNameHash() : 0);
 
                                     mapping.request(req);
                                 }
 
                                 distributedKeys.add(key);
 
-                                if (cctx.config().isOnePhaseCommitAllowed() && inTx() && implicitTx() &&
-                                    mappings.size() == 1) {
+                                if (cctx.config().isOnePhaseCommitAllowed() && inTx() && implicitTx() && mappings.size() == 1 && !cctx.isStoreEnabled()) {
                                     tx.onePhaseCommit(true);
 
                                     req.onePhaseCommit(true);
@@ -958,7 +958,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (tx != null) {
                 tx.addKeyMapping(cctx.localNode(), distributedKeys);
 
-                if (cctx.config().isOnePhaseCommitAllowed() && tx.implicit())
+                if (cctx.config().isOnePhaseCommitAllowed() && tx.implicit() && !cctx.isStoreEnabled())
                     tx.onePhaseCommit(true);
             }
 
@@ -1245,7 +1245,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                         cctx.events().addEvent(cctx.affinity().partition(k), k, tx, null,
                             EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                            null, false, CU.subjectId(tx, cctx));
+                            null, false, CU.subjectId(tx, cctx), null, tx == null ? null : tx.resolveTaskName());
 
                     i++;
                 }

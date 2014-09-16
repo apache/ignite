@@ -62,15 +62,15 @@ public class GridHadoopV1Splitter {
     }
 
     /**
-     * @param cls Input split class.
+     * @param clsName Input split class name.
      * @param in Input stream.
      * @param hosts Optional hosts.
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.
      * @throws GridException If failed.
      */
-    @Nullable public static GridHadoopFileBlock readFileBlock(Class<?> cls, FSDataInputStream in,
+    @Nullable public static GridHadoopFileBlock readFileBlock(String clsName, FSDataInputStream in,
         @Nullable String[] hosts) throws GridException {
-        if (FileSplit.class != cls)
+        if (!FileSplit.class.getName().equals(clsName))
             return null;
 
         FileSplit split = U.newInstance(FileSplit.class);

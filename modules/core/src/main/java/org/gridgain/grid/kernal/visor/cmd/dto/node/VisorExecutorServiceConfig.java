@@ -65,8 +65,10 @@ public class VisorExecutorServiceConfig implements Serializable {
 
         GridClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
 
-        cfg.restExecutorService(compactClass(cc.getRestExecutorService()));
-        cfg.restExecutorServiceShutdown(cc.isRestExecutorServiceShutdown());
+        if (cc != null) {
+            cfg.restExecutorService(compactClass(cc.getRestExecutorService()));
+            cfg.restExecutorServiceShutdown(cc.isRestExecutorServiceShutdown());
+        }
 
         return cfg;
     }

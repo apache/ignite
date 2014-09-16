@@ -266,20 +266,23 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             }
 
             if (initSecondary) {
-                if (paths.secondaryConfigurationPath() == null)
+                Map<String, String> props = paths.properties();
+
+                String secUri = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
+                String secConfPath = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
+
+                if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
                         "path is not provided.");
 
-                if (paths.secondaryUri() == null)
+                if (secUri == null)
                     throw new IOException("Failed to connect to the secondary file system because URI is not " +
                         "provided.");
 
-                String secondaryConfPath = paths.secondaryConfigurationPath();
-
                 try {
-                    secondaryUri = new URI(paths.secondaryUri());
+                    secondaryUri = new URI(secUri);
 
-                    URL secondaryCfgUrl = U.resolveGridGainUrl(secondaryConfPath);
+                    URL secondaryCfgUrl = U.resolveGridGainUrl(secConfPath);
 
                     Configuration conf = new Configuration();
 
@@ -294,15 +297,14 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 }
                 catch (URISyntaxException ignore) {
                     if (!mgmt)
-                        throw new IOException("Failed to resolve secondary file system URI: " + paths.secondaryUri());
+                        throw new IOException("Failed to resolve secondary file system URI: " + secUri);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect).");
                 }
                 catch (IOException e) {
                     if (!mgmt)
-                        throw new IOException("Failed to connect to the secondary file system: " +
-                            paths.secondaryUri(), e);
+                        throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect): " + e.getMessage());
@@ -425,8 +427,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 secondaryFs.setPermission(toSecondary(p), perm);
             }
             else if (rmtClient.update(convert(p), permission(perm)) == null) {
-                    throw new IOException("Failed to set file permission (file not found?)" +
-                        " [path=" + p + ", perm=" + perm + ']');
+                throw new IOException("Failed to set file permission (file not found?)" +
+                    " [path=" + p + ", perm=" + perm + ']');
             }
         }
         finally {

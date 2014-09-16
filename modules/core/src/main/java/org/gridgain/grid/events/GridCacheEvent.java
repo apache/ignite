@@ -116,6 +116,14 @@ public class GridCacheEvent extends GridEventAdapter {
     @GridToStringInclude
     private UUID subjId;
 
+    /** Closure class name. */
+    @GridToStringInclude
+    private String cloClsName;
+
+    /** Task name if update was initiated within task execution. */
+    @GridToStringInclude
+    private String taskName;
+
     /**
      * Constructs cache event.
      *
@@ -135,10 +143,12 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param oldVal Old value.
      * @param hasOldVal Flag indicating whether old value is present in case if we
      *      don't have it in deserialized form.
+     * @param subjId Subject ID.
+     * @param cloClsName Closure class name.
      */
     public GridCacheEvent(String cacheName, GridNode node, @Nullable GridNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
-        Object oldVal, boolean hasOldVal, UUID subjId) {
+        Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNode = evtNode;
@@ -152,6 +162,8 @@ public class GridCacheEvent extends GridEventAdapter {
         this.oldVal = oldVal;
         this.hasOldVal = hasOldVal;
         this.subjId = subjId;
+        this.cloClsName = cloClsName;
+        this.taskName = taskName;
     }
 
     /**
@@ -274,6 +286,24 @@ public class GridCacheEvent extends GridEventAdapter {
         return subjId;
     }
 
+    /**
+     * Gets closure class name (applicable only for TRANSFORM operations).
+     *
+     * @return Closure class name.
+     */
+    @Nullable public String closureClassName() {
+        return cloClsName;
+    }
+
+    /**
+     * Gets task name if cache event was caused by an operation initiated within task execution.
+     *
+     * @return Task name.
+     */
+    @Nullable public String taskName() {
+        return taskName;
+    }
+
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
         return name() + ": near=" + near + ", key=" + key + ", hasNewVal=" + hasNewVal + ", hasOldVal=" + hasOldVal +
@@ -281,6 +311,7 @@ public class GridCacheEvent extends GridEventAdapter {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public String toString() {
         return S.toString(GridCacheEvent.class, this,
             "nodeId8", U.id8(node().id()),

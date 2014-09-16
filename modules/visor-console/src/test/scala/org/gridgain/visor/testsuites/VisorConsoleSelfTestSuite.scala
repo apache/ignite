@@ -34,7 +34,7 @@ import org.gridgain.visor.commands.ping.VisorPingCommandSpec
 import org.gridgain.visor.commands.start.VisorStartCommandSpec
 import org.gridgain.visor.commands.tasks.VisorTasksCommandSpec
 import org.gridgain.visor.commands.top.VisorTopologyCommandSpec
-import org.gridgain.visor.{VisorScalarSpec, VisorTextTableSpec}
+import org.gridgain.visor.VisorTextTableSpec
 import org.junit.runner.RunWith
 import org.scalatest.Suites
 import org.scalatest.junit.JUnitRunner
@@ -44,7 +44,6 @@ import org.scalatest.junit.JUnitRunner
  */
 @RunWith(classOf[JUnitRunner])
 class VisorConsoleSelfTestSuite extends Suites (
-    new VisorScalarSpec,
     new VisorTextTableSpec,
     new VisorAckCommandSpec,
     new VisorAlertCommandSpec,

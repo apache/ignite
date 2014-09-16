@@ -35,6 +35,7 @@
         <module>modules/extdata/uri</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
+        <module>modules/ggfs</module>
         <module>modules/clients</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
@@ -73,6 +74,23 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
+                        <id>dependencies-visor-trial</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-visor.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin/include</outputDirectory>
+                            <finalName>visorui</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>core-jar</id>
                         <phase>package</phase>
                         <goals>
@@ -83,7 +101,7 @@
                                 <descriptor>assembly/core-jar.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>gridgain-${gridgain.version}</finalName>
+                            <finalName>gridgain-core-${gridgain.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
@@ -100,6 +118,8 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+                <module>modules/visor-trial</module>
             </modules>
         </profile>
 

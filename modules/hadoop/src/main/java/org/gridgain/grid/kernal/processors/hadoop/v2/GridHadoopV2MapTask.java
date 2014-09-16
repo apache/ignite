@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.map.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
@@ -30,19 +31,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
-        throws GridException {
-        Mapper mapper;
-        InputFormat inFormat;
-
-        try {
-            mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), jobCtx.getConfiguration());
-            inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(), jobCtx.getConfiguration());
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException(e);
-        }
-
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
         GridHadoopInputSplit split = info().inputSplit();
 
         InputSplit nativeSplit;
@@ -53,21 +42,30 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
             nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), null);
         }
         else
-            nativeSplit = (InputSplit)jobImpl.getNativeSplit(split);
+            nativeSplit = (InputSplit)taskCtx.getNativeSplit(split);
 
         assert nativeSplit != null;
 
         OutputFormat outputFormat = null;
         Exception err = null;
 
+        JobContextImpl jobCtx = taskCtx.jobContext();
+
         try {
+            InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(),
+                hadoopContext().getConfiguration());
+
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
 
             reader.initialize(nativeSplit, hadoopContext());
 
             hadoopContext().reader(reader);
 
-            outputFormat = jobImpl.info().hasCombiner() || jobImpl.info().hasReducer() ? null : prepareWriter(jobCtx);
+            GridHadoopJobInfo jobInfo = taskCtx.job().info();
+
+            outputFormat = jobInfo.hasCombiner() || jobInfo.hasReducer() ? null : prepareWriter(jobCtx);
+
+            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));

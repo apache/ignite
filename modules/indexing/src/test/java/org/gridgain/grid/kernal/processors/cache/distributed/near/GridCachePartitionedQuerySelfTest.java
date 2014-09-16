@@ -277,7 +277,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
             }
         }).get();
 
-        assert F.reduce(res, locRdc) == 1500;
+        assertEquals(1500., F.reduce(res, locRdc));
     }
 
     /**

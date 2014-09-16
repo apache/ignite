@@ -131,6 +131,47 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    public void testGetServiceByName() throws Exception {
+        String name = "serviceByName";
+
+        Grid g = randomGrid();
+
+        g.services().deployNodeSingleton(name, new DummyService()).get();
+
+        DummyService srvc = g.services().service(name);
+
+        assertNotNull(srvc);
+
+        Collection<DummyService> srvcs = g.services().services(name);
+
+        assertEquals(1, srvcs.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetServicesByName() throws Exception {
+        String name = "servicesByName";
+
+        Grid g = randomGrid();
+
+        g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3).get();
+
+        int cnt = 0;
+
+        for (int i = 0; i < nodeCount(); i++) {
+            Collection<DummyService> srvcs = grid(i).services().services(name);
+
+            if (srvcs != null)
+                cnt += srvcs.size();
+        }
+
+        assertEquals(nodeCount() * 2, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDeployOnEachNode() throws Exception {
         Grid g = randomGrid();
 
@@ -387,6 +428,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * Affinity service.
      */
     protected static class AffinityService implements GridService {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Latch. */
         private static CountDownLatch latch;
 

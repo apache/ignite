@@ -122,7 +122,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             }
 
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false, false, false);
+                new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -340,7 +340,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private GridCloseableIterator<T> iterator0() {
         try {
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false, false, false);
+                new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 

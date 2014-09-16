@@ -4,20 +4,22 @@
 
 <div style="height: 40px"></div>
 
-## 1. GridGain In-Memory Platform
+## 1. GridGain In-Memory Data Fabric
 
-GridGain’s In-Memory Computing Platform is designed to deliver uncompromised performance for the widest array of in-memory computing use cases.
+GridGain’s In-Memory Data Fabric is designed to deliver uncompromised performance for the widest array of in-memory computing use cases.
 
-Following components are included in the platform:
+Following components are included in the fabric:
 * `In-Memory High Performance Computing (HPC)` - includes distributed clustering, messaging, events, and computational features.
 * `In-Memory Data Grid` - partitioned in-memory key-value store with support for ACID transactions, off-heap memory, SQL, and more.
 * `In-Memory Streaming` - supports event workflow, rolling data windows and indexing, continuous querying, and more.
-* `In-Memory Apache Hadoop Accelerator` - accelerates Hadoop installations by providing `GridGain File System (GGFS)` - in-memory hadoop-compliant file system.
 
 Enterprise Features:
+* Portable Objects
+* Dynamic data structure changes without restarting cluster
+* Cross-language support, including Java (JVM), .NET (C#), C++
 * Datacenter replication
 * Rolling production updates
-* Local restartable store
+* Local recoverable store
 * Network segmentation protection
 * Secure authentication and Secure client sessions
 * GUI Management & Monitoring
@@ -73,17 +75,15 @@ started and what the expected outcome should be.
 GridGain provides repository for its Maven artifacts.
 
 - GridGain Open Source repository is hosted at Maven Central (no additional URL required)
-- GridGain Enterprise repository is located at http://www.gridgainsystems.com:8085/nexus/content/repositories/external
+- GridGain Enterprise repository is located at http://www.gridgainsystems.com/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
-GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition):
+GridGain Maven repository has `4` artifacts (add `'-ent'` for enterprise edition):
 
 * gridgain-hpc - contains jars and dependencies for In-Memory High Performance Computing (HPC)
 * gridgain-datagrid - contains jars and dependencies for In-Memory Data Grid
 * gridgain-streaming - contains jars and dependencies for In-Memory Streaming
-* gridgain-hadoop1 - contains jars and dependencies for In-Memory Accelerator for Hadoop (Hadoop 1.x version)
-* gridgain-hadoop2 - contains jars and dependencies for In-Memory Accelerator for Hadoop (Hadoop 2.x version)
-* gridgain-platform - contains jars and dependencies for all GridGain editions.
+* gridgain-fabric - contains jars and dependencies for all GridGain editions
 
 ### 3.2 Maven Example
 
@@ -91,7 +91,7 @@ GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition
 
     <dependency>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-platform</artifactId>
+        <artifactId>gridgain-fabric</artifactId>
         <version>${gridgain.version}</version>
         <type>pom</type>
     </dependency>
@@ -100,12 +100,12 @@ GridGain Maven repository has `6` artifacts (add `'-ent'` for enterprise edition
 
     <repository>
         <id>GridGain External Repository</id>
-        <url>http://www.gridgainsystems.com:8085/nexus/content/repositories/external</url>
+        <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
     </repository>
     ...
     <dependency>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-platform-ent</artifactId>
+        <artifactId>gridgain-fabric-ent</artifactId>
         <version>${gridgain.version}</version>
         <type>pom</type>
     </dependency>

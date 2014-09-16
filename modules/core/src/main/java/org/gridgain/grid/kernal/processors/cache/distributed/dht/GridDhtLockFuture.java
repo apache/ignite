@@ -821,7 +821,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.size() : cnt,
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
-                        inTx() ? tx.subjectId() : null);
+                        inTx() ? tx.subjectId() : null,
+                        inTx() ? tx.taskNameHash() : 0);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = dhtMapping.listIterator(); it.hasNext();) {
@@ -895,7 +896,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.size() : cnt,
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
-                        inTx() ? tx.subjectId() : null);
+                        inTx() ? tx.subjectId() : null,
+                        inTx() ? tx.taskNameHash() : 0);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = nearMapping.listIterator(); it.hasNext();) {

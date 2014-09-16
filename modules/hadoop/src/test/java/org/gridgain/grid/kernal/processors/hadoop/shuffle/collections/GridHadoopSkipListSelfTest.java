@@ -10,16 +10,12 @@
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import com.google.common.collect.*;
-import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,7 +27,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 /**
  * Skip list tests.
  */
-public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
+public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
     /**
      *
      */
@@ -78,16 +74,13 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         int mapSize = 16 << rnd.nextInt(6);
 
-        Job job = Job.getInstance();
+        GridHadoopJob job = mockJob();
 
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-        GridHadoopMultimap m = new GridHadoopSkipList(new GridHadoopV2Job(
-            new GridHadoopJobId(UUID.randomUUID(), 10), new GridHadoopDefaultJobInfo(job.getConfiguration()), log),
-            mem, ComparableComparator.getInstance());
+        GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
-        GridHadoopConcurrentHashMultimap.Adder a = m.startAdding();
+        GridHadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
@@ -103,9 +96,9 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
             a.close();
 
-            check(m, mm, vis);
+            check(m, mm, vis, taskCtx);
 
-            a = m.startAdding();
+            a = m.startAdding(taskCtx);
         }
 
 //        a.add(new IntWritable(10), new IntWritable(2));
@@ -121,9 +114,9 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis)
+    private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis, GridHadoopTaskContext taskCtx)
         throws Exception {
-        final GridHadoopTaskInput in = m.input(null);
+        final GridHadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -142,7 +135,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
             prevKey = k.get();
 
-            LinkedList<Integer> vs = new LinkedList<>();
+            Deque<Integer> vs = new LinkedList<>();
 
             Iterator<?> it = in.values();
 
@@ -156,13 +149,13 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
 
         assertEquals(mmm.size(), keys);
 
-//        assertEquals(m.keys(), keys);
+//!        assertEquals(m.keys(), keys);
 
         // Check visitor.
 
         final byte[] buf = new byte[4];
 
-        final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
+        final GridDataInput dataInput = new GridUnsafeDataInput();
 
         m.visit(false, new GridHadoopConcurrentHashMultimap.Visitor() {
             /** */
@@ -181,7 +174,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                 vis.put(key.get(), val.get());
             }
 
-            private void read(long ptr, int size, IntWritable w) {
+            private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
                 UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF, size);
@@ -215,13 +208,11 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            Job job = Job.getInstance();
+            GridHadoopJob job = mockJob();
 
-            job.setMapOutputKeyClass(IntWritable.class);
-            job.setMapOutputValueClass(IntWritable.class);
+            final GridHadoopTaskContext taskCtx = mockTaskContext(job);
 
-            final GridHadoopMultimap m = new GridHadoopSkipList(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
-                new GridHadoopDefaultJobInfo(job.getConfiguration()), log), mem, ComparableComparator.getInstance());
+            final GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 
@@ -236,7 +227,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                     IntWritable key = new IntWritable();
                     IntWritable val = new IntWritable();
 
-                    GridHadoopMultimap.Adder a = m.startAdding();
+                    GridHadoopMultimap.Adder a = m.startAdding(taskCtx);
 
                     for (int i = 0; i < 50000; i++) {
                         int k = rnd.nextInt(32000);
@@ -269,7 +260,7 @@ public class GridHadoopSkipListSelfTest  extends GridCommonAbstractTest {
                 }
             }, 3 + rnd.nextInt(27));
 
-            GridHadoopTaskInput in = m.input(null);
+            GridHadoopTaskInput in = m.input(taskCtx);
 
             int prevKey = Integer.MIN_VALUE;
 

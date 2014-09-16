@@ -36,7 +36,6 @@ public class GridHadoopV1OutputCollector implements OutputCollector {
     private final TaskAttemptID attempt;
 
     /**
-     *
      * @param jobConf Job configuration.
      * @param taskCtx Task context.
      * @param directWrite Direct write flag.
@@ -104,7 +103,7 @@ public class GridHadoopV1OutputCollector implements OutputCollector {
         if (writer != null) {
             OutputCommitter outputCommitter = jobConf.getOutputCommitter();
 
-            TaskAttemptContextImpl taskCtx = new TaskAttemptContextImpl(jobConf, attempt);
+            TaskAttemptContext taskCtx = new TaskAttemptContextImpl(jobConf, attempt);
 
             if (outputCommitter.needsTaskCommit(taskCtx))
                 outputCommitter.commitTask(taskCtx);

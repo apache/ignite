@@ -14,24 +14,20 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
-import org.gridgain.grid.product.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example that shows how to use {@link GridGgfsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
+ * GGFS: {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
+ * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsMapReduceExample {
     /**
      * Executes example.
@@ -45,7 +41,7 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
+            try (Grid g = GridGain.start("examples/config/filesystem/example-ggfs.xml")) {
                 System.out.println();
                 System.out.println(">>> GGFS map reduce example started.");
 

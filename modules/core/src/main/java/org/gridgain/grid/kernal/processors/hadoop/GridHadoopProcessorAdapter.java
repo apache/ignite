@@ -59,6 +59,15 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
     public abstract GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
 
     /**
+     * Returns Hadoop job counters.
+     *
+     * @param jobId Job ID to get counters for.
+     * @return Job counters.
+     * @throws GridException If failed.
+     */
+    public abstract GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException;
+
+    /**
      * Gets Hadoop job finish future.
      *
      * @param jobId Job ID.

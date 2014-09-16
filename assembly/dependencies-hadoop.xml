@@ -39,6 +39,7 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
+                <include>org.gridgain:gridgain-log4j</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -73,11 +74,20 @@
 
         <moduleSet>
             <includes>
+                <include>org.gridgain:gridgain-ggfs</include>
                 <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
-                <includeModuleDirectory>false</includeModuleDirectory>
+                <includeModuleDirectory>true</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>readme.txt</include>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/</outputDirectory>
@@ -104,7 +114,7 @@
 
     <files>
         <file>
-            <source>target/gridgain-${gridgain.version}.jar</source>
+            <source>target/gridgain-core-${gridgain.version}.jar</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

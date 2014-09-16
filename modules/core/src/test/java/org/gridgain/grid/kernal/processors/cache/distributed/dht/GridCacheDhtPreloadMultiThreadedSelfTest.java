@@ -13,11 +13,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -108,8 +113,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                     @Nullable @Override public Object call() throws Exception {
                         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
-                        cfg.setRestEnabled(false);
-
                         startGrid(Thread.currentThread().getName(), cfg);
 
                         return null;
@@ -151,29 +154,11 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         }
     }
 
-    /**
-     * TODO: uncomment or remove when fixed - http://atlassian.gridgain.com/jira/browse/GG-8671
-     * @throws Exception If failed.
-     */
-    public void _testRestarts() throws Exception {
-        startGrid("first");
-        startGrid("second");
-
-        cacheEnabled = false;
-
-        for (int i = 0; i < 5000; i++) {
-            try (Grid g = startGrid(i)) {
-                assertEquals(3, g.nodes().size());
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
         cfg.setGridName(gridName);
-        cfg.setRestEnabled(false);
 
         if (cacheEnabled) {
             for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {

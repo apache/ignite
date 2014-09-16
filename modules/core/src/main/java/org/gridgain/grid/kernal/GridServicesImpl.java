@@ -15,29 +15,36 @@ import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl implements GridServices {
+public class GridServicesImpl implements GridServices, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridKernalContext ctx;
 
     /** */
     private GridProjection prj;
 
-    /** */
-    private UUID subjId;
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridServicesImpl() {
+        // No-op.
+    }
 
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridServicesImpl(GridKernalContext ctx, GridProjection prj, UUID subjId) {
+    public GridServicesImpl(GridKernalContext ctx, GridProjection prj) {
         this.ctx = ctx;
         this.prj = prj;
-        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -159,6 +166,30 @@ public class GridServicesImpl implements GridServices {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T service(String name) {
+        guard();
+
+        try {
+            return ctx.service().service(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Collection<T> services(String name) {
+        guard();
+
+        try {
+            return ctx.service().services(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
@@ -171,5 +202,25 @@ public class GridServicesImpl implements GridServices {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        prj = (GridProjection)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return prj.services();
     }
 }

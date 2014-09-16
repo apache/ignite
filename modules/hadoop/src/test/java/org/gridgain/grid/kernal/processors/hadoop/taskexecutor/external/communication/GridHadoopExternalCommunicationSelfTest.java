@@ -17,6 +17,7 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -165,6 +166,13 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
         }
 
         /**
+         * Required by {@link Externalizable}.
+         */
+        public TestMessage() {
+            // No-op.
+        }
+
+        /**
          * @return From index.
          */
         public int from() {
@@ -176,6 +184,18 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
          */
         public int to() {
             return to;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(from);
+            out.writeInt(to);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            from = in.readInt();
+            to = in.readInt();
         }
     }
 }

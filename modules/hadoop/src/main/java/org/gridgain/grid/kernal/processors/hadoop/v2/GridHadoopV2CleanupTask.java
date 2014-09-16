@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
+import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -20,7 +21,7 @@ import java.io.*;
  */
 public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
     /** Abort flag. */
-    private boolean abort;
+    private final boolean abort;
 
     /**
      * @param taskInfo Task info.
@@ -34,8 +35,9 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run0(GridHadoopV2Job jobImpl, JobContext jobCtx, GridHadoopTaskContext taskCtx)
-        throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
+        JobContextImpl jobCtx = taskCtx.jobContext();
+
         try {
             OutputFormat outputFormat = getOutputFormat(jobCtx);
 

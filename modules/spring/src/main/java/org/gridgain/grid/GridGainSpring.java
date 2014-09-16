@@ -80,7 +80,7 @@ public class GridGainSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Grid start(String springCfgPath, @Nullable ApplicationContext springCtx) throws GridException {
-        return GridGainEx.start(springCfgPath, new GridSpringResourceContextImpl(springCtx));
+        return GridGainEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
     }
 
     /**
@@ -104,6 +104,6 @@ public class GridGainSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Grid start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws GridException {
-        return GridGainEx.start(springCfgUrl, new GridSpringResourceContextImpl(springCtx));
+        return GridGainEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
     }
 }

@@ -23,6 +23,7 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -53,19 +54,19 @@ public class GridHadoopChildProcessRunner {
     private GridLogger log;
 
     /** Init guard. */
-    private AtomicBoolean initGuard = new AtomicBoolean();
+    private final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** Start time. */
     private long startTime;
 
     /** Init future. */
-    private GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
+    private final GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
 
     /** Job instance. */
     private GridHadoopJob job;
 
     /** Number of uncompleted tasks. */
-    private AtomicInteger pendingTasks = new AtomicInteger();
+    private final AtomicInteger pendingTasks = new AtomicInteger();
 
     /** Shuffle job. */
     private GridHadoopShuffleJob<GridHadoopProcessDescriptor> shuffleJob;
@@ -112,8 +113,10 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem, req.reducers(),
-                    req.hasMappers());
+                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
+
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                    req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 
@@ -168,25 +171,25 @@ public class GridHadoopChildProcessRunner {
                             log.debug("Submitted task for external execution: " + taskInfo);
 
                         execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
-                            @Override protected void onTaskFinished(GridHadoopTaskState state, Throwable err) {
-                                onTaskFinished0(this, state, err);
+                            @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
+                                onTaskFinished0(this, status);
                             }
 
-                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.input(info);
+                                return shuffleJob.input(ctx);
                             }
 
-                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskInfo info)
+                            @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx)
                                 throws GridException {
-                                return shuffleJob.output(info);
+                                return shuffleJob.output(ctx);
                             }
                         });
                     }
                 }
                 catch (GridException e) {
                     for (GridHadoopTaskInfo info : req.tasks())
-                        notifyTaskFinished(info, GridHadoopTaskState.FAILED, e, false);
+                        notifyTaskFinished(info, new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
                 }
             }
         });
@@ -214,7 +217,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void updateTasks(final GridHadoopJobInfoUpdateRequest req) {
         initFut.listenAsync(new CI1<GridFuture<?>>() {
-            @Override public void apply(GridFuture<?> gridFuture) {
+            @Override public void apply(GridFuture<?> gridFut) {
                 assert initGuard.get();
 
                 assert req.jobId().equals(job.id());
@@ -256,40 +259,43 @@ public class GridHadoopChildProcessRunner {
      * Notifies node about task finish.
      *
      * @param run Finished task runnable.
-     * @param state Task finish state.
-     * @param err Error, if any.
+     * @param status Task status.
      */
-    private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskState state, Throwable err) {
+    private void onTaskFinished0(GridHadoopRunnableTask run, GridHadoopTaskStatus status) {
         GridHadoopTaskInfo info = run.taskInfo();
 
         int pendingTasks0 = pendingTasks.decrementAndGet();
 
         if (log.isDebugEnabled())
             log.debug("Hadoop task execution finished [info=" + info
-                + ", state=" + state + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
+                + ", state=" + status.state() + ", waitTime=" + run.waitTime() + ", execTime=" + run.executionTime() +
                 ", pendingTasks=" + pendingTasks0 +
-                ", err=" + err + ']');
+                ", err=" + status.failCause() + ']');
 
-        boolean flush = pendingTasks0 == 0 && (info.type() == COMBINE || (info.type() == MAP &&
-            (!job.info().hasCombiner() || !GridHadoopJobProperty.get(job.info(), SINGLE_COMBINER_FOR_ALL_MAPPERS, false))));
+        assert info.type() == MAP || info.type() == REDUCE : "Only MAP or REDUCE tasks are supported.";
 
-        notifyTaskFinished(info, state, err, flush);
+        boolean flush = pendingTasks0 == 0 && info.type() == MAP;
+
+        notifyTaskFinished(info, status, flush);
     }
 
     /**
      * @param taskInfo Finished task info.
-     * @param state Task finish state.
-     * @param err Error, if any.
+     * @param status Task status.
      */
-    private void notifyTaskFinished(final GridHadoopTaskInfo taskInfo, final GridHadoopTaskState state,
-        final Throwable err, boolean flush) {
+    private void notifyTaskFinished(final GridHadoopTaskInfo taskInfo, final GridHadoopTaskStatus status,
+        boolean flush) {
+
+        final GridHadoopTaskState state = status.state();
+        final Throwable err = status.failCause();
+
         if (!flush) {
             try {
                 if (log.isDebugEnabled())
                     log.debug("Sending notification to parent node [taskInfo=" + taskInfo + ", state=" + state +
                         ", err=" + err + ']');
 
-                comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, state, err));
+                comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, status));
             }
             catch (GridException e) {
                 log.error("Failed to send message to parent node (will terminate child process).", e);
@@ -319,13 +325,14 @@ public class GridHadoopChildProcessRunner {
                             // Check for errors on shuffle.
                             f.get();
 
-                            notifyTaskFinished(taskInfo, state, err, false);
+                            notifyTaskFinished(taskInfo, status, false);
                         }
                         catch (GridException e) {
                             log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                                 ", state=" + state + ", err=" + err + ']', e);
 
-                            notifyTaskFinished(taskInfo, GridHadoopTaskState.FAILED, e, false);
+                            notifyTaskFinished(taskInfo,
+                                new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
                         }
                     }
                 });
@@ -334,7 +341,7 @@ public class GridHadoopChildProcessRunner {
                 log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                     ", state=" + state + ", err=" + err + ']', e);
 
-                notifyTaskFinished(taskInfo, GridHadoopTaskState.FAILED, e, false);
+                notifyTaskFinished(taskInfo, new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
             }
         }
     }

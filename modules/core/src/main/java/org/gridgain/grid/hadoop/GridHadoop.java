@@ -49,6 +49,15 @@ public interface GridHadoop {
     @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
 
     /**
+     * Returns job counters.
+     *
+     * @param jobId Job ID to get counters for.
+     * @return Job counters object.
+     * @throws GridException If failed.
+     */
+    public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException;
+
+    /**
      * Gets Hadoop finish future for particular job.
      *
      * @param jobId Job ID.

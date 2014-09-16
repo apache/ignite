@@ -40,6 +40,7 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpDiscoveryVmMetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySharedFsMetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreInitSchemaSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySpiSelfTest.class));

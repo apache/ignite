@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.spring.*;
@@ -243,6 +244,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridInteropProcessor iopProc;
+
+    /** */
+    @GridToStringExclude
     private GridSpringProcessor spring;
 
     /** */
@@ -414,6 +419,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             hadoopProc = (GridHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
+        else if (comp instanceof GridInteropProcessor)
+            iopProc = (GridInteropProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -671,6 +678,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridInteropProcessor interop() {
+        return iopProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridLogger log() {
         return config().getGridLogger();
     }
@@ -756,10 +768,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

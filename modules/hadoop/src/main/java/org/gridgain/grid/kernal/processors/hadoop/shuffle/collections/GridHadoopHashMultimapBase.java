@@ -33,8 +33,8 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(Comparator<Object> ignore) throws GridException {
-        return new Input();
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+        return new Input(taskCtx);
     }
 
     /**
@@ -146,19 +146,20 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
         private final int cap;
 
         /** */
-        private Reader keyReader;
+        private final Reader keyReader;
 
         /** */
-        private Reader valReader;
+        private final Reader valReader;
 
         /**
          * @throws GridException If failed.
+         * @param taskCtx Task context.
          */
-        public Input() throws GridException {
+        public Input(GridHadoopTaskContext taskCtx) throws GridException {
             cap = capacity();
 
-            keyReader = new Reader(job.keySerialization());
-            valReader = new Reader(job.valueSerialization());
+            keyReader = new Reader(taskCtx.keySerialization());
+            valReader = new Reader(taskCtx.valueSerialization());
         }
 
         /** {@inheritDoc} */

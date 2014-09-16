@@ -29,10 +29,10 @@ import java.util.concurrent.*;
  */
 public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
-    private ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob<UUID>> jobs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob<UUID>> jobs = new ConcurrentHashMap<>();
 
     /** */
-    protected GridUnsafeMemory mem = new GridUnsafeMemory(0);
+    protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
     /** {@inheritDoc} */
     @Override public void start(GridHadoopContext ctx) throws GridException {
@@ -74,8 +74,8 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     private GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws GridException {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
-        GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), !F.isEmpty(plan.mappers(ctx.localNodeId())));
+        GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), ctx.localNodeId(), log,
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()));
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
@@ -188,19 +188,19 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Output.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
-        return job(taskInfo.jobId()).output(taskInfo);
+    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
+        return job(taskCtx.taskInfo().jobId()).output(taskCtx);
     }
 
     /**
-     * @param taskInfo Task info.
+     * @param taskCtx Task info.
      * @return Input.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
-        return job(taskInfo.jobId()).input(taskInfo);
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+        return job(taskCtx.taskInfo().jobId()).input(taskCtx);
     }
 
     /**

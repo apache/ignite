@@ -24,9 +24,6 @@ import java.util.concurrent.atomic.*;
  * Skip list.
  */
 public class GridHadoopSkipList extends GridHadoopMultimapBase {
-    /** */
-    private final Comparator cmp;
-
     /** Top level. */
     private final AtomicInteger topLevel = new AtomicInteger(-1);
 
@@ -39,14 +36,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     /**
      * @param job Job.
      * @param mem Memory.
-     * @param cmp Comparator for keys.
      */
-    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem, Comparator cmp) {
+    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
         super(job, mem);
-
-        assert cmp != null;
-
-        this.cmp = cmp;
     }
 
     /** {@inheritDoc} */
@@ -81,16 +73,18 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Adder startAdding() throws GridException {
-        return new AdderImpl();
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+        return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(Comparator<Object> groupCmp) throws GridException {
-        Input in = new Input();
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+        Input in = new Input(taskCtx);
 
-        if (groupCmp != null && groupCmp.getClass() != cmp.getClass())
-            return new GroupedInput(groupCmp, in);
+        Comparator<Object> grpCmp = taskCtx.groupComparator();
+
+        if (grpCmp != null)
+            return new GroupedInput(grpCmp, in);
 
         return in;
     }
@@ -219,6 +213,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         return level;
     }
 
+    /**
+     * Reader.
+     */
     private class Reader extends ReaderBase {
         /**
          * @param ser Serialization.
@@ -245,21 +242,32 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
     }
 
-    private class AdderImpl extends GridHadoopMultimapBase.AdderBase {
+    /**
+     * Adder.
+     */
+    private class AdderImpl extends AdderBase {
         /** */
-        private Random rnd = new GridRandom();
+        private final Comparator<Object> cmp;
 
         /** */
-        private GridLongList stack = new GridLongList(16);
+        private final Random rnd = new GridRandom();
+
+        /** */
+        private final GridLongList stack = new GridLongList(16);
 
         /** */
         private final Reader keyReader;
 
         /**
+         * @param ctx Task context.
          * @throws GridException If failed.
          */
-        protected AdderImpl() throws GridException {
+        protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+            super(ctx);
+
             keyReader = new Reader(keySer);
+
+            cmp = ctx.sortComparator();
         }
 
         /** {@inheritDoc} */
@@ -498,7 +506,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         /**
          * Key.
          */
-        public class KeyImpl implements Key {
+        private class KeyImpl implements Key {
             /** */
             private long meta;
 
@@ -544,17 +552,18 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private long metaPtr;
 
         /** */
-        private Reader keyReader;
+        private final Reader keyReader;
 
         /** */
-        private Reader valReader;
+        private final Reader valReader;
 
         /**
+         * @param taskCtx Task context.
          * @throws GridException If failed.
          */
-        public Input() throws GridException {
-            keyReader = new Reader(job.keySerialization());
-            valReader = new Reader(job.valueSerialization());
+        private Input(GridHadoopTaskContext taskCtx) throws GridException {
+            keyReader = new Reader(taskCtx.keySerialization());
+            valReader = new Reader(taskCtx.valueSerialization());
         }
 
         /** {@inheritDoc} */
@@ -586,10 +595,10 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      */
     private class GroupedInput implements GridHadoopTaskInput {
         /** */
-        private Comparator<Object> groupCmp;
+        private final Comparator<Object> grpCmp;
 
         /** */
-        private Input in;
+        private final Input in;
 
         /** */
         private Object prevKey;
@@ -598,14 +607,14 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         private Object nextKey;
 
         /** */
-        private GridLongList vals = new GridLongList();
+        private final GridLongList vals = new GridLongList();
 
         /**
-         * @param groupCmp Grouping comparator.
+         * @param grpCmp Grouping comparator.
          * @param in Input.
          */
-        private GroupedInput(Comparator<Object> groupCmp, Input in) {
-            this.groupCmp = groupCmp;
+        private GroupedInput(Comparator<Object> grpCmp, Input in) {
+            this.grpCmp = grpCmp;
             this.in = in;
         }
 
@@ -637,9 +646,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             }
 
             while (in.next()) { // Fill with head value pointers with equal keys.
-                if (groupCmp.compare(prevKey, nextKey = in.key()) == 0) {
+                if (grpCmp.compare(prevKey, nextKey = in.key()) == 0)
                     vals.add(value(in.metaPtr));
-                }
                 else
                     break;
             }
@@ -662,7 +670,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
             return new Iterator<Object>() {
                 /** */
-                int idx;
+                private int idx;
 
                 @Override public boolean hasNext() {
                     if (!valIter.hasNext()) {

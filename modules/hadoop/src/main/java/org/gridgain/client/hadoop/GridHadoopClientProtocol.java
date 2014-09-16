@@ -23,6 +23,7 @@ import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
 import org.gridgain.client.*;
+import org.gridgain.client.hadoop.counter.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
@@ -160,8 +161,19 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
-    @Override public Counters getJobCounters(JobID jobid) throws IOException, InterruptedException {
-        return null;
+    @Override public Counters getJobCounters(JobID jobId) throws IOException, InterruptedException {
+        try {
+            final GridHadoopCounters counters = cli.compute().execute(GridHadoopProtocolJobCountersTask.class.getName(),
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
+
+            if (counters == null)
+                throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
+
+            return new GridHadoopClientCounters(counters);
+        }
+        catch (GridClientException e) {
+            throw new IOException("Failed to get job counters: " + jobId, e);
+        }
     }
 
     /** {@inheritDoc} */

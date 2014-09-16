@@ -11,13 +11,19 @@ package org.gridgain.grid.kernal.processors.portable;
 
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.portable.*;
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
+    /** */
+    public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.2.0");
+
     /**
      * @param typeName Type name.
      * @return Type ID.
@@ -32,6 +38,12 @@ public interface GridPortableProcessor extends GridProcessor {
     public Object marshalToPortable(@Nullable Object obj) throws GridPortableException;
 
     /**
+     * @param obj Object (portable or not).
+     * @return Detached portable object or original object.
+     */
+    public Object detachPortable(@Nullable Object obj);
+
+    /**
      * @return Portable marshaller for client connectivity or {@code null} if it's not
      *      supported (in case of OS edition).
      */
@@ -42,4 +54,46 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Whether marshaller is portable.
      */
     public boolean isPortable(GridClientMarshaller marsh);
+
+    /**
+     * @return Builder.
+     */
+    public GridPortableBuilder builder();
+
+    /**
+     * @param typeId Type ID.
+     * @param newMeta New meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public void addMeta(int typeId, final GridPortableMetadata newMeta) throws GridPortableException;
+
+    /**
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
+     * @param fieldTypeIds Fields map.
+     * @throws GridPortableException In case of error.
+     */
+    void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+        Map<String, Integer> fieldTypeIds) throws GridPortableException;
+
+    /**
+     * @param typeId Type ID.
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
+
+    /**
+     * @param typeIds Type ID.
+     * @return Meta data.
+     * @throws GridPortableException In case of error.
+     */
+    public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) throws GridPortableException;
+
+    /**
+     * @return Metadata for all types.
+     * @throws GridPortableException In case of error.
+     */
+    public Collection<GridPortableMetadata> metadata() throws GridPortableException;
 }

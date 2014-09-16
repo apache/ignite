@@ -37,6 +37,7 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -56,16 +57,19 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.portable.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.noop.*;
+import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -87,7 +91,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
+import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
 /**
@@ -129,30 +133,38 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+    @GridToStringExclude
     private GridLoggerProxy log;
 
     /** */
     private String gridName;
 
     /** */
+    @GridToStringExclude
     private ObjectName kernalMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName locNodeMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName pubExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName sysExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName mgmtExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName p2PExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName restExecSvcMBean;
 
     /** Kernal start timestamp. */
@@ -162,45 +174,59 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private GridSpringResourceContext rsrcCtx;
 
     /** */
+    @GridToStringExclude
     private Timer updateNtfTimer;
 
     /** */
+    @GridToStringExclude
     private Timer starveTimer;
 
     /** */
+    @GridToStringExclude
     private Timer licTimer;
 
     /** */
+    @GridToStringExclude
     private Timer metricsLogTimer;
 
     /** Indicate error on grid stop. */
+    @GridToStringExclude
     private boolean errOnStop;
 
     /** Node local store. */
+    @GridToStringExclude
     private GridNodeLocalMap nodeLoc;
 
     /** Scheduler. */
+    @GridToStringExclude
     private GridScheduler scheduler;
 
     /** Grid security instance. */
+    @GridToStringExclude
     private GridSecurity security;
 
     /** Portables instance. */
+    @GridToStringExclude
     private GridPortables portables;
 
     /** DR pool. */
+    @GridToStringExclude
     private ExecutorService drPool;
 
     /** Kernal gateway. */
+    @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
     /** Data Grid edition usage registered flag. */
+    @GridToStringExclude
     private volatile boolean dbUsageRegistered;
 
     /** */
+    @GridToStringExclude
     private final Collection<String> compatibleVers;
 
     /** Stop guard. */
+    @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
     /**
@@ -685,6 +711,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
+            startProcessor(ctx, createComponent(GridInteropProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -701,8 +728,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verProc.addConvertersToAttributes(attrs);
 
             if (ctx.isEnterprise()) {
-                security = new GridSecurityImpl(ctx.security());
-                portables = new GridPortablesImpl(ctx.portable());
+                security = new GridSecurityImpl(ctx);
+                portables = new GridPortablesImpl(ctx);
             }
 
             gw.writeLock();
@@ -722,6 +749,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Suggest configuration optimizations.
             suggestOptimizations(ctx, cfg);
+
+            if (!ctx.isEnterprise())
+                warnNotSupportedFeaturesForOs(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -1141,6 +1171,38 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (GridOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof GridOptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
                 GridOptimizedMarshaller.class.getSimpleName() + ')');
+    }
+
+    /**
+     * Warns user about unsupported features which was configured in OS edition.
+     *
+     * @param cfg Grid configuration.
+     */
+    private void warnNotSupportedFeaturesForOs(GridConfiguration cfg) {
+        Collection<String> msgs = new ArrayList<>();
+
+        if (!F.isEmpty(cfg.getSegmentationResolvers()))
+            msgs.add("Network segmentation detection.");
+
+        if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
+            msgs.add("Data center replication.");
+
+        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
+            msgs.add("Secure session SPI.");
+
+        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
+            msgs.add("Authentication SPI.");
+
+        if (!F.isEmpty(msgs)) {
+            U.quietAndInfo(log, "The following features are not supported in open source edition, " +
+                "related configuration settings will be ignored " +
+                "(consider downloading enterprise edition from http://www.gridgain.com):");
+
+            for (String s : msgs)
+                U.quietAndInfo(log, "  ^-- " + s);
+
+            U.quietAndInfo(log, "");
+        }
     }
 
     /**
@@ -1910,6 +1972,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             GridOptimizedMarshaller.clearCache();
             GridMarshallerExclusions.clearCache();
+            GridEnumCache.clear();
 
             gw.writeLock();
 
@@ -2934,6 +2997,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridInteropProcessor interop() {
+        return ctx.interop();
     }
 
     /** {@inheritDoc} */

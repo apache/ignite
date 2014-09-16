@@ -12,12 +12,9 @@ package org.gridgain.grid.dataload;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Data loader is responsible for loading external data into cache. It achieves it by
@@ -83,7 +80,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  *  </li>
  * </ul>
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public interface GridDataLoader<K, V> extends AutoCloseable {
     /** Default max concurrent put operations count. */
     public static final int DFLT_MAX_PARALLEL_OPS = 16;

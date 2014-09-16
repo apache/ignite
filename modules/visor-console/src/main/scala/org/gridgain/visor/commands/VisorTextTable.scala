@@ -14,6 +14,8 @@ package org.gridgain.visor.commands
 import org.gridgain.grid.util.{GridStringBuilder => SB}
 import VisorTextTable._
 
+import scala.collection.{Traversable, IterableLike}
+
 /**
  * ==Overview==
  * Provides `ASCII`-based table with minimal styling support.
@@ -92,8 +94,7 @@ class VisorTextTable {
         /**
          * Gets height of the cell.
          */
-        def height: Int =
-            lines.length
+        def height: Int = lines.length
     }
 
     /**
@@ -320,7 +321,10 @@ class VisorTextTable {
         assert(curRow != null)
 
         // Break up long line into multiple ones - if necessary.
-        val lst = lines flatten(_.toString.grouped(maxCellWidth))
+        val lst = lines flatten {
+            case it: Traversable[_] => it.flatten(_.toString.grouped(maxCellWidth))
+            case obj => obj.toString.grouped(maxCellWidth)
+        }
 
         curRow += Cell(Style(rowSty), lst)
 

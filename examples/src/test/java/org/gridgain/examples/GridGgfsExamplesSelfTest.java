@@ -64,7 +64,7 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testHadoopFileSystemExample() throws Exception {
-        File cpDir = U.resolveGridGainPath("examples/config/hadoop");
+        File cpDir = U.resolveGridGainPath("examples/config/filesystem");
 
         startGrid(null);
 

@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
@@ -178,6 +179,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param dep Deployed task.
      * @param evtLsnr Event listener.
      * @param thCtx Thread-local context from task processor.
+     * @param subjId Subject ID.
      */
     GridTaskWorker(
         GridKernalContext ctx,
@@ -188,7 +190,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         @Nullable GridComputeTask<T, R> task,
         GridDeployment dep,
         GridTaskEventListener evtLsnr,
-        @Nullable Map<GridTaskThreadContextKey, Object> thCtx) {
+        @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
+        UUID subjId) {
         super(ctx.config().getGridName(), "grid-task-worker", ctx.config().getGridLogger());
 
         assert ses != null;
@@ -205,6 +208,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         this.dep = dep;
         this.evtLsnr = evtLsnr;
         this.thCtx = thCtx;
+        this.subjId = subjId;
 
         log = U.logger(ctx, logRef, this);
 
@@ -215,10 +219,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
         this.noFailover = noFailover != null ? noFailover : false;
-
-        UUID subjId = getThreadContext(TC_SUBJ_ID);
-
-        this.subjId = subjId != null ? subjId : ctx.localNodeId();
     }
 
     /**
@@ -1111,31 +1111,58 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
-                    req = new GridJobExecuteRequest(
-                        ses.getId(),
-                        res.getJobContext().getJobId(),
-                        ses.getTaskName(),
-                        ses.getUserVersion(),
-                        ses.getTaskClassName(),
-                        loc ? null : marsh.marshal(res.getJob()),
-                        loc ? res.getJob() : null,
-                        ses.getStartTime(),
-                        timeout,
-                        ses.getTopology(),
-                        loc ? null : marsh.marshal(ses.getJobSiblings()),
-                        loc ? ses.getJobSiblings() : null,
-                        loc ? null : marsh.marshal(sesAttrs),
-                        loc ? sesAttrs : null,
-                        loc ? null: marsh.marshal(jobAttrs),
-                        loc ? jobAttrs : null,
-                        ses.getCheckpointSpi(),
-                        dep.classLoaderId(),
-                        dep.deployMode(),
-                        continuous,
-                        dep.participants(),
-                        forceLocDep,
-                        ses.isFullSupport(),
-                        internal);
+                    req = node.version().compareTo(GridJobProcessor.SUBJECT_ID_ADDED_SINCE_VER) < 0 ?
+                        new GridJobExecuteRequest(
+                            ses.getId(),
+                            res.getJobContext().getJobId(),
+                            ses.getTaskName(),
+                            ses.getUserVersion(),
+                            ses.getTaskClassName(),
+                            loc ? null : marsh.marshal(res.getJob()),
+                            loc ? res.getJob() : null,
+                            ses.getStartTime(),
+                            timeout,
+                            ses.getTopology(),
+                            loc ? null : marsh.marshal(ses.getJobSiblings()),
+                            loc ? ses.getJobSiblings() : null,
+                            loc ? null : marsh.marshal(sesAttrs),
+                            loc ? sesAttrs : null,
+                            loc ? null: marsh.marshal(jobAttrs),
+                            loc ? jobAttrs : null,
+                            ses.getCheckpointSpi(),
+                            dep.classLoaderId(),
+                            dep.deployMode(),
+                            continuous,
+                            dep.participants(),
+                            forceLocDep,
+                            ses.isFullSupport(),
+                            internal) :
+                        new GridJobExecuteRequestV2(
+                            ses.getId(),
+                            res.getJobContext().getJobId(),
+                            ses.getTaskName(),
+                            ses.getUserVersion(),
+                            ses.getTaskClassName(),
+                            loc ? null : marsh.marshal(res.getJob()),
+                            loc ? res.getJob() : null,
+                            ses.getStartTime(),
+                            timeout,
+                            ses.getTopology(),
+                            loc ? null : marsh.marshal(ses.getJobSiblings()),
+                            loc ? ses.getJobSiblings() : null,
+                            loc ? null : marsh.marshal(sesAttrs),
+                            loc ? sesAttrs : null,
+                            loc ? null: marsh.marshal(jobAttrs),
+                            loc ? jobAttrs : null,
+                            ses.getCheckpointSpi(),
+                            dep.classLoaderId(),
+                            dep.deployMode(),
+                            continuous,
+                            dep.participants(),
+                            forceLocDep,
+                            ses.isFullSupport(),
+                            internal,
+                            subjId);
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
@@ -1229,7 +1256,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param msg Event message.
      */
     private void recordTaskEvent(int evtType, String msg) {
-        if (ctx.event().isRecordable(evtType)) {
+        if (!internal && ctx.event().isRecordable(evtType)) {
             GridEvent evt = new GridTaskEvent(
                 ctx.discovery().localNode(),
                 msg,
@@ -1262,6 +1289,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
+            evt.taskSubjectId(ses.subjectId());
 
             ctx.event().record(evt);
         }
