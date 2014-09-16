@@ -610,7 +610,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             success = false;
                     }
                     else {
-                        metrics0().onRead(false);
+                        if (!storeEnabled)
+                            metrics0().onRead(false);
 
                         success = false;
                     }
