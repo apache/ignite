@@ -107,7 +107,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             // Event notification.
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED))
                 cctx.events().addEvent(partition(), key, cand.nodeId(), cand, EVT_CACHE_OBJECT_LOCKED, val, hasVal,
-                    val, hasVal, null);
+                    val, hasVal, null, null, null);
         }
 
         checkOwnerChanged(prev, owner);
@@ -313,7 +313,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             // Event notification.
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_UNLOCKED))
                 cctx.events().addEvent(partition(), key, prev.nodeId(), prev, EVT_CACHE_OBJECT_UNLOCKED, val, hasVal,
-                    val, hasVal, null);
+                    val, hasVal, null, null, null);
         }
 
         checkOwnerChanged(prev, owner);
@@ -369,7 +369,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             // Event notification.
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_UNLOCKED))
                 cctx.events().addEvent(partition(), key, doomed.nodeId(), doomed, EVT_CACHE_OBJECT_UNLOCKED,
-                    val, hasVal, val, hasVal, null);
+                    val, hasVal, val, hasVal, null, null, null);
         }
 
         checkOwnerChanged(prev, owner);

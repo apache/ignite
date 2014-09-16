@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
@@ -1202,23 +1201,39 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return false;
 
         if (!cctx.isLocal()) {
-            cctx.topology().readLock();
-
-            try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
-
-                long topVer = fut.topologySnapshot().topologyVersion();
+            while (true) {
+                long topVer = cctx.topologyVersionFuture().get();
 
                 Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
 
-                cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()), nodes,
-                    true).get();
+                try {
+                    cctx.closures().callAsyncNoFailover(BROADCAST,
+                        new BlockSetCallable(cctx.name(), hdr.id()),
+                        nodes,
+                        true).get();
+                }
+                catch (GridTopologyException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("BlockSet job failed, will retry: " + e);
 
-                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
-                    nodes, true).get();
-            }
-            finally {
-                cctx.topology().readUnlock();
+                    continue;
+                }
+
+                try {
+                    cctx.closures().callAsyncNoFailover(BROADCAST,
+                        new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
+                        nodes,
+                        true).get();
+                }
+                catch (GridTopologyException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
+
+                    continue;
+                }
+
+                if (cctx.topologyVersionFuture().get() == topVer)
+                    break;
             }
         }
         else {
@@ -1248,6 +1263,16 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      */
     @SuppressWarnings("unchecked")
     private void removeSetData(GridUuid setId, long topVer) throws GridException {
+        boolean local = cctx.isLocal();
+
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        if (!local) {
+            aff.affinityReadyFuture(topVer).get();
+
+            cctx.preloader().syncFuture().get();
+        }
+
         GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
 
         if (set == null)
@@ -1259,30 +1284,47 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-        boolean local = cctx.isLocal();
-
-        GridCacheAffinityManager aff = cctx.affinity();
-
-        if (!local)
-            aff.affinityReadyFuture(topVer).get();
-
         for (GridCacheSetItemKey key : set) {
-            if (!local && !aff.primary(cctx.localNode(), key, topVer))
-                continue;
+           if (!local && !aff.primary(cctx.localNode(), key, topVer))
+               continue;
 
             keys.add(key);
 
             if (keys.size() == BATCH_SIZE) {
-                cache.removeAll(keys);
+                retryRemove(cache, keys);
 
                 keys.clear();
             }
         }
 
         if (!keys.isEmpty())
-            cache.removeAll(keys);
+            retryRemove(cache, keys);
 
         setDataMap.remove(setId);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys to remove.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void retryRemove(GridCache cache, Collection<GridCacheSetItemKey> keys) throws GridException {
+        int cnt = 0;
+
+        while (true) {
+            try {
+                cache.removeAll(keys);
+
+                break;
+            }
+            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                if (cnt++ == 3)
+                    throw e;
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to remove set items, will retry [err=" + e + ']');
+            }
+        }
     }
 
     /**

@@ -11,15 +11,12 @@ package org.gridgain.examples.streaming;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example to demonstrate how to compute a running average. In this example
@@ -37,7 +34,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streamer.xml} configuration.
  */
-@GridOnlyAvailableIn(STREAMING)
 public class StreamingRunningAverageExample {
     /**
      * Main method.

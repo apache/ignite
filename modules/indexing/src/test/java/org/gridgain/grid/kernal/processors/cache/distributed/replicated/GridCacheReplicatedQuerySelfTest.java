@@ -409,7 +409,8 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             assertEquals(1, futs.size());
 
-            GridCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter = F.first(futs.values()).get();
+            GridCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter =
+                U.field(F.first(futs.values()).get(), "iter");
 
             assertFalse(iter.isClosed());
 

@@ -115,6 +115,7 @@ public interface GridDiscoverySpi extends GridSpi {
      * @throws GridSpiException If any error occurs.
      * @see #reconnect()
      */
+    @Deprecated
     public void disconnect() throws GridSpiException;
 
     /**
@@ -128,7 +129,10 @@ public interface GridDiscoverySpi extends GridSpi {
      *
      * @throws GridSpiException If any error occurs.
      * @see #disconnect()
+     * @deprecated This method is unsupported in current version of GridGain and
+     *      will be removed in the next major release.
      */
+    @Deprecated
     public void reconnect() throws GridSpiException;
 
     /**

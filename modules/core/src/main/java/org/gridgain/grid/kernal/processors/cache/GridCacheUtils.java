@@ -644,19 +644,6 @@ public class GridCacheUtils {
     /**
      * Checks if given node has specified cache started.
      *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
-        assert ctx != null;
-
-        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
      * @param cacheName Cache name.
      * @param node Node to check.
      * @return {@code True} if given node has specified cache started.
@@ -1375,7 +1362,8 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration) [cacheName=" + cfgName +
+                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');

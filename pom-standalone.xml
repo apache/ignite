@@ -19,8 +19,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.0</gridgain.version>
-        <gridgain.edition>platform</gridgain.edition>
+        <gridgain.version>6.5.0</gridgain.version>
+        <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -42,6 +42,7 @@
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/visor-console</module>
+        <module>modules/visor-plugins</module>
         <module>modules/visor-trial</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
@@ -60,6 +61,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>modules/ggfs</module>
     </modules>
 
     <dependencyManagement>
@@ -235,7 +237,6 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.portable:org.gridgain.grid.portable</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
@@ -380,7 +381,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>
@@ -535,6 +536,14 @@
                                     <title>Marshallers</title>
                                     <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
                                 </group>
+                                <group>
+                                    <title>Visor Plugins</title>
+                                    <packages>org.gridgain.visor.plugin</packages>
+                                </group>
+                                <group>
+                                    <title>Spring Caching</title>
+                                    <packages>org.gridgain.grid.cache.spring</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
@@ -582,7 +591,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>
@@ -774,6 +783,32 @@
                                 </replace>
 
                                 <replaceregexp byline="true">
+                                    <regexp pattern='\. "\$\{GRIDGAIN_HOME\}/os/bin/include/target-classpath.sh"'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replace dir="target/release-package/bin"
+                                         token='call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"'
+                                         value="">
+                                    <include name="**/*.bat"/>
+                                </replace>
+
+                                <replace token="os/" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="os\" value="">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
+
+                                <replaceregexp byline="true">
                                     <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                     <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
                                     <fileset dir="target/release-package/bin">
@@ -795,28 +830,15 @@
                                     </fileset>
                                 </replace>
 
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-win.zip"
+                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}.zip"
                                      encoding="UTF-8">
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-win">
-                                        <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.so"/>
-                                        <exclude name="**/*.dylib"/>
-                                        <exclude name="**/*.sl"/>
-                                    </zipfileset>
-                                </zip>
-
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-nix.zip"
-                                     encoding="UTF-8">
-                                    <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix"
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
                                                 includes="**/*.sh"
                                                 filemode="755"/>
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix">
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
                                         <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.bat"/>
-                                        <exclude name="**/*.exe"/>
                                     </zipfileset>
                                 </zip>
                             </target>
@@ -830,7 +852,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>prepare-package</phase>
+                        <phase>test-compile</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>

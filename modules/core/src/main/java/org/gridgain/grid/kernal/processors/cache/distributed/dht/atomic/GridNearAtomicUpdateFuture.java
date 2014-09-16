@@ -125,6 +125,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Subject ID. */
     private final UUID subjId;
 
+    /** Task name hash. */
+    private final int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -140,6 +143,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         op = null;
         nearEnabled = false;
         subjId = null;
+        taskNameHash = 0;
     }
 
     /**
@@ -171,7 +175,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
         final GridPredicate<GridCacheEntry<K, V>>[] filter,
-        UUID subjId
+        UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.kernalContext());
         this.rawRetval = rawRetval;
@@ -195,6 +200,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.ttl = ttl;
         this.filter = filter;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         log = U.logger(ctx, logRef, GridFutureAdapter.class);
 
@@ -419,12 +425,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         assert snapshot != null;
 
-        try {
-            map0(snapshot, keys, remap, oldNodeId);
-        }
-        catch (GridException e) {
-            onDone(e);
-        }
+        map0(snapshot, keys, remap, oldNodeId);
     }
 
     /**
@@ -448,7 +449,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param oldNodeId Old node ID if was remap.
      */
     private void map0(GridDiscoveryTopologySnapshot topSnapshot, Collection<? extends K> keys, boolean remap,
-        @Nullable UUID oldNodeId) throws GridException {
+        @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
 
         long topVer = topSnapshot.topologyVersion();
@@ -543,7 +544,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 ttl,
                 filter,
-                subjId);
+                subjId,
+                taskNameHash);
 
             req.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, true);
 
@@ -647,7 +649,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             ttl,
                             filter,
-                            subjId);
+                            subjId,
+                            taskNameHash);
 
                         pendingMappings.put(nodeId, mapped);
 

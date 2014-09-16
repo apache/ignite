@@ -428,6 +428,17 @@ public final class GridSystemProperties {
     public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "GRIDGAIN_PORTABLE_ARRAY_INITIAL_CAPACITY";
 
     /**
+     * Property allowing to skip configuration consistency checks.
+     */
+    public static final String GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
+        "GRIDGAIN_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
+
+    /**
+     * Flag indicating whether validation of keys put to cache should be disabled.
+     */
+    public static final String GG_CACHE_KEY_VALIDATION_DISABLED = "GRIDGAIN_CACHE_KEY_VALIDATION_DISABLED";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {

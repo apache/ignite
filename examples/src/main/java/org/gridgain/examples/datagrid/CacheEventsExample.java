@@ -45,6 +45,9 @@ public class CacheEventsExample {
 
             final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
+
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
             GridBiPredicate<UUID, GridCacheEvent> locLsnr = new GridBiPredicate<UUID, GridCacheEvent>() {

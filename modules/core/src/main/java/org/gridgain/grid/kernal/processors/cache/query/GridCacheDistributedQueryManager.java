@@ -60,7 +60,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private CI2<UUID, GridCacheQueryResponse<K, V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
+    private GridBiInClosure<UUID,GridCacheQueryResponse<K,V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
         @Override public void apply(UUID nodeId, GridCacheQueryResponse<K, V> res) {
             processQueryResponse(nodeId, res);
         }
@@ -139,7 +139,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             if (req.fields())
                 removeFieldsQueryResult(sndId, req.id());
             else
-                removeQueryIterator(sndId, req.id());
+                removeQueryResult(sndId, req.id());
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
@@ -202,8 +202,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
-                req.portableKeys(),
-                req.portableValues()
+                req.keepPortable(),
+                req.subjectId(),
+                req.taskHash()
             );
 
         return new GridCacheQueryInfo(
@@ -300,8 +301,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeQueryIterator(@Nullable UUID sndId, long reqId) {
-        super.removeQueryIterator(sndId, reqId);
+    @Override protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+        super.removeQueryResult(sndId, reqId);
 
         if (sndId != null) {
             Object topic = topic(sndId, reqId);
@@ -510,8 +511,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 false,
-                qry.query().portableKeys(),
-                qry.query().portableValues());
+                qry.query().keepPortable(),
+                qry.query().subjectId(),
+                qry.query().taskHash());
 
             addQueryFuture(req.id(), fut);
 
@@ -546,7 +548,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         try {
             GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.includeBackups(), fut.fields(), all, qry.portableKeys(), qry.portableValues());
+                qry.includeBackups(), fut.fields(), all, qry.keepPortable(), qry.subjectId(), qry.taskHash());
 
             sendRequest(fut, req, nodes);
         }
@@ -608,8 +610,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 qry.query().includeMetadata(),
-                qry.query().portableKeys(),
-                qry.query().portableValues());
+                qry.query().keepPortable(),
+                qry.query().subjectId(),
+                qry.query().taskHash());
 
             addQueryFuture(req.id(), fut);
 

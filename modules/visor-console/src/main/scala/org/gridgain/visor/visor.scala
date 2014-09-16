@@ -81,7 +81,7 @@ sealed case class VisorConsoleCommandHolder(
  *         else
  *             println("foo")
  *     }
- *     def foo(@Nullable args: Symbol*): Unit = foo(visor.flatSymbols(args: _*))
+ *     def foo(@Nullable args: Symbol*) = foo(visor.flatSymbols(args: _*))
  * }
  * object VisorCustomCommand {
  *     implicit def fromVisor(vs: VisorTag) = new VisorCustomCommand
@@ -1988,7 +1988,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(files(a.toInt).get1())
+                    Some(files(a.toInt).get3.getPath)
                 catch {
                     case e: Throwable =>
                         nl()
