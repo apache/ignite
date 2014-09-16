@@ -11,7 +11,6 @@
 
 package org.gridgain.visor.plugin;
 
-import org.gridgain.visor.plugin.api.*;
 import ro.fortsoft.pf4j.*;
 
 /**
