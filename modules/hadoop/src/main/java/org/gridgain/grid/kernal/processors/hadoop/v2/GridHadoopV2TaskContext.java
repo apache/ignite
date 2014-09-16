@@ -21,8 +21,10 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.*;
@@ -72,18 +74,26 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /** Current task. */
     private volatile GridHadoopTask task;
 
+    /** Local node ID */
+    private UUID locNodeId;
+
     /**
      * @param taskInfo Task info.
      * @param job Job.
      * @param jobId Job ID.
+     * @param locNodeId Local node ID.
      */
-    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopJobId jobId) {
+    public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopJobId jobId,
+        @Nullable UUID locNodeId) {
         super(taskInfo, job);
+        this.locNodeId = locNodeId;
 
         // Before create JobConf instance we should set new context class loader.
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
         JobConf jobConf = new JobConf();
+
+        GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
         for (Map.Entry<String,String> e : ((GridHadoopDefaultJobInfo)job.info()).properties().entrySet())
             jobConf.set(e.getKey(), e.getValue());
@@ -114,16 +124,16 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
             case REDUCE:
                 return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo(), true) :
-                        new GridHadoopV1ReduceTask(taskInfo(), true);
+                    new GridHadoopV1ReduceTask(taskInfo(), true);
 
             case COMBINE:
                 return useNewCombiner ? new GridHadoopV2ReduceTask(taskInfo(), false) :
-                        new GridHadoopV1ReduceTask(taskInfo(), false);
+                    new GridHadoopV1ReduceTask(taskInfo(), false);
 
             case COMMIT:
             case ABORT:
                 return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo(), isAbort) :
-                        new GridHadoopV1CleanupTask(taskInfo(), isAbort);
+                    new GridHadoopV1CleanupTask(taskInfo(), isAbort);
 
             default:
                 return null;
@@ -167,6 +177,47 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
         if (t != null)
             t.cancel();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareTaskEnvironment() throws GridException {
+        File locDir;
+
+        switch(taskInfo().type()) {
+            case MAP:
+            case REDUCE:
+                job().prepareTaskEnvironment(taskInfo());
+
+                locDir = taskLocalDir(locNodeId, taskInfo());
+
+                break;
+
+            default:
+                locDir = jobLocalDir(locNodeId, taskInfo().jobId());
+        }
+
+        Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
+
+        try {
+            FileSystem fs = FileSystem.get(jobConf());
+
+            GridHadoopFileSystemsUtils.setUser(fs, jobConf().getUser());
+
+            LocalFileSystem locFs = FileSystem.getLocal(jobConf());
+
+            locFs.setWorkingDirectory(new Path(locDir.getAbsolutePath()));
+        }
+        catch (Throwable e) {
+            throw transformException(e);
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupTaskEnvironment() throws GridException {
+        job().cleanupTaskEnvironment(taskInfo());
     }
 
     /**

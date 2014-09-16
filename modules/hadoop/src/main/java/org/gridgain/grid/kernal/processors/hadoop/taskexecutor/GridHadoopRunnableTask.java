@@ -99,13 +99,12 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
 
             ctx.counters(counters);
 
-            job.prepareTaskEnvironment(info);
+            ctx.prepareTaskEnvironment();
 
             runTask(ctx);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                    info.attempt(), null));
+                ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
                     runTask(ctx);
@@ -132,7 +131,8 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             if (local != null)
                 local.close();
 
-            job.cleanupTaskEnvironment(info);
+            if (ctx != null)
+                ctx.cleanupTaskEnvironment();
         }
 
         return null;

@@ -452,7 +452,10 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             X.println("___ Mapper: " + ctx.getTaskAttemptID());
 
             String taskId = ctx.getTaskAttemptID().toString();
-            String workDir = FileSystem.getLocal(ctx.getConfiguration()).getWorkingDirectory().toString();
+
+            LocalFileSystem locFs = FileSystem.getLocal(ctx.getConfiguration());
+
+            String workDir = locFs.getWorkingDirectory().toString();
 
             assertNull(taskWorkDirs.put(workDir, taskId));
         }

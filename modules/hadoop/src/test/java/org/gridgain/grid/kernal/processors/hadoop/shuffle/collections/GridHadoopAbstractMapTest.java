@@ -48,6 +48,6 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
     }
 
     public GridHadoopTaskContext mockTaskContext(GridHadoopJob job) throws GridException {
-        return job.getTaskContext(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, null, 0, 0, null));
+        return job.getTaskContext(new GridHadoopTaskInfo(GridHadoopTaskType.MAP, null, 0, 0, null));
     }
 }

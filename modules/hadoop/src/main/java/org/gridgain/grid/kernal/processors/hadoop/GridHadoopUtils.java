@@ -395,6 +395,31 @@ public class GridHadoopUtils {
         return new GridException(os.toString());
     }
 
+    /**
+     * Returns work directory for job execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param jobId Job ID.
+     * @return Working directory for job.
+     * @throws GridException If Failed.
+     */
+    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws GridException {
+        return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    }
+
+    /**
+     * Returns subdirectory of job working directory for task execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param info Task info.
+     * @return Working directory for task.
+     * @throws GridException If Failed.
+     */
+    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws GridException {
+        File jobLocDir = jobLocalDir(locNodeId, info.jobId());
+
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
+    }
 
     /**
      * Constructor.

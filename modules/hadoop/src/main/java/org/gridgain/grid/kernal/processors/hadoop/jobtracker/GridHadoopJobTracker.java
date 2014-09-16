@@ -649,7 +649,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             case PHASE_REDUCE: {
                 if (meta.pendingReducers().isEmpty() && ctx.jobUpdateLeader()) {
-                    GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMMIT, jobId, 0, 0, null);
+                    GridHadoopTaskInfo info = new GridHadoopTaskInfo(COMMIT, jobId, 0, 0, null);
 
                     if (log.isDebugEnabled())
                         log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
@@ -684,8 +684,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                         // Prevent running multiple abort tasks.
                         if (state.onAborted()) {
-                            GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), ABORT, jobId, 0, 0,
-                                    null);
+                            GridHadoopTaskInfo info = new GridHadoopTaskInfo(ABORT, jobId, 0, 0, null);
 
                             if (log.isDebugEnabled())
                                 log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
@@ -780,7 +779,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         else {
             initState(jobId);
 
-            return Collections.singleton(new GridHadoopTaskInfo(ctx.localNodeId(), SETUP, jobId, 0, 0, null));
+            return Collections.singleton(new GridHadoopTaskInfo(SETUP, jobId, 0, 0, null));
         }
     }
 
@@ -809,8 +808,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         log.debug("Submitting MAP task for execution [locNodeId=" + locNodeId +
                             ", split=" + split + ']');
 
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, MAP, jobId, meta.taskNumber(split),
-                        0, split);
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(MAP, jobId, meta.taskNumber(split), 0, split);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();
@@ -848,7 +846,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         log.debug("Submitting REDUCE task for execution [locNodeId=" + locNodeId +
                             ", rdc=" + rdc + ']');
 
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, REDUCE, jobId, rdc, 0, null);
+                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(REDUCE, jobId, rdc, 0, null);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();

@@ -31,16 +31,7 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  */
 public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest {
     /** */
-    private static boolean partitionerWasConfigured;
-
-    /** */
-    private static boolean serializationWasConfigured;
-
-    /** */
-    private static boolean inputFormatWasConfigured;
-
-    /** */
-    private static boolean outputFormatWasConfigured;
+    private static Map<String, Boolean> flags = GridHadoopSharedMap.put("flags", new HashMap<String, Boolean>());
 
     /** {@inheritDoc} */
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
@@ -64,17 +55,17 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "key1", 10000, "key2", 20000, "key3", 15000, "key4", 7000, "key5", 12000,
-                "key6", 18000 );
+            "key6", 18000 );
 
         for (int i = 0; i < 2; i++) {
             boolean useNewAPI = i == 1;
 
             ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
 
-            serializationWasConfigured = false;
-            partitionerWasConfigured = false;
-            inputFormatWasConfigured = false;
-            outputFormatWasConfigured = false;
+            flags.put("serializationWasConfigured", false);
+            flags.put("partitionerWasConfigured", false);
+            flags.put("inputFormatWasConfigured", false);
+            flags.put("outputFormatWasConfigured", false);
 
             JobConf jobConf = new JobConf();
 
@@ -122,13 +113,17 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
 
             fut.get();
 
-            assertTrue("Serialization was configured (new API is " + useNewAPI + ")", serializationWasConfigured);
+            assertTrue("Serialization was configured (new API is " + useNewAPI + ")",
+                 flags.get("serializationWasConfigured"));
 
-            assertTrue("Partitioner was configured (new API is = " + useNewAPI + ")", partitionerWasConfigured);
+            assertTrue("Partitioner was configured (new API is = " + useNewAPI + ")",
+                 flags.get("partitionerWasConfigured"));
 
-            assertTrue("Input format was configured (new API is = " + useNewAPI + ")", inputFormatWasConfigured);
+            assertTrue("Input format was configured (new API is = " + useNewAPI + ")",
+                 flags.get("inputFormatWasConfigured"));
 
-            assertTrue("Output format was configured (new API is = " + useNewAPI + ")", outputFormatWasConfigured);
+            assertTrue("Output format was configured (new API is = " + useNewAPI + ")",
+                 flags.get("outputFormatWasConfigured"));
 
             assertEquals("Use new API = " + useNewAPI,
                 "key3\t15000\n" +
@@ -158,7 +153,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         @Override public void setConf(Configuration conf) {
             super.setConf(conf);
 
-            serializationWasConfigured = true;
+            flags.put("serializationWasConfigured", true);
         }
     }
 
@@ -168,7 +163,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
     private static class CustomV1Partitioner extends org.apache.hadoop.mapred.lib.HashPartitioner {
         /** {@inheritDoc} */
         @Override public void configure(JobConf job) {
-            partitionerWasConfigured = true;
+            flags.put("partitionerWasConfigured", true);
         }
     }
 
@@ -179,7 +174,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
             implements Configurable {
         /** {@inheritDoc} */
         @Override public void setConf(Configuration conf) {
-            partitionerWasConfigured = true;
+            flags.put("partitionerWasConfigured", true);
         }
 
         /** {@inheritDoc} */
@@ -194,7 +189,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
     private static class CustomV2InputFormat extends org.apache.hadoop.mapreduce.lib.input.TextInputFormat implements Configurable {
         /** {@inheritDoc} */
         @Override public void setConf(Configuration conf) {
-            inputFormatWasConfigured = true;
+            flags.put("inputFormatWasConfigured", true);
         }
 
         /** {@inheritDoc} */
@@ -209,7 +204,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
     private static class CustomV2OutputFormat extends org.apache.hadoop.mapreduce.lib.output.TextOutputFormat implements Configurable {
         /** {@inheritDoc} */
         @Override public void setConf(Configuration conf) {
-            outputFormatWasConfigured = true;
+            flags.put("outputFormatWasConfigured", true);
         }
 
         /** {@inheritDoc} */
@@ -226,7 +221,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         @Override public void configure(JobConf job) {
             super.configure(job);
 
-            inputFormatWasConfigured = true;
+            flags.put("inputFormatWasConfigured", true);
         }
     }
 
@@ -236,7 +231,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
     private static class CustomV1OutputFormat extends org.apache.hadoop.mapred.TextOutputFormat implements JobConfigurable {
         /** {@inheritDoc} */
         @Override public void configure(JobConf job) {
-            outputFormatWasConfigured = true;
+            flags.put("outputFormatWasConfigured", true);
         }
     }
 }

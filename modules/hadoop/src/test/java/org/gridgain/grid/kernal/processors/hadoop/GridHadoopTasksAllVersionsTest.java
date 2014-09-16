@@ -74,8 +74,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         GridHadoopV2Job gridJob = getHadoopJob(ggfsScheme() + inFile.toString(), ggfsScheme() + PATH_OUTPUT);
 
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0,
-            fileBlock1);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock1);
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
@@ -87,7 +86,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         ctx.mockOutput().clear();
 
-        ctx.taskInfo(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2));
+        ctx.taskInfo(new GridHadoopTaskInfo(GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2));
 
         ctx.run();
 
@@ -105,8 +104,8 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @throws GridException If fails.
      */
     private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2Job gridJob, GridHadoopTaskType taskType,
-                                                       int taskNum, String... words) throws GridException {
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, gridJob.id(), taskNum, 0, null);
+        int taskNum, String... words) throws GridException {
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(taskType, gridJob.id(), taskNum, 0, null);
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
@@ -178,14 +177,14 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      */
     private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopV2Job gridJob)
         throws GridException {
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
 
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
         mapCtx.run();
 
         //Prepare input for combine
-        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
+        taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
 
         GridHadoopTestTaskContext combineCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
@@ -229,7 +228,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         GridHadoopTestTaskContext combine2Ctx = runMapCombineTask(fileBlock2, gridJob);
 
         //Prepare input for combine
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
 
         GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);
 
@@ -238,7 +237,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
         reduceCtx.run();
 
-        reduceCtx.taskInfo(new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null));
+        reduceCtx.taskInfo(new GridHadoopTaskInfo(GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null));
 
         reduceCtx.run();
 

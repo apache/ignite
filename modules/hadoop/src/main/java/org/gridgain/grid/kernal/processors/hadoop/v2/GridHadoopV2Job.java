@@ -20,12 +20,14 @@ import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 
+import java.io.File;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -61,6 +63,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
     /** */
     private final Queue<GridHadoopClassLoader> clsLdrPool = new ConcurrentLinkedQueue<>();
 
+    /** Local node ID */
+    private UUID locNodeId;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -83,6 +88,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
         Thread.currentThread().setContextClassLoader(clsLdr);
 
         jobConf = new JobConf();
+
+        GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
         Thread.currentThread().setContextClassLoader(null);
 
@@ -183,9 +190,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
         try {
             Class<?> cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
 
-            Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class, GridHadoopJobId.class);
+            Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class,
+                GridHadoopJobId.class, UUID.class);
 
-            GridHadoopTaskContext res = (GridHadoopTaskContext) ctr.newInstance(info, this, jobId);
+            GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId);
 
             fut.onDone(res);
 
@@ -202,18 +210,31 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr.prepareJobEnvironment(!external, locNodeId);
+        this.locNodeId = locNodeId;
+
+        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+
+        try {
+            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void dispose(boolean external) throws GridException {
-        if (rsrcMgr != null)
-            rsrcMgr.cleanupJobEnvironment(!external);
+        if (rsrcMgr != null && !external) {
+            File jobLocDir = jobLocalDir(locNodeId, jobId);
+
+            if (jobLocDir.exists())
+                jobLocDir.delete();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.prepareTaskEnvironment(info);
+        rsrcMgr.prepareTaskWorkDir(taskLocalDir(locNodeId, info));
     }
 
     /** {@inheritDoc} */
@@ -222,7 +243,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         clsLdrPool.offer((GridHadoopClassLoader)ctx.getClass().getClassLoader());
 
-        rsrcMgr.cleanupTaskEnvironment(info);
+        File locDir = taskLocalDir(locNodeId, info);
+
+        if (locDir.exists())
+            locDir.delete();
     }
 
     /** {@inheritDoc} */
