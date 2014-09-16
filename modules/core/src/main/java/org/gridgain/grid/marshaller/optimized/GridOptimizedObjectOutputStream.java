@@ -23,7 +23,7 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 /**
  * Optimized object output stream.
  */
-public class GridOptimizedObjectOutputStream extends ObjectOutputStream {
+class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",

@@ -118,6 +118,9 @@ public class GridPortablesImpl implements GridPortables {
         }
     }
 
+    /**
+     * @return Portable processor.
+     */
     public GridPortableProcessor processor() {
         return proc;
     }

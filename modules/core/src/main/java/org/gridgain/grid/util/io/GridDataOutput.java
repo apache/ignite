@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.util.io;
 
-import org.gridgain.grid.marshaller.optimized.*;
-
 import java.io.*;
 
 /**
