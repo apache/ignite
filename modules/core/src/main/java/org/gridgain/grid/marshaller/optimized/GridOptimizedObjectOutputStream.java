@@ -106,10 +106,6 @@ public class GridOptimizedObjectOutputStream extends ObjectOutputStream {
         out.write(b);
     }
 
-    public void write(GridDirectByteBuffer buf, int off, int len) throws IOException {
-        out.writeDirectBuffer(buf, off, len);
-    }
-
     /** {@inheritDoc} */
     @Override public void write(byte[] b, int off, int len) throws IOException {
         out.write(b, off, len);

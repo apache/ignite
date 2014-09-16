@@ -55,8 +55,6 @@ public interface GridDataOutput extends DataOutput {
      */
     public void writeByteArray(byte[] arr) throws IOException;
 
-    public void writeDirectBuffer(GridDirectByteBuffer buf, int off, int len) throws IOException;
-
     /**
      * Writes array of {@code short}s.
      *

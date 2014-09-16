@@ -268,17 +268,6 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     }
 
     /** {@inheritDoc} */
-    @Override public void writeDirectBuffer(GridDirectByteBuffer buf, int off, int len) throws IOException {
-        requestFreeSize(len);
-
-        // UNSAFE.copyMemory(b, byteArrOff + off, bytes, byteArrOff + this.off, len);
-
-        buf.copyTo(off, bytes, this.off, len);
-
-        onWrite(len);
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeShortArray(short[] arr) throws IOException {
         writeInt(arr.length);
 
