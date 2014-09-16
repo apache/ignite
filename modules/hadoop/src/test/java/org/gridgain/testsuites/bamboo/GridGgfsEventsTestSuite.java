@@ -26,28 +26,22 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  */
 @SuppressWarnings("PublicInnerClass")
 public class GridGgfsEventsTestSuite extends TestSuite {
-    /** */
-    private static GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-
-    /** */
-    private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException {
-        return ldr.loadClass(cls.getName());
-    }
-
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+        
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
 
-        suite.addTest(new TestSuite(loadClass(ShmemPrivate.class)));
-        suite.addTest(new TestSuite(loadClass(ShmemDualSync.class)));
-        suite.addTest(new TestSuite(loadClass(ShmemDualAsync.class)));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualAsync.class.getName())));
 
-        suite.addTest(new TestSuite(loadClass(LoopbackPrivate.class)));
-        suite.addTest(new TestSuite(loadClass(LoopbackDualSync.class)));
-        suite.addTest(new TestSuite(loadClass(LoopbackDualAsync.class)));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }
@@ -57,11 +51,13 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suiteNoarchOnly() throws Exception {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+        
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
 
-        suite.addTest(new TestSuite(loadClass(LoopbackPrivate.class)));
-        suite.addTest(new TestSuite(loadClass(LoopbackDualSync.class)));
-        suite.addTest(new TestSuite(loadClass(LoopbackDualAsync.class)));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }
