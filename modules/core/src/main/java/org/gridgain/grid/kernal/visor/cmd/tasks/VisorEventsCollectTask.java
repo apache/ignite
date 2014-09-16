@@ -23,6 +23,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
+
 /**
  * Task that runs on specified node and returns events data.
  */
@@ -106,8 +108,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
             return new VisorEventsCollectArgs(null,
-                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION,
-                    GridEventType.EVTS_AUTHENTICATION, GridEventType.EVTS_AUTHORIZATION, GridEventType.EVTS_SECURE_SESSION),
+                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
+                    EVTS_SECURE_SESSION),
                 timeArg, taskName, taskSessionId);
         }
 
