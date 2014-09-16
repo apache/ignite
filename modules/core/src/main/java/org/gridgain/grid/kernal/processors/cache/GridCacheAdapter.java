@@ -1090,11 +1090,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isKeepPortableEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
         throw new UnsupportedOperationException();
     }

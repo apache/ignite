@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.util.io;
 
-import org.gridgain.grid.marshaller.optimized.*;
-
 import java.io.*;
 
 /**
@@ -54,8 +52,6 @@ public interface GridDataOutput extends DataOutput {
      * @throws IOException In case of error.
      */
     public void writeByteArray(byte[] arr) throws IOException;
-
-    public void writeDirectBuffer(GridDirectByteBuffer buf, int off, int len) throws IOException;
 
     /**
      * Writes array of {@code short}s.

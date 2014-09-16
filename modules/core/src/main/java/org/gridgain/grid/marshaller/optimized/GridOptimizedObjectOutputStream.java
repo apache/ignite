@@ -23,7 +23,7 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 /**
  * Optimized object output stream.
  */
-public class GridOptimizedObjectOutputStream extends ObjectOutputStream {
+class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
@@ -104,10 +104,6 @@ public class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public void write(byte[] b) throws IOException {
         out.write(b);
-    }
-
-    public void write(GridDirectByteBuffer buf, int off, int len) throws IOException {
-        out.writeDirectBuffer(buf, off, len);
     }
 
     /** {@inheritDoc} */

@@ -948,55 +948,46 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         avgActiveJobs = in.readFloat();
         maxWaitingJobs = in.readInt();
         curWaitingJobs = in.readInt();
-
         avgWaitingJobs = in.readFloat();
         maxCancelledJobs = in.readInt();
         curCancelledJobs = in.readInt();
         avgCancelledJobs = in.readFloat();
         maxRejectedJobs = in.readInt();
-
         curRejectedJobs = in.readInt();
         avgRejectedJobs = in.readFloat();
         totalExecutedJobs = in.readInt();
         totalCancelledJobs = in.readInt();
         totalRejectedJobs = in.readInt();
-
         maxJobWaitTime = in.readLong();
         curJobWaitTime = in.readLong();
         avgJobWaitTime = in.readDouble();
         maxJobExecTime = in.readLong();
         curJobExecTime = in.readLong();
-
         avgJobExecTime = in.readDouble();
         totalExecTasks = in.readInt();
         curIdleTime = in.readLong();
         totalIdleTime = in.readLong();
         availProcs = in.readInt();
-
         totalPhysicalMemory = in.readLong();
         load = in.readDouble();
         avgLoad = in.readDouble();
         gcLoad = in.readDouble();
         heapInit = in.readLong();
-
         heapUsed = in.readLong();
         heapCommitted = in.readLong();
         heapMax = in.readLong();
         nonHeapInit = in.readLong();
         nonHeapUsed = in.readLong();
-
         nonHeapCommitted = in.readLong();
         nonHeapMax = in.readLong();
         upTime = in.readLong();
         startTime = in.readLong();
         nodeStartTime = in.readLong();
-
         threadCnt = in.readInt();
         peakThreadCnt = in.readInt();
         startedThreadCnt = in.readLong();
         daemonThreadCnt = in.readInt();
         lastDataVer = in.readLong();
-
         sentMsgsCnt = in.readInt();
         sentBytesCnt = in.readLong();
         rcvdMsgsCnt = in.readInt();
