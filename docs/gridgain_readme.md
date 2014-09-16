@@ -78,8 +78,12 @@ GridGain provides repository for its Maven artifacts.
 - GridGain Enterprise repository is located at http://www.gridgainsystems.com/nexus/content/repositories/external
 
 ### 3.1 Maven Artifacts
-* `gridgain-fabric` - contains jars and dependencies for GridGain Open Source In-Memory Data Fabric.
-* `gridgain-fabric-ent` - contains jars and dependencies for GridGain Enterprise In-Memory Data Fabric.
+GridGain Maven repository has `4` artifacts (add `'-ent'` for enterprise edition):
+
+* gridgain-hpc - contains jars and dependencies for In-Memory High Performance Computing (HPC)
+* gridgain-datagrid - contains jars and dependencies for In-Memory Data Grid
+* gridgain-streaming - contains jars and dependencies for In-Memory Streaming
+* gridgain-fabric - contains jars and dependencies for all GridGain editions
 
 ### 3.2 Maven Example
 
@@ -89,6 +93,7 @@ GridGain provides repository for its Maven artifacts.
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-fabric</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 #### 3.2.2 Enterprise
@@ -102,6 +107,7 @@ GridGain provides repository for its Maven artifacts.
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-fabric-ent</artifactId>
         <version>${gridgain.version}</version>
+        <type>pom</type>
     </dependency>
 
 ## 4. Starting Grid Nodes

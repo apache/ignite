@@ -27,7 +27,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>platform</id>
+    <id>fabric</id>
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
@@ -37,18 +37,10 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
-        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
+        <componentDescriptor>release-base-fabric.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>
-        <fileSet>
-            <directory>config</directory>
-            <outputDirectory>/config</outputDirectory>
-            <includes>
-                <include>hadoop/*</include>
-            </includes>
-        </fileSet>
-
         <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
