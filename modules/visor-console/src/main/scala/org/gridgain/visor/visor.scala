@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
+import scala.io.StdIn
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
@@ -1506,7 +1507,7 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setRestEnabled(false)
+                cfg.setClientConnectionConfiguration(null)
 
                 def createExecutor = new GridThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
 
@@ -2054,7 +2055,7 @@ object visor extends VisorTag {
 
         println("\nC: Cancel")
 
-        readLine("\nChoose node: ") match {
+        StdIn.readLine("\nChoose node: ") match {
             case "c" | "C" => None
             case idx =>
                 try
