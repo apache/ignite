@@ -136,7 +136,7 @@ public interface GridEx extends Grid, GridProjectionEx {
     @Nullable public GridGgfs ggfsx(@Nullable String name);
 
     /**
-     * Get interop processor.
+     * Gets interop processor.
      *
      * @return Interop processor.
      */

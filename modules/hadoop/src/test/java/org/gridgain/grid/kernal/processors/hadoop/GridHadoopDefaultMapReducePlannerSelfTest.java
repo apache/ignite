@@ -25,7 +25,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
