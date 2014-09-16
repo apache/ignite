@@ -35,24 +35,27 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  * Tests map-reduce task execution basics.
  */
 public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest {
+    /** */
+    private static GridHadoopSharedMap m = GridHadoopSharedMap.map(GridHadoopTaskExecutionSelfTest.class);
+
     /** Line count. */
-    private static final AtomicInteger totalLineCnt = GridHadoopSharedMap.put("totalLineCnt", new AtomicInteger());
+    private static final AtomicInteger totalLineCnt = m.put("totalLineCnt", new AtomicInteger());
 
     /** Executed tasks. */
-    private static final AtomicInteger executedTasks = GridHadoopSharedMap.put("executedTasks", new AtomicInteger());
+    private static final AtomicInteger executedTasks = m.put("executedTasks", new AtomicInteger());
 
     /** Cancelled tasks. */
-    private static final AtomicInteger cancelledTasks = GridHadoopSharedMap.put("cancelledTasks", new AtomicInteger());
+    private static final AtomicInteger cancelledTasks = m.put("cancelledTasks", new AtomicInteger());
 
     /** Working directory of each task. */
-    private static final Map<String, String> taskWorkDirs = GridHadoopSharedMap.put("taskWorkDirs",
+    private static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
         new ConcurrentHashMap<String, String>());
 
     /** Mapper id to fail. */
-    private static final AtomicInteger failMapperId = GridHadoopSharedMap.put("failMapperId", new AtomicInteger());
+    private static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());
 
     /** Number of splits of the current input. */
-    private static final AtomicInteger splitsCount = GridHadoopSharedMap.put("splitsCount", new AtomicInteger());
+    private static final AtomicInteger splitsCount = m.put("splitsCount", new AtomicInteger());
 
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
