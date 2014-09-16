@@ -108,28 +108,26 @@ class VisorLicenseCommand {
 
                         nl()
 
-                        println("License: '" + e._1 + "'")
+                        println("License ID: '" + e._1 + "'")
 
                         if (l != null) {
                             val licT = new VisorTextTable()
 
-                            licT += ("Version", safe(l.version(), "<n/a>"))
-                            licT += ("Version regular expression", safe(l.versionRegexp(), "<n/a>"))
+                            licT += ("Version Regex", safe(l.versionRegexp(), "<n/a>"))
                             licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
-                            licT += ("Maintenance time",
-                                if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
-                            licT += ("Issue organization", safe(l.issueOrganization(), "<n/a>"))
-                            licT += ("User name", safe(l.userName(), "<n/a>"))
-                            licT += ("User organization", safe(l.userOrganization(), "<n/a>"))
-                            licT += ("User organization URL", safe(l.userWww(), "<n/a>"))
-                            licT += ("User organization e-mail", safe(l.userEmail(), "<n/a>"))
                             licT += ("License note", safe(l.note(), "<n/a>"))
-                            licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
+                            licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
+                            licT += ("Licensee name", safe(l.userName(), "<n/a>"))
+                            licT += ("Licensee organization", safe(l.userOrganization(), "<n/a>"))
+                            licT += ("Licensee URL", safe(l.userWww(), "<n/a>"))
+                            licT += ("Licensee e-mail", safe(l.userEmail(), "<n/a>"))
                             licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
-                            licT += ("Maximum number of computers", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
+                            licT += ("Maximum number of hosts", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
                             licT += ("Maximum number of CPUs", if (l.maxCpus() > 0) l.maxCpus() else "No restriction")
                             licT += ("Maximum up time", if (l.maxUpTime() > 0) l.maxUpTime() + " min." else "No restriction")
-                            licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
+                            licT += ("Maintenance time",
+                            if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
+                            licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
                             licT += ("Disabled subsystems", Option(l.disabledSubsystems()).
                                 fold("No disabled subsystems")(s => s.split(',').toList.toString()))
 
