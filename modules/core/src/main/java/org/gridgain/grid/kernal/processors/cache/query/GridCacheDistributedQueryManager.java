@@ -658,8 +658,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @throws GridException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private void sendRequest(final GridCacheDistributedQueryFuture<?, ?, ?> fut,
-        final GridCacheQueryRequest<K, V> req, Collection<GridNode> nodes) throws GridException {
+    private void sendRequest(
+        final GridCacheDistributedQueryFuture<?, ?, ?> fut,
+        final GridCacheQueryRequest<K, V> req,
+        Collection<GridNode> nodes
+    ) throws GridException {
         assert fut != null;
         assert req != null;
         assert nodes != null;
@@ -706,10 +709,24 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                     String clsName = typeDescriptor.valueClass().getName();
 
-                    GridCacheQueryRequest req0 = new GridCacheQueryRequest(req.id(), req.cacheName(), req.type(),
-                        req.fields(), req.clause(), clsName, req.keyValueFilter(), req.projectionFilter(),
-                        req.reducer(), req.transformer(), req.pageSize(), req.includeBackups(),
-                        req.arguments(), req.includeMetaData(), req.keepPortable(), req.subjectId(), req.taskHash());
+                    GridCacheQueryRequest req0 = new GridCacheQueryRequest(
+                        req.id(),
+                        req.cacheName(),
+                        req.type(),
+                        req.fields(),
+                        req.clause(),
+                        clsName,
+                        req.keyValueFilter(),
+                        req.projectionFilter(),
+                        req.reducer(),
+                        req.transformer(),
+                        req.pageSize(),
+                        req.includeBackups(),
+                        req.arguments(),
+                        req.includeMetaData(),
+                        req.keepPortable(),
+                        req.subjectId(),
+                        req.taskHash());
 
                     if (!simpleNameSupported.isEmpty())
                         cctx.io().safeSend(simpleNameSupported, req, fallback);
