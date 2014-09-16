@@ -23,6 +23,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
+
 /**
  * Task that runs on specified node and returns events data.
  */
@@ -106,7 +108,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
             return new VisorEventsCollectArgs(null,
-                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
+                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
+                    EVTS_SECURE_SESSION),
                 timeArg, taskName, taskSessionId);
         }
 
@@ -312,6 +315,24 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
 
                     res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
                         node.id(), addr, node.isDaemon()));
+                }
+                else if (e instanceof GridAuthenticationEvent) {
+                    GridAuthenticationEvent ae = (GridAuthenticationEvent)e;
+
+                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
+                        ae.subjectId(), ae.login()));
+                }
+                else if (e instanceof GridAuthorizationEvent) {
+                    GridAuthorizationEvent ae = (GridAuthorizationEvent)e;
+
+                    res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
+                        ae.subject()));
+                }
+                else if (e instanceof GridSecureSessionEvent) {
+                    GridSecureSessionEvent se = (GridSecureSessionEvent) e;
+
+                    res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
+                        se.subjectId()));
                 }
                 else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
