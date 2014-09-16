@@ -821,9 +821,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridCacheEntryEx<K, V> cached,
         final CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb
     ) {
-        GridFuture<Object> forceFut = req.returnValue() ? preldr.request(req.keys(), req.topologyVersion()) : null;
+        GridFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
 
-        if (forceFut == null || forceFut.isDone())
+        if (forceFut.isDone())
             updateAllAsyncInternal0(nodeId, req, cached, completionCb);
         else {
             forceFut.listenAsync(new CI1<GridFuture<Object>>() {

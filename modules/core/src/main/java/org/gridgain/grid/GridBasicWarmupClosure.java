@@ -39,7 +39,7 @@ public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> 
     private int gridCnt = DFLT_GRID_CNT;
 
     /** Warmup date format. */
-    private static final SimpleDateFormat WARMUP_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
+    private static final SimpleDateFormat WARMUP_DATE_FMT = new SimpleDateFormat("HH:mm:ss");
 
     /** Warmup thread count. */
     private int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
