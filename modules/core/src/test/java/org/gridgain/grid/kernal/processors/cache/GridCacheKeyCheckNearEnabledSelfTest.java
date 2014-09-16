@@ -7,18 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.grid.kernal.processors.cache;
 
-import java.util.*;
+import org.gridgain.grid.cache.*;
 
 /**
- * The listener interface for receiving "selection" events from standard Visor panels.
+ * Tests for key check for near cache.
  */
-public interface VisorSelectionListener<T> {
-    /**
-     * On selection changed.
-     *
-     * @param selected Selected elements. If nothing selected return all.
-     */
-    public void onChange(Collection<T> selected);
+public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return GridCacheDistributionMode.NEAR_PARTITIONED;
+    }
 }
