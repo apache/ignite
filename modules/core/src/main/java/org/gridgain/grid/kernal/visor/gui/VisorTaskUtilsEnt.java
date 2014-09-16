@@ -69,8 +69,16 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
 
         EVT_LIC_CLEARED,
         EVT_LIC_VIOLATION,
-        EVT_LIC_GRACE_EXPIRED
+        EVT_LIC_GRACE_EXPIRED,
+
+        EVT_AUTHORIZATION_FAILED,
+        EVT_AUTHENTICATION_FAILED,
+
+        EVT_SECURE_SESSION_VALIDATION_FAILED
     };
+
+    /** Only non task event types that Visor should collect. */
+    private static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
 
     /**
      * Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders.
@@ -161,8 +169,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
 
                 // Retains events by lastOrder, period and type.
                 return e.localOrder() > lastOrder && e.timestamp() > notOlderThan &&
-                        all ? (F.contains(VISOR_TASK_EVTS, e.type()) || F.contains(VISOR_NON_TASK_EVTS, e.type()))
-                            : F.contains(VISOR_NON_TASK_EVTS, e.type());
+                    (all ? F.contains(VISOR_ALL_EVTS, e.type()) : F.contains(VISOR_NON_TASK_EVTS, e.type()));
             }
         };
 
@@ -216,6 +223,24 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
                 GridLicenseEvent le = (GridLicenseEvent)e;
 
                 res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
+            }
+            else if (e instanceof GridAuthorizationEvent) {
+                GridAuthorizationEvent ae = (GridAuthorizationEvent)e;
+
+                res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
+                    ae.subject()));
+            }
+            else if (e instanceof GridAuthenticationEvent) {
+                GridAuthenticationEvent ae = (GridAuthenticationEvent)e;
+
+                res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
+                    ae.subjectId(), ae.login()));
+            }
+            else if (e instanceof GridSecureSessionEvent) {
+                GridSecureSessionEvent se = (GridSecureSessionEvent)e;
+
+                res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
+                    se.subjectId()));
             }
         }
 

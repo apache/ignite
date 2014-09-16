@@ -644,19 +644,6 @@ public class GridCacheUtils {
     /**
      * Checks if given node has specified cache started.
      *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
-        assert ctx != null;
-
-        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
      * @param cacheName Cache name.
      * @param node Node to check.
      * @return {@code True} if given node has specified cache started.

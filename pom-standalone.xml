@@ -19,8 +19,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.2.1</gridgain.version>
-        <gridgain.edition>platform</gridgain.edition>
+        <gridgain.version>6.5.0</gridgain.version>
+        <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.0</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -381,7 +381,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>
@@ -538,7 +538,7 @@
                                 </group>
                                 <group>
                                     <title>Visor Plugins</title>
-                                    <packages>org.gridgain.visor.plugin:org.gridgain.visor.plugin.api</packages>
+                                    <packages>org.gridgain.visor.plugin</packages>
                                 </group>
                                 <group>
                                     <title>Spring Caching</title>
@@ -591,7 +591,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Platform</b>
+                                                            <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${gridgain.version}</strong>
@@ -830,28 +830,15 @@
                                     </fileset>
                                 </replace>
 
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-win.zip"
+                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}.zip"
                                      encoding="UTF-8">
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-win">
-                                        <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.so"/>
-                                        <exclude name="**/*.dylib"/>
-                                        <exclude name="**/*.sl"/>
-                                    </zipfileset>
-                                </zip>
-
-                                <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-nix.zip"
-                                     encoding="UTF-8">
-                                    <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix"
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
                                                 includes="**/*.sh"
                                                 filemode="755"/>
                                     <zipfileset dir="target/release-package"
-                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}-nix">
+                                                prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
                                         <exclude name="**/*.sh"/>
-                                        <exclude name="**/*.bat"/>
-                                        <exclude name="**/*.exe"/>
                                     </zipfileset>
                                 </zip>
                             </target>
