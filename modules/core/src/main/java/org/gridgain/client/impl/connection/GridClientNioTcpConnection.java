@@ -525,6 +525,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         switch (fut.retryState()) {
             case TcpClientFuture.STATE_INITIAL: {
                 if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE) {
+                    if (credentials() == null) {
+                        fut.onDone(new GridClientAuthenticationException("Client has no credentials [clientId=" +
+                            clientId + ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+
+                        return;
+                    }
+
                     fut.retryState(TcpClientFuture.STATE_AUTH_RETRY);
 
                     GridClientAuthenticationRequest req = buildAuthRequest();
