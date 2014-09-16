@@ -7,14 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.service;
+package org.gridgain.visor.plugin;
+
+import java.util.*;
 
 /**
- * Single node services test.
+ * The listener interface for receiving "selection" events from standard Visor panels.
  */
-public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int nodeCount() {
-        return 1;
-    }
+public interface VisorSelectionListener<T> {
+    /**
+     * On selection changed.
+     *
+     * @param selected Selected elements. If nothing selected return all.
+     */
+    public void onChange(Collection<T> selected);
 }

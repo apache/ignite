@@ -7,16 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
-
-import javax.swing.*;
+package org.gridgain.visor.plugin;
 
 /**
- * Base interface for Visor components.
+ * Standard Visor panel with log entries.
+ *
+ * This panel will be created by {@link VisorPluginComponentsFactory}.
  */
-public interface VisorPluginComponent {
-    /**
-     * Get component container.
-     **/
-    public JComponent container();
+public interface VisorPluginLogPanel extends VisorPluginComponent {
 }

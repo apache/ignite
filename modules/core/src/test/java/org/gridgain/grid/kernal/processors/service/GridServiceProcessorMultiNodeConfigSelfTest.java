@@ -18,9 +18,6 @@ import java.util.concurrent.*;
 
 /**
  * Single node services test.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** Cluster singleton name. */
