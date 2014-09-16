@@ -13,6 +13,7 @@ import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
@@ -30,15 +31,17 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+        
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
 
-        suite.addTestSuite(ShmemPrivate.class);
-        suite.addTestSuite(ShmemDualSync.class);
-        suite.addTestSuite(ShmemDualAsync.class);
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualAsync.class.getName())));
 
-        suite.addTestSuite(LoopbackPrivate.class);
-        suite.addTestSuite(LoopbackDualSync.class);
-        suite.addTestSuite(LoopbackDualAsync.class);
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }
@@ -48,11 +51,13 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suiteNoarchOnly() throws Exception {
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+        
         TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
 
-        suite.addTestSuite(LoopbackPrivate.class);
-        suite.addTestSuite(LoopbackDualSync.class);
-        suite.addTestSuite(LoopbackDualAsync.class);
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }

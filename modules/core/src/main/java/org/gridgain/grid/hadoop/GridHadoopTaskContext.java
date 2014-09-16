@@ -180,4 +180,18 @@ public abstract class GridHadoopTaskContext {
      * Cancel current task execution.
      */
     public abstract void cancel();
+
+    /**
+     * Prepare local environment for the task.
+     *
+     * @throws GridException If failed.
+     */
+    public abstract void prepareTaskEnvironment() throws GridException;
+
+    /**
+     *  Cleans up local environment of the task.
+     *
+     * @throws GridException If failed.
+     */
+    public abstract void cleanupTaskEnvironment() throws GridException;
 }

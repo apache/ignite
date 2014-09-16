@@ -11,13 +11,15 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
@@ -27,9 +29,6 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
-    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
-    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
-
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
@@ -49,31 +48,43 @@ public class GridHadoopUtils {
     private static final String OLD_REDUCE_CLASS_ATTR = "mapred.reducer.class";
 
     /**
-     * Convert Hadoop job metadata to job status.
+     * Wraps native split.
      *
-     * @param meta Metadata.
-     * @return Status.
+     * @param id Split ID.
+     * @param split Split.
+     * @param hosts Hosts.
+     * @throws IOException If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
-        GridHadoopJobInfo jobInfo = meta.jobInfo();
+    public static GridHadoopSplitWrapper wrapSplit(int id, Object split, String[] hosts) throws IOException {
+        ByteArrayOutputStream arr = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(arr);
 
-        return new GridHadoopJobStatus(
-            meta.jobId(),
-            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            jobInfo.jobName(),
-            jobInfo.user(),
-            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
-            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.mapReducePlan().mappers(),
-            meta.mapReducePlan().reducers(),
-            meta.startTimestamp(),
-            meta.setupCompleteTimestamp(),
-            meta.mapCompleteTimestamp(),
-            meta.phase(),
-            SPECULATIVE_CONCURRENCY,
-            meta.version()
-        );
+        assert split instanceof Writable;
+
+        ((Writable)split).write(out);
+
+        out.flush();
+
+        return new GridHadoopSplitWrapper(id, split.getClass().getName(), arr.toByteArray(), hosts);
+    }
+
+    /**
+     * Unwraps native split.
+     *
+     * @param o Wrapper.
+     * @return Split.
+     */
+    public static Object unwrapSplit(GridHadoopSplitWrapper o) {
+        try {
+            Writable w = (Writable)GridHadoopUtils.class.getClassLoader().loadClass(o.className()).newInstance();
+
+            w.readFields(new ObjectInputStream(new ByteArrayInputStream(o.bytes())));
+
+            return w;
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -367,6 +378,47 @@ public class GridHadoopUtils {
             props.put(entry.getKey(), entry.getValue());
 
         return new GridHadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
+    }
+
+    /**
+     * Throws new {@link GridException} with original exception is serialized into string.
+     * This is needed to transfer error outside the current class loader.
+     *
+     * @param e Original exception.
+     * @return GridException New exception.
+     */
+    public static GridException transformException(Throwable e) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        e.printStackTrace(new PrintStream(os, true));
+
+        return new GridException(os.toString());
+    }
+
+    /**
+     * Returns work directory for job execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param jobId Job ID.
+     * @return Working directory for job.
+     * @throws GridException If Failed.
+     */
+    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws GridException {
+        return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    }
+
+    /**
+     * Returns subdirectory of job working directory for task execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param info Task info.
+     * @return Working directory for task.
+     * @throws GridException If Failed.
+     */
+    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws GridException {
+        File jobLocDir = jobLocalDir(locNodeId, info.jobId());
+
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
     /**

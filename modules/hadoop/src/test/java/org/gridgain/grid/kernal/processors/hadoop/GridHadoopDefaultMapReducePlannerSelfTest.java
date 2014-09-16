@@ -19,7 +19,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
@@ -80,11 +79,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
     static {
         GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
-        GridTestUtils.setFieldValue(PLANNER, "log", new GridJavaLogger());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        GridTestUtils.setFieldValue(PLANNER, "log", log());
+
         BLOCK_MAP.clear();
         PROXY_MAP.clear();
     }

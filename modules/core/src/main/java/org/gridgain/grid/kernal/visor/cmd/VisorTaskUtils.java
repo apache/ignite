@@ -41,18 +41,28 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Concat two arrays in one.
+     * Concat arrays in one.
      *
-     * @param a First array.
-     * @param b Second array.
+     * @param arrays Arrays.
      * @return Summary array.
      */
-    public static int[] concat(int[] a, int[] b) {
-        int[] c = Arrays.copyOf(a, a.length + b.length);
+    public static int[] concat(int[] ... arrays) {
+        assert arrays != null;
+        assert arrays.length > 1;
 
-        System.arraycopy(b, 0, c, a.length, b.length);
+        int length = 0;
 
-        return c;
+        for (int[] a : arrays)
+            length += a.length;
+
+        int[] r = Arrays.copyOf(arrays[0], length);
+
+        for (int i = 1, shift = 0; i < arrays.length; i++) {
+            shift += arrays[i - 1].length;
+            System.arraycopy(arrays[i], 0, r, shift, arrays[i].length);
+        }
+
+        return r;
     }
 
     /**

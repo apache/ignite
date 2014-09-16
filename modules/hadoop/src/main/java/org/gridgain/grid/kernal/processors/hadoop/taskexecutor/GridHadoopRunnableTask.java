@@ -15,9 +15,10 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
+import java.util.concurrent.Callable;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
@@ -25,7 +26,7 @@ import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 /**
  * Runnable task.
  */
-public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> {
+public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** */
     private final GridUnsafeMemory mem;
 
@@ -89,21 +90,21 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        ctx = job.getTaskContext(info);
-
-        ctx.counters(counters);
-
-        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
 
+        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
+
         try {
-            job.prepareTaskEnvironment(info);
+            ctx = job.getTaskContext(info);
+
+            ctx.counters(counters);
+
+            ctx.prepareTaskEnvironment();
 
             runTask(ctx);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                    info.attempt(), null));
+                ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
                     runTask(ctx);
@@ -130,7 +131,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (local != null)
                 local.close();
 
-            job.cleanupTaskEnvironment(info);
+            if (ctx != null)
+                ctx.cleanupTaskEnvironment();
         }
 
         return null;

@@ -74,7 +74,7 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
         try {
             GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-            Class<?> jobCls = ldr.loadClassExplicitly(GridHadoopV2Job.class.getName());
+            Class<?> jobCls = ldr.loadClass(GridHadoopV2Job.class.getName());
 
             Constructor<?> constructor = jobCls.getConstructor(GridHadoopJobId.class, GridHadoopDefaultJobInfo.class,
                 GridLogger.class);

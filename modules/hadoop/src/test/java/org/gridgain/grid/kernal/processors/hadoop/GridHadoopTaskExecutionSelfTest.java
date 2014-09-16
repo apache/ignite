@@ -36,19 +36,23 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  */
 public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest {
     /** Line count. */
-    private static final AtomicInteger totalLineCnt = new AtomicInteger();
+    private static final AtomicInteger totalLineCnt = GridHadoopSharedMap.put("totalLineCnt", new AtomicInteger());
 
     /** Executed tasks. */
-    private static final AtomicInteger executedTasks = new AtomicInteger();
+    private static final AtomicInteger executedTasks = GridHadoopSharedMap.put("executedTasks", new AtomicInteger());
 
     /** Cancelled tasks. */
-    private static final AtomicInteger cancelledTasks = new AtomicInteger();
+    private static final AtomicInteger cancelledTasks = GridHadoopSharedMap.put("cancelledTasks", new AtomicInteger());
 
     /** Working directory of each task. */
-    private static final Map<String, String> taskWorkDirs = new ConcurrentHashMap<>();
+    private static final Map<String, String> taskWorkDirs = GridHadoopSharedMap.put("taskWorkDirs",
+        new ConcurrentHashMap<String, String>());
 
     /** Mapper id to fail. */
-    private static volatile int failMapperId;
+    private static final AtomicInteger failMapperId = GridHadoopSharedMap.put("failMapperId", new AtomicInteger());
+
+    /** Number of splits of the current input. */
+    private static final AtomicInteger splitsCount = GridHadoopSharedMap.put("splitsCount", new AtomicInteger());
 
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
@@ -245,11 +249,12 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If fails.
      */
     private Configuration prepareJobForCancelling() throws Exception {
-        prepareFile("/testFile", 5000);
+        prepareFile("/testFile", 1500);
 
         executedTasks.set(0);
         cancelledTasks.set(0);
-        failMapperId = 0;
+        failMapperId.set(0);
+        splitsCount.set(0);
 
         Configuration cfg = new Configuration();
 
@@ -263,7 +268,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setNumReduceTasks(0);
 
-        job.setInputFormatClass(TextInputFormat.class);
+        job.setInputFormatClass(InFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://:" + getTestGridName(0) + "@/"));
         FileOutputFormat.setOutputPath(job, new Path("ggfs://:" + getTestGridName(0) + "@/output/"));
@@ -271,6 +276,21 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         job.setJarByClass(getClass());
 
         return job.getConfiguration();
+    }
+
+    /**
+     * Test input format.
+     */
+    private static class InFormat extends TextInputFormat {
+        @Override public List<InputSplit> getSplits(JobContext ctx) throws IOException {
+            List<InputSplit> res = super.getSplits(ctx);
+
+            splitsCount.set(res.size());
+
+            X.println("___ split of input: " + splitsCount.get());
+
+            return res;
+        }
     }
 
     /**
@@ -285,7 +305,17 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return executedTasks.get() == 16;
+                return splitsCount.get() > 0;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
+
+            assertTrue(false);
+        }
+
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return executedTasks.get() == splitsCount.get();
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -294,7 +324,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }
 
         // Fail mapper with id "1", cancels others
-        failMapperId = 1;
+        failMapperId.set(1);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -326,9 +356,19 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
+                return splitsCount.get() > 0;
+            }
+        }, 20000)) {
+            U.dumpThreads(log);
+
+            assertTrue(false);
+        }
+
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 X.println("___ executed tasks: " + executedTasks.get());
 
-                return executedTasks.get() == 16;
+                return executedTasks.get() == splitsCount.get();
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -361,14 +401,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         private int mapperId;
 
         /** {@inheritDoc} */
-        @Override protected void setup(Context context) throws IOException, InterruptedException {
+        @Override protected void setup(Context ctx) throws IOException, InterruptedException {
             mapperId = executedTasks.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void run(Context context) throws IOException, InterruptedException {
+        @Override public void run(Context ctx) throws IOException, InterruptedException {
             try {
-                super.run(context);
+                super.run(ctx);
             }
             catch (GridHadoopTaskCancelledException e) {
                 cancelledTasks.incrementAndGet();
@@ -378,8 +418,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         }
 
         /** {@inheritDoc} */
-        @Override protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            if (mapperId == failMapperId)
+        @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
+            if (mapperId == failMapperId.get())
                 throw new IOException();
 
             Thread.sleep(1000);
@@ -391,7 +431,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      */
     private static class FailMapper extends Mapper<Object, Text, Text, IntWritable> {
         /** {@inheritDoc} */
-        @Override protected void map(Object key, Text value, Context context)
+        @Override protected void map(Object key, Text val, Context ctx)
             throws IOException, InterruptedException {
             throw new IOException("Expected");
         }
@@ -408,17 +448,20 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         public static final Text LINE_COUNT = new Text("lineCount");
 
         /** {@inheritDoc} */
-        @Override protected void setup(Context context) throws IOException, InterruptedException {
-            X.println("___ Mapper: " + context.getTaskAttemptID());
+        @Override protected void setup(Context ctx) throws IOException, InterruptedException {
+            X.println("___ Mapper: " + ctx.getTaskAttemptID());
 
-            String taskId = context.getTaskAttemptID().toString();
-            String workDir = FileSystem.getLocal(context.getConfiguration()).getWorkingDirectory().toString();
+            String taskId = ctx.getTaskAttemptID().toString();
+
+            LocalFileSystem locFs = FileSystem.getLocal(ctx.getConfiguration());
+
+            String workDir = locFs.getWorkingDirectory().toString();
 
             assertNull(taskWorkDirs.put(workDir, taskId));
         }
 
         /** {@inheritDoc} */
-        @Override protected void map(Object key, Text value, Context ctx) throws IOException, InterruptedException {
+        @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
             if (ctx.getConfiguration().getBoolean(MAP_WRITE, false))
                 ctx.write(LINE_COUNT, ONE);
             else
@@ -434,7 +477,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         IntWritable sum = new IntWritable();
 
         /** {@inheritDoc} */
-        @Override protected void setup(Context context) throws IOException, InterruptedException {
+        @Override protected void setup(Context ctx) throws IOException, InterruptedException {
             X.println("___ Combiner: ");
         }
 
@@ -462,11 +505,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         IntWritable sum = new IntWritable();
 
         /** {@inheritDoc} */
-        @Override protected void setup(Context context) throws IOException, InterruptedException {
-            X.println("___ Reducer: " + context.getTaskAttemptID());
+        @Override protected void setup(Context ctx) throws IOException, InterruptedException {
+            X.println("___ Reducer: " + ctx.getTaskAttemptID());
 
-            String taskId = context.getTaskAttemptID().toString();
-            String workDir = FileSystem.getLocal(context.getConfiguration()).getWorkingDirectory().toString();
+            String taskId = ctx.getTaskAttemptID().toString();
+            String workDir = FileSystem.getLocal(ctx.getConfiguration()).getWorkingDirectory().toString();
 
             assertNull(taskWorkDirs.put(workDir, taskId));
         }

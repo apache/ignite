@@ -85,7 +85,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
                 throw new UnsupportedOperationException(); // TODO
             }
             else if (split instanceof GridHadoopSplitWrapper) {
-                inputSplit = (InputSplit)((GridHadoopSplitWrapper)split).innerSplit();
+                inputSplit = (InputSplit)GridHadoopUtils.unwrapSplit((GridHadoopSplitWrapper)split);
             }
             else
                 throw new IllegalStateException();

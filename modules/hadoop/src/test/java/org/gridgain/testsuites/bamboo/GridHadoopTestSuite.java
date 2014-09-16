@@ -10,104 +10,191 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.*;
+import org.apache.commons.compress.archivers.tar.*;
+import org.apache.commons.compress.compressors.gzip.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
  */
 public class GridHadoopTestSuite extends TestSuite {
-    /** */
-    private static Class<?> loadClass(Class<?> cls) throws ClassNotFoundException, GridException {
-        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-
-        return ldr.loadClassExplicitly(cls.getName());
-    }
-
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        downloadHadoop();
+        
+        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+        
         TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
 
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemClientSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerStateSelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemLoggerSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridGgfsHadoopFileSystemHandshakeSelfTest.class));
-//
-//        suite.addTestSuite(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class);
-//
-//        suite.addTest(new TestSuite(GridGgfsHadoopDualSyncSelfTest.class));
-//        suite.addTest(new TestSuite(GridGgfsHadoopDualAsyncSelfTest.class));
-//
-//        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
-//
-//        suite.addTest(new TestSuite(GridHadoopFileSystemsTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopValidationSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopDefaultMapReducePlannerSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopJobTrackerSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopHashMapSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopDataStreamSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopConcurrentHashMultimapSelftest.class));
-//        suite.addTestSuite(GridHadoopSkipListSelfTest.class);
-//        suite.addTest(new TestSuite(GridHadoopTaskExecutionSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopV2JobSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopSerializationWrapperSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopSplitWrapperSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopTasksV1Test.class));
-//        suite.addTest(new TestSuite(GridHadoopTasksV2Test.class));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
 
-//        System.out.println(TestCase.class.getProtectionDomain().getCodeSource().getLocation());
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemSecondaryModeSelfTest.class.getName())));
 
-//        suite.addTest(new TestSuite(GridHadoopMapReduceTest.class));
-        suite.addTest(new TestSuite(loadClass(GridHadoopMapReduceTest.class)));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemClientSelfTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoggerStateSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoggerSelfTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemHandshakeSelfTest.class.getName())));
 
-//        TestSuite ts = new TestSuite();
-//
-//        Class<?> cls = loadClass(GridHadoopMapReduceTest.class);
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest.class.getName())));
 
-//        Thread.currentThread().setContextClassLoader(cls.getClassLoader().getParent());
-//
-//        ts.addTest(createTest(cls, "testWholeMapReduceExecution"));
-//
-//        suite.addTest(ts);
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualAsyncSelfTest.class.getName())));
 
-//        suite.addTest(new TestSuite(cls));
+        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
 
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopFileSystemsTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopValidationSelfTest.class.getName())));
 
-//        suite.addTest(new TestSuite(GridHadoopMapReduceEmbeddedSelfTest.class));
-//
-//        //TODO: GG-8936 Fix and uncomment ExternalExecution tests
-//        //suite.addTest(new TestSuite(GridHadoopExternalTaskExecutionSelfTest.class));
-//        suite.addTest(new TestSuite(GridHadoopExternalCommunicationSelfTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopSortingTest.class));
-//        suite.addTest(new TestSuite(GridHadoopSortingExternalTest.class));
-//
-//        suite.addTest(new TestSuite(GridHadoopGroupingTest.class));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopDefaultMapReducePlannerSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopJobTrackerSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopHashMapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopDataStreamSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopConcurrentHashMultimapSelftest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSkipListSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopTaskExecutionSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopV2JobSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSerializationWrapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSplitWrapperSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopTasksV1Test.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopTasksV2Test.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopMapReduceTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopMapReduceEmbeddedSelfTest.class.getName())));
+
+        //TODO: GG-8936 Fix and uncomment ExternalExecution tests
+        //suite.addTest(new TestSuite(ldr.loadClass(GridHadoopExternalTaskExecutionSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopExternalCommunicationSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSortingTest.class.getName())));
+
+        //TODO: GG-8936 Fix and uncomment ExternalExecution tests
+        //suite.addTest(new TestSuite(ldr.loadClass(GridHadoopSortingExternalTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(GridHadoopGroupingTest.class.getName())));
 
         return suite;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public static void downloadHadoop() throws Exception {
+        String hadoopHome = X.getSystemOrEnv("HADOOP_HOME");
+
+        if (!F.isEmpty(hadoopHome) && new File(hadoopHome).isDirectory()) {
+            X.println("HADOOP_HOME is set to: " + hadoopHome);
+
+            return;
+        }
+
+        String ver = X.getSystemOrEnv("hadoop.version", "2.4.1");
+
+        X.println("Will use Hadoop version: " + ver);
+
+        String path = "hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
+
+        List<String> urls = F.asList(
+            "http://apache-mirror.rbc.ru/pub/apache/hadoop/common/",
+            "http://www.eu.apache.org/dist/hadoop/common/",
+            "http://www.us.apache.org/dist/hadoop/common/");
+
+        String tmpPath = System.getProperty("java.io.tmpdir");
+
+        X.println("tmp: " + tmpPath);
+
+        File install = new File(tmpPath + File.separatorChar + "__hadoop");
+
+        File home = new File(install, "hadoop-" + ver);
+
+        X.println("Setting HADOOP_HOME to " + home.getAbsolutePath());
+
+        System.setProperty("HADOOP_HOME", home.getAbsolutePath());
+
+        if (home.exists()) {
+            X.println("Destination directory already exists.");
+
+            return;
+        }
+
+        for (String url : urls) {
+            if (!install.mkdirs())
+                throw new IOException("Failed to create directory: " + install.getAbsolutePath());
+
+            URL u = new URL(url + path);
+
+            X.println("Attempting to download from: " + u);
+
+            try {
+                URLConnection c = u.openConnection();
+
+                c.connect();
+
+                try (TarArchiveInputStream in = new TarArchiveInputStream(new GzipCompressorInputStream(
+                    new BufferedInputStream(c.getInputStream(), 32 * 1024)))) {
+
+                    TarArchiveEntry entry;
+
+                    while ((entry = in.getNextTarEntry()) != null) {
+                        File dest = new File(install, entry.getName());
+
+                        if (entry.isDirectory()) {
+                            if (!dest.mkdirs())
+                                throw new IllegalStateException();
+                        }
+                        else {
+                            X.print(" [" + dest);
+
+                            try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(dest, false),
+                                    128 * 1024)) {
+                                U.copy(in, out);
+
+                                out.flush();
+                            }
+
+                            X.println("]");
+                        }
+                    }
+                }
+
+                return;
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+
+                U.delete(install);
+            }
+        }
+
+        throw new IllegalStateException("Failed to install Hadoop.");
     }
 }

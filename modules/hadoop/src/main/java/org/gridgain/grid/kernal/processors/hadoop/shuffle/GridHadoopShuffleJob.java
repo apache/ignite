@@ -99,8 +99,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
-                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, GridHadoopTaskType.REDUCE, job.id(),
-                        rdc, 0, null);
+                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
                 reducersCtx.put(rdc, job.getTaskContext(taskInfo));
             }

@@ -20,15 +20,19 @@ import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 
-import java.io.*;
+import java.io.File;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
  * Hadoop job implementation for v2 API.
@@ -53,7 +57,14 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final GridHadoopV2JobResourceManager rsrcMgr;
 
     /** */
-    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridHadoopTaskContext> ctxs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>> ctxs =
+        new ConcurrentHashMap8<>();
+
+    /** */
+    private final Queue<GridHadoopClassLoader> clsLdrPool = new ConcurrentLinkedQueue<>();
+
+    /** Local node ID */
+    private UUID locNodeId;
 
     /**
      * @param jobId Job ID.
@@ -69,10 +80,18 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
+        GridHadoopClassLoader clsLdr = (GridHadoopClassLoader)getClass().getClassLoader();
+
+        clsLdrPool.add(clsLdr);
+
         // Before create JobConf instance we should set new context class loader.
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+        Thread.currentThread().setContextClassLoader(clsLdr);
 
         jobConf = new JobConf();
+
+        GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
+
+        Thread.currentThread().setContextClassLoader(null);
 
         for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
             jobConf.set(e.getKey(), e.getValue());
@@ -94,116 +113,145 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopInputSplit> input() throws GridException {
-        String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
 
-        if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
-            // Assume that we have needed classes and try to generate input splits ourself.
-            if (jobConf.getUseNewMapper())
-                return GridHadoopV2Splitter.splitJob(jobCtx);
-            else
-                return GridHadoopV1Splitter.splitJob(jobConf);
-        }
+        try {
+            String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
-        Path jobDir = new Path(jobDirPath);
+            if (jobDirPath == null) { // Probably job was submitted not by hadoop client.
+                // Assume that we have needed classes and try to generate input splits ourself.
+                if (jobConf.getUseNewMapper())
+                    return GridHadoopV2Splitter.splitJob(jobCtx);
+                else
+                    return GridHadoopV1Splitter.splitJob(jobConf);
+            }
 
-        try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf)) {
-            JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf, jobDir);
+            Path jobDir = new Path(jobDirPath);
 
-            if (F.isEmpty(metaInfos))
-                throw new GridException("No input splits found.");
+            try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf)) {
+                JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf, jobDir);
 
-            Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
+                if (F.isEmpty(metaInfos))
+                    throw new GridException("No input splits found.");
 
-            try (FSDataInputStream in = fs.open(splitsFile)) {
-                Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
+                Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
 
-                for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
-                    long off = metaInfo.getStartOffset();
+                try (FSDataInputStream in = fs.open(splitsFile)) {
+                    Collection<GridHadoopInputSplit> res = new ArrayList<>(metaInfos.length);
 
-                    String[] hosts = metaInfo.getLocations();
+                    for (JobSplit.TaskSplitMetaInfo metaInfo : metaInfos) {
+                        long off = metaInfo.getStartOffset();
 
-                    in.seek(off);
+                        String[] hosts = metaInfo.getLocations();
 
-                    String clsName = Text.readString(in);
+                        in.seek(off);
 
-                    GridHadoopFileBlock block = GridHadoopV1Splitter.readFileBlock(clsName, in, hosts);
+                        String clsName = Text.readString(in);
 
-                    if (block == null)
-                        block = GridHadoopV2Splitter.readFileBlock(clsName, in, hosts);
+                        GridHadoopFileBlock block = GridHadoopV1Splitter.readFileBlock(clsName, in, hosts);
 
-                    res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
+                        if (block == null)
+                            block = GridHadoopV2Splitter.readFileBlock(clsName, in, hosts);
+
+                        res.add(block != null ? block : new GridHadoopExternalSplit(hosts, off));
+                    }
+
+                    return res;
                 }
-
-                return res;
+            }
+            catch (Throwable e) {
+                throw transformException(e);
             }
         }
-        catch (IOException e) {
-            throw new GridException(e);
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
-        T2<GridHadoopTaskType, Integer> locTaskId =  new T2<>(info.type(),  info.taskNumber());
+        T2<GridHadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
-        GridHadoopTaskContext res = ctxs.get(locTaskId);
+        GridFutureAdapter<GridHadoopTaskContext> fut = ctxs.get(locTaskId);
 
-        if (res != null)
-            return res;
+        if (fut != null)
+            return fut.get();
 
-        GridHadoopClassLoader ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
+        GridFutureAdapter<GridHadoopTaskContext> old = ctxs.putIfAbsent(locTaskId, fut = new GridFutureAdapter<>());
+
+        if (old != null)
+            return old.get();
+
+        GridHadoopClassLoader ldr = clsLdrPool.poll();
+
+        if (ldr == null)
+            ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
 
         try {
-            Class<?> cls = ldr.loadClassExplicitly(GridHadoopV2TaskContext.class.getName());
+            Class<?> cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
 
-            Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class, GridHadoopJobId.class);
+            Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class,
+                GridHadoopJobId.class, UUID.class);
 
-            res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId);
+            GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId);
+
+            fut.onDone(res);
+
+            return res;
         }
-        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
-            IllegalAccessException e) {
+        catch (Throwable e) {
+            GridException te = transformException(e);
 
-            throw new GridException(e);
+            fut.onDone(te);
+
+            throw te;
         }
-
-        GridHadoopTaskContext old = ctxs.putIfAbsent(locTaskId, res);
-
-        return old == null ? res : old;
     }
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
-        rsrcMgr.prepareJobEnvironment(!external, locNodeId);
+        this.locNodeId = locNodeId;
+
+        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+
+        try {
+            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void dispose(boolean external) throws GridException {
-        if (rsrcMgr != null)
-            rsrcMgr.cleanupJobEnvironment(!external);
+        if (rsrcMgr != null && !external) {
+            File jobLocDir = jobLocalDir(locNodeId, jobId);
+
+            if (jobLocDir.exists())
+                jobLocDir.delete();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.prepareTaskEnvironment(info);
+        rsrcMgr.prepareTaskWorkDir(taskLocalDir(locNodeId, info));
     }
 
     /** {@inheritDoc} */
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
-        rsrcMgr.cleanupTaskEnvironment(info);
+        GridHadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
+
+        clsLdrPool.offer((GridHadoopClassLoader)ctx.getClass().getClassLoader());
+
+        File locDir = taskLocalDir(locNodeId, info);
+
+        if (locDir.exists())
+            locDir.delete();
     }
 
     /** {@inheritDoc} */
     @Override public void cleanupStagingDirectory() {
         if (rsrcMgr != null)
             rsrcMgr.cleanupStagingDirectory();
-    }
-
-    /**
-     * Returns hadoop job context.
-     *
-     * @return Job context.
-     */
-    public JobContextImpl jobContext() {
-        return jobCtx;
     }
 }
