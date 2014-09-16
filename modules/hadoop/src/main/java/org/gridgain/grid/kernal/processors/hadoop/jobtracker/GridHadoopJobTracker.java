@@ -591,17 +591,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             try {
                 ctx.taskExecutor().onJobStateChanged(meta);
-
-                processJobMetaUpdate(jobId, meta, locNodeId);
-
-                jobComplete |= meta.phase() == PHASE_COMPLETE;
             }
-            catch (Throwable e) {
+            catch (GridException e) {
                 U.error(log, "Failed to process job state changed callback (will fail the job) " +
                     "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
 
                 transform(jobId, new CancelJobClosure(null, e));
             }
+
+            processJobMetaUpdate(jobId, meta, locNodeId);
+
+            jobComplete |= meta.phase() == PHASE_COMPLETE;
         }
 
         // One or more jobs are complete and removed, helping to GC class loaders to avoid PermGen pollution.
