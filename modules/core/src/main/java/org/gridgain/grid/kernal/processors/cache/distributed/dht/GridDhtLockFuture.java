@@ -1146,7 +1146,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     catch (GridCacheEntryRemovedException e) {
                         assert false : "Entry cannot become obsolete when DHT local candidate is added " +
                             "[e=" + e + ", ex=" + e + ']';
-
                     }
                 }
 
