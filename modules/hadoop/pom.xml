@@ -192,7 +192,7 @@
                         <classpathDependencyExcludes>com.jcraft:jsch</classpathDependencyExcludes>
                         <classpathDependencyExcludes>com.google.code.findbugs:jsr305</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.zookeeper:zookeeper</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>org.apache.commons:commons-compress</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>org.apache.commons:commons-compress</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>org.tukaani:xz</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-hdfs</classpathDependencyExcludes>
                         <classpathDependencyExcludes>commons-daemon:commons-daemon</classpathDependencyExcludes>
