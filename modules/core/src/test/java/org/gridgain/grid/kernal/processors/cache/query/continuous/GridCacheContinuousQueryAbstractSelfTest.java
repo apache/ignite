@@ -40,6 +40,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
@@ -1409,6 +1410,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 GridCacheQueryReadEvent qe = (GridCacheQueryReadEvent)evt;
 
+                assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
@@ -1432,6 +1434,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
+                assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
@@ -1450,8 +1453,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         try {
             for (int i = 0; i < gridCount(); i++) {
-                grid(i).events().localListen(lsnr, EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ);
-                grid(i).events().localListen(execLsnr, EVT_CACHE_CONTINUOUS_QUERY_EXECUTED);
+                grid(i).events().localListen(lsnr, EVT_CACHE_QUERY_OBJECT_READ);
+                grid(i).events().localListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
 
             GridCache<Integer, Integer> cache = grid(0).cache(null);
@@ -1483,8 +1486,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
         finally {
             for (int i = 0; i < gridCount(); i++) {
-                grid(i).events().stopLocalListen(lsnr, EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ);
-                grid(i).events().stopLocalListen(execLsnr, EVT_CACHE_CONTINUOUS_QUERY_EXECUTED);
+                grid(i).events().stopLocalListen(lsnr, EVT_CACHE_QUERY_OBJECT_READ);
+                grid(i).events().stopLocalListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
         }
     }

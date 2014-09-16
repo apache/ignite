@@ -444,11 +444,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         switch (qry.type()) {
             case SQL:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "SQL query executed.",
-                        EVT_CACHE_SQL_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
@@ -463,11 +464,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
 
             case SCAN:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Scan query executed.",
-                        EVT_CACHE_SCAN_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
                         cctx.namex(),
                         null,
                         null,
@@ -481,11 +483,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return scanIterator(qry);
 
             case TEXT:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Full text query executed.",
-                        EVT_CACHE_FULL_TEXT_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
@@ -533,11 +536,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         assert qry.type() == SQL_FIELDS;
 
-        if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED)) {
+        if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                 cctx.localNode(),
                 "SQL fields query executed.",
-                EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED,
+                EVT_CACHE_QUERY_EXECUTED,
+                org.gridgain.grid.cache.query.GridCacheQueryType.SQL_FIELDS,
                 cctx.namex(),
                 null,
                 qry.clause(),
@@ -837,11 +841,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             rowIt.remove();
                     }
 
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ)) {
+                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                         cctx.gridEvents().record(new GridCacheQueryReadEvent<K, V>(
                             cctx.localNode(),
                             "SQL fields query result set row read.",
-                            EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ,
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -1037,11 +1042,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     switch (type) {
                         case SQL:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "SQL query entry read.",
-                                    EVT_CACHE_SQL_QUERY_OBJECT_READ,
+                                    EVT_CACHE_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1059,11 +1065,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             break;
 
                         case TEXT:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Full text query entry read.",
-                                    EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ,
+                                    EVT_CACHE_QUERY_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1081,11 +1088,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             break;
 
                         case SCAN:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Scan query entry read.",
-                                    EVT_CACHE_SCAN_QUERY_OBJECT_READ,
+                                    EVT_CACHE_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
                                     cctx.namex(),
                                     null,
                                     null,
