@@ -55,11 +55,11 @@ if [ -d "$HADOOP_COMMON_HOME" ]
             file_name=$(basename $file)
 
             if [ -f ${file} ] && [[ "${file_name}" != slf4j*.jar ]] && [[ "${file_name}" != log4j*.jar ]] ; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}
+                GRIDGAIN_LIBS={file}${SEP}${GRIDGAIN_LIBS}
             fi
         done
     else
-        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*
+        GRIDGAIN_LIBS=${GRIDGAIN_HOME}/bin/include/visorui/*${SEP}{GRIDGAIN_LIBS}
 fi
 
 CP="${GRIDGAIN_LIBS}"

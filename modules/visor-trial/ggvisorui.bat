@@ -90,7 +90,7 @@ if exist "%HADOOP_COMMON_HOME%" (
     goto cp
 )
 
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\bin\include\visorui\*;%GRIDGAIN_LIBS%
 
 :cp
 set CP=%GRIDGAIN_LIBS%
