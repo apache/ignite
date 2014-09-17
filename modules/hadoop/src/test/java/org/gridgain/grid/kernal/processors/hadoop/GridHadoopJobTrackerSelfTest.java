@@ -36,17 +36,20 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** Test block count parameter name. */
     private static final int BLOCK_CNT = 10;
 
+    /** */
+    private static GridHadoopSharedMap m = GridHadoopSharedMap.map(GridHadoopJobTrackerSelfTest.class);
+
     /** Map task execution count. */
-    private static final AtomicInteger mapExecCnt = GridHadoopSharedMap.put("mapExecCnt", new AtomicInteger());
+    private static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    private static final AtomicInteger reduceExecCnt = GridHadoopSharedMap.put("reduceExecCnt", new AtomicInteger());
+    private static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    private static final AtomicInteger combineExecCnt = GridHadoopSharedMap.put("combineExecCnt", new AtomicInteger());
+    private static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
 
-    private static final Map<String, CountDownLatch> latch = GridHadoopSharedMap.put("latch",
-        new HashMap<String, CountDownLatch>());
+    /** */
+    private static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 
     /** {@inheritDoc} */
     @Override protected boolean ggfsEnabled() {

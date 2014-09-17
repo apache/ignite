@@ -31,7 +31,8 @@ import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
  */
 public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest {
     /** */
-    private static Map<String, Boolean> flags = GridHadoopSharedMap.put("flags", new HashMap<String, Boolean>());
+    private static Map<String, Boolean> flags = GridHadoopSharedMap.map(GridHadoopMapReduceEmbeddedSelfTest.class)
+        .put("flags", new HashMap<String, Boolean>());
 
     /** {@inheritDoc} */
     @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {

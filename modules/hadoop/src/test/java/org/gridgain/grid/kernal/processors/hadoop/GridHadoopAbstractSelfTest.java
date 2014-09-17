@@ -69,8 +69,6 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        GridHadoopSharedMap.clear();
-
         // Restore classpath.
         System.setProperty("java.class.path", initCp);
 

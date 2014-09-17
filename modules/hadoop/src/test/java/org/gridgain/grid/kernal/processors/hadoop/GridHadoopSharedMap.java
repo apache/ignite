@@ -18,7 +18,17 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class GridHadoopSharedMap {
     /** */
-    private static ConcurrentMap<String, Object> map = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, GridHadoopSharedMap> maps = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentMap<String, Object> map = new ConcurrentHashMap8<>();
+
+    /**
+     * Private.
+     */
+    private GridHadoopSharedMap() {
+        // No-op.
+    }
 
     /**
      * Puts object by key.
@@ -26,16 +36,24 @@ public class GridHadoopSharedMap {
      * @param key Key.
      * @param val Value.
      */
-    public static <T> T put(String key, T val) {
+    public <T> T put(String key, T val) {
         Object old = map.putIfAbsent(key, val);
 
         return old == null ? val : (T)old;
     }
 
     /**
-     * Clears.
+     * @param cls Class.
+     * @return Map of static fields.
      */
-    public static void clear() {
-        map.clear();
+    public static GridHadoopSharedMap map(Class<?> cls) {
+        GridHadoopSharedMap m = maps.get(cls.getName());
+
+        if (m != null)
+            return m;
+
+        GridHadoopSharedMap old = maps.putIfAbsent(cls.getName(), m = new GridHadoopSharedMap());
+
+        return old == null ? m : old;
     }
 }
