@@ -66,7 +66,7 @@ if [ "${USER_LIBS}" != "" ]; then
 fi
 
 if [ "${HADOOP_EDITION}" == "1" ]; then
-    . "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/hadoop-classpath.sh
+    . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
 
     if [ "${GRIDGAIN_HADOOP_CLASSPATH}" != "" ]; then
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH

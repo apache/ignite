@@ -41,7 +41,7 @@ if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
 
-if "%HADOOP_EDITION%" == "1" call "%~0\..\hadoop-classpath.bat"
+if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
 
 set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 

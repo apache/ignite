@@ -15,6 +15,26 @@
 #
 
 #
+# Import common functions.
+#
+if [ "${GRIDGAIN_HOME}" = "" ];
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
+    else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
+fi
+
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
+
+#
+# Discover GRIDGAIN_HOME environment variable.
+#
+setGridGainHome
+
+#
 # Set router service environment.
 #
 export DEFAULT_CONFIG=config/router/default-router.xml
@@ -23,4 +43,4 @@ export MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 #
 # Start router service.
 #
-. "$(dirname "$0")/ggstart.sh" $@
+. "${SCRIPTS_HOME}"/ggstart.sh $@
