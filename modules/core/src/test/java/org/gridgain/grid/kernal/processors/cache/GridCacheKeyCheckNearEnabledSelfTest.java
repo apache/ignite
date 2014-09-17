@@ -7,14 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.service;
+package org.gridgain.grid.kernal.processors.cache;
+
+import org.gridgain.grid.cache.*;
 
 /**
- * Single node services test.
+ * Tests for key check for near cache.
  */
-public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
+public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
     /** {@inheritDoc} */
-    @Override protected int nodeCount() {
-        return 1;
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return GridCacheDistributionMode.NEAR_PARTITIONED;
     }
 }

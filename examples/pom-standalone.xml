@@ -37,6 +37,12 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-ggfs</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hadoop2-integration</artifactId>
             <version>${gridgain.version}</version>
         </dependency>

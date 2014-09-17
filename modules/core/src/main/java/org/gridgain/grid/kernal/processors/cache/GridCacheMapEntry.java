@@ -149,6 +149,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
         log = U.logger(cctx.kernalContext(), logRef, this);
 
+        if (cctx.portableEnabled())
+            key = (K)cctx.kernalContext().portable().detachPortable(key);
+
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
