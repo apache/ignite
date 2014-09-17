@@ -59,7 +59,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
      * @return {@code true} if we need to check this class.
      */
     private static boolean isGgfsOrGgHadoop(String cls) {
-        String gg = "org.gridgain.grid.";
+        String gg = "org.gridgain.";
         int len = gg.length();
 
         return cls.startsWith(gg) && (cls.indexOf("ggfs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
@@ -75,27 +75,32 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
-                return loadFromBytes(name, GridHadoopShutdownHookManager.class.getName());
+        try {
+            if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
+                if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
+                    return loadFromBytes(name, GridHadoopShutdownHookManager.class.getName());
 
-            return loadClassExplicitly(name, resolve);
-        }
-
-        if (isGgfsOrGgHadoop(name)) { // For GG Hadoop and GGFS classes we have to check if they depend on Hadoop.
-            Boolean hasDeps = cache.get(name);
-
-            if (hasDeps == null) {
-                hasDeps = hasExternalDependencies(name, new HashSet<String>());
-
-                cache.put(name, hasDeps);
+                return loadClassExplicitly(name, resolve);
             }
 
-            if (hasDeps)
-                return loadClassExplicitly(name, resolve);
-        }
+            if (isGgfsOrGgHadoop(name)) { // For GG Hadoop and GGFS classes we have to check if they depend on Hadoop.
+                Boolean hasDeps = cache.get(name);
 
-        return super.loadClass(name, resolve);
+                if (hasDeps == null) {
+                    hasDeps = hasExternalDependencies(name, new HashSet<String>());
+
+                    cache.put(name, hasDeps);
+                }
+
+                if (hasDeps)
+                    return loadClassExplicitly(name, resolve);
+            }
+
+            return super.loadClass(name, resolve);
+        }
+        catch (NoClassDefFoundError | ClassNotFoundException e) {
+            throw new ClassNotFoundException("Failed to load class: " + name, e);
+        }
     }
 
     /**
@@ -192,7 +197,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
      * @param clsName Class name.
      * @return {@code true} If the class has external dependencies.
      */
-    boolean hasExternalDependencies(String clsName, final Set<String> visited) {
+    boolean hasExternalDependencies(final String clsName, final Set<String> visited) {
         if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
@@ -205,7 +210,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         if (!isGgfsOrGgHadoop(clsName)) // Other classes should not have external dependencies.
             return false;
 
-        ClassReader rdr;
+        final ClassReader rdr;
 
         try {
             rdr = new ClassReader(in);
@@ -225,7 +230,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
             FieldVisitor fv = new FieldVisitor(Opcodes.ASM4) {
                 @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
-                    onType(desc, true);
+                    onType(desc);
 
                     return av;
                 }
@@ -233,13 +238,13 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
             MethodVisitor mv = new MethodVisitor(Opcodes.ASM4) {
                 @Override public AnnotationVisitor visitAnnotation(String desc, boolean b) {
-                    onType(desc, true);
+                    onType(desc);
 
                     return av;
                 }
 
                 @Override public AnnotationVisitor visitParameterAnnotation(int i, String desc, boolean b) {
-                    onType(desc, true);
+                    onType(desc);
 
                     return av;
                 }
@@ -249,41 +254,43 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 }
 
                 @Override public void visitFieldInsn(int i, String owner, String name, String desc) {
-                    onType(owner, false);
-                    onType(desc, true);
+                    onType(owner);
+                    onType(desc);
                 }
 
-                @Override public void visitFrame(int i, int i2, Object[] localTypes, int i3, Object[] stackTypes) {
-                    for (Object o : localTypes) {
+                @Override public void visitFrame(int i, int i2, Object[] locTypes, int i3, Object[] stackTypes) {
+                    for (Object o : locTypes) {
                         if (o instanceof String)
-                            onType((String)o, false);
+                            onType((String)o);
                     }
 
                     for (Object o : stackTypes) {
                         if (o instanceof String)
-                            onType((String)o, false);
+                            onType((String)o);
                     }
                 }
 
-                @Override public void visitLocalVariable(String name, String desc, String signature, Label label,
-                    Label label2, int i) {
-                    onType(desc, true);
+                @Override public void visitLocalVariable(String name, String desc, String signature, Label lb,
+                    Label lb2, int i) {
+                    onType(desc);
                 }
 
                 @Override public void visitMethodInsn(int i, String owner, String name, String desc) {
-                    onType(owner, false);
+                    onType(owner);
                 }
 
                 @Override public void visitMultiANewArrayInsn(String desc, int dim) {
-                    onType(desc, true);
+                    onType(desc);
                 }
 
-                @Override public void visitTryCatchBlock(Label label, Label label2, Label label3, String exception) {
-                    onType(exception, false);
+                @Override public void visitTryCatchBlock(Label lb, Label lb2, Label lb3, String e) {
+                    onType(e);
                 }
             };
 
             void onClass(String depCls) {
+                assert validateClassName(depCls) : depCls;
+
                 if (depCls.startsWith("java.")) // Filter out platform classes.
                     return;
 
@@ -296,23 +303,26 @@ public class GridHadoopClassLoader extends URLClassLoader {
                     hasDeps.set(true);
             }
 
-            void onType(String type, boolean internal) {
+            void onType(String type) {
                 if (type == null)
                     return;
 
-                if (!internal && type.charAt(0) == '[')
-                    internal = true;
+                int off = 0;
 
-                if (internal) {
-                    int off = 0;
+                while (type.charAt(off) == '[')
+                    off++; // Handle arrays.
 
-                    while (type.charAt(off) == '[')
-                        off++; // Handle arrays.
 
-                    if (type.charAt(off) != 'L')
-                        return; // Skip primitives.
+                if (off != 0)
+                    type = type.substring(off);
 
-                    type = type.substring(off + 1, type.length() - 1);
+                if (type.length() == 1)
+                    return; // Get rid of primitives.
+
+                if (type.lastIndexOf(';') != -1) {
+                    assert type.charAt(0) == 'L' : type;
+
+                    type = type.substring(1, type.length() - 1);
                 }
 
                 type = type.replace('/', '.');
@@ -322,26 +332,26 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
             @Override public void visit(int i, int i2, String name, String signature, String superName,
                 String[] ifaces) {
-                onType(superName, true);
+                onType(superName);
 
                 if (ifaces != null) {
                     for (String iface : ifaces)
-                        onType(iface, true);
+                        onType(iface);
                 }
             }
 
             @Override public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-                onType(desc, true);
+                onType(desc);
 
                 return av;
             }
 
             @Override public void visitInnerClass(String name, String outerName, String innerName, int i) {
-                onType(name, false);
+                onType(name);
             }
 
             @Override public FieldVisitor visitField(int i, String name, String desc, String signature, Object val) {
-                onType(desc, true);
+                onType(desc);
 
                 return fv;
             }
@@ -350,7 +360,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 String[] exceptions) {
                 if (exceptions != null) {
                     for (String e : exceptions)
-                        onType(e, false);
+                        onType(e);
                 }
 
                 return mv;
@@ -377,6 +387,23 @@ public class GridHadoopClassLoader extends URLClassLoader {
             res = hasExternalDependencies(parentCls, visited);
 
         return res;
+    }
+
+    /**
+     *
+     * @param name
+     * @return
+     */
+    private boolean validateClassName(String name) {
+        if (name.length() <= 1 || name.indexOf('.') == -1)
+            return false;
+
+        for (char c : name.toCharArray()) {
+            if (!Character.isAlphabetic(c) && !Character.isDigit(c) && "_.$".indexOf(c) == -1)
+                return false;
+        }
+
+        return true;
     }
 
     /**
