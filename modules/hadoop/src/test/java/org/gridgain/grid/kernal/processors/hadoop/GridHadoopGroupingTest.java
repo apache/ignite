@@ -29,8 +29,8 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
     private static final String PATH_OUTPUT = "/test-out";
 
     /** */
-    private static final GridConcurrentHashSet<UUID> vals = GridHadoopSharedMap.put("vals",
-        new GridConcurrentHashSet<UUID>());
+    private static final GridConcurrentHashSet<UUID> vals = GridHadoopSharedMap.map(GridHadoopGroupingTest.class)
+        .put("vals", new GridConcurrentHashSet<UUID>());
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
