@@ -711,8 +711,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             };
 
-            if (req.className() == null)
-                cctx.io().safeSend(rmtNodes, req, fallback);
+            if (req.className() == null) {
+                if (!F.isEmpty(rmtNodes))
+                    cctx.io().safeSend(rmtNodes, req, fallback);
+
+                if (!F.isEmpty(simpleNameUnsupported))
+                    cctx.io().safeSend(simpleNameUnsupported, req, fallback);
+            }
             else {
                 // Nodes with newer version than QUERY_PORTABLES_SINCE.
                 if (!F.isEmpty(rmtNodes))
