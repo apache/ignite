@@ -74,7 +74,7 @@ public class GridHadoopV2JobResourceManager {
         Thread.currentThread().setContextClassLoader(cfg.getClassLoader());
 
         try {
-            cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY, dir.getAbsolutePath());
+            cfg.set(GridHadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP, dir.getAbsolutePath());
 
             if(!cfg.getBoolean("fs.file.impl.disable.cache", false))
                 FileSystem.getLocal(cfg).setWorkingDirectory(new Path(dir.getAbsolutePath()));

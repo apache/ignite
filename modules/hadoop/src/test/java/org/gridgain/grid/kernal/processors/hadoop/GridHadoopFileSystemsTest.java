@@ -58,7 +58,7 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
 
         setupFileSystems(cfg);
 
-        cfg.set(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY,
+        cfg.set(GridHadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP,
             new Path(new Path(uri), "user/" + System.getProperty("user.name")).toString());
 
         final CountDownLatch changeUserPhase = new CountDownLatch(THREAD_COUNT);
@@ -122,6 +122,8 @@ public class GridHadoopFileSystemsTest extends GridHadoopAbstractSelfTest {
             cfg.set(MRJobConfig.USER_NAME, "user" + i);
 
             Path workDir = new Path(new Path(uri), "user/user" + i);
+
+            cfg.set(GridHadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP, workDir.toString());
 
             assertEquals(workDir, FileSystem.newInstance(uri, cfg).getWorkingDirectory());
 
