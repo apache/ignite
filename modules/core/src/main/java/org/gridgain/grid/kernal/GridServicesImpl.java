@@ -166,6 +166,30 @@ public class GridServicesImpl implements GridServices, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T service(String name) {
+        guard();
+
+        try {
+            return ctx.service().service(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Collection<T> services(String name) {
+        guard();
+
+        try {
+            return ctx.service().services(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
