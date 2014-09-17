@@ -316,7 +316,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNullStageName() throws Exception {
+    public void testAddEventWithNullStageName() throws Exception {
         atLeastOnce = true;
         router = new GridTestStreamerEventRouter();
         p2pEnabled = false;
@@ -367,6 +367,62 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
                 info("Caught expected exception: " + e.getMessage());
             }
+        }
+        finally {
+            stopAllGrids(false);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNullStageNameInResultMap() throws Exception {
+        atLeastOnce = true;
+        router = new GridTestStreamerEventRouter();
+        p2pEnabled = false;
+
+        SC stage = new SC() {
+            @SuppressWarnings("unchecked")
+            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+                Collection<Object> evts) {
+                String nextStage = ctx.nextStageName();
+
+                if (nextStage == null)
+                    return null;
+
+                Integer val = (Integer)F.first(evts);
+
+                Map<String, Collection<?>> res = new HashMap<>();
+
+                res.put(null, F.asList(++val));
+
+                return res;
+            }
+        };
+
+        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage), new GridTestStage("1", stage));
+
+        startGrids(2);
+
+        try {
+            GridTestStreamerEventRouter router0 = (GridTestStreamerEventRouter)router;
+
+            final CountDownLatch errLatch = new CountDownLatch(1);
+
+            grid(0).streamer(null).addStreamerFailureListener(new GridStreamerFailureListener() {
+                @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
+                    info("Expected failure: " + err.getMessage());
+
+                    errLatch.countDown();
+                }
+            });
+
+            router0.put("0", grid(0).localNode().id());
+            router0.put("1", grid(1).localNode().id());
+
+            grid(0).streamer(null).addEvent(0);
+
+            assert errLatch.await(5, TimeUnit.SECONDS);
         }
         finally {
             stopAllGrids(false);
