@@ -156,6 +156,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     try {
                         GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
 
+                        if (info == null)
+                            return;
+
                         if (req.fields())
                             runFieldsQuery(info);
                         else
@@ -180,7 +183,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @return Query info.
      * @throws ClassNotFoundException If class not found.
      */
-    private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
+    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
         throws ClassNotFoundException {
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
@@ -190,9 +193,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         GridNode sndNode = cctx.node(sndId);
 
+        if (sndNode == null)
+            return null;
+
         String className;
 
-        if (sndNode != null && sndNode.version().compareTo(QUERY_PORTABLES_SINCE) < 0) {
+        if (sndNode.version().compareTo(QUERY_PORTABLES_SINCE) < 0) {
             Class cls = U.forName(req.className(), cctx.deploy().globalLoader());
 
             className = cls == null ? null : cls.getSimpleName();
@@ -669,9 +675,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         final UUID locNodeId = cctx.localNodeId();
 
-        GridNode locNode = F.find(nodes, null, F.localNode(locNodeId));
+        GridNode locNode = null;
 
-        Collection<? extends GridNode> remoteNodes = F.view(nodes, F.remoteNodes(locNodeId));
+        Collection<GridNode> remoteNodes = new ArrayList<>(nodes.size());
+
+        for (GridNode n : nodes) {
+            if (n.id().equals(locNodeId))
+                locNode = n;
+            else
+                remoteNodes.add(n);
+        }
 
         // Request should be sent to remote nodes before the query is processed on the local node.
         // For example, a remote reducer has a state, we should not serialize and then send
@@ -688,22 +701,22 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             if (req.className() == null)
                 cctx.io().safeSend(remoteNodes, req, fallback);
             else {
-                Collection<? extends GridNode> simpleNameUnsupported = F.view(remoteNodes, new P1<GridNode>() {
-                        @Override public boolean apply(GridNode n) {
-                            return n.version().compareTo(QUERY_PORTABLES_SINCE) < 0;
-                        }
-                    }
-                );
+                Collection<GridNode> simpleNameUnsupported = new ArrayList<>(remoteNodes.size());
+
+                for (GridNode n : remoteNodes) {
+                    if (n.version().compareTo(QUERY_PORTABLES_SINCE) < 0)
+                        simpleNameUnsupported.add(n);
+                }
 
                 if (simpleNameUnsupported.isEmpty())
                     cctx.io().safeSend(remoteNodes, req, fallback);
                 else {
-                    Collection<? extends GridNode> simpleNameSupported = F.view(remoteNodes, new P1<GridNode>() {
-                            @Override public boolean apply(GridNode n) {
-                                return n.version().compareTo(QUERY_PORTABLES_SINCE) >= 0;
-                            }
-                        }
-                    );
+                    Collection<GridNode> simpleNameSupported = new ArrayList<>(remoteNodes.size());
+
+                    for (GridNode n : remoteNodes) {
+                        if (n.version().compareTo(QUERY_PORTABLES_SINCE) >= 0)
+                            simpleNameSupported.add(n);
+                    }
 
                     GridIndexingTypeDescriptor typeDescriptor = idxMgr.type(space(), req.className());
 
