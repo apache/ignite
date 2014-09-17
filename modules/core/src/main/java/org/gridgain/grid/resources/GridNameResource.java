@@ -19,7 +19,7 @@ import java.lang.annotation.*;
  * Annotates a field or a setter method for injection of GridGain grid name.
  * GridGain name is provided to grid via {@link GridConfiguration#getGridName()} method.
  * <p>
- * Home path can be injected into instances of following classes:
+ * Grid name can be injected into instances of following classes:
  * <ul>
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>

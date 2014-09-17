@@ -37,7 +37,7 @@ public class VisorComputeMonitoringHolder {
      * Start collect events for Visor instance.
      *
      * @param g grid.
-     * @param visorKey uniq Visor instance key.
+     * @param visorKey unique Visor instance key.
      */
     public void startCollect(GridEx g, String visorKey) {
         synchronized(listenVisor) {
