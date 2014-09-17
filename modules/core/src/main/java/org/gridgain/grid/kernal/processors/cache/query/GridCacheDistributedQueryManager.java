@@ -662,7 +662,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Request.
      * @param nodes Nodes.
      * @throws GridException In case of error.
+     * @deprecated Need to remove nodes filtration after breaking compatibility.
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
@@ -677,19 +679,30 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         GridNode locNode = null;
 
-        Collection<GridNode> remoteNodes = new ArrayList<>(nodes.size());
+        Collection<GridNode> rmtNodes = null;
+        Collection<GridNode> simpleNameUnsupported = null;
 
         for (GridNode n : nodes) {
             if (n.id().equals(locNodeId))
                 locNode = n;
-            else
-                remoteNodes.add(n);
+            else if (n.version().compareTo(QUERY_PORTABLES_SINCE) >= 0) {
+                if (rmtNodes == null)
+                    rmtNodes = new ArrayList<>(nodes.size());
+
+                rmtNodes.add(n);
+            }
+            else {
+                if (simpleNameUnsupported == null)
+                    simpleNameUnsupported = new ArrayList<>(nodes.size());
+
+                simpleNameUnsupported.add(n);
+            }
         }
 
         // Request should be sent to remote nodes before the query is processed on the local node.
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
-        if (!remoteNodes.isEmpty()) {
+        if (!F.isEmpty(rmtNodes) || !F.isEmpty(simpleNameUnsupported)) {
             P1<GridNode> fallback = new P1<GridNode>() {
                 @Override public boolean apply(GridNode node) {
                     fut.onNodeLeft(node.id());
@@ -699,25 +712,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             };
 
             if (req.className() == null)
-                cctx.io().safeSend(remoteNodes, req, fallback);
+                cctx.io().safeSend(rmtNodes, req, fallback);
             else {
-                Collection<GridNode> simpleNameUnsupported = new ArrayList<>(remoteNodes.size());
+                // Nodes with newer version than QUERY_PORTABLES_SINCE.
+                if (!F.isEmpty(rmtNodes))
+                    cctx.io().safeSend(rmtNodes, req, fallback);
 
-                for (GridNode n : remoteNodes) {
-                    if (n.version().compareTo(QUERY_PORTABLES_SINCE) < 0)
-                        simpleNameUnsupported.add(n);
-                }
-
-                if (simpleNameUnsupported.isEmpty())
-                    cctx.io().safeSend(remoteNodes, req, fallback);
-                else {
-                    Collection<GridNode> simpleNameSupported = new ArrayList<>(remoteNodes.size());
-
-                    for (GridNode n : remoteNodes) {
-                        if (n.version().compareTo(QUERY_PORTABLES_SINCE) >= 0)
-                            simpleNameSupported.add(n);
-                    }
-
+                // Nodes with older version than QUERY_PORTABLES_SINCE.
+                if (!F.isEmpty(simpleNameUnsupported)) {
                     GridIndexingTypeDescriptor typeDescriptor = idxMgr.type(space(), req.className());
 
                     String clsName = typeDescriptor.valueClass().getName();
@@ -740,9 +742,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         req.keepPortable(),
                         req.subjectId(),
                         req.taskHash());
-
-                    if (!simpleNameSupported.isEmpty())
-                        cctx.io().safeSend(simpleNameSupported, req, fallback);
 
                     cctx.io().safeSend(simpleNameUnsupported, req0, fallback);
                 }
