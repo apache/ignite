@@ -82,8 +82,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         GridHadoopClassLoader clsLdr = (GridHadoopClassLoader)getClass().getClassLoader();
 
-        clsLdrPool.add(clsLdr);
-
         // Before create JobConf instance we should set new context class loader.
         Thread.currentThread().setContextClassLoader(clsLdr);
 
