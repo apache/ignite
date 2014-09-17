@@ -21,10 +21,10 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.fs.GridHadoopFileSystemsUtils;
+import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -91,20 +91,23 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         // Before create JobConf instance we should set new context class loader.
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
-        JobConf jobConf = new JobConf();
+        try {
+            JobConf jobConf = new JobConf();
 
-        GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
+            GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
-        for (Map.Entry<String,String> e : ((GridHadoopDefaultJobInfo)job.info()).properties().entrySet())
-            jobConf.set(e.getKey(), e.getValue());
+            for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo) job.info()).properties().entrySet())
+                jobConf.set(e.getKey(), e.getValue());
 
-        jobCtx = new JobContextImpl(jobConf, new JobID(jobId.globalId().toString(), jobId.localId()));
+            jobCtx = new JobContextImpl(jobConf, new JobID(jobId.globalId().toString(), jobId.localId()));
 
-        useNewMapper = jobConf.getUseNewMapper();
-        useNewReducer = jobConf.getUseNewReducer();
-        useNewCombiner = jobConf.getCombinerClass() == null;
-
-        Thread.currentThread().setContextClassLoader(null);
+            useNewMapper = jobConf.getUseNewMapper();
+            useNewReducer = jobConf.getUseNewReducer();
+            useNewCombiner = jobConf.getCombinerClass() == null;
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(null);
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.io.File;
@@ -226,7 +227,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             File jobLocDir = jobLocalDir(locNodeId, jobId);
 
             if (jobLocDir.exists())
-                jobLocDir.delete();
+                U.delete(jobLocDir);
         }
     }
 
@@ -244,7 +245,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
         File locDir = taskLocalDir(locNodeId, info);
 
         if (locDir.exists())
-            locDir.delete();
+            U.delete(locDir);
     }
 
     /** {@inheritDoc} */

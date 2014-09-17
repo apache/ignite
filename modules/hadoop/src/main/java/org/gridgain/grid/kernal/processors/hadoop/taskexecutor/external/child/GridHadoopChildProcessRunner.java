@@ -113,9 +113,7 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
-
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);

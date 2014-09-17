@@ -597,6 +597,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
 
                 transform(jobId, new CancelJobClosure(null, e));
+
+                continue;
             }
 
             processJobMetaUpdate(jobId, meta, locNodeId);

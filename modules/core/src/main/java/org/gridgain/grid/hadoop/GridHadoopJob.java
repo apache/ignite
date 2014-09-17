@@ -11,7 +11,6 @@ package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
 
-import java.io.File;
 import java.util.*;
 
 /**

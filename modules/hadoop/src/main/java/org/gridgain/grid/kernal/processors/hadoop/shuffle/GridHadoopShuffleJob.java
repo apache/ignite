@@ -82,7 +82,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
     /**
      * @param locReduceAddr Local reducer address.
-     * @param locNodeId Local node Id.
      * @param log Logger.
      * @param job Job.
      * @param mem Memory.
@@ -90,7 +89,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param locReducers Reducers will work on current node.
      * @throws GridException If error.
      */
-    public GridHadoopShuffleJob(T locReduceAddr, UUID locNodeId, GridLogger log, GridHadoopJob job,
+    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job,
         GridUnsafeMemory mem, int totalReducerCnt, int[] locReducers) throws GridException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;

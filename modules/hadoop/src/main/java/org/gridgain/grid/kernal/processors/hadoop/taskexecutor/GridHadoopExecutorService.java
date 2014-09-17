@@ -10,24 +10,21 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridInterruptedException;
-import org.gridgain.grid.hadoop.GridHadoopTaskInfo;
-import org.gridgain.grid.logger.GridLogger;
-import org.gridgain.grid.thread.GridThread;
-import org.gridgain.grid.util.worker.GridWorker;
-import org.gridgain.grid.util.worker.GridWorkerListener;
-import org.gridgain.grid.util.worker.GridWorkerListenerAdapter;
-import org.jdk8.backport.ConcurrentHashMap8;
+import org.gridgain.grid.*;
+import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.thread.*;
+import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.*;
 
 import static java.util.Collections.*;
 
 /**
- * Executor service.
+ * Executor service without thread pooling.
  */
 public class GridHadoopExecutorService {
     /** */

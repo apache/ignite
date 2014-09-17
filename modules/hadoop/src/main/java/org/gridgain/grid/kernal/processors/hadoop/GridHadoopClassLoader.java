@@ -312,14 +312,13 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 while (type.charAt(off) == '[')
                     off++; // Handle arrays.
 
-
                 if (off != 0)
                     type = type.substring(off);
 
                 if (type.length() == 1)
                     return; // Get rid of primitives.
 
-                if (type.lastIndexOf(';') != -1) {
+                if (type.charAt(type.length() - 1) == ';') {
                     assert type.charAt(0) == 'L' : type;
 
                     type = type.substring(1, type.length() - 1);
@@ -390,20 +389,30 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     *
-     * @param name
-     * @return
+     * @param name Class name.
+     * @return {@code true} If this is a valid class name.
      */
-    private boolean validateClassName(String name) {
-        if (name.length() <= 1 || name.indexOf('.') == -1)
+    private static boolean validateClassName(String name) {
+        int len = name.length();
+
+        if (len <= 1)
             return false;
 
-        for (char c : name.toCharArray()) {
-            if (!Character.isAlphabetic(c) && !Character.isDigit(c) && "_.$".indexOf(c) == -1)
+        if (!Character.isJavaIdentifierStart(name.charAt(0)))
+            return false;
+
+        boolean hasDot = false;
+
+        for (int i = 1; i < len; i++) {
+            char c = name.charAt(i);
+
+            if (c == '.')
+                hasDot = true;
+            else if (!Character.isJavaIdentifierPart(c))
                 return false;
         }
 
-        return true;
+        return hasDot;
     }
 
     /**

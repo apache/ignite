@@ -148,7 +148,6 @@ public class GridHadoopV2JobResourceManager {
     /**
      * Process list of resources.
      *
-     *
      * @param jobLocDir Job working directory.
      * @param files Array of {@link java.net.URI} or {@link org.apache.hadoop.fs.Path} to process resources.
      * @param download {@code true}, if need to download. Process class path only else.
