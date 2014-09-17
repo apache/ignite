@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.lang.reflect.*;
 import java.util.concurrent.*;
@@ -37,9 +36,8 @@ final class GridResourceUtils {
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     static void inject(Field field, Object target, Object rsrc) throws GridException {
-        if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass())) {
+        if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass()))
             throw new GridException("Resource field is not assignable from the resource: " + rsrc.getClass());
-        }
 
         try {
             // Override default Java access check.
