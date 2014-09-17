@@ -32,7 +32,7 @@ public class GridHadoopSplitWrapperSelfTest extends GridHadoopAbstractSelfTest {
 
         assertEquals("/path/to/file:100+500", nativeSplit.toString());
 
-        GridHadoopSplitWrapper split = new GridHadoopSplitWrapper(10, nativeSplit, nativeSplit.getLocations());
+        GridHadoopSplitWrapper split = GridHadoopUtils.wrapSplit(10, nativeSplit, nativeSplit.getLocations());
 
         assertEquals("[host1, host2]", Arrays.toString(split.hosts()));
 
@@ -46,7 +46,7 @@ public class GridHadoopSplitWrapperSelfTest extends GridHadoopAbstractSelfTest {
 
         final GridHadoopSplitWrapper res = (GridHadoopSplitWrapper)in.readObject();
 
-        assertEquals("/path/to/file:100+500", res.innerSplit().toString());
+        assertEquals("/path/to/file:100+500", GridHadoopUtils.unwrapSplit(res).toString());
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -69,7 +69,7 @@
                 </bean>
 
                 <!--
-                    Partitioned cache example configuration with portable objects enabled.
+                    Partitioned cache example configuration with portable objects enabled (Atomic mode).
                     Used in .NET, C++ and Java client examples that are available only in
                     enterprise edition.
                 -->
@@ -123,6 +123,20 @@
                             </property>
                         </bean>
                     </property>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration with portable objects enabled (Transactional mode).
+                    Used in .NET, C++ and Java client examples that are available only in
+                    enterprise edition.
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_portable_tx"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="backups" value="1"/>
+                    <property name="portableEnabled" value="true"/>
                 </bean>
 
                 <!-- Replicated cache example configuration (Atomic mode). -->

@@ -244,7 +244,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridInteropProcessor iopProc;
+    private GridInteropProcessor interopProc;
 
     /** */
     @GridToStringExclude
@@ -420,7 +420,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
-            iopProc = (GridInteropProcessor)comp;
+            interopProc = (GridInteropProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -679,7 +679,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public GridInteropProcessor interop() {
-        return iopProc;
+        return interopProc;
     }
 
     /** {@inheritDoc} */
