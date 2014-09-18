@@ -48,7 +48,7 @@ public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePla
                 it = top.iterator();
         }
 
-        int[] rdc = new int[((GridHadoopDefaultJobInfo)job.info()).reducers()];
+        int[] rdc = new int[job.info().reducers()];
 
         for (int i = 0; i < rdc.length; i++)
             rdc[i] = i;

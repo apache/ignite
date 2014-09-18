@@ -1988,7 +1988,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(files(a.toInt).get1())
+                    Some(files(a.toInt).get3.getPath)
                 catch {
                     case e: Throwable =>
                         nl()

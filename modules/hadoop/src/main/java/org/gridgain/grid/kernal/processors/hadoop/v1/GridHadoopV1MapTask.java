@@ -32,7 +32,7 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
+        GridHadoopJob job = taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
@@ -59,8 +59,8 @@ public class GridHadoopV1MapTask extends GridHadoopV1Task {
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, ctx, !jobImpl.info().hasCombiner() && !jobImpl.info().hasReducer(),
-                fileName(), jobImpl.attemptId(info()));
+            collector = collector(jobConf, ctx, !job.info().hasCombiner() && !job.info().hasReducer(),
+                fileName(), ctx.attemptId());
 
             RecordReader reader = inFormat.getRecordReader(nativeSplit, jobConf, reporter);
 

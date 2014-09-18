@@ -7,12 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.grid.kernal.processors.hadoop;
 
 /**
- * Standard Visor panel with log entries.
- *
- * This panel will be created by {@link VisorPluginComponentsFactory}.
+ * Hadoop constants.
  */
-public interface VisorPluginLogPanel extends VisorPluginComponent {
+public class GridHadoopConsts {
+    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
+    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
 }

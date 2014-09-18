@@ -7,16 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.grid.kernal.processors.cache;
 
-import javax.swing.*;
+import org.gridgain.grid.cache.*;
 
 /**
- * Base interface for Visor components.
+ * Tests for key check for near cache.
  */
-public interface VisorPluginComponent {
-    /**
-     * Get component container.
-     **/
-    public JComponent container();
+public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return GridCacheDistributionMode.NEAR_PARTITIONED;
+    }
 }

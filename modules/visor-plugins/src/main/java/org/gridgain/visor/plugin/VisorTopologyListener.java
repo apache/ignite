@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.visor.plugin.api;
+package org.gridgain.visor.plugin;
 
 import java.util.*;
 
@@ -42,11 +42,4 @@ public interface VisorTopologyListener {
      * @param nid ID of segmented node.
      */
     public void onNodeSegmented(UUID nid);
-
-    /**
-     * Action that should be done on node reconnected.
-     *
-     * @param nid ID of reconnected node.
-     */
-    public void onNodeReconnected(UUID nid);
 }
