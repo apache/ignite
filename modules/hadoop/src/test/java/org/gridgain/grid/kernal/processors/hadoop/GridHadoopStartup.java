@@ -31,7 +31,7 @@ public class GridHadoopStartup {
     public static Configuration configuration() {
         Configuration cfg = new Configuration();
 
-        cfg.set("fs.default.name", "ggfs://ggfs@localhost");
+        cfg.set("fs.defaultFS", "ggfs://ggfs@localhost");
 
         cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());

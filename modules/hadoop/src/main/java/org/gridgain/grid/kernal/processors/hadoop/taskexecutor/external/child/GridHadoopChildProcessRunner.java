@@ -42,7 +42,7 @@ public class GridHadoopChildProcessRunner {
     private ExecutorService msgExecSvc;
 
     /** Task executor service. */
-    private ThreadPoolExecutor execSvc;
+    private GridHadoopExecutorService execSvc;
 
     /** */
     protected GridUnsafeMemory mem = new GridUnsafeMemory(0);
@@ -113,9 +113,7 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
-
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
@@ -159,8 +157,8 @@ public class GridHadoopChildProcessRunner {
 
                     int size = info.type() == MAP ? concMappers : concReducers;
 
-                    execSvc.setCorePoolSize(size);
-                    execSvc.setMaximumPoolSize(size);
+//                    execSvc.setCorePoolSize(size);
+//                    execSvc.setMaximumPoolSize(size);
 
                     if (log.isDebugEnabled())
                         log.debug("Set executor service size for task type [type=" + info.type() +
@@ -202,12 +200,11 @@ public class GridHadoopChildProcessRunner {
      */
     private void initializeExecutors(GridHadoopPrepareForJobRequest req) {
         int cpus = Runtime.getRuntime().availableProcessors();
+//
+//        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
+//        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
 
-        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
-        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
-
-        execSvc = new ThreadPoolExecutor(concMappers, concMappers,
-            1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+        execSvc = new GridHadoopExecutorService(log, "", cpus * 2, 1024);
     }
 
     /**
@@ -242,7 +239,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void shutdown() {
         if (execSvc != null)
-            execSvc.shutdownNow();
+            execSvc.shutdown(5000);
 
         if (msgExecSvc != null)
             msgExecSvc.shutdownNow();
