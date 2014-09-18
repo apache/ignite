@@ -170,6 +170,18 @@ public abstract class GridHadoopTaskContext {
     public abstract Comparator<Object> groupComparator();
 
     /**
+     * Execute current task.
+     *
+     * @throws GridException If failed.
+     */
+    public abstract void run() throws GridException;
+
+    /**
+     * Cancel current task execution.
+     */
+    public abstract void cancel();
+
+    /**
      * Prepare local environment for the task.
      *
      * @throws GridException If failed.
@@ -177,7 +189,7 @@ public abstract class GridHadoopTaskContext {
     public abstract void prepareTaskEnvironment() throws GridException;
 
     /**
-     * Cleans up local environment of the task.
+     *  Cleans up local environment of the task.
      *
      * @throws GridException If failed.
      */

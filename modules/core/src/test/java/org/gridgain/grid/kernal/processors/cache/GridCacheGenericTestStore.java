@@ -182,6 +182,13 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
         GridBiInClosure<K, V> c) throws GridException {
         lastMtd = "loadAll";
 
+        for (K key : keys) {
+            V val = map.get(key);
+
+            if (val != null)
+                c.apply(key, val);
+        }
+
         checkOperation();
     }
 

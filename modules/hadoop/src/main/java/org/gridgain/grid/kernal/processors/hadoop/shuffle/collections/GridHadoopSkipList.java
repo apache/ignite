@@ -199,7 +199,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param rnd Random.
      * @return Next level.
      */
-    static int randomLevel(Random rnd) {
+    public static int randomLevel(Random rnd) {
         int x = rnd.nextInt();
 
         int level = 0;
