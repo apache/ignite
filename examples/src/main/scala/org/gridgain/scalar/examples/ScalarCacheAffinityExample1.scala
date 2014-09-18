@@ -18,7 +18,6 @@ import cache.affinity.GridCacheAffinityKeyMapped
 import cache.GridCacheName
 import org.jetbrains.annotations.Nullable
 import java.util.concurrent.Callable
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 /**
  * Example of how to collocate computations and data in GridGain using
@@ -31,7 +30,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinityExample1 {
     /** Configuration file name. */
     private val CONFIG = "examples/config/example-cache.xml" // Cache.

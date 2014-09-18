@@ -1327,7 +1327,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         /** Key filter. */
         private KeyValueFilter<K, V> kvFilter;
 
-        /** Constant array to avoid recreation. */
+        /** Entry filter. */
         private GridPredicate<? super GridCacheEntry<K, V>> entryFilter;
 
         /**

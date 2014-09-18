@@ -66,7 +66,7 @@ public class GridHadoopRawLocalFileSystem extends FileSystem {
 
         setConf(conf);
 
-        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOCAL_FS_WORK_DIR_PROPERTY);
+        String initWorkDir = conf.get(GridHadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP);
 
         if (initWorkDir != null)
             setWorkingDirectory(new Path(initWorkDir));
