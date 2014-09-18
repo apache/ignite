@@ -526,8 +526,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             case TcpClientFuture.STATE_INITIAL: {
                 if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE) {
                     if (credentials() == null) {
-                        fut.onDone(new GridClientAuthenticationException("Client has no credentials [clientId=" +
-                            clientId + ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+                        fut.onDone(new GridClientAuthenticationException("Authentication failed on server " +
+                            "(client has no credentials) [clientId=" + clientId +
+                            ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
 
                         return;
                     }
