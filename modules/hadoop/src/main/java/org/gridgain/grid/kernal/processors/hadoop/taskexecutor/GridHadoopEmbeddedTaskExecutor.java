@@ -30,7 +30,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     private final ConcurrentMap<GridHadoopJobId, Collection<GridHadoopRunnableTask>> jobs = new ConcurrentHashMap<>();
 
     /** Executor service to run tasks. */
-    private ExecutorService exec;
+    private GridHadoopExecutorService exec;
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
@@ -38,16 +38,14 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         jobTracker = ctx.jobTracker();
 
-        exec = ctx.configuration().getEmbeddedExecutor();
-
-        if (exec == null)
-            exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        exec = new GridHadoopExecutorService(log, ctx.kernalContext().gridName(),
+            ctx.configuration().getMaxParallelTasks(), ctx.configuration().getMaxTaskQueueSize());
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (exec != null) {
-            exec.shutdown();
+            exec.shutdown(3000);
 
             if (cancel) {
                 for (GridHadoopJobId jobId : jobs.keySet())
@@ -58,13 +56,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        try {
-            if (exec != null && !exec.awaitTermination(30, TimeUnit.SECONDS))
-                U.warn(log, "Failed to finish running tasks in 30 sec.");
-        }
-        catch (InterruptedException e) {
-            U.error(log, "Failed to finish running tasks.", e);
-        }
+        if (exec != null && !exec.shutdown(30000))
+            U.warn(log, "Failed to finish running tasks in 30 sec.");
     }
 
     /** {@inheritDoc} */

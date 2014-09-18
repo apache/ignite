@@ -38,7 +38,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
+        GridHadoopJob job = taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
@@ -49,8 +49,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
         GridHadoopV1OutputCollector collector = null;
 
         try {
-            collector = collector(jobConf, ctx, reduce || !jobImpl.info().hasReducer(), fileName(),
-                jobImpl.attemptId(info()));
+            collector = collector(jobConf, ctx, reduce || !job.info().hasReducer(), fileName(), ctx.attemptId());
 
             Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
                 jobConf);

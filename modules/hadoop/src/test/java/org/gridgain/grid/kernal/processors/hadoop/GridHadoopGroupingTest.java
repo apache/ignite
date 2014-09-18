@@ -19,6 +19,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Grouping test.
  */
@@ -27,7 +29,8 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
     private static final String PATH_OUTPUT = "/test-out";
 
     /** */
-    private static final GridConcurrentHashSet<UUID> vals = new GridConcurrentHashSet<>();
+    private static final GridConcurrentHashSet<UUID> vals = GridHadoopSharedMap.map(GridHadoopGroupingTest.class)
+        .put("vals", new GridConcurrentHashSet<UUID>());
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -101,7 +104,7 @@ public class GridHadoopGroupingTest extends GridHadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(30000);
+            createJobInfo(job.getConfiguration())).get(30000);
 
         assertTrue(vals.isEmpty());
     }

@@ -20,6 +20,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.IOException;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Abstract class for maps test.
  */
@@ -40,12 +42,12 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         jobCtx.setSortComparatorClass(TestComparator.class);
         jobCtx.setCombinerKeyGroupingComparatorClass(TestComparator.class);
 
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(jobCtx.getConfiguration());
+        GridHadoopDefaultJobInfo jobInfo = createJobInfo(jobCtx.getConfiguration());
 
         return new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10), jobInfo, log);
     }
 
     public GridHadoopTaskContext mockTaskContext(GridHadoopJob job) throws GridException {
-        return job.getTaskContext(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, null, 0, 0, null));
+        return job.getTaskContext(new GridHadoopTaskInfo(GridHadoopTaskType.MAP, null, 0, 0, null));
     }
 }
