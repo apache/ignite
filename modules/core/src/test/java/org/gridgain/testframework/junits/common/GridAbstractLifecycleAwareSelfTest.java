@@ -75,10 +75,20 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     }
 
     /**
+     * After grid start callback.
+     * @param grid Grid.
+     */
+    protected void afterGridStart(Grid grid) {
+        // No-op.
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLifecycleAware() throws Exception {
-        startGrid();
+        Grid grid = startGrid();
+
+        afterGridStart(grid);
 
         assertFalse(lifecycleAwares.isEmpty());
 

@@ -25,9 +25,9 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/util
-       http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+       http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!--
         Optional description.
@@ -51,7 +51,7 @@
         Note that for job stealing to work, you must always use both,
         GridJobStealingCollisionSpi and GridJobStealingFailoverSPI.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="gridName" value="sslnode"/>
 
         <!-- Set to local host address. -->
@@ -60,25 +60,27 @@
         <!-- Enable rest protocol. -->
         <property name="restEnabled" value="true"/>
 
-        <!-- Configure TCP+SSL rest protocol. -->
-        <property name="restTcpSslEnabled" value="true"/>
+        <!-- Client configuration. -->
+        <property name="clientConnectionConfiguration">
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+                <!-- Configure TCP+SSL rest protocol. -->
+                <property name="restTcpSslEnabled" value="true"/>
 
-        <!-- Sets flag indicating whether or not SSL client authentication is required. -->
-        <property name="restTcpSslClientAuth" value="true"/>
+                <!-- Sets flag indicating whether or not SSL client authentication is required. -->
+                <property name="restTcpSslClientAuth" value="true"/>
 
-        <property name="restTcpSslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
-                <property name="trustStorePassword" value="123456"/>
+                <property name="restTcpSslContextFactory">
+                    <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                        <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
+                        <property name="keyStorePassword" value="123456"/>
+                        <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
+                        <property name="trustStorePassword" value="123456"/>
+                    </bean>
+                </property>
+
+                <property name="restTcpPort" value="10443"/>
             </bean>
         </property>
-
-        <property name="restTcpPort" value="10443"/>
-
-        <!-- Configure HTTPs rest protocol. -->
-        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty-ssl.xml"/>
 
         <property name="cacheConfiguration">
             <!--
@@ -123,7 +125,63 @@
                         </bean>
                     </property>
 
-                    <property name="queryIndexEnabled" value="false"/>
+                    <property name="portableEnabled" value="true"/>
+
+                    <!-- Enable queries for partitioned cache -->
+                    <property name="queryIndexEnabled" value="true"/>
+
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <property name="typeMetadata">
+                                <list>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address</value>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridImplicitPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridNoDefPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
                 </bean>
 
                 <!--
@@ -259,5 +317,16 @@
 
         <property name="systemExecutorServiceShutdown" value="true"/>
 
+        <property name="portableConfiguration">
+            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
     </bean>
 </beans>

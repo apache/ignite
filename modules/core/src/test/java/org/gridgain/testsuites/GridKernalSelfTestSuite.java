@@ -18,6 +18,8 @@ import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.events.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.service.*;
+import org.gridgain.grid.util.*;
 
 /**
  * Kernal self test suite.
@@ -49,12 +51,19 @@ public class GridKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
+        suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
+        suite.addTestSuite(GridStartupWithUndefinedGridGainHomeSelfTest.class);
         suite.addTestSuite(GridVersionSelfTest.class);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
         suite.addTestSuite(GridUpdateNotifierSelfTest.class);
-        suite.addTestSuite(GridScheduleSelfTest.class);
+
+        // Managed Services.
+        suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorMultiNodeSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
+        suite.addTestSuite(GridServiceReassignmentSelfTest.class);
 
         return suite;
     }

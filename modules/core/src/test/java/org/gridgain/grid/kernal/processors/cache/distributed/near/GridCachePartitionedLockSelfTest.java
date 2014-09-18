@@ -48,12 +48,13 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     }
 
     /**
-     * @throws GridException
+     * @throws GridException If failed.
      */
     public void testLockAtomicCache() throws GridException {
         GridConfiguration cfg = new GridConfiguration();
 
         cfg.setGridName(getTestGridName(0));
+        cfg.setRestEnabled(false);
         cfg.setCacheConfiguration(new GridCacheConfiguration());
 
         final Grid g0 = G.start(cfg);

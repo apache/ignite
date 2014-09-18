@@ -33,14 +33,19 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
     /** Cache name. */
     private final String cacheName;
 
+    /** Optimistic transaction flag. */
+    private final boolean optimistic;
+
     /**
      *
      * @param preferredNode A node that we'd prefer to take from grid.
      * @param cacheName A name of the cache to work with.
+     * @param optimistic Optimistic transaction flag.
      */
-    GridCacheGroupLockPutTask(UUID preferredNode, String cacheName) {
+    GridCacheGroupLockPutTask(UUID preferredNode, String cacheName, boolean optimistic) {
         this.preferredNode = preferredNode;
         this.cacheName = cacheName;
+        this.optimistic = optimistic;
     }
 
     /**
@@ -63,7 +68,6 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
 
         // Give preference to wanted node. Otherwise, take the first one.
         GridNode targetNode = F.find(subgrid, subgrid.get(0), new GridPredicate<GridNode>() {
-            /** {@inheritDoc} */
             @Override public boolean apply(GridNode e) {
                 return preferredNode.equals(e.id());
             }
@@ -84,8 +88,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
 
                     assert cache != null;
 
-                    Map<Integer, T2<Integer, Collection<Integer>>> putMap =
-                        groupData(data);
+                    Map<Integer, T2<Integer, Collection<Integer>>> putMap = groupData(data);
 
                     for (Map.Entry<Integer, T2<Integer, Collection<Integer>>> entry : putMap.entrySet()) {
                         T2<Integer, Collection<Integer>> pair = entry.getValue();
@@ -93,8 +96,8 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
                         Object affKey = pair.get1();
 
                         // Group lock partition.
-                        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC,
-                            REPEATABLE_READ, 0, pair.get2().size())) {
+                        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey),
+                            optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ, 0, pair.get2().size())) {
                             for (Integer val : pair.get2())
                                 cache.put(val, val);
 
@@ -116,8 +119,7 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
                 private Map<Integer, T2<Integer, Collection<Integer>>> groupData(Iterable<Integer> data) {
                     GridCache<Object, Object> cache = grid.cache(cacheName);
 
-                    Map<Integer, T2<Integer, Collection<Integer>>> res =
-                        new HashMap<>();
+                    Map<Integer, T2<Integer, Collection<Integer>>> res = new HashMap<>();
 
                     for (Integer val : data) {
                         int part = cache.affinity().partition(val);

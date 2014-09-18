@@ -11,11 +11,14 @@ package org.gridgain.grid.cache.store;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.hibernate.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * API for cache persistent storage for read-through and write-through behavior.
@@ -34,7 +37,7 @@ import java.util.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@link GridCacheHibernateBlobStore}</li>
+ *     <li>{@gglink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
  *     <li>{@link GridCacheJdbcBlobStore}</li>
  * </ul>
  * <p>
@@ -53,6 +56,39 @@ import java.util.*;
  *     tx.addMeta("some.name", conn);
  * }
  * </pre>
+ * <h1 class="header">Working With Portable Objects</h1>
+ * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
+ * {@code true}), all portable keys and values are converted to instances of {@link GridPortableObject}.
+ * Therefore, all cache store methods will take parameters in portable format. To avoid class
+ * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
+ * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
+ * signature should be the following:
+ * <pre>
+ * public class PortableCacheStore implements GridCacheStore&lt;Integer, GridPortableObject&gt; {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws GridException {
+ *         ...
+ *     }
+ *
+ *     ...
+ * }
+ * </pre>
+ * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * types are stored in cache without changes and therefore should not affect cache store signature:
+ * <ul>
+ *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+ *     <li>Arrays of primitives (byte[], int[], ...)</li>
+ *     <li>{@link String} and array of {@link String}s</li>
+ *     <li>{@link UUID} and array of {@link UUID}s</li>
+ *     <li>{@link Date} and array of {@link Date}s</li>
+ *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+ *     <li>Enums and array of enums</li>
+ *     <li>
+ *         Maps, collections and array of objects (but objects inside
+ *         them will still be converted if they are portable)
+ *     </li>
+ * </ul>
+ *
+ * @see GridPortables
  */
 public interface GridCacheStore<K, V> {
     /**

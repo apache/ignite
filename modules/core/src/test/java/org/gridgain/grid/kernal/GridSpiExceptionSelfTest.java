@@ -82,11 +82,6 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * Test event storage spi that throws an exception on try to query local events.
      */
-    @GridSpiInfo(
-        author = /*@java.spi.author*/"GridGain Systems",
-        url = /*@java.spi.url*/"www.gridgain.com",
-        email = /*@java.spi.email*/"support@gridgain.com",
-        version = /*@java.spi.version*/"x.x")
     @GridSpiMultipleInstancesSupport(true)
     private static class GridTestRuntimeExceptionSpi extends GridSpiAdapter implements GridEventStorageSpi {
         /** {@inheritDoc} */
@@ -113,11 +108,6 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * Test deployment spi that throws an exception on try to register any class.
      */
-    @GridSpiInfo(
-        author = /*@java.spi.author*/"GridGain Systems",
-        url = /*@java.spi.url*/"www.gridgain.com",
-        email = /*@java.spi.email*/"support@gridgain.com",
-        version = /*@java.spi.version*/"x.x")
     @GridSpiMultipleInstancesSupport(true)
     private static class GridTestCheckedExceptionSpi extends GridSpiAdapter implements GridDeploymentSpi {
         /** {@inheritDoc} */

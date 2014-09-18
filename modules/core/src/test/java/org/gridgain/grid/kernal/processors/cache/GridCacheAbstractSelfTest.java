@@ -120,11 +120,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     int primaryKeySize = cache(i).primarySize();
                     int keySize = cache(i).size();
                     int size = cache(i).size();
+                    int globalSize = cache(i).globalSize();
+                    int globalPrimarySize = cache(i).globalPrimarySize();
 
                     info("Size after [idx=" + i +
                         ", size=" + size +
                         ", size=" + keySize +
                         ", primarySize=" + primaryKeySize +
+                        ", globalSize=" + globalSize +
+                        ", globalPrimarySize=" + globalPrimarySize +
                         ", keySet=" + cache(i).keySet() + ']');
 
                     assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + cache(i).entrySet() + ']',
@@ -213,6 +217,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
+        cfg.setPortableEnabled(portableEnabled());
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -283,7 +288,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return {@code true} if near cache should be enabled.
      */
-    protected final boolean nearEnabled() {
+    protected boolean nearEnabled() {
         return distributionMode() == NEAR_ONLY || distributionMode() == NEAR_PARTITIONED;
     }
 
@@ -299,6 +304,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected boolean lockingEnabled() {
         return true;
+    }
+
+    /**
+     * @return Whether portable mode is enabled.
+     */
+    protected boolean portableEnabled() {
+        return false;
     }
 
     /**

@@ -201,15 +201,17 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     /**
      * @param entry Entry to remove.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     void onRemoved(GridDhtCacheEntry<K, V> entry) {
-        assert Thread.holdsLock(entry);
         assert entry.obsolete();
 
         // Make sure to remove exactly this entry.
-        map.remove(entry.key(), entry);
+        synchronized (entry) {
+            map.remove(entry.key(), entry);
 
-        if (!entry.isInternal() && !entry.deleted())
-            mapPubSize.decrement();
+            if (!entry.isInternal() && !entry.deleted())
+                mapPubSize.decrement();
+        }
 
         // Attempt to evict.
         tryEvict(true);
@@ -410,6 +412,11 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
+            if (cctx.isDrEnabled())
+                cctx.dr().partitionEvicted(id);
+
+            cctx.dataStructures().onPartitionEvicted(id);
+
             rent.onDone();
 
             ((GridDhtPreloader<K, V>)cctx.preloader()).onPartitionEvicted(this, updateSeq);
@@ -441,6 +448,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
 
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
+
+            cctx.dataStructures().onPartitionEvicted(id);
 
             rent.onDone();
 
@@ -492,7 +501,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                         if (rec)
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), (GridUuid)null,
                                 null, EVT_CACHE_PRELOAD_OBJECT_UNLOADED, null, false, cached.rawGet(),
-                                cached.hasValue());
+                                cached.hasValue(), null, null, null);
                     }
                 }
             }

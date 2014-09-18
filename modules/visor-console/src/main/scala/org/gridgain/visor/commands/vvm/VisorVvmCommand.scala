@@ -11,21 +11,23 @@
 
 package org.gridgain.visor.commands.vvm
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.typedef.X
+
+import java.io.File
+import java.net._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
+
+import org.jetbrains.annotations.Nullable
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
-import org.jetbrains.annotations.Nullable
-import collection.immutable._
-import org.gridgain.grid._
-import kernal.GridNodeAttributes._
-import org.gridgain.grid.util.typedef.X
-import util.{GridUtils => U}
-import java.net._
-import java.io.File
-import org.gridgain.scalar._
-import scalar._
-import scala.util.control.Breaks._
-import collection.JavaConversions._
+import org.gridgain.visor.visor._
 
 /**
  * ==Overview==
@@ -104,8 +106,8 @@ class VisorVvmCommand {
             val argLst = parseArgs(args)
 
             val vvmHome = argValue("home", argLst) getOrElse X.getSystemOrEnv("VVM_HOME")
-            val id8 = argValue("id8", argLst) getOrElse null
-            val id = argValue("id", argLst) getOrElse null
+            val id8 = argValue("id8", argLst).orNull
+            val id = argValue("id", argLst).orNull
 
             var vvmCmd: String = null
 

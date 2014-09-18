@@ -42,6 +42,9 @@ public class CacheContinuousQueryExample {
 
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
+
             int keyCnt = 20;
 
             for (int i = 0; i < keyCnt; i++)
@@ -50,20 +53,24 @@ public class CacheContinuousQueryExample {
             // Create new continuous query.
             try (GridCacheContinuousQuery<Integer, String> qry = cache.queries().createContinuousQuery()) {
                 // Callback that is called locally when update notifications are received.
-                qry.callback(new GridBiPredicate<UUID, Collection<Map.Entry<Integer, String>>>() {
-                    @Override public boolean apply(UUID nodeId, Collection<Map.Entry<Integer, String>> entries) {
-                        for (Map.Entry<Integer, String> e : entries)
-                            System.out.println("Queried entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+                qry.localCallback(
+                    new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, String>>>() {
+                        @Override public boolean apply(
+                            UUID nodeId,
+                            Collection<GridCacheContinuousQueryEntry<Integer, String>> entries
+                        ) {
+                            for (GridCacheContinuousQueryEntry<Integer, String> e : entries)
+                                System.out.println("Queried entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
-                        return true; // Return true to continue listening.
-                    }
-                });
+                            return true; // Return true to continue listening.
+                        }
+                    });
 
                 // This filter will be evaluated remotely on all nodes
                 // Entry that pass this filter will be sent to the caller.
-                qry.filter(new GridBiPredicate<Integer, String>() {
-                    @Override public boolean apply(Integer key, String val) {
-                        return key > 15;
+                qry.remoteFilter(new GridPredicate<GridCacheContinuousQueryEntry<Integer, String>>() {
+                    @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, String> e) {
+                        return e.getKey() > 15;
                     }
                 });
 

@@ -61,7 +61,7 @@ public class GridPerformanceSuggestions {
             return;
 
         if (!F.isEmpty(perfs) && !suppressed.containsAll(perfs)) {
-            U.quietAndInfo(log, "Performance suggestions for grid" +
+            U.quietAndInfo(log, "Performance suggestions for grid " +
                 (gridName == null ? "" : '\'' + gridName + '\'') + " (fix if possible)");
             U.quietAndInfo(log, "To disable, set -D" + GG_PERFORMANCE_SUGGESTIONS_DISABLED + "=true");
 

@@ -21,6 +21,8 @@
     <bean id="grid.cfg.1" class="org.gridgain.grid.GridConfiguration" singleton="true">
         <property name="gridName" value="grid-factory-test-1"/>
 
+        <property name="restEnabled" value="false" />
+
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
@@ -35,6 +37,8 @@
 
     <bean id="grid.cfg.2" class="org.gridgain.grid.GridConfiguration" singleton="true">
         <property name="gridName" value="grid-factory-test-2"/>
+
+        <property name="restEnabled" value="false" />
 
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">

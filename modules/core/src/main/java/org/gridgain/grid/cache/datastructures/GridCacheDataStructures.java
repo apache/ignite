@@ -19,6 +19,8 @@ import org.jetbrains.annotations.*;
  * For example, if you increment {@link GridCacheAtomicLong} on one node, another node will
  * know about the change. Or if you add an element to {@link GridCacheQueue} on one node,
  * you can poll it on another node.
+ * <p>
+ * You can get data structures facade by calling {@link GridCache#dataStructures()} method.
  */
 public interface GridCacheDataStructures {
     /**
@@ -113,6 +115,29 @@ public interface GridCacheDataStructures {
      * @throws GridException If remove failed.
      */
     public boolean removeQueue(String name, int batchSize) throws GridException;
+
+    /**
+     * Will get a named set from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Set name.
+     * @param collocated If {@code true} then all items within the same set will be collocated on the same node.
+     *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
+     *      for {@link GridCacheMode#PARTITIONED} cache.
+     * @param create Flag indicating whether set should be created if does not exist.
+     * @return Set with given properties.
+     * @throws GridException If failed.
+     */
+    @Nullable public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create) throws GridException;
+
+    /**
+     * Removes set from cache.
+     *
+     * @param name Set name.
+     * @return {@code True} if set has been removed and false if it's not cached.
+     * @throws GridException If failed.
+     */
+    public boolean removeSet(String name) throws GridException;
 
     /**
      * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag

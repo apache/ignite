@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -46,7 +45,7 @@ import org.jetbrains.annotations.*;
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link GridCacheQuerySqlFunction}. Classes containing these methods must be registered in
- * {@link GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])}.
+ * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(java.lang.Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link GridCacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
@@ -84,26 +83,29 @@ import org.jetbrains.annotations.*;
  * classes defined as follows:
  * <pre name="code" class="java">
  * public class Organization {
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private long id;
  *
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private String name;
  *     ...
  * }
  *
  * public class Person {
- *     // Unique index.
- *     &#64;GridCacheQuerySqlField
+ *     // Indexed field.
+ *     &#64;GridCacheQuerySqlField(index = true)
  *     private long id;
  *
- *     &#64;GridCacheQuerySqlField
- *     private long orgId; // Organization ID.
+ *     // Indexed field (Organization ID, used as a foreign key).
+ *     &#64;GridCacheQuerySqlField(index = true)
+ *     private long orgId;
  *
- *     // Not indexed.
+ *     // Without SQL field annotation, this field cannot be used in queries.
  *     private String name;
  *
- *     // Non-unique index.
+ *     // Not indexed field.
  *     &#64;GridCacheQuerySqlField
  *     private double salary;
  *
@@ -140,12 +142,16 @@ import org.jetbrains.annotations.*;
  * // Query all cache nodes.
  * mastersQry.execute();
  * </pre>
- * Example of spatial index (supported in {@link GridH2IndexingSpi}):
+ * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
+ * GridGain also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index
+ * (supported by {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi}):
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
+ *     // Geospatial index.
  *     &#64;GridCacheQuerySqlField(index = true)
  *     private com.vividsolutions.jts.geom.Point location;
-
+ *
+ *     // Not indexed field.
  *     &#64;GridCacheQuerySqlField
  *     private String name;
  *
@@ -155,7 +161,7 @@ import org.jetbrains.annotations.*;
  *     }
  * }
  * </pre>
- * Example of spatial query on before mentioned field:
+ * Example of spatial query on the geo-indexed field from above:
  * <pre name="code" class="java">
  * com.vividsolutions.jts.geom.GeometryFactory factory = new com.vividsolutions.jts.geom.GeometryFactory();
  *

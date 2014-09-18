@@ -12,13 +12,13 @@ package org.gridgain.testframework.junits;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
+import org.gridgain.testframework.junits.logger.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridTestResources {
     /** */
-    private static final GridLogger rootLog = new GridLog4jLogger(false);
+    private static final GridLogger rootLog = new GridTestLog4jLogger(false);
 
     /** */
     private final GridLogger log;

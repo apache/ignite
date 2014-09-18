@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.license.*;
+import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
@@ -41,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -437,7 +439,7 @@ public abstract class GridAbstractTest extends TestCase {
             if (startGrid) {
                 GridConfiguration cfg = optimize(getConfiguration());
 
-                G.start(cfg, new GenericApplicationContext());
+                G.start(cfg);
             }
 
             try {
@@ -610,7 +612,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Grid startGrid(int idx, ApplicationContext ctx) throws Exception {
+    protected Grid startGrid(int idx, GridSpringResourceContext ctx) throws Exception {
         return startGrid(getTestGridName(idx), ctx);
     }
 
@@ -622,7 +624,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Grid startGrid(String gridName) throws Exception {
-        return startGrid(gridName, new GenericApplicationContext());
+        return startGrid(gridName, (GridSpringResourceContext)null);
     }
 
     /**
@@ -633,38 +635,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Grid startGrid(String gridName, ApplicationContext ctx) throws Exception {
-        return G.start(optimize(getConfiguration(gridName)), ctx);
-    }
-
-    /**
-     * Starts new grid with given name in a background thread.
-     *
-     * @param gridName Grid name.
-     * @param ctx Spring context.
-     * @return Started grid.
-     */
-    protected Callable<Grid> startGridTask(final String gridName, final ApplicationContext ctx) {
-        return new Callable<Grid>() {
-            @Override public Grid call() throws Exception {
-                return startGrid(gridName, ctx);
-            }
-        };
-    }
-
-    /**
-     * Starts new grid with given name in a background thread.
-     *
-     * @param cfg Grid configuration.
-     * @param ctx Spring context.
-     * @return Started grid.
-     */
-    protected Callable<Grid> startGridTask(final GridConfiguration cfg, final ApplicationContext ctx) {
-        return new Callable<Grid>() {
-            @Override public Grid call() throws Exception {
-                return G.start(optimize(cfg), ctx);
-            }
-        };
+    protected Grid startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        return GridGainEx.start(optimize(getConfiguration(gridName)), ctx);
     }
 
     /**
@@ -1095,6 +1067,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setStartSize(1024);
         cfg.setQueryIndexEnabled(true);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -1131,39 +1104,43 @@ public abstract class GridAbstractTest extends TestCase {
             info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
                 ", stopped=" + cntrs.getStopped() + ']');
 
-        afterTest();
-
-        if (isLastTest()) {
-            info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
-
-            TestCounters counters = getTestCounters();
-
-            // Stop all threads started by runMultithreaded() methods.
-            GridTestUtils.stopThreads(log);
-
-            // Safety.
-            getTestResources().stopThreads();
-
-            // Set reset flags, so counters will be reset on the next setUp.
-            counters.setReset(true);
-
-            afterTestsStopped();
-
-            if (startGrid)
-                G.stop(getTestGridName(), true);
-
-            // Remove counters.
-            tests.remove(getClass());
-
-            // Remove resources cached in static, if any.
-            GridClassLoaderCache.clear();
-            GridOptimizedMarshaller.clearCache();
-            GridMarshallerExclusions.clearCache();
+        try {
+            afterTest();
         }
+        finally {
+            if (isLastTest()) {
+                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
-        Thread.currentThread().setContextClassLoader(clsLdr);
+                TestCounters counters = getTestCounters();
 
-        clsLdr = null;
+                // Stop all threads started by runMultithreaded() methods.
+                GridTestUtils.stopThreads(log);
+
+                // Safety.
+                getTestResources().stopThreads();
+
+                // Set reset flags, so counters will be reset on the next setUp.
+                counters.setReset(true);
+
+                afterTestsStopped();
+
+                if (startGrid)
+                    G.stop(getTestGridName(), true);
+
+                // Remove counters.
+                tests.remove(getClass());
+
+                // Remove resources cached in static, if any.
+                GridClassLoaderCache.clear();
+                GridOptimizedMarshaller.clearCache();
+                GridMarshallerExclusions.clearCache();
+                GridEnumCache.clear();
+            }
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+        }
     }
 
     /**

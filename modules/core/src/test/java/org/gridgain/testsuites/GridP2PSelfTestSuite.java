@@ -30,10 +30,7 @@ public class GridP2PSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridP2PClassLoadingSelfTest.class));
         suite.addTest(new TestSuite(GridP2PUndeploySelfTest.class));
         suite.addTest(new TestSuite(GridP2PRemoteClassLoadersSelfTest.class));
-        suite.addTest(new TestSuite(GridP2PContinuousLocalDeploySelfTest.class));
-        suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
         suite.addTest(new TestSuite(GridP2PNodeLeftSelfTest.class));
-        suite.addTest(new TestSuite(GridP2PDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridP2PDifferentClassLoaderSelfTest.class));
         suite.addTest(new TestSuite(GridP2PSameClassLoaderSelfTest.class));
         suite.addTest(new TestSuite(GridP2PJobClassLoaderSelfTest.class));

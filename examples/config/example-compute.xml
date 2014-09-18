@@ -19,10 +19,10 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
-    <bean id="grid.cfg" scope="singleton" class="org.gridgain.grid.GridConfiguration">
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
@@ -45,6 +45,11 @@
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
+                    <!--
+                        GridGain provides several options for automatic discovery that can be used
+                        instead os static IP based discovery. For information on all options refer
+                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
+                    -->
                     <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
                     <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">

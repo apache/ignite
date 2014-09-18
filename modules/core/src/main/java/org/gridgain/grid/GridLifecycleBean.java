@@ -62,7 +62,7 @@ import org.gridgain.grid.resources.*;
  * <h1 class="header">Usage</h1>
  * If you need to tie your application logic into GridGain lifecycle,
  * you can configure lifecycle beans via standard grid configuration, add your
- * application library dependencies into {@code GRIDGAIN_HOME/libs/ext} folder, and
+ * application library dependencies into {@code GRIDGAIN_HOME/libs} folder, and
  * simply start {@code GRIDGAIN_HOME/ggstart.{sh|bat}} scripts.
  * <p>
  * <h1 class="header">Configuration</h1>
@@ -81,7 +81,7 @@ import org.gridgain.grid.resources.*;
  * </pre>
  * or from Spring XML configuration file as follows:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
+ * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;
  *       &lt;list&gt;

@@ -10,14 +10,16 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.springframework.context.*;
+
 import javax.management.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -42,7 +44,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private final GridLogger log;
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<Grid> gridInjector;
+    private GridResourceBasicInjector<GridEx> gridInjector;
 
     /** GridGain home folder injector. */
     private GridResourceBasicInjector<String> ggHomeInjector;
@@ -63,13 +65,16 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private GridResourceBasicInjector<GridMarshaller> marshallerInjector;
 
     /** Spring application context injector. */
-    private GridResourceBasicInjector<ApplicationContext> springCtxInjector;
+    private GridResourceInjector springCtxInjector;
 
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
 
+    /** Service injector. */
+    private GridResourceBasicInjector<Collection<GridService>> srvcInjector;
+
     /** Spring bean resources injector. */
-    private GridResourceSpringBeanInjector springBeanInjector;
+    private GridResourceInjector springBeanInjector;
 
     /** Null injector for cleaning resources. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
@@ -99,7 +104,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param gridInjector Grid instance.
      */
-    public void setGridInjector(GridResourceBasicInjector<Grid> gridInjector) {
+    public void setGridInjector(GridResourceBasicInjector<GridEx> gridInjector) {
         this.gridInjector = gridInjector;
     }
 
@@ -162,7 +167,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param springCtxInjector Spring application context.
      */
-    void setSpringContextInjector(GridResourceBasicInjector<ApplicationContext> springCtxInjector) {
+    void setSpringContextInjector(GridResourceInjector springCtxInjector) {
         this.springCtxInjector = springCtxInjector;
     }
 
@@ -171,7 +176,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param springBeanInjector Injector for Spring beans.
      */
-    public void setSpringBeanInjector(GridResourceSpringBeanInjector springBeanInjector) {
+    public void setSpringBeanInjector(GridResourceInjector springBeanInjector) {
         this.springBeanInjector = springBeanInjector;
     }
 
@@ -184,6 +189,15 @@ class GridResourceCustomInjector implements GridResourceInjector {
         this.logInjector = logInjector;
     }
 
+    /**
+     * Sets injector for grid services.
+     *
+     * @param srvcInjector Service injector.
+     */
+    public void setSrvcInjector(GridResourceBasicInjector<Collection<GridService>> srvcInjector) {
+        this.srvcInjector = srvcInjector;
+    }
+
     /** {@inheritDoc} */
     @Override public void undeploy(GridDeployment dep) {
         lock.writeLock().lock();
@@ -193,9 +207,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
                 @Override public void apply(Map<Class<?>, Map<String, CachedResource>> map) {
                     if (map != null) {
                         for (Map<String, CachedResource> m : map.values()) {
-                            if (m != null) {
+                            if (m != null)
                                 undeploy(m.values());
-                            }
                         }
                     }
                 }
@@ -207,9 +220,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
             Map<Class<?>, Map<Class<?>, Map<String, CachedResource>>> clsRsrcs = dep.removeMeta(CLS_RSRC_CACHE);
 
-            if (clsRsrcs != null) {
+            if (clsRsrcs != null)
                 F.forEach(clsRsrcs.values(), x);
-            }
         }
         finally {
             lock.writeLock().unlock();
@@ -304,9 +316,8 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
         GridUserResource ann = (GridUserResource)mtd.getAnnotation();
 
-        if (mtd.getMethod().getParameterTypes().length != 1) {
+        if (mtd.getMethod().getParameterTypes().length != 1)
             throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());
-        }
 
         Class<?> rsrcCls = !ann.resourceClass().equals(Void.class) ? ann.resourceClass() :
             mtd.getMethod().getParameterTypes()[0];
@@ -345,26 +356,23 @@ class GridResourceCustomInjector implements GridResourceInjector {
                 if (m != null) {
                     Map<Class<?>, Map<String, CachedResource>> m1 = m.get(depCls);
 
-                    if (m1 != null) {
+                    if (m1 != null)
                         map = m1.get(rsrcCls);
-                    }
                 }
             }
             else {
                 Map<Class<?>, Map<String, CachedResource>> m = dep.meta(CLS_LDR_RSRC_CACHE);
 
-                if (m != null) {
+                if (m != null)
                     map = m.get(rsrcCls);
-                }
             }
 
             if (map != null) {
                 CachedResource rsrc = map.get(rsrcName);
 
                 if (rsrc != null) {
-                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled())
                         log.debug("Read resource from cache: [rsrcCls=" + rsrcCls + ", rsrcName=" + rsrcName + ']');
-                    }
 
                     return rsrc.getResource();
                 }
@@ -446,6 +454,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
             ioc.inject(rsrc, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
             ioc.inject(rsrc, GridSpringResource.class, springBeanInjector, dep, depCls);
             ioc.inject(rsrc, GridLoggerResource.class, logInjector, dep, depCls);
+            ioc.inject(rsrc, GridServiceResource.class, srvcInjector, dep, depCls);
 
             for (Method mtd : getMethodsWithAnnotation(rsrcCls, GridUserResourceOnDeployed.class)) {
                 mtd.setAccessible(true);
@@ -495,7 +504,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     }
 
     /** */
-    private class CachedResource {
+    private static class CachedResource {
         /** */
         private final Object rsrc;
 

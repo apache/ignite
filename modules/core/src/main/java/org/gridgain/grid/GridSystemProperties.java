@@ -393,11 +393,6 @@ public final class GridSystemProperties {
     public static final String GG_TCP_DISCOVERY_ADDRESSES = "GRIDGAIN_TCP_DISCOVERY_ADDRESSES";
 
     /**
-     * Flag indicating whether library consistency check is on or off (by default the check is on).
-     */
-    public static final String GG_LIBRARY_CONSISTENCY_CHECK = "GRIDGAIN_LIBRARY_CONSISTENCY_CHECK";
-
-    /**
      * Flag indicating whether performance suggestions output on start should be disabled.
      */
     public static final String GG_PERFORMANCE_SUGGESTIONS_DISABLED = "GRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED";
@@ -421,6 +416,27 @@ public final class GridSystemProperties {
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
     public static final String GG_H2_DEBUG_CONSOLE = "GRIDGAIN_H2_DEBUG_CONSOLE";
+
+    /**
+     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     */
+    public static final String GG_IPC_SHMEM_SPACE_DEBUG = "GRIDGAIN_IPC_SHMEM_SPACE_DEBUG";
+
+    /**
+     * Portable object array initial capacity.
+     */
+    public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "GRIDGAIN_PORTABLE_ARRAY_INITIAL_CAPACITY";
+
+    /**
+     * Property allowing to skip configuration consistency checks.
+     */
+    public static final String GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
+        "GRIDGAIN_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
+
+    /**
+     * Flag indicating whether validation of keys put to cache should be disabled.
+     */
+    public static final String GG_CACHE_KEY_VALIDATION_DISABLED = "GRIDGAIN_CACHE_KEY_VALIDATION_DISABLED";
 
     /**
      * Enforces singleton.

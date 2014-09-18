@@ -18,10 +18,16 @@ import java.nio.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
+
 /**
  *
  */
+@SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
 public class GridIpcSharedMemorySpace implements Closeable {
+    /** Debug flag (enable for testing). */
+    private static final boolean DEBUG = Boolean.getBoolean(GG_IPC_SHMEM_SPACE_DEBUG);
+
     /** Shared memory segment size (operable). */
     private final int opSize;
 
@@ -74,7 +80,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         opSize = size;
 
-        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, log.isDebugEnabled());
+        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG && log.isDebugEnabled());
 
         shmemId = GridIpcSharedMemoryUtils.sharedMemoryId(shmemPtr);
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
@@ -85,7 +91,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.writerPid = writerPid;
 
-        if (log.isDebugEnabled())
+        if (DEBUG && log.isDebugEnabled())
             log.debug("Shared memory space has been created: " + this);
     }
 
@@ -114,7 +120,8 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.tokFileName = tokFileName;
 
-        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, log.isDebugEnabled());
+        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, DEBUG && log.isDebugEnabled());
+
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
     }
 
@@ -289,7 +296,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             lock.writeLock().unlock();
         }
 
-        if (log.isDebugEnabled())
+        if (DEBUG && log.isDebugEnabled())
             log.debug("Shared memory space has been closed: " + this);
     }
 

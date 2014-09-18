@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.ipc.loopback;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -18,6 +17,7 @@ import org.gridgain.grid.util.ipc.*;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 /**
  * Server loopback IPC endpoint.
@@ -45,7 +45,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         if (port <= 0 || port >= 0xffff)
-            throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);
+            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -61,7 +61,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
             if (srvSock != null)
                 U.closeQuiet(srvSock);
 
-            throw new GridGgfsIpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
+            throw new GridIpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
                 "use?): " + port, e);
         }
     }
@@ -128,5 +128,45 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridIpcServerTcpEndpoint.class, this);
+    }
+
+    /**
+     * Sets configuration properties from the map.
+     *
+     * @param endpointCfg Map of properties.
+     * @throws GridException If invalid property name or value.
+     */
+    public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
+        for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
+            try {
+                switch (e.getKey()) {
+                    case "type":
+                        //Ignore this property
+                        break;
+
+                    case "port":
+                        setPort(Integer.parseInt(e.getValue()));
+                        break;
+
+                    case "host":
+                        setHost(e.getValue());
+                        break;
+
+                    case "management":
+                        setManagement(Boolean.valueOf(e.getValue()));
+                        break;
+
+                    default:
+                        throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                }
+            }
+            catch (Throwable t) {
+                if (t instanceof GridException)
+                    throw t;
+
+                throw new GridException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
+                    getClass().getSimpleName(), t);
+            }
+        }
     }
 }

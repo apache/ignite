@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
@@ -24,7 +23,6 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with GGFS configuration with configured endpoint.
@@ -32,7 +30,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
@@ -94,14 +91,24 @@ public class GgfsFileSystemNodeStartup {
 
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
-        ggfsCfg.setName("GGFS");
+        ggfsCfg.setName("ggfs");
         ggfsCfg.setMetaCacheName("ggfs-meta");
         ggfsCfg.setDataCacheName("ggfs-data");
         ggfsCfg.setBlockSize(128 * 1024);
         ggfsCfg.setPerNodeBatchSize(512);
         ggfsCfg.setPerNodeParallelBatchCount(16);
         ggfsCfg.setPrefetchBlocks(32);
-        ggfsCfg.setIpcEndpointConfiguration(GridUtils.isWindows() ? "{type:'tcp'}" : "{type:'shmem', port:'10500'}");
+
+        Map<String, String> endpointCfg = new HashMap<>();
+
+        if (GridUtils.isWindows())
+            endpointCfg.put("type", "tcp");
+        else {
+            endpointCfg.put("type", "shmem");
+            endpointCfg.put("port", "10500");
+        }
+
+        ggfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         cfg.setGgfsConfiguration(ggfsCfg);
 

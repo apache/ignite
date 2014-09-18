@@ -79,8 +79,14 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -174,9 +180,9 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         hndField.setAccessible(true);
 
-        Collection handlers = (Collection)hndField.get(proc);
+        Map handlers = (Map)hndField.get(proc);
 
-        Collection cp = new ArrayList(handlers);
+        Map cp = new HashMap(handlers);
 
         handlers.clear();
 
@@ -192,7 +198,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
                 "Failed to process client request: Failed to find registered handler for command: CACHE_GET");
         }
         finally {
-            handlers.addAll(cp);
+            handlers.putAll(cp);
         }
     }
 
@@ -471,17 +477,15 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(grid().localNode().id(), false, false);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
@@ -491,17 +495,15 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         node = client.node(HOST, false, false);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(PORT,  node.getTcpPort());
         assertEquals(grid().localNode().id(), node.getNodeId());
     }
@@ -521,7 +523,6 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(node.getAttributes().isEmpty());
         assertNotNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(grid().localNode().id(), node.getNodeId());
 
         top = client.topology(false, false);
@@ -532,10 +533,9 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         node = F.first(top);
 
         assertNotNull(node);
-        assertTrue(node.getAttributes().isEmpty());
+        assertNull(node.getAttributes());
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
-        assertNotNull(node.getJettyAddresses());
         assertEquals(grid().localNode().id(), node.getNodeId());
     }
 

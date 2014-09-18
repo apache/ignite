@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -81,8 +82,14 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(BINARY_PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(BINARY_PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -145,9 +152,9 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridKernal g = (GridKernal)grid(0);
 
-        Collection<GridRestCommandHandler> handlers = U.field(g.context().rest(), "handlers");
+        Map<GridRestCommand, GridRestCommandHandler> handlers = U.field(g.context().rest(), "handlers");
 
-        GridTaskCommandHandler taskHnd = (GridTaskCommandHandler)F.find(handlers, null,
+        GridTaskCommandHandler taskHnd = (GridTaskCommandHandler)F.find(handlers.values(), null,
             new P1<GridRestCommandHandler>() {
                 @Override public boolean apply(GridRestCommandHandler e) {
                     return e instanceof GridTaskCommandHandler;

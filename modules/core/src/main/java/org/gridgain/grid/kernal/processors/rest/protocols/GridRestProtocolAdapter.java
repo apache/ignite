@@ -53,12 +53,13 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
     protected GridRestProtocolAdapter(GridKernalContext ctx) {
         assert ctx != null;
+        assert ctx.config().getClientConnectionConfiguration() != null;
 
         this.ctx = ctx;
 
         log = ctx.log(getClass());
 
-        secretKey = ctx.config().getRestSecretKey();
+        secretKey = ctx.config().getClientConnectionConfiguration().getRestSecretKey();
     }
 
     /**
@@ -132,6 +133,13 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
             throw new GridException("REST protocol parameter failed condition check: " + condDesc);
     }
 
+    /**
+     * @return Client configuration.
+     */
+    protected GridClientConnectionConfiguration config() {
+        return ctx.config().getClientConnectionConfiguration();
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<GridBiTuple<String, Object>> getProperties() {
         try {
@@ -139,18 +147,16 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
             GridBiTuple<Collection<String>, Collection<String>> addrs = host != null ?
                 U.resolveLocalAddresses(host) : null;
 
-            return Arrays.asList(
-                F.<String, Object>t(getAddressPropertyName(), addrs.get1()),
-                F.<String, Object>t(getHostNamePropertyName(), addrs.get2()),
-                F.<String, Object>t(getPortPropertyName(), port)
-            );
+            return port > 0 ?
+                Arrays.asList(
+                    F.<String, Object>t(getAddressPropertyName(), addrs.get1()),
+                    F.<String, Object>t(getHostNamePropertyName(), addrs.get2()),
+                    F.<String, Object>t(getPortPropertyName(), port)
+                ) :
+                Collections.<GridBiTuple<String, Object>>emptyList();
         }
         catch (GridException | IOException ignored) {
-            return Arrays.asList(
-                F.t(getAddressPropertyName(), null),
-                F.t(getHostNamePropertyName(), null),
-                F.<String, Object>t(getPortPropertyName(), port)
-            );
+            return null;
         }
     }
 
@@ -174,4 +180,9 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
      * @return Node attribute name.
      */
     protected abstract String getPortPropertyName();
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        // No-op.
+    }
 }

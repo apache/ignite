@@ -11,21 +11,14 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.events.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Test {@link GridCache#globalClearAll()} operation in multinode environment with nodes
@@ -136,12 +129,6 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void performTest() throws Exception {
-        List<AtomicInteger> ctrs = new ArrayList<>(GRID_CNT);
-
-        // Add task start event listeners to all grids.
-        for (int i = 0; i < GRID_CNT; i++)
-            ctrs.add(addTaskStartedEvtListener(grid(i)));
-
         // Put values into normal replicated cache.
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).cache(CACHE_NAME).put(i, "val" + i);
@@ -168,57 +155,5 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
 
         // ... but cache with another name should remain untouched.
         assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).size() == KEY_CNT_OTHER;
-
-        // All nodes listeners should have noticed globalClearAll() task execution except of grid(0)
-        // which is the master node for this task and grid(GRID_CNT-1) which doesn't have affected cache.
-        assert ctrs.get(0).get() == 0;
-
-        for (int i = 1; i < GRID_CNT - 1; i++)
-            assert ctrs.get(i).get() == 1;
-
-        assert ctrs.get(GRID_CNT - 1).get() == 0;
-    }
-
-    /**
-     * Attach {@link GlobalClearAllJobStartEventListener} to the grid.
-     *
-     * @param grid Grid listener to be attached to.
-     * @return Counter passed to listener.
-     */
-    private AtomicInteger addTaskStartedEvtListener(GridProjection grid) {
-        AtomicInteger ctr = new AtomicInteger();
-
-        grid.events().localListen(new GlobalClearAllJobStartEventListener(ctr), EVT_JOB_STARTED);
-
-        return ctr;
-    }
-
-    /**
-     * Job start event listener which increments passed counter whenever globalClearAll-related job is executed.
-     */
-    private static class GlobalClearAllJobStartEventListener implements GridPredicate<GridEvent> {
-        /** Counter to be incremented. */
-        private final AtomicInteger ctr;
-
-        /**
-         * Standard constructor.
-         *
-         * @param ctr Counter.
-         */
-        private GlobalClearAllJobStartEventListener(AtomicInteger ctr) {
-            this.ctr = ctr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(GridEvent evt) {
-            assert evt.type() == EVT_JOB_STARTED;
-
-            GridJobEvent jobEvt = (GridJobEvent)evt;
-
-            if (jobEvt.taskClassName().contains("GlobalClearAllCallable"))
-                ctr.incrementAndGet();
-
-            return true;
-        }
     }
 }

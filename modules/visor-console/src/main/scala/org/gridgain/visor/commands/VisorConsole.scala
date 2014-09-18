@@ -31,8 +31,7 @@ import org.gridgain.grid.kernal.GridProductImpl
 // Note the importing of implicit conversions.
 import ack.VisorAckCommand
 import alert.VisorAlertCommand
-import org.gridgain.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCompactCommand, VisorCacheCommand}
-import cswap.VisorCacheSwapCommand
+import org.gridgain.visor.commands.cache.{VisorCacheSwapCommand, VisorCacheClearCommand, VisorCacheCompactCommand, VisorCacheCommand}
 import config.VisorConfigurationCommand
 import deploy.VisorDeployCommand
 import disco.VisorDiscoveryCommand
@@ -51,13 +50,16 @@ import vvm.VisorVvmCommand
  * Command line Visor.
  */
 object VisorConsole extends App {
-    /** Ant-augmented version number. */
-    private final val VISOR_VER = GridProductImpl.EDITION + "-" + GridProductImpl.VER
-    /** Ant-augmented release date. */
+    /** Version number. */
+    private final val VISOR_VER = GridProductImpl.VER
+
+    /** Release date. */
     private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
-    /** Ant-augmented copyright blurb. */
+
+    /** Copyright. */
     private final val VISOR_COPYRIGHT = GridProductImpl.COPYRIGHT
 
+    /** Release date (another format). */
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)
 
     // Pre-initialize built-in commands.
@@ -123,23 +125,29 @@ object VisorConsole extends App {
                     buf.clear()
                 }
 
-                line match {
-                    case emptyArg(c) =>
-                        visor.searchCmd(c) match {
-                            case Some(cmdHolder) => cmdHolder.impl.invoke()
-                            case _ => adviseToHelp(c)
-                        }
-                    case varArg(c, args) =>
-                        visor.searchCmd(c) match {
-                            case Some(cmdHolder) => cmdHolder.impl.invoke(args.trim)
-                            case _ => adviseToHelp(c)
-                        }
-                    case s if "".equals(s.trim)  => // Ignore empty user input.
-                    case _ => adviseToHelp(line)
+                try {
+                    line match {
+                        case emptyArg(c) =>
+                            visor.searchCmd(c) match {
+                                case Some(cmdHolder) => cmdHolder.impl.invoke()
+                                case _ => adviseToHelp(c)
+                            }
+                        case varArg(c, args) =>
+                            visor.searchCmd(c) match {
+                                case Some(cmdHolder) => cmdHolder.impl.invoke(args.trim)
+                                case _ => adviseToHelp(c)
+                            }
+                        case s if "".equals(s.trim) => // Ignore empty user input.
+                        case _ => adviseToHelp(line)
+                    }
+                } catch {
+                    case ignore: Exception => ignore.printStackTrace()
                 }
             }
         }
     }
+
+    def terminalWidth() = reader.getTerminal.getWidth
 
     /**
      * Prints standard 'Invalid command' error message.

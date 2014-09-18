@@ -27,7 +27,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <description>Main Spring file for router configuration.</description>
 
@@ -55,8 +55,7 @@
     </bean>
 
     <!-- Configuration of Tcp router. -->
-    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration"
-          scope="singleton">
+    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
 
@@ -87,37 +86,7 @@
         </property>
 
         <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
-    </bean>
-
-    <!-- Configuration of Http router. -->
-    <bean id="http.router.cfg" class="org.gridgain.client.router.GridHttpRouterConfiguration"
-          scope="singleton">
-
-        <property name="logger" ref="router.log"/>
-
-        <!-- GRIDGAIN_JETTY_PORT=12400 -->
-        <property name="jettyConfigurationPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/router-jetty-ssl.xml"/>
-
-        <!-- Specify list of remote grid nodes to connect. -->
-        <property name="servers">
-            <list>
-                <value>127.0.0.1:11443</value>
-            </list>
-        </property>
-
-        <!-- Provide Ssl context. -->
-        <property name="clientSslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/client.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
-                <property name="trustStorePassword" value="123456"/>
-            </bean>
-        </property>
-
-        <!-- Specify credentials for grid connection. -->
-        <property name="credentials" value="s3cret"/>
+        <!--<property name="credentials" value="s3cret"/>-->
     </bean>
 
     <!--

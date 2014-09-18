@@ -15,99 +15,10 @@ import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * No-op implementation for {@link GridLicenseProcessor}.
  */
 public class GridOsLicenseProcessor extends GridProcessorAdapter implements GridLicenseProcessor {
-    /** */
-    private static final GridProductLicense dummyLic = new GridProductLicense() {
-        @Override public String disabledSubsystems() {
-            return null;
-        }
-
-        @Override public String version() {
-            return null;
-        }
-
-        @Override public UUID id() {
-            return null;
-        }
-
-        @Override public String versionRegexp() {
-            return null;
-        }
-
-        @Override public Date issueDate() {
-            return null;
-        }
-
-        @Override public int maintenanceTime() {
-            return 0;
-        }
-
-        @Override public String issueOrganization() {
-            return null;
-        }
-
-        @Override public String userOrganization() {
-            return null;
-        }
-
-        @Override public String licenseNote() {
-            return null;
-        }
-
-        @Override public String userWww() {
-            return null;
-        }
-
-        @Override public String userEmail() {
-            return null;
-        }
-
-        @Override public String userName() {
-            return null;
-        }
-
-        @Override public Date expireDate() {
-            return null;
-        }
-
-        @Override public int maxNodes() {
-            return 0;
-        }
-
-        @Override public int maxComputers() {
-            return 0;
-        }
-
-        @Override public int maxCpus() {
-            return 0;
-        }
-
-        @Override public long maxUpTime() {
-            return 0;
-        }
-
-        @Override public long gracePeriod() {
-            return 0;
-        }
-
-        @Override @Nullable public String attributeName() {
-            return null;
-        }
-
-        @Override @Nullable public String attributeValue() {
-            return null;
-        }
-
-        @Nullable @Override public String getCacheDistributionModes() {
-            return null;
-        }
-    };
-
     /**
      * @param ctx Kernal context.
      */
@@ -131,17 +42,17 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enabled(GridProductEdition ed) {
+    @Override public boolean enabled(GridLicenseSubsystem ed) {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public GridProductLicense license() {
-        return dummyLic;
+    @Nullable @Override public GridProductLicense license() {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public long gracePeriodLeft() {
-        return 0;
+        return -1;
     }
 }

@@ -41,6 +41,7 @@ public class GridTaskSessionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridSessionJobFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridSessionLoadSelfTest.class));
         suite.addTest(new TestSuite(GridSessionCollisionSpiSelfTest.class));
+        suite.addTest(new TestSuite(GridSessionCheckpointSelfTest.class));
 
         return suite;
     }

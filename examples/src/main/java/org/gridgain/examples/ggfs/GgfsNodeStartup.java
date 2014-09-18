@@ -10,20 +10,16 @@
 package org.gridgain.examples.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with GGFS configuration.
  * You can also start a stand-alone GridGain instance by passing the path
  * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
+ * {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
@@ -32,6 +28,6 @@ public class GgfsNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/example-ggfs.xml");
+        GridGain.start("examples/config/filesystem/example-ggfs.xml");
     }
 }

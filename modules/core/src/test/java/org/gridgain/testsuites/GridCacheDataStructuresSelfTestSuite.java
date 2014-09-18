@@ -31,6 +31,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
 
@@ -39,6 +41,7 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheReplicatedQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueRotativeMultiNodeTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedSetSelfTest.class));
         // TODO: GG-5306
         // suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
 
@@ -50,6 +53,12 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
+
+        suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
+
         suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCacheQueueCleanupSelfTest.class));

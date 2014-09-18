@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
@@ -99,6 +100,18 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** */
     private boolean all;
 
+    /** */
+    @GridDirectVersion(1)
+    private boolean keepPortable;
+
+    /** */
+    @GridDirectVersion(2)
+    private UUID subjId;
+
+    /** */
+    @GridDirectVersion(2)
+    private int taskHash;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -126,6 +139,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
+     * @param keepPortable Whether to keep portables.
      */
     public GridCacheQueryRequest(
         long id,
@@ -133,13 +147,19 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         int pageSize,
         boolean incBackups,
         boolean fields,
-        boolean all) {
+        boolean all,
+        boolean keepPortable,
+        UUID subjId,
+        int taskHash) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
+        this.keepPortable = keepPortable;
+        this.subjId = subjId;
+        this.taskHash = taskHash;
     }
 
     /**
@@ -172,10 +192,13 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         int pageSize,
         boolean incBackups,
         Object[] args,
-        boolean incMeta) {
+        boolean incMeta,
+        boolean keepPortable,
+        UUID subjId,
+        int taskHash) {
         assert type != null || fields;
-        assert clause != null || type == SCAN;
-        assert clsName != null || fields || type == SCAN;
+        assert clause != null || (type == SCAN || type == SET);
+        assert clsName != null || fields || type == SCAN || type == SET;
 
         this.id = id;
         this.cacheName = cacheName;
@@ -191,6 +214,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
+        this.keepPortable = keepPortable;
+        this.subjId = subjId;
+        this.taskHash = taskHash;
     }
 
     /** {@inheritDoc} */
@@ -378,6 +404,27 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         return all;
     }
 
+    /**
+     * @return Whether to keep portables.
+     */
+    public boolean keepPortable() {
+        return keepPortable;
+    }
+
+    /**
+     * @return Security subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task hash.
+     */
+    public int taskHash() {
+        return taskHash;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -415,6 +462,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.cancel = cancel;
         _clone.incMeta = incMeta;
         _clone.all = all;
+        _clone.keepPortable = keepPortable;
+        _clone.subjId = subjId;
+        _clone.taskHash = taskHash;
     }
 
     /** {@inheritDoc} */
@@ -525,6 +575,24 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
             case 17:
                 if (!commState.putEnum(type))
+                    return false;
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putBoolean(keepPortable))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 20:
+                if (!commState.putInt(taskHash))
                     return false;
 
                 commState.idx++;
@@ -686,6 +754,32 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 byte type0 = commState.getByte();
 
                 type = GridCacheQueryType.fromOrdinal(type0);
+
+                commState.idx++;
+
+            case 18:
+                if (buf.remaining() < 1)
+                    return false;
+
+                keepPortable = commState.getBoolean();
+
+                commState.idx++;
+
+            case 19:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 20:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskHash = commState.getInt();
 
                 commState.idx++;
 

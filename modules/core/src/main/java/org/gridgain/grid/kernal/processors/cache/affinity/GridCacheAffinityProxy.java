@@ -14,17 +14,31 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Affinity interface implementation.
  */
-public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
+public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
 
     /** Affinity delegate. */
     private GridCacheAffinity<K> delegate;
+
+    /** Context. */
+    private GridCacheContext<K, V> cctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheAffinityProxy() {
+        // No-op.
+    }
 
     /**
      * @param cctx Context.
@@ -33,6 +47,7 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
     public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, GridCacheAffinity<K> delegate) {
         gate = cctx.gate();
         this.delegate = delegate;
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
@@ -214,5 +229,26 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
         finally {
             gate.leave(old);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cctx = (GridCacheContext<K, V>)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return cctx.grid().cache(cctx.cache().name()).affinity();
     }
 }

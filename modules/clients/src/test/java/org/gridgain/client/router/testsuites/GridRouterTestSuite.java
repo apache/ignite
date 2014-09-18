@@ -12,8 +12,6 @@ package org.gridgain.client.router.testsuites;
 import junit.framework.*;
 import org.gridgain.client.router.*;
 
-import java.io.*;
-
 /**
  * Test suite for router tests.
  *
@@ -23,21 +21,15 @@ import java.io.*;
 public class GridRouterTestSuite extends TestSuite {
     /**
      * @return Suite that contains all router tests.
-     * @throws IOException If failed.
      */
-    public static TestSuite suite() throws IOException {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Router Test Suite");
 
         suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpsRouterSelfTest.class));
         suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHttpsRouterMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterMultiAuthSelfTest.class));
-        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 
         return suite;
     }

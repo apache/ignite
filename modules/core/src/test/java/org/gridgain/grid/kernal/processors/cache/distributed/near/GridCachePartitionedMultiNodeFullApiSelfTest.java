@@ -214,27 +214,27 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @throws Exception If failed.
      */
     public void testPeekPartitionedModes() throws Exception {
-        boolean nearEnabled = nearEnabled(cache());
-
-        Integer nearPeekVal = nearEnabled ? 1 : null;
-
         cache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
+            boolean nearEnabled = nearEnabled(cache(i));
+
+            Integer nearPeekVal = nearEnabled ? 1 : null;
+
             GridCache<String, Integer> c = cache(i);
 
             GridCacheEntry<String, Integer> e = c.entry("key");
 
             if (e.backup()) {
-                assert e.peek(F.asList(NEAR_ONLY)) == null;
-                assert e.peek(F.asList(PARTITIONED_ONLY)) == 1;
+                assertNull("NEAR_ONLY for cache: " + i, e.peek(F.asList(NEAR_ONLY)));
+                assertEquals((Integer)1, e.peek(F.asList(PARTITIONED_ONLY)));
 
-                assert c.peek("key", F.asList(NEAR_ONLY)) == null;
+                assertNull(c.peek("key", F.asList(NEAR_ONLY)));
 
-                assert c.peek("key", F.asList(PARTITIONED_ONLY)) == 1;
+                assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
             }
             else if (!e.primary() && !e.backup()) {
-                assert e.get() == 1;
+                assertEquals((Integer)1, e.get());
 
                 assertEquals(nearPeekVal, e.peek(Arrays.asList(NEAR_ONLY)));
 
@@ -251,13 +251,13 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @throws Exception If failed.
      */
     public void testPeekAsyncPartitionedModes() throws Exception {
-        boolean nearEnabled = nearEnabled(cache());
-
-        Integer nearPeekVal = nearEnabled ? 1 : null;
-
         cache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
+            boolean nearEnabled = nearEnabled(cache(i));
+
+            Integer nearPeekVal = nearEnabled ? 1 : null;
+
             GridCache<String, Integer> c = cache(i);
 
             GridCacheEntry<String, Integer> e = c.entry("key");

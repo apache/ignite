@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -52,8 +51,6 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
-
-        idxSpi.setDefaultIndexPrimitiveKey(true);
 
         cfg.setIndexingSpi(idxSpi);
 
@@ -572,7 +569,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends GridH2IndexingSpi {
+    private static class TestIndexingSpi extends  GridSpiAdapter implements GridIndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -584,8 +581,63 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
+        @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
+            Collection<Object> params, GridIndexingQueryFilter<K, V>... filters) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(
+            @Nullable String spaceName, String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
+            GridIndexingQueryFilter<K, V>... filters) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
+            @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
+            GridIndexingQueryFilter<K, V>... filters) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long size(@Nullable String spaceName, GridIndexingTypeDescriptor desc) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean registerType(@Nullable String spaceName, GridIndexingTypeDescriptor desc) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unregisterType(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void registerMarshaller(GridIndexingMarshaller marshaller) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rebuildIndexes(@Nullable String spaceName, GridIndexingTypeDescriptor type) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
-            GridIndexingEntity<K> key, GridIndexingEntity<V> val, byte[] ver, long expirationTime)
+                                           GridIndexingEntity<K> key, GridIndexingEntity<V> val, byte[] ver, long expirationTime)
             throws GridSpiException {
             if (fail) {
                 fail = false;

@@ -17,6 +17,8 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
+import static org.gridgain.client.GridClientCacheFlag.*;
+
 /**
  * Tests conversions between GridClientCacheFlag and GridCacheFlag.
  */
@@ -26,10 +28,14 @@ public class GridClientCacheFlagsCodecTest extends TestCase {
      */
     public void testEncodingDecodingFullness() {
         for (GridClientCacheFlag f : GridClientCacheFlag.values()) {
+            if (f == KEEP_PORTABLES)
+                continue;
+
             int bits = GridClientConnection.encodeCacheFlags(Collections.singleton(f));
+
             assertTrue(bits != 0);
 
-            GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(Integer.toString(bits));
+            GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
             assertEquals(1, out.length);
 
             assertEquals(f.name(), out[0].name());
@@ -57,9 +63,9 @@ public class GridClientCacheFlagsCodecTest extends TestCase {
 
         int bits = GridClientConnection.encodeCacheFlags(flagSet);
 
-        GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(Integer.toString(bits));
+        GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
 
-        assertEquals(flagSet.size(), out.length);
+        assertEquals(flagSet.contains(KEEP_PORTABLES) ? flagSet.size() - 1 : flagSet.size(), out.length);
 
         for (GridCacheFlag f : out) {
             assertTrue(flagSet.contains(GridClientCacheFlag.valueOf(f.name())));

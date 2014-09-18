@@ -14,14 +14,14 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
-        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
     <description>
         Base Spring file for grid configuration.
     </description>
 
-    <bean abstract="true" id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean abstract="true" id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="gridName" value="dsi"/>
 
         <property name="localHost" value="127.0.0.1"/>

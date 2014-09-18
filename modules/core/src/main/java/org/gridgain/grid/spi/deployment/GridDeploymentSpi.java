@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.local.*;
-import org.gridgain.grid.spi.deployment.uri.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.*;
  * Gridgain provides the following {@code GridDeploymentSpi} implementations:
  * <ul>
  * <li>{@link GridLocalDeploymentSpi}</li>
- * <li>{@link GridUriDeploymentSpi}</li>
+ * <li>{@gglink org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -53,7 +52,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDeploymentSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridDeploymentSpi extends GridSpi {
     /**
      * Finds class loader for the given class.
      *

@@ -25,16 +25,20 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -132,6 +136,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Replication manager. */
     private GridCacheDrManager<K, V> drMgr;
 
+    /** JTA manager. */
+    private GridCacheJtaManagerAdapter<K, V> jtaMgr;
+
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
 
@@ -174,9 +181,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local flag array. */
     private static final GridCacheFlag[] FLAG_LOCAL = new GridCacheFlag[]{LOCAL};
 
-    /** Thread local peek mode excludes. */
-    private ThreadLocal<GridCachePeekMode[]> peekModeExcl = new ThreadLocal<>();
-
     /** Data center ID. */
     private byte dataCenterId;
 
@@ -209,6 +213,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
+     * @param jtaMgr JTA manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -235,7 +240,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
-        GridCacheDrManager<K, V> drMgr) {
+        GridCacheDrManager<K, V> drMgr,
+        GridCacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
         assert cacheCfg != null;
 
@@ -278,6 +284,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
+        this.jtaMgr = add(jtaMgr);
 
         log = ctx.log(getClass());
 
@@ -522,6 +529,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param op Operation to check.
+     * @throws GridSecurityException If security check failed.
+     */
+    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+        if (CU.isSystemCache(name()))
+            return;
+
+        ctx.security().authorize(name(), op, null);
+    }
+
+    /**
      * @return Preloader.
      */
     public GridCachePreloader<K, V> preloader() {
@@ -742,7 +760,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public GridCacheTxManager<K, V> tm() {
-        return txMgr;
+         return txMgr;
     }
 
     /**
@@ -774,16 +792,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Query manager.
+     * @return Query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheQueryManager<K, V> queries() {
+    public GridCacheQueryManager<K, V> queries() {
         return qryMgr;
     }
 
     /**
-     * @return Continuous query manager.
+     * @return Continuous query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheContinuousQueryManager<K, V> continuousQueries() {
+    public GridCacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
     }
 
@@ -850,6 +868,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         return ttlMgr;
     }
 
+    /**
+     * @return JTA manager.
+     */
+    public GridCacheJtaManagerAdapter<K, V> jta() {
+        return jtaMgr;
+    }
     /**
      * @return No get-value filter.
      */
@@ -1012,45 +1036,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Force peek mode excludes for current thread.
-     *
-     * @param modes Peek modes to exclude.
-     * @return Excludes prior to this call.
-     */
-    public GridCachePeekMode[] excludePeekModes(@Nullable GridCachePeekMode[] modes) {
-        if (nearContext())
-            return dht().near().context().excludePeekModes(modes);
-
-        GridCachePeekMode[] oldModes = peekModeExcl.get();
-
-        peekModeExcl.set(F.isEmpty(modes) ? null : modes);
-
-        return oldModes;
-    }
-
-    /**
-     * @return Peek mode excludes.
-     */
-    public GridCachePeekMode[] peekModeExcludes() {
-        return nearContext() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
-    }
-
-    /**
-     * @param mode Peek mode.
-     * @return {@code true} if given peek mode is excluded.
-     */
-    public boolean peekModeExcluded(GridCachePeekMode mode) {
-        assert mode != null;
-
-        if (nearContext())
-            return dht().near().context().peekModeExcluded(mode);
-
-        GridCachePeekMode[] excl = peekModeExcl.get();
-
-        return excl != null && U.containsObjectArray(excl, mode);
-    }
-
-    /**
      * Clone cached object.
      *
      * @param obj Object to clone
@@ -1088,6 +1073,27 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
         return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+    }
+
+    /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId) {
+        if (subjId != null)
+            return subjId;
+
+        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+
+        if (prj != null)
+            subjId = prj.subjectId();
+
+        if (subjId == null)
+            subjId = ctx.localNodeId();
+
+        return subjId;
     }
 
     /**
@@ -1368,14 +1374,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
-        return isSwapEnabled() || isOffHeapEnabled();
-    }
-
-    /**
-     * @return {@code True} if swap storage is enabled.
-     */
-    public boolean isSwapEnabled() {
-        return swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP);
+        return (swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP)) || isOffHeapEnabled();
     }
 
     /**
@@ -1457,15 +1456,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty()) {
-            List<GridNode> owners = dht().topology().owners(entry.partition(), topVer);
-
-            assert dhtNodes.containsAll(owners) : "Invalid nodes resolving [dhtNodes=" + dhtNodes +
-                ", owners=" + owners + ']';
-
-            // Exclude owner nodes.
-            ret |= map(entry, F.view(nearNodes, F.notIn(owners)), nearMap);
-        }
+        if (nearNodes != null && !nearNodes.isEmpty())
+            ret |= map(entry, nearNodes, nearMap);
 
         return ret;
     }
@@ -1656,6 +1648,118 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
+     * @return {@code True} if interceptor cancels remove.
+     */
+    public boolean cancelRemove(@Nullable GridBiTuple<Boolean, ?> interceptorRes) {
+        if (interceptorRes != null) {
+            if (interceptorRes.get1() == null) {
+                U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
+                    "'onBeforeRemove' method.");
+
+                return false;
+            }
+            else
+                return interceptorRes.get1();
+        }
+        else {
+            U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+
+            return false;
+        }
+    }
+
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return cacheCfg.isPortableEnabled();
+    }
+
+    /**
+     * @param obj Object.
+     * @return Portable object.
+     * @throws GridPortableException In case of error.
+     */
+    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+        assert portableEnabled();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
+            return obj;
+
+        GridPortableProcessor proc = kernalContext().portable();
+
+        assert proc != null;
+
+        return proc.marshalToPortable(obj);
+    }
+
+    /**
+     * Unwraps collection.
+     *
+     * @param col Collection to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped collection.
+     * @throws GridException
+     */
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable)
+        throws GridException {
+        if (!config().isPortableEnabled())
+            return col;
+
+        Collection<Object> unwrapped = new ArrayList<>(col.size());
+
+        for (Object o : col) {
+            unwrapped.add(unwrapPortableIfNeeded(o, keepPortable));
+        }
+
+        return unwrapped;
+    }
+
+    /**
+     * Unwraps object for portables.
+     *
+     * @param o Object to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped object.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) throws GridException {
+        if (!config().isPortableEnabled())
+            return o;
+
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            if (key instanceof GridPortableObject && !keepPortable)
+                key = ((GridPortableObject)key).deserialize();
+
+            Object val = entry.getValue();
+
+            if (val instanceof GridPortableObject && !keepPortable)
+                val = ((GridPortableObject)val).deserialize();
+
+            return F.t(key, val);
+        }
+        else if (!keepPortable) {
+            if (o instanceof Collection)
+                return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable);
+            else if (o instanceof GridPortableObject)
+                return ((GridPortableObject)o).deserialize();
+            else
+                return o;
+        }
+        else
+            return o;
+    }
+
+    /**
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {
@@ -1712,10 +1816,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

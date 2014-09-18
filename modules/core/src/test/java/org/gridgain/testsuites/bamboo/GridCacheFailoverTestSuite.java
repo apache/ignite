@@ -30,6 +30,7 @@ public class GridCacheFailoverTestSuite extends TestSuite {
 
         // Group lock failover.
         suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
+        suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);

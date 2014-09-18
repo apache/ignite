@@ -144,11 +144,6 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridSpiInfo(
-        author = /*@java.spi.author*/"GridGain Systems",
-        url = /*@java.spi.url*/"www.gridgain.com",
-        email = /*@java.spi.email*/"support@gridgain.com",
-        version = /*@java.spi.version*/"x.x")
     @GridSpiMultipleInstancesSupport(true)
     private static class GridCancelCollisionSpi extends GridSpiAdapter
         implements GridCollisionSpi {

@@ -137,24 +137,25 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 switch (evt.type()) {
                     case EVT_NODE_JOINED:
                         if (reqs != null) {
+                            UUID routineId = null;
+
                             // Send pending requests.
-                            for (GridContinuousMessage req : reqs) {
-                                try {
+                            try {
+                                for (GridContinuousMessage req : reqs) {
+                                    routineId = req.routineId();
+
                                     sendWithRetries(nodeId, req, null);
                                 }
-                                catch (GridException e) {
-                                    U.error(log, "Failed to send pending start request to node: " + nodeId, e);
+                            }
+                            catch (GridTopologyException ignored) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send pending start request to node (is node alive?): " +
+                                        nodeId);
+                            }
+                            catch (GridException e) {
+                                U.error(log, "Failed to send pending start request to node: " + nodeId, e);
 
-                                    UUID routineId = req.routineId();
-
-                                    Collection<UUID> nodeIds = waitForStartAck.get(routineId);
-
-                                    assert nodeIds != null;
-
-                                    nodeIds.remove(nodeId);
-
-                                    completeStartFuture(routineId);
-                                }
+                                completeStartFuture(routineId);
                             }
                         }
 
@@ -357,7 +358,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
                 // Handle peer deployment for projection predicate.
-                if (prjPred != null) {
+                if (prjPred != null && !U.isGrid(prjPred.getClass())) {
                     Class cls = U.detectClass(prjPred);
 
                     String clsName = cls.getName();
@@ -721,6 +722,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, err), null);
         }
+        catch (GridTopologyException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send start acknowledgement to node (is node alive?): " + nodeId);
+        }
         catch (GridException e) {
             U.error(log, "Failed to send start acknowledgement to node: " + nodeId, e);
         }
@@ -777,6 +782,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null), null);
+        }
+        catch (GridTopologyException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send stop acknowledgement to node (is node alive?): " + nodeId);
         }
         catch (GridException e) {
             U.error(log, "Failed to send stop acknowledgement to node: " + nodeId, e);
@@ -886,6 +895,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (doRegister) {
             if (interval > 0) {
                 GridThread checker = new GridThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
+                    @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
 
@@ -904,6 +914,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             if (toSnd != null) {
                                 try {
                                     sendNotification(nodeId, routineId, toSnd, hnd.orderedTopic());
+                                }
+                                catch (GridTopologyException ignored) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send notification to node (is node alive?): " + nodeId);
                                 }
                                 catch (GridException e) {
                                     U.error(log, "Failed to send notification to node: " + nodeId, e);
@@ -1063,7 +1077,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Local routine info.
      */
-    private static class LocalRoutineInfo {
+    @SuppressWarnings("PackageVisibleInnerClass")
+    static class LocalRoutineInfo {
         /** Projection predicate. */
         private final GridPredicate<GridNode> prjPred;
 
@@ -1092,6 +1107,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+        }
+
+        /**
+         * @return Handler.
+         */
+        GridContinuousHandler handler() {
+            return hnd;
         }
     }
 
@@ -1321,6 +1343,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             boolean b = in.readBoolean();
 
@@ -1465,6 +1488,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             routineId = U.readUuid(in);
             prjPred = (GridPredicate<GridNode>)in.readObject();
@@ -1657,6 +1681,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         for (UUID id : ids) {
                             try {
                                 sendWithRetries(id, req, null);
+                            }
+                            catch (GridTopologyException ignored) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to resend stop request to node (is node alive?): " + id);
                             }
                             catch (GridException e) {
                                 U.error(log, "Failed to resend stop request to node: " + id, e);

@@ -14,7 +14,6 @@ package org.gridgain.scalar.examples
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid.cache.GridCache
-import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 /**
  * This example demonstrates the simplest code that populates the distributed cache
@@ -30,7 +29,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-@GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinitySimpleExample extends App {
     /** Number of keys. */
     private val KEY_CNT = 20
@@ -58,7 +56,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
             grid$.compute().affinityRun("partitioned", i,
-                () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
+                () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']')).get
         )
     }
 

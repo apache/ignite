@@ -44,14 +44,14 @@ import java.util.concurrent.atomic.*;
  * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
  */
 public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAdapter {
-    /** Default path for local testing only. */
-    public static final String DFLT_PATH = "work/disco/tcp";
-
     /**
-     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
-     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
+     * Default path for discovering of local nodes (testing only). Note that this path is relative to
+     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
      */
-    private static final String DFLT_TMP_DIR = ".gg.sharedfs.disco";
+    public static final String DFLT_PATH = "disco/tcp";
 
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";
@@ -127,7 +127,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
                     tmp = new File(path);
                 else {
                     try {
-                        tmp = U.resolveWorkDirectory(path, DFLT_TMP_DIR, false, false);
+                        tmp = U.resolveWorkDirectory(path, false);
                     }
                     catch (GridException e) {
                         throw new GridSpiException("Failed to resolve directory [path=" + path +

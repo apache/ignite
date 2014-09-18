@@ -11,178 +11,19 @@
 
 package org.gridgain.visor.commands.license
 
-import org.gridgain.scalar._
-import scalar._
+import java.io._
+import java.util.UUID
+
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid._
-import resources.GridInstanceResource
-import org.jetbrains.annotations.Nullable
-import java.text.SimpleDateFormat
-import java.io._
+import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
 import scala.io.Source
-import java.util.{Locale, Date, UUID}
-import java.net.URL
-import org.gridgain.grid.lang.{GridCallable, GridRunnable}
-
-/**
- * License data.
- */
-private case class License(
-    id: String,
-    ver: String,
-    verRegexp: String,
-    issueDate: String,
-    maintenanceTime: String,
-    issueOrg: String,
-    userName: String,
-    userOrg: String,
-    userWww: String,
-    userEmail: String,
-    note: String,
-    expDate: String,
-    maxNodes: String,
-    maxComp: String,
-    maxCpus: String,
-    maxUpTime: String,
-    gracePeriod: String,
-    disSubs: String
-) {
-    override def equals(r: Any) =
-        if (this eq r.asInstanceOf[AnyRef])
-            true
-        else if (r == null || !r.isInstanceOf[License])
-            false
-        else
-            r.asInstanceOf[License].id == id
-
-    override def hashCode() =
-        id.hashCode()
-}
-
-/**
- * License getter closure.
- */
-private class LicenseGetter extends GridCallable[License] {
-    /**Injected grid */
-    @GridInstanceResource
-    private val g: Grid = null
-
-    override def call(): License = {
-        val l = g.product().license()
-
-        if (l == null)
-            null
-        else {
-            License(
-                id = safe(l.id, "<n/a>"),
-                ver = safe(l.version, "<n/a>"),
-                verRegexp = safe(l.versionRegexp, "<n/a>"),
-                issueDate =
-                    if (l.issueDate != null)
-                        formatDate(l.issueDate)
-                    else
-                        "<n/a>",
-                maintenanceTime =
-                    if (l.maintenanceTime > 0)
-                        l.maintenanceTime.toString + " months"
-                    else
-                        "No restriction",
-                issueOrg = safe(l.issueOrganization, "<n/a>"),
-                userName = safe(l.userName, "<n/a>"),
-                userOrg = safe(l.userOrganization, "<n/a>"),
-                userWww = safe(l.userWww, "<n/a>"),
-                userEmail = safe(l.userEmail, "<n/a>"),
-                note = safe(l.licenseNote, "<n/a>"),
-                expDate =
-                    if (l.expireDate != null)
-                        formatDate(l.expireDate)
-                    else
-                        "No restriction",
-                maxNodes =
-                    if (l.maxNodes > 0)
-                        l.maxNodes.toString
-                    else
-                        "No restriction",
-                maxComp =
-                    if (l.maxComputers > 0)
-                        l.maxComputers.toString
-                    else
-                        "No restriction",
-                maxCpus =
-                    if (l.maxCpus > 0)
-                        l.maxCpus.toString
-                    else
-                        "No restriction",
-                maxUpTime =
-                    if (l.maxUpTime > 0)
-                        l.maxUpTime + " min."
-                    else
-                        "No restriction",
-                gracePeriod =
-                    if (l.gracePeriod > 0)
-                        l.maxUpTime + " min."
-                    else
-                        "No grace/burst period",
-                disSubs = safe(l.disabledSubsystems, "No disabled subsystems")
-            )
-        }
-    }
-
-    /** Date format. */
-    private val dFmt = new SimpleDateFormat("MM/dd/yy", Locale.US)
-
-    /**
-     * Gets a non-`null` value for given parameter.
-     *
-     * @param a Parameter.
-     * @param dflt Value to return if `a` is `null`.
-     */
-    private def safe(@Nullable a: Any, dflt: Any = ""): String = {
-        assert(dflt != null)
-
-        if (a != null)
-            a.toString
-        else
-            dflt.toString
-    }
-
-    /**
-     * Returns string representation of the timestamp provided. Result formatted
-     * using pattern `MM/dd/yy`.
-     *
-     * @param date Timestamp.
-     */
-    private def formatDate(date: Date): String =
-        dFmt.format(date)
-}
-
-/**
- * License updater closure.
- */
-private class LicenseUpdater(oldLicId: UUID, newLicLines: List[String]) extends GridRunnable {
-    /**Injected grid */
-    @GridInstanceResource
-    private val g: Grid = null
-
-    override def run() {
-        val lic = g.product().license()
-
-        if (lic != null && lic.id == oldLicId) {
-            val file = new File(new URL(g.configuration().getLicenseUrl).toURI)
-
-            val writer = new BufferedWriter(new FileWriter(file, false))
-
-            newLicLines.foreach(l => {
-                writer.write(l)
-                writer.newLine()
-            })
-
-            writer.close()
-        }
-    }
-}
+import scala.language.implicitConversions
 
 /**
  * ==Overview==
@@ -245,61 +86,67 @@ class VisorLicenseCommand {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (grid.isEmpty)
+            if (grid.nodes().isEmpty)
                 scold("Topology is empty.")
             else {
-                val f = new LicenseGetter()
+                val nodes = grid.nodes()
 
-                var ls = Set.empty[License]
+                val lics = try
+                    grid.forNodes(nodes).compute().execute(classOf[VisorLicenseCollectTask],
+                        emptyTaskArgument(nodes.map(_.id()))).get
+                        .groupBy(n => Option(n.get2()).fold("Open source")(_.id().toString))
+                catch {
+                    case _: GridException =>
+                        warn("Failed to obtain license from grid.")
 
-                val sumT = new VisorTextTable()
+                        return
+                }
 
-                sumT #= ("Node ID8(@)", "License ID")
+                if (lics.nonEmpty) {
+                    lics.foreach(e => {
+                        val l = e._2.head.get2()
 
-                grid.foreach(n => {
-                    try {
-                        val lic = grid.forNode(n).compute().withNoFailover().call(f).get
-
-                        val id = lic.id
-
-                        sumT += (nodeId8Addr(n.id), id)
-
-                        ls += lic
-                    }
-                    catch {
-                        case _: GridException => warn("Failed to obtain license from: " + nodeId8Addr(n.id))
-                    }
-                })
-
-                if (!ls.isEmpty) {
-                    sumT.render()
-
-                    ls.foreach(l => {
                         nl()
 
-                        println("License '" + l.id + "':")
+                        println("License: '" + e._1 + "'")
 
-                        val licT = new VisorTextTable()
+                        if (l != null) {
+                            val licT = new VisorTextTable()
 
-                        licT += ("Version", l.ver)
-                        licT += ("Version regular expression", l.verRegexp)
-                        licT += ("Issue date", l.issueDate)
-                        licT += ("Maintenance time", l.maintenanceTime)
-                        licT += ("Issue organization", l.issueOrg)
-                        licT += ("User name", l.userName)
-                        licT += ("User organization", l.userOrg)
-                        licT += ("User organization URL", l.userWww)
-                        licT += ("User organization e-mail", l.userEmail)
-                        licT += ("License note", l.note)
-                        licT += ("Expire date", l.expDate)
-                        licT += ("Maximum number of nodes", l.maxNodes)
-                        licT += ("Maximum number of computers", l.maxComp)
-                        licT += ("Maximum number of CPUs", l.maxCpus)
-                        licT += ("Maximum up time", l.maxUpTime)
-                        licT += ("Grace/burst period", l.gracePeriod)
-                        licT += ("Disabled subsystems", l.disSubs.split(',').toList)
+                            licT += ("Version", safe(l.version(), "<n/a>"))
+                            licT += ("Version regular expression", safe(l.versionRegexp(), "<n/a>"))
+                            licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
+                            licT += ("Maintenance time",
+                                if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
+                            licT += ("Issue organization", safe(l.issueOrganization(), "<n/a>"))
+                            licT += ("User name", safe(l.userName(), "<n/a>"))
+                            licT += ("User organization", safe(l.userOrganization(), "<n/a>"))
+                            licT += ("User organization URL", safe(l.userWww(), "<n/a>"))
+                            licT += ("User organization e-mail", safe(l.userEmail(), "<n/a>"))
+                            licT += ("License note", safe(l.note(), "<n/a>"))
+                            licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
+                            licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
+                            licT += ("Maximum number of computers", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
+                            licT += ("Maximum number of CPUs", if (l.maxCpus() > 0) l.maxCpus() else "No restriction")
+                            licT += ("Maximum up time", if (l.maxUpTime() > 0) l.maxUpTime() + " min." else "No restriction")
+                            licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
+                            licT += ("Disabled subsystems", Option(l.disabledSubsystems()).
+                                fold("No disabled subsystems")(s => s.split(',').toList.toString()))
 
-                        licT.render()
+                            licT.render()
+                        }
+
+                        nl()
+
+                        println("Nodes with license '" + e._1 + "':")
+
+                        val sumT = new VisorTextTable()
+
+                        sumT #= ("Node ID8(@)", "License ID")
+
+                        e._2.foreach(t => sumT += (nodeId8Addr(t.get1()), Option(t.get2()).fold("Open source")(_.id().toString)))
+
+                        sumT.render()
                     })
                 }
             }
@@ -333,9 +180,13 @@ class VisorLicenseCommand {
             val licPath = path.get
 
             try {
-                grid.compute()
-                    .withNoFailover()
-                    .broadcast(new LicenseUpdater(UUID.fromString(licId), Source.fromFile(licPath).getLines().toList))
+                val nodes = grid.nodes()
+
+                nodes.foreach(n => {
+                    grid.forNode(n).compute().withNoFailover().
+                        execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
+                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
+                })
 
                 println("All licenses have been updated.")
 
@@ -349,7 +200,7 @@ class VisorLicenseCommand {
                 case _: IOException => scold("Failed to read the license file: " + licPath)
                 case _: GridException => scold(
                     "Failed to update the license due to system error.",
-                    "Note: some licenses may haven been updated."
+                    "Note: Some licenses may haven been updated."
                 )
             }
         }

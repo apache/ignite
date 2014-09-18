@@ -11,8 +11,10 @@ package org.gridgain.grid.logger.java;
 
 import junit.framework.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
-import java.util.logging.*;
+
+import java.util.*;
 
 /**
  * Java logger test.
@@ -24,14 +26,17 @@ public class GridJavaLoggerTest extends TestCase {
     private GridLogger log;
 
     /** */
-    public void testLogInitialize() {
-        log = new GridJavaLogger(Logger.getLogger(GridJavaLoggerTest.class.getName()));
+    public void testLogInitialize() throws Exception {
+        U.setWorkDirectory(null, U.getGridGainHome());
 
-        if (log.isDebugEnabled()) {
+        log = new GridJavaLogger();
+
+        ((GridLoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
+
+        if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
-        }
 
-        assert log.isInfoEnabled() == true;
+        assert log.isInfoEnabled();
 
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");
@@ -40,5 +45,10 @@ public class GridJavaLoggerTest extends TestCase {
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
         assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof GridJavaLogger;
+
+        assert log.fileName() != null;
+
+        // Ensure we don't get pattern, only actual file name is allowed here.
+        assert !log.fileName().contains("%");
     }
 }

@@ -80,8 +80,6 @@ setGridGainHome() {
     # Set GRIDGAIN_HOME, if needed.
     #
     if [ "${GRIDGAIN_HOME}" = "" ]; then
-        echo $0", WARN: GRIDGAIN_HOME environment variable is not found."
-
         export GRIDGAIN_HOME=${GRIDGAIN_HOME_TMP}
     fi
 
@@ -90,8 +88,8 @@ setGridGainHome() {
     #
     if [ ! -d "${GRIDGAIN_HOME}/config" ]; then
         echo $0", ERROR:"
-        echo "GRIDGAIN_HOME environment variable is not found or is not valid."
-        echo "GRIDGAIN_HOME variable must point to GridGain installation folder."
+        echo "GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid."
+        echo "Please create GRIDGAIN_HOME environment variable pointing to location of GridGain installation folder."
 
         exit 1
     fi
@@ -110,8 +108,7 @@ setGridGainHome() {
 # The function exports JMX_MON variable with Java JMX options.
 #
 findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${GRIDGAIN_HOME}/${ANT_AUGMENTED_GGJAR}" \
-    org.gridgain.grid.util.portscanner.GridJmxPortFinder`
+    JMX_PORT=`"$JAVA" -cp "${GRIDGAIN_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
 
     #
     # This variable defines necessary parameters for JMX

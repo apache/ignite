@@ -31,6 +31,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
@@ -121,6 +122,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Near cache flag. */
     private final boolean nearEnabled;
 
+    /** Subject ID. */
+    private final UUID subjId;
+
+    /** Task name hash. */
+    private final int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -135,6 +142,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         syncMode = null;
         op = null;
         nearEnabled = false;
+        subjId = null;
+        taskNameHash = 0;
     }
 
     /**
@@ -165,7 +174,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        final GridPredicate<GridCacheEntry<K, V>>[] filter
+        final GridPredicate<GridCacheEntry<K, V>>[] filter,
+        UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.kernalContext());
         this.rawRetval = rawRetval;
@@ -174,6 +185,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         assert drPutVals == null || drPutVals.size() == keys.size();
         assert drRmvVals == null || drRmvVals.size() == keys.size();
         assert cached == null || keys.size() == 1;
+        assert subjId != null;
 
         this.cctx = cctx;
         this.cache = cache;
@@ -187,13 +199,16 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.cached = cached;
         this.ttl = ttl;
         this.filter = filter;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         log = U.logger(ctx, logRef, GridFutureAdapter.class);
 
         mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
 
         fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
-            cctx.config().getAtomicWriteOrderMode() == CLOCK;
+            cctx.config().getAtomicWriteOrderMode() == CLOCK &&
+            !(cctx.isStoreEnabled() && cctx.config().getInterceptor() != null);
 
         nearEnabled = CU.isNearEnabled(cctx);
     }
@@ -503,6 +518,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
+            if (cctx.portableEnabled()) {
+                key = (K)cctx.marshalToPortable(key);
+
+                if (op != TRANSFORM)
+                    val = cctx.marshalToPortable(val);
+            }
+
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
@@ -519,8 +541,11 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 syncMode,
                 op,
                 retval,
+                op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 ttl,
-                filter);
+                filter,
+                subjId,
+                taskNameHash);
 
             req.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, true);
 
@@ -595,6 +620,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
 
+                if (cctx.portableEnabled()) {
+                    key = (K)cctx.marshalToPortable(key);
+
+                    if (op != TRANSFORM)
+                    val = cctx.marshalToPortable(val);
+                }
+
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);
 
                 int i = 0;
@@ -614,8 +646,11 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             syncMode,
                             op,
                             retval,
+                            op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             ttl,
-                            filter);
+                            filter,
+                            subjId,
+                            taskNameHash);
 
                         pendingMappings.put(nodeId, mapped);
 

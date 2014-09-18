@@ -12,12 +12,8 @@ package org.gridgain.examples.datagrid;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -28,7 +24,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheApiExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
@@ -43,6 +38,9 @@ public class CacheApiExample {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
+
+            // Clean up caches on all nodes before run.
+            g.cache(CACHE_NAME).globalClearAll(0);
 
             // Demonstrate atomic map operations.
             atomicMapOperations();
@@ -82,7 +80,7 @@ public class CacheApiExample {
                     System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
                 }
                 catch (GridException e) {
-                    throw new GridClosureException(e);
+                    e.printStackTrace();
                 }
             }
         });

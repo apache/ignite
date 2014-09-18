@@ -9,14 +9,15 @@
 
 package org.gridgain.examples.datagrid.hibernate;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
 import org.hibernate.service.*;
 import org.hibernate.stat.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -52,13 +53,20 @@ import java.util.*;
  * <p>
  * Note: this example uses {@link AccessType#READ_ONLY} L2 cache access type, but you
  * can experiment with other access types by modifying the Hibernate configuration file
- * {@code GRIDGAIN_HOME/examples/config/hibernate.xml}, used by the example.
+ * {@code GRIDGAIN_HOME/examples/config/hibernate/example-hibernate-L2-cache.xml}, used by the example.
  * <p>
  * Remote nodes should always be started using {@link HibernateL2CacheExampleNodeStartup}
  */
 public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */
     private static final String JDBC_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
+
+    /** Path to hibernate configuration file (will be resolved from application {@code CLASSPATH}). */
+    private static final String HIBERNATE_CFG = "hibernate/example-hibernate-L2-cache.xml";
+
+    /** Entity names for stats output. */
+    private static final List<String> ENTITY_NAMES =
+        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /**
      * Executes example.
@@ -68,14 +76,16 @@ public class HibernateL2CacheExample {
      */
     public static void main(String[] args) throws GridException {
         // Start the GridGain node, run the example, and stop the node when finished.
-        try (Grid grid = GridGain.start(HibernateL2CacheExampleNodeStartup.configuration())) {
+        try (Grid g = GridGain.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            SessionFactory sesFactory = createHibernateSessionFactory();
+            URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
+
+            SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
 
             System.out.println();
             System.out.println(">>> Creating objects.");
@@ -143,23 +153,21 @@ public class HibernateL2CacheExample {
         }
     }
 
-    /** Entity names for stats output. */
-    private static final List<String> ENTITY_NAMES =
-        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
-
     /**
      * Creates a new Hibernate {@link SessionFactory} using a programmatic
      * configuration.
      *
+     * @param hibernateCfg Hibernate configuration file.
      * @return New Hibernate {@link SessionFactory}.
      */
-    private static SessionFactory createHibernateSessionFactory() {
+    private static SessionFactory createHibernateSessionFactory(URL hibernateCfg) {
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
-        return new Configuration().configure(U.resolveGridGainUrl("examples/config/hibernate/hibernate-L2-cache.xml"))
+        return new Configuration()
+            .configure(hibernateCfg)
             .buildSessionFactory(builder.buildServiceRegistry());
     }
 

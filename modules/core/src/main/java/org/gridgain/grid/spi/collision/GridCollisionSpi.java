@@ -43,7 +43,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCollisionSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridCollisionSpi extends GridSpi {
     /**
      * This is a callback called when either new grid job arrived or executing job finished its
      * execution. When new job arrives it is added to the end of the wait list and this

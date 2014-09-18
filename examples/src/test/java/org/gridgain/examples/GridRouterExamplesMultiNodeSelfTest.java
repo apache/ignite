@@ -17,6 +17,6 @@ public class GridRouterExamplesMultiNodeSelfTest extends GridRouterExamplesSelfT
     @Override protected void beforeTest() throws Exception {
         startRemoteNodes();
         // Start up a router.
-        startRouter("modules/clients/src/main/java/config/router/default-router.xml");
+        startRouter("config/router/default-router.xml");
     }
 }

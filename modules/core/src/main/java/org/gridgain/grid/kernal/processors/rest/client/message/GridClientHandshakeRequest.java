@@ -10,22 +10,19 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
-
-import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
  * A client handshake request, containing version info and
- * a marshaller protocol ID.
+ * a marshaller ID.
  *
  * A handshake request structure is as follows:
  * <ol>
- *     <li>Message header (1 byte)</li>
- *     <li>Version info (4 bytes)</li>
- *     <li>Marshaller PROTOCOL_ID (1 byte)</li>
+ *     <li>Protocol version (2 bytes)</li>
+ *     <li>Marshaller ID (2 bits)</li>
+ *     <li>Reserved space (6 bits + 1 byte)</li>
+ *     <li>Marshaller ID for backward compatibility (1 byte)</li>
  * </ol>
  */
 public class GridClientHandshakeRequest extends GridClientAbstractMessage {
@@ -33,85 +30,52 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Packet size. */
-    private static final int PACKET_SIZE = 6;
+    static final int PACKET_SIZE = 5;
 
-    /** Signal char. */
-    public static final byte SIGNAL_CHAR = (byte)0x91;
+    /** Protocol version. */
+    private static final short PROTO_VER = 1;
 
-    /** Version info byte array. */
-    private byte[] verArr;
+    /** Handshake byte array. */
+    private byte[] arr;
 
-    /** Protocol ID. */
-    private byte protoId;
+    /** Marshaller ID. */
+    private byte marshId;
 
     /**
-     * Default constructor.
+     * @return Protocol version.
      */
-    public GridClientHandshakeRequest() {
-        // No-op.
+    public short version() {
+        return U.bytesToShort(arr, 0);
     }
 
     /**
-     * Constructor.
-     *
-     * @param protoId A protocol ID to use.
+     * @return Marshaller ID.
      */
-    public GridClientHandshakeRequest(byte protoId) {
-        this.protoId = protoId;
+    public byte marshallerId() {
+        return (byte)((arr[2] & 0xff) >> 6);
     }
 
     /**
-     * @return Copy of version bytes or {@code null}, if version
-     *         bytes were not set.
+     * @param marshId Marshaller ID.
      */
-    @Nullable public byte[] versionBytes() {
-        if (verArr == null)
-            return null;
+    public void marshallerId(byte marshId) {
+        assert marshId >= 0 && marshId <= 2;
 
-        return Arrays.copyOf(verArr, verArr.length);
+        this.marshId = marshId;
     }
 
     /**
-     * Sets the version byte to a given value.
-     *
-     * @param idx Byte index.
-     * @param b Byte value.
-     */
-    public void putVersionByte(int idx, byte b) {
-        assert idx < VER_BYTES.length;
-
-        if (verArr == null)
-            verArr = new byte[VER_BYTES.length];
-
-        verArr[idx] = b;
-    }
-
-    /**
-     * Sets the version bytes from specified buffer to a given value.
+     * Sets bytes from specified buffer to a given value.
      *
      * @param buf Buffer.
      * @param off Offset.
      * @param len Length.
      */
-    public void putVersionBytes(byte[] buf, int off, int len) {
-        if (verArr == null)
-            verArr = new byte[VER_BYTES.length];
+    public void putBytes(byte[] buf, int off, int len) {
+        if (arr == null)
+            arr = new byte[PACKET_SIZE];
 
-        U.arrayCopy(buf, 0, verArr, off, len);
-    }
-
-    /**
-     * @param protoId New protocol ID.
-     */
-    public void protocolId(byte protoId) {
-        this.protoId = protoId;
-    }
-
-    /**
-     * @return Protocol ID.
-     */
-    public byte protocolId() {
-        return protoId;
+        U.arrayCopy(buf, 0, arr, off, len);
     }
 
     /**
@@ -120,37 +84,17 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     public byte[] rawBytes() {
         byte[] ret = new byte[PACKET_SIZE];
 
-        ret[0] = SIGNAL_CHAR;
-        ret[1] = VER_BYTES[0];
-        ret[2] = VER_BYTES[1];
-        ret[3] = VER_BYTES[2];
-        ret[4] = VER_BYTES[3];
-        ret[5] = protoId;
+        U.shortToBytes(PROTO_VER, ret, 0);
+
+        ret[2] = (byte)(marshId << 6);
+
+        ret[4] = marshId; // Marshaller ID for backward compatibility.
 
         return ret;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeByteArray(out, verArr);
-
-        out.writeByte(protoId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        verArr = U.readByteArray(in);
-
-        protoId = in.readByte();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getSimpleName() + " [verArr=" + Arrays.toString(verArr) +
-            ", protoId=" + protoId + ']';
+        return getClass().getSimpleName() + " [arr=" + Arrays.toString(arr) + ']';
     }
 }

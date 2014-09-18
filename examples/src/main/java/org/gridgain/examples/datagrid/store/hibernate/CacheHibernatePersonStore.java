@@ -14,20 +14,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.product.GridProductEdition.*;
-
 /**
  * Example of {@link GridCacheStore} implementation that uses Hibernate
  * and deals with maps {@link UUID} to {@link Person}.
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Default hibernate configuration resource path. */
     private static final String DFLT_HIBERNATE_CFG = "/org/gridgain/examples/datagrid/store/hibernate/hibernate.cfg.xml";

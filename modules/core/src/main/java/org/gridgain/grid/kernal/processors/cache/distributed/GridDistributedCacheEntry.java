@@ -859,7 +859,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, prev.nodeId(), prev, EVT_CACHE_OBJECT_UNLOCKED, val, hasVal,
-                    val, hasVal);
+                    val, hasVal, null, null, null);
             }
 
             if (owner != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
@@ -867,7 +867,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, owner.nodeId(), owner, EVT_CACHE_OBJECT_LOCKED, val, hasVal,
-                    val, hasVal);
+                    val, hasVal, null, null, null);
             }
         }
     }

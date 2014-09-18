@@ -23,6 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -146,6 +147,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             assertEquals(0, grid(i).cache(null).primaryKeySet().size());
             assertEquals(0, grid(i).cache(null).entrySet().size());
             assertEquals(0, grid(i).cache(null).primaryEntrySet().size());
+            assertEquals(0, grid(i).cache(null).globalSize());
+            assertEquals(0, grid(i).cache(null).globalPrimarySize());
         }
     }
 
@@ -162,10 +165,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            GridFuture<Object> fut1 = startGrid(GRID_CNT + 1).scheduler().callLocal(new Callable<Object>() {
-                @GridInstanceResource
-                private Grid g;
+            final Grid g = startGrid(GRID_CNT + 1);
 
+            GridFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     info(">>> Executing put callable [node=" + g.localNode().id() +
                         ", thread=" + Thread.currentThread().getName() + ", aff=" +
@@ -194,19 +196,18 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             latch.await();
 
-            GridFuture<Object> fut2 = startGrid(GRID_CNT + 2).scheduler().callLocal(new Callable<Object>() {
-                @GridInstanceResource
-                private Grid g;
+            final Grid g1 = startGrid(GRID_CNT + 2);
 
+            GridFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @SuppressWarnings("BusyWait")
                 @Override public Object call() throws Exception {
                     try {
-                        info(">>> Executing poll callable [node=" + g.localNode().id() +
+                        info(">>> Executing poll callable [node=" + g1.localNode().id() +
                             ", thread=" + Thread.currentThread().getName() + ", aff=" +
-                            F.nodeId8s(g.cache(null).affinity().mapKeyToPrimaryAndBackups(
+                            F.nodeId8s(g1.cache(null).affinity().mapKeyToPrimaryAndBackups(
                                 new GridCacheInternalKeyImpl(queueName))) + ']');
 
-                        GridCacheQueue<Integer> q = g.cache(null).dataStructures().queue(queueName, 5, true, true);
+                        GridCacheQueue<Integer> q = g1.cache(null).dataStructures().queue(queueName, 5, true, true);
 
                         int cnt = 0;
                         int nullCnt = 0;
@@ -232,7 +233,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                         }
                         while (cnt < ITEMS_CNT);
 
-                        info("Finished poll callable on node: " + g.localNode().id());
+                        info("Finished poll callable on node: " + g1.localNode().id());
 
                         return null;
                     }
@@ -553,6 +554,33 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSerialization() throws Exception {
+        // Random queue name.
+        String queueName = UUID.randomUUID().toString();
+
+        final GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, 0, false, true);
+
+        assertNotNull(queue);
+
+        try {
+            for (int i = 0; i < 10; i++)
+                queue.add(i);
+
+            Collection<Integer> c = grid(0).compute().broadcast(new QueueJob(queue)).get();
+
+            assertEquals(GRID_CNT, c.size());
+
+            for (Integer size : c)
+                assertEquals((Integer)10, size);
+        }
+        finally {
+            grid(0).cache(null).dataStructures().removeQueue(queueName);
+        }
+    }
+
+    /**
      * @param q Queue.
      * @param v Value.
      */
@@ -562,6 +590,28 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         q.put(v);
 
         X.println("Done putting value: " + v);
+    }
+
+    /**
+     * Tests queue serialization.
+     */
+    private static class QueueJob implements Callable<Integer>, Serializable {
+        /** */
+        private GridCacheQueue<Integer> queue;
+
+        /**
+         * @param queue Queue.
+         */
+        private QueueJob(GridCacheQueue<Integer> queue) {
+            this.queue = queue;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            assertNotNull(queue);
+
+            return queue.size();
+        }
     }
 
     /**

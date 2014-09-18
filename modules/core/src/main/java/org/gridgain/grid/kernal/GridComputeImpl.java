@@ -18,6 +18,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -29,20 +30,34 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 /**
  * {@link GridCompute} implementation.
  */
-public class GridComputeImpl implements GridCompute {
+public class GridComputeImpl implements GridCompute, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridKernalContext ctx;
 
     /** */
     private GridProjection prj;
 
+    /** */
+    private UUID subjId;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridComputeImpl() {
+        // No-op.
+    }
+
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridComputeImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridComputeImpl(GridKernalContext ctx, GridProjection prj, UUID subjId) {
         this.ctx = ctx;
         this.prj = prj;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -88,6 +103,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskName, arg);
         }
@@ -105,6 +121,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(taskCls, arg);
         }
@@ -121,6 +138,7 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(task, arg);
         }
@@ -324,15 +342,13 @@ public class GridComputeImpl implements GridCompute {
         try {
             GridComputeTaskFuture<Object> task = ctx.task().taskFuture(sesId);
 
-            if (task != null) {
-                boolean loc = F.nodeIds(prj.nodes()).contains(ctx.localNodeId());
-
-                if (loc)
-                    task.cancel();
-            }
-            else
+            if (task != null)
+                // Cancel local task.
+                task.cancel();
+            else if (prj.node(sesId.globalId()) != null)
+                // Cancel remote task only if its master is in projection.
                 ctx.io().send(
-                    prj.forRemotes().nodes(),
+                    sesId.globalId(),
                     TOPIC_TASK_CANCEL,
                     new GridTaskCancelRequest(sesId),
                     SYSTEM_POOL
@@ -468,5 +484,25 @@ public class GridComputeImpl implements GridCompute {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        prj = (GridProjection)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return prj.compute();
     }
 }

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -22,7 +22,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
     private final List<GridIndexingFieldMetadata> metaData;
 
     /** Result iterator. */
-    private final GridCloseableIterator<List<GridIndexingEntity<?>>> it;
+    private final GridSpiCloseableIterator<List<GridIndexingEntity<?>>> it;
 
     /**
      * Creates query field result composed of field metadata and iterator
@@ -32,7 +32,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
      * @param it Result iterator.
      */
     public GridIndexingFieldsResultAdapter(@Nullable List<GridIndexingFieldMetadata> metaData,
-        GridCloseableIterator<List<GridIndexingEntity<?>>> it) {
+        GridSpiCloseableIterator<List<GridIndexingEntity<?>>> it) {
         this.metaData = metaData != null ? Collections.unmodifiableList(metaData) : null;
         this.it = it;
     }
@@ -43,7 +43,7 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<List<GridIndexingEntity<?>>> iterator() {
+    @Override public GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iterator() {
         return it;
     }
 }

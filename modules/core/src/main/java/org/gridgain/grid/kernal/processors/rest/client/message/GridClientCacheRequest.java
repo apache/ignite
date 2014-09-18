@@ -8,6 +8,8 @@
  */
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -17,7 +19,7 @@ import java.util.*;
 /**
  * Generic cache request.
  */
-public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
+public class GridClientCacheRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,16 +82,16 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     private String cacheName;
 
     /** Key */
-    private K key;
+    private Object key;
 
     /** Value (expected value for CAS). */
-    private V val;
+    private Object val;
 
     /** New value for CAS. */
-    private V val2;
+    private Object val2;
 
     /** Keys and values for put all, get all, remove all operations. */
-    private Map<K, V> vals;
+    private Map<Object, Object> vals;
 
     /** Bit map of cache flags to be enabled on cache projection */
     private int cacheFlagsOn;
@@ -138,66 +140,66 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     /**
      * @return Key.
      */
-    public K key() {
+    public Object key() {
         return key;
     }
 
     /**
      * @param key Key.
      */
-    public void key(K key) {
+    public void key(Object key) {
         this.key = key;
     }
 
     /**
      * @return Value 1.
      */
-    public V value() {
+    public Object value() {
         return val;
     }
 
     /**
      * @param val Value 1.
      */
-    public void value(V val) {
+    public void value(Object val) {
         this.val = val;
     }
 
     /**
      * @return Value 2.
      */
-    public V value2() {
+    public Object value2() {
         return val2;
     }
 
     /**
      * @param val2 Value 2.
      */
-    public void value2(V val2) {
+    public void value2(Object val2) {
         this.val2 = val2;
     }
 
     /**
      * @return Values map for batch operations.
      */
-    public Map<K, V> values() {
+    public Map<Object, Object> values() {
         return vals;
     }
 
     /**
      * @param vals Values map for batch operations.
      */
-    public void values(Map<K, V> vals) {
+    public void values(Map<Object, Object> vals) {
         this.vals = vals;
     }
 
     /**
      * @param keys Keys collection
      */
-    public void keys(Iterable<K> keys) {
+    public void keys(Iterable<Object> keys) {
         vals = new HashMap<>();
 
-        for (K k : keys)
+        for (Object k : keys)
             vals.put(k, null);
     }
 
@@ -219,6 +221,53 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        super.writePortable(writer);
+
+        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
+
+        raw.writeInt(op.ordinal());
+        raw.writeString(cacheName);
+        raw.writeInt(cacheFlagsOn);
+        raw.writeObjectDetached(key);
+        raw.writeObjectDetached(val);
+        raw.writeObjectDetached(val2);
+
+        raw.writeInt(vals != null ? vals.size() : -1);
+
+        if (vals != null) {
+            for (Map.Entry<Object, Object> e : vals.entrySet()) {
+                raw.writeObjectDetached(e.getKey());
+                raw.writeObjectDetached(e.getValue());
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        super.readPortable(reader);
+
+        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
+
+        op = GridCacheOperation.fromOrdinal(raw.readInt());
+        cacheName = raw.readString();
+        cacheFlagsOn = raw.readInt();
+        key = raw.readObjectDetached();
+        val = raw.readObjectDetached();
+        val2 = raw.readObjectDetached();
+
+        int valsSize = raw.readInt();
+
+        if (valsSize >= 0) {
+            vals = new HashMap<>(valsSize);
+
+            for (int i = 0; i < valsSize; i++)
+                vals.put(raw.readObjectDetached(), raw.readObjectDetached());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -236,6 +285,7 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
@@ -243,9 +293,9 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
 
         cacheName = U.readString(in);
 
-        key = (K)in.readObject();
-        val = (V)in.readObject();
-        val2 = (V)in.readObject();
+        key = in.readObject();
+        val = in.readObject();
+        val2 = in.readObject();
 
         vals = U.readMap(in);
 

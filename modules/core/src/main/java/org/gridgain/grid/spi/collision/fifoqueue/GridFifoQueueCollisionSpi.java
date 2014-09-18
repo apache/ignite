@@ -62,11 +62,6 @@ import java.util.*;
  * &lt;/bean&gt;
  * </pre>
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 public class GridFifoQueueCollisionSpi extends GridSpiAdapter implements GridCollisionSpi,
     GridFifoQueueCollisionSpiMBean {

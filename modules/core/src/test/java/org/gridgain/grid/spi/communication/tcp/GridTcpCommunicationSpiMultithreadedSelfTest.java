@@ -66,12 +66,11 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     private static boolean reject;
 
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE,
-            new CO<GridTcpCommunicationMessageAdapter>() {
-            @Override public GridTcpCommunicationMessageAdapter apply() {
+        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
                 return new GridTestMessage();
             }
-        });
+        }, GridTestMessage.DIRECT_TYPE);
 
         try {
             mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");

@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -60,9 +61,12 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         boolean invalidate,
         boolean swapEnabled,
         boolean storeEnabled,
-        int txSize) {
+        int txSize,
+        @Nullable UUID subjId,
+        int taskNameHash
+    ) {
         super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, null, false);
+            swapEnabled, storeEnabled, txSize, null, false, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */

@@ -11,8 +11,6 @@ package org.gridgain.grid.cache.query;
 
 import java.lang.annotation.*;
 
-import org.gridgain.grid.spi.indexing.h2.*;
-
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
  * this annotation. For more information about cache queries see {@link GridCacheQuery} documentation.
@@ -27,7 +25,7 @@ public @interface GridCacheQuerySqlField {
      * Just like with databases, field indexing may require additional overhead
      * during updates, but makes select operations faster.
      * <p>
-     * When {@link GridH2IndexingSpi} is set as indexing SPI and indexed field is
+     * When {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} is set as indexing SPI and indexed field is
      * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then GridGain will
      * consider this index as spatial providing performance boost for spatial queries.
      *

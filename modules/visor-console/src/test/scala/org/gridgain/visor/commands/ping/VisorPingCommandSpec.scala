@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.ping
 
 import org.gridgain.visor._
-import VisorPingCommand._
+import org.gridgain.visor.commands.ping.VisorPingCommand._
 
 /**
  * Unit test for 'ping' command.
@@ -21,12 +21,12 @@ class VisorPingCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'ping' visor command"
 
     it should "properly execute" in {
-        visor open("-d", false)
-        visor ping()
-        visor close()
+        visor.ping()
     }
 
     it should "print error message when not connected" in {
-        visor ping()
+        closeVisorQuiet()
+
+        visor.ping()
     }
 }

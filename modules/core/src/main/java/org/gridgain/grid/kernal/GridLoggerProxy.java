@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -96,17 +95,9 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
         return new GridLoggerProxy(impl.getLogger(ctgr), ctgr, gridName, id8);
     }
 
-    /**
-     * If using {@code log4j}, gets name of the file being logged to if one is configured or {@code null} otherwise.
-     *
-     * @return If using {@code log4j}, gets name of the file being logged to if one is configured
-     *      or {@code null} otherwise.
-     */
-    @Nullable public String fileName() {
-        if (!(impl instanceof GridLog4jLogger))
-            return null;
-
-        return ((GridLog4jLogger)impl).fileName();
+    /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return impl.fileName();
     }
 
     /** {@inheritDoc} */
@@ -191,10 +182,10 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

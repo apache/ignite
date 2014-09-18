@@ -56,6 +56,9 @@ abstract public class CopyOnWriteManager<E> implements Cloneable {
      *  uninterruptable acquireShared.
      */
     private class Latch extends AbstractQueuedSynchronizer {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         Latch(final boolean triggered) {
             setState(triggered ? 0 : 1);
         }
@@ -78,6 +81,8 @@ abstract public class CopyOnWriteManager<E> implements Cloneable {
     private static final int BULK_READ_AFTER_FREEZE = 4;
 
     private class COWEpoch extends EpochNode {
+        /** */
+        private static final long serialVersionUID = 0L;
 
         /** Tripped after this COWEpoch is installed as active. */
         private final Latch _activated;

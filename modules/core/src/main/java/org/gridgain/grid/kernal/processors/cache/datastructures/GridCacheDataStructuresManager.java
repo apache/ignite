@@ -12,9 +12,12 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -31,6 +34,7 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -82,12 +86,19 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Init flag. */
     private boolean initFlag;
 
+    /** Set keys used for set iteration. */
+    private ConcurrentMap<GridUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
+
+    /** Sets map. */
+    private final ConcurrentMap<GridUuid, GridCacheSetProxy> setsMap;
+
     /**
      * Default constructor.
      */
     public GridCacheDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
         queuesMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        setsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
     }
 
     /** {@inheritDoc} */
@@ -1022,6 +1033,301 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
+     * Gets a set from cache or creates one if it's not cached.
+     *
+     * @param name Set name.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set instance.
+     * @throws GridException If failed.
+     */
+    @Nullable public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
+        throws GridException {
+        waitInitialization();
+
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || collocated;
+
+        if (cctx.atomic())
+            return set0(name, collocMode, create);
+
+        return CU.outTx(new Callable<GridCacheSet<T>>() {
+            @Override public GridCacheSet<T> call() throws Exception {
+                return set0(name, collocMode, create);
+            }
+        }, cctx);
+    }
+
+    /**
+     * Removes set.
+     *
+     * @param name Set name.
+     * @return {@code True} if set was removed.
+     * @throws GridException If failed.
+     */
+    public boolean removeSet(final String name) throws GridException {
+        waitInitialization();
+
+        if (cctx.atomic())
+            return removeSet0(name);
+
+        return CU.outTx(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                return removeSet0(name);
+            }
+        }, cctx);
+    }
+
+    /**
+     * Entry update callback.
+     *
+     * @param key Key.
+     * @param rmv {@code True} if entry was removed.
+     */
+    public void onEntryUpdated(K key, boolean rmv) {
+        if (key instanceof GridCacheSetItemKey)
+            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
+    }
+
+    /**
+     * Partition evicted callback.
+     *
+     * @param part Partition number.
+     */
+    public void onPartitionEvicted(int part) {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
+            Iterator<GridCacheSetItemKey> iter = set.iterator();
+
+            while (iter.hasNext()) {
+                GridCacheSetItemKey key = iter.next();
+
+                if (aff.partition(key) == part)
+                    iter.remove();
+            }
+        }
+    }
+
+    /**
+     * @param id Set ID.
+     * @return Data for given set.
+     */
+    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
+        return setDataMap.get(id);
+    }
+
+    /**
+     * @param key Set item key.
+     * @param rmv {@code True} if item was removed.
+     */
+    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
+
+        if (set == null) {
+            if (rmv)
+                return;
+
+            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+                set = new GridConcurrentHashSet<>());
+
+            if (old != null)
+                set = old;
+        }
+
+        if (rmv)
+            set.remove(key);
+        else
+            set.add(key);
+    }
+
+
+    /**
+     * @param name Name of set.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCacheSetHeader hdr;
+
+        GridCacheAdapter cache = cctx.cache();
+
+        if (create) {
+            hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
+
+            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+
+            if (old != null)
+                hdr = old;
+        }
+        else
+            hdr = (GridCacheSetHeader)cache.get(key);
+
+        if (hdr == null)
+            return null;
+
+        GridCacheSetProxy<T> set = setsMap.get(hdr.id());
+
+        if (set == null) {
+            GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+
+            if (old != null)
+                set = old;
+        }
+
+        return set;
+    }
+
+    /**
+     * @param name Set name.
+     * @return {@code True} if set was removed.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean removeSet0(String name) throws GridException {
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCache cache = cctx.cache();
+
+        GridCacheSetHeader hdr = (GridCacheSetHeader)cache.remove(key);
+
+        if (hdr == null)
+            return false;
+
+        if (!cctx.isLocal()) {
+            while (true) {
+                long topVer = cctx.topologyVersionFuture().get();
+
+                Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
+
+                try {
+                    cctx.closures().callAsyncNoFailover(BROADCAST,
+                        new BlockSetCallable(cctx.name(), hdr.id()),
+                        nodes,
+                        true).get();
+                }
+                catch (GridTopologyException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("BlockSet job failed, will retry: " + e);
+
+                    continue;
+                }
+
+                try {
+                    cctx.closures().callAsyncNoFailover(BROADCAST,
+                        new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
+                        nodes,
+                        true).get();
+                }
+                catch (GridTopologyException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
+
+                    continue;
+                }
+
+                if (cctx.topologyVersionFuture().get() == topVer)
+                    break;
+            }
+        }
+        else {
+            blockSet(hdr.id());
+
+            removeSetData(hdr.id(), 0);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param setId Set ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void blockSet(GridUuid setId) {
+        GridCacheSetProxy set = setsMap.remove(setId);
+
+        if (set != null)
+            set.blockOnRemove();
+    }
+
+    /**
+     * @param setId Set ID.
+     * @param topVer Topology version.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void removeSetData(GridUuid setId, long topVer) throws GridException {
+        boolean local = cctx.isLocal();
+
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        if (!local) {
+            aff.affinityReadyFuture(topVer).get();
+
+            cctx.preloader().syncFuture().get();
+        }
+
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
+
+        if (set == null)
+            return;
+
+        GridCache cache = cctx.cache();
+
+        final int BATCH_SIZE = 100;
+
+        Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
+
+        for (GridCacheSetItemKey key : set) {
+           if (!local && !aff.primary(cctx.localNode(), key, topVer))
+               continue;
+
+            keys.add(key);
+
+            if (keys.size() == BATCH_SIZE) {
+                retryRemove(cache, keys);
+
+                keys.clear();
+            }
+        }
+
+        if (!keys.isEmpty())
+            retryRemove(cache, keys);
+
+        setDataMap.remove(setId);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys to remove.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void retryRemove(GridCache cache, Collection<GridCacheSetItemKey> keys) throws GridException {
+        int cnt = 0;
+
+        while (true) {
+            try {
+                cache.removeAll(keys);
+
+                break;
+            }
+            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                if (cnt++ == 3)
+                    throw e;
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to remove set items, will retry [err=" + e + ']');
+            }
+        }
+    }
+
+    /**
      * Tries to cast the object to expected type.
      *
      * @param obj Object which will be casted.
@@ -1075,6 +1381,139 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) {
             // No-op.
+        }
+    }
+
+    /**
+     * Waits for completion of all started set operations and blocks all subsequent operations.
+     */
+    @GridInternal
+    private static class BlockSetCallable implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = -8892474927216478231L;
+
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private GridUuid setId;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public BlockSetCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param setId Set ID.
+         */
+        private BlockSetCallable(String cacheName, GridUuid setId) {
+            this.cacheName = cacheName;
+            this.setId = setId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws GridException {
+            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+
+            assert cache != null;
+
+            cache.context().dataStructures().blockSet(setId);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            U.writeGridUuid(out, setId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            setId = U.readGridUuid(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "BlockSetCallable [setId=" + setId + ']';
+        }
+    }
+
+    /**
+     * Removes set items.
+     */
+    @GridInternal
+    private static class RemoveSetDataCallable implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 5053205121218843148L;
+
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private GridUuid setId;
+
+        /** */
+        private long topVer;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public RemoveSetDataCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param setId Set ID.
+         * @param topVer Topology version.
+         */
+        private RemoveSetDataCallable(String cacheName, GridUuid setId, long topVer) {
+            this.cacheName = cacheName;
+            this.setId = setId;
+            this.topVer = topVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws GridException {
+            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+
+            assert cache != null;
+
+            cache.context().dataStructures().removeSetData(setId, topVer);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            U.writeGridUuid(out, setId);
+            out.writeLong(topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            setId = U.readGridUuid(in);
+            topVer = in.readLong();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "RemoveSetCallable [setId=" + setId + ']';
         }
     }
 }

@@ -925,6 +925,50 @@ public final class GridTestUtils {
      * Get object field value via reflection.
      *
      * @param obj Object or class to get field value from.
+     * @param cls Class.
+     * @param fieldName Field names to get value for.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws GridRuntimeException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws GridRuntimeException {
+        assert obj != null;
+        assert fieldName != null;
+
+        try {
+            // Resolve inner field.
+            Field field = cls.getDeclaredField(fieldName);
+
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
+
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
+
+                    obj = field.get(obj);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+                ", fieldName=" + fieldName + ']', e);
+        }
+    }
+
+    /**
+     * Get object field value via reflection.
+     *
+     * @param obj Object or class to get field value from.
      * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
      * @param <T> Expected field class.
      * @return Field value.
@@ -1049,7 +1093,7 @@ public final class GridTestUtils {
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         // We cannot resolve method by parameter classes due to some of parameters can be null.
         // Search correct method among all methods collection.
-        for (Method m : obj.getClass().getMethods()) {
+        for (Method m : obj.getClass().getDeclaredMethods()) {
             // Filter methods by name.
             if (!m.getName().equals(mtd))
                 continue;

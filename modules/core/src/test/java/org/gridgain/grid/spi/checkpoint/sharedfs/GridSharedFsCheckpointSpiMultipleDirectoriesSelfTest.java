@@ -24,10 +24,10 @@ import java.util.*;
 public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     GridSpiAbstractTest<GridSharedFsCheckpointSpi> {
     /** */
-    private static final String PATH1 = "work/cp/test-shared-fs1";
+    private static final String PATH1 = "cp/test-shared-fs1";
 
     /** */
-    private static final String PATH2 = "work/cp/test-shared-fs2";
+    private static final String PATH2 = "cp/test-shared-fs2";
 
     /** */
     private static final String CHECK_POINT_KEY_PREFIX = "testCheckpoint";
@@ -38,6 +38,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     @GridSpiTestConfig(setterName="setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         Collection<String> dirs = new ArrayList<>();
+
         dirs.add(PATH1);
         dirs.add(PATH2);
 
@@ -58,7 +59,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath1 = getSpi().getCurrentDirectoryPath();
 
-        File folder1 = new File(U.getGridGainHome(), curSpiPath1);
+        File folder1 = U.resolveWorkDirectory(curSpiPath1, false);
 
         assert folder1.exists() : "Checkpoint folder doesn't exist.";
 
@@ -71,14 +72,13 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath2 = getSpi().getCurrentDirectoryPath();
 
-        File folder2 = new File(U.getGridGainHome(), curSpiPath2);
+        File folder2 = U.resolveWorkDirectory(curSpiPath2, false);
 
         assert folder2.exists() : "Check point folder doesn't exist.";
 
         assert folder1.getAbsoluteFile().equals(folder2.getAbsoluteFile()) : "folder1 should be equal folder2.";
 
-        // Remove directory.
-        deleteFolder(folder2);
+        U.delete(folder2);
 
         getSpi().saveCheckpoint(CHECK_POINT_KEY_PREFIX, GridTestIoUtils.serializeJdk(state), 0, true);
 
@@ -86,14 +86,13 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String newCurSpiPath = getSpi().getCurrentDirectoryPath();
 
-        File changedFolder = new File(U.getGridGainHome(), newCurSpiPath);
+        File changedFolder = U.resolveWorkDirectory(newCurSpiPath, false);
 
         assert changedFolder.exists() : "Check point folder doesn't exist.";
 
         assert !folder2.getAbsolutePath().equals(changedFolder.getAbsolutePath()) : "Directories should not be equal.";
 
-        // Remove directory.
-        deleteFolder(changedFolder);
+        U.delete(changedFolder);
 
         boolean error = false;
 
@@ -106,18 +105,5 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
         }
 
         assert error : "Check point should not be saved.";
-    }
-
-    /**
-     * @param f Folder to delete.
-     */
-    void deleteFolder(File f) {
-        for (File file : f.listFiles())
-            if (file.isDirectory())
-                deleteFolder(file);
-            else
-                file.delete();
-
-        f.delete();
     }
 }

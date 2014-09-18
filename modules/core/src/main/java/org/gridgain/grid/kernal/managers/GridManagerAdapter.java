@@ -15,19 +15,22 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
+import static java.util.Arrays.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -191,11 +194,6 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             if (log.isDebugEnabled())
                 log.debug("Starting SPI: " + spi);
 
-            GridSpiInfo info = spi.getClass().getAnnotation(GridSpiInfo.class);
-
-            if (info == null)
-                throw new GridException("SPI implementation does not have @GridSpiInfo annotation: " + spi.getClass());
-
             if (names.contains(spi.getName()))
                 throw new GridException("Duplicate SPI name (need to explicitly configure 'setName()' property): " +
                     spi.getName());
@@ -213,8 +211,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             }
 
             if (log.isDebugEnabled())
-                log.debug("SPI module started ok [spi=" + spi.getClass().getName() + ", author=" + info.author() +
-                    ", version=" + info.version() + ", email=" + info.email() + ", url=" + info.url() + ']');
+                log.debug("SPI module started OK: " + spi.getClass().getName());
         }
     }
 
@@ -231,14 +228,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
             try {
                 spi.spiStop();
 
-                GridSpiInfo info = spi.getClass().getAnnotation(GridSpiInfo.class);
-
-                assert info != null;
-
                 if (log.isDebugEnabled())
-                    log.debug("SPI module stopped ok [spi=" + spi.getClass().getName() +
-                        ", author=" + info.author() + ", version=" + info.version() +
-                        ", email=" + info.email() + ", url=" + info.url() + ']');
+                    log.debug("SPI module stopped OK: " + spi.getClass().getName());
             }
             catch (GridSpiException e) {
                 throw new GridException("Failed to stop SPI: " + spi, e);
@@ -286,6 +277,18 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.discovery().localNode();
                     }
 
+                    @Override public Collection<GridNode> remoteDaemonNodes() {
+                        final Collection<GridNode> all = ctx.discovery().daemonNodes();
+
+                        return !localNode().isDaemon() ?
+                            all :
+                            F.view(all, new GridPredicate<GridNode>() {
+                                @Override public boolean apply(GridNode n) {
+                                    return n.isDaemon();
+                                }
+                            });
+                    }
+
                     @Nullable @Override public GridNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
@@ -308,7 +311,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                             if (msg instanceof GridTcpCommunicationMessageAdapter)
                                 ctx.io().send(node, topic, (GridTcpCommunicationMessageAdapter)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(Arrays.asList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
                         catch (GridException e) {
                             throw unwrapException(e);
@@ -406,6 +409,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         ctx.swap().write(spaceName, key, val, ldr);
                     }
 
@@ -429,6 +434,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, GridSwapKey key,
                         @Nullable ClassLoader ldr) throws GridException {
+                        assert ctx.swap().enabled();
+
                         return ctx.swap().readValue(spaceName, key, ldr);
                     }
 
@@ -438,12 +445,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public void removeFromSwap(String spaceName, Object key,
                         @Nullable ClassLoader ldr) throws GridException {
-                        ctx.swap().remove(spaceName, key, null, ldr);
-                    }
+                        assert ctx.swap().enabled();
 
-                    @Override public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs)
-                        throws GridException {
-                        return ctx.auth().authenticateNode(nodeId, attrs);
+                        ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
                     @Override public GridNodeValidationResult validateNode(GridNode node) {
@@ -463,6 +467,14 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
                         return ctx.versionConverter().readDelta(nodeId, msgCls, buf);
+                    }
+
+                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+                        return ctx.grid().security().authenticatedSubjects();
+                    }
+
+                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+                        return ctx.grid().security().authenticatedSubject(subjId);
                     }
 
                     /**

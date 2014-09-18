@@ -19,3 +19,4 @@ atlassian-ide-plugin.xml
 *.iml
 target
 target/*
+/libs/

@@ -9,11 +9,9 @@
 
 package org.gridgain.loadtests.direct.multisplit;
 
-import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.*;
@@ -54,10 +52,6 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         cfg.setDiscoverySpi(discoSpi);
-
-        GridLog4jLogger log = (GridLog4jLogger)cfg.getGridLogger().getLogger(null);
-
-        log.setLevel(Level.INFO);
 
         ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 

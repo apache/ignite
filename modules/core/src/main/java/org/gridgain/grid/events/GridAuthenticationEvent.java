@@ -11,7 +11,8 @@ package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.*;
+import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -38,17 +39,12 @@ import java.util.*;
  * </ul>
  * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in GridGain are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
- * under the load and therefore it creates a significant additional load on the system. If these events are
- * not needed by the application this load is unnecessary and leads to significant performance degradation.
- * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
  * by using {@link GridConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see GridEventType#EVT_AUTH_FAILED
- * @see GridEventType#EVT_AUTH_SUCCEEDED
+ * @see GridEventType#EVT_AUTHENTICATION_FAILED
+ * @see GridEventType#EVT_AUTHENTICATION_SUCCEEDED
  */
 public class GridAuthenticationEvent extends GridEventAdapter {
     /** */
@@ -58,7 +54,11 @@ public class GridAuthenticationEvent extends GridEventAdapter {
     private GridSecuritySubjectType subjType;
 
     /** Subject ID. */
-    private byte[] subjId;
+    private UUID subjId;
+
+    /** Login. */
+    @GridToStringInclude
+    private Object login;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -92,11 +92,12 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      * @param subjId Subject ID.
      */
     public GridAuthenticationEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
-        byte[] subjId) {
+        UUID subjId, Object login) {
         super(node, msg, type);
 
         this.subjType = subjType;
         this.subjId = subjId;
+        this.login = login;
     }
 
     /**
@@ -113,7 +114,7 @@ public class GridAuthenticationEvent extends GridEventAdapter {
      *
      * @return Subject ID that triggered the event.
      */
-    public byte[] subjectId() {
+    public UUID subjectId() {
         return subjId;
     }
 
@@ -127,11 +128,29 @@ public class GridAuthenticationEvent extends GridEventAdapter {
     }
 
     /**
+     * Gets login that triggered event.
+     *
+     * @return Login object.
+     */
+    public Object login() {
+        return login;
+    }
+
+    /**
+     * Sets login that triggered event.
+     *
+     * @param login Login object.
+     */
+    public void login(Object login) {
+        this.login = login;
+    }
+
+    /**
      * Sets subject ID that triggered the event.
      *
      * @param subjId Subject ID to set.
      */
-    public void subjectId(byte[] subjId) {
+    public void subjectId(UUID subjId) {
         this.subjId = subjId;
     }
 

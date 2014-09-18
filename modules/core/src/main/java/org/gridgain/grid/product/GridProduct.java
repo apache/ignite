@@ -20,11 +20,6 @@ import org.jetbrains.annotations.*;
  */
 public interface GridProduct {
     /**
-     * @return GridGain edition.
-     */
-    public GridProductEdition edition();
-
-    /**
      * Gets license descriptor for enterprise edition or {@code null} for open source edition.
      *
      * @return License descriptor.

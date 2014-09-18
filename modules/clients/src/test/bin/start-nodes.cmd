@@ -10,34 +10,28 @@ SET BIN_PATH=%SCRIPT_DIR%\..\..\..\..\..\bin
 cd %SCRIPT_DIR%\..\..\..\..\..\..
 set GG_HOME=%CD%
 
-echo Switch to build script directory %SCRIPT_DIR%
-cd %SCRIPT_DIR%
-
 rem Define this script configuration.
-set CLIENT_TEST_JAR=%GG_HOME%\gridgain-clients-tests.jar
 set NODES_COUNT=2
 
-rem Clean up old jar files.
-del /F /Q %GG_HOME%\*.jar
-
-set ANT_TARGET="mk.tests.jar.full"
-
-echo Generate client test jar [ant target=%ANT_TARGET%, jar file=%CLIENT_TEST_JAR%]
 echo GG_HOME: %GG_HOME%
-echo TEMP: %TEMP%
 echo JAVA_HOME: %JAVA_HOME%
-echo GIT_PATH: %GIT_PATH%
 echo SCRIPT_DIR: %SCRIPT_DIR%
-echo call ant -DGG_HOME="%GG_HOME%" -DTMP_DIR="%TEMP%" -DJAVA_HOME="%JAVA_HOME%" -f %SCRIPT_DIR%\..\build\build.xml %ANT_TARGET%
 
-call ant -DGG_HOME="%GG_HOME%" -DTMP_DIR="%TEMP%" -DJAVA_HOME="%JAVA_HOME%" -f %SCRIPT_DIR%\..\build\build.xml %ANT_TARGET%
+echo Switch to home directory %GG_HOME%
+cd %GG_HOME%
+
+set MVN_EXEC=mvn
+
+if defined M2_HOME set MVN_EXEC=%M2_HOME%\bin\%MVN_EXEC%
+
+call %MVN_EXEC% -P+test,-scala,-examples,-release clean package -DskipTests -DskipClientDocs
+
+echo Switch to build script directory %SCRIPT_DIR%
+cd %SCRIPT_DIR%
 
 rem Force to create log's directory.
 rmdir %GG_HOME%\work\log /S /Q
 mkdir %GG_HOME%\work\log
-
-rem Provide user library to the grid startup scripts.
-set USER_LIBS=%CLIENT_TEST_JAR%
 
 set JVM_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
 

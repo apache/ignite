@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dr.cache.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 
 /**
  * Test suite for cache API.
@@ -59,6 +58,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
@@ -78,6 +78,9 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
+
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
 
         suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
@@ -103,9 +106,6 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
-
-        // The rest cache stuff.
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
 
         // Cache API tests for cache configured as DR target.
         // Multi node.

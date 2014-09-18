@@ -77,7 +77,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
@@ -85,6 +85,13 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     ) {
         if (grpLockKey != null)
             throw new IllegalStateException("Group locking is not supported for LOCAL cache.");
+
+        // Use null as subject ID for transactions if subject per call is not set.
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         return new GridLocalTx<>(
             ctx,
@@ -94,9 +101,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             isolation,
             timeout,
             invalidate,
-            swapEnabled,
+            swapOrOffheapEnabled,
             storeEnabled,
-            txSize);
+            txSize,
+            subjId,
+            taskNameHash);
     }
 
     /**

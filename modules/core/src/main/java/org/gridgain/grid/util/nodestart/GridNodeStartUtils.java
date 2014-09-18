@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.nodestart;
 
-import org.apache.commons.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -95,47 +95,107 @@ public class GridNodeStartUtils {
         assert file.exists();
         assert file.isFile();
 
-        Collection<Map<String, Object>> hosts = new LinkedList<>();
-        Map<String, Object> dflts = null;
+        BufferedReader br = null;
+
+        int lineCnt = 1;
 
         try {
-            HierarchicalINIConfiguration ini = new HierarchicalINIConfiguration(file);
+            br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
 
-            Set<String> sections = ini.getSections();
+            String section = null;
 
-            for (String sectionName : sections) {
-                Map<String, Object> props = new HashMap<>();
+            Collection<Map<String, Object>> hosts = new LinkedList<>();
+            Map<String, Object> dflts = null;
+            Map<String, Object> props = null;
 
-                SubnodeConfiguration section = ini.getSection(sectionName);
+            for (String line; (line = br.readLine()) != null; lineCnt++) {
+                String l = line.trim();
 
-                props.put(HOST, section.getString(HOST));
-                props.put(PORT, section.getInteger(PORT, null));
-                props.put(UNAME, section.getString(UNAME));
-                props.put(PASSWD, section.getString(PASSWD));
+                if (l.isEmpty() || l.startsWith("#") || l.startsWith(";"))
+                    continue;
 
-                if (section.getString(KEY) != null)
-                    props.put(KEY, new File(section.getString(KEY)));
+                if (l.startsWith("[") && l.endsWith("]")) {
+                    Map<String, Object> dfltsTmp = processSection(section, hosts, dflts, props);
 
-                props.put(NODES, section.getInteger(NODES, null));
-                props.put(GG_HOME, section.getString(GG_HOME));
-                props.put(CFG, section.getString(CFG));
-                props.put(SCRIPT, section.getString(SCRIPT));
+                    if (dfltsTmp != null)
+                        dflts = dfltsTmp;
 
-                if (DFLT_SECTION.equalsIgnoreCase(sectionName)) {
-                    if (dflts != null)
-                        throw new GridException("Only one '" + DFLT_SECTION + "' section is allowed.");
+                    props = new HashMap<>();
 
-                    dflts = props;
+                    section = l.substring(1, l.length() - 1);
+                }
+                else if (l.contains("=")) {
+                    if (section == null)
+                        throw new GridException("GridGain ini format doesn't support unnamed section.");
+
+                    String key = l.substring(0, l.indexOf('='));
+                    String val = line.substring(line.indexOf('=') + 1);
+
+                    switch (key) {
+                        case HOST:
+                        case UNAME:
+                        case PASSWD:
+                        case GG_HOME:
+                        case CFG:
+                        case SCRIPT:
+                            props.put(key, val);
+                            break;
+
+                        case PORT:
+                        case NODES:
+                            props.put(key, Integer.valueOf(val));
+                            break;
+
+                        case KEY:
+                            props.put(KEY, new File(val));
+                            break;
+                    }
                 }
                 else
-                    hosts.add(props);
+                    throw new GridException("Failed to parse INI file (line " + lineCnt + ").");
             }
-        }
-        catch (ConfigurationException e) {
-            throw new GridException("Failed to parse INI file.", e);
-        }
 
-        return F.t(hosts, dflts);
+            Map<String, Object> dfltsTmp = processSection(section, hosts, dflts, props);
+
+            if (dfltsTmp != null)
+                dflts = dfltsTmp;
+
+            return F.t(hosts, dflts);
+        }
+        catch (IOException | NumberFormatException e) {
+            throw new GridException("Failed to parse INI file (line " + lineCnt + ").", e);
+        }
+        finally {
+            U.closeQuiet(br);
+        }
+    }
+
+    /**
+     * Processes section of parsed INI file.
+     *
+     * @param section Name of the section.
+     * @param hosts Already parsed properties for sections excluding default.
+     * @param dflts Parsed properties for default section.
+     * @param props Current properties.
+     * @return Default properties if specified section is default, {@code null} otherwise.
+     * @throws GridException If INI file contains several default sections.
+     */
+    private static Map<String, Object> processSection(String section, Collection<Map<String, Object>> hosts,
+        Map<String, Object> dflts, Map<String, Object> props) throws GridException {
+        if (section == null || props == null)
+            return null;
+
+        if (DFLT_SECTION.equalsIgnoreCase(section)) {
+            if (dflts != null)
+                throw new GridException("Only one '" + DFLT_SECTION + "' section is allowed.");
+
+            return props;
+        }
+        else {
+            hosts.add(props);
+
+            return null;
+        }
     }
 
     /**
@@ -185,7 +245,7 @@ public class GridNodeStartUtils {
         String ggHome = null;
         String cfg = DFLT_CFG;
         String script = null;
-        GridLogger logger = null;
+        GridLogger log = null;
 
         if (dflts != null) {
             if (dflts.get(PORT) != null)
@@ -213,7 +273,7 @@ public class GridNodeStartUtils {
                 script = (String)dflts.get(SCRIPT);
 
             if (dflts.get(LOGGER) != null)
-                logger = (GridLogger)dflts.get(LOGGER);
+                log = (GridLogger)dflts.get(LOGGER);
         }
 
         if (port <= 0)
@@ -223,7 +283,7 @@ public class GridNodeStartUtils {
             throw new GridException("Invalid number of nodes: " + nodes);
 
         return new GridRemoteStartSpecification(null, port, uname, passwd,
-            key, nodes, ggHome, cfg, script, logger);
+            key, nodes, ggHome, cfg, script, log);
     }
 
     /**

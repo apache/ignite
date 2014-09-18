@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -117,15 +118,21 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         GridConfiguration c = super.getConfiguration(gridName);
 
         c.setLocalHost(HOST);
-        c.setRestTcpPort(REST_TCP_PORT_BASE);
-        c.setRestEnabled(restEnabled);
+
+        assert c.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
         GridSslContextFactory sslCtxFactory = sslContextFactory();
 
         if (sslCtxFactory != null) {
-            c.setRestTcpSslEnabled(true);
-            c.setRestTcpSslContextFactory(sslCtxFactory);
+            clientCfg.setRestTcpSslEnabled(true);
+            clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
         }
+
+        c.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -145,7 +152,8 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         ThreadPoolExecutor exec = new ThreadPoolExecutor(
             40,
             40,
-            0, TimeUnit.MILLISECONDS,
+            0,
+            MILLISECONDS,
             new LinkedBlockingQueue<Runnable>());
 
         exec.prestartAllCoreThreads();
@@ -157,7 +165,8 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         ThreadPoolExecutor sysExec = new ThreadPoolExecutor(
             40,
             40,
-            0, TimeUnit.MILLISECONDS,
+            0,
+            MILLISECONDS,
             new LinkedBlockingQueue<Runnable>());
 
         sysExec.prestartAllCoreThreads();
@@ -376,28 +385,38 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testInvalidateFlag() throws Exception {
-        GridClientData d = client.data(REPLICATED_CACHE_NAME);
+        GridEx g0 = grid(0);
 
-        assertTrue(d.put("xxx", "yyy"));
+        GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
-        assertEquals("yyy", grid(0).cache(REPLICATED_CACHE_NAME).get("xxx"));
+        String key = null;
 
-        d.flagsOn(GridClientCacheFlag.INVALIDATE).put("xxx", "zzz");
+        for (int i = 0; i < 10_000; i++) {
+            if (!cache.affinity().isPrimaryOrBackup(g0.localNode(), String.valueOf(i))) {
+                key = String.valueOf(i);
 
-        int notNulls = 0;
-
-        for (Grid g : G.allGrids()) {
-            GridCache<String, Object> cache = g.cache(REPLICATED_CACHE_NAME);
-
-            Object val = cache != null ? cache.peek("xxx") : null;
-
-            if ("zzz".equals(val))
-                notNulls++;
-            else
-                assertNull(val);
+                break;
+            }
         }
 
-        assertEquals(1, notNulls);
+        assertNotNull(key);
+
+        cache.put(key, key); // Create entry in near cache, it is invalidated if INVALIDATE flag is set.
+
+        assertNotNull(cache.peek(key));
+
+        GridClientData d = client.data(PARTITIONED_CACHE_NAME);
+
+        d.flagsOn(GridClientCacheFlag.INVALIDATE).put(key, "zzz");
+
+        for (Grid g : G.allGrids()) {
+            cache = g.cache(PARTITIONED_CACHE_NAME);
+
+            if (cache.affinity().isPrimaryOrBackup(g.localNode(), key))
+                assertEquals("zzz", cache.peek(key));
+            else
+                assertNull(cache.peek(key));
+        }
     }
 
     /**
@@ -449,15 +468,22 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);
 
+        final CountDownLatch addedLatch = new CountDownLatch(1);
+        final CountDownLatch rmvLatch = new CountDownLatch(1);
+
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
         GridClientTopologyListener lsnr = new GridClientTopologyListener() {
             @Override public void onNodeAdded(GridClientNode node) {
                 added.add(node.nodeId());
+
+                addedLatch.countDown();
             }
 
             @Override public void onNodeRemoved(GridClientNode node) {
                 rmvd.add(node.nodeId());
+
+                rmvLatch.countDown();
             }
         };
 
@@ -468,14 +494,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             UUID id = g.localNode().id();
 
-            Thread.sleep(2 * TOP_REFRESH_FREQ);
+            assertTrue(addedLatch.await(2 * TOP_REFRESH_FREQ, MILLISECONDS));
 
             assertEquals(1, added.size());
             assertEquals(id, F.first(added));
 
             stopGrid(NODES_CNT + 1);
 
-            Thread.sleep(2 * TOP_REFRESH_FREQ);
+            assertTrue(rmvLatch.await(2 * TOP_REFRESH_FREQ, MILLISECONDS));
 
             assertEquals(1, rmvd.size());
             assertEquals(id, F.first(rmvd));
@@ -614,7 +640,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     /**
      * @return Client configuration for the test.
      */
-    protected GridClientConfiguration clientConfiguration() {
+    protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         cfg.setBalancer(getBalancer());

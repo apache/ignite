@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.spi.authentication.noop;
 
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Default implementation of the authentication SPI which permits any request.
@@ -54,11 +55,6 @@ import org.jetbrains.annotations.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopAuthenticationSpi extends GridSpiAdapter
@@ -68,6 +64,9 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     @GridToStringExclude
     private GridLogger log;
 
+    /** Always allow permission set. */
+    private static final GridSecurityPermissionSet allowAll = new GridAllowAllPermissionSet();
+
     /** {@inheritDoc} */
     @Override public boolean supported(GridSecuritySubjectType subjType) {
         // If this SPI is configured, then authentication is disabled.
@@ -75,9 +74,16 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId,
-        @Nullable Object creds) throws GridSpiException {
-        return true;
+    @Override public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException {
+        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
+
+        subj.address(authCtx.address());
+        subj.permissions(allowAll);
+
+        if (authCtx.credentials() != null)
+            subj.login(authCtx.credentials().getLogin());
+
+        return subj;
     }
 
     /** {@inheritDoc} */

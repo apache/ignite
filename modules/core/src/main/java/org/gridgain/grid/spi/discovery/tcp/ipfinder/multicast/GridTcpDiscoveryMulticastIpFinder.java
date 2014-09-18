@@ -78,6 +78,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
 
     /** Grid name. */
     @GridNameResource
+    @GridToStringExclude
     private String gridName;
 
     /** Multicast IP address as string. */

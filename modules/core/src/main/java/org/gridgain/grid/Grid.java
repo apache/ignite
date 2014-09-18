@@ -16,10 +16,13 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.streamer.*;
@@ -30,8 +33,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Main entry-point for all GridGain APIs.
@@ -135,11 +136,24 @@ public interface Grid extends GridProjection, AutoCloseable {
     public GridScheduler scheduler();
 
     /**
+     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
+     *
+     * @return Instance of {@code GridSecurity} interface.
+     */
+    public GridSecurity security();
+
+    /**
+     * Gets an instance of {@code GridPortables} interface. Available in enterprise edition only.
+     *
+     * @return Instance of {@code GridPortables} interface.
+     */
+    public GridPortables portables();
+
+    /**
      * Gets an instance of Data Center Replication.
      *
      * @return Instance of Data Center Replication.
      */
-    @GridOnlyAvailableIn(DATA_GRID)
     public GridDr dr();
 
     /**
@@ -156,7 +170,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @see GridGgfsConfiguration#getDataCacheName()
      * @see GridGgfsConfiguration#getMetaCacheName()
      */
-    @GridOnlyAvailableIn(DATA_GRID)
     public <K, V> GridCache<K, V> cache(@Nullable String name);
 
     /**
@@ -168,7 +181,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @see GridGgfsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
-    @GridOnlyAvailableIn(DATA_GRID)
     public Collection<GridCache<?, ?>> caches();
 
     /**
@@ -179,7 +191,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    @GridOnlyAvailableIn(DATA_GRID)
     public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
@@ -193,7 +204,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @param name GGFS name.
      * @return GGFS instance.
      */
-    @GridOnlyAvailableIn(HADOOP)
     public GridGgfs ggfs(String name);
 
     /**
@@ -201,8 +211,14 @@ public interface Grid extends GridProjection, AutoCloseable {
      *
      * @return Collection of grid file systems instances.
      */
-    @GridOnlyAvailableIn(HADOOP)
     public Collection<GridGgfs> ggfss();
+
+    /**
+     * Gets an instance of Hadoop.
+     *
+     * @return Hadoop instance.
+     */
+    public GridHadoop hadoop();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then
@@ -211,7 +227,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @param name Streamer name.
      * @return Streamer for given name.
      */
-    @GridOnlyAvailableIn(STREAMING)
     public GridStreamer streamer(@Nullable String name);
 
     /**
@@ -219,7 +234,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      *
      * @return Collection of all streamer instances.
      */
-    @GridOnlyAvailableIn(STREAMING)
     public Collection<GridStreamer> streamers();
 
     /**

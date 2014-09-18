@@ -1,0 +1,144 @@
+/* @java.file.header */
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.client;
+
+import org.jetbrains.annotations.*;
+
+import java.net.*;
+import java.util.*;
+
+/**
+ * Descriptor of remote grid node. Use {@link GridClientCompute#nodes()} to
+ * get a full view over remote grid nodes.
+ */
+public interface GridClientNode {
+    /**
+     * Gets ID of a remote node.
+     *
+     * @return Node ID.
+     */
+    public UUID nodeId();
+
+    /**
+     * Gets consistent globally unique node ID. Unlike {@link #nodeId()} method,
+     * this method returns consistent node ID which survives node restarts.
+     *
+     * @return Consistent globally unique node ID.
+     */
+    public Object consistentId();
+
+    /**
+     * Gets list of REST TCP server addresses of remote node.
+     *
+     * @return REST TCP server addresses.
+     */
+    public List<String> tcpAddresses();
+
+    /**
+     * Gets list of REST TCP server host names of remote node.
+     *
+     * @return REST TCP server host names.
+     */
+    public List<String> tcpHostNames();
+
+    /**
+     * Gets list of REST HTTP server addresses of remote node.
+     *
+     * @return REST HTTP server addresses.
+     */
+    @Deprecated
+    public List<String> jettyAddresses();
+
+    /**
+     * Gets list of REST HTTP server host names of remote node.
+     *
+     * @return REST HTTP server host names.
+     */
+    @Deprecated
+    public List<String> jettyHostNames();
+
+    /**
+     * Gets client TCP port of remote node.
+     *
+     * @return Remote tcp port.
+     */
+    public int tcpPort();
+
+    /**
+     * Gets client HTTP port of remote node.
+     *
+     * @return Remote http port.
+     */
+    @Deprecated
+    public int httpPort();
+
+    /**
+     * Gets all attributes of remote node. Note that all system and
+     * environment properties are automatically includes in node
+     * attributes. User can also attach custom attributes and then
+     * use them to further filter remote nodes into virtual subgrids
+     * for task execution.
+     *
+     * @return All node attributes.
+     */
+    public Map<String, Object> attributes();
+
+    /**
+     * Gets specific attribute of remote node.
+     *
+     * @param name Attribute name.
+     * @return Attribute value.
+     * @see #attributes()
+     */
+    @Nullable public <T> T attribute(String name);
+
+    /**
+     * Gets various dynamic metrics of remote node.
+     *
+     * @return Metrics of remote node.
+     */
+    public GridClientNodeMetrics metrics();
+
+    /**
+     * Gets all configured caches and their types on remote node.
+     *
+     * @return Map in which key is a configured cache name on the node,
+     *      value is mode of configured cache.
+     */
+    public Map<String, GridClientCacheMode> caches();
+
+    /**
+     * Gets node replica count for consistent hash ring (valid only for
+     * {@code PARTITIONED} caches).
+     *
+     * @return Node replica count for consistent hash ring.
+     */
+    public int replicaCount();
+
+    /**
+     * Gets collection of addresses on which REST binary protocol is bound.
+     *
+     * @param proto Protocol for which addresses are obtained.
+     * @param filterResolved Whether to filter resolved addresses ( {@link InetSocketAddress#isUnresolved()}
+     * returns {@code False} ) or not.
+     * @return List of addresses.
+     */
+    public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved);
+
+    /**
+     * Indicates whether client can establish direct connection with this node.
+     * So it is guaranteed that that any request will take only one network
+     * 'hop' before it will be processed by a Grid node.
+     *
+     * @return {@code true} if node can be directly connected,
+     *  {@code false} if request may be passed through a router.
+     */
+    public boolean connectable();
+}

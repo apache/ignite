@@ -315,7 +315,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.recoveryWrites(),
                 sync, // Ignore syncPrimary() check here because this is not local node (see assert above).
                 tx.onePhaseCommit(),
-                tx.groupLockKey());
+                tx.groupLockKey(),
+                tx.subjectId(),
+                tx.taskNameHash());
 
             if (tx.onePhaseCommit())
                 req.writeVersion(tx.writeVersion());
@@ -372,7 +374,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.recoveryWrites(),
                     syncReq,
                     tx.onePhaseCommit(),
-                    tx.groupLockKey());
+                    tx.groupLockKey(),
+                    tx.subjectId(),
+                    tx.taskNameHash());
 
                 if (tx.onePhaseCommit())
                     req.writeVersion(tx.writeVersion());

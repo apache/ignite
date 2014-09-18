@@ -244,7 +244,7 @@ public class GridCacheAttributes implements Externalizable {
         evictPlcClsName = className(cfg.getEvictionPolicy());
         nearEvictPlcClsName = className(cfg.getNearEvictionPolicy());
         storeClsName = className(cfg.getStore());
-        tmLookupClsName = className(cfg.getTransactionManagerLookup());
+        tmLookupClsName = cfg.getTransactionManagerLookupClassName();
     }
 
     /**

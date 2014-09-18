@@ -9,19 +9,23 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
-import org.w3c.dom.Node;
-import org.w3c.tidy.*;
+import org.xml.sax.*;
 
+import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
+
+import static java.net.URLEncoder.*;
 
 /**
  * This class is responsible for notification about new version availability. Note that this class
@@ -32,24 +36,14 @@ import java.util.concurrent.*;
  * gracefully ignore any errors occurred during notification and verification process.
  */
 class GridUpdateNotifier {
-    /*
-     * *********************************************************
-     * DO NOT CHANGE THIS URL OR HOW IT IS PUT IN ONE LINE.    *
-     * THIS URL IS HANDLED BY POST-BUILD PROCESS AND IT HAS TO *
-     * BE PLACED EXACTLY HOW IT IS SHOWING.                    *
-     * *********************************************************
-     */
     /** Access URL to be used to access latest version data. */
-    private static final String URL_SUFFIX = /*@java.update.status.url*/"/update_status.php?test=vfvfvskfkeievskjv";
+    private static final String UPD_STATUS_PARAMS = GridProperties.get("gridgain.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
     /** Grid version. */
     private final String ver;
-
-    /** Edition name. */
-    private final String edition;
 
     /** Site. */
     private final String url;
@@ -61,16 +55,22 @@ class GridUpdateNotifier {
     private volatile String latestVer;
 
     /** HTML parsing helper. */
-    private final Tidy tidy;
+    private final DocumentBuilder documentBuilder;
 
     /** Grid name. */
     private final String gridName;
 
-    /**  Whether or not to report only new version. */
-    private boolean reportOnlyNew;
+    /** Whether or not to report only new version. */
+    private volatile boolean reportOnlyNew;
 
     /** */
-    private int topSize;
+    private volatile int topSize;
+
+    /** System properties */
+    private final String vmProps;
+
+    /** Kernal gateway */
+    private final GridKernalGateway gw;
 
     /** */
     private long lastLog = -1;
@@ -82,27 +82,64 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
-     * @param edition GridGain edition.
      * @param ver Compound GridGain version.
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
+     * @param gw Kernal gateway.
+     * @throws GridException If failed.
      */
-    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew) {
-        tidy = new Tidy();
+    GridUpdateNotifier(String gridName, String ver, String site, GridKernalGateway gw, boolean reportOnlyNew)
+        throws GridException {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-        tidy.setQuiet(true);
-        tidy.setOnlyErrors(true);
-        tidy.setShowWarnings(false);
-        tidy.setInputEncoding("UTF8");
-        tidy.setOutputEncoding("UTF8");
+            documentBuilder = factory.newDocumentBuilder();
 
-        this.ver = ver;
-        this.edition = edition;
+            documentBuilder.setEntityResolver(new EntityResolver() {
+                @Override public InputSource resolveEntity(String publicId, String sysId) {
+                    if (sysId.endsWith(".dtd"))
+                        return new InputSource(new StringReader(""));
 
-        url = "http://" + site + URL_SUFFIX;
+                    return null;
+                }
+            });
 
-        this.gridName = gridName;
-        this.reportOnlyNew = reportOnlyNew;
+            this.ver = ver;
+
+            url = "http://" + site + "/update_status.php";
+
+            this.gridName = gridName == null ? "null" : gridName;
+            this.reportOnlyNew = reportOnlyNew;
+            this.gw = gw;
+
+            vmProps = getSystemProperties();
+        }
+        catch (ParserConfigurationException e) {
+            throw new GridException("Failed to create xml parser.", e);
+        }
+    }
+
+    /**
+     * Gets system properties.
+     *
+     * @return System properties.
+     */
+    private static String getSystemProperties() {
+        try {
+            StringWriter sw = new StringWriter();
+
+            try {
+                System.getProperties().store(new PrintWriter(sw), "");
+            }
+            catch (IOException ignore) {
+                return null;
+            }
+
+            return sw.toString();
+        }
+        catch (SecurityException ignore) {
+            return null;
+        }
     }
 
     /**
@@ -211,6 +248,9 @@ class GridUpdateNotifier {
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
+        /** Default encoding. */
+        private static final String CHARSET = "UTF-8";
+
         /** Logger. */
         private final GridLogger log;
 
@@ -230,44 +270,65 @@ class GridUpdateNotifier {
             try {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
 
-                URLConnection conn = new URL(url +
-                    (url.endsWith(".php") ? '?' : '&') +
-                    (topSize > 0 ? "t=" + topSize + "&" : "") +
-                    (lic != null ? "l=" + lic.id() + "&" : "") +
-                    "p=" + gridName)
-                    .openConnection();
+                String stackTrace = gw != null ? gw.userStackTrace() : null;
+
+                String postParams =
+                    "gridName=" + encode(gridName, CHARSET) +
+                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
+                    (topSize > 0 ? "&topSize=" + topSize : "") +
+                    (lic != null ? "&licenseId=" + lic.id() : "") +
+                    (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
+                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "");
+
+                URLConnection conn = new URL(url).openConnection();
 
                 if (!isCancelled()) {
-                    // Timeout after 3 seconds.
+                    conn.setDoOutput(true);
+                    conn.setRequestProperty("Accept-Charset", CHARSET);
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
+
                     conn.setConnectTimeout(3000);
                     conn.setReadTimeout(3000);
-
-                    InputStream in = null;
 
                     Document dom = null;
 
                     try {
-                        in = conn.getInputStream();
+                        try (OutputStream os = conn.getOutputStream()) {
+                            os.write(postParams.getBytes(CHARSET));
+                        }
 
-                        if (in == null)
-                            return;
+                        try (InputStream in = conn.getInputStream()) {
+                            if (in == null)
+                                return;
 
-                        dom = tidy.parseDOM(in, null);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
+
+                            StringBuilder xml = new StringBuilder();
+
+                            String line;
+
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains("<meta") && !line.contains("/>"))
+                                    line = line.replace(">", "/>");
+
+                                xml.append(line).append('\n');
+                            }
+
+                            dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes(CHARSET)));
+                        }
                     }
                     catch (IOException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to GridGain update server. " + e.getMessage());
-                    }
-                    finally {
-                        U.close(in, log);
                     }
 
                     if (dom != null)
                         latestVer = obtainVersionFrom(dom);
                 }
             }
-            catch (Exception ignore) {
-                // Ignore this error.
+            catch (Exception e) {
+                if (log.isDebugEnabled())
+                    log.debug("Unexpected exception in update checker. " + e.getMessage());
             }
         }
 
@@ -285,7 +346,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if ((edition + "-version").equals(name)) {
+                if (("version").equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())

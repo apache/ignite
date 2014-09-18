@@ -17,7 +17,10 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,6 +29,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -37,6 +41,12 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * DHT cache adapter.
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
+    /** */
+    public static final GridProductVersion SUBJECT_ID_EVENTS_SINCE_VER = GridProductVersion.fromString("6.1.7");
+
+    /** */
+    public static final GridProductVersion TASK_NAME_HASH_SINCE_VER = GridProductVersion.fromString("6.2.1");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -344,7 +354,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.versions().next(topology().topologyVersion());
+        final GridCacheVersion ver0 = ctx.versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -365,6 +375,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         GridCacheEntryEx<K, V> entry = null;
 
                         try {
+                            if (ctx.portableEnabled()) {
+                                key = (K)ctx.marshalToPortable(key);
+                                val = (V)ctx.marshalToPortable(val);
+                            }
+
                             entry = entryEx(key, false);
 
                             entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
@@ -411,7 +426,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, GridPredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, GridPredicate[])}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -425,9 +440,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, filter);
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable,
+            forcePrimary, filter);
     }
 
     /** {@inheritDoc} */
@@ -446,9 +465,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
-    GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, filter);
+    GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
+        String taskName, boolean deserializePortable, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
+            filter);
     }
 
     /**
@@ -461,10 +481,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return DHT future.
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
-        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
+        int taskNameHash, boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
-            topVer, filter);
+            topVer, filter, subjId, taskNameHash, deserializePortable);
 
         fut.init();
 
@@ -479,7 +499,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert isAffinityNode(cacheCfg);
 
         GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.filter());
+            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
+                req.taskNameHash(), false, req.filter());
 
         fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
@@ -516,7 +537,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** {@inheritDoc} */
     @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapEnabled, boolean storeEnabled, int txSize,
+        boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
         @Nullable Object grpLockKey, boolean partLock) {
         assert false;
 
@@ -610,7 +631,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtLocalPartition<K, V> part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersion(), false);
 
-            return part != null ? part.size() : 0;
+            return part != null ? part.publicSize() : 0;
         }
 
         /** {@inheritDoc} */
@@ -748,6 +769,87 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
          */
         private long topologyVersion() {
             return topVer;
+        }
+    }
+
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridSubjectIdAddedMessageConverter616 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putUuid(GridTcpCommunicationMessageAdapter.UUID_NOT_READ))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    UUID subjId0 = commState.getUuid();
+
+                    if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * GridDhtAtomicUpdateRequest converter for version 6.1.2
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridTaskNameHashAddedMessageConverter621 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (!commState.putInt(0))
+                        return false;
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0: {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.getInt();
+
+                    commState.idx++;
+                }
+            }
+
+            return true;
         }
     }
 }

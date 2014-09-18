@@ -15,7 +15,6 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
 import org.gridgain.grid.spi.checkpoint.noop.*;
-import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.*;
  * <ul>
  * <li>{@link GridNoopCheckpointSpi} - default</li>
  * <li>{@link GridSharedFsCheckpointSpi}</li>
- * <li>{@link GridS3CheckpointSpi}</li>
+ * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
  * <li>{@link GridJdbcCheckpointSpi}</li>
  * <li>{@link GridCacheCheckpointSpi}</li>
  * </ul>
@@ -55,7 +54,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCheckpointSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridCheckpointSpi extends GridSpi {
     /**
      * Loads checkpoint from storage by its unique key.
      *

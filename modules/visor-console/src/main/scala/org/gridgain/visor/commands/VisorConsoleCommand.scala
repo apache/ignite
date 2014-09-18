@@ -44,9 +44,9 @@ object VisorConsoleCommand {
      */
     def apply(emptyArgs: () => Unit, withArgs: (String) => Unit) = {
         new VisorConsoleCommand {
-            @impl def invoke(): Unit = emptyArgs.apply()
+            @impl def invoke() = emptyArgs.apply()
 
-            @impl def invoke(args: String): Unit = withArgs.apply(args)
+            @impl def invoke(args: String) = withArgs.apply(args)
         }
     }
 
@@ -58,9 +58,9 @@ object VisorConsoleCommand {
      */
     def apply(emptyArgs: () => Unit) = {
         new VisorConsoleCommand {
-            @impl def invoke(): Unit = emptyArgs.apply()
+            @impl def invoke() = emptyArgs.apply()
 
-            @impl def invoke(args: String): Unit = {
+            @impl def invoke(args: String) {
                 visor.warn(
                     "Invalid arguments for command without arguments.",
                     "Type 'help' to print commands list."

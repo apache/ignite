@@ -22,15 +22,12 @@
 # Check GRIDGAIN_HOME.
 #
 if [ "${GRIDGAIN_HOME}" = "" ]; then
-    echo $0", ERROR: GRIDGAIN_HOME environment variable is not found."
+    echo $0", ERROR: GridGain installation folder is not found."
     echo "Please create GRIDGAIN_HOME variable pointing to location of"
     echo "GridGain installation folder."
 
     exit 1
 fi
-
-# USER_LIBS variable can optionally contain user's JARs/libs.
-# USER_LIBS=
 
 #
 # OS specific support.
@@ -48,33 +45,32 @@ case "`uname`" in
         ;;
 esac
 
-# The following libraries are required for GridGain.
-GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/config/userversion${SEP}${GRIDGAIN_HOME}/libs/*${SEP}${GRIDGAIN_HOME}/libs/${HADOOP_LIB_DIR}/*
-
 #
-# Set property JAR name during the Ant build.
+# Libraries included in classpath.
 #
-ANT_AUGMENTED_GGJAR=gridgain.jar
+GRIDGAIN_LIBS="${GRIDGAIN_HOME}/libs/*"
 
-GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/${ANT_AUGMENTED_GGJAR}
+for file in ${GRIDGAIN_HOME}/libs/*
+do
+    if [ -d ${file} ] && [ "${file}" != "${GRIDGAIN_HOME}/libs/optional" ]; then
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
+    fi
 
-# Uncomment if using JBoss.
-# JBOSS_HOME must point to JBoss installation folder.
-# JBOSS_HOME=
+    base_file_name=$(basename $file)
 
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/lib/jboss-common.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/lib/jboss-jmx.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/lib/jboss-system.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jbossha.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jboss-j2ee.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jboss.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jboss-transaction.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jmx-adaptor-plugin.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/server/all/lib/jnpserver.jar
+    if [ "${base_file_name:0:15}" == "gridgain-hadoop" ]; then
+        HADOOP_EDITION=1
+    fi
+done
 
-# If using JBoss AOP following libraries need to be downloaded separately
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/lib/jboss-aop-jdk50.jar
-# GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${JBOSS_HOME}"/lib/jboss-aspect-library-jdk50.jar
+if [ "${USER_LIBS}" != "" ]; then
+    GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
+fi
 
-# Set user external libraries
-GRIDGAIN_LIBS="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/libs/ext/*"
+if [ "$HADOOP_EDITION" == "1" ]; then
+    . ${GRIDGAIN_HOME}/os/bin/include/hadoop-classpath.sh
+
+    if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
+        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
+    fi
+fi

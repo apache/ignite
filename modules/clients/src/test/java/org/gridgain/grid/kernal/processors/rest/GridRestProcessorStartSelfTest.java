@@ -37,9 +37,6 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
     public static final int TCP_PORT = 11222;
 
     /** */
-    public static final int HTTP_PORT = 8080;
-
-    /** */
     private CountDownLatch gridReady;
 
     /** */
@@ -50,8 +47,14 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(TCP_PORT);
-        cfg.setRestEnabled(true);
+
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(TCP_PORT);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         TestDiscoverySpi disc = new TestDiscoverySpi();
 
@@ -81,18 +84,6 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
 
         clCfg.setProtocol(GridClientProtocol.TCP);
         clCfg.setServers(Collections.singleton(HOST + ":" + TCP_PORT));
-
-        doTest(clCfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testHttpStart() throws Exception {
-        GridClientConfiguration clCfg = new GridClientConfiguration();
-
-        clCfg.setProtocol(GridClientProtocol.HTTP);
-        clCfg.setServers(Collections.singleton(HOST + ":" + HTTP_PORT));
 
         doTest(clCfg);
     }
@@ -146,7 +137,6 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
     /**
      * Test SPI.
      */
-    @GridSpiInfo(author="test", version="test", url="gridgain.com", email="test@gridgain.com")
     private class TestDiscoverySpi extends GridTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws GridSpiException {

@@ -271,15 +271,22 @@ class GridOptimizedClassResolver {
                 desc = ggT.get3();
 
                 if (desc == null) {
-                    if (cls == null) {
+                    if (clsLdr == U.gridClassLoader()) {
+                        if (cls == null) {
+                            cls = forName(name, clsLdr);
+
+                            ggT.set2(cls);
+                        }
+
+                        desc = classDescriptor(cls, null);
+
+                        ggT.set3(desc);
+                    }
+                    else {
                         cls = forName(name, clsLdr);
 
-                        ggT.set2(cls);
+                        desc = classDescriptor(cls, null);
                     }
-
-                    desc = classDescriptor(cls, null);
-
-                    ggT.set3(desc);
                 }
 
                 break;
@@ -290,7 +297,11 @@ class GridOptimizedClassResolver {
                 T3<String, Class<?>, GridOptimizedClassDescriptor> usrT;
 
                 try {
-                    usrT = usrId2Name != null ? usrId2Name[usrId] : null;
+                    if (usrId2Name != null)
+                        usrT = usrId2Name[usrId];
+                    else
+                        throw new ClassNotFoundException("Failed to find user defined class ID " +
+                            "(make sure to register identical classes on all nodes for optimization): " + usrId);
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
                     throw new ClassNotFoundException("Failed to find user defined class ID " +

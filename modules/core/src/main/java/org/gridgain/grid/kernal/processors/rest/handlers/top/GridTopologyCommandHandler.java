@@ -17,20 +17,25 @@ import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 
 import java.net.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Command handler for API requests.
  */
 public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
+    /** Supported commands. */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(TOPOLOGY, NODE);
+
     /**
      * @param ctx Context.
      */
@@ -39,37 +44,28 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean supported(GridRestCommand cmd) {
-        switch (cmd) {
-            case TOPOLOGY:
-            case NODE:
-                return true;
-
-            default:
-                return false;
-        }
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-        assert req != null;
+        assert req instanceof GridRestTopologyRequest : "Invalid command for topology handler: " + req;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
 
         if (log.isDebugEnabled())
             log.debug("Handling topology REST request: " + req);
 
+        GridRestTopologyRequest req0 = (GridRestTopologyRequest)req;
+
         GridRestResponse res = new GridRestResponse();
 
-        Object mtrVal = value("mtr", req);
-        Object attrVal = value("attr", req);
+        boolean mtr = req0.includeMetrics();
+        boolean attr = req0.includeAttributes();
 
-        boolean mtr = mtrVal != null && (mtrVal instanceof String ?
-            Boolean.parseBoolean((String)mtrVal) : (Boolean)mtrVal);
-        boolean attr = attrVal != null && (attrVal instanceof String ?
-            Boolean.parseBoolean((String)attrVal) : (Boolean)attrVal);
-
-        switch (req.getCommand()) {
-            case TOPOLOGY:
+        switch (req.command()) {
+            case TOPOLOGY: {
                 Collection<GridNode> allNodes = F.concat(false,
                     ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
 
@@ -82,52 +78,43 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 res.setResponse(top);
 
                 break;
+            }
 
-            case NODE:
-                String idParam = value("id", req);
+            case NODE: {
+                UUID id = req0.nodeId();
 
-                try {
-                    UUID id = idParam != null ? UUID.fromString(idParam) : null;
+                final String ip = req0.nodeIp();
 
-                    final String ip = value("ip", req);
+                if (id == null && ip == null)
+                    return new GridFinishedFuture<>(ctx, new GridException(
+                        "Failed to handle request (either id or ip should be specified)."));
 
-                    if (id == null && ip == null)
-                        return new GridFinishedFuture<>(ctx, new GridException(
-                            "Failed to handle request (either id or ip should be specified)."));
+                GridNode node;
 
-                    GridNode node;
+                if (id != null) {
+                    // Always refresh topology so client see most up-to-date view.
+                    ctx.discovery().alive(id);
 
-                    if (id != null) {
-                        // Always refresh topology so client see most up-to-date view.
-                        ctx.discovery().alive(id);
+                    node = ctx.grid().node(id);
 
-                        node = ctx.grid().node(id);
-
-                        if (ip != null && node != null && !containsIp(node.addresses(), ip))
-                            node = null;
-                    }
-                    else
-                        node = F.find(ctx.discovery().allNodes(), null, new P1<GridNode>() {
-                            @Override public boolean apply(GridNode n) {
-                                return containsIp(n.addresses(), ip);
-                            }
-                        });
-
-                    if (node != null)
-                        res.setResponse(createNodeBean(node, mtr, attr));
-                    else
-                        res.setResponse(null);
+                    if (ip != null && node != null && !containsIp(node.addresses(), ip))
+                        node = null;
                 }
-                catch (IllegalArgumentException e) {
-                    String msg = "Failed to parse id parameter [id=" + idParam + ", err=" + e.getMessage() + ']';
+                else
+                    node = F.find(ctx.discovery().allNodes(), null, new P1<GridNode>() {
+                        @Override
+                        public boolean apply(GridNode n) {
+                            return containsIp(n.addresses(), ip);
+                        }
+                    });
 
-                    if (log.isDebugEnabled())
-                        log.debug(msg);
-
-                    return new GridFinishedFuture<>(ctx, new GridException(msg));
-                }
+                if (node != null)
+                    res.setResponse(createNodeBean(node, mtr, attr));
+                else
+                    res.setResponse(null);
 
                 break;
+            }
 
             default:
                 assert false : "Invalid command for topology handler: " + req;
@@ -173,13 +160,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
-        nodeBean.setJettyPort(attribute(node, ATTR_REST_JETTY_PORT, 0));
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
-        nodeBean.setJettyAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_ADDRS)));
-        nodeBean.setJettyHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_HOST_NAMES)));
 
         Integer dfltReplicaCnt = node.attribute(GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
@@ -191,11 +175,12 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
         if (!F.isEmpty(caches)) {
-            assert caches != null;
-
-            Map<String, String> cacheMap = new HashMap<>(caches.length);
+            Map<String, String> cacheMap = new HashMap<>();
 
             for (GridCacheAttributes cacheAttr : caches) {
+                if (ctx.cache().systemCache(cacheAttr.cacheName()))
+                    continue;
+
                 if (cacheAttr.cacheName() != null)
                     cacheMap.put(cacheAttr.cacheName(), cacheAttr.cacheMode().toString());
                 else
@@ -269,6 +254,15 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_VER_CONVERTERS);
+            attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                if (e.getValue() != null) {
+                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                      e.setValue(e.getValue().toString());
+                }
+            }
 
             nodeBean.setAttributes(attrs);
         }

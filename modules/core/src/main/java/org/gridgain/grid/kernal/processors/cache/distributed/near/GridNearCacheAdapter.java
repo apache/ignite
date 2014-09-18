@@ -74,28 +74,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void beforePessimisticLock(
-        GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock) {
-        dht().beforePessimisticLock(beforePessimisticLock);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock() {
-        return dht().beforePessimisticLock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterPessimisticUnlock(
-        GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock) {
-        dht().afterPessimisticUnlock(afterPessimisticUnlock);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock() {
-        return dht().afterPessimisticUnlock();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCachePreloader<K, V> preloader() {
         return dht().preloader();
     }
@@ -185,8 +163,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, GridBiInClosure<K, V> vis) {
-        return (GridFuture)loadAsync(tx, keys, reload, false, filter);
+        GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
+        GridBiInClosure<K, V> vis) {
+        return (GridFuture)loadAsync(tx, keys, reload, false, filter, subjId, taskName, true);
     }
 
     /** {@inheritDoc} */
@@ -271,13 +250,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx, @Nullable Collection<? extends K> keys,
-        boolean reload, boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean reload, boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable UUID subjId, String taskName, boolean deserializePortable) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter,
+            subjId, taskName, deserializePortable);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();
@@ -365,7 +349,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<GridCacheEntry<K, V>> entries =
-            F.flat(
+            F.flatCollections(
                 F.viewReadOnly(
                     dht().topology().currentLocalPartitions(),
                     new C1<GridDhtLocalPartition<K, V>, Collection<GridCacheEntry<K, V>>>() {

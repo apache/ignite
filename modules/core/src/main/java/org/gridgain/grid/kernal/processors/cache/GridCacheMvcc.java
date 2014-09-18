@@ -223,25 +223,6 @@ public final class GridCacheMvcc<K> {
                 return;
             }
 
-            // Only add if one does not exist yet.
-            if (cctx.isReplicated()) {
-                // Care for order in replicated cache only.
-                for (ListIterator<GridCacheMvccCandidate<K>> it = rmts.listIterator(); it.hasNext(); ) {
-                    GridCacheMvccCandidate<K> c = it.next();
-
-                    // Skip over owners or lesser candidates at the beginning of the list.
-                    if (c.used() || c.owner() || c.version().isLess(cand.version()))
-                        continue;
-
-                    // Reposition.
-                    it.previous();
-
-                    it.add(cand);
-
-                    return;
-                }
-            }
-
             // Either list is empty or candidate is last.
             rmts.add(cand);
         }

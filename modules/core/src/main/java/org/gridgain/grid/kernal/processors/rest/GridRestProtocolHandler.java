@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 
 /**
  * Command protocol handler.

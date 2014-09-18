@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.thread.*;
 import org.springframework.context.*;
@@ -57,7 +57,7 @@ class GridMarshallerResourceBean implements Serializable {
      * Initialization.
      */
     GridMarshallerResourceBean() {
-        log = new GridLog4jLogger();
+        log = new GridJavaLogger();
         marshaller = new GridJdkMarshaller();
         mbeanSrv = ManagementFactory.getPlatformMBeanServer();
         ses = new GridTestTaskSession();

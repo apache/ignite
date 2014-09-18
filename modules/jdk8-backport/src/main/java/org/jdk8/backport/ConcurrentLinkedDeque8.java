@@ -40,7 +40,6 @@
 
 package org.jdk8.backport;
 
-import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.lang.reflect.*;
@@ -319,7 +318,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         /**
          * @return Item or {@code null} if this node was removed from the queue.
          */
-        @Nullable public E item() {
+        public E item() {
             return item;
         }
 
@@ -328,7 +327,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
          * @param val New value.
          * @return {@code True} if set.
          */
-        boolean casItem(E cmp, @Nullable E val) {
+        boolean casItem(E cmp, E val) {
             return UNSAFE.compareAndSwapObject(this, itemOffset, cmp, val);
         }
 
@@ -344,7 +343,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
          * @param val New value.
          * @return {@code True} if set.
          */
-        boolean casNext(@Nullable Node<E> cmp, Node<E> val) {
+        boolean casNext(Node<E> cmp, Node<E> val) {
             return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
         }
 
@@ -1234,7 +1233,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E peekFirst() {
+    @Override public E peekFirst() {
         for (Node<E> p = first(); p != null; p = successor(p)) {
             E item = p.item;
 
@@ -1251,7 +1250,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return The header node of this deque, or <tt>null</tt> if this deque is empty
      */
-    @Nullable public Node<E> peekFirstx() {
+    public Node<E> peekFirstx() {
         for (Node<E> p = first(); p != null; p = successor(p)) {
             E item = p.item;
 
@@ -1263,7 +1262,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E peekLast() {
+    @Override public E peekLast() {
         for (Node<E> p = last(); p != null; p = predecessor(p)) {
             E item = p.item;
 
@@ -1289,7 +1288,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E pollFirst() {
+    @Override public E pollFirst() {
         for (Node<E> p = first(); p != null; p = successor(p)) {
             E item = p.item;
 
@@ -1304,7 +1303,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E pollLast() {
+    @Override public E pollLast() {
         for (Node<E> p = last(); p != null; p = predecessor(p)) {
             E item = p.item;
 
@@ -1386,7 +1385,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E peek() {
+    @Override public E peek() {
         return peekFirst();
     }
 
@@ -1400,7 +1399,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return The header node of the queue represented by this deque, or
      *      {@code null} if this deque is empty
      */
-    @Nullable public Node<E> peekx() {
+    public Node<E> peekx() {
         return peekFirstx();
     }
 

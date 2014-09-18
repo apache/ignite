@@ -10,11 +10,9 @@
 package org.gridgain.grid.spi.authentication;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.jaas.*;
 import org.gridgain.grid.spi.authentication.noop.*;
-import org.gridgain.grid.spi.authentication.passcode.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Authentication SPI used for authenticating grid nodes and remote clients. This SPI
@@ -30,11 +28,11 @@ import org.jetbrains.annotations.*;
  *     {@link GridNoopAuthenticationSpi} - permits any request.
  * </li>
  * <li>
- *     {@link GridPasscodeAuthenticationSpi} -
+ *     {@code GridPasscodeAuthenticationSpi} -
  *     validates authentication with passcode phrase.
  * </li>
  * <li>
- *     {@link GridJaasAuthenticationSpi} -
+ *     {@code GridJaasAuthenticationSpi} -
  *     validates authentication with JAAS Java extension.
  * </li>
  * </ul>
@@ -51,8 +49,8 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-@GridSpiConsistencyChecked(optional = true)
-public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable {
+@GridSpiConsistencyChecked(optional = false, checkDaemon = true)
+public interface GridAuthenticationSpi extends GridSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next authentication SPI
      * in the list will be checked.
@@ -60,20 +58,16 @@ public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable 
      * @param subjType Subject type.
      * @return {@code True} if subject type is supported, {@code false} otherwise.
      */
-    boolean supported(GridSecuritySubjectType subjType);
+    public boolean supported(GridSecuritySubjectType subjType);
 
     /**
      * Authenticates a given subject (either node or remote client).
      *
-     * @param subjType Subject type.
-     * @param subjId Unique subject ID such as local or remote node ID, client ID, etc.
-     * @param credentials Authentication parameters (may be {@code null} or empty based on implementation).
-     *      The map of parameters may be different for different subject types. Refer to specific
-     *      authentication SPI documentation for a list of required parameters.
-     * @return {@code true} if authentication passed, {@code false} if authentication failed.
+     * @param authCtx Authentication context. Contains all necessary information required to authenticate
+     *      the subject.
+     * @return Authenticated subject context or {@code null} if authentication did not pass.
      * @throws GridSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable Object credentials)
-        throws GridSpiException;
+    public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
 }

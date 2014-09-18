@@ -66,7 +66,6 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridSpiInfo(author = "", url = "", email = "", version = "")
     private static class Spi extends GridSpiAdapter implements TestSpi {
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws GridSpiException {

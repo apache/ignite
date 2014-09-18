@@ -6,8 +6,10 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -68,6 +70,28 @@ public class GridClientLogRequest extends GridClientAbstractMessage {
      */
     public void to(int to) {
         this.to = to;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        super.writePortable(writer);
+
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeString(path);
+        raw.writeInt(from);
+        raw.writeInt(to);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        super.readPortable(reader);
+
+        GridPortableRawReader raw = reader.rawReader();
+
+        path = raw.readString();
+        from = raw.readInt();
+        to = raw.readInt();
     }
 
     /** {@inheritDoc} */

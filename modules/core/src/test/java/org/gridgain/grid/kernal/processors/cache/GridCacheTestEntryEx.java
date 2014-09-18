@@ -200,13 +200,6 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @return Any owner.
-     */
-    @Nullable public GridCacheMvccCandidate<K> anyOwner() {
-        return mvcc.anyOwner();
-    }
-
-    /**
      * @param ver Version.
      */
     public void doneRemote(GridCacheVersion ver) {
@@ -399,8 +392,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
+        String taskName, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return val;
     }
 
@@ -413,15 +406,16 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
         @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
         boolean evt, boolean metrics, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType,
-        long drExpireTime, @Nullable GridCacheVersion drVer) throws GridException,
+        long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult<>(true, rawPut(val, ttl));
     }
 
     /** {@inheritDoc} */
     @Override public GridBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
-                                                              @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
-                                                              @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException {
+        @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean intercept, UUID subjId, String taskName)
+        throws GridException, GridCacheEntryRemovedException {
         return new GridBiTuple<>(false, null);
     }
 
@@ -430,16 +424,17 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
         @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
         boolean metrics, boolean primary, boolean checkVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
-        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve)
-        throws GridException,
+        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve,
+        boolean intercept, UUID subjId, String taskName) throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
-        boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
-        GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer)
+    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId,
+        UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
+        GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
+        String taskName)
         throws GridException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
@@ -451,7 +446,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
+    @Override public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
@@ -492,6 +487,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkedObsolete() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -668,6 +668,13 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Override public GridCacheMvccCandidate<K> candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException {
         return mvcc.remoteCandidate(nodeId, threadId);
+    }
+
+    /**
+     * @return Any MVCC owner.
+     */
+    public GridCacheMvccCandidate<K> anyOwner() {
+        return mvcc.anyOwner();
     }
 
     /** @inheritDoc */

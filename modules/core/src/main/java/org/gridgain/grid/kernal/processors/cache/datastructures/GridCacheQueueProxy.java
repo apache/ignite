@@ -12,24 +12,45 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Cache queue proxy.
  */
-public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
+public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Deserialization stash. */
+    private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
+        new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
+            @Override protected GridBiTuple<GridCacheContext, String> initialValue() {
+                return F.t2();
+            }
+        };
+
     /** Delegate queue. */
-    private final GridCacheQueueAdapter<T> delegate;
+    private GridCacheQueueAdapter<T> delegate;
 
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private GridCacheContext cctx;
 
     /** Cache gateway. */
-    private final GridCacheGateway gate;
+    private GridCacheGateway gate;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheQueueProxy() {
+        // No-op.
+    }
 
     /**
      * @param cctx Cache context.
@@ -443,7 +464,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
                         return delegate.remainingCapacity();
                     }
                 }, cctx);
-            
+
             return delegate.remainingCapacity();
         }
         catch (GridException e) {
@@ -465,7 +486,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
                         return delegate.drainTo(c);
                     }
                 }, cctx);
-            
+
             return delegate.drainTo(c);
         }
         catch (GridException e) {
@@ -487,7 +508,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
                         return delegate.drainTo(c, maxElements);
                     }
                 }, cctx);
-            
+
             return delegate.drainTo(c, maxElements);
         }
         catch (GridException e) {
@@ -509,7 +530,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
                         return delegate.remove();
                     }
                 }, cctx);
-            
+
             return delegate.remove();
         }
         catch (GridException e) {
@@ -531,7 +552,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
                         return delegate.element();
                     }
                 }, cctx);
-            
+
             return delegate.element();
         }
         catch (GridException e) {
@@ -674,6 +695,40 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T> {
         GridCacheQueueProxy that = (GridCacheQueueProxy)o;
 
         return delegate.equals(that.delegate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+        U.writeString(out, name());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        GridBiTuple<GridCacheContext, String> t = stash.get();
+
+        t.set1((GridCacheContext)in.readObject());
+        t.set2(U.readString(in));
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            GridBiTuple<GridCacheContext, String> t = stash.get();
+
+            return t.get1().dataStructures().queue(t.get2(), 0, false, false);
+        }
+        catch (GridException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 
     /** {@inheritDoc} */

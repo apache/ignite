@@ -16,7 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.nio.*;
@@ -42,11 +41,11 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private int bufSize;
 
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(DIRECT_TYPE, new CO<GridTcpCommunicationMessageAdapter>() {
-            @Override public GridTcpCommunicationMessageAdapter apply() {
+        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
                 return new TestMessage();
             }
-        });
+        }, DIRECT_TYPE);
     }
 
     /** {@inheritDoc} */

@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.affinity.fair;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -22,12 +23,14 @@ import java.util.*;
 /**
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
- *
- * @author @java.author
- * @version @java.version
+ * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 @GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {
+    /** Default partition count. */
+    public static final int DFLT_PART_CNT = 256;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,6 +42,13 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
     /** */
     private int parts;
+
+    /**
+     * Creates fair affinity with default partition count.
+     */
+    public GridCachePartitionFairAffinity() {
+        this(DFLT_PART_CNT);
+    }
 
     /**
      * @param parts Number of partitions.
@@ -113,7 +123,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return U.safeAbs(key.hashCode()) % parts;
+        return U.safeAbs(hash(key.hashCode())) % parts;
     }
 
     /** {@inheritDoc} */
@@ -683,6 +693,24 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
         public Map<UUID, PartitionSet> tierMapping(int tier) {
             return tierMaps[tier];
         }
+    }
+
+    /**
+     * Applies a supplemental hash function to a given hashCode, which
+     * defends against poor quality hash functions.
+     *
+     * @param h Hash code.
+     * @return Enhanced hash code.
+     */
+    private static int hash(int h) {
+        // Spread bits to regularize both segment and index locations,
+        // using variant of single-word Wang/Jenkins hash.
+        h += (h <<  15) ^ 0xffffcd7d;
+        h ^= (h >>> 10);
+        h += (h <<   3);
+        h ^= (h >>>  6);
+        h += (h <<   2) + (h << 14);
+        return h ^ (h >>> 16);
     }
 
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")

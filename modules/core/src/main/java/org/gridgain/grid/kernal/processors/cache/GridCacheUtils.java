@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -29,9 +28,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -41,7 +43,13 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridCacheUtils {
     /** DR system cache name prefix. */
-    public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
+    public static final String SYS_CACHE_DR_PREFIX = "gg-dr-sys-cache-";
+
+    /**  Hadoop syste cache name. */
+    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
+
+    /** Security system cache name. */
+    public static final String UTILITY_CACHE_NAME = "gg-utility-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -210,6 +218,22 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
+
+    /**
+     * List of keywords that can't be used as identifiers for H2 (table names, column names and so on),
+     * unless they are surrounded with double quotes.
+     */
+    private static final String[] H2_RESERVED_WORDS = {
+        "cross", "current_date", "current_time", "current_timestamp", "distinct", "except", "exists", "false", "for",
+        "from", "full", "group", "having", "inner", "intersect", "is", "join", "like", "limit", "minus", "natural",
+        "not", "null", "on", "order", "primary", "rownum", "select", "sysdate", "systime", "systimestamp", "today",
+        "true", "union", "unique", "where"
+    };
+
+    /** */
+    static {
+        Arrays.sort(H2_RESERVED_WORDS);
+    }
 
     /**
      * Ensure singleton.
@@ -587,7 +611,6 @@ public class GridCacheUtils {
      * @param ctx Cache context to check.
      * @return {@code True} if near cache is enabled, {@code false} otherwise.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(GridCacheContext ctx) {
         return isNearEnabled(ctx.config());
     }
@@ -616,19 +639,6 @@ public class GridCacheUtils {
     public static GridCacheDistributionMode distributionMode(GridCacheConfiguration cfg) {
         return cfg.getDistributionMode() != null ?
             cfg.getDistributionMode() : GridCacheDistributionMode.PARTITIONED_ONLY;
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
-        assert ctx != null;
-
-        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
     }
 
     /**
@@ -799,7 +809,6 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
         return new P2<K, V>() {
             @Override public boolean apply(K k, V v) {
@@ -1345,7 +1354,7 @@ public class GridCacheUtils {
      * @throws GridException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(GridLogger log, String cfgName, GridNode rmt, String attrName,
-        String attrMsg, Object locVal, Object rmtVal, boolean fail) throws GridException {
+        String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
         assert rmt != null;
         assert attrName != null;
         assert attrMsg != null;
@@ -1353,9 +1362,10 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration) [cacheName=" + cfgName +
-                    ", local" + WordUtils.capitalize(attrName) + "=" + locVal +
-                    ", remote" + WordUtils.capitalize(attrName) + "=" + rmtVal +
+                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [cacheName=" + cfgName +
+                    ", local" + capitalize(attrName) + "=" + locVal +
+                    ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
             }
             else {
@@ -1363,11 +1373,19 @@ public class GridCacheUtils {
 
                 U.warn(log, attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
                     "configuration) [cacheName=" + cfgName +
-                    ", local" + WordUtils.capitalize(attrName) + "=" + locVal +
-                    ", remote" + WordUtils.capitalize(attrName) + "=" + rmtVal +
+                    ", local" + capitalize(attrName) + "=" + locVal +
+                    ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
             }
         }
+    }
+
+    /**
+     * @param str String.
+     * @return String with first symbol in upper case.
+     */
+    private static String capitalize(String str) {
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     /**
@@ -1404,10 +1422,10 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return Name of internal replicated cache used by data center replication component.
+     * @return {@code True} if this is Hadoop system cache.
      */
-    public static String cacheNameForDrSystemCache(String cacheName) {
-        return DR_SYS_CACHE_PREFIX + cacheName;
+    public static boolean isHadoopSystemCache(String cacheName) {
+        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
     }
 
     /**
@@ -1415,7 +1433,71 @@ public class GridCacheUtils {
      * @return {@code True} if this is DR system cache.
      */
     public static boolean isDrSystemCache(String cacheName) {
-        return cacheName != null && cacheName.startsWith(DR_SYS_CACHE_PREFIX);
+        return cacheName != null && cacheName.startsWith(SYS_CACHE_DR_PREFIX);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Name of internal replicated cache used by data center replication component.
+     */
+    public static String cacheNameForDrSystemCache(String cacheName) {
+        return SYS_CACHE_DR_PREFIX + cacheName;
+    }
+
+    /**
+     * Create system cache used by Hadoop component.
+     *
+     * @return Hadoop cache configuration.
+     */
+    public static GridCacheConfiguration hadoopSystemCache() {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(CU.SYS_CACHE_HADOOP_MR);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setEvictionPolicy(null);
+        cache.setSwapEnabled(false);
+        cache.setQueryIndexEnabled(false);
+        cache.setStore(null);
+        cache.setEagerTtl(true);
+        cache.setPreloadMode(SYNC);
+
+        return cache;
+    }
+
+    /**
+     * Creates system cache configuration used by data center replication component.
+     *
+     * @param cacheName Cache name.
+     * @return DR cache configuration.
+     */
+    public static GridCacheConfiguration drSystemCache(String cacheName) {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(cacheName);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cache;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isUtilityCache(String cacheName) {
+        return UTILITY_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if system cache.
+     */
+    public static boolean isSystemCache(String cacheName) {
+        return isDrSystemCache(cacheName) || isUtilityCache(cacheName);
     }
 
     /**
@@ -1427,7 +1509,7 @@ public class GridCacheUtils {
     private static void validateExternalizable(GridLogger log, Object obj) {
         Class<?> cls = obj.getClass();
 
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable))
+        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
             LT.warn(log, null, "For best performance you should implement " +
                 "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }
@@ -1514,6 +1596,21 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets subject ID by transaction.
+     *
+     * @param tx Transaction.
+     * @return Subject ID.
+     */
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheContext<K, V> ctx) {
+        if (tx == null)
+            return ctx.localNodeId();
+
+        UUID subjId = tx.subjectId();
+
+        return subjId != null ? subjId : tx.originatingNodeId();
+    }
+
+    /**
      * Invalidate entry in cache.
      *
      * @param cache Cache.
@@ -1522,5 +1619,23 @@ public class GridCacheUtils {
      */
     public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
         return cache.clear(key);
+    }
+
+    /**
+     * Escapes specified string if it is keyword reserved by H2 or contains special characters
+     * (such strings should be surrounded with double quotes to be used as identifier).
+     *
+     * @param s String.
+     * @return Escaped string if specified string is keyword reserved by H2 or contains special characters,
+     *      original input otherwise.
+     */
+    public static String h2Escape(String s) {
+        if (s == null)
+            return null;
+
+        if (s.contains("-") || Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
+            return "\"" + s + "\"";
+
+        return s;
     }
 }

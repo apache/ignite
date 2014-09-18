@@ -9,12 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
+
 import java.io.*;
 
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable {
+public class GridClientNodeMetricsBean implements Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1336,6 +1338,122 @@ public class GridClientNodeMetricsBean implements Externalizable {
             append(", rcvdBytesCnt=").append(rcvdBytesCnt).
             append("]").
             toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeLong(lastUpdateTime);
+        raw.writeInt(maxActiveJobs);
+        raw.writeInt(curActiveJobs);
+        raw.writeFloat(avgActiveJobs);
+        raw.writeInt(maxWaitingJobs);
+        raw.writeInt(curWaitingJobs);
+        raw.writeFloat(avgWaitingJobs);
+        raw.writeInt(maxRejectedJobs);
+        raw.writeInt(curRejectedJobs);
+        raw.writeFloat(avgRejectedJobs);
+        raw.writeInt(maxCancelledJobs);
+        raw.writeInt(curCancelledJobs);
+        raw.writeFloat(avgCancelledJobs);
+        raw.writeInt(totalRejectedJobs);
+        raw.writeInt(totalCancelledJobs);
+        raw.writeInt(totalExecutedJobs);
+        raw.writeLong(maxJobWaitTime);
+        raw.writeLong(curJobWaitTime);
+        raw.writeDouble(avgJobWaitTime);
+        raw.writeLong(maxJobExecTime);
+        raw.writeLong(curJobExecTime);
+        raw.writeDouble(avgJobExecTime);
+        raw.writeInt(totalExecTasks);
+        raw.writeLong(totalIdleTime);
+        raw.writeLong(curIdleTime);
+        raw.writeInt(availProcs);
+        raw.writeDouble(load);
+        raw.writeDouble(avgLoad);
+        raw.writeDouble(gcLoad);
+        raw.writeLong(heapInit);
+        raw.writeLong(heapUsed);
+        raw.writeLong(heapCommitted);
+        raw.writeLong(heapMax);
+        raw.writeLong(nonHeapInit);
+        raw.writeLong(nonHeapUsed);
+        raw.writeLong(nonHeapCommitted);
+        raw.writeLong(nonHeapMax);
+        raw.writeLong(upTime);
+        raw.writeLong(startTime);
+        raw.writeLong(nodeStartTime);
+        raw.writeInt(threadCnt);
+        raw.writeInt(peakThreadCnt);
+        raw.writeLong(startedThreadCnt);
+        raw.writeInt(daemonThreadCnt);
+        raw.writeLong(fileSysFreeSpace);
+        raw.writeLong(fileSysTotalSpace);
+        raw.writeLong(fileSysUsableSpace);
+        raw.writeLong(lastDataVer);
+        raw.writeInt(sentMsgsCnt);
+        raw.writeLong(sentBytesCnt);
+        raw.writeInt(rcvdMsgsCnt);
+        raw.writeLong(rcvdBytesCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        GridPortableRawReader raw = reader.rawReader();
+
+        lastUpdateTime = raw.readLong();
+        maxActiveJobs = raw.readInt();
+        curActiveJobs = raw.readInt();
+        avgActiveJobs = raw.readFloat();
+        maxWaitingJobs = raw.readInt();
+        curWaitingJobs = raw.readInt();
+        avgWaitingJobs = raw.readFloat();
+        maxRejectedJobs = raw.readInt();
+        curRejectedJobs = raw.readInt();
+        avgRejectedJobs = raw.readFloat();
+        maxCancelledJobs = raw.readInt();
+        curCancelledJobs = raw.readInt();
+        avgCancelledJobs = raw.readFloat();
+        totalRejectedJobs = raw.readInt();
+        totalCancelledJobs = raw.readInt();
+        totalExecutedJobs = raw.readInt();
+        maxJobWaitTime = raw.readLong();
+        curJobWaitTime = raw.readLong();
+        avgJobWaitTime = raw.readDouble();
+        maxJobExecTime = raw.readLong();
+        curJobExecTime = raw.readLong();
+        avgJobExecTime = raw.readDouble();
+        totalExecTasks = raw.readInt();
+        totalIdleTime = raw.readLong();
+        curIdleTime = raw.readLong();
+        availProcs = raw.readInt();
+        load = raw.readDouble();
+        avgLoad = raw.readDouble();
+        gcLoad = raw.readDouble();
+        heapInit = raw.readLong();
+        heapUsed = raw.readLong();
+        heapCommitted = raw.readLong();
+        heapMax = raw.readLong();
+        nonHeapInit = raw.readLong();
+        nonHeapUsed = raw.readLong();
+        nonHeapCommitted = raw.readLong();
+        nonHeapMax = raw.readLong();
+        upTime = raw.readLong();
+        startTime = raw.readLong();
+        nodeStartTime = raw.readLong();
+        threadCnt = raw.readInt();
+        peakThreadCnt = raw.readInt();
+        startedThreadCnt = raw.readLong();
+        daemonThreadCnt = raw.readInt();
+        fileSysFreeSpace = raw.readLong();
+        fileSysTotalSpace = raw.readLong();
+        fileSysUsableSpace = raw.readLong();
+        lastDataVer = raw.readLong();
+        sentMsgsCnt = raw.readInt();
+        sentBytesCnt = raw.readLong();
+        rcvdMsgsCnt = raw.readInt();
+        rcvdBytesCnt = raw.readLong();
     }
 
     /** {@inheritDoc} */

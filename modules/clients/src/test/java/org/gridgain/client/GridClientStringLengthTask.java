@@ -55,7 +55,8 @@ public class GridClientStringLengthTask extends GridComputeTaskSplitAdapter<Stri
     }
 
     /** {@inheritDoc} */
-    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+    @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+        throws GridException {
         if (res.getException() != null)
             return FAILOVER;
 

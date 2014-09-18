@@ -9,11 +9,9 @@
 
 package org.gridgain.examples.misc.client.memcache;
 
-import org.gridgain.examples.misc.client.interceptor.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
@@ -24,7 +22,6 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
@@ -32,7 +29,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class MemcacheRestExampleNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
@@ -69,8 +65,6 @@ public class MemcacheRestExampleNodeStartup {
         indexSpi.setDefaultIndexFixedTyping(false);
 
         cfg.setIndexingSpi(indexSpi);
-
-        cfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 

@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -42,9 +40,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
     /** */
     private static final String WRONG_AFFINITY_MAPPER_GRID_NAME = "cacheAffinityMapperCheckFails";
-
-    /** */
-    private static final String WRONG_EVICTION_FILTER_FOR_GGFS_EVICTIONS = "cacheEvictionFilterForGgfsEvictions";
 
     /** */
     private static final String WRONG_OFF_HEAP_GRID_NAME = "cacheOhhHeapCheckFails";
@@ -110,15 +105,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         }
         else if (gridName.contains(WRONG_OFF_HEAP_GRID_NAME))
             dfltCacheCfg.setMemoryMode(OFFHEAP_VALUES);
-        else if (gridName.contains(WRONG_EVICTION_FILTER_FOR_GGFS_EVICTIONS)) {
-            dfltCacheCfg.setEvictionPolicy(new GridCacheGgfsPerBlockLruEvictionPolicy());
-
-            dfltCacheCfg.setEvictionFilter(new GridCacheEvictionFilter<Object, Object>() {
-                @Override public boolean evictAllowed(GridCacheEntry<Object, Object> entry) {
-                    return false;
-                }
-            });
-        }
 
         if (gridName.contains(DUP_CACHES_GRID_NAME))
             cfg.setCacheConfiguration(namedCacheCfg, namedCacheCfg);
@@ -169,9 +155,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
             // This grid should not start.
             startInvalidGrid(WRONG_AFFINITY_MAPPER_GRID_NAME);
-
-            // This grid should not start.
-            startInvalidGrid(WRONG_EVICTION_FILTER_FOR_GGFS_EVICTIONS);
 
             // This grid will start normally.
             startGrid(1);

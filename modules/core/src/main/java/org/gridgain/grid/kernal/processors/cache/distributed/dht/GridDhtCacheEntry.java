@@ -93,7 +93,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onMarkedObsolete() {
+    @Override public void onMarkedObsolete() {
+        assert !Thread.holdsLock(this);
+
         // Remove this entry from partition mapping.
         cctx.dht().topology().onRemoved(this);
     }
@@ -376,7 +378,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         boolean ret = false;
 
-        GridCacheMultiTxFuture<K, V> txFut;
+        GridCacheMultiTxFuture<K, V> txFut = null;
 
         Collection<GridCacheMvccCandidate<K>> cands = null;
 
@@ -397,11 +399,14 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                 // Seal.
                 rdrs = Collections.unmodifiableList(rdrs);
 
-                txFut = reader.getOrCreateTxFuture(cctx);
+                // No transactions in ATOMIC cache.
+                if (!cctx.atomic()) {
+                    txFut = reader.getOrCreateTxFuture(cctx);
 
-                cands = localCandidates();
+                    cands = localCandidates();
 
-                ret = true;
+                    ret = true;
+                }
             }
             else {
                 txFut = reader.txFuture();

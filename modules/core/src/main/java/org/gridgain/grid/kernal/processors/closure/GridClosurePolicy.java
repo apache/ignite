@@ -23,7 +23,10 @@ public enum GridClosurePolicy {
     P2P_POOL,
 
     /** System execution pool. */
-    SYSTEM_POOL;
+    SYSTEM_POOL,
+
+    /** GGFS pool. */
+    GGFS_POOL;
 
     /** Enum values. */
     private static final GridClosurePolicy[] VALS = values();
