@@ -226,8 +226,8 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
                     assert local == null;
 
                     local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
-                        new GridHadoopHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
-                        new GridHadoopSkipList(job, mem); // TODO replace with red-black tree
+                        new GridHadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                        new GridHadoopSkipList(job.info(), mem); // TODO replace with red-black tree
 
                     return local.startAdding(ctx);
                 }

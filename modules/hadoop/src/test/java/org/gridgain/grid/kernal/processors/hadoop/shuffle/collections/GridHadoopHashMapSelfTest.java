@@ -79,11 +79,9 @@ public class GridHadoopHashMapSelfTest extends GridHadoopAbstractMapTest {
 
         int mapSize = 16 << rnd.nextInt(3);
 
-        GridHadoopJob job = mockJob();
+        GridHadoopTaskContext taskCtx = new TaskContext();
 
-        GridHadoopTaskContext taskCtx = mockTaskContext(job);
-
-        final GridHadoopHashMultimap m = new GridHadoopHashMultimap(job, mem, mapSize);
+        final GridHadoopHashMultimap m = new GridHadoopHashMultimap(new JobInfo(), mem, mapSize);
 
         GridHadoopMultimap.Adder a = m.startAdding(taskCtx);
 

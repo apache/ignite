@@ -174,8 +174,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         if (map == null) { // Create new map.
             map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
-                new GridHadoopConcurrentHashMultimap(job, mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
-                new GridHadoopSkipList(job, mem);
+                new GridHadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
+                new GridHadoopSkipList(job.info(), mem);
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
