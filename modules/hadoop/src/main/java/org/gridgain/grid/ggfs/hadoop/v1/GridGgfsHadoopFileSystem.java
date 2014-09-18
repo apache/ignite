@@ -808,13 +808,16 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
 
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
                 return arr;
             }
             else {
                 Collection<GridGgfsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
-                    return null;
+                    throw new FileNotFoundException("File " + f + " does not exist.");
 
                 List<GridGgfsFile> files = new ArrayList<>(list);
 
@@ -836,7 +839,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             }
         }
         catch (FileNotFoundException ignored) {
-            return null;
+            throw new FileNotFoundException("File " + f + " does not exist.");
         }
         finally {
             leaveBusy();
