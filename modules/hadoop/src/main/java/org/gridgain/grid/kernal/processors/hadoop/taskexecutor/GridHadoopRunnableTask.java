@@ -15,9 +15,9 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
@@ -25,7 +25,7 @@ import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 /**
  * Runnable task.
  */
-public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> {
+public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** */
     private final GridUnsafeMemory mem;
 
@@ -51,7 +51,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private GridHadoopMultimap local;
 
     /** */
-    private volatile GridHadoopTask task;
+    private volatile GridHadoopTaskContext ctx;
 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
@@ -89,21 +89,21 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
-
-        ctx.counters(counters);
-
-        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
 
+        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
+
         try {
+            ctx = job.getTaskContext(info);
+
+            ctx.counters(counters);
+
             ctx.prepareTaskEnvironment();
 
             runTask(ctx);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                    info.attempt(), null));
+                ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
                     runTask(ctx);
@@ -130,7 +130,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             if (local != null)
                 local.close();
 
-            ctx.cleanupTaskEnvironment();
+            if (ctx != null)
+                ctx.cleanupTaskEnvironment();
         }
 
         return null;
@@ -140,8 +141,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx)
-        throws GridException {
+    private void runTask(GridHadoopTaskContext ctx) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -151,12 +151,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             ctx.input(in);
             ctx.output(out);
 
-            task = job.createTask(ctx.taskInfo());
-
-            if (cancelled)
-                throw new GridHadoopTaskCancelledException("Task cancelled.");
-
-            task.run(ctx);
+            ctx.run();
         }
     }
 
@@ -166,8 +161,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     public void cancel() {
         cancelled = true;
 
-        if (task != null)
-            task.cancel();
+        if (ctx != null)
+            ctx.cancel();
     }
 
     /**
