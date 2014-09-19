@@ -554,13 +554,20 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (isNearEnabled(ctx) && req.invalidateNearEntry(idx))
                         invalidateNearEntry(entry.key(), req.version());
 
-                    if (req.needPreloadKey(idx)) {
-                        GridCacheEntryEx<K, V> cached = entry.cached();
+                    try {
+                        if (req.needPreloadKey(idx)) {
+                            GridCacheEntryEx<K, V> cached = entry.cached();
 
-                        if (cached == null)
-                            cached = entryEx(entry.key(), req.topologyVersion());
+                            if (cached == null)
+                                cached = entryEx(entry.key(), req.topologyVersion());
 
-                        res.addPreloadEntry(cached.info());
+                            res.addPreloadEntry(cached.info());
+                        }
+                    }
+                    catch (GridDhtInvalidPartitionException e) {
+                        tx.addInvalidPartition(e.partition());
+
+                        tx.clearEntry(entry.key());
                     }
 
                     idx++;
