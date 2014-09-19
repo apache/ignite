@@ -667,20 +667,17 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (mode == PROXY) {
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -688,7 +685,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return arr;
             }
             else {
-                List<GridGgfsFile> files = new ArrayList<>(rmtClient.listFiles(path));
+                Collection<GridGgfsFile> list = rmtClient.listFiles(path);
+
+                if (list == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                List<GridGgfsFile> files = new ArrayList<>(list);
 
                 FileStatus[] arr = new FileStatus[files.size()];
 
