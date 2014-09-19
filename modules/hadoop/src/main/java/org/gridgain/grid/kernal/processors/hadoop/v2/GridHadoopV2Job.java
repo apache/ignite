@@ -33,6 +33,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
@@ -87,6 +88,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
         Thread.currentThread().setContextClassLoader(clsLdr);
 
         jobConf = new JobConf();
+
+        // For map-reduce jobs prefer local writes. 
+        jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
