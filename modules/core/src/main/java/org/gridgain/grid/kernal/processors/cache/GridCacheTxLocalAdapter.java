@@ -1856,6 +1856,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean rmv = lookup == null && transformMap == null;
 
         try {
+            // Set transform flag for transaction.
+            if (transformMap != null)
+                transform = true;
+
             groupLockSanityCheck(keys);
 
             for (K key : keys) {

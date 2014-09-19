@@ -1422,6 +1422,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     tx.addLocalCandidates(txEntry1.key(), entry1.localCandidates(tx.xidVersion()));
 
+                    entry1.unswap();
+
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {

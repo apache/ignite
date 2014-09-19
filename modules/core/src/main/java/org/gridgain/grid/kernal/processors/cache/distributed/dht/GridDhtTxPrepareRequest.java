@@ -76,6 +76,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     @GridDirectVersion(2)
     private int taskNameHash;
 
+    @GridDirectVersion(3)
+    /** Preload keys. */
+    private BitSet preloadKeys;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -193,6 +197,26 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /**
+     * Marks last added key for preloading.
+     */
+    public void markKeyForPreload(int idx) {
+        if (preloadKeys == null)
+            preloadKeys = new BitSet();
+
+        preloadKeys.set(idx, true);
+    }
+
+    /**
+     * Checks whether entry info should be sent to primary node from backup.
+     *
+     * @param idx Index.
+     * @return {@code True} if value should be sent, {@code false} otherwise.
+     */
+    public boolean needPreloadKey(int idx) {
+        return preloadKeys != null && preloadKeys.get(idx);
+    }
+
+    /**
      * @return Future ID.
      */
     public GridUuid futureId() {
@@ -307,6 +331,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         _clone.last = last;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
+        _clone.preloadKeys = preloadKeys;
     }
 
     /** {@inheritDoc} */
@@ -408,6 +433,12 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
             case 30:
                 if (!commState.putInt(taskNameHash))
+                    return false;
+
+                commState.idx++;
+
+            case 31:
+                if (!commState.putBitSet(preloadKeys))
                     return false;
 
                 commState.idx++;
@@ -546,6 +577,16 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                     return false;
 
                 taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 31:
+                BitSet preloadKeys0 = commState.getBitSet();
+
+                if (preloadKeys0 == BIT_SET_NOT_READ)
+                    return false;
+
+                preloadKeys = preloadKeys0;
 
                 commState.idx++;
 
