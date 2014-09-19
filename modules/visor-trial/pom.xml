@@ -93,7 +93,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration combine.self="override">
-                            <excludeArtifactIds>gridgain-core</excludeArtifactIds>
+                            <excludeArtifactIds>gridgain-core,jdk8-backport</excludeArtifactIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>
