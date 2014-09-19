@@ -631,7 +631,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     boolean metrics = true;
 
-                                    if (updateNearCache())
+                                    if (updateNearCache(txEntry.key(), topVer))
                                         nearCached = cctx.dht().near().peekEx(txEntry.key());
                                     else if (near() && txEntry.locallyMapped())
                                         metrics = false;
