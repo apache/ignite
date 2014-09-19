@@ -42,9 +42,9 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridHadoopAbstract
 
         int mapSize = 16 << rnd.nextInt(3);
 
-        GridHadoopJob job = mockJob();
+        GridHadoopJobInfo job = new JobInfo();
 
-        GridHadoopTaskContext taskCtx = mockTaskContext(job);
+        GridHadoopTaskContext taskCtx = new TaskContext();
 
         GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(job, mem, mapSize);
 
@@ -172,9 +172,9 @@ public class GridHadoopConcurrentHashMultimapSelftest extends GridHadoopAbstract
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            GridHadoopJob job = mockJob();
+            GridHadoopJobInfo job = new JobInfo();
 
-            final GridHadoopTaskContext taskCtx = mockTaskContext(job);
+            final GridHadoopTaskContext taskCtx = new TaskContext();
 
             final GridHadoopConcurrentHashMultimap m = new GridHadoopConcurrentHashMultimap(job, mem, 16);
 
