@@ -120,6 +120,9 @@ trap restoreSttySettings INT
 #
 VISOR_PLUGINS_DIR="${GRIDGAIN_HOME}/bin/include/visorui/plugins"
 
+# Force to use OpenGL
+# JVM_OPTS_VISOR="${JVM_OPTS_VISOR} -Dsun.java2d.opengl=True"
+
 #
 # Starts Visor Dashboard.
 #

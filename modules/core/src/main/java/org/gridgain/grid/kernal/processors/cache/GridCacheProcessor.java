@@ -613,10 +613,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
             GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
 
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtAtomicCache.TASK_NAME_HASH_SINCE_VER);
-
         ctx.versionConverter().registerLocal(GridNearLockRequest.class,
             GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
             GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
