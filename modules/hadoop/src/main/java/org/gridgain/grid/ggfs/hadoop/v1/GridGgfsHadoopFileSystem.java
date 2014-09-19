@@ -134,8 +134,11 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** GGFS group block size. */
     private long ggfsGrpBlockSize;
 
-    /** Flag that controls whether file wites should be colocated. */
+    /** Flag that controls whether file writes should be colocated. */
     private boolean colocateFileWrites;
+
+    /** Prefer local writes. */
+    private boolean preferLocFileWrites;
 
     /** Custom-provided sequential reads before prefetch. */
     private int seqReadsBeforePrefetch;
@@ -221,6 +224,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             // Get file colocation control flag.
             colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
@@ -569,7 +573,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             else {
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 GridGgfsHadoopStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
-                    replication, blockSize, permission(perm));
+                    replication, blockSize, F.asMap(PROP_PERMISSION, toString(perm),
+                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites)));
 
                 assert stream != null;
 
@@ -1207,7 +1212,15 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()));
+        return F.asMap(PROP_PERMISSION, toString(perm));
+    }
+
+    /**
+     * @param perm Permission.
+     * @return String.
+     */
+    private static String toString(FsPermission perm) {
+        return String.format("%04o", perm.toShort());
     }
 
     /**
