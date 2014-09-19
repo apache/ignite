@@ -41,13 +41,13 @@ public class GridGgfsConfiguration {
     public static final long DFLT_FRAGMENTIZER_THROTTLING_DELAY = 200;
 
     /** Default fragmentizer concurrent files. */
-    public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 1;
+    public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 0;
 
     /** Default fragmentizer local writes ratio. */
     public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
-    public static final boolean DFLT_FRAGMENTIZER_ENABLED = false;
+    public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
 
     /** Default batch size for logging. */
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
