@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.portable;
 
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
@@ -21,4 +22,9 @@ public interface GridPortableRawWriterEx extends GridPortableRawWriter {
      * @throws GridPortableException In case of error.
      */
     public void writeObjectDetached(@Nullable Object obj) throws GridPortableException;
+
+    /**
+     * @return Output stream.
+     */
+    public GridPortableOutputStream out();
 }

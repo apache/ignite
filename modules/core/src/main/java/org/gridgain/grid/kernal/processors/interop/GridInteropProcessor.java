@@ -45,4 +45,12 @@ public interface GridInteropProcessor extends GridProcessor {
      * @param cancel Cancel flag.
      */
     public void close(boolean cancel);
+
+    /**
+     * Inject context to target.
+     *
+     * @param target Target.
+     * @throws GridException In case of error.
+     */
+    public void injectInteropContext(Object target) throws GridException;
 }
