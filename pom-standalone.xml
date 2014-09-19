@@ -21,7 +21,7 @@
     <properties>
         <gridgain.version>6.5.0</gridgain.version>
         <gridgain.edition>fabric</gridgain.edition>
-        <hadoop.version>2.4.0</hadoop.version>
+        <hadoop.version>2.4.1</hadoop.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>

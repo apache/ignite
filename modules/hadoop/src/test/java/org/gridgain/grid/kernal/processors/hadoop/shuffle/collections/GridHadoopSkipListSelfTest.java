@@ -74,9 +74,9 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
 
         int mapSize = 16 << rnd.nextInt(6);
 
-        GridHadoopJob job = mockJob();
+        GridHadoopJobInfo job = new JobInfo();
 
-        GridHadoopTaskContext taskCtx = mockTaskContext(job);
+        GridHadoopTaskContext taskCtx = new TaskContext();
 
         GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
@@ -208,9 +208,9 @@ public class GridHadoopSkipListSelfTest extends GridHadoopAbstractMapTest {
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            GridHadoopJob job = mockJob();
+            GridHadoopJobInfo job = new JobInfo();
 
-            final GridHadoopTaskContext taskCtx = mockTaskContext(job);
+            final GridHadoopTaskContext taskCtx = new TaskContext();
 
             final GridHadoopMultimap m = new GridHadoopSkipList(job, mem);
 
