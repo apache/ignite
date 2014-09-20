@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * Extended writer interface.
  */
-public interface GridPortableRawWriterEx extends GridPortableRawWriter {
+public interface GridPortableRawWriterEx extends GridPortableRawWriter, AutoCloseable {
     /**
      * @param obj Object to write.
      * @throws GridPortableException In case of error.
@@ -27,4 +27,9 @@ public interface GridPortableRawWriterEx extends GridPortableRawWriter {
      * @return Output stream.
      */
     public GridPortableOutputStream out();
+
+    /**
+     * Cleans resources.
+     */
+    @Override public void close();
 }
