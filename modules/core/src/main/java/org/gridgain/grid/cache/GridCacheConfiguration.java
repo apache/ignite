@@ -181,9 +181,6 @@ public class GridCacheConfiguration {
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
-    /** Default value for one phase commit allowed flag. */
-    public static final boolean DFLT_ONE_PHASE_COMMIT_ALLOWED = true;
-
     /** Default continuous query buffers queue size. */
     @SuppressWarnings("UnusedDeclaration")
     @Deprecated
@@ -359,9 +356,6 @@ public class GridCacheConfiguration {
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
 
-    /** One phase commit allowed flag. */
-    private boolean onePhaseCommitAllowed = DFLT_ONE_PHASE_COMMIT_ALLOWED;
-
     /** Memory mode. */
     private GridCacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
@@ -449,7 +443,6 @@ public class GridCacheConfiguration {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        onePhaseCommitAllowed = cc.isOnePhaseCommitAllowed();
         pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cc.getPessimisticTxLogSize();
         portableEnabled = cc.isPortableEnabled();
@@ -2025,28 +2018,6 @@ public class GridCacheConfiguration {
      */
     public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
-    }
-
-    /**
-     * Gets flag indicating if one-phase commit is allowed. If one-phase commit is allowed and implicit transaction
-     * is mapped on a single primary and (optionally) in single backup, then transaction will be committed in one
-     * phase. If this flag is set to {@code false}, even implicit transactions mapped to a single node will be
-     * committed with two-phase protocol.
-     *
-     * @return Flag indicating whether one-phase commit is allowed.
-     */
-    public boolean isOnePhaseCommitAllowed() {
-        return onePhaseCommitAllowed;
-    }
-
-    /**
-     * Sets flag indicating whether one-phase commit is allowed.
-     *
-     * @param onePhaseCommitAllowed Allowance flag.
-     * @see #isOnePhaseCommitAllowed()
-     */
-    public void setOnePhaseCommitAllowed(boolean onePhaseCommitAllowed) {
-        this.onePhaseCommitAllowed = onePhaseCommitAllowed;
     }
 
     /** {@inheritDoc} */
