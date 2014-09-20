@@ -50,9 +50,4 @@ public class GridOsInteropProcessor extends GridProcessorAdapter implements Grid
     @Override public GridInteropTarget cache(@Nullable String name) throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
-
-    /** {@inheritDoc} */
-    @Override public void injectInteropContext(Object target) {
-        throw new UnsupportedOperationException(ERR_MSG);
-    }
 }
