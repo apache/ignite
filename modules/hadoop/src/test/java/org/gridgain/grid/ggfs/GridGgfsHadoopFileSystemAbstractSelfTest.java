@@ -318,7 +318,12 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         if (mode != PRIMARY)
             cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
 
-        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
+        String x = primaryIpcEndpointConfiguration(gridName);
+
+        Map<String, String> endPointCfg = GridHadoopTestUtils.jsonToMap(x);
+
+        cfg.setIpcEndpointConfiguration(endPointCfg);
+
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 

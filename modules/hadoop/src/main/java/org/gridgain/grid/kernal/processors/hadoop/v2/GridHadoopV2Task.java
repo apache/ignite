@@ -35,11 +35,9 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
-        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
-
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
-        hadoopCtx = new GridHadoopV2Context(ctx, jobImpl.attemptId(info()));
+        hadoopCtx = new GridHadoopV2Context(ctx);
 
         run0(ctx);
     }

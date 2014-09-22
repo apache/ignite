@@ -20,11 +20,11 @@ import java.util.*;
  */
 public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase {
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      */
-    protected GridHadoopHashMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
-        super(job, mem);
+    protected GridHadoopHashMultimapBase(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+        super(jobInfo, mem);
     }
 
     /** {@inheritDoc} */

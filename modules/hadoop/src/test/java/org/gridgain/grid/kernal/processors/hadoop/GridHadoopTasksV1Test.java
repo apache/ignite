@@ -17,6 +17,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1.
  */
@@ -34,7 +36,7 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
 
         setupFileSystems(jobConf);
 
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(jobConf);
+        GridHadoopDefaultJobInfo jobInfo = createJobInfo(jobConf);
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 

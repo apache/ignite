@@ -156,6 +156,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     try {
                         GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
 
+                        if (info == null)
+                            return;
+
                         if (req.fields())
                             runFieldsQuery(info);
                         else
@@ -178,13 +181,30 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      * @return Query info.
+     * @throws ClassNotFoundException If class not found.
      */
-    private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req) {
+    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
+        throws ClassNotFoundException {
         GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
             F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
         GridReducer<Object, Object> rdc = req.reducer();
         GridClosure<Object, Object> trans = req.transformer();
+
+        GridNode sndNode = cctx.node(sndId);
+
+        if (sndNode == null)
+            return null;
+
+        String className;
+
+        if (sndNode.version().compareTo(QUERY_PORTABLES_SINCE) < 0) {
+            Class cls = U.forName(req.className(), cctx.deploy().globalLoader());
+
+            className = cls == null ? null : cls.getSimpleName();
+        }
+        else
+            className = req.className();
 
         GridCacheQueryAdapter<?> qry =
             new GridCacheQueryAdapter<>(
@@ -199,7 +219,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
-                req.className(),
+                className,
                 req.clause(),
                 req.includeMetaData(),
                 req.keepPortable(),
@@ -642,30 +662,95 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Request.
      * @param nodes Nodes.
      * @throws GridException In case of error.
+     * @deprecated Need to remove nodes filtration after breaking compatibility.
      */
-    private void sendRequest(final GridCacheDistributedQueryFuture<?, ?, ?> fut,
-        final GridCacheQueryRequest<K, V> req, Collection<GridNode> nodes) throws GridException {
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    private void sendRequest(
+        final GridCacheDistributedQueryFuture<?, ?, ?> fut,
+        final GridCacheQueryRequest<K, V> req,
+        Collection<GridNode> nodes
+    ) throws GridException {
         assert fut != null;
         assert req != null;
         assert nodes != null;
 
         final UUID locNodeId = cctx.localNodeId();
 
-        GridNode locNode = F.find(nodes, null, F.localNode(locNodeId));
+        GridNode locNode = null;
 
-        Collection<? extends GridNode> remoteNodes = F.view(nodes, F.remoteNodes(locNodeId));
+        Collection<GridNode> rmtNodes = null;
+        Collection<GridNode> simpleNameUnsupported = null;
+
+        for (GridNode n : nodes) {
+            if (n.id().equals(locNodeId))
+                locNode = n;
+            else if (n.version().compareTo(QUERY_PORTABLES_SINCE) >= 0) {
+                if (rmtNodes == null)
+                    rmtNodes = new ArrayList<>(nodes.size());
+
+                rmtNodes.add(n);
+            }
+            else {
+                if (simpleNameUnsupported == null)
+                    simpleNameUnsupported = new ArrayList<>(nodes.size());
+
+                simpleNameUnsupported.add(n);
+            }
+        }
 
         // Request should be sent to remote nodes before the query is processed on the local node.
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
-        if (!remoteNodes.isEmpty()) {
-            cctx.io().safeSend(remoteNodes, req, new P1<GridNode>() {
+        if (!F.isEmpty(rmtNodes) || !F.isEmpty(simpleNameUnsupported)) {
+            P1<GridNode> fallback = new P1<GridNode>() {
                 @Override public boolean apply(GridNode node) {
                     fut.onNodeLeft(node.id());
 
                     return !fut.isDone();
                 }
-            });
+            };
+
+            if (req.className() == null) {
+                if (!F.isEmpty(rmtNodes))
+                    cctx.io().safeSend(rmtNodes, req, fallback);
+
+                if (!F.isEmpty(simpleNameUnsupported))
+                    cctx.io().safeSend(simpleNameUnsupported, req, fallback);
+            }
+            else {
+                // Nodes with newer version than QUERY_PORTABLES_SINCE.
+                if (!F.isEmpty(rmtNodes))
+                    cctx.io().safeSend(rmtNodes, req, fallback);
+
+                // Nodes with older version than QUERY_PORTABLES_SINCE.
+                if (!F.isEmpty(simpleNameUnsupported)) {
+                    GridIndexingTypeDescriptor typeDescriptor = idxMgr.type(space(), req.className());
+
+                    String clsName = typeDescriptor.valueClass().getName();
+
+                    GridCacheQueryRequest req0 = new GridCacheQueryRequest(
+                        req.id(),
+                        req.cacheName(),
+                        req.type(),
+                        req.fields(),
+                        req.clause(),
+                        clsName,
+                        req.keyValueFilter(),
+                        req.projectionFilter(),
+                        req.reducer(),
+                        req.transformer(),
+                        req.pageSize(),
+                        req.includeBackups(),
+                        req.arguments(),
+                        req.includeMetaData(),
+                        req.keepPortable(),
+                        req.subjectId(),
+                        req.taskHash());
+
+                    cctx.io().safeSend(simpleNameUnsupported, req0, fallback);
+                }
+            }
         }
 
         if (locNode != null) {
