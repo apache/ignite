@@ -40,16 +40,10 @@ public class GridHadoopJobMetadata implements Externalizable {
     private GridHadoopMapReducePlan mrPlan;
 
     /** Pending splits for which mapper should be executed. */
-    private Collection<GridHadoopInputSplit> pendingSplits;
+    private Map<GridHadoopInputSplit, Integer> pendingSplits;
 
     /** Pending reducers. */
     private Collection<Integer> pendingReducers;
-
-    /** Task number map. */
-    private Map<Object, Integer> taskNumMap = new HashMap<>();
-
-    /** Next task number. */
-    private int nextTaskNum;
 
     /** Reducers addresses. */
     @GridToStringInclude
@@ -105,7 +99,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         phase = src.phase;
         reducersAddrs = src.reducersAddrs;
         submitNodeId = src.submitNodeId;
-        taskNumMap = src.taskNumMap;
         ver = src.ver + 1;
     }
 
@@ -153,7 +146,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @param pendingSplits Collection of pending splits.
      */
-    public void pendingSplits(Collection<GridHadoopInputSplit> pendingSplits) {
+    public void pendingSplits(Map<GridHadoopInputSplit, Integer> pendingSplits) {
         this.pendingSplits = pendingSplits;
     }
 
@@ -162,7 +155,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @return Collection of pending splits.
      */
-    public Collection<GridHadoopInputSplit> pendingSplits() {
+    public Map<GridHadoopInputSplit, Integer> pendingSplits() {
         return pendingSplits;
     }
 
@@ -194,25 +187,10 @@ public class GridHadoopJobMetadata implements Externalizable {
     /**
      * @param mrPlan Map-reduce plan.
      */
-    @SuppressWarnings("ConstantConditions")
     public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
         assert this.mrPlan == null : "Map-reduce plan can only be initialized once.";
 
         this.mrPlan = mrPlan;
-
-        // Initialize task numbers.
-        for (UUID nodeId : mrPlan.mapperNodeIds()) {
-            for (GridHadoopInputSplit split : mrPlan.mappers(nodeId))
-                assignTaskNumber(split);
-
-            // Combiner task.
-            assignTaskNumber(nodeId);
-        }
-
-        for (UUID nodeId : mrPlan.reducerNodeIds()) {
-            for (int rdc : mrPlan.reducers(nodeId))
-                assignTaskNumber(rdc);
-        }
     }
 
     /**
@@ -272,29 +250,11 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * @param src Task source.
+     * @param split Split.
      * @return Task number.
      */
-    public int taskNumber(Object src) {
-        Integer res = taskNumMap.get(src);
-
-        if (res == null)
-            throw new IllegalArgumentException("Failed to find task number for source [src=" + src +
-                ", map=" + taskNumMap + ']');
-
-        return res;
-    }
-
-    /**
-     * Assigns next available task number to a task source if was not assigned yet.
-     *
-     * @param src Task source to assign number for.
-     */
-    private void assignTaskNumber(Object src) {
-        Integer num = taskNumMap.get(src);
-
-        if (num == null)
-            taskNumMap.put(src, nextTaskNum++);
+    public int taskNumber(GridHadoopInputSplit split) {
+        return pendingSplits.get(split);
     }
 
     /** {@inheritDoc} */
@@ -305,8 +265,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(mrPlan);
         out.writeObject(pendingSplits);
         out.writeObject(pendingReducers);
-        out.writeObject(taskNumMap);
-        out.writeInt(nextTaskNum);
         out.writeObject(phase);
         out.writeObject(failCause);
         out.writeLong(ver);
@@ -321,10 +279,8 @@ public class GridHadoopJobMetadata implements Externalizable {
         jobId = (GridHadoopJobId)in.readObject();
         jobInfo = (GridHadoopJobInfo)in.readObject();
         mrPlan = (GridHadoopMapReducePlan)in.readObject();
-        pendingSplits = (Collection<GridHadoopInputSplit>)in.readObject();
+        pendingSplits = (Map<GridHadoopInputSplit,Integer>)in.readObject();
         pendingReducers = (Collection<Integer>)in.readObject();
-        taskNumMap = (Map<Object, Integer>)in.readObject();
-        nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
         failCause = (Throwable)in.readObject();
         ver = in.readLong();

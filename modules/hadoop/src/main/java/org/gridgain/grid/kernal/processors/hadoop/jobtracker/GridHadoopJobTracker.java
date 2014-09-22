@@ -460,11 +460,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Collection of all input splits that should be processed.
      */
     @SuppressWarnings("ConstantConditions")
-    private Collection<GridHadoopInputSplit> allSplits(GridHadoopMapReducePlan plan) {
-        Collection<GridHadoopInputSplit> res = new HashSet<>();
+    private Map<GridHadoopInputSplit, Integer> allSplits(GridHadoopMapReducePlan plan) {
+        Map<GridHadoopInputSplit, Integer> res = new HashMap<>();
 
-        for (UUID nodeId : plan.mapperNodeIds())
-            res.addAll(plan.mappers(nodeId));
+        int taskNum = 0;
+
+        for (UUID nodeId : plan.mapperNodeIds()) {
+            for (GridHadoopInputSplit split : plan.mappers(nodeId)) {
+                if (res.put(split, taskNum++) != null)
+                    throw new IllegalStateException("Split duplicate.");
+            }
+        }
 
         return res;
     }
@@ -1246,9 +1252,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(GridHadoopJobMetadata meta, GridHadoopJobMetadata cp) {
-            Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());
+            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
-            splitsCp.removeAll(splits);
+            for (GridHadoopInputSplit s : splits)
+                splitsCp.remove(s);
 
             cp.pendingSplits(splitsCp);
 
@@ -1417,10 +1424,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingReducers(rdcCp);
 
-            Collection<GridHadoopInputSplit> splitsCp = new HashSet<>(cp.pendingSplits());
+            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
-            if (splits != null)
-                splitsCp.removeAll(splits);
+            if (splits != null) {
+                for (GridHadoopInputSplit s : splits)
+                    splitsCp.remove(s);
+            }
 
             cp.pendingSplits(splitsCp);
 
