@@ -32,10 +32,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopConsts.*;
 
 /**
  * Hadoop job tracker.
@@ -252,18 +250,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         return new GridHadoopJobStatus(
             meta.jobId(),
-            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
             jobInfo.jobName(),
             jobInfo.user(),
             meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
             meta.mapReducePlan().mappers(),
             meta.mapReducePlan().reducers(),
-            meta.startTimestamp(),
-            meta.setupCompleteTimestamp(),
-            meta.mapCompleteTimestamp(),
             meta.phase(),
-            SPECULATIVE_CONCURRENCY,
+            meta.failCause() != null,
             meta.version()
         );
     }
@@ -731,11 +725,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             case PHASE_COMPLETE: {
                 if (log.isDebugEnabled())
                     log.debug("Job execution is complete, will remove local state from active jobs " +
-                            "[jobId=" + jobId + ", meta=" + meta +
-                            ", setupTime=" + meta.setupTime() +
-                            ", mapTime=" + meta.mapTime() +
-                            ", reduceTime=" + meta.reduceTime() +
-                            ", totalTime=" + meta.totalTime() + ']');
+                            "[jobId=" + jobId + ", meta=" + meta + ']');
 
                 if (state != null) {
                     state = activeJobs.remove(jobId);
@@ -1217,11 +1207,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /** {@inheritDoc} */
         @Override protected void update(GridHadoopJobMetadata meta, GridHadoopJobMetadata cp) {
             cp.phase(phase);
-
-            if (phase == PHASE_MAP)
-                cp.setupCompleteTimestamp(System.currentTimeMillis());
-            else if (phase == PHASE_COMPLETE)
-                cp.completeTimestamp(System.currentTimeMillis());
         }
     }
 
@@ -1274,11 +1259,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 cp.phase(PHASE_CANCELLING);
 
             if (splitsCp.isEmpty()) {
-                if (cp.phase() != PHASE_CANCELLING) {
+                if (cp.phase() != PHASE_CANCELLING)
                     cp.phase(PHASE_REDUCE);
-
-                    cp.mapCompleteTimestamp(System.currentTimeMillis());
-                }
             }
         }
     }

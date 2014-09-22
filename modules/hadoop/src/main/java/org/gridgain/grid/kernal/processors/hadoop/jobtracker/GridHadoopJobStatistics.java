@@ -7,12 +7,26 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop;
+package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 /**
- * Hadoop constants.
  */
-public class GridHadoopConsts {
-    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
-    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
+public class GridHadoopJobStatistics {
+    /** */
+    private long[] mapTaskStarts;
+
+    /** */
+    private long[] cmbTaskStarts;
+
+    /** */
+    private long[] mapTaskStops;
+
+    /** */
+    private long[] rdcTaskStarts;
+
+    /** */
+    private long[] rdcTaskStops;
+
+
+
 }
