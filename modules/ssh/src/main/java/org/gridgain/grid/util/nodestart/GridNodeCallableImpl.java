@@ -268,18 +268,18 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * Gets the value of the specified environment variable.
      *
      * @param ses SSH session.
-     * @param command environment variable name.
+     * @param cmd environment variable name.
      * @return environment variable value.
      * @throws JSchException In case of SSH error.
      * @throws IOException If failed.
      */
-    private String exec(Session ses, String command) throws JSchException, IOException {
+    private String exec(Session ses, String cmd) throws JSchException, IOException {
         ChannelExec ch = null;
 
         try {
             ch = (ChannelExec)ses.openChannel("exec");
 
-            ch.setCommand(command);
+            ch.setCommand(cmd);
 
             ch.connect();
 
