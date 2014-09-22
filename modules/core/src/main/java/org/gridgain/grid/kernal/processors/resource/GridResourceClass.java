@@ -37,10 +37,11 @@ class GridResourceClass {
         this.annCls = annCls;
     }
 
-    @Override
-    public boolean equals(Object o) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -48,12 +49,14 @@ class GridResourceClass {
 
         if (annCls != null ? !annCls.equals(that.annCls) : that.annCls != null)
             return false;
+
         if (cls != null ? !cls.equals(that.cls) : that.cls != null)
             return false;
 
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = cls != null ? cls.hashCode() : 0;
         result = 31 * result + (annCls != null ? annCls.hashCode() : 0);
@@ -61,20 +64,16 @@ class GridResourceClass {
     }
 
     /**
-     * Gets class field object.
-     *
      * @return Class field.
      */
-    public Class<?> getCls() {
+    public Class<?> class0() {
         return cls;
     }
 
     /**
-     * Gets annotation for class field object.
-     *
      * @return Annotation class to inject.
      */
-    public Class<? extends Annotation> getAnnCls() {
+    public Class<? extends Annotation> annotationClass() {
         return annCls;
     }
 

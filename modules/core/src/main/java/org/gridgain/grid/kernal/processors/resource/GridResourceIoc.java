@@ -57,18 +57,23 @@ class GridResourceIoc {
 
         if (clss != null) {
             Set<GridResourceClass> fieldsToRmv = new HashSet<>();
-            for (Class<?> cls : clss)
-                for (GridResourceClass field : fieldCache.keySet())
+
+            for (Class<?> cls : clss) {
+                for (GridResourceClass field : fieldCache.keySet()) {
                     if (field.getCls().equals(cls))
                         fieldsToRmv.add(field);
+                }
+            }
 
             fieldCache.keySet().removeAll(fieldsToRmv);
 
             Set<GridResourceClass> mtdsToRmv = new HashSet<>();
-            for (Class<?> cls : clss)
-                for (GridResourceClass mtd : mtdCache.keySet())
+            for (Class<?> cls : clss) {
+                for (GridResourceClass mtd : mtdCache.keySet()) {
                     if (mtd.getCls().equals(cls))
                         fieldsToRmv.add(mtd);
+                }
+            }
 
             mtdCache.keySet().removeAll(mtdsToRmv);
 
