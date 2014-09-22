@@ -682,31 +682,31 @@ public final class X {
      * @param throwable the throwable to introspect for a cause, may be null
      * @param mtdNames the method names, null treated as default set
      * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input
-     * @since 1.0
      */
     public static Throwable getCause(Throwable throwable, String[] mtdNames) {
         if (throwable == null) {
             return null;
         }
+
         Throwable cause = getCauseUsingWellKnownTypes(throwable);
+
         if (cause == null) {
-            if (mtdNames == null) {
+            if (mtdNames == null)
                 mtdNames = CAUSE_MTD_NAMES;
-            }
 
             for (String mtdName : mtdNames) {
                 if (mtdName != null) {
                     cause = getCauseUsingMethodName(throwable, mtdName);
-                    if (cause != null) {
+
+                    if (cause != null)
                         break;
-                    }
                 }
             }
 
-            if (cause == null) {
+            if (cause == null)
                 cause = getCauseUsingFieldName(throwable, "detail");
-            }
         }
+
         return cause;
     }
 
@@ -720,16 +720,18 @@ public final class X {
      * <p>This method handles recursive cause structures that might otherwise cause infinite loops. The cause chain is
      * processed until the end is reached, or until the next item in the chain is already in the result set.</p>
      *
-     * @param throwable the throwable to inspect, may be null
-     * @return the list of throwables, never null
-     * @since Commons Lang 2.2
+     * @param throwable The throwable to inspect, may be null.
+     * @return The list of throwables, never null.
      */
     public static List<Throwable> getThrowableList(Throwable throwable) {
         List<Throwable> list = new ArrayList<>();
+
         while (throwable != null && !list.contains(throwable)) {
             list.add(throwable);
+
             throwable = getCause(throwable);
         }
+
         return list;
     }
 
@@ -750,6 +752,7 @@ public final class X {
      */
     public static Throwable[] getThrowables(Throwable throwable) {
         List<Throwable> list = getThrowableList(throwable);
+
         return list.toArray(new Throwable[list.size()]);
     }
 
@@ -767,12 +770,14 @@ public final class X {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw, true);
         Throwable[] ts = getThrowables(throwable);
+
         for (Throwable t : ts) {
             t.printStackTrace(pw);
-            if (isNestedThrowable(t)) {
+
+            if (isNestedThrowable(t))
                 break;
-            }
         }
+
         return sw.getBuffer().toString();
     }
 
