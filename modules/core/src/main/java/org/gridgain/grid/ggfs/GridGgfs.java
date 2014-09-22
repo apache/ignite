@@ -50,6 +50,9 @@ public interface GridGgfs extends GridGgfsFileSystem {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
+    /** File property: prefer writes to local node. */
+    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
+
     /**
      * Gets GGFS name.
      *
