@@ -62,10 +62,7 @@ public @interface GridCacheQuerySqlField {
      * or {@code b} but not both. For more effective query execution here it is preferable to have a single
      * group index on both fields.
      * <p>
-     * Note, that order of fields in these indexes is unspecified (it can be either {@code (a, b)} or {@code (b, a)})
-     * and sort order of cache entries in index is always ascending on all the fields, so their applicability is
-     * limited by cases like previous example, where these characteristics do not make sense. For more complex
-     * scenarios please refer to {@linkplain GridCacheQuerySqlField.Group} documentation.
+     * For more complex scenarios please refer to {@link GridCacheQuerySqlField.Group} documentation.
      *
      * @return Array of group names.
      */
@@ -90,12 +87,12 @@ public @interface GridCacheQuerySqlField {
     /**
      * Describes group of index and position of field in this group.
      * <p>
-     * Opposite to {@linkplain #groups()} this annotation gives control over order of field in a group index
-     * as well as cache entry sort order on this field in a group index. This can be needed in
-     * scenarios when we have a query like {@code select * from X where a = ? and b = ? order by b desc}. If we have
-     * index {@code (a asc, b asc)} sorting on {@code b} will be performed. Here it is preferable to have index
-     * {@code (b desc, a asc)} which will still allow query to search on index using both fields and avoid
-     * sorting because index is already sorted in needed way.
+     * Opposite to {@link #groups()} this annotation gives control over order of fields in a group index.
+     * This can be needed in scenarios when we have a query like
+     * {@code select * from X where a = ? and b = ? order by b desc}. If we have index {@code (a asc, b asc)}
+     * sorting on {@code b} will be performed. Here it is preferable to have index {@code (b desc, a asc)}
+     * which will still allow query to search on index using both fields and avoid sorting because index
+     * is already sorted in needed way.
      *
      * @see #groups()
      * @see #orderedGroups()
