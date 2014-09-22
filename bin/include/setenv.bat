@@ -35,7 +35,7 @@ goto :eof
 :: The following libraries are required for GridGain.
 set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
 
-for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not %%F == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
+for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not "%%F" == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
 
 if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
 
