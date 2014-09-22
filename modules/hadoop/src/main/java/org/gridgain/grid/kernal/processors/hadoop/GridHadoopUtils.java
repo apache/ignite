@@ -11,10 +11,16 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
+import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
@@ -23,9 +29,6 @@ import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
-    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
-    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
-
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
@@ -38,32 +41,50 @@ public class GridHadoopUtils {
     /** Range of possible amount of steps giving 50% of remaining progress. Gives [5 .. 50] range. */
     private static final int STEPS_PER_HALF_PROGRESS_RANGE = 45;
 
-    /**
-     * Convert Hadoop job metadata to job status.
-     *
-     * @param meta Metadata.
-     * @return Status.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
-        GridHadoopDefaultJobInfo jobInfo = (GridHadoopDefaultJobInfo)meta.jobInfo();
+    /** Old mapper class attribute. */
+    private static final String OLD_MAP_CLASS_ATTR = "mapred.mapper.class";
 
-        return new GridHadoopJobStatus(
-            meta.jobId(),
-            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            jobInfo.configuration().getJobName(),
-            jobInfo.configuration().getUser(),
-            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
-            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.mapReducePlan().mappers(),
-            meta.mapReducePlan().reducers(),
-            meta.startTimestamp(),
-            meta.setupCompleteTimestamp(),
-            meta.mapCompleteTimestamp(),
-            meta.phase(),
-            SPECULATIVE_CONCURRENCY,
-            meta.version()
-        );
+    /** Old reducer class attribute. */
+    private static final String OLD_REDUCE_CLASS_ATTR = "mapred.reducer.class";
+
+    /**
+     * Wraps native split.
+     *
+     * @param id Split ID.
+     * @param split Split.
+     * @param hosts Hosts.
+     * @throws IOException If failed.
+     */
+    public static GridHadoopSplitWrapper wrapSplit(int id, Object split, String[] hosts) throws IOException {
+        ByteArrayOutputStream arr = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(arr);
+
+        assert split instanceof Writable;
+
+        ((Writable)split).write(out);
+
+        out.flush();
+
+        return new GridHadoopSplitWrapper(id, split.getClass().getName(), arr.toByteArray(), hosts);
+    }
+
+    /**
+     * Unwraps native split.
+     *
+     * @param o Wrapper.
+     * @return Split.
+     */
+    public static Object unwrapSplit(GridHadoopSplitWrapper o) {
+        try {
+            Writable w = (Writable)GridHadoopUtils.class.getClassLoader().loadClass(o.className()).newInstance();
+
+            w.readFields(new ObjectInputStream(new ByteArrayInputStream(o.bytes())));
+
+            return w;
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -280,6 +301,124 @@ public class GridHadoopUtils {
 
         return /** Sum of geom. progression 1/2 + 1/4 ... */ 1 - power2 +
             /** Relative progress of tail steps. */ (power2 / 2) * tailSteps / halfProgressSteps;
+    }
+
+    /**
+     * Checks the attribute in configuration is not set.
+     *
+     * @param attr Attribute name.
+     * @param msg Message for creation of exception.
+     * @throws org.gridgain.grid.GridException If attribute is set.
+     */
+    public static void ensureNotSet(Configuration cfg, String attr, String msg) throws GridException {
+        if (cfg.get(attr) != null)
+            throw new GridException(attr + " is incompatible with " + msg + " mode.");
+    }
+
+    /**
+     * Creates JobInfo from hadoop configuration.
+     *
+     * @param cfg Hadoop configuration.
+     * @return Job info.
+     * @throws GridException If failed.
+     */
+    public static GridHadoopDefaultJobInfo createJobInfo(Configuration cfg) throws GridException {
+        JobConf jobConf = new JobConf(cfg);
+
+        boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
+                || jobConf.get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
+
+        int numReduces = jobConf.getNumReduceTasks();
+
+        jobConf.setBooleanIfUnset("mapred.mapper.new-api", jobConf.get(OLD_MAP_CLASS_ATTR) == null);
+
+        if (jobConf.getUseNewMapper()) {
+            String mode = "new map API";
+
+            ensureNotSet(jobConf, "mapred.input.format.class", mode);
+            ensureNotSet(jobConf, OLD_MAP_CLASS_ATTR, mode);
+
+            if (numReduces != 0)
+                ensureNotSet(jobConf, "mapred.partitioner.class", mode);
+            else
+                ensureNotSet(jobConf, "mapred.output.format.class", mode);
+        }
+        else {
+            String mode = "map compatibility";
+
+            ensureNotSet(jobConf, MRJobConfig.INPUT_FORMAT_CLASS_ATTR, mode);
+            ensureNotSet(jobConf, MRJobConfig.MAP_CLASS_ATTR, mode);
+
+            if (numReduces != 0)
+                ensureNotSet(jobConf, MRJobConfig.PARTITIONER_CLASS_ATTR, mode);
+            else
+                ensureNotSet(jobConf, MRJobConfig.OUTPUT_FORMAT_CLASS_ATTR, mode);
+        }
+
+        if (numReduces != 0) {
+            jobConf.setBooleanIfUnset("mapred.reducer.new-api", jobConf.get(OLD_REDUCE_CLASS_ATTR) == null);
+
+            if (jobConf.getUseNewReducer()) {
+                String mode = "new reduce API";
+
+                ensureNotSet(jobConf, "mapred.output.format.class", mode);
+                ensureNotSet(jobConf, OLD_REDUCE_CLASS_ATTR, mode);
+            }
+            else {
+                String mode = "reduce compatibility";
+
+                ensureNotSet(jobConf, MRJobConfig.OUTPUT_FORMAT_CLASS_ATTR, mode);
+                ensureNotSet(jobConf, MRJobConfig.REDUCE_CLASS_ATTR, mode);
+            }
+        }
+
+        Map<String, String> props = new HashMap<>();
+
+        for (Map.Entry<String, String> entry : jobConf)
+            props.put(entry.getKey(), entry.getValue());
+
+        return new GridHadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
+    }
+
+    /**
+     * Throws new {@link GridException} with original exception is serialized into string.
+     * This is needed to transfer error outside the current class loader.
+     *
+     * @param e Original exception.
+     * @return GridException New exception.
+     */
+    public static GridException transformException(Throwable e) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        e.printStackTrace(new PrintStream(os, true));
+
+        return new GridException(os.toString());
+    }
+
+    /**
+     * Returns work directory for job execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param jobId Job ID.
+     * @return Working directory for job.
+     * @throws GridException If Failed.
+     */
+    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws GridException {
+        return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    }
+
+    /**
+     * Returns subdirectory of job working directory for task execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param info Task info.
+     * @return Working directory for task.
+     * @throws GridException If Failed.
+     */
+    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws GridException {
+        File jobLocDir = jobLocalDir(locNodeId, info.jobId());
+
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
     /**

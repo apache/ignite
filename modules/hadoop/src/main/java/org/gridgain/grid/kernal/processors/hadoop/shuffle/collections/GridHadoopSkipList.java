@@ -34,11 +34,11 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     private final AtomicBoolean visitGuard = new AtomicBoolean();
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      */
-    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
-        super(job, mem);
+    public GridHadoopSkipList(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+        super(jobInfo, mem);
     }
 
     /** {@inheritDoc} */
@@ -199,7 +199,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param rnd Random.
      * @return Next level.
      */
-    static int randomLevel(Random rnd) {
+    public static int randomLevel(Random rnd) {
         int x = rnd.nextInt();
 
         int level = 0;

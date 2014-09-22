@@ -22,6 +22,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Tests correct sorting.
  */
@@ -85,7 +87,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         X.printerrln("Data generation started.");
 
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration())).get(180000);
 
         X.printerrln("Data generation complete.");
 
@@ -116,7 +118,7 @@ public class GridHadoopSortingTest extends GridHadoopAbstractSelfTest {
         X.printerrln("Job started.");
 
         grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 2),
-            new GridHadoopDefaultJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration())).get(180000);
 
         X.printerrln("Job complete.");
 

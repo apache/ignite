@@ -17,6 +17,8 @@ import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -151,22 +153,26 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testGetServicesByName() throws Exception {
-        String name = "servicesByName";
+        final String name = "servicesByName";
 
         Grid g = randomGrid();
 
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3).get();
 
-        int cnt = 0;
+        GridTestUtils.retryAssert(log, 50, 200, new CA() {
+            @Override public void apply() {
+                int cnt = 0;
 
-        for (int i = 0; i < nodeCount(); i++) {
-            Collection<DummyService> srvcs = grid(i).services().services(name);
+                for (int i = 0; i < nodeCount(); i++) {
+                    Collection<DummyService> srvcs = grid(i).services().services(name);
 
-            if (srvcs != null)
-                cnt += srvcs.size();
-        }
+                    if (srvcs != null)
+                        cnt += srvcs.size();
+                }
 
-        assertEquals(nodeCount() * 2, cnt);
+                assertEquals(nodeCount() * 2, cnt);
+            }
+        });
     }
 
     /**
