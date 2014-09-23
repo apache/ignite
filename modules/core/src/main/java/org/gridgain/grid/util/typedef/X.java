@@ -410,16 +410,13 @@ public final class X {
     }
 
     /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
-     * <b>including</b> that throwable itself.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>including</b> that
+     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *      {@code false} otherwise.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
+     * otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
         if (t == null || F.isEmpty(cls))
@@ -444,16 +441,13 @@ public final class X {
     }
 
     /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
-     * <b>excluding</b> that throwable itself.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>excluding</b> that
+     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *      {@code false} otherwise.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
+     * otherwise.
      */
     public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
         if (t == null || F.isEmpty(cls))
@@ -479,9 +473,8 @@ public final class X {
 
     /**
      * Gets first cause if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
+     *
+     * Note that this method follows includes {@link Throwable#getSuppressed()} into check.
      *
      * @param t Throwable to check (if {@code null}, {@code null} is returned).
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
@@ -569,6 +562,7 @@ public final class X {
      */
     private static Throwable getCauseUsingFieldName(Throwable throwable, String fieldName) {
         Field field = null;
+
         try {
             field = throwable.getClass().getField(fieldName);
         }
@@ -584,15 +578,16 @@ public final class X {
                 // exception ignored
             }
         }
+
         return null;
     }
 
     /**
      * Checks if the Throwable class has a <code>getCause</code> method.
      *
-     * <p>This is true for JDK 1.4 and above.</p>
+     * This is true for JDK 1.4 and above.
      *
-     * @return true if Throwable is nestable
+     * @return true if Throwable is nestable.
      */
     public static boolean isThrowableNested() {
         return THROWABLE_CAUSE_METHOD != null;
@@ -601,23 +596,20 @@ public final class X {
     /**
      * Checks whether this <code>Throwable</code> class can store a cause.
      *
-     * <p>This method does <b>not</b> check whether it actually does store a cause.<p>
+     * This method does <b>not</b> check whether it actually does store a cause.
      *
-     * @param throwable the <code>Throwable</code> to examine, may be null
-     * @return boolean <code>true</code> if nested otherwise <code>false</code>
+     * @param throwable the <code>Throwable</code> to examine, may be null.
+     * @return boolean <code>true</code> if nested otherwise <code>false</code>.
      */
     public static boolean isNestedThrowable(Throwable throwable) {
-        if (throwable == null) {
+        if (throwable == null)
             return false;
-        }
 
-        if (throwable instanceof SQLException || throwable instanceof InvocationTargetException) {
+        if (throwable instanceof SQLException || throwable instanceof InvocationTargetException)
             return true;
-        }
 
-        if (isThrowableNested()) {
+        if (isThrowableNested())
             return true;
-        }
 
         Class<?> cls = throwable.getClass();
         for (String CAUSE_MTD_NAME : CAUSE_MTD_NAMES) {
@@ -634,9 +626,8 @@ public final class X {
 
         try {
             Field field = cls.getField("detail");
-            if (field != null) {
+            if (field != null)
                 return true;
-            }
         }
         catch (NoSuchFieldException | SecurityException ignored) {
             // exception ignored
@@ -648,22 +639,23 @@ public final class X {
     /**
      * Introspects the <code>Throwable</code> to obtain the cause.
      *
-     * <p>The method searches for methods with specific names that return a <code>Throwable</code> object. This will
-     * pick up most wrapping exceptions, including those from JDK 1.4.</p>
+     * The method searches for methods with specific names that return a <code>Throwable</code> object.
+     * This will pick up most wrapping exceptions, including those from JDK 1.4.
      *
-     * <p>The default list searched for are:</p> <ul> <li><code>getCause()</code></li>
+     * The default list searched for are:</p> <ul> <li><code>getCause()</code></li>
      * <li><code>getNextException()</code></li> <li><code>getTargetException()</code></li>
      * <li><code>getException()</code></li> <li><code>getSourceException()</code></li>
      * <li><code>getRootCause()</code></li> <li><code>getCausedByException()</code></li>
      * <li><code>getNested()</code></li> </ul>
      *
-     * <p>In the absence of any such method, the object is inspected for a <code>detail</code> field assignable to a
-     * <code>Throwable</code>.</p>
+     * <p>In the absence of any such method, the object is inspected for a <code>detail</code>
+     * field assignable to a <code>Throwable</code>.</p>
      *
-     * <p>If none of the above is found, returns <code>null</code>.</p>
+     * <p>If none of the above is found, returns <code>null</code>.
      *
-     * @param throwable the throwable to introspect for a cause, may be null
-     * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input
+     * @param throwable the throwable to introspect for a cause, may be null.
+     * @return the cause of the <code>Throwable</code>,
+     *         <code>null</code> if none found or null throwable input.
      */
     public static Throwable getCause(Throwable throwable) {
         return getCause(throwable, CAUSE_MTD_NAMES);
@@ -678,33 +670,31 @@ public final class X {
      * <p>A <code>null</code> set of method names means use the default set. A <code>null</code> in the set of method
      * names will be ignored.</p>
      *
-     * @param throwable the throwable to introspect for a cause, may be null
-     * @param mtdNames the method names, null treated as default set
-     * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input
+     * @param throwable the throwable to introspect for a cause, may be null.
+     * @param mtdNames the method names, null treated as default set.
+     * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input.
      */
     public static Throwable getCause(Throwable throwable, String[] mtdNames) {
-        if (throwable == null) {
+        if (throwable == null)
             return null;
-        }
+
         Throwable cause = getCauseUsingWellKnownTypes(throwable);
         if (cause == null) {
-            if (mtdNames == null) {
+            if (mtdNames == null)
                 mtdNames = CAUSE_MTD_NAMES;
-            }
 
             for (String mtdName : mtdNames) {
                 if (mtdName != null) {
                     cause = getCauseUsingMethodName(throwable, mtdName);
-                    if (cause != null) {
+                    if (cause != null)
                         break;
-                    }
                 }
             }
 
-            if (cause == null) {
+            if (cause == null)
                 cause = getCauseUsingFieldName(throwable, "detail");
-            }
         }
+
         return cause;
     }
 
@@ -723,10 +713,12 @@ public final class X {
      */
     public static List<Throwable> getThrowableList(Throwable throwable) {
         List<Throwable> list = new ArrayList<>();
+
         while (throwable != null && !list.contains(throwable)) {
             list.add(throwable);
             throwable = getCause(throwable);
         }
+
         return list;
     }
 
@@ -766,9 +758,8 @@ public final class X {
 
         for (Throwable t : ts) {
             t.printStackTrace(pw);
-            if (isNestedThrowable(t)) {
+            if (isNestedThrowable(t))
                 break;
-            }
         }
 
         return sw.getBuffer().toString();
@@ -880,8 +871,7 @@ public final class X {
     /**
      * Parses double from possibly {@code null} or invalid string.
      *
-     * @param s String to parse double from. If string is null or invalid,
-     *          a default value is used.
+     * @param s String to parse double from. If string is null or invalid, a default value is used.
      * @param dflt Default value for double, if parsing failed.
      * @return Resulting double.
      */
