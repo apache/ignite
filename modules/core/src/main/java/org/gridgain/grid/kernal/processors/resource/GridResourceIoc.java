@@ -441,8 +441,7 @@ class GridResourceIoc {
     }
 
     private static class ClassWithAnnotation extends GridBiTuple<Class<?>, Class<? extends Annotation>> {
-        private ClassWithAnnotation(@Nullable Class<?> val1,
-            @Nullable Class<? extends Annotation> val2) {
+        private ClassWithAnnotation(@Nullable Class<?> val1, @Nullable Class<? extends Annotation> val2) {
             super(val1, val2);
         }
     }
