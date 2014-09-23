@@ -28,7 +28,7 @@ import java.util.*;
  * when this typedef <b>does not sacrifice</b> the code readability.
  */
 public final class X {
-    /** An empty immutable <code>Object</code> array. */
+    /** An empty immutable {@code Object} array. */
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
     /** Time span dividers. */
@@ -428,13 +428,15 @@ public final class X {
         assert cls != null;
 
         for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls)
+            for (Class<? extends Throwable> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
+            }
 
-            for (Throwable n : th.getSuppressed())
+            for (Throwable n : th.getSuppressed()) {
                 if (hasCause(n, cls))
                     return true;
+            }
 
             if (th.getCause() == th)
                 break;
@@ -462,17 +464,19 @@ public final class X {
         assert cls != null;
 
         for (Throwable th = t.getCause(); th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls)
+            for (Class<? extends Throwable> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
+            }
 
             if (th.getCause() == th)
                 break;
         }
 
-        for (Throwable n : t.getSuppressed())
+        for (Throwable n : t.getSuppressed()) {
             if (hasCause(n, cls))
                 return true;
+        }
 
         return false;
     }
@@ -528,8 +532,8 @@ public final class X {
      * Finds a {@code Throwable} by method name.
      *
      * @param throwable The exception to examine.
-     * @param mtdName The name of the method to find and invoke
-     * @return the wrapped exception, or <code>null</code> if not found
+     * @param mtdName The name of the method to find and invoke.
+     * @return The wrapped exception, or {@code null} if not found.
      */
     private static Throwable getCauseUsingMethodName(Throwable throwable, String mtdName) {
         Method mtd = null;
@@ -554,11 +558,11 @@ public final class X {
     }
 
     /**
-     * Finds a <code>Throwable</code> by field name.
+     * Finds a {@code Throwable} by field name.
      *
-     * @param throwable the exception to examine
-     * @param fieldName the name of the attribute to examine
-     * @return the wrapped exception, or <code>null</code> if not found
+     * @param throwable The exception to examine.
+     * @param fieldName The name of the attribute to examine.
+     * @return The wrapped exception, or {@code null} if not found.
      */
     private static Throwable getCauseUsingFieldName(Throwable throwable, String fieldName) {
         Field field = null;
@@ -583,23 +587,23 @@ public final class X {
     }
 
     /**
-     * Checks if the Throwable class has a <code>getCause</code> method.
+     * Checks if the Throwable class has a {@code getCause} method.
      *
      * This is true for JDK 1.4 and above.
      *
-     * @return true if Throwable is nestable.
+     * @return True if Throwable is nestable.
      */
     public static boolean isThrowableNested() {
         return THROWABLE_CAUSE_METHOD != null;
     }
 
     /**
-     * Checks whether this <code>Throwable</code> class can store a cause.
+     * Checks whether this {@code Throwable} class can store a cause.
      *
-     * This method does <b>not</b> check whether it actually does store a cause.
+     * This method does not check whether it actually does store a cause.
      *
-     * @param throwable the <code>Throwable</code> to examine, may be null.
-     * @return boolean <code>true</code> if nested otherwise <code>false</code>.
+     * @param throwable The {@code Throwable} to examine, may be null.
+     * @return Boolean {@code true} if nested otherwise {@code false}.
      */
     public static boolean isNestedThrowable(Throwable throwable) {
         if (throwable == null)
@@ -615,6 +619,7 @@ public final class X {
         for (String CAUSE_MTD_NAME : CAUSE_MTD_NAMES) {
             try {
                 Method mtd = cls.getMethod(CAUSE_MTD_NAME, null);
+
                 if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType())) {
                     return true;
                 }
@@ -626,6 +631,7 @@ public final class X {
 
         try {
             Field field = cls.getField("detail");
+
             if (field != null)
                 return true;
         }
@@ -637,42 +643,43 @@ public final class X {
     }
 
     /**
-     * Introspects the <code>Throwable</code> to obtain the cause.
+     * Introspects the {@code Throwable} to obtain the cause.
      *
-     * The method searches for methods with specific names that return a <code>Throwable</code> object.
+     * The method searches for methods with specific names that return a {@code Throwable} object.
      * This will pick up most wrapping exceptions, including those from JDK 1.4.
      *
-     * The default list searched for are:</p> <ul> <li><code>getCause()</code></li>
-     * <li><code>getNextException()</code></li> <li><code>getTargetException()</code></li>
-     * <li><code>getException()</code></li> <li><code>getSourceException()</code></li>
-     * <li><code>getRootCause()</code></li> <li><code>getCausedByException()</code></li>
-     * <li><code>getNested()</code></li> </ul>
+     * The default list searched for are:</p> <ul> <li>{@code getCause()}</li>
+     * <li>{@code getNextException()}</li> <li>{@code getTargetException()}</li>
+     * <li>{@code getException()}</li> <li>{@code getSourceException()}</li>
+     * <li>{@code getRootCause()}</li> <li>{@code getCausedByException()}</li>
+     * <li>{@code getNested()}</li> </ul>
      *
-     * <p>In the absence of any such method, the object is inspected for a <code>detail</code>
-     * field assignable to a <code>Throwable</code>.</p>
+     * <p>In the absence of any such method, the object is inspected for a {@code detail}
+     * field assignable to a {@code Throwable}.</p>
      *
-     * <p>If none of the above is found, returns <code>null</code>.
+     * If none of the above is found, returns {@code null}.
      *
-     * @param throwable the throwable to introspect for a cause, may be null.
-     * @return the cause of the <code>Throwable</code>,
-     *         <code>null</code> if none found or null throwable input.
+     * @param throwable The throwable to introspect for a cause, may be null.
+     * @return The cause of the {@code Throwable},
+     *         {@code null} if none found or null throwable input.
      */
     public static Throwable getCause(Throwable throwable) {
         return getCause(throwable, CAUSE_MTD_NAMES);
     }
 
     /**
-     * Introspects the <code>Throwable</code> to obtain the cause.
+     * Introspects the {@code Throwable} to obtain the cause.
      *
-     * <ol> <li>Try known exception types.</li> <li>Try the supplied array of method names.</li> <li>Try the field
-     * 'detail'.</li> </ol>
+     * <ol> <li>Try known exception types.</li>
+     * <li>Try the supplied array of method names.</li>
+     * <li>Try the field 'detail'.</li> </ol>
      *
-     * <p>A <code>null</code> set of method names means use the default set. A <code>null</code> in the set of method
-     * names will be ignored.</p>
+     * <p>A {@code null} set of method names means use the default set.
+     * A {@code null} in the set of method names will be ignored.</p>
      *
-     * @param throwable the throwable to introspect for a cause, may be null.
-     * @param mtdNames the method names, null treated as default set.
-     * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input.
+     * @param throwable The throwable to introspect for a cause, may be null.
+     * @param mtdNames The method names, null treated as default set.
+     * @return The cause of the {@code Throwable}, {@code null} if none found or null throwable input.
      */
     public static Throwable getCause(Throwable throwable, String[] mtdNames) {
         if (throwable == null)
@@ -687,7 +694,6 @@ public final class X {
             for (String mtdName : mtdNames) {
                 if (mtdName != null) {
                     cause = getCauseUsingMethodName(throwable, mtdName);
-                    if (cause != null)
 
                     if (cause != null)
                         break;
@@ -702,17 +708,18 @@ public final class X {
     }
 
     /**
-     * Returns the list of <code>Throwable</code> objects in the exception chain.
+     * Returns the list of {@code Throwable} objects in the exception chain.
      *
-     * <p>A throwable without cause will return a list containing one element - the input throwable. A throwable with
-     * one cause will return a list containing two elements. - the input throwable and the cause throwable. A
-     * <code>null</code> throwable will return a list of size zero.</p>
+     * A throwable without cause will return a list containing one element - the input throwable.
+     * A throwable with one cause will return a list containing two elements - the input throwable
+     * and the cause throwable. A {@code null} throwable will return a list of size zero.
      *
-     * <p>This method handles recursive cause structures that might otherwise cause infinite loops. The cause chain is
-     * processed until the end is reached, or until the next item in the chain is already in the result set.</p>
+     * This method handles recursive cause structures that might otherwise cause infinite loops.
+     * The cause chain is processed until the end is reached, or until the next item in the chain
+     * is already in the result set.</p>
      *
-     * @param throwable the throwable to inspect, may be null
-     * @return the list of throwables, never null
+     * @param throwable The throwable to inspect, may be null.
+     * @return The list of throwables, never null.
      */
     public static List<Throwable> getThrowableList(Throwable throwable) {
         List<Throwable> list = new ArrayList<>();
@@ -726,15 +733,14 @@ public final class X {
     }
 
     /**
-     * Returns the list of <code>Throwable</code> objects in the exception chain.
+     * Returns the list of {@code Throwable} objects in the exception chain.
      *
      * A throwable without cause will return an array containing one element - the input throwable.
      * A throwable with one cause will return an array containing two elements - the input throwable
-     * and the cause throwable. A <code>null</code> throwable will return an array of size zero.
+     * and the cause throwable. A {@code null} throwable will return an array of size zero.
      *
-     * @param throwable the throwable to inspect, may be null.
-     * @return the array of throwables, never null.
-     * @see #getThrowableList(Throwable)
+     * @param throwable The throwable to inspect, may be null.
+     * @return The array of throwables, never null.     
      */
     public static Throwable[] getThrowables(Throwable throwable) {
         List<Throwable> list = getThrowableList(throwable);
@@ -745,12 +751,11 @@ public final class X {
     /**
      * A way to get the entire nested stack-trace of an throwable.
      *
-     * <p>The result of this method is highly dependent on the JDK version and whether the exceptions override
-     * printStackTrace or not.</p>
+     * The result of this method is highly dependent on the JDK version
+     * and whether the exceptions override printStackTrace or not.
      *
-     * @param throwable the <code>Throwable</code> to be examined
-     * @return the nested stack trace, with the root cause first
-     * @since 2.0
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
      */
     public static String getFullStackTrace(Throwable throwable) {
         StringWriter sw = new StringWriter();
