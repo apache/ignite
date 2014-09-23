@@ -119,25 +119,25 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private static final long serialVersionUID = 0L;
 
         // Named column indexes in log file.
-        public static final int LOG_COL_TIMESTAMP = 0;
-        public static final int LOG_COL_THREAD_ID = 1;
-        public static final int LOG_COL_ENTRY_TYPE = 3;
-        public static final int LOG_COL_PATH = 4;
-        public static final int LOG_COL_GGFS_MODE = 5;
-        public static final int LOG_COL_STREAM_ID = 6;
-        public static final int LOG_COL_DATA_LEN = 8;
-        public static final int LOG_COL_OVERWRITE = 10;
-        public static final int LOG_COL_POS = 13;
-        public static final int LOG_COL_USER_TIME = 17;
-        public static final int LOG_COL_SYSTEM_TIME = 18;
-        public static final int LOG_COL_TOTAL_BYTES = 19;
+        private static final int LOG_COL_TIMESTAMP = 0;
+        private static final int LOG_COL_THREAD_ID = 1;
+        private static final int LOG_COL_ENTRY_TYPE = 3;
+        private static final int LOG_COL_PATH = 4;
+        private static final int LOG_COL_GGFS_MODE = 5;
+        private static final int LOG_COL_STREAM_ID = 6;
+        private static final int LOG_COL_DATA_LEN = 8;
+        private static final int LOG_COL_OVERWRITE = 10;
+        private static final int LOG_COL_POS = 13;
+        private static final int LOG_COL_USER_TIME = 17;
+        private static final int LOG_COL_SYSTEM_TIME = 18;
+        private static final int LOG_COL_TOTAL_BYTES = 19;
 
         // Constants copied from GridGgfsHadoopLogger in module "gridgain-hadoop".
         /** Field delimiter. */
-        public static final String DELIM_FIELD = ";";
+        private static final String DELIM_FIELD = ";";
 
         /** Pre-defined header string. */
-        public static final String HDR = "Timestamp" + DELIM_FIELD + "ThreadID" + DELIM_FIELD + "PID" + DELIM_FIELD +
+        private static final String HDR = "Timestamp" + DELIM_FIELD + "ThreadID" + DELIM_FIELD + "PID" + DELIM_FIELD +
             "Type" + DELIM_FIELD + "Path" + DELIM_FIELD + "Mode" + DELIM_FIELD + "StreamId" + DELIM_FIELD + "BufSize" +
             DELIM_FIELD + "DataLen" + DELIM_FIELD + "Append" + DELIM_FIELD + "Overwrite" + DELIM_FIELD + "Replication" +
             DELIM_FIELD + "BlockSize" + DELIM_FIELD + "Position" + DELIM_FIELD + "ReadLen" + DELIM_FIELD + "SkipCnt" +
@@ -145,23 +145,23 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             "TotalBytes" + DELIM_FIELD + "DestPath" + DELIM_FIELD + "Recursive" + DELIM_FIELD + "List";
 
         /** File open. */
-        public static final int TYPE_OPEN_IN = 0;
+        private static final int TYPE_OPEN_IN = 0;
 
         /** File create or append. */
-        public static final int TYPE_OPEN_OUT = 1;
+        private static final int TYPE_OPEN_OUT = 1;
 
         /** Random read. */
-        public static final int TYPE_RANDOM_READ = 2;
+        private static final int TYPE_RANDOM_READ = 2;
 
         /** Close input stream. */
-        public static final int TYPE_CLOSE_IN = 7;
+        private static final int TYPE_CLOSE_IN = 7;
 
         /** Close output stream. */
-        public static final int TYPE_CLOSE_OUT = 8;
+        private static final int TYPE_CLOSE_OUT = 8;
         // End of constants.
 
         /** List of log entries that should be parsed. */
-        public static final Set<Integer> LOG_TYPES = F.asSet(
+        private static final Set<Integer> LOG_TYPES = F.asSet(
             TYPE_OPEN_IN,
             TYPE_OPEN_OUT,
             TYPE_RANDOM_READ,
