@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
@@ -31,13 +32,11 @@ class GridResourceIoc {
         new ConcurrentHashMap8<>();
 
     /** Field cache. */
-    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>,
-        List<GridResourceField>>> fieldCache =
+    private final ConcurrentMap<ClassWithAnnotation, List<GridResourceField>> fieldCache =
         new ConcurrentHashMap8<>();
 
     /** Method cache. */
-    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>,
-        List<GridResourceMethod>>> mtdCache =
+    private final ConcurrentMap<ClassWithAnnotation, List<GridResourceMethod>> mtdCache =
         new ConcurrentHashMap8<>();
 
     /**
@@ -58,8 +57,26 @@ class GridResourceIoc {
         Set<Class<?>> clss = taskMap.remove(ldr);
 
         if (clss != null) {
-            fieldCache.keySet().removeAll(clss);
-            mtdCache.keySet().removeAll(clss);
+            Set<ClassWithAnnotation> fieldsToRmv = new HashSet<>();
+
+            for (Class<?> cls : clss) {
+                for (ClassWithAnnotation field : fieldCache.keySet()) {
+                    if (field.getKey().equals(cls))
+                        fieldsToRmv.add(field);
+                }
+            }
+
+            fieldCache.keySet().removeAll(fieldsToRmv);
+
+            Set<ClassWithAnnotation> mtdsToRmv = new HashSet<>();
+            for (Class<?> cls : clss) {
+                for (ClassWithAnnotation mtd : mtdCache.keySet()) {
+                    if (mtd.getKey().equals(cls))
+                        fieldsToRmv.add(mtd);
+                }
+            }
+
+            mtdCache.keySet().removeAll(mtdsToRmv);
 
             for (Map.Entry<Class<? extends Annotation>, Set<Class<?>>> e : skipCache.entrySet()) {
                 Set<Class<?>> skipClss = e.getValue();
@@ -83,8 +100,7 @@ class GridResourceIoc {
     }
 
     /**
-     * Injects given resource via field or setter with specified annotations
-     * on provided target object.
+     * Injects given resource via field or setter with specified annotations on provided target object.
      *
      * @param target Target object.
      * @param annCls Setter annotation.
@@ -220,8 +236,8 @@ class GridResourceIoc {
      * @param annClss Annotations.
      * @return Filtered set of annotations that present in target.
      */
-    @SuppressWarnings({"SuspiciousToArrayCall", "unchecked"})
-    Class<? extends Annotation>[] filter(@Nullable GridDeployment dep, Object target,
+    @SuppressWarnings({"SuspiciousToArrayCall", "unchecked"}) Class<? extends Annotation>[] filter(
+        @Nullable GridDeployment dep, Object target,
         Collection<Class<? extends Annotation>> annClss) {
         assert target != null;
         assert annClss != null && !annClss.isEmpty();
@@ -266,13 +282,13 @@ class GridResourceIoc {
      * @return {@code true} if cached, {@code false} otherwise.
      */
     boolean isCached(String clsName) {
-        for (Class<?> aClass : fieldCache.keySet()) {
-            if (aClass.getName().equals(clsName))
+        for (ClassWithAnnotation aClass : fieldCache.keySet()) {
+            if (aClass.getKey().getName().equals(clsName))
                 return true;
         }
 
-        for (Class<?> aClass : mtdCache.keySet()) {
-            if (aClass.getName().equals(clsName))
+        for (ClassWithAnnotation aClass : mtdCache.keySet()) {
+            if (aClass.getKey().getName().equals(clsName))
                 return true;
         }
 
@@ -349,12 +365,7 @@ class GridResourceIoc {
      * @return List of fields with given annotation, possibly {@code null}.
      */
     @Nullable private List<GridResourceField> getFieldsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
-        Map<Class<? extends Annotation>, List<GridResourceField>> annCache = fieldCache.get(cls);
-
-        if (annCache != null)
-            return annCache.get(annCls);
-
-        return null;
+        return fieldCache.get(new ClassWithAnnotation(cls, annCls));
     }
 
     /**
@@ -375,12 +386,12 @@ class GridResourceIoc {
             classes.add(cls);
         }
 
-        Map<Class<? extends Annotation>, List<GridResourceField>> rsrcFields =
-            F.addIfAbsent(fieldCache, cls, F.<Class<? extends Annotation>, List<GridResourceField>>newCMap());
+        List<GridResourceField> rsrcFields =
+            F.addIfAbsent(fieldCache, new ClassWithAnnotation(cls, annCls), F.<GridResourceField>newList());
 
         assert rsrcFields != null;
 
-        rsrcFields.put(annCls, fields);
+        rsrcFields.addAll(fields);
     }
 
     /**
@@ -392,12 +403,7 @@ class GridResourceIoc {
      */
     @Nullable
     private List<GridResourceMethod> getMethodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
-        Map<Class<? extends Annotation>, List<GridResourceMethod>> annCache = mtdCache.get(cls);
-
-        if (annCache != null)
-            return annCache.get(annCls);
-
-        return null;
+        return mtdCache.get(new ClassWithAnnotation(cls, annCls));
     }
 
     /**
@@ -418,12 +424,12 @@ class GridResourceIoc {
             classes.add(rsrcCls);
         }
 
-        Map<Class<? extends Annotation>, List<GridResourceMethod>> rsrcMtds = F.addIfAbsent(mtdCache,
-            rsrcCls, F.<Class<? extends Annotation>, List<GridResourceMethod>>newCMap());
+        List<GridResourceMethod> rsrcMtds =
+            F.addIfAbsent(mtdCache, new ClassWithAnnotation(rsrcCls, annCls), F.<GridResourceMethod>newList());
 
         assert rsrcMtds != null;
 
-        rsrcMtds.put(annCls, mtds);
+        rsrcMtds.addAll(mtds);
     }
 
     /** {@inheritDoc} */
@@ -432,5 +438,11 @@ class GridResourceIoc {
         X.println(">>>   fieldCacheSize: " + fieldCache.size());
         X.println(">>>   mtdCacheSize: " + mtdCache.size());
         X.println(">>>   skipCacheSize: " + skipCache.size());
+    }
+
+    private static class ClassWithAnnotation extends GridBiTuple<Class<?>, Class<? extends Annotation>> {
+        private ClassWithAnnotation(@Nullable Class<?> val1, @Nullable Class<? extends Annotation> val2) {
+            super(val1, val2);
+        }
     }
 }

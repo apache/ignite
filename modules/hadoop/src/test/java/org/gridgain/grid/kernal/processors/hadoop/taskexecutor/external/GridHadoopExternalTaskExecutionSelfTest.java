@@ -24,6 +24,8 @@ import org.gridgain.grid.util.typedef.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Job tracker self test.
  */
@@ -83,7 +85,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         job.setJarByClass(getClass());
 
         GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+            createJobInfo(job.getConfiguration()));
 
         fut.get();
     }
@@ -119,7 +121,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         job.setJarByClass(getClass());
 
         GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+            createJobInfo(job.getConfiguration()));
 
         try {
             fut.get();

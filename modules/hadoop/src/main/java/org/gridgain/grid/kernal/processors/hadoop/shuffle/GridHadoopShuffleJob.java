@@ -82,7 +82,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
     /**
      * @param locReduceAddr Local reducer address.
-     * @param locNodeId Local node Id.
      * @param log Logger.
      * @param job Job.
      * @param mem Memory.
@@ -90,7 +89,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param locReducers Reducers will work on current node.
      * @throws GridException If error.
      */
-    public GridHadoopShuffleJob(T locReduceAddr, UUID locNodeId, GridLogger log, GridHadoopJob job,
+    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job,
         GridUnsafeMemory mem, int totalReducerCnt, int[] locReducers) throws GridException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
@@ -99,8 +98,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
-                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId, GridHadoopTaskType.REDUCE, job.id(),
-                        rdc, 0, null);
+                GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
                 reducersCtx.put(rdc, job.getTaskContext(taskInfo));
             }
@@ -176,8 +174,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
         if (map == null) { // Create new map.
             map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
-                new GridHadoopConcurrentHashMultimap(job, mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
-                new GridHadoopSkipList(job, mem);
+                new GridHadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
+                new GridHadoopSkipList(job.info(), mem);
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();

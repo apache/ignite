@@ -22,7 +22,12 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -37,18 +42,18 @@ setGridGainHome
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
+. "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
-. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
+. "${SCRIPTS_HOME}"/include/setenv.sh
+. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
 
 #
 # Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
 #
-if [ -d "$HADOOP_COMMON_HOME" ]
+if [ -d "${HADOOP_COMMON_HOME}" ]
     then
         for file in ${GRIDGAIN_HOME}/bin/include/visorui/*
         do
@@ -86,7 +91,7 @@ if [ "${DOCK_OPTS}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Visor - GridGain Admin Console"
 fi
 
-if [ -z "$MAC_OS_OPTS" ] ; then
+if [ -z "${MAC_OS_OPTS}" ] ; then
     MAC_OS_OPTS=-Dsun.java2d.opengl=false
 fi
 
@@ -114,6 +119,9 @@ trap restoreSttySettings INT
 # Set Visor plugins directory.
 #
 VISOR_PLUGINS_DIR="${GRIDGAIN_HOME}/bin/include/visorui/plugins"
+
+# Force to use OpenGL
+# JVM_OPTS_VISOR="${JVM_OPTS_VISOR} -Dsun.java2d.opengl=True"
 
 #
 # Starts Visor Dashboard.

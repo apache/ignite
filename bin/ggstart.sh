@@ -18,11 +18,16 @@
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -35,19 +40,19 @@ checkJava
 setGridGainHome
 
 if [ "${DEFAULT_CONFIG}" == "" ]; then
-    DEFAULT_CONFIG="${GRIDGAIN_HOME}/os/config/default-config.xml"
+    DEFAULT_CONFIG=config/default-config.xml
 fi
 
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
+. "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
-. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
+. "${SCRIPTS_HOME}"/include/setenv.sh
+. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
 CP="${GRIDGAIN_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.gridgain.grid.startup.cmdline.GridCommandLineRandomNumberGenerator)
@@ -77,9 +82,10 @@ fi
 if [ -z "$JVM_OPTS" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts"
 
-    # Hadoop needs class unloading enabled
+    # Hadoop needs class unloading enabled and bigger PermGen size.
     if [ "GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
-        JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m"
+        JVM_OPTS="$JVM_OPTS -XX:MaxPermSize=350m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled"
+        JVM_OPTS="$JVM_OPTS -XX:+ParallelRefProcEnabled -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses"
     fi
 fi
 

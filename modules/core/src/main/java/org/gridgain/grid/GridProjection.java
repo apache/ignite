@@ -280,7 +280,7 @@ public interface GridProjection {
     /**
      * Gets a metrics snapshot for this projection.
      *
-     * @return Grid project metrics snapshot.
+     * @return Grid projection metrics snapshot.
      * @throws GridException If projection is empty.
      */
     public GridProjectionMetrics metrics() throws GridException;
