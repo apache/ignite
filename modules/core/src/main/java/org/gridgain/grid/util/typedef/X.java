@@ -677,6 +677,7 @@ public final class X {
             return null;
 
         Throwable cause = getCauseUsingWellKnownTypes(throwable);
+
         if (cause == null) {
             if (mtdNames == null)
                 mtdNames = CAUSE_MTD_NAMES;
@@ -684,6 +685,8 @@ public final class X {
             for (String mtdName : mtdNames) {
                 if (mtdName != null) {
                     cause = getCauseUsingMethodName(throwable, mtdName);
+                    if (cause != null)
+
                     if (cause != null)
                         break;
                 }
@@ -745,6 +748,7 @@ public final class X {
      *
      * @param throwable the <code>Throwable</code> to be examined
      * @return the nested stack trace, with the root cause first
+     * @since 2.0
      */
     public static String getFullStackTrace(Throwable throwable) {
         StringWriter sw = new StringWriter();
@@ -753,6 +757,7 @@ public final class X {
 
         for (Throwable t : ts) {
             t.printStackTrace(pw);
+
             if (isNestedThrowable(t))
                 break;
         }
