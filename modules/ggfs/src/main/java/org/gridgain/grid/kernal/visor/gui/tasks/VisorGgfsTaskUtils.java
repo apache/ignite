@@ -13,45 +13,19 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
-import java.util.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
  */
 @SuppressWarnings("ExtendsUtilityClass")
-public class VisorHadoopTaskUtilsEnt extends VisorTaskUtils {
-    // Named column indexes in log file.
-    public static final int LOG_COL_TIMESTAMP = 0;
-    public static final int LOG_COL_THREAD_ID = 1;
-    public static final int LOG_COL_ENTRY_TYPE = 3;
-    public static final int LOG_COL_PATH = 4;
-    public static final int LOG_COL_GGFS_MODE = 5;
-    public static final int LOG_COL_STREAM_ID = 6;
-    public static final int LOG_COL_DATA_LEN = 8;
-    public static final int LOG_COL_OVERWRITE = 10;
-    public static final int LOG_COL_POS = 13;
-    public static final int LOG_COL_USER_TIME = 17;
-    public static final int LOG_COL_SYSTEM_TIME = 18;
-    public static final int LOG_COL_TOTAL_BYTES = 19;
-
-    /** List of log entries that should be parsed. */
-    public static final Set<Integer> LOG_TYPES = F.asSet(
-            GridGgfsHadoopLogger.TYPE_OPEN_IN,
-            GridGgfsHadoopLogger.TYPE_OPEN_OUT,
-            GridGgfsHadoopLogger.TYPE_RANDOM_READ,
-            GridGgfsHadoopLogger.TYPE_CLOSE_IN,
-            GridGgfsHadoopLogger.TYPE_CLOSE_OUT
-    );
-
+public class VisorGgfsTaskUtils extends VisorTaskUtils {
     /**
      * Resolve GGFS profiler logs directory.
      *

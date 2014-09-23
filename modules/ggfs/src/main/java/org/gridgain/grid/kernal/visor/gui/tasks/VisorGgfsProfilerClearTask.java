@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.nio.file.*;
 
-import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.gui.tasks.VisorGgfsTaskUtils.*;
 
 /**
  * Remove all GGFS profiler logs.
