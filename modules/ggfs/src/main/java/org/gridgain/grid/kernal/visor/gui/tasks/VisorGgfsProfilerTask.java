@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
 
 import java.io.*;
@@ -117,6 +116,33 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        // Constants copied from GridGgfsHadoopLogger in module "gridgain-hadoop".
+        /** Field delimiter. */
+        private static final String DELIM_FIELD = ";";
+
+        /** Pre-defined header string. */
+        public static final String HDR = "Timestamp" + DELIM_FIELD + "ThreadID" + DELIM_FIELD + "PID" + DELIM_FIELD +
+            "Type" + DELIM_FIELD + "Path" + DELIM_FIELD + "Mode" + DELIM_FIELD + "StreamId" + DELIM_FIELD + "BufSize" +
+            DELIM_FIELD + "DataLen" + DELIM_FIELD + "Append" + DELIM_FIELD + "Overwrite" + DELIM_FIELD + "Replication" +
+            DELIM_FIELD + "BlockSize" + DELIM_FIELD + "Position" + DELIM_FIELD + "ReadLen" + DELIM_FIELD + "SkipCnt" +
+            DELIM_FIELD + "ReadLimit" + DELIM_FIELD + "UserTime" + DELIM_FIELD + "SystemTime" + DELIM_FIELD +
+            "TotalBytes" + DELIM_FIELD + "DestPath" + DELIM_FIELD + "Recursive" + DELIM_FIELD + "List";
+
+        /** File open. */
+        private static final int TYPE_OPEN_IN = 0;
+
+        /** File create or append. */
+        private static final int TYPE_OPEN_OUT = 1;
+
+        /** Random read. */
+        private static final int TYPE_RANDOM_READ = 2;
+
+        /** Close input stream. */
+        private static final int TYPE_CLOSE_IN = 7;
+
+        /** Close output stream. */
+        private static final int TYPE_CLOSE_OUT = 8;
 
         /** Create job with given argument. */
         private VisorGgfsProfilerJob(String arg) {
@@ -350,7 +376,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @throws IOException if failed to read log file.
          */
         private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
-            List<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+            Collection<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
                 String line = br.readLine(); // Skip first line with columns header.

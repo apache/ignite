@@ -45,11 +45,11 @@ public class VisorHadoopTaskUtilsEnt extends VisorTaskUtils {
 
     /** List of log entries that should be parsed. */
     public static final Set<Integer> LOG_TYPES = F.asSet(
-            TYPE_OPEN_IN,
-            TYPE_OPEN_OUT,
-            TYPE_RANDOM_READ,
-            TYPE_CLOSE_IN,
-            TYPE_CLOSE_OUT
+            GridGgfsHadoopLogger.TYPE_OPEN_IN,
+            GridGgfsHadoopLogger.TYPE_OPEN_OUT,
+            GridGgfsHadoopLogger.TYPE_RANDOM_READ,
+            GridGgfsHadoopLogger.TYPE_CLOSE_IN,
+            GridGgfsHadoopLogger.TYPE_CLOSE_OUT
     );
 
     /**
