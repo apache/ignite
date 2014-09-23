@@ -209,10 +209,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         try {
+            long start = U.currentTimeMillis();
+
             if (jobs.containsKey(jobId) || jobMetaCache().containsKey(jobId))
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
-
-            long start = U.currentTimeMillis();
 
             GridHadoopJob job = job(jobId, info);
 
@@ -592,8 +592,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) throws GridException {
         UUID locNodeId = ctx.localNodeId();
 
-        boolean jobComplete = false;
-
         for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
             GridHadoopJobId jobId = entry.getKey();
             GridHadoopJobMetadata meta = entry.getValue();
@@ -618,15 +616,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             }
 
             processJobMetaUpdate(jobId, meta, locNodeId);
-
-            jobComplete |= meta.phase() == PHASE_COMPLETE;
         }
-
-        // One or more jobs are complete and removed, helping to GC class loaders to avoid PermGen pollution.
-        // Preferable to run CMS collector with flag -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses
-        // to avoid full GC pauses. To disable use -XX:+DisableExplicitGC flag.
-        if (jobComplete)
-            System.gc();
     }
 
     /**
