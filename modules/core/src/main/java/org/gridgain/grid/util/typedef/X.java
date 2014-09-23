@@ -410,13 +410,16 @@ public final class X {
     }
 
     /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>including</b> that
-     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
-     * otherwise.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
+     *      {@code false} otherwise.
      */
     public static boolean hasCause(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
         if (t == null || F.isEmpty(cls))
@@ -441,13 +444,16 @@ public final class X {
     }
 
     /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>excluding</b> that
-     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>excluding</b> that throwable itself.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *         {@code false} otherwise.
+     *      {@code false} otherwise.
      */
     public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
         if (t == null || F.isEmpty(cls))
@@ -473,8 +479,9 @@ public final class X {
 
     /**
      * Gets first cause if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy.
-     *
-     * Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code null} is returned).
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
@@ -504,13 +511,8 @@ public final class X {
     }
 
     /**
-     * Finds a <code>Throwable</code> for known types.
-     *
-     * <p>Uses <code>instanceof</code> checks to examine the exception, looking for well known types which could contain
-     * chained or wrapped exceptions.</p>
-     *
-     * @param throwable the exception to examine
-     * @return the wrapped exception, or <code>null</code> if not found
+     * @param throwable The exception to examine.
+     * @return The wrapped exception, or {@code null} if not found.
      */
     private static Throwable getCauseUsingWellKnownTypes(Throwable throwable) {
         if (throwable instanceof SQLException)
@@ -523,10 +525,10 @@ public final class X {
     }
 
     /**
-     * Finds a <code>Throwable</code> by method name.
+     * Finds a {@code Throwable} by method name.
      *
-     * @param throwable the exception to examine
-     * @param mtdName the name of the method to find and invoke
+     * @param throwable The exception to examine.
+     * @param mtdName The name of the method to find and invoke
      * @return the wrapped exception, or <code>null</code> if not found
      */
     private static Throwable getCauseUsingMethodName(Throwable throwable, String mtdName) {
