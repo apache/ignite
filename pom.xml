@@ -74,23 +74,6 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
-                        <id>dependencies-visor-trial</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/dependencies-visor.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
-                            <finalName>visorui</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>core-jar</id>
                         <phase>package</phase>
                         <goals>
@@ -119,7 +102,6 @@
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
-                <module>modules/visor-trial</module>
             </modules>
         </profile>
 

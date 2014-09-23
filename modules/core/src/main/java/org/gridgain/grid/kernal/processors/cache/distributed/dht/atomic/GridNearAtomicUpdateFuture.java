@@ -392,6 +392,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (futVer == null)
+                    // Assign future version in topology read lock before first exception may be thrown.
+                    futVer = cctx.versions().next(topVer);
+
                 // We are holding topology read lock and current topology is ready, we can start mapping.
                 snapshot = fut.topologySnapshot();
             }
@@ -406,10 +410,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             }
 
             topVer = snapshot.topologyVersion();
-
-            if (futVer == null)
-                // Assign future version in topology read lock.
-                futVer = cctx.versions().next(topVer);
 
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
