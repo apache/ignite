@@ -446,8 +446,8 @@ public final class X {
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
-     * otherwise.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
+     *         {@code false} otherwise.
      */
     public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
         if (t == null || F.isEmpty(cls))
@@ -513,15 +513,13 @@ public final class X {
      * @return the wrapped exception, or <code>null</code> if not found
      */
     private static Throwable getCauseUsingWellKnownTypes(Throwable throwable) {
-        if (throwable instanceof SQLException) {
+        if (throwable instanceof SQLException)
             return ((SQLException)throwable).getNextException();
-        }
-        else if (throwable instanceof InvocationTargetException) {
+
+        if (throwable instanceof InvocationTargetException)
             return ((InvocationTargetException)throwable).getTargetException();
-        }
-        else {
-            return null;
-        }
+
+        return null;
     }
 
     /**
@@ -725,20 +723,17 @@ public final class X {
     /**
      * Returns the list of <code>Throwable</code> objects in the exception chain.
      *
-     * <p>A throwable without cause will return an array containing one element - the input throwable. A throwable with
-     * one cause will return an array containing two elements. - the input throwable and the cause throwable. A
-     * <code>null</code> throwable will return an array of size zero.</p>
+     * A throwable without cause will return an array containing one element - the input throwable.
+     * A throwable with one cause will return an array containing two elements - the input throwable
+     * and the cause throwable. A <code>null</code> throwable will return an array of size zero.
      *
-     * <p>From version 2.2, this method handles recursive cause structures that might otherwise cause infinite loops.
-     * The cause chain is processed until the end is reached, or until the next item in the chain is already in the
-     * result set.</p>
-     *
-     * @param throwable the throwable to inspect, may be null
-     * @return the array of throwables, never null
+     * @param throwable the throwable to inspect, may be null.
+     * @return the array of throwables, never null.
      * @see #getThrowableList(Throwable)
      */
     public static Throwable[] getThrowables(Throwable throwable) {
         List<Throwable> list = getThrowableList(throwable);
+
         return list.toArray(new Throwable[list.size()]);
     }
 
