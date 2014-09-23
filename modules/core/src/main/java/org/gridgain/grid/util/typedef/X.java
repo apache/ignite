@@ -540,6 +540,7 @@ public final class X {
      */
     private static Throwable getCauseUsingMethodName(Throwable throwable, String mtdName) {
         Method mtd = null;
+
         try {
             mtd = throwable.getClass().getMethod(mtdName, null);
         }
@@ -555,6 +556,7 @@ public final class X {
                 // exception ignored
             }
         }
+
         return null;
     }
 
@@ -591,7 +593,6 @@ public final class X {
      * <p>This is true for JDK 1.4 and above.</p>
      *
      * @return true if Throwable is nestable
-     * @since 2.0
      */
     public static boolean isThrowableNested() {
         return THROWABLE_CAUSE_METHOD != null;
@@ -604,7 +605,6 @@ public final class X {
      *
      * @param throwable the <code>Throwable</code> to examine, may be null
      * @return boolean <code>true</code> if nested otherwise <code>false</code>
-     * @since 2.0
      */
     public static boolean isNestedThrowable(Throwable throwable) {
         if (throwable == null) {
@@ -664,7 +664,6 @@ public final class X {
      *
      * @param throwable the throwable to introspect for a cause, may be null
      * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input
-     * @since 1.0
      */
     public static Throwable getCause(Throwable throwable) {
         return getCause(throwable, CAUSE_MTD_NAMES);
@@ -682,7 +681,6 @@ public final class X {
      * @param throwable the throwable to introspect for a cause, may be null
      * @param mtdNames the method names, null treated as default set
      * @return the cause of the <code>Throwable</code>, <code>null</code> if none found or null throwable input
-     * @since 1.0
      */
     public static Throwable getCause(Throwable throwable, String[] mtdNames) {
         if (throwable == null) {
@@ -722,7 +720,6 @@ public final class X {
      *
      * @param throwable the throwable to inspect, may be null
      * @return the list of throwables, never null
-     * @since Commons Lang 2.2
      */
     public static List<Throwable> getThrowableList(Throwable throwable) {
         List<Throwable> list = new ArrayList<>();
@@ -761,18 +758,19 @@ public final class X {
      *
      * @param throwable the <code>Throwable</code> to be examined
      * @return the nested stack trace, with the root cause first
-     * @since 2.0
      */
     public static String getFullStackTrace(Throwable throwable) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw, true);
         Throwable[] ts = getThrowables(throwable);
+
         for (Throwable t : ts) {
             t.printStackTrace(pw);
             if (isNestedThrowable(t)) {
                 break;
             }
         }
+
         return sw.getBuffer().toString();
     }
 
