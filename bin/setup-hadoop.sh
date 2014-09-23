@@ -29,21 +29,21 @@ fi
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
 # Discover GRIDGAIN_HOME environment variable.
 #
 setGridGainHome
-
-#
-# Get correct Java class path separator symbol for the given platform.
-#
-getClassPathSeparator
 
 #
 # Set utility environment.
@@ -53,5 +53,4 @@ export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 #
 # Start utility.
 #
-. "${GRIDGAIN_HOME}/os/bin/ggstart.sh" $@
-
+. "${SCRIPTS_HOME}/ggstart.sh" $@

@@ -72,14 +72,16 @@ if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
 
 :run
 
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME="%GRIDGAIN_HOME%\os\bin" :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
 
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
-call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" :: Will be removed in release.
 
 ::
 :: Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
@@ -98,7 +100,7 @@ set CP=%GRIDGAIN_LIBS%
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
