@@ -953,7 +953,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * GridCachePessimisticCheckCommittedTxRequest message converter.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class NearOnlyFlagAddedMessageConverter650 extends GridVersionConverter {
+    public static class BooleanFlagAddedMessageConverter650 extends GridVersionConverter {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
             commState.setBuffer(buf);

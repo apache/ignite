@@ -675,7 +675,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
 
         ctx.versionConverter().registerLocal(GridCachePessimisticCheckCommittedTxRequest.class,
-            GridDhtCacheAdapter.NearOnlyFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
             GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
