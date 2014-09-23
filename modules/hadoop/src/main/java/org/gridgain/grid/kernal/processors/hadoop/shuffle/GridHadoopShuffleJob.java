@@ -36,7 +36,7 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  */
 public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int MSG_BUF_SIZE = 64 * 1024;
+    private static final int MSG_BUF_SIZE = 128 * 1024;
 
     /** */
     private final GridHadoopJob job;
