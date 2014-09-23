@@ -770,43 +770,53 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <replace token="@sh.file.version" value="${gridgain.version}">
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replace>
-
-                                <replace token="@bat.file.version" value="${gridgain.version}">
+                                <replaceregexp byline="true">
+                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.\s*::.+'/>
+                                    <substitution expression='pushd "%~dp0"/..'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
                                     </fileset>
-                                </replace>
+                                </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='\. "\$\{GRIDGAIN_HOME\}/os/bin/include/target-classpath.sh"'/>
+                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"\s*#.*'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
                                     </fileset>
                                 </replaceregexp>
 
-                                <replace dir="target/release-package/bin"
-                                         token='call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"'
-                                         value="">
-                                    <include name="**/*.bat"/>
-                                </replace>
-
-                                <replace token="os/" value="">
-                                    <fileset dir="target/release-package/bin">
-                                        <include name="**/*.sh"/>
-                                    </fileset>
-                                </replace>
-
-                                <replace token="os\" value="">
+                                <replaceregexp byline="true">
+                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin\s*::.*'/>
+                                    <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
                                     </fileset>
-                                </replace>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"\s*#.*'/>
+                                    <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh\s*#.*'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"\s*::.*'/>
+                                    <substitution expression=""/>
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replaceregexp>
 
                                 <replaceregexp byline="true">
                                     <regexp pattern='ENABLE_ASSERTIONS=.*'/>
@@ -823,6 +833,18 @@
                                         <include name="**/*.bat"/>
                                     </fileset>
                                 </replaceregexp>
+
+                                <replace token="@sh.file.version" value="${gridgain.version}">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="@bat.file.version" value="${gridgain.version}">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
 
                                 <replace token="@xml.file.version" value="${gridgain.version}">
                                     <fileset dir="target/release-package">
