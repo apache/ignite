@@ -14,10 +14,10 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
-import static org.gridgain.grid.kernal.visor.gui.tasks.VisorHadoopTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.gui.tasks.VisorGgfsTaskUtils.*;
 
 import java.io.*;
 import java.nio.charset.*;
@@ -117,6 +117,57 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
     private static class VisorGgfsProfilerJob extends VisorJob<String, Collection<VisorGgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        // Named column indexes in log file.
+        private static final int LOG_COL_TIMESTAMP = 0;
+        private static final int LOG_COL_THREAD_ID = 1;
+        private static final int LOG_COL_ENTRY_TYPE = 3;
+        private static final int LOG_COL_PATH = 4;
+        private static final int LOG_COL_GGFS_MODE = 5;
+        private static final int LOG_COL_STREAM_ID = 6;
+        private static final int LOG_COL_DATA_LEN = 8;
+        private static final int LOG_COL_OVERWRITE = 10;
+        private static final int LOG_COL_POS = 13;
+        private static final int LOG_COL_USER_TIME = 17;
+        private static final int LOG_COL_SYSTEM_TIME = 18;
+        private static final int LOG_COL_TOTAL_BYTES = 19;
+
+        // Constants copied from GridGgfsHadoopLogger in module "gridgain-hadoop".
+        /** Field delimiter. */
+        private static final String DELIM_FIELD = ";";
+
+        /** Pre-defined header string. */
+        private static final String HDR = "Timestamp" + DELIM_FIELD + "ThreadID" + DELIM_FIELD + "PID" + DELIM_FIELD +
+            "Type" + DELIM_FIELD + "Path" + DELIM_FIELD + "Mode" + DELIM_FIELD + "StreamId" + DELIM_FIELD + "BufSize" +
+            DELIM_FIELD + "DataLen" + DELIM_FIELD + "Append" + DELIM_FIELD + "Overwrite" + DELIM_FIELD + "Replication" +
+            DELIM_FIELD + "BlockSize" + DELIM_FIELD + "Position" + DELIM_FIELD + "ReadLen" + DELIM_FIELD + "SkipCnt" +
+            DELIM_FIELD + "ReadLimit" + DELIM_FIELD + "UserTime" + DELIM_FIELD + "SystemTime" + DELIM_FIELD +
+            "TotalBytes" + DELIM_FIELD + "DestPath" + DELIM_FIELD + "Recursive" + DELIM_FIELD + "List";
+
+        /** File open. */
+        private static final int TYPE_OPEN_IN = 0;
+
+        /** File create or append. */
+        private static final int TYPE_OPEN_OUT = 1;
+
+        /** Random read. */
+        private static final int TYPE_RANDOM_READ = 2;
+
+        /** Close input stream. */
+        private static final int TYPE_CLOSE_IN = 7;
+
+        /** Close output stream. */
+        private static final int TYPE_CLOSE_OUT = 8;
+        // End of constants.
+
+        /** List of log entries that should be parsed. */
+        private static final Set<Integer> LOG_TYPES = F.asSet(
+            TYPE_OPEN_IN,
+            TYPE_OPEN_OUT,
+            TYPE_RANDOM_READ,
+            TYPE_CLOSE_IN,
+            TYPE_CLOSE_OUT
+        );
 
         /** Create job with given argument. */
         private VisorGgfsProfilerJob(String arg) {
@@ -350,7 +401,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @throws IOException if failed to read log file.
          */
         private Collection<VisorGgfsProfilerEntry> parseFile(Path p) throws IOException {
-            List<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+            Collection<VisorGgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
                 String line = br.readLine(); // Skip first line with columns header.
