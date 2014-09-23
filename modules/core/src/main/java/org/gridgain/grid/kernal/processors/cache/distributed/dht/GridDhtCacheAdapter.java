@@ -49,6 +49,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public static final GridProductVersion TASK_NAME_HASH_SINCE_VER = GridProductVersion.fromString("6.2.1");
 
     /** */
+    public static final GridProductVersion PRELOAD_WITH_LOCK_SINCE_VER = GridProductVersion.fromString("6.5.0");
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology. */
