@@ -99,14 +99,16 @@ public class GridHadoopUtils {
 
             case PHASE_MAP:
                 setupProgress = 1;
-                mapProgress = status.pendingMapperCnt() / (float)status.totalMapperCnt();
+                mapProgress = 1f - status.pendingMapperCnt() / (float)status.totalMapperCnt();
 
                 break;
 
             case PHASE_REDUCE:
+                assert status.totalReducerCnt() > 0;
+
                 setupProgress = 1;
                 mapProgress = 1;
-                reduceProgress = status.pendingReducerCnt() / (float)status.totalReducerCnt();
+                reduceProgress = 1f - status.pendingReducerCnt() / (float)status.totalReducerCnt();
 
                 break;
 
