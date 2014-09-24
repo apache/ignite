@@ -314,15 +314,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             cctx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
         }
-
-        // If this is the oldest node.
-        if (oldestNode.get().id().equals(cctx.nodeId())) {
-            if (allReceived() && ready.get() && replied.compareAndSet(false, true)) {
-                spreadPartitions(top.partitionMap(true));
-
-                onDone(exchId.topologyVersion());
-            }
-        }
     }
 
     /**
@@ -419,13 +410,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     }
 
     /**
-     * @return Init flag.
-     */
-    boolean isInit() {
-        return init.get();
-    }
-
-    /**
      * Starts activity.
      *
      * @throws GridInterruptedException If interrupted.
@@ -457,6 +441,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 assert topVer == top.topologyVersion() :
                     "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
 
+                // Do not wait for partition release future only if local node has just joined the grid.
                 if (canCalculateAffinity()) {
                     // Get partitions of event source node: join => new topology, left => previous topology.
                     long moveTopVer = topVer + (exchId.isLeft() ? -1 : 0);
@@ -517,19 +502,26 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             if (log.isDebugEnabled())
                 log.debug("Initialized future: " + this);
 
-            // If this node is not oldest.
-            if (!oldestNode.get().id().equals(cctx.nodeId()))
-                sendPartitions();
-            else {
-                boolean allReceived = allReceived();
+            if (!U.hasCache(discoEvt.node(), cctx.name())) {
+                assert canCalculateAffinity();
 
-                if (allReceived && replied.compareAndSet(false, true)) {
-                    if (spreadPartitions(top.partitionMap(true)))
-                        onDone(exchId.topologyVersion());
-                }
+                onDone(exchId.topologyVersion());
             }
+            else {
+                // If this node is not oldest.
+                if (!oldestNode.get().id().equals(cctx.nodeId()))
+                    sendPartitions();
+                else {
+                    boolean allReceived = allReceived();
 
-            scheduleRecheck();
+                    if (allReceived && replied.compareAndSet(false, true)) {
+                        if (spreadPartitions(top.partitionMap(true)))
+                            onDone(exchId.topologyVersion());
+                    }
+                }
+
+                scheduleRecheck();
+            }
         }
         else
             assert false : "Skipped init future: " + this;

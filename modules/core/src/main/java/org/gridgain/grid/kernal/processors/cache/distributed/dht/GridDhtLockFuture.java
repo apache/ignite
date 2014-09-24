@@ -28,6 +28,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+
 /**
  * Cache lock future.
  */
@@ -836,6 +838,16 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                 invalidateRdr,
                                 cctx);
 
+                            try {
+                                if (e.isNewLocked())
+                                    // Mark last added key as needed to be preloaded.
+                                    req.markLastKeyForPreload();
+                            }
+                            catch (GridCacheEntryRemovedException ex) {
+                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                                    "[e=" + e + ", ex=" + ex + ']';
+                            }
+
                             it.set(addOwned(req, e));
                         }
 
@@ -1051,7 +1063,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             return node;
         }
 
-
         /**
          * @param e Error.
          */
@@ -1116,6 +1127,26 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                     if (dhtMapping.isEmpty())
                         dhtMap.remove(node);
+                }
+
+                boolean replicate = cctx.isDrEnabled();
+
+                for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
+                    try {
+                        GridCacheEntryEx<K,V> entry = cctx.cache().entryEx(info.key(), topVer);
+
+                        entry.initialValue(info.value(), info.valueBytes(), info.version(), info.ttl(),
+                            info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE);
+                    }
+                    catch (GridException e) {
+                        onDone(e);
+
+                        return;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                            "[e=" + e + ", ex=" + e + ']';
+                    }
                 }
 
                 // Finish mini future.

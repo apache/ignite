@@ -32,6 +32,7 @@ public class GridCacheMetricsSelfTestSuite extends TestSuite {
 
         // Atomic cache.
         suite.addTest(new TestSuite(GridCacheAtomicLocalMetricsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class));
 
