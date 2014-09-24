@@ -22,7 +22,8 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testDistribution() throws Exception {
+    // TODO Enable after GG-9153.
+    public void _testDistribution() throws Exception {
         for (int i = 0; i < 100; i++) {
             int grpSize = ThreadLocalRandom.current().nextInt(2, 100000);
             int partCnt = ThreadLocalRandom.current().nextInt(1, grpSize);

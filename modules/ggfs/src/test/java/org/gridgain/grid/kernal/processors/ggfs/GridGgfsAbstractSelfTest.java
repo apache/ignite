@@ -753,8 +753,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    // TODO Enable after GG-8578.
     @SuppressWarnings("ConstantConditions")
-    public void testFormat() throws Exception {
+    public void _testFormat() throws Exception {
         GridKernal grid = (GridKernal)G.grid("grid");
         GridCache cache = grid.internalCache("dataCache");
 
