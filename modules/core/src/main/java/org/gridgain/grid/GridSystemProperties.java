@@ -464,27 +464,73 @@ public final class GridSystemProperties {
         return v;
     }
 
-    public static String getString(String name, String dflt) {
+    /**
+     * Gets either system property or environment variable with given name.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Value of the system property or environment variable.
+     *         Returns {@code null} if neither can be found for given name.
+     */
+    @Nullable public static String getString(String name, String dflt) {
         String val = getString(name);
 
         return val == null ? dflt : val;
     }
 
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code boolean} using {@code Boolean.valueOf()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @return Boolean value of the system property or environment variable.
+     *         Returns {@code False} in case neither system property
+     *         nor environment variable with given name is found.
+     */
     public static boolean getBoolean(String name) {
         return Boolean.valueOf(getString(name));
     }
 
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code boolean} using {@code Boolean.valueOf()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Boolean value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
     public static boolean getBoolean(String name, boolean dflt) {
         String val = getString(name);
 
         return val == null ? dflt : Boolean.valueOf(val);
     }
 
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code int} using {@code Integer.valueOf()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @return Integer value of the system property or environment variable.
+     *         Returns -1 in case neither system property
+     *         nor environment variable with given name is found.
+     */
     public static int getInteger(String name) {
         String val = getString(name);
-        return val == null ? 0 : Integer.valueOf(val);
+        return val == null ? -1 : Integer.valueOf(val);
     }
 
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code int} using {@code Integer.valueOf()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value
+     * @return Integer value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
     public static int getInteger(String name, int dflt) {
         String val = getString(name);
         return val == null ? dflt : Integer.valueOf(val);

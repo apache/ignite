@@ -175,7 +175,7 @@ public final class X {
      * @param name Name of the system property or environment variable.
      * @param dflt Default value.
      * @return Value of the system property or environment variable. Returns
-     *      {@code null} if neither can be found for given name.
+     *      the default value if neither can be found for given name.
      */
     @Nullable public static String getSystemOrEnv(String name, String dflt) {
         assert name != null;
