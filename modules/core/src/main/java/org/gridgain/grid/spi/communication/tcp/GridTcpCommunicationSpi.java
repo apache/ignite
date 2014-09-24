@@ -243,6 +243,11 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                         ((GridTcpNioCommunicationClient)rmv).session() == ses &&
                         clients.remove(id, rmv))
                         rmv.forceClose();
+
+                    GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
+
+                    if (lsnr0 != null)
+                        lsnr0.onDisconnected(id);
                 }
             }
 
