@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -31,9 +30,6 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -56,9 +52,6 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     /** Flag indicating that future checks near node instead of checking all topology in case of primary node crash. */
     private boolean nearCheck;
 
-    /** Logger. */
-    private final GridLogger log;
-
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -72,8 +65,6 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         this.cctx = cctx;
         this.tx = tx;
         this.failedNodeId = failedNodeId;
-
-        log = U.logger(ctx, logRef, GridCacheOptimisticCheckPreparedTxFuture.class);
 
         nodes = new GridLeanMap<>();
 
@@ -138,7 +129,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
             MiniFuture fut = new MiniFuture(rmtNode.id());
 
             GridCachePessimisticCheckCommittedTxRequest<K, V> req = new GridCachePessimisticCheckCommittedTxRequest<>(tx,
-                originatingThreadId, futureId(), fut.futureId());
+                originatingThreadId, futureId(), fut.futureId(), nearCheck);
 
             add(fut);
 
