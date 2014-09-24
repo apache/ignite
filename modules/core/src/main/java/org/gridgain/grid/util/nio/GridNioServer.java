@@ -476,6 +476,9 @@ public class GridNioServer<T> {
 
                 srvrCh.configureBlocking(false);
 
+                if (sockRcvBuf > 0)
+                    srvrCh.socket().setReceiveBufferSize(sockRcvBuf);
+
                 // Bind the server socket to the specified address and port
                 srvrCh.socket().bind(addr);
 
@@ -1018,7 +1021,7 @@ public class GridNioServer<T> {
      */
     private abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
-        private final ConcurrentLinkedDeque8<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
+        private final Queue<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
 
         /** Selector to select read events. */
         private Selector selector;
@@ -1044,25 +1047,29 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, GridInterruptedException {
-            boolean reset = false;
+            try {
+                boolean reset = false;
+                while (!closed) {
+                    try {
+                        if (reset)
+                            selector = createSelector(null);
 
-            while (!closed) {
-                try {
-                    if (reset)
-                        selector = createSelector(null);
+                        bodyInternal();
+                    }
+                    catch (GridException e) {
+                        if (!Thread.currentThread().isInterrupted()) {
+                            U.error(log, "Failed to read data from remote connection (will wait for " +
+                                ERR_WAIT_TIME + "ms).", e);
 
-                    bodyInternal();
-                }
-                catch (GridException e) {
-                    if (!Thread.currentThread().isInterrupted()) {
-                        U.error(log, "Failed to read data from remote connection (will wait for " +
-                            ERR_WAIT_TIME + "ms).", e);
+                            U.sleep(ERR_WAIT_TIME);
 
-                        U.sleep(ERR_WAIT_TIME);
-
-                        reset = true;
+                            reset = true;
+                        }
                     }
                 }
+            }
+            catch (Throwable e) {
+                U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
             }
         }
 
@@ -1219,7 +1226,8 @@ public class GridNioServer<T> {
                 try {
                     if (key.isReadable())
                         processRead(key);
-                    else if (key.isWritable())
+
+                    if (key.isValid() && key.isWritable())
                         processWrite(key);
                 }
                 catch (ClosedByInterruptException e) {
