@@ -663,11 +663,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 if (ctx.jobUpdateLeader()) {
                     Collection<GridHadoopTaskInfo> setupTask = setupTask(jobId);
 
-                    if (setupTask != null) {
-                        printPlan(jobId, plan);
-
+                    if (setupTask != null)
                         ctx.taskExecutor().run(job, setupTask);
-                    }
                 }
 
                 break;
@@ -777,8 +774,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 GridHadoopJobStatistics s = stats.remove(jobId);
 
-                if (s != null)
-                    jobStatPrj.transform(new StatId(jobId), new StatUpdateClosure(s));
+//                if (s != null)
+//                    jobStatPrj.transform(new StatId(jobId), new StatUpdateClosure(s));
 
                 GridFutureAdapter<GridHadoopJobId> finishFut = activeFinishFuts.remove(jobId);
 
@@ -796,19 +793,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 job.dispose(false);
 
-                if (ctx.jobUpdateLeader()) { // TODO remove this
-                    U.sleep(1000);
-
-                    s = jobStatPrj.remove(new StatId(jobId));
-
-                    if (s != null) {
-                        log.info("=== Stats for " + jobId);
-
-                        s.print(log);
-
-                        log.info("===_");
-                    }
-                }
+//                if (ctx.jobUpdateLeader()) { // TODO remove this
+//                    U.sleep(1000);
+//
+//                    s = jobStatPrj.remove(new StatId(jobId));
+//
+//                    if (s != null) {
+//                        log.info("=== Stats for " + jobId);
+//
+//                        s.print(log);
+//
+//                        log.info("===_");
+//                    }
+//                }
 
                 break;
             }
