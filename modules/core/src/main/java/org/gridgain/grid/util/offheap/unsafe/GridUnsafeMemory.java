@@ -40,7 +40,7 @@ public class GridUnsafeMemory {
 
     /** Safe offheap release flag. */
     private static final boolean SAFE_RELEASE = Boolean.valueOf(
-        X.getSystemOrEnv(GridSystemProperties.GG_OFFHEAP_SAFE_RELEASE, "false"));
+        GridSystemProperties.getString(GridSystemProperties.GG_OFFHEAP_SAFE_RELEASE, "false"));
 
     /** Total size. */
     @GridToStringInclude

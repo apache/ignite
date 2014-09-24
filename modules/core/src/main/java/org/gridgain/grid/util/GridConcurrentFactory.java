@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
@@ -29,7 +29,7 @@ public class GridConcurrentFactory {
     static {
         int dfltLevel = 256;
 
-        String s = X.getSystemOrEnv(GG_MAP_CONCURRENCY_LEVEL, Integer.toString(dfltLevel));
+        String s = GridSystemProperties.getString(GG_MAP_CONCURRENCY_LEVEL, Integer.toString(dfltLevel));
 
         int level;
 

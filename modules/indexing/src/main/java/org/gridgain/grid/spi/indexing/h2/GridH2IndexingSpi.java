@@ -1389,7 +1389,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             createSqlFunctions();
             runInitScript();
 
-            if (X.getSystemOrEnv(GridSystemProperties.GG_H2_DEBUG_CONSOLE) != null) {
+            if (GridSystemProperties.getString(GridSystemProperties.GG_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();

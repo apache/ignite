@@ -585,7 +585,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = !"false".equalsIgnoreCase(X.getSystemOrEnv(GG_UPDATE_NOTIFIER));
+        boolean notifyEnabled = !"false".equalsIgnoreCase(GridSystemProperties.getString(GG_UPDATE_NOTIFIER));
 
         GridUpdateNotifier verChecker0 = null;
 
@@ -835,7 +835,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
 
-        String intervalStr = X.getSystemOrEnv(GG_STARVATION_CHECK_INTERVAL);
+        String intervalStr = GridSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
 
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
@@ -1299,7 +1299,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         add(attrs, ATTR_JVM_PID, U.jvmPid());
 
-        // Build a string from JVM arguments, because parameters with spaces are splited.
+        // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
 
         for (String arg : U.jvmArgs()) {

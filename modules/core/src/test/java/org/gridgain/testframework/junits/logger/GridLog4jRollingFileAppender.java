@@ -10,8 +10,8 @@
 package org.gridgain.testframework.junits.logger;
 
 import org.apache.log4j.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -82,7 +82,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             fileName = U.nodeIdLogFileName(nodeId, baseFileName);
         }
         else {
-            String tmpDir = X.getSystemOrEnv("java.io.tmpdir");
+            String tmpDir = GridSystemProperties.getString("java.io.tmpdir");
 
             if (tmpDir != null) {
                 baseFileName = new File(tmpDir, "gridgain.log").getAbsolutePath();

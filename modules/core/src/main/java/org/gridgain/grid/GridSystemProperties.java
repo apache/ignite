@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 
@@ -443,5 +444,49 @@ public final class GridSystemProperties {
      */
     private GridSystemProperties() {
         // No-op.
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
+     *
+     * @param name Name of the system property or environment variable.
+     * @return Value of the system property or environment variable.
+     *         Returns {@code null} if neither can be found for given name.
+     */
+    @Nullable public static String getString(String name) {
+        assert name != null;
+
+        String v = System.getProperty(name);
+
+        if (v == null)
+            v = System.getenv(name);
+
+        return v;
+    }
+
+    public static String getString(String name, String dflt) {
+        String val = getString(name);
+
+        return val == null ? dflt : val;
+    }
+
+    public static boolean getBoolean(String name) {
+        return Boolean.valueOf(getString(name));
+    }
+
+    public static boolean getBoolean(String name, boolean dflt) {
+        String val = getString(name);
+
+        return val == null ? dflt : Boolean.valueOf(val);
+    }
+
+    public static int getInteger(String name) {
+        String val = getString(name);
+        return val == null ? 0 : Integer.valueOf(val);
+    }
+
+    public static int getInteger(String name, int dflt) {
+        String val = getString(name);
+        return val == null ? dflt : Integer.valueOf(val);
     }
 }

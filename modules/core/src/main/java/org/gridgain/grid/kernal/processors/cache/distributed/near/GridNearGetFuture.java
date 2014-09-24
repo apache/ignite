@@ -97,7 +97,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     static {
         int dfltRemapCnt = DFLT_MAX_REMAP_CNT;
 
-        String s = X.getSystemOrEnv(GG_NEAR_GET_MAX_REMAPS, Integer.toString(dfltRemapCnt));
+        String s = GridSystemProperties.getString(GG_NEAR_GET_MAX_REMAPS, Integer.toString(dfltRemapCnt));
 
         int cnt;
 

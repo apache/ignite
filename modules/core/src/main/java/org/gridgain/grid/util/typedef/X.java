@@ -866,7 +866,7 @@ public final class X {
      * @throws GridException If GridGain home folder was not set.
      */
     public static String resolveGridGainHome() throws GridException {
-        String var = getSystemOrEnv("GRIDGAIN_HOME");
+        String var = GridSystemProperties.getString(GridSystemProperties.GG_HOME);
 
         if (var != null)
             return var;

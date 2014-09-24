@@ -19,10 +19,10 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -242,7 +242,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     void resendPartitions() {
         try {
-             refreshPartitions(0);
+            refreshPartitions(0);
         }
         catch (GridInterruptedException e) {
             U.warn(log, "Partitions were not refreshed (thread got interrupted): " + e,
@@ -570,7 +570,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     private static long getResendTimeout() {
         try {
-            return Long.parseLong(X.getSystemOrEnv(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
+            return Long.parseLong(GridSystemProperties.getString(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
                 String.valueOf(GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT)));
         }
         catch (NumberFormatException ignored) {
@@ -759,7 +759,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws GridTopologyException If node left.
          * @throws GridException If failed to send message.
          */
-        private Set<Integer> demandFromNode(GridNode node, final long topVer,  GridDhtPartitionDemandMessage<K, V> d,
+        private Set<Integer> demandFromNode(GridNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
             GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, GridException {
             cntr++;
 
@@ -1129,7 +1129,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         syncFut.onWorkerDone(this);
                     }
 
-                     scheduleResendPartitions();
+                    scheduleResendPartitions();
                 }
             }
             finally {

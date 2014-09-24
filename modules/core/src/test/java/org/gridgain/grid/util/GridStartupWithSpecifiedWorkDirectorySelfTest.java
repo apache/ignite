@@ -60,7 +60,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     private GridConfiguration getConfiguration(GridLogger log) {
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
-        String ggHome = X.getSystemOrEnv(GridSystemProperties.GG_HOME);
+        String ggHome = GridSystemProperties.getString(GridSystemProperties.GG_HOME);
 
         assert ggHome != null;
 
