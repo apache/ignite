@@ -631,7 +631,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     boolean metrics = true;
 
-                                    if (updateNearCache())
+                                    if (updateNearCache(txEntry.key(), topVer))
                                         nearCached = cctx.dht().near().peekEx(txEntry.key());
                                     else if (near() && txEntry.locallyMapped())
                                         metrics = false;
@@ -1856,6 +1856,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean rmv = lookup == null && transformMap == null;
 
         try {
+            // Set transform flag for transaction.
+            if (transformMap != null)
+                transform = true;
+
             groupLockSanityCheck(keys);
 
             for (K key : keys) {
