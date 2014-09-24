@@ -795,20 +795,17 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -819,7 +816,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 Collection<GridGgfsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
-                    return null;
+                    throw new FileNotFoundException("File " + f + " does not exist.");
 
                 List<GridGgfsFile> files = new ArrayList<>(list);
 
@@ -839,9 +836,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 return arr;
             }
-        }
-        catch (FileNotFoundException ignored) {
-            return null;
         }
         finally {
             leaveBusy();
