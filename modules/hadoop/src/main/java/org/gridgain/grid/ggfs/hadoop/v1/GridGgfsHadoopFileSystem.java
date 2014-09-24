@@ -837,9 +837,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 return arr;
             }
         }
-        catch (FileNotFoundException ignored) {
-            throw new FileNotFoundException("File " + f + " does not exist.");
-        }
         finally {
             leaveBusy();
         }
