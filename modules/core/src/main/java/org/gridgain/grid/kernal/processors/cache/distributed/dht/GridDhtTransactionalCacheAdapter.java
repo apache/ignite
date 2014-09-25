@@ -563,7 +563,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             GridCacheEntryInfo<K, V> info = cached.info();
 
-                            if (!info.isNew() && !info.isDeleted())
+                            if (info != null && !info.isNew() && !info.isDeleted())
                                 res.addPreloadEntry(info);
                         }
                     }
@@ -873,7 +873,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (req.needPreloadKey(i)) {
                             GridCacheEntryInfo<K, V> info = entry.info();
 
-                            if (!info.isNew() && !info.isDeleted())
+                            if (info != null && !info.isNew() && !info.isDeleted())
                                 res.addPreloadEntry(info);
                         }
 
