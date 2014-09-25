@@ -63,7 +63,8 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         validate(cfg);
 
-        U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
+        if (hadoopHome() != null)
+            U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
 
         boolean ok = false;
 

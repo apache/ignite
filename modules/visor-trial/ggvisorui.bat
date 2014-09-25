@@ -22,14 +22,14 @@ if not "%JAVA_HOME%" == "" goto checkJdk
     echo %0, ERROR: JAVA_HOME environment variable is not found.
     echo %0, ERROR: Please create JAVA_HOME variable pointing to location of JDK 1.7 or JDK 1.8.
     echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
-    exit 1
+goto error_finish
 
 :checkJdk
 :: Check that JDK is where it should be.
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR: The JDK is not found in %JAVA_HOME%.
     echo %0, ERROR: Please modify your script so that JAVA_HOME would point to valid location of JDK.
-    exit 1
+goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
@@ -37,7 +37,7 @@ if %ERRORLEVEL% equ 0 goto checkGridGainHome1
     echo %0, ERROR: The version of JAVA installed in %JAVA_HOME% is incorrect.
     echo %0, ERROR: Please install JDK 1.7 or 1.8.
     echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
-    exit 1
+goto error_finish
 
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
@@ -64,38 +64,26 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
     echo Please create GRIDGAIN_HOME environment variable pointing to location of
     echo GridGain installation folder.
-    exit 1
+    goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
-    echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
-
-:run
 
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME="%GRIDGAIN_HOME%\os\bin" :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
+    echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
+
+:run
 
 ::
 :: Set GRIDGAIN_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" :: Will be removed in release.
-
-::
-:: Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
-::
-if exist "%HADOOP_COMMON_HOME%" (
-    for /f %%f in ('dir /B %GRIDGAIN_HOME%\bin\include\visorui') do call :concat %%f
-
-    goto cp
-)
-
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
-
-:cp
-set CP=%GRIDGAIN_LIBS%
+set CP=%GRIDGAIN_HOME%\bin\include\visorui\*;%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
@@ -138,14 +126,11 @@ set VISOR_PLUGINS_DIR=%GRIDGAIN_HOME%\bin\include\visorui\plugins
 -Dpf4j.pluginsDir="%VISOR_PLUGINS_DIR%" ^
 -cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
 
-exit %ERRORLEVEL%
+:error_finish
 
-goto :eof
-
-:concat
-set file=%1
-
-if %file:~-0,5% neq slf4j if %file:~-0,5% neq log4j if %file% neq licenses if %file% neq plugins ^
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\%1
+if %ERRORLEVEL% neq 0 (
+    echo Visor exit with error
+    exit /b %ERRORLEVEL%
+)
 
 goto :eof

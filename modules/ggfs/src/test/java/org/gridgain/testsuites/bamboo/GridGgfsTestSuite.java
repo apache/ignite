@@ -28,7 +28,7 @@ public class GridGgfsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Platform Independent Tests");
 
-        suite.addTest(new TestSuite(GridGgfsSizeSelfTest.class));
+//        suite.addTest(new TestSuite(GridGgfsSizeSelfTest.class)); TODO Enable after GG-9035
         suite.addTest(new TestSuite(GridGgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsFileInfoSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetaManagerSelfTest.class));

@@ -28,6 +28,9 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+
 /**
  * Cache lock future.
  */
@@ -836,6 +839,16 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                 invalidateRdr,
                                 cctx);
 
+                            try {
+                                if (e.isNewLocked())
+                                    // Mark last added key as needed to be preloaded.
+                                    req.markLastKeyForPreload();
+                            }
+                            catch (GridCacheEntryRemovedException ex) {
+                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                                    "[e=" + e + ", ex=" + ex + ']';
+                            }
+
                             it.set(addOwned(req, e));
                         }
 
@@ -1051,7 +1064,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             return node;
         }
 
-
         /**
          * @param e Error.
          */
@@ -1116,6 +1128,33 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                     if (dhtMapping.isEmpty())
                         dhtMap.remove(node);
+                }
+
+                boolean replicate = cctx.isDrEnabled();
+
+                boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+
+                for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
+                    try {
+                        GridCacheEntryEx<K,V> entry = cctx.cache().entryEx(info.key(), topVer);
+
+                        if (entry.initialValue(info.value(), info.valueBytes(), info.version(), info.ttl(),
+                            info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
+                            if (rec && !entry.isInternal())
+                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                    (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    false, null, null, null);
+                        }
+                    }
+                    catch (GridException e) {
+                        onDone(e);
+
+                        return;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                            "[e=" + e + ", ex=" + e + ']';
+                    }
                 }
 
                 // Finish mini future.

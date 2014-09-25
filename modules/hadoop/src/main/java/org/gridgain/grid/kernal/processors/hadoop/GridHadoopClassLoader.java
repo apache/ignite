@@ -14,8 +14,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.asm.*;
-import org.springframework.asm.commons.*;
+import org.objectweb.asm.*;
+import org.objectweb.asm.commons.*;
 
 import java.io.*;
 import java.net.*;
@@ -28,6 +28,13 @@ import java.util.concurrent.atomic.*;
  * unavailable for parent.
  */
 public class GridHadoopClassLoader extends URLClassLoader {
+    /**
+     * We are very parallel capable.
+     */
+    static {
+        registerAsParallelCapable();
+    }
+
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)GridHadoopClassLoader.class.getClassLoader();
 
@@ -79,6 +86,8 @@ public class GridHadoopClassLoader extends URLClassLoader {
             if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
                 if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadFromBytes(name, GridHadoopShutdownHookManager.class.getName());
+                else if (name.endsWith(".util.NativeCodeLoader"))
+                    return loadFromBytes(name, GridHadoopNativeCodeLoader.class.getName());
 
                 return loadClassExplicitly(name, resolve);
             }

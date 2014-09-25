@@ -269,9 +269,39 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         /** {@inheritDoc} */
+        @Override public <T> T get(Object key, Class<T> type) {
+            try {
+                Object val = cache.get(key);
+
+                if (val != null && type != null && !type.isInstance(val))
+                    throw new IllegalStateException("Cached value is not of required type [cacheName=" + cache.name() +
+                        ", key=" + key + ", val=" + val + ", requiredType=" + type + ']');
+
+                return (T)val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException("Failed to get value from cache [cacheName=" + cache.name() +
+                    ", key=" + key + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public void put(Object key, Object val) {
             try {
                 cache.putx(key, val);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +
+                    ", key=" + key + ", val=" + val + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public ValueWrapper putIfAbsent(Object key, Object val) {
+            try {
+                Object old = cache.putIfAbsent(key, val);
+
+                return old != null ? new SimpleValueWrapper(old) : null;
             }
             catch (GridException e) {
                 throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +

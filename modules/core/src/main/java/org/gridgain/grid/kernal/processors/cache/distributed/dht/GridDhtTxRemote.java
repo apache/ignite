@@ -211,8 +211,15 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache() {
-        return cctx.isDht() && isNearEnabled(cctx) && !cctx.localNodeId().equals(nearNodeId);
+    @Override protected boolean updateNearCache(K key, long topVer) {
+        if (!cctx.isDht() || !isNearEnabled(cctx) || cctx.localNodeId().equals(nearNodeId))
+            return false;
+
+        if (cctx.config().getBackups() == 0)
+            return true;
+
+        // Check if we are on the backup node.
+        return !cctx.affinity().backups(key, topVer).contains(cctx.localNode());
     }
 
     /** {@inheritDoc} */

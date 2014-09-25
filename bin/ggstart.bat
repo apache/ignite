@@ -75,7 +75,7 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
 
 if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
@@ -145,16 +145,7 @@ if "%JMX_PORT%" == "" (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-set BASE_JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
-
-if "%JVM_OPTS%" == "" (
-    :: Hadoop needs class unloading enabled and large size of perm space.
-    if defined GRIDGAIN_HADOOP_CLASSPATH (
-        set JVM_OPTS=%BASE_JVM_OPTS% -XX:MaxPermSize=350m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:+ParallelRefProcEnabled -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses
-    ) else (
-        set JVM_OPTS=%BASE_JVM_OPTS%
-    )
-)
+if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
