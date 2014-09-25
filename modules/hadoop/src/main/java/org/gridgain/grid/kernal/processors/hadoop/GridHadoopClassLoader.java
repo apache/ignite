@@ -14,8 +14,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.asm.*;
-import org.springframework.asm.commons.*;
+import org.objectweb.asm.*;
+import org.objectweb.asm.commons.*;
 
 import java.io.*;
 import java.net.*;
