@@ -23,6 +23,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
@@ -613,10 +614,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
             GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
 
-        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridTaskNameHashAddedMessageConverter621.class,
-            GridDhtAtomicCache.TASK_NAME_HASH_SINCE_VER);
-
         ctx.versionConverter().registerLocal(GridNearLockRequest.class,
             GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
             GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
@@ -660,6 +657,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
             GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
             GridCacheQueryManager.QUERY_EVENTS_SINCE);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockResponse.class,
+            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareResponse.class,
+            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridCachePessimisticCheckCommittedTxRequest.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 

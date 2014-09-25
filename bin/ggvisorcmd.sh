@@ -16,11 +16,16 @@
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -35,14 +40,14 @@ setGridGainHome
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
+. "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
-. "${GRIDGAIN_HOME}/os/bin/include/target-classpath.sh"
-CP="${GRIDGAIN_HOME}/bin/include/visorcmd/*${SEP}${GRIDGAIN_LIBS}"
+. "${SCRIPTS_HOME}"/include/setenv.sh
+. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
+CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorcmd/*"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.

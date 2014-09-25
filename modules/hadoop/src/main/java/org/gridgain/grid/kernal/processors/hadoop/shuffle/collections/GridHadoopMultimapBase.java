@@ -36,16 +36,16 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
     private final Collection<GridLongList> allPages = new ConcurrentLinkedQueue<>();
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      */
-    protected GridHadoopMultimapBase(GridHadoopJob job, GridUnsafeMemory mem) {
-        assert job != null;
+    protected GridHadoopMultimapBase(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+        assert jobInfo != null;
         assert mem != null;
 
         this.mem = mem;
 
-        pageSize = get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
+        pageSize = get(jobInfo, SHUFFLE_OFFHEAP_PAGE_SIZE, 16 * 1024);
     }
 
     /**
