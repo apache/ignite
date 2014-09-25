@@ -80,13 +80,7 @@ fi
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
 if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts"
-
-    # Hadoop needs class unloading enabled and bigger PermGen size.
-    if [ "GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
-        JVM_OPTS="$JVM_OPTS -XX:MaxPermSize=350m -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled"
-        JVM_OPTS="$JVM_OPTS -XX:+ParallelRefProcEnabled -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses"
-    fi
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
 fi
 
 #

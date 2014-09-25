@@ -40,16 +40,10 @@ public class GridHadoopJobMetadata implements Externalizable {
     private GridHadoopMapReducePlan mrPlan;
 
     /** Pending splits for which mapper should be executed. */
-    private Collection<GridHadoopInputSplit> pendingSplits;
+    private Map<GridHadoopInputSplit, Integer> pendingSplits;
 
     /** Pending reducers. */
     private Collection<Integer> pendingReducers;
-
-    /** Task number map. */
-    private Map<Object, Integer> taskNumMap = new HashMap<>();
-
-    /** Next task number. */
-    private int nextTaskNum;
 
     /** Reducers addresses. */
     @GridToStringInclude
@@ -64,18 +58,6 @@ public class GridHadoopJobMetadata implements Externalizable {
 
     /** Version. */
     private long ver;
-
-    /** Start time. */
-    private long startTs;
-
-    /** Setup phase complete time. */
-    private long setupCompleteTs;
-
-    /** Map phase complete time. */
-    private long mapCompleteTs;
-
-    /** Job complete time. */
-    private long completeTs;
 
     /** Job counters */
     private GridHadoopCounters counters = new GridHadoopCountersImpl();
@@ -98,8 +80,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.submitNodeId = submitNodeId;
-
-        startTs = System.currentTimeMillis();
     }
 
     /**
@@ -109,21 +89,16 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
-        completeTs = src.completeTs;
         counters = src.counters;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
-        mapCompleteTs = src.mapCompleteTs;
         mrPlan = src.mrPlan;
         pendingSplits = src.pendingSplits;
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         reducersAddrs = src.reducersAddrs;
-        setupCompleteTs = src.setupCompleteTs;
-        startTs = src.startTs;
         submitNodeId = src.submitNodeId;
-        taskNumMap = src.taskNumMap;
         ver = src.ver + 1;
     }
 
@@ -171,7 +146,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @param pendingSplits Collection of pending splits.
      */
-    public void pendingSplits(Collection<GridHadoopInputSplit> pendingSplits) {
+    public void pendingSplits(Map<GridHadoopInputSplit, Integer> pendingSplits) {
         this.pendingSplits = pendingSplits;
     }
 
@@ -180,7 +155,7 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @return Collection of pending splits.
      */
-    public Collection<GridHadoopInputSplit> pendingSplits() {
+    public Map<GridHadoopInputSplit, Integer> pendingSplits() {
         return pendingSplits;
     }
 
@@ -210,104 +185,12 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * @return Job start time.
-     */
-    public long startTimestamp() {
-        return startTs;
-    }
-
-    /**
-     * @return Setup complete time.
-     */
-    public long setupCompleteTimestamp() {
-        return setupCompleteTs;
-    }
-
-    /**
-     * @return Map complete time.
-     */
-    public long mapCompleteTimestamp() {
-        return mapCompleteTs;
-    }
-
-    /**
-     * @return Complete time.
-     */
-    public long completeTimestamp() {
-        return completeTs;
-    }
-
-    /**
-     * @param setupCompleteTs Setup complete timestamp.
-     */
-    public void setupCompleteTimestamp(long setupCompleteTs) {
-        this.setupCompleteTs = setupCompleteTs;
-    }
-
-    /**
-     * @param mapCompleteTs Map complete time.
-     */
-    public void mapCompleteTimestamp(long mapCompleteTs) {
-        this.mapCompleteTs = mapCompleteTs;
-    }
-
-    /**
-     * @param completeTs Complete time.
-     */
-    public void completeTimestamp(long completeTs) {
-        this.completeTs = completeTs;
-    }
-
-    /**
-     * @return Setup time in milliseconds.
-     */
-    public long setupTime() {
-        return setupCompleteTs = startTs;
-    }
-
-    /**
-     * @return Map time in milliseconds.
-     */
-    public long mapTime() {
-        return mapCompleteTs - setupCompleteTs;
-    }
-
-    /**
-     * @return Reduce time in milliseconds.
-     */
-    public long reduceTime() {
-        return completeTs - mapCompleteTs;
-    }
-
-    /**
-     * @return Total execution time in milliseconds.
-     */
-    public long totalTime() {
-        return completeTs - startTs;
-    }
-
-    /**
      * @param mrPlan Map-reduce plan.
      */
-    @SuppressWarnings("ConstantConditions")
     public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
         assert this.mrPlan == null : "Map-reduce plan can only be initialized once.";
 
         this.mrPlan = mrPlan;
-
-        // Initialize task numbers.
-        for (UUID nodeId : mrPlan.mapperNodeIds()) {
-            for (GridHadoopInputSplit split : mrPlan.mappers(nodeId))
-                assignTaskNumber(split);
-
-            // Combiner task.
-            assignTaskNumber(nodeId);
-        }
-
-        for (UUID nodeId : mrPlan.reducerNodeIds()) {
-            for (int rdc : mrPlan.reducers(nodeId))
-                assignTaskNumber(rdc);
-        }
     }
 
     /**
@@ -367,29 +250,11 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * @param src Task source.
+     * @param split Split.
      * @return Task number.
      */
-    public int taskNumber(Object src) {
-        Integer res = taskNumMap.get(src);
-
-        if (res == null)
-            throw new IllegalArgumentException("Failed to find task number for source [src=" + src +
-                ", map=" + taskNumMap + ']');
-
-        return res;
-    }
-
-    /**
-     * Assigns next available task number to a task source if was not assigned yet.
-     *
-     * @param src Task source to assign number for.
-     */
-    private void assignTaskNumber(Object src) {
-        Integer num = taskNumMap.get(src);
-
-        if (num == null)
-            taskNumMap.put(src, nextTaskNum++);
+    public int taskNumber(GridHadoopInputSplit split) {
+        return pendingSplits.get(split);
     }
 
     /** {@inheritDoc} */
@@ -400,15 +265,9 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(mrPlan);
         out.writeObject(pendingSplits);
         out.writeObject(pendingReducers);
-        out.writeObject(taskNumMap);
-        out.writeInt(nextTaskNum);
         out.writeObject(phase);
         out.writeObject(failCause);
         out.writeLong(ver);
-        out.writeLong(startTs);
-        out.writeLong(setupCompleteTs);
-        out.writeLong(mapCompleteTs);
-        out.writeLong(completeTs);
         out.writeObject(reducersAddrs);
         out.writeObject(counters);
     }
@@ -420,17 +279,11 @@ public class GridHadoopJobMetadata implements Externalizable {
         jobId = (GridHadoopJobId)in.readObject();
         jobInfo = (GridHadoopJobInfo)in.readObject();
         mrPlan = (GridHadoopMapReducePlan)in.readObject();
-        pendingSplits = (Collection<GridHadoopInputSplit>)in.readObject();
+        pendingSplits = (Map<GridHadoopInputSplit,Integer>)in.readObject();
         pendingReducers = (Collection<Integer>)in.readObject();
-        taskNumMap = (Map<Object, Integer>)in.readObject();
-        nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
         failCause = (Throwable)in.readObject();
         ver = in.readLong();
-        startTs = in.readLong();
-        setupCompleteTs = in.readLong();
-        mapCompleteTs = in.readLong();
-        completeTs = in.readLong();
         reducersAddrs = (Map<Integer, GridHadoopProcessDescriptor>)in.readObject();
         counters = (GridHadoopCounters)in.readObject();
     }
