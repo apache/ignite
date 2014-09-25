@@ -17,6 +17,7 @@ import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
 import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -116,7 +117,15 @@ class VisorLicenseCommand {
                             licT += ("Version regex", safe(l.versionRegexp(), "<n/a>"))
                             licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
                             licT += ("License note", safe(l.note(), "<n/a>"))
-                            licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
+
+                            val gracePeriod = if (l.gracePeriodLeft < 0)
+                                    "No grace/burst period"
+                                else if (l.gracePeriodLeft > 0)
+                                    s"License grace/burst period - left ${U.formatMins(l.gracePeriodLeft)}."
+                                else
+                                    "License grace/burst period expired."
+
+                            licT += ("Grace/burst period", gracePeriod)
                             licT += ("Licensee name", safe(l.userName(), "<n/a>"))
                             licT += ("Licensee organization", safe(l.userOrganization(), "<n/a>"))
                             licT += ("Licensee URL", safe(l.userWww(), "<n/a>"))
@@ -124,7 +133,7 @@ class VisorLicenseCommand {
                             licT += ("Maximum number of nodes", if (l.maxNodes() > 0) l.maxNodes() else "No restriction")
                             licT += ("Maximum number of hosts", if (l.maxComputers() > 0) l.maxComputers() else "No restriction")
                             licT += ("Maximum number of CPUs", if (l.maxCpus() > 0) l.maxCpus() else "No restriction")
-                            licT += ("Maximum up time", if (l.maxUpTime() > 0) l.maxUpTime() + " min." else "No restriction")
+                            licT += ("Maximum up time", if (l.maxUpTime() > 0) U.formatMins(l.maxUpTime()) else "No restriction")
                             licT += ("Maintenance time",
                             if (l.maintenanceTime() > 0) l.maintenanceTime() + " months" else "No restriction")
                             licT += ("Expire date", Option(l.expireDate()).fold("No restriction")(d => formatDate(d)))
