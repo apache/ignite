@@ -244,6 +244,7 @@ public class GridJavadocAntTask extends MatchingTask {
                 case TOKEN_CLOSE_TAG: {
                     if ("</head>".equalsIgnoreCase(val))
                         tok.update(
+                            "<link rel='shortcut icon' href='http://gridgain.com/wp-content/uploads/2014/09/favicon.ico'/>\n" +
                             "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shCore.css'/>\n" +
                             "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shThemeDefault.css'/>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shCore.js'></script>\n" +
