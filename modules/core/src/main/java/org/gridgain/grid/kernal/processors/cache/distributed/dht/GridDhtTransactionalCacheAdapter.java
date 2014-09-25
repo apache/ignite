@@ -797,7 +797,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         // Invalidate key in near cache, if any.
                         if (isNearEnabled(cacheCfg))
-                            invalidateNearEntry(key, req.version());
+                            obsoleteNearEntry(key, req.version());
 
                         break;
                     }
@@ -906,7 +906,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     // Invalidate key in near cache, if any.
                     if (isNearEnabled(cacheCfg))
-                        invalidateNearEntry(key, req.version());
+                        obsoleteNearEntry(key, req.version());
 
                     if (tx != null) {
                         tx.clearEntry(key);
@@ -2301,5 +2301,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (nearEntry != null)
             nearEntry.invalidate(null, ver);
+    }
+
+    /**
+     * @param key Key
+     * @param ver Version.
+     */
+    private void obsoleteNearEntry(K key, GridCacheVersion ver) {
+        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+
+        if (nearEntry != null)
+            nearEntry.markObsolete(ver);
     }
 }
