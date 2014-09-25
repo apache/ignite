@@ -90,7 +90,7 @@ public class GridHadoopChildProcessRunner {
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(GridHadoopChildProcessRunner.class);
 
-        startTime = System.currentTimeMillis();
+        startTime = U.currentTimeMillis();
 
         // At this point node knows that this process has started.
         comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedAck());
@@ -113,14 +113,14 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, null, mem,
                     req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 
                 if (log.isDebugEnabled())
                     log.debug("External process initialized [initWaitTime=" +
-                        (System.currentTimeMillis() - startTime) + ']');
+                        (U.currentTimeMillis() - startTime) + ']');
 
                 initFut.onDone(null, null);
             }
@@ -168,7 +168,7 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, null, mem, taskInfo) {
                             @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
                                 onTaskFinished0(this, status);
                             }
@@ -307,12 +307,12 @@ public class GridHadoopChildProcessRunner {
                 log.debug("Flushing shuffle messages before sending last task completion notification [taskInfo=" +
                     taskInfo + ", state=" + state + ", err=" + err + ']');
 
-            final long start = System.currentTimeMillis();
+            final long start = U.currentTimeMillis();
 
             try {
                 shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> f) {
-                        long end = System.currentTimeMillis();
+                        long end = U.currentTimeMillis();
 
                         if (log.isDebugEnabled())
                             log.debug("Finished flushing shuffle messages [taskInfo=" + taskInfo +

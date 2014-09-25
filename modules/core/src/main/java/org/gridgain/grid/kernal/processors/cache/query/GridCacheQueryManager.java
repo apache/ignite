@@ -1241,7 +1241,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 fut.onDone(new QueryResult<>(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
                     qryInfo.query().subjectId(), taskName), qryInfo.query().type()));
             }
-            catch (GridException e) {
+            catch (Error e) {
+                fut.onDone(e);
+
+                throw e;
+            }
+            catch (Throwable e) {
                 fut.onDone(e);
             }
         }
