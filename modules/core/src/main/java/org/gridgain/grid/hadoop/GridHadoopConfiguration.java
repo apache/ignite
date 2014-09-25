@@ -22,7 +22,7 @@ public class GridHadoopConfiguration {
     public static final boolean DFLT_EXTERNAL_EXECUTION = false;
 
     /** Default value for the max parallel tasks. */
-    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors() * 2;
+    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
 
     /** Default value for the max task queue size. */
     public static final int DFLT_MAX_TASK_QUEUE_SIZE = 1000;
