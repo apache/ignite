@@ -18,13 +18,12 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -80,11 +79,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
     static {
         GridTestUtils.setFieldValue(PLANNER, "grid", GRID);
-        GridTestUtils.setFieldValue(PLANNER, "log", new GridJavaLogger());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        GridTestUtils.setFieldValue(PLANNER, "log", log());
+
         BLOCK_MAP.clear();
         PROXY_MAP.clear();
     }
@@ -618,17 +618,22 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public void initialize(boolean external, UUID nodeId) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void dispose(boolean external) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
             // No-op.
         }
 
@@ -978,6 +983,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridProjectionEx forSubjectId(UUID subjId) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridInteropProcessor interop() {
             return null;
         }
     }

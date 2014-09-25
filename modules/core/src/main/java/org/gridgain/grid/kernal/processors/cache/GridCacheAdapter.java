@@ -4718,7 +4718,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             log.debug("Processing check committed transaction request [nodeId=" + nodeId + ", req=" + req + ']');
 
         // First check if we have near transaction with this ID.
-        GridCacheTxEx<K, V> tx = ctx.tm().localTxForRecovery(req.nearXidVersion());
+        GridCacheTxEx<K, V> tx = ctx.tm().localTxForRecovery(req.nearXidVersion(), !req.nearOnlyCheck());
 
         // Either we found near transaction or one of transactions is being committed by user.
         // Wait for it and send reply.

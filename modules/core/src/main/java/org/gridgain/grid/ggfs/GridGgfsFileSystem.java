@@ -26,13 +26,13 @@ import java.util.*;
  * This is the minimum of functionality that is needed to work as secondary file system in dual modes of GGFS.
  */
 public interface GridGgfsFileSystem {
-    /** Property: user name. */
+    /** File property: user name. */
     public static final String PROP_USER_NAME = "usrName";
 
-    /** Property: group name. */
+    /** File property: group name. */
     public static final String PROP_GROUP_NAME = "grpName";
 
-    /** Property: permission. */
+    /** File property: permission. */
     public static final String PROP_PERMISSION = "permission";
 
     /**
@@ -202,7 +202,7 @@ public interface GridGgfsFileSystem {
     /**
      * Gets the implementation specific properties of file system.
      *
-     * @return
+     * @return Map of properties.
      */
     public Map<String,String> properties();
 }

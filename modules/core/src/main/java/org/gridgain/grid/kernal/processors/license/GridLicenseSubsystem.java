@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.license;
 import org.jetbrains.annotations.*;
 
 /**
- * Different GridGain editions.
+ * Different GridGain subsystems.
  */
 public enum GridLicenseSubsystem {
     /** In-Memory HPC. */
@@ -28,10 +28,7 @@ public enum GridLicenseSubsystem {
     HADOOP,
 
     /** In-Memory Accelerator For MongoDB. */
-    MONGO,
-
-    /** Platform edition which contains all functionality from other editions. */
-    PLATFORM;
+    MONGO;
 
     /** Enumerated values. */
     private static final GridLicenseSubsystem[] VALS = values();

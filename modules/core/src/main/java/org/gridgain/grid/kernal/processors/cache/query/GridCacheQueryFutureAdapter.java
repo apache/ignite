@@ -167,6 +167,29 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @throws GridException If fetch failed.
      */
     public Collection<R> nextPage() throws GridException {
+        return nextPage(qry.query().timeout(), startTime);
+    }
+
+    /**
+     * Returns next page for the query.
+     *
+     * @param timeout Timeout.
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    public Collection<R> nextPage(long timeout) throws GridException {
+        return nextPage(timeout, U.currentTimeMillis());
+    }
+
+    /**
+     * Returns next page for the query.
+     *
+     * @param timeout Timeout.
+     * @param startTime Timeout wait start time.
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    private Collection<R> nextPage(long timeout, long startTime) throws GridException {
         Collection<R> res = null;
 
         while (res == null) {
@@ -177,8 +200,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (res == null) {
                 if (!isDone()) {
                     loadPage();
-
-                    long timeout = qry.query().timeout();
 
                     long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
 

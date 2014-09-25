@@ -10,7 +10,6 @@
 package org.gridgain.client.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.ipc.*;
@@ -24,11 +23,14 @@ import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
 import org.gridgain.client.*;
 import org.gridgain.client.hadoop.counter.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
 
 import java.io.*;
+
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
  * Hadoop client protocol.
@@ -85,14 +87,13 @@ public class GridHadoopClientProtocol implements ClientProtocol {
         InterruptedException {
         try {
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
-                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(),
-                    new GridHadoopProtocolConfigurationWrapper(conf)));
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));
 
             assert status != null;
 
             return processStatus(status);
         }
-        catch (GridClientException e) {
+        catch (GridClientException | GridException e) {
             throw new IOException("Failed to submit job.", e);
         }
     }
