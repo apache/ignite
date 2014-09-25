@@ -29,6 +29,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
@@ -98,6 +99,9 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
 
             for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo) job.info()).properties().entrySet())
                 jobConf.set(e.getKey(), e.getValue());
+
+            // For map-reduce jobs prefer local writes.
+            jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
 
             jobCtx = new JobContextImpl(jobConf, new JobID(jobId.globalId().toString(), jobId.localId()));
 
