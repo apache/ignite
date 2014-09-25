@@ -1285,7 +1285,11 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
     /** @throws Exception If failed. */
     public void testListStatusIfPathDoesNotExist() throws Exception {
-        assertNull(fs.listStatus(new Path("/tmp/some/dir")));
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return fs.listStatus(new Path("/tmp/some/dir"));
+                }
+            }, FileNotFoundException.class, null);
     }
 
     /**

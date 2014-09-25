@@ -1052,7 +1052,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return set0(name, collocMode, create);
 
         return CU.outTx(new Callable<GridCacheSet<T>>() {
-            @Override public GridCacheSet<T> call() throws Exception {
+            @Nullable @Override public GridCacheSet<T> call() throws Exception {
                 return set0(name, collocMode, create);
             }
         }, cctx);
@@ -1150,7 +1150,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -1160,7 +1160,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (create) {
             hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
 
-            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+            GridCacheSetHeader old = retryPutIfAbsent(cache, key, hdr);
 
             if (old != null)
                 hdr = old;
@@ -1195,7 +1195,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         GridCache cache = cctx.cache();
 
-        GridCacheSetHeader hdr = (GridCacheSetHeader)cache.remove(key);
+        GridCacheSetHeader hdr = retryRemove(cache, key);
 
         if (hdr == null)
             return false;
@@ -1323,6 +1323,53 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     throw e;
                 else if (log.isDebugEnabled())
                     log.debug("Failed to remove set items, will retry [err=" + e + ']');
+            }
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @throws GridException If failed.
+     * @return Previous value.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <T> T retryPutIfAbsent(GridCache cache, Object key, T val) throws GridException {
+        int cnt = 0;
+
+        while (true) {
+            try {
+                return (T)cache.putIfAbsent(key, val);
+            }
+            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                if (cnt++ == 3)
+                    throw e;
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to create cache item, will retry [err=" + e + ']');
+            }
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key to remove.
+     * @throws GridException If failed.
+     * @return Removed value.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <T> T retryRemove(GridCache cache, Object key) throws GridException {
+        int cnt = 0;
+
+        while (true) {
+            try {
+                return (T)cache.remove(key);
+            }
+            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                if (cnt++ == 3)
+                    throw e;
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to remove cache item, will retry [err=" + e + ']');
             }
         }
     }
