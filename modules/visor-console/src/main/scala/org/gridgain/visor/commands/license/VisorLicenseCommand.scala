@@ -113,7 +113,7 @@ class VisorLicenseCommand {
                         if (l != null) {
                             val licT = new VisorTextTable()
 
-                            licT += ("Version Regex", safe(l.versionRegexp(), "<n/a>"))
+                            licT += ("Version regex", safe(l.versionRegexp(), "<n/a>"))
                             licT += ("Issue date", Option(l.issueDate()).fold("<n/a>")(d => formatDate(d)))
                             licT += ("License note", safe(l.note(), "<n/a>"))
                             licT += ("Grace/burst period", if (l.gracePeriod() > 0) l.gracePeriod() + " min." else "No grace/burst period")
