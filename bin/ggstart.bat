@@ -46,7 +46,7 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if defined GRIDGAIN_HOME goto checkGridGainHome2
-    pushd "%~dp0"/../.. :: Will be replaced by pushd "%~dp0"/..
+    pushd "%~dp0"/../.. &:: Will be replaced by pushd "%~dp0"/..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -75,7 +75,7 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin :: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
 
 if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
@@ -93,7 +93,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set GRIDGAIN_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\target-classpath.bat" :: Will be removed in release.
+call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
 set CP=%GRIDGAIN_LIBS%
 
 ::
