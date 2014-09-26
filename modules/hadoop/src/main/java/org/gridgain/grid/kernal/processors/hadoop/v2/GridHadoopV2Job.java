@@ -33,7 +33,6 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
@@ -62,8 +61,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private final ConcurrentMap<T2<GridHadoopTaskType, Integer>, GridFutureAdapter<GridHadoopTaskContext>> ctxs =
         new ConcurrentHashMap8<>();
 
-    /** */
-    private final Queue<GridHadoopClassLoader> clsLdrPool = new ConcurrentLinkedQueue<>();
+    /** Pooling task context class and thus class loading environment. */
+    private final Queue<Class<?>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
 
     /** Local node ID */
     private UUID locNodeId;
@@ -88,9 +87,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
         Thread.currentThread().setContextClassLoader(clsLdr);
 
         jobConf = new JobConf();
-
-        // For map-reduce jobs prefer local writes. 
-        jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);
 
         GridHadoopFileSystemsUtils.setupFileSystems(jobConf);
 
@@ -185,13 +181,15 @@ public class GridHadoopV2Job implements GridHadoopJob {
         if (old != null)
             return old.get();
 
-        GridHadoopClassLoader ldr = clsLdrPool.poll();
-
-        if (ldr == null)
-            ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
+        Class<?> cls = taskCtxClsPool.poll();
 
         try {
-            Class<?> cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
+            if (cls == null) {
+                // If there is no pooled class, then load new one.
+                GridHadoopClassLoader ldr = new GridHadoopClassLoader(rsrcMgr.classPath());
+
+                cls = ldr.loadClass(GridHadoopV2TaskContext.class.getName());
+            }
 
             Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class,
                 GridHadoopJobId.class, UUID.class);
@@ -244,7 +242,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
         GridHadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
 
-        clsLdrPool.offer((GridHadoopClassLoader)ctx.getClass().getClassLoader());
+        taskCtxClsPool.offer(ctx.getClass());
 
         File locDir = taskLocalDir(locNodeId, info);
 

@@ -413,8 +413,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                 lock.lock();
 
                 try {
-                    if (fragmentingFiles.size() < ggfsCtx.configuration().getFragmentizerConcurrentFiles())
-                        cond.await(FRAGMENTIZER_CHECK_INTERVAL, MILLISECONDS);
+                    cond.await(FRAGMENTIZER_CHECK_INTERVAL, MILLISECONDS);
                 }
                 finally {
                     lock.unlock();
