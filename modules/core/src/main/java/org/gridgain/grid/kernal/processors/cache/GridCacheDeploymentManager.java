@@ -288,9 +288,13 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
             cctx.near().dht().context().swap().onUndeploy(leftNodeId, ldr) :
             cctx.swap().onUndeploy(leftNodeId, ldr);
 
-        if (log.isInfoEnabled())
-            log.info("Undeployed all entries (if any) for obsolete class loader [undeployCnt=" + keys.size() +
-                ", swapUndeployCnt=" + swapUndeployCnt + ", clsLdr=" + ldr.getClass().getName() + ']');
+        U.quietAndWarn(
+            log,
+            "Undeployed entries for obsolete class loader [cacheName=" + cctx.namexx() +
+                ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
+                ", clsLdr=" + ldr.getClass().getName() + ']',
+            "Undeployed entries for obsolete class loader [cacheName=" + cctx.namexx() +
+                ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt + ']');
 
         // Avoid class caching issues inside classloader.
         globalLdr = new CacheClassLoader();
