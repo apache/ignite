@@ -76,6 +76,7 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
 set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
+for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
 
 if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
