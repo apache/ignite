@@ -83,7 +83,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorcmd\*
+set CP=%GRIDGAIN_HOME%\bin\include\visorcmd\*;%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
