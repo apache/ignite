@@ -297,7 +297,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
             "Cleared all cache entries for undeployed class loader for cache: " + cctx.namexx());
         U.quietAndWarn(
             log,
-            "  ^-- Auto-undeployment happens in SHARED deployment mode (to turn off, switch to CONTINUOUS mode)");
+            "  ^-- Cache auto-undeployment happens in SHARED deployment mode (to turn off, switch to CONTINUOUS mode)");
         U.quietAndWarn(log, "");
 
         // Avoid class caching issues inside classloader.
