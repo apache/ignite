@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -35,10 +36,13 @@ import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
  */
 public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int MSG_BUF_SIZE = 32 * 1024;
+    private static final int MSG_BUF_SIZE = 128 * 1024;
 
     /** */
     private final GridHadoopJob job;
+
+    /** */
+    private final GridHadoopJobStatistics stats;
 
     /** */
     private final GridUnsafeMemory mem;
@@ -84,15 +88,17 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
      * @param job Job.
+     * @param stats Statistics.
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
      * @throws GridException If error.
      */
-    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job,
+    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job, GridHadoopJobStatistics stats,
         GridUnsafeMemory mem, int totalReducerCnt, int[] locReducers) throws GridException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
+        this.stats = stats;
         this.mem = mem;
         this.log = log.getLogger(GridHadoopShuffleJob.class);
 
@@ -182,6 +188,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
                 return maps.get(idx);
             }
+
+            stats.onShuffleStart(idx); // New map created.
         }
 
         return map;
@@ -351,7 +359,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param idx Index of message.
      * @param newBufMinSize Min new buffer size.
      */
-    private void send(int idx, int newBufMinSize) {
+    private void send(final int idx, int newBufMinSize) {
         final GridFutureAdapterEx<?> fut = new GridFutureAdapterEx<>();
 
         GridHadoopShuffleMessage msg = msgs[idx];
@@ -378,6 +386,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     // Clean up the future from map only if there was no exception.
                     // Otherwise flush() should fail.
                     sentMsgs.remove(msgId);
+
+                    stats.onShuffleEnd(idx);
                 }
                 catch (GridException e) {
                     log.error("Failed to send message.", e);
