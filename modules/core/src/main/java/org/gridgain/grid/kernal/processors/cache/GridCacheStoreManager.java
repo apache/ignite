@@ -112,7 +112,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             V val = null;
 
             try {
-                val = convert(store.load(tx != null && !tx.implicit() ? tx : null, key));
+                val = convert(store.load(tx, key));
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -164,7 +164,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
 
                 try {
-                    store.loadAll(tx != null && !tx.implicit() ? tx : null, keys, new CI2<K, Object>() {
+                    store.loadAll(tx, keys, new CI2<K, Object>() {
                         @Override public void apply(K k, Object v) {
                             vis.apply(k, convert(v));
                         }
@@ -261,7 +261,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
             else {
                 try {
-                    store.put(tx != null && !tx.implicit() ? tx : null, key, locStore ? F.t(val, ver) : val);
+                    store.put(tx, key, locStore ? F.t(val, ver) : val);
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
@@ -301,7 +301,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     log.debug("Storing values in cache store [map=" + map + ']');
 
                 try {
-                    store.putAll(tx != null && !tx.implicit() ? tx : null, locStore ? map : F.viewReadOnly(map,
+                    store.putAll(tx, locStore ? map : F.viewReadOnly(map,
                         new C1<GridBiTuple<V, GridCacheVersion>, Object>() {
                         @Override public Object apply(GridBiTuple<V, GridCacheVersion> t) {
                             return t.get1();
@@ -338,7 +338,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return false;
             else {
                 try {
-                    store.remove(tx != null && !tx.implicit() ? tx : null, key);
+                    store.remove(tx, key);
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
@@ -375,7 +375,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 log.debug("Removing values from cache store [keys=" + keys + ']');
 
             try {
-                store.removeAll(tx != null && !tx.implicit() ? tx : null, keys);
+                store.removeAll(tx, keys);
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -411,10 +411,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridException If failed.
      */
     public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
-        assert tx != null;
-
-        if (!tx.implicit())
-            store.txEnd(tx, commit);
+        store.txEnd(tx, commit);
     }
 
     /**
