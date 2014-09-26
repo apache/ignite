@@ -21,6 +21,9 @@ import java.util.*;
  * Ant task fixing known HTML issues for Javadoc.
  */
 public class GridJavadocAntTask extends MatchingTask {
+    /** */
+    private static final String SH_URL = "http://gridgain.com/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3";
+
     /** Directory. */
     private File dir;
 
@@ -241,17 +244,18 @@ public class GridJavadocAntTask extends MatchingTask {
                 case TOKEN_CLOSE_TAG: {
                     if ("</head>".equalsIgnoreCase(val))
                         tok.update(
-                            "<link type='text/css' rel='stylesheet' href='http://www.gridgain.com/sh3.0/styles/shCore.css'/>\n" +
-                            "<link type='text/css' rel='stylesheet' href='http://www.gridgain.com/sh3.0/styles/shThemeDefault.css'/>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/src/shCore.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/src/shLegacy.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushJava.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushPlain.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushJScript.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushBash.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushXml.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushScala.js'></script>\n" +
-                            "<script type='text/javascript' src='http://www.gridgain.com/sh3.0/scripts/shBrushGroovy.js'></script>\n" +
+                            "<link rel='shortcut icon' href='http://gridgain.com/wp-content/uploads/2014/09/favicon.ico'/>\n" +
+                            "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shCore.css'/>\n" +
+                            "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shThemeDefault.css'/>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shCore.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shLegacy.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushJava.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushPlain.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushJScript.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushBash.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushXml.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushScala.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushGroovy.js'></script>\n" +
                             "</head>\n");
                     else if ("</body>".equalsIgnoreCase(val))
                         tok.update(

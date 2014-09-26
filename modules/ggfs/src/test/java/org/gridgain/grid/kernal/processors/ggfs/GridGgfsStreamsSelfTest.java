@@ -210,7 +210,8 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testCreateFileFragmented() throws Exception {
+    // TODO Enable after GG-9154.
+    public void _testCreateFileFragmented() throws Exception {
         GridGgfsEx impl = (GridGgfsEx)grid(0).ggfs("ggfs");
 
         GridGgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();

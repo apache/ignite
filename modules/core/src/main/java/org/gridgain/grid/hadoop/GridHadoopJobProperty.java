@@ -51,7 +51,7 @@ public enum GridHadoopJobProperty {
     /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
-     * By default is {@code 16 * 1024}.
+     * By default is {@code 32 * 1024}.
      */
     SHUFFLE_OFFHEAP_PAGE_SIZE,
 
