@@ -50,7 +50,8 @@ abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest 
     @Override protected void afterTest() throws Exception {
         cache().clearAll();
 
-        assertTrue(cache().isEmpty());
+        assertTrue(
+            cache().isEmpty());
     }
 
     /** {@inheritDoc} */
