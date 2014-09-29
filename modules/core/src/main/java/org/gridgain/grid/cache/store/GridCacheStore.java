@@ -138,9 +138,8 @@ public interface GridCacheStore<K, V> {
         throws GridException;
 
     /**
-     * Stores a given value in persistent storage. Note that cache transaction is implicitly created
-     * even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Stores a given value in persistent storage. Note that if write-behind is configured for a
+     * particular cache, transaction object passed in the cache store will be always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to put.
@@ -150,9 +149,8 @@ public interface GridCacheStore<K, V> {
     public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException;
 
     /**
-     * Stores given key value pairs in persistent storage. Note that cache transaction is implicitly created
-     * even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Stores given key value pairs in persistent storage. Note that if write-behind is configured
+     * for a particular cache, transaction object passed in the cache store will be always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param map Values to store.
@@ -161,9 +159,9 @@ public interface GridCacheStore<K, V> {
     public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws GridException;
 
     /**
-     * Removes the value identified by given key from persistent storage. Note that cache transaction is
-     * implicitly created even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Removes the value identified by given key from persistent storage. Note that  if write-behind is
+     * configured for a particular cache, transaction object passed in the cache store will be always
+     * {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to remove.
@@ -172,9 +170,9 @@ public interface GridCacheStore<K, V> {
     public void remove(@Nullable GridCacheTx tx, K key) throws GridException;
 
     /**
-     * Removes all vales identified by given keys from persistent storage. Note that cache transaction
-     * is implicitly created even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Removes all vales identified by given keys from persistent storage. Note that if write-behind
+     * is configured for a particular cache, transaction object passed in the cache store will be
+     * always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param keys Keys to remove.
@@ -185,11 +183,6 @@ public interface GridCacheStore<K, V> {
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
      * parameter.
-     * <p>
-     * Note that if explicit transactions are not used in code, then it is possible
-     * to commit or rollback transactions directly in {@code 'put(..)'}, or {@code 'remove(..)'}
-     * methods. In that case, this method should be left empty ({@link GridCacheStoreAdapter} provides
-     * empty implementation of this method).
      *
      * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.

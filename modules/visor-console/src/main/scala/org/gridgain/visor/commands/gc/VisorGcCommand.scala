@@ -140,8 +140,8 @@ class VisorGcCommand {
 
                 prj.compute().withNoFailover().execute(classOf[VisorGcTask],
                     toTaskArgument(nids, new JavaBoolean(dgc))).get.foreach { case (nid, stat) =>
-                    val roundHb = math.round(stat.get1() / (1024L * 1024L))
-                    val roundHa = math.round(stat.get2() / (1024L * 1024L))
+                    val roundHb = stat.get1() / (1024L * 1024L)
+                    val roundHa = stat.get2() / (1024L * 1024L)
 
                     val sign = if (roundHa > roundHb) "+" else ""
 
