@@ -7573,13 +7573,13 @@ public class GridFunc {
 
     /**
      * Compares two maps. Unlike {@code java.util.AbstractMap#equals(...)} method this implementation
-     * checks not only entrysets, but also the keys. Some optimization checks are also used.
+     * checks not only entry sets, but also the keys. Some optimization checks are also used.
      *
      * @param m1 First map to check.
      * @param m2 Second map to check
      * @return {@code True} is maps are equal, {@code False} otherwise.
      */
-    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+    public static <K, V> boolean eq(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
         if (m1 == m2)
             return true;
 
@@ -7592,8 +7592,10 @@ public class GridFunc {
         for (Entry<K, V> e : m1.entrySet()) {
             V v1 = e.getValue();
             V v2 = m2.get(e.getKey());
+
             if (v2 == null)
                 return false;
+
             if (!eq(v1, v2))
                 return false;
         }
