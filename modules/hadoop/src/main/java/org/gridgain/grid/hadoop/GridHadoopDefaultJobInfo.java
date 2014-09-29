@@ -39,6 +39,9 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     /** User name. */
     private String user;
 
+    /** */
+    private static volatile Class<?> jobCls;
+
     /**
      * Default constructor required by {@link Externalizable}.
      */
@@ -72,11 +75,19 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     /** {@inheritDoc} */
     @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
         try {
-            GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
+            Class<?> jobCls0 = jobCls;
 
-            Class<?> jobCls = ldr.loadClass(GridHadoopV2Job.class.getName());
+            if (jobCls0 == null) { // It is enough to have only one class loader with only Hadoop classes.
+                synchronized (GridHadoopDefaultJobInfo.class) {
+                    if ((jobCls0 = jobCls) == null) {
+                        GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-            Constructor<?> constructor = jobCls.getConstructor(GridHadoopJobId.class, GridHadoopDefaultJobInfo.class,
+                        jobCls = jobCls0 = ldr.loadClass(GridHadoopV2Job.class.getName());
+                    }
+                }
+            }
+
+            Constructor<?> constructor = jobCls0.getConstructor(GridHadoopJobId.class, GridHadoopDefaultJobInfo.class,
                 GridLogger.class);
 
             return (GridHadoopJob)constructor.newInstance(jobId, this, log);

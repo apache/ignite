@@ -561,7 +561,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (cached == null)
                                 cached = entryEx(entry.key(), req.topologyVersion());
 
-                            res.addPreloadEntry(cached.info());
+                            GridCacheEntryInfo<K, V> info = cached.info();
+
+                            if (info != null && !info.isNew() && !info.isDeleted())
+                                res.addPreloadEntry(info);
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
@@ -867,8 +870,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             invalidateNearEntry(key, req.version());
 
                         // Get entry info after candidate is added.
-                        if (req.needPreloadKey(i))
-                            res.addPreloadEntry(entry.info());
+                        if (req.needPreloadKey(i)) {
+                            GridCacheEntryInfo<K, V> info = entry.info();
+
+                            if (info != null && !info.isNew() && !info.isDeleted())
+                                res.addPreloadEntry(info);
+                        }
 
                         // Double-check in case if sender node left the grid.
                         if (ctx.discovery().node(req.nodeId()) == null) {
