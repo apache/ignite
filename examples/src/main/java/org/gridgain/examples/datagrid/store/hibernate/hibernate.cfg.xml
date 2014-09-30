@@ -1,8 +1,23 @@
 <?xml version='1.0' encoding='utf-8'?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
 <!DOCTYPE hibernate-configuration PUBLIC
         "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
         "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 
+<!--
+    Hibernate configuration.
+-->
 <hibernate-configuration>
     <session-factory>
         <!-- Show SQL. -->
@@ -13,6 +28,9 @@
 
         <!-- Only validate the database schema on startup in production mode. -->
         <property name="hbm2ddl.auto">update</property>
+
+        <!-- Do not output SQL. -->
+        <property name="show_sql">false</property>
 
         <!-- Mappings. -->
         <mapping resource="org/gridgain/examples/datagrid/store/hibernate/Person.hbm.xml"/>
