@@ -242,8 +242,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8705
-    public void _testSyncCommitFlagPartitioned() throws Exception {
+    public void testSyncCommitFlagPartitioned() throws Exception {
         doTestSyncCommitFlag(client.data(PARTITIONED_ASYNC_BACKUP_CACHE_NAME));
     }
 
@@ -273,7 +272,6 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
         Iterator<? extends GridClientNode> it = nodes.iterator();
 
         final GridClientData dataFirst = data.pinNodes(it.next());
-        final GridClientData dataOthers = data.pinNodes(it.next(), toArray(it));
 
         for (int i = 0; i < syncCommitIterCount(); i++) {
             final CountDownLatch l = new CountDownLatch(1);
@@ -286,7 +284,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
                 public Object call() throws Exception {
                     l.await();
 
-                    assertEquals(val, dataOthers.get(key));
+                    assertEquals(val, data.get(key));
 
                     return null;
                 }
