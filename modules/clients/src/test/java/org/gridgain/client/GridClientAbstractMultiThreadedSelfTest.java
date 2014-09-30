@@ -27,6 +27,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.junit.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -268,23 +269,37 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
      * @throws Exception If failed.
      */
     private void doTestSyncCommitFlag(final GridClientData data) throws Exception {
-        Collection<? extends GridClientNode> nodes = client.compute().nodes();
-        Iterator<? extends GridClientNode> it = nodes.iterator();
+        final String key = "k0";
 
-        final GridClientData dataFirst = data.pinNodes(it.next());
+        Collection<UUID> affNodesIds = F.viewReadOnly(
+            grid(0).cache(data.cacheName()).affinity().mapKeyToPrimaryAndBackups(key),
+            F.node2id());
+
+        final GridClientData dataFirst = data.pinNodes(F.first(client.compute().nodes()));
+
+        List<GridClientNode> affNodes = new ArrayList<>();
+
+        for (GridClientNode node : client.compute().nodes()) {
+            if (affNodesIds.contains(node.nodeId()))
+                affNodes.add(node);
+        }
+
+        Assert.assertFalse(affNodes.isEmpty());
+
+        Iterator<? extends GridClientNode> it = affNodes.iterator();
+
+        final GridClientData dataOthers = data.pinNodes(it.next(), toArray(it));
 
         for (int i = 0; i < syncCommitIterCount(); i++) {
             final CountDownLatch l = new CountDownLatch(1);
 
-            final String key = "k" + i;
             final String val = "v" + i;
 
             GridFuture<?> f = multithreadedAsync(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     l.await();
 
-                    assertEquals(val, data.get(key));
+                    assertEquals(val, dataOthers.get(key));
 
                     return null;
                 }
@@ -297,7 +312,6 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
             f.get();
         }
     }
-
 
     /**
      * @throws Exception If failed.
