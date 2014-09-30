@@ -403,7 +403,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected final void checkRemoved(Long idx) {
         if (idx == QUEUE_REMOVED_IDX)
-            onRemoved();
+            onRemoved(true);
     }
 
     /**
@@ -413,18 +413,21 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected final void checkRemoved(@Nullable GridCacheQueueHeader hdr) {
         if (queueRemoved(hdr, id))
-            onRemoved();
+            onRemoved(true);
     }
 
     /**
-     * Marks queue as removed and throws {@link GridCacheDataStructureRemovedRuntimeException}.
+     * Marks queue as removed.
+     *
+     * @param throw0 If {@code true} then throws {@link GridCacheDataStructureRemovedRuntimeException}.
      */
-    private void onRemoved() {
+    void onRemoved(boolean throw0) {
         rmvd = true;
 
         releaseSemaphores();
 
-        throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
+        if (throw0)
+            throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
     }
 
     /**

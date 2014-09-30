@@ -639,41 +639,28 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             queueQry.filter(new QueueHeaderPredicate());
 
-            queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
-                @Override public boolean apply(UUID id, Collection<Map.Entry> entries) {
-                    if (!busyLock.enterBusy())
-                        return false;
+            queueQry.localCallback(new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
+               @Override public boolean apply(UUID id, Collection<GridCacheContinuousQueryEntry> entries) {
+                   if (!busyLock.enterBusy())
+                       return false;
 
-                    try {
-                        for (Map.Entry e : entries) {
+                   try {
+                        for (GridCacheContinuousQueryEntry e : entries) {
                             GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
                             GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
 
                             for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                 if (queue.name().equals(key.queueName())) {
                                     if (hdr == null) {
-                                        /*
-                                         * Potentially there can be queues with the same names, need to check that
-                                         * queue was really removed.
-                                         */
-                                        cctx.closures().callLocalSafe(new Callable<Void>() {
-                                            @Override public Void call() throws Exception {
-                                                if (!busyLock.enterBusy())
-                                                    return null;
+                                        GridCacheQueueHeader rmvd = (GridCacheQueueHeader)e.getOldValue();
 
-                                                try {
-                                                    queue.size();
-                                                }
-                                                catch (GridCacheDataStructureRemovedRuntimeException ignore) {
-                                                    queuesMap.remove(queue.delegate().id());
-                                                }
-                                                finally {
-                                                    busyLock.leaveBusy();
-                                                }
+                                        assert rmvd != null;
 
-                                                return null;
-                                            }
-                                        }, false);
+                                        if (rmvd.id().equals(queue.delegate().id())) {
+                                            queue.delegate().onRemoved(false);
+
+                                            queuesMap.remove(queue.delegate().id());
+                                        }
                                     }
                                     else
                                         queue.delegate().onHeaderChanged(hdr);
@@ -682,11 +669,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         }
 
                         return true;
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
-                }
+                   }
+                   finally {
+                       busyLock.leaveBusy();
+                   }
+               }
             });
 
             queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
