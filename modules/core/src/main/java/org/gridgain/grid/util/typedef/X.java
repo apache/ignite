@@ -174,9 +174,12 @@ public final class X {
      *
      * @param name Name of the system property or environment variable.
      * @param dflt Default value.
-     * @return Value of the system property or environment variable. Returns
-     *      the default value if neither can be found for given name.
+     * @return Value of the system property or environment variable.
+     *         Returns the default value if neither can be found for given name.
+     * @deprecated This method will be removed in the next major release.
+     *             Use {@link GridSystemProperties#getString(String)} instead.
      */
+    @Deprecated
     @Nullable public static String getSystemOrEnv(String name, String dflt) {
         assert name != null;
 

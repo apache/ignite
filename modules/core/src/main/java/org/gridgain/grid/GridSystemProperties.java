@@ -518,6 +518,7 @@ public final class GridSystemProperties {
      */
     public static int getInteger(String name) {
         String val = getString(name);
+
         return val == null ? -1 : Integer.valueOf(val);
     }
 
@@ -533,6 +534,7 @@ public final class GridSystemProperties {
      */
     public static int getInteger(String name, int dflt) {
         String val = getString(name);
+
         return val == null ? dflt : Integer.valueOf(val);
     }
 }
