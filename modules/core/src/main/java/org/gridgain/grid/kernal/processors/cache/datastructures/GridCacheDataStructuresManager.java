@@ -44,6 +44,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
+    /** */
+    private static final int MAX_UPDATE_RETRIES = 100;
+
+    /** */
+    private static final long RETRY_DELAY = 1;
+
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
     private GridCacheProjection<GridCacheInternal, GridCacheInternal> dsView;
 
@@ -1052,7 +1058,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return set0(name, collocMode, create);
 
         return CU.outTx(new Callable<GridCacheSet<T>>() {
-            @Override public GridCacheSet<T> call() throws Exception {
+            @Nullable @Override public GridCacheSet<T> call() throws Exception {
                 return set0(name, collocMode, create);
             }
         }, cctx);
@@ -1150,7 +1156,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -1160,7 +1166,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (create) {
             hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
 
-            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+            GridCacheSetHeader old = retryPutIfAbsent(cache, key, hdr);
 
             if (old != null)
                 hdr = old;
@@ -1195,7 +1201,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         GridCache cache = cctx.cache();
 
-        GridCacheSetHeader hdr = (GridCacheSetHeader)cache.remove(key);
+        GridCacheSetHeader hdr = retryRemove(cache, key);
 
         if (hdr == null)
             return false;
@@ -1291,16 +1297,66 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             keys.add(key);
 
             if (keys.size() == BATCH_SIZE) {
-                retryRemove(cache, keys);
+                retryRemoveAll(cache, keys);
 
                 keys.clear();
             }
         }
 
         if (!keys.isEmpty())
-            retryRemove(cache, keys);
+            retryRemoveAll(cache, keys);
 
         setDataMap.remove(setId);
+    }
+
+    /**
+     * @param call Callable.
+     * @return Callable result.
+     * @throws GridException If all retrys failed.
+     */
+    <R> R retry(Callable<R> call) throws GridException {
+        try {
+            int cnt = 0;
+
+            while (true) {
+                try {
+                    return call.call();
+                }
+                catch (GridEmptyProjectionException e) {
+                    throw new GridRuntimeException(e);
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to execute data structure operation, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
+                }
+            }
+        }
+        catch (GridException | GridRuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key to remove.
+     * @throws GridException If failed.
+     * @return Removed value.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws GridException {
+        return retry(new Callable<T>() {
+            @Nullable @Override public T call() throws Exception {
+                return (T)cache.remove(key);
+            }
+        });
     }
 
     /**
@@ -1309,22 +1365,32 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemove(GridCache cache, Collection<GridCacheSetItemKey> keys) throws GridException {
-        int cnt = 0;
-
-        while (true) {
-            try {
+    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
+        throws GridException {
+        retry(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 cache.removeAll(keys);
 
-                break;
+                return null;
             }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == 3)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to remove set items, will retry [err=" + e + ']');
+        });
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @throws GridException If failed.
+     * @return Previous value.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
+        throws GridException {
+        return retry(new Callable<T>() {
+            @Nullable @Override public T call() throws Exception {
+                return (T)cache.putIfAbsent(key, val);
             }
-        }
+        });
     }
 
     /**

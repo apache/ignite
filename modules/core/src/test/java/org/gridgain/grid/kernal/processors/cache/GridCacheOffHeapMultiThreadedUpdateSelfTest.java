@@ -25,13 +25,18 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     public void testTransformTx() throws Exception {
+        info(">>> PESSIMISTIC node 0");
+
         testTransformTx(keyForNode(0), PESSIMISTIC);
 
+        info(">>> OPTIMISTIC node 0");
         testTransformTx(keyForNode(0), OPTIMISTIC);
 
         if (gridCount() > 1) {
+            info(">>> PESSIMISTIC node 1");
             testTransformTx(keyForNode(1), PESSIMISTIC);
 
+            info(">>> OPTIMISTIC node 1");
             testTransformTx(keyForNode(1), OPTIMISTIC);
         }
     }
@@ -75,7 +80,12 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                 assertNotNull("Unexpected value for grid " + i, val);
         }
 
-        assertFalse(failed);
+        if (failed) {
+            for (int g = 0; g < gridCount(); g++)
+                info("Value for cache [g=" + g + ", val=" + grid(g).cache(null).get(key) + ']');
+
+            assertFalse(failed);
+        }
     }
 
     /**

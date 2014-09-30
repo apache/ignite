@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.portable;
 /**
  * Portable output stream.
  */
-public interface GridPortableOutputStream extends GridPortableStream {
+public interface GridPortableOutputStream extends GridPortableStream, AutoCloseable {
     /**
      * Write byte value.
      *
@@ -151,14 +151,14 @@ public interface GridPortableOutputStream extends GridPortableStream {
     public void write(long addr, int cnt);
 
     /**
-     * Close the stream releasing resources.
-     */
-    public void close();
-
-    /**
      * Ensure capacity.
      *
      * @param cnt Required byte count.
      */
     public void ensureCapacity(int cnt);
+
+    /**
+     * Close the stream releasing resources.
+     */
+    @Override public void close();
 }

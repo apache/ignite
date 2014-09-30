@@ -22,6 +22,7 @@
         <gridgain.version>6.5.0</gridgain.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
+        <spring.version>4.1.0.RELEASE</spring.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
@@ -143,42 +144,42 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-aop</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -771,7 +772,7 @@
                         <configuration>
                             <target>
                                 <replaceregexp byline="true">
-                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.\s*::.+'/>
+                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
                                     <substitution expression='pushd "%~dp0"/..'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
@@ -779,7 +780,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"\s*#.*'/>
+                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -787,7 +788,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin\s*::.*'/>
+                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
                                     <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
@@ -795,7 +796,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"\s*#.*'/>
+                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
                                     <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -803,7 +804,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh\s*#.*'/>
+                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -811,7 +812,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"\s*::.*'/>
+                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>

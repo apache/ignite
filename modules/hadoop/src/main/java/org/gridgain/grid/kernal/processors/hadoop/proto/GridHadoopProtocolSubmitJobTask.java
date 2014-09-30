@@ -16,8 +16,6 @@ import org.gridgain.grid.hadoop.*;
 import java.util.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopConsts.*;
 
 /**
  * Submit job task.
@@ -44,8 +42,8 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
         GridHadoopJobStatus res = hadoop.status(jobId);
 
         if (res == null) { // Submission failed.
-            res = new GridHadoopJobStatus(jobId, STATE_FAILED, info.jobName(), info.user(), 0, 0, 0, 0, 0, -1, -1,
-                PHASE_CANCELLING, SPECULATIVE_CONCURRENCY, 1);
+            res = new GridHadoopJobStatus(jobId, info.jobName(), info.user(), 0, 0, 0, 0,
+                PHASE_CANCELLING, true, 1);
         }
 
         return res;

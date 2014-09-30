@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -41,6 +42,10 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     /** Originating thread ID. */
     private long originatingThreadId;
 
+    /** Flag indicating that this is near-only check. */
+    @GridDirectVersion(1)
+    private boolean nearOnlyCheck;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -55,11 +60,12 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      * @param miniId Mini future ID.
      */
     public GridCachePessimisticCheckCommittedTxRequest(GridCacheTxEx<K, V> tx, long originatingThreadId, GridUuid futId,
-        GridUuid miniId) {
+        GridUuid miniId, boolean nearOnlyCheck) {
         super(tx.xidVersion(), 0);
 
         this.futId = futId;
         this.miniId = miniId;
+        this.nearOnlyCheck = nearOnlyCheck;
 
         nearXidVer = tx.nearXidVersion();
         originatingNodeId = tx.eventNodeId();
@@ -101,6 +107,14 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
         return miniId;
     }
 
+    /**
+     * @return Flag indicating that this request was sent only to near node. If this flag is set, no finalizing
+     *      will be executed on receiving (near) node since this is a user node.
+     */
+    public boolean nearOnlyCheck() {
+        return nearOnlyCheck;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -122,6 +136,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
         _clone.nearXidVer = nearXidVer;
         _clone.originatingNodeId = originatingNodeId;
         _clone.originatingThreadId = originatingThreadId;
+        _clone.nearOnlyCheck = nearOnlyCheck;
     }
 
     /** {@inheritDoc} */
@@ -166,6 +181,12 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
             case 11:
                 if (!commState.putLong(originatingThreadId))
+                    return false;
+
+                commState.idx++;
+
+            case 12:
+                if (!commState.putBoolean(nearOnlyCheck))
                     return false;
 
                 commState.idx++;
@@ -229,6 +250,14 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                     return false;
 
                 originatingThreadId = commState.getLong();
+
+                commState.idx++;
+
+            case 12:
+                if (buf.remaining() < 1)
+                    return false;
+
+                nearOnlyCheck = commState.getBoolean();
 
                 commState.idx++;
 

@@ -43,13 +43,13 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.10.4</version>
+            <version>2.11.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>jline</artifactId>
-            <version>2.10.4</version>
+            <version>2.11.0-M3</version>
         </dependency>
 
         <dependency>
@@ -68,8 +68,8 @@
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.10</artifactId>
-            <version>2.1.5</version>
+            <artifactId>scalatest_2.11</artifactId>
+            <version>2.2.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>

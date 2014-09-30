@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.util;
 
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,6 +37,9 @@ public class GridDebug {
 
     /** */
     private static final Charset charset = Charset.forName("UTF-8");
+
+    /** */
+    private static volatile long start;
 
     /**
      * On Ubuntu:
@@ -125,6 +130,22 @@ public class GridDebug {
             catch (InterruptedException ignored) {
                 // No-op.
             }
+    }
+
+    /**
+     * Sets starting time after which {@link #timing(String)} measurements can be done.
+     */
+    public static void start() {
+        start = U.currentTimeMillis();
+    }
+
+    /**
+     * Print timing after the {@link #start()} call.
+     *
+     * @param label Label.
+     */
+    public static void timing(String label) {
+        X.println(label + ' ' + (U.currentTimeMillis() - start) + " ms");
     }
 
     /**
