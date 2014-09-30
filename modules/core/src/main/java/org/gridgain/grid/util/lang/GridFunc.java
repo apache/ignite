@@ -7579,7 +7579,7 @@ public class GridFunc {
      * @param m2 Second map to check
      * @return {@code True} is maps are equal, {@code False} otherwise.
      */
-    public static <K, V> boolean eq(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
         if (m1 == m2)
             return true;
 
