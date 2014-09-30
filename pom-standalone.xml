@@ -1030,6 +1030,10 @@
                                 </fileset>
 
                                 <fileset>
+                                    <directory>bin/include/visor-common</directory>
+                                </fileset>
+
+                                <fileset>
                                     <directory>bin/include/visorcmd</directory>
                                 </fileset>
 
