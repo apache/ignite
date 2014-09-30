@@ -39,26 +39,28 @@
         <moduleSet>
             <includes>
                 <include>org.gridgain:gridgain-visor-console</include>
-                <include>org.gridgain:gridgain-spring</include>
-                <include>org.gridgain:gridgain-ssh</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
                         <directory>${basedir}</directory>
-                        <outputDirectory>/</outputDirectory>
+                        <outputDirectory>/visorcmd</outputDirectory>
                         <includes>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
                         <directory>target/libs</directory>
-                        <outputDirectory>/</outputDirectory>
+                        <outputDirectory>/visorcmd</outputDirectory>
+                        <excludes>
+                            <exclude>scala-*.jar</exclude>
+                            <exclude>spring-*.jar</exclude>
+                        </excludes>
                     </fileSet>
                     <fileSet>
                         <directory>target</directory>
-                        <outputDirectory>/</outputDirectory>
+                        <outputDirectory>/visorcmd</outputDirectory>
                         <includes>
                             <include>*.jar</include>
                         </includes>
@@ -67,6 +69,26 @@
                             <exclude>*-javadoc.jar</exclude>
                             <exclude>*-sources.jar</exclude>
                         </excludes>
+                    </fileSet>
+                </fileSets>
+            </sources>
+        </moduleSet>
+
+        <moduleSet>
+            <includes>
+                <include>org.gridgain:gridgain-ssh</include>
+                <include>org.gridgain:gridgain-spring</include>
+            </includes>
+            <sources>
+                <includeModuleDirectory>false</includeModuleDirectory>
+                <fileSets>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/visor-common</outputDirectory>
+                        <includes>
+                            <include>scala-*.jar</include>
+                            <include>spring-*.jar</include>
+                        </includes>
                     </fileSet>
                 </fileSets>
             </sources>

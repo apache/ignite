@@ -63,6 +63,8 @@
                     <fileSet>
                         <directory>${basedir}/target/libs</directory>
                         <outputDirectory>/include/visorui</outputDirectory>
+                        <exclude>scala-*.jar</exclude>
+                        <exclude>spring-*.jar</exclude>
                     </fileSet>
 
                     <fileSet>
