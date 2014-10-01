@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.fs.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 
 import java.io.*;
 
@@ -21,7 +22,7 @@ public class GridGgfsHadoopProxyInputStream extends InputStream implements Seeka
     private final FSDataInputStream is;
 
     /** Client logger. */
-    private final GridGgfsHadoopLogger clientLog;
+    private final GridGgfsLogger clientLog;
 
     /** Log stream ID. */
     private final long logStreamId;
@@ -47,7 +48,7 @@ public class GridGgfsHadoopProxyInputStream extends InputStream implements Seeka
      * @param is Actual input stream to the secondary file system.
      * @param clientLog Client log.
      */
-    public GridGgfsHadoopProxyInputStream(FSDataInputStream is, GridGgfsHadoopLogger clientLog, long logStreamId) {
+    public GridGgfsHadoopProxyInputStream(FSDataInputStream is, GridGgfsLogger clientLog, long logStreamId) {
         assert is != null;
         assert clientLog != null;
 
