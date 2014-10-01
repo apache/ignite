@@ -21,27 +21,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridConcurrentFactory {
     /** Default concurrency level. */
-    private static final int CONCURRENCY_LEVEL;
-
-    /**
-     * Initializes concurrency level.
-     */
-    static {
-        int dfltLevel = 256;
-
-        String s = GridSystemProperties.getString(GG_MAP_CONCURRENCY_LEVEL, Integer.toString(dfltLevel));
-
-        int level;
-
-        try {
-            level = Integer.parseInt(s);
-        }
-        catch (NumberFormatException ignore) {
-            level = dfltLevel;
-        }
-
-        CONCURRENCY_LEVEL = level;
-    }
+    private static final int CONCURRENCY_LEVEL = GridSystemProperties.getInteger(GG_MAP_CONCURRENCY_LEVEL, 256);
 
     /**
      * Ensure singleton.

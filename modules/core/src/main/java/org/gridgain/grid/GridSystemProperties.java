@@ -509,22 +509,7 @@ public final class GridSystemProperties {
 
     /**
      * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code int} using {@code Integer.valueOf()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @return Integer value of the system property or environment variable.
-     *         Returns -1 in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static int getInteger(String name) {
-        String val = getString(name);
-
-        return val == null ? -1 : Integer.valueOf(val);
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code int} using {@code Integer.valueOf()} method.
+     * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
      * @param dflt Default value
@@ -542,6 +527,34 @@ public final class GridSystemProperties {
 
         try {
             res = Integer.parseInt(s);
+        }
+        catch (NumberFormatException ignore) {
+            res = dflt;
+        }
+
+        return res;
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code long} using {@code Long.parseLong()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value
+     * @return Integer value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
+    public static long getLong(String name, long dflt) {
+        String s = getString(name);
+
+        if (s == null)
+            return dflt;
+
+        long res;
+
+        try {
+            res = Long.parseLong(s);
         }
         catch (NumberFormatException ignore) {
             res = dflt;

@@ -102,7 +102,8 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getResendTimeout();
+    private final long partResendTimeout = GridSystemProperties.getLong(GG_PRELOAD_RESEND_TIMEOUT,
+        DFLT_PRELOAD_RESEND_TIMEOUT);
 
     /**
      * @param cctx Cache context.
