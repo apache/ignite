@@ -241,4 +241,11 @@ public interface GridNode extends GridMetadataAware {
      * @return {@code True} if this node is a daemon, {@code false} otherwise.
      */
     public boolean isDaemon();
+
+    /**
+     * Tests whether or not this node is a client node.
+     *
+     * @return {@code True} if this node is a client node, {@code false} otherwise.
+     */
+    public boolean isClient();
 }

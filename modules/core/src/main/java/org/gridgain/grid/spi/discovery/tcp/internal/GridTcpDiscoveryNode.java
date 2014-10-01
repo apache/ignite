@@ -103,6 +103,9 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** Version. */
     private GridProductVersion ver;
 
+    /** Client node. */
+    private boolean client;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -119,9 +122,10 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
      * @param discPort Port.
      * @param metricsProvider Metrics provider.
      * @param ver Version.
+     * @param client Client node.
      */
     public GridTcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-        GridDiscoveryMetricsProvider metricsProvider, GridProductVersion ver) {
+        GridDiscoveryMetricsProvider metricsProvider, GridProductVersion ver, boolean client) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -133,6 +137,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
+        this.client = client;
 
         consistentId = U.consistentId(addrs, discPort);
 
@@ -362,6 +367,10 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         this.visible = visible;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isClient() {
+        return client;
+    }
 
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable GridTcpDiscoveryNode node) {
@@ -396,6 +405,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         out.writeLong(order);
         out.writeLong(intOrder);
         out.writeObject(ver);
+        out.writeBoolean(client);
     }
 
     /** {@inheritDoc} */
@@ -419,6 +429,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         order = in.readLong();
         intOrder = in.readLong();
         ver = (GridProductVersion)in.readObject();
+        client = in.readBoolean();
     }
 
     /** {@inheritDoc} */

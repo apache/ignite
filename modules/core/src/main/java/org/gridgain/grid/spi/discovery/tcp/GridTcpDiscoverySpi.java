@@ -16,8 +16,6 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
@@ -33,13 +31,12 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.io.*;
-import org.gridgain.grid.util.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -48,7 +45,6 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
@@ -149,24 +145,13 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridDiscoverySpi
  */
+@SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
-public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscoverySpi, GridTcpDiscoverySpiMBean {
-    /** Default port to listen (value is <tt>47500</tt>). */
-    public static final int DFLT_PORT = 47500;
-
+public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpDiscoverySpiMBean {
     /** Default local port range (value is <tt>100</tt>). */
     public static final int DFLT_PORT_RANGE = 100;
-
-    /** Default network timeout in milliseconds (value is <tt>5,000ms</tt>). */
-    public static final long DFLT_NETWORK_TIMEOUT = 5000;
-
-    /** Default socket operations timeout in milliseconds (value is <tt>2,000ms</tt>). */
-    public static final long DFLT_SOCK_TIMEOUT = 2000;
-
-    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>5,000ms</tt>). */
-    public static final long DFLT_ACK_TIMEOUT = 5000;
 
     /** Default timeout for joining topology (value is <tt>0</tt>). */
     public static final long DFLT_JOIN_TIMEOUT = 0;
@@ -180,9 +165,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
     public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
 
-    /** Default value for thread priority (value is <tt>10</tt>). */
-    public static final int DFLT_THREAD_PRI = 10;
-
     /** Default stores (IP finder clean and metrics store) frequency in milliseconds (value is <tt>60,000ms</tt>). */
     public static final long DFLT_STORES_CLEAN_FREQ = 60 * 1000;
 
@@ -194,15 +176,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
-
-    /** Response OK. */
-    private static final int RES_OK = 1;
-
-    /** Response CONTINUE JOIN. */
-    private static final int RES_CONTINUE_JOIN = 100;
-
-    /** Response WAIT. */
-    private static final int RES_WAIT = 200;
 
     /** Predicate to filter visible nodes. */
     private static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
@@ -227,16 +200,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "RedundantFieldInitialization"})
     private long statsPrintFreq = DFLT_STATS_PRINT_FREQ;
 
-    /** Network timeout. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private long netTimeout = DFLT_NETWORK_TIMEOUT;
-
-    /** Socket operations timeout. */
-    private long sockTimeout = DFLT_SOCK_TIMEOUT;
-
-    /** Message acknowledgement timeout. */
-    private long ackTimeout = DFLT_ACK_TIMEOUT;
-
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
 
@@ -251,10 +214,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Max heartbeats count node can miss without initiating status check. */
     private int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
 
-    /** Thread priority for all threads started by SPI. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private int threadPri = DFLT_THREAD_PRI;
-
     /** Stores clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private long storesCleanFreq = DFLT_STORES_CLEAN_FREQ;
@@ -267,66 +226,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
-    /** Name of the grid. */
-    @GridNameResource
-    private String gridName;
-
-    /** Grid logger. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridLoggerResource
-    private GridLogger log;
-
-    /** Local node Id. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Marshaller. */
-    private final GridMarshaller marsh = new GridJdkMarshaller();
-
     /** Grid marshaller. */
     @GridMarshallerResource
     private GridMarshaller gridMarsh;
-
-    /**
-     * Local node (although, it may be reassigned on segmentation, it may be non-volatile,
-     * since all internal threads are restarted).
-     */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private GridTcpDiscoveryNode locNode;
-
-    /** Internal and external addresses of local node. */
-    private Collection<InetSocketAddress> locNodeAddrs;
-
-    /** Local IP address. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private String locAddr;
-
-    /** Complex variable that represents this node IP address. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private InetAddress locHost;
-
-    /** Grid discovery listener. */
-    @GridToStringExclude
-    private volatile GridDiscoverySpiListener lsnr;
-
-    /** Discovery data exchange handler. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    @GridToStringExclude
-    private GridDiscoverySpiDataExchange exchange;
-
-    /** Metrics provider. */
-    private GridDiscoveryMetricsProvider metricsProvider;
-
-    /** Local node attributes. */
-    private Map<String, Object> nodeAttrs;
-
-    /** Local node version. */
-    @GridToStringExclude
-    private GridProductVersion nodeVer;
-
-    /** IP finder. */
-    private GridTcpDiscoveryIpFinder ipFinder;
 
     /** Metrics store. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -339,18 +241,21 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Topology snapshots history. */
     private final SortedMap<Long, Collection<GridNode>> topHist = new TreeMap<>();
 
-    /** Discovery state. */
-    private GridTcpDiscoverySpiState spiState = DISCONNECTED;
-
     /** Socket readers. */
     private final Collection<SocketReader> readers = new LinkedList<>();
+
+    /** Client nodes. */
+    private final ConcurrentMap<UUID, GridTcpDiscoveryNode> clientNodes = new ConcurrentHashMap8<>();
 
     /** TCP server for discovery SPI. */
     private TcpServer tcpSrvr;
 
     /** Message worker. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private MessageWorker msgWorker;
+    private RingMessageWorker msgWorker;
+
+    /** Client message workers. */
+    private Collection<ClientMessageWorker> clientMsgWorkers = new GridConcurrentHashSet<>();
 
     /** Metrics sender. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -372,19 +277,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private StatisticsPrinter statsPrinter;
 
-    /** Socket timeout worker. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private SocketTimeoutWorker sockTimeoutWorker;
-
     /** Failed nodes (but still in topology). */
     private Collection<GridTcpDiscoveryNode> failedNodes = new HashSet<>();
 
     /** Leaving nodes (but still in topology). */
     private Collection<GridTcpDiscoveryNode> leavingNodes = new HashSet<>();
-
-    /** Statistics. */
-    @GridToStringExclude
-    private final GridTcpDiscoveryStatistics stats = new GridTcpDiscoveryStatistics();
 
     /** If non-shared IP finder is used this flag shows whether IP finder contains local address. */
     private boolean ipFinderHasLocAddr;
@@ -408,9 +305,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Mutex. */
     private final Object mux = new Object();
 
-    /** Start time of the very first grid node. */
-    private volatile long gridStartTime;
-
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridFuture<UUID>> pingMap = new ConcurrentHashMap8<>();
 
@@ -423,32 +317,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ConcurrentLinkedDeque<String> debugLog;
-
-    /**
-     * Sets local host IP address that discovery SPI uses.
-     * <p>
-     * If not provided, by default a first found non-loopback address
-     * will be used. If there is no non-loopback address available,
-     * then {@link InetAddress#getLocalHost()} will be used.
-     *
-     * @param locAddr IP address.
-     */
-    @GridSpiConfiguration(optional = true)
-    @GridLocalHostResource
-    public void setLocalAddress(String locAddr) {
-        // Injection should not override value already set by Spring or user.
-        if (this.locAddr == null)
-            this.locAddr = locAddr;
-    }
-
-    /**
-     * Gets local address that was set to SPI with {@link #setLocalAddress(String)} method.
-     *
-     * @return local address.
-     */
-    public String getLocalAddress() {
-        return locAddr;
-    }
 
     /**
      * Sets address resolver.
@@ -493,11 +361,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         this.reconCnt = reconCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNetworkTimeout() {
-        return netTimeout;
-    }
-
     /**
      * Sets size of topology snapshots history. Specified size should be greater than or equal to default size
      * {@link #DFLT_TOP_HISTORY_SIZE}.
@@ -524,38 +387,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         return topHistSize;
     }
 
-    /**
-     * Sets maximum network timeout to use for network operations.
-     * <p>
-     * If not specified, default is {@link #DFLT_NETWORK_TIMEOUT}.
-     *
-     * @param netTimeout Network timeout.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setNetworkTimeout(long netTimeout) {
-        this.netTimeout = netTimeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getAckTimeout() {
-        return ackTimeout;
-    }
-
-    /**
-     * Sets timeout for receiving acknowledgement for sent message.
-     * <p>
-     * If acknowledgement is not received within this timeout, sending is considered as failed
-     * and SPI tries to repeat message sending.
-     * <p>
-     * If not specified, default is {@link #DFLT_ACK_TIMEOUT}.
-     *
-     * @param ackTimeout Acknowledgement timeout.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setAckTimeout(long ackTimeout) {
-        this.ackTimeout = ackTimeout;
-    }
-
     /** {@inheritDoc} */
     @Override public long getMaxAckTimeout() {
         return maxAckTimeout;
@@ -576,27 +407,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @GridSpiConfiguration(optional = true)
     public void setMaxAckTimeout(long maxAckTimeout) {
         this.maxAckTimeout = maxAckTimeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSocketTimeout() {
-        return sockTimeout;
-    }
-
-    /**
-     * Sets socket operations timeout. This timeout is used to limit connection time and
-     * write-to-socket time.
-     * <p>
-     * Note that when running GridGain on Amazon EC2, socket timeout must be set to a value
-     * significantly greater than the default (e.g. to {@code 30000}).
-     * <p>
-     * If not specified, default is {@link #DFLT_SOCK_TIMEOUT}.
-     *
-     * @param sockTimeout Socket connection timeout.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setSocketTimeout(long sockTimeout) {
-        this.sockTimeout = sockTimeout;
     }
 
     /** {@inheritDoc} */
@@ -717,44 +527,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         this.statsPrintFreq = statsPrintFreq;
     }
 
-    /**
-     * Gets IP finder for IP addresses sharing and storing.
-     *
-     * @return IP finder for IP addresses sharing and storing.
-     */
-    public GridTcpDiscoveryIpFinder getIpFinder() {
-        return ipFinder;
-    }
-
-    /**
-     * Sets IP finder for IP addresses sharing and storing.
-     * <p>
-     * If not provided {@link GridTcpDiscoveryMulticastIpFinder} will be used by default.
-     *
-     * @param ipFinder IP finder.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setIpFinder(GridTcpDiscoveryIpFinder ipFinder) {
-        this.ipFinder = ipFinder;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getThreadPriority() {
-        return threadPri;
-    }
-
-    /**
-     * Sets thread priority. All threads within SPI will be started with it.
-     * <p>
-     * If not provided, default value is {@link #DFLT_THREAD_PRI}
-     *
-     * @param threadPri Thread priority.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setThreadPriority(int threadPri) {
-        this.threadPri = threadPri;
-    }
-
     /** {@inheritDoc} */
     @Override public long getStoresCleanFrequency() {
         return storesCleanFreq;
@@ -809,7 +581,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public int getMessageWorkerQueueSize() {
-        return msgWorker.queue.size();
+        return msgWorker.queueSize();
     }
 
     /** {@inheritDoc} */
@@ -894,11 +666,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode getLocalNode() {
-        return locNode;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public GridNode getNode(UUID nodeId) {
         assert nodeId != null;
 
@@ -910,6 +677,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         GridTcpDiscoveryNode node = ring.node(nodeId);
 
+        if (node == null)
+            node = clientNodes.get(nodeId);
+
         if (node != null && !node.visible())
             return null;
 
@@ -918,36 +688,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> getRemoteNodes() {
-        return new ArrayList<GridNode>(F.view(ring.remoteNodes(), VISIBLE_NODES));
-    }
+        Collection<GridNode> nodes = new ArrayList<>();
 
-    /** {@inheritDoc} */
-    @Override public void setListener(GridDiscoverySpiListener lsnr) {
-        this.lsnr = lsnr;
-    }
+        nodes.addAll(F.view(ring.remoteNodes(), VISIBLE_NODES));
+        nodes.addAll(F.view(clientNodes.values(), VISIBLE_NODES));
 
-    /** {@inheritDoc} */
-    @Override public void setDataExchange(GridDiscoverySpiDataExchange exchange) {
-        this.exchange = exchange;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMetricsProvider(GridDiscoveryMetricsProvider metricsProvider) {
-        this.metricsProvider = metricsProvider;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
-        assert nodeAttrs == null;
-        assert nodeVer == null;
-
-        if (log.isDebugEnabled()) {
-            log.debug("Node attributes to set: " + attrs);
-            log.debug("Node version to set: " + ver);
-        }
-
-        nodeAttrs = attrs;
-        nodeVer = ver;
+        return nodes;
     }
 
     /** {@inheritDoc} */
@@ -1000,7 +746,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         sockTimeoutWorker = new SocketTimeoutWorker();
         sockTimeoutWorker.start();
 
-        msgWorker = new MessageWorker();
+        msgWorker = new RingMessageWorker();
         msgWorker.start();
 
         tcpSrvr = new TcpServer();
@@ -1021,7 +767,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             addrs.get2(),
             tcpSrvr.port,
             metricsProvider,
-            nodeVer);
+            locNodeVer,
+            false);
 
         try {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1029,13 +776,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     locNode.discoveryPort());
 
             if (extAddrs != null)
-                nodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+                locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (GridException e) {
             throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
         }
 
-        locNode.setAttributes(nodeAttrs);
+        locNode.setAttributes(locNodeAttrs);
 
         locNode.local(true);
 
@@ -1191,11 +938,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
+        super.onContextInitialized0(spiCtx);
+
         ctxInitLatch.countDown();
 
         spiCtx.registerPort(tcpSrvr.port, TCP);
-
-        ipFinder.onSpiContextInitialized(spiCtx);
 
         if (metricsStore != null)
             metricsStore.onSpiContextInitialized(spiCtx);
@@ -1379,13 +1126,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
+        super.onContextDestroyed0();
+
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
 
         getSpiContext().deregisterPorts();
-
-        ipFinder.onSpiContextDestroyed();
 
         if (metricsStore != null)
             metricsStore.onSpiContextDestroyed();
@@ -1502,7 +1249,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         sock = openSocket(addr);
 
                         // Handshake response will act as ping response.
-                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
 
                         GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
 
@@ -1751,7 +1498,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws GridSpiException {
         GridTcpDiscoveryAbstractMessage joinReq = new GridTcpDiscoveryJoinRequestMessage(locNode,
-            exchange.collect(locNodeId));
+            exchange.collect(locNodeId), false);
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -1908,7 +1655,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 openSock = true;
 
                 // Handshake.
-                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
 
                 GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
@@ -2061,263 +1808,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /**
-     * @param sockAddr Remote address.
-     * @return Opened socket.
-     * @throws IOException If failed.
-     */
-    private Socket openSocket(InetSocketAddress sockAddr) throws IOException {
-        assert sockAddr != null;
-
-        InetSocketAddress resolved = sockAddr.isUnresolved() ?
-            new InetSocketAddress(InetAddress.getByName(sockAddr.getHostName()), sockAddr.getPort()) : sockAddr;
-
-        InetAddress addr = resolved.getAddress();
-
-        assert addr != null;
-
-        Socket sock = new Socket();
-
-        sock.bind(new InetSocketAddress(locHost, 0));
-
-        sock.setTcpNoDelay(true);
-
-        sock.connect(resolved, (int)sockTimeout);
-
-        writeToSocket(sock, U.GG_HEADER);
-
-        return sock;
-    }
-
-    /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
-     *
-     * @param sock Socket.
-     * @param msg Message.
-     * @throws IOException If IO failed or write timed out.
-     * @throws GridException If marshalling failed.
-     */
-    private void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg) throws IOException, GridException {
-        writeToSocket(sock, msg, new GridByteArrayOutputStream(8 * 1024)); // 8K.
-    }
-
-    /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
-     *
-     * @param sock Socket.
-     * @param msg Message.
-     * @param bout Byte array output stream.
-     * @throws IOException If IO failed or write timed out.
-     * @throws GridException If marshalling failed.
-     */
-    @SuppressWarnings("ThrowFromFinallyBlock")
-    private void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg, GridByteArrayOutputStream bout)
-        throws IOException, GridException {
-        assert sock != null;
-        assert msg != null;
-        assert bout != null;
-
-        // Marshall message first to perform only write after.
-        marsh.marshal(msg, bout);
-
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + sockTimeout);
-
-        sockTimeoutWorker.addTimeoutObject(obj);
-
-        IOException err = null;
-
-        try {
-            OutputStream out = sock.getOutputStream();
-
-            bout.writeTo(out);
-
-            out.flush();
-        }
-        catch (IOException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                sockTimeoutWorker.removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
-        }
-    }
-
-    /**
-     * Writes response to the socket limiting write time to {@link #getSocketTimeout()}.
-     *
-     * @param sock Socket.
-     * @param res Integer response.
-     * @throws IOException If IO failed or write timed out.
-     */
-    @SuppressWarnings("ThrowFromFinallyBlock")
-    private void writeToSocket(Socket sock, int res) throws IOException {
-        assert sock != null;
-
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + sockTimeout);
-
-        sockTimeoutWorker.addTimeoutObject(obj);
-
-        OutputStream out = sock.getOutputStream();
-
-        IOException err = null;
-
-        try {
-            out.write(res);
-
-            out.flush();
-        }
-        catch (IOException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                sockTimeoutWorker.removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
-        }
-    }
-
-    /**
-     * Writes message to the socket limiting write time to {@link #getSocketTimeout()}.
-     *
-     * @param sock Socket.
-     * @param data Raw data to write.
-     * @throws IOException If IO failed or write timed out.
-     */
-    @SuppressWarnings("ThrowFromFinallyBlock")
-    private void writeToSocket(Socket sock, byte[] data) throws IOException {
-        assert sock != null;
-        assert data != null;
-
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + sockTimeout);
-
-        sockTimeoutWorker.addTimeoutObject(obj);
-
-        IOException err = null;
-
-        try {
-            OutputStream out = sock.getOutputStream();
-
-            out.write(data);
-
-            out.flush();
-        }
-        catch (IOException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                sockTimeoutWorker.removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
-        }
-    }
-
-    /**
-     * Reads message delivery receipt from the socket.
-     *
-     * @param sock Socket.
-     * @param timeout Socket timeout for this operation.
-     * @return Receipt.
-     * @throws IOException If IO failed or read timed out.
-     */
-    private int readReceipt(Socket sock, long timeout) throws IOException {
-        assert sock != null;
-
-        int oldTimeout = sock.getSoTimeout();
-
-        try {
-            sock.setSoTimeout((int)timeout);
-
-            int res = sock.getInputStream().read();
-
-            if (res == -1)
-                throw new EOFException();
-
-            return res;
-        }
-        catch (SocketTimeoutException e) {
-            LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
-                "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
-                "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
-
-            stats.onAckTimeout();
-
-            throw e;
-        }
-        finally {
-            // Quietly restore timeout.
-            try {
-                sock.setSoTimeout(oldTimeout);
-            }
-            catch (SocketException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
-     * Reads message from the socket limiting read time.
-     *
-     * @param sock Socket.
-     * @param in Input stream (in case socket stream was wrapped).
-     * @param timeout Socket timeout for this operation.
-     * @return Message.
-     * @throws IOException If IO failed or read timed out.
-     * @throws GridException If unmarshalling failed.
-     */
-    private <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout) throws IOException, GridException {
-        assert sock != null;
-
-        int oldTimeout = sock.getSoTimeout();
-
-        try {
-            sock.setSoTimeout((int)timeout);
-
-            return marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
-        }
-        catch (IOException | GridException e) {
-            if (X.hasCause(e, SocketTimeoutException.class))
-                LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node. Current timeout: " + timeout + '.');
-
-            throw e;
-        }
-        finally {
-            // Quietly restore timeout.
-            try {
-                sock.setSoTimeout(oldTimeout);
-            }
-            catch (SocketException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
      * Notify external listener on discovery event.
      *
      * @param type Discovery event type. See {@link GridDiscoveryEvent} for more details.
@@ -2369,61 +1859,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /**
-     * Resolves addresses registered in the IP finder, removes duplicates and local host
-     * address and returns the collection of.
-     *
-     * @return Resolved addresses without duplicates and local address (potentially
-     * empty but never null).
-     * @throws GridSpiException If an error occurs.
-     */
-    @SuppressWarnings("BusyWait")
-    private Collection<InetSocketAddress> resolvedAddresses() throws GridSpiException {
-        Collection<InetSocketAddress> res = new LinkedHashSet<>();
-
-        Collection<InetSocketAddress> addrs;
-
-        // Get consistent addresses collection.
-        while (true) {
-            try {
-                addrs = registeredAddresses();
-
-                break;
-            }
-            catch (GridSpiException e) {
-                LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
-                    "(retrying every 2000 ms).");
-            }
-
-            try {
-                U.sleep(2000);
-            }
-            catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
-            }
-        }
-
-        for (InetSocketAddress addr : addrs) {
-            assert addr != null;
-
-            try {
-                InetSocketAddress resolved = addr.isUnresolved() ?
-                    new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
-
-                if (!locNodeAddrs.contains(resolved))
-                    res.add(resolved);
-            }
-            catch (UnknownHostException ignored) {
-                LT.warn(log, null, "Failed to resolve address from IP finder (host is unknown): " + addr);
-
-                // Add address in any case.
-                res.add(addr);
-            }
-        }
-
-        return res;
-    }
-
-    /**
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
@@ -2459,27 +1894,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         if (extAddrs != null)
             res.addAll(extAddrs);
-
-        return res;
-    }
-
-    /**
-     * Gets addresses registered in the IP finder, initializes addresses having no
-     * port (or 0 port) with {@link #DFLT_PORT}.
-     *
-     * @return Registered addresses.
-     * @throws GridSpiException If an error occurs.
-     */
-    private Collection<InetSocketAddress> registeredAddresses() throws GridSpiException {
-        Collection<InetSocketAddress> res = new LinkedList<>();
-
-        for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
-            if (addr.getPort() == 0)
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), DFLT_PORT) :
-                    new InetSocketAddress(addr.getAddress(), DFLT_PORT);
-
-            res.add(addr);
-        }
 
         return res;
     }
@@ -2566,7 +1980,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 ", coord=" + coord +
                 ", topSize=" + ring.allNodes().size() +
                 ", leavingNodesSize=" + leavingNodesSize + ", failedNodesSize=" + failedNodesSize +
-                ", msgWorker.queue.size=" + (msgWorker != null ? msgWorker.queue.size() : "N/A") +
+                ", msgWorker.queue.size=" + (msgWorker != null ? msgWorker.queueSize() : "N/A") +
                 ", lastUpdate=" + (locNode != null ? U.format(locNode.lastUpdateTime()) : "N/A") +
                 ", heapFree=" + runtime.freeMemory() / (1024 * 1024) +
                 "M, heapTotal=" + runtime.maxMemory() / (1024 * 1024) + "M]");
@@ -2657,13 +2071,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      */
     GridTcpDiscoveryNodesRing ring() {
         return ring;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getGridStartTime() {
-        assert gridStartTime != 0;
-
-        return gridStartTime;
     }
 
     /** {@inheritDoc} */
@@ -3034,27 +2441,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /**
      * Message worker thread for messages processing.
      */
-    private class MessageWorker extends GridSpiThread {
-        /** Socket to next node. */
-        private Socket nextNodeSock;
-
+    private class RingMessageWorker extends MessageWorkerAdapter {
         /** Next node. */
         @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private GridTcpDiscoveryNode next;
 
-        /** First queue message gets in. */
-        private final BlockingDeque<GridTcpDiscoveryAbstractMessage> queue =
-            new LinkedBlockingDeque<>();
-
         /** Pending messages. */
         private final Queue<GridTcpDiscoveryAbstractMessage> pendingMsgs =
             new ArrayDeque<>(256);
-
-        /** Backed interrupted flag. */
-        private volatile boolean interrupted;
-
-        /** Pre-allocated output stream (100K). */
-        private final GridByteArrayOutputStream bout = new GridByteArrayOutputStream(100 * 1024);
 
         /** Last message that updated topology. */
         private GridTcpDiscoveryAbstractMessage lastMsg;
@@ -3062,50 +2456,16 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         /** Force pending messages send. */
         private boolean forceSndPending;
 
-        /** Constructor. */
-        private MessageWorker() {
-            super(gridName, "tcp-disco-msg-worker", log);
-
-            setPriority(threadPri);
-        }
-
         /**
-         * Adds message to queue.
-         *
-         * @param msg Message to add.
          */
-        void addMessage(GridTcpDiscoveryAbstractMessage msg) {
-            assert msg != null;
-
-            if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
-                queue.addFirst(msg);
-
-            else
-                queue.add(msg);
-
-            if (log.isDebugEnabled())
-                log.debug("Message has been added to queue: " + msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            if (log.isDebugEnabled())
-                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
-
-            while (!isInterrupted()) {
-                GridTcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
-
-                if (msg == null)
-                    continue;
-
-                processMessage(msg);
-            }
+        protected RingMessageWorker() {
+            super("tcp-disco-msg-worker", null);
         }
 
         /**
          * @param msg Message to process.
          */
-        private void processMessage(GridTcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             if (log.isDebugEnabled())
                 log.debug("Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
@@ -3145,37 +2505,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
             stats.onMessageProcessingFinished(msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void cleanup() {
-            super.cleanup();
-
-            U.closeQuiet(nextNodeSock);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            interrupted = true;
-
-            super.interrupt();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInterrupted() {
-            return interrupted || super.isInterrupted();
-        }
-
-        /**
-         * @param sock Socket.
-         * @param msg Message.
-         * @throws IOException If IO failed.
-         * @throws GridException If marshalling failed.
-         */
-        private void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg) throws IOException, GridException {
-            bout.reset();
-
-            GridTcpDiscoverySpi.this.writeToSocket(sock, msg, bout);
         }
 
         /**
@@ -3230,9 +2559,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             debugLog("New next node [newNext=" + newNext + ", formerNext=" + next +
                                 ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
 
-                        U.closeQuiet(nextNodeSock);
+                        U.closeQuiet(sock);
 
-                        nextNodeSock = null;
+                        sock = null;
 
                         next = newNext;
                     }
@@ -3242,7 +2571,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
 
                 // Flag that shows whether next node exists and accepts incoming connections.
-                boolean nextNodeExists = nextNodeSock != null;
+                boolean nextNodeExists = sock != null;
 
                 final boolean sameHost = U.sameMacs(locNode, next);
 
@@ -3250,7 +2579,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     long ackTimeout0 = ackTimeout;
 
                     for (int i = 0; i < reconCnt; i++) {
-                        if (nextNodeSock == null) {
+                        if (sock == null) {
                             nextNodeExists = false;
 
                             boolean success = false;
@@ -3261,22 +2590,22 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             try {
                                 long tstamp = U.currentTimeMillis();
 
-                                nextNodeSock = openSocket(addr);
+                                sock = openSocket(addr);
 
                                 openSock = true;
 
                                 // Handshake.
-                                writeToSocket(nextNodeSock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
 
-                                GridTcpDiscoveryHandshakeResponse res = readMessage(nextNodeSock, null, ackTimeout0);
+                                GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
 
-                                    U.closeQuiet(nextNodeSock);
+                                    U.closeQuiet(sock);
 
-                                    nextNodeSock = null;
+                                    sock = null;
 
                                     break;
                                 }
@@ -3356,9 +2685,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             }
                             finally {
                                 if (!success) {
-                                    U.closeQuiet(nextNodeSock);
+                                    U.closeQuiet(sock);
 
-                                    nextNodeSock = null;
+                                    sock = null;
                                 }
                                 else
                                     // Next node exists and accepts incoming messages.
@@ -3390,7 +2719,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                     prepareNodeAddedMessage(pendingMsg);
 
                                     try {
-                                        writeToSocket(nextNodeSock, pendingMsg);
+                                        writeToSocket(sock, pendingMsg);
                                     }
                                     finally {
                                         clearNodeAddedMessage(pendingMsg);
@@ -3398,7 +2727,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                                     stats.onMessageSent(pendingMsg, U.currentTimeMillis() - tstamp);
 
-                                    int res = readReceipt(nextNodeSock, ackTimeout0);
+                                    int res = readReceipt(sock, ackTimeout0);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Pending message has been sent to next node [msg=" + msg.id() +
@@ -3417,11 +2746,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             try {
                                 long tstamp = U.currentTimeMillis();
 
-                                writeToSocket(nextNodeSock, msg);
+                                writeToSocket(sock, msg);
 
                                 stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
-                                int res = readReceipt(nextNodeSock, ackTimeout0);
+                                int res = readReceipt(sock, ackTimeout0);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Message has been sent to next node [msg=" + msg +
@@ -3464,9 +2793,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             forceSndPending = false;
 
                             if (!sent) {
-                                U.closeQuiet(nextNodeSock);
+                                U.closeQuiet(sock);
 
-                                nextNodeSock = null;
+                                sock = null;
 
                                 if (log.isDebugEnabled())
                                     log.debug("Message has not been sent [next=" + next.id() + ", msg=" + msg +
@@ -4012,7 +3341,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
 
                 processNodeAddedMessage(new GridTcpDiscoveryNodeAddedMessage(locNodeId, node, msg.discoveryData(),
-                    gridStartTime));
+                    gridStartTime, msg.client()));
             }
             else if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
@@ -4101,7 +3430,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     node.logger(log);
                 }
 
-                boolean topChanged = ring.add(node);
+                boolean topChanged = msg.client() ? clientNodes.putIfAbsent(node.id(), node) == null : ring.add(node);
 
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
@@ -4270,8 +3599,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
                     ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
-                if (nodeVer.equals(node.version()))
-                    node.version(nodeVer);
+                if (locNodeVer.equals(node.version()))
+                    node.version(locNodeVer);
 
                 if (!locNodeCoord) {
                     boolean b = ring.topologyVersion(topVer);
@@ -4463,9 +3792,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     lastMsg = msg;
                 }
 
-                if (leftNode.equals(next) && nextNodeSock != null) {
+                if (leftNode.equals(next) && sock != null) {
                     try {
-                        writeToSocket(nextNodeSock, msg);
+                        writeToSocket(sock, msg);
 
                         if (log.isDebugEnabled())
                             log.debug("Sent verified node left message to leaving node: " + msg);
@@ -4480,7 +3809,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         next = null;
 
-                        U.closeQuiet(nextNodeSock);
+                        U.closeQuiet(sock);
                     }
                 }
 
@@ -4509,7 +3838,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 if (log.isDebugEnabled())
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
-                U.closeQuiet(nextNodeSock);
+                U.closeQuiet(sock);
             }
         }
 
@@ -4660,7 +3989,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 if (log.isDebugEnabled())
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
-                U.closeQuiet(nextNodeSock);
+                U.closeQuiet(sock);
             }
         }
 
@@ -4925,6 +4254,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
          *
          * @param msg Discard message.
          */
+        @SuppressWarnings("StatementWithEmptyBody")
         private void processDiscardMessage(GridTcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
@@ -5082,6 +4412,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         /** */
         private volatile UUID nodeId;
 
+        /** */
+        private volatile boolean client;
+
         /**
          * Constructor.
          *
@@ -5155,8 +4488,10 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     GridTcpDiscoveryHandshakeRequest req = readMessage(sock, in, netTimeout);
 
                     UUID nodeId = req.creatorNodeId();
+                    boolean client = req.client();
 
                     this.nodeId = nodeId;
+                    this.client = client;
 
                     GridTcpDiscoveryHandshakeResponse res =
                         new GridTcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
@@ -5166,17 +4501,24 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
                     if (locNodeId.equals(nodeId)) {
+                        assert !client;
+
                         if (log.isDebugEnabled())
                             log.debug("Handshake request from local node: " + req);
 
                         return;
                     }
 
+                    if (client)
+                        clientMsgWorkers.add(new ClientMessageWorker(sock, nodeId));
+
                     if (log.isDebugEnabled())
-                        log.debug("Initialized connection with remote node: " + nodeId);
+                        log.debug("Initialized connection with remote node [nodeId=" + nodeId +
+                            ", client=" + client + ']');
 
                     if (debugMode)
-                        debugLog("Initialized connection with remote node: " + nodeId);
+                        debugLog("Initialized connection with remote node [nodeId=" + nodeId +
+                            ", client=" + client + ']');
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
@@ -5232,11 +4574,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
 
-                            // Direct join request - no need to handle this socket anymore.
                             if (!req.responded()) {
                                 processJoinRequestMessage(req);
 
-                                break;
+                                if (client)
+                                    continue;
+                                else
+                                    // Direct join request - no need to handle this socket anymore.
+                                    break;
                             }
                         }
                         else if (msg instanceof GridTcpDiscoveryDuplicateIdMessage) {
@@ -5357,6 +4702,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         }
 
                         msgWorker.addMessage(msg);
+
+                        if (!client) {
+                            for (ClientMessageWorker clientMsgWorker : clientMsgWorkers)
+                                clientMsgWorker.addMessage(msg);
+                        }
 
                         // Send receipt back.
                         writeToSocket(sock, RES_OK);
@@ -5580,179 +4930,32 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /**
-     * Handles sockets timeouts.
      */
-    private class SocketTimeoutWorker extends GridSpiThread {
-        /** Time-based sorted set for timeout objects. */
-        private final GridConcurrentSkipListSet<SocketTimeoutObject> timeoutObjs =
-            new GridConcurrentSkipListSet<>(new Comparator<SocketTimeoutObject>() {
-                @Override public int compare(SocketTimeoutObject o1, SocketTimeoutObject o2) {
-                    long time1 = o1.endTime();
-                    long time2 = o2.endTime();
-
-                    long id1 = o1.id();
-                    long id2 = o2.id();
-
-                    return time1 < time2 ? -1 : time1 > time2 ? 1 :
-                        id1 < id2 ? -1 : id1 > id2 ? 1 : 0;
-                }
-            });
-
-        /** Mutex. */
-        private final Object mux0 = new Object();
-
-        /**
-         *
-         */
-        SocketTimeoutWorker() {
-            super(gridName, "tcp-disco-sock-timeout-worker", log);
-
-            setPriority(threadPri);
-        }
-
-        /**
-         * @param timeoutObj Timeout object to add.
-         */
-        @SuppressWarnings({"NakedNotify"})
-        public void addTimeoutObject(SocketTimeoutObject timeoutObj) {
-            assert timeoutObj != null && timeoutObj.endTime() > 0 && timeoutObj.endTime() != Long.MAX_VALUE;
-
-            timeoutObjs.add(timeoutObj);
-
-            if (timeoutObjs.firstx() == timeoutObj) {
-                synchronized (mux0) {
-                    mux0.notifyAll();
-                }
-            }
-        }
-
-        /**
-         * @param timeoutObj Timeout object to remove.
-         */
-        public void removeTimeoutObject(SocketTimeoutObject timeoutObj) {
-            assert timeoutObj != null;
-
-            timeoutObjs.remove(timeoutObj);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            if (log.isDebugEnabled())
-                log.debug("Socket timeout worker has been started.");
-
-            while (!isInterrupted()) {
-                long now = U.currentTimeMillis();
-
-                for (Iterator<SocketTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
-                    SocketTimeoutObject timeoutObj = iter.next();
-
-                    if (timeoutObj.endTime() <= now) {
-                        iter.remove();
-
-                        if (timeoutObj.onTimeout()) {
-                            LT.warn(log, null, "Socket write has timed out (consider increasing " +
-                                "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout + ']');
-
-                            stats.onSocketTimeout();
-                        }
-                    }
-                    else
-                        break;
-                }
-
-                synchronized (mux0) {
-                    while (true) {
-                        // Access of the first element must be inside of
-                        // synchronization block, so we don't miss out
-                        // on thread notification events sent from
-                        // 'addTimeoutObject(..)' method.
-                        SocketTimeoutObject first = timeoutObjs.firstx();
-
-                        if (first != null) {
-                            long waitTime = first.endTime() - U.currentTimeMillis();
-
-                            if (waitTime > 0)
-                                mux0.wait(waitTime);
-                            else
-                                break;
-                        }
-                        else
-                            mux0.wait(5000);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class SocketTimeoutObject {
+    private class ClientMessageWorker extends MessageWorkerAdapter {
         /** */
-        private static final AtomicLong idGen = new AtomicLong();
-
-        /** */
-        private final long id = idGen.incrementAndGet();
-
-        /** */
-        private final Socket sock;
-
-        /** */
-        private final long endTime;
-
-        /** */
-        private final AtomicBoolean done = new AtomicBoolean();
+        private UUID nodeId;
 
         /**
          * @param sock Socket.
-         * @param endTime End time.
+         * @param nodeId Node ID.
          */
-        SocketTimeoutObject(Socket sock, long endTime) {
-            assert sock != null;
-            assert endTime > 0;
+        protected ClientMessageWorker(Socket sock, UUID nodeId) {
+            super("tcp-disco-client-message-worker", sock);
 
             this.sock = sock;
-            this.endTime = endTime;
-        }
-
-        /**
-         * @return {@code True} if object has not yet been processed.
-         */
-        boolean cancel() {
-            return done.compareAndSet(false, true);
-        }
-
-        /**
-         * @return {@code True} if object has not yet been canceled.
-         */
-        boolean onTimeout() {
-            if (done.compareAndSet(false, true)) {
-                // Close socket - timeout occurred.
-                U.closeQuiet(sock);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /**
-         * @return End time.
-         */
-        long endTime() {
-            return endTime;
-        }
-
-        /**
-         * @return ID.
-         */
-        long id() {
-            return id;
+            this.nodeId = nodeId;
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SocketTimeoutObject.class, this);
+        @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
+            try {
+                writeToSocket(sock, msg);
+            }
+            catch (GridException | IOException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Caught exception on redirecting message to client [sock=" + sock +
+                        ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
+            }
         }
     }
 }
