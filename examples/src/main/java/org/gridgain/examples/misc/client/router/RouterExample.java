@@ -23,7 +23,7 @@ import java.util.*;
  * <p>
  * Alternatively you can run node and router instances from command line.
  * To do so you need to execute commands
- * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-cache.xml}
+ * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-compute.xml}
  * and {@code GRIDGAIN_HOME/bin/ggrouter.sh config/router/default-router.xml}
  * For more details on how to configure standalone router instances please refer to
  * configuration file {@code GRIDGAIN_HOME/config/router/default-router.xml}.
