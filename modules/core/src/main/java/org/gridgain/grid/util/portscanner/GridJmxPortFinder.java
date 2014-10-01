@@ -51,15 +51,10 @@ public class GridJmxPortFinder {
             return;
         }
 
-        String jmxPort = GridSystemProperties.getString(GG_JMX_PORT);
+        int jmxPort = GridSystemProperties.getInteger(GG_JMX_PORT, -1);
 
-        if (jmxPort != null) {
-            try {
-                System.out.println(Integer.parseInt(jmxPort));
-            }
-            catch (NumberFormatException ignored) {
-                // Do not return anything to signal inability to run JMX.
-            }
+        if (jmxPort != -1) {
+            System.out.println(jmxPort);
 
             return;
         }

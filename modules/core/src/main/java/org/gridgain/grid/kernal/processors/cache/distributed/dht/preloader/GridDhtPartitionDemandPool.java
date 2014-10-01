@@ -568,19 +568,6 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
     }
 
-    /**
-     * @return Partition resend timeout get from system property.
-     */
-    private static long getResendTimeout() {
-        try {
-            return Long.parseLong(GridSystemProperties.getString(GG_PRELOAD_RESEND_TIMEOUT,
-                String.valueOf(DFLT_PRELOAD_RESEND_TIMEOUT)));
-        }
-        catch (NumberFormatException ignored) {
-            return DFLT_PRELOAD_RESEND_TIMEOUT;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionDemandPool.class, this);

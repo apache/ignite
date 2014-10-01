@@ -1776,20 +1776,12 @@ public class GridGainEx {
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            String smtpPort = GridSystemProperties.getString(GG_SMTP_PORT);
+            int smtpPort = GridSystemProperties.getInteger(GG_SMTP_PORT,-1);
 
-            if (smtpPort != null)
-                try {
-                    myCfg.setSmtpPort(Integer.parseInt(smtpPort));
-                }
-                catch (NumberFormatException e) {
-                    U.error(log, "Invalid SMTP port override value (safely ignored): " + smtpPort, e);
-                }
+            if(smtpPort != -1)
+                myCfg.setSmtpPort(smtpPort);
 
-            String smtpSsl = GridSystemProperties.getString(GG_SMTP_SSL);
-
-            if (smtpSsl != null)
-                myCfg.setSmtpSsl(Boolean.parseBoolean(smtpSsl));
+            myCfg.setSmtpSsl(GridSystemProperties.getBoolean(GG_SMTP_SSL));
 
             String adminEmails = GridSystemProperties.getString(GG_ADMIN_EMAILS);
 
@@ -1951,7 +1943,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!"true".equalsIgnoreCase(GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK))) {
+            if (GridSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
