@@ -20,9 +20,6 @@ package org.gridgain.grid.portables;
  * usually for performance reasons. The only difference here is that portable
  * serialization is already very fast and implementing custom serialization
  * logic for portables does not provide significant performance gains.
- * <p>
- * Note that class implementing this interface should have default public constructor
- * (same requirement as {@link java.io.Externalizable}).
  */
 public interface GridPortableMarshalAware {
     /**
