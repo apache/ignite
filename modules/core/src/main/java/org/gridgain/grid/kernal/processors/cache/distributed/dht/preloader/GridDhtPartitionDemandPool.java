@@ -33,9 +33,11 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
@@ -570,11 +572,11 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     private static long getResendTimeout() {
         try {
-            return Long.parseLong(GridSystemProperties.getString(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
-                String.valueOf(GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT)));
+            return Long.parseLong(GridSystemProperties.getString(GG_PRELOAD_RESEND_TIMEOUT,
+                String.valueOf(DFLT_PRELOAD_RESEND_TIMEOUT)));
         }
         catch (NumberFormatException ignored) {
-            return GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+            return DFLT_PRELOAD_RESEND_TIMEOUT;
         }
     }
 

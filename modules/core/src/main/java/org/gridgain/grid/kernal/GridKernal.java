@@ -585,7 +585,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = !"false".equalsIgnoreCase(GridSystemProperties.getString(GG_UPDATE_NOTIFIER));
+        boolean notifyEnabled = GridSystemProperties.getBoolean(GG_UPDATE_NOTIFIER);
 
         GridUpdateNotifier verChecker0 = null;
 

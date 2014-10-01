@@ -488,7 +488,7 @@ public final class GridSystemProperties {
      *         nor environment variable with given name is found.
      */
     public static boolean getBoolean(String name) {
-        return Boolean.valueOf(getString(name));
+        return Boolean.getBoolean(name);
     }
 
     /**
@@ -533,8 +533,20 @@ public final class GridSystemProperties {
      *         nor environment variable with given name is found.
      */
     public static int getInteger(String name, int dflt) {
-        String val = getString(name);
+        String s = getString(name);
 
-        return val == null ? dflt : Integer.valueOf(val);
+        if (s == null)
+            return dflt;
+
+        int res;
+
+        try {
+            res = Integer.parseInt(s);
+        }
+        catch (NumberFormatException ignore) {
+            res = dflt;
+        }
+
+        return res;
     }
 }
