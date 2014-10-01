@@ -971,8 +971,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-trial.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin</outputDirectory>
-                            <finalName>include</finalName>
+                            <outputDirectory>${basedir}</outputDirectory>
+                            <finalName>bin</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
