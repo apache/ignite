@@ -50,6 +50,7 @@
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
+
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/visorcmd</outputDirectory>
@@ -58,6 +59,7 @@
                             <exclude>spring-*.jar</exclude>
                         </excludes>
                     </fileSet>
+
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/visorcmd</outputDirectory>
@@ -89,6 +91,19 @@
                             <include>scala-*.jar</include>
                             <include>spring-*.jar</include>
                         </includes>
+                    </fileSet>
+
+                    <fileSet>
+                        <directory>target</directory>
+                        <outputDirectory>/visor-common</outputDirectory>
+                        <includes>
+                            <include>*.jar</include>
+                        </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
+                        </excludes>
                     </fileSet>
                 </fileSets>
             </sources>

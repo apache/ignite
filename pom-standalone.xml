@@ -954,8 +954,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
-                            <finalName>visorcmd</finalName>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -971,8 +971,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-trial.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}</outputDirectory>
-                            <finalName>bin</finalName>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
