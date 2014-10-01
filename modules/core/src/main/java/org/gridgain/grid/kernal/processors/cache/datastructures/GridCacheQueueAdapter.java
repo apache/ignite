@@ -40,6 +40,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** */
     protected static final long RETRY_DELAY = 1;
 
+    /** */
+    private static final int DFLT_CLEAR_BATCH_SIZE = 100;
+
     /** Logger. */
     protected final GridLogger log;
 
@@ -317,6 +320,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         int remaining = cap - size();
 
         return remaining > 0 ? remaining : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        clear(DFLT_CLEAR_BATCH_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -665,11 +673,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         @Override public GridBiTuple<GridCacheQueueHeader, GridBiTuple<Long, Long>> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
-            if (rmvd || hdr.empty()) {
-                long idx = rmvd ? QUEUE_REMOVED_IDX : null;
-
-                return new GridBiTuple<>(hdr, new GridBiTuple<>(idx, idx));
-            }
+            if (rmvd)
+                return new GridBiTuple<>(hdr, new GridBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX));
+            else if (hdr.empty())
+                return new GridBiTuple<>(hdr, null);
 
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.tail(), hdr.tail(), null);
