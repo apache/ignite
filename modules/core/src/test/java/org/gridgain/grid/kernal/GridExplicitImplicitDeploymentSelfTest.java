@@ -457,7 +457,6 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
                     finally {
                         U.close(in, null);
                     }
-
                 }
 
                 return null;
