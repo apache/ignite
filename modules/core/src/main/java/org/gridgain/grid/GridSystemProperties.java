@@ -488,7 +488,7 @@ public final class GridSystemProperties {
      *         nor environment variable with given name is found.
      */
     public static boolean getBoolean(String name) {
-        return Boolean.getBoolean(name);
+        return getBoolean(name, false);
     }
 
     /**

@@ -2185,18 +2185,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets boolean system or environment property.
-     *
-     * @param name Property name.
-     * @return {@code True} if system or environment property is set to {@code true}. Otherwise returns {@code false}.
-     */
-    public static boolean getBoolean(String name) {
-        String v = GridSystemProperties.getString(name);
-
-        return v != null && "true".equalsIgnoreCase(v.trim());
-    }
-
-    /**
      * Resolve project home directory based on source code base.
      *
      * @return Project home directory (or {@code null} if it cannot be resolved).
@@ -7159,22 +7147,6 @@ public abstract class GridUtils {
                     return attrs.nearCacheEnabled();
 
         return false;
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work synchronously.
-     */
-    public static boolean isFutureNotificationSynchronous(boolean dflt) {
-        return GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, dflt);
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work concurrently.
-     */
-    public static boolean isFutureNotificationConcurrent(boolean dflt) {
-        return GridSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, dflt);
     }
 
     /**

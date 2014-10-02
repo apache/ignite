@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.*;
@@ -38,7 +39,7 @@ public class GridUnsafeMemory {
     private static final int ADDR_SIZE = UNSAFE.addressSize();
 
     /** Safe offheap release flag. */
-    private static final boolean SAFE_RELEASE = getBoolean(GG_OFFHEAP_SAFE_RELEASE);
+    private static final boolean SAFE_RELEASE = GridSystemProperties.getBoolean(GG_OFFHEAP_SAFE_RELEASE);
 
     /** Total size. */
     @GridToStringInclude

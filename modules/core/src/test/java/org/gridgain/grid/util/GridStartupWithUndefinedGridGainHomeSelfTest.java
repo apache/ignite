@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.util.GridUtils.*;
 
 /**
@@ -52,7 +53,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
-        String ggHome = GridSystemProperties.getString(GridSystemProperties.GG_HOME);
+        String ggHome = GridSystemProperties.getString(GG_HOME);
 
         assert ggHome != null;
 

@@ -20,6 +20,8 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
+
 /**
  * Defines global scope.
  * <p>
@@ -53,14 +55,19 @@ public final class X {
     /** The Method object for Java 1.4 getCause. */
     private static final Method THROWABLE_CAUSE_METHOD;
 
+    /**
+     *
+     */
     static {
         Method causeMtd;
+
         try {
             causeMtd = Throwable.class.getMethod("getCause", null);
         }
         catch (Exception ignored) {
             causeMtd = null;
         }
+
         THROWABLE_CAUSE_METHOD = causeMtd;
     }
 
@@ -743,7 +750,7 @@ public final class X {
      * and the cause throwable. A {@code null} throwable will return an array of size zero.
      *
      * @param throwable The throwable to inspect, may be null.
-     * @return The array of throwables, never null.     
+     * @return The array of throwables, never null.
      */
     public static Throwable[] getThrowables(Throwable throwable) {
         List<Throwable> list = getThrowableList(throwable);
@@ -869,7 +876,7 @@ public final class X {
      * @throws GridException If GridGain home folder was not set.
      */
     public static String resolveGridGainHome() throws GridException {
-        String var = GridSystemProperties.getString(GridSystemProperties.GG_HOME);
+        String var = GridSystemProperties.getString(GG_HOME);
 
         if (var != null)
             return var;
