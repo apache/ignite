@@ -275,11 +275,11 @@ public abstract class GridUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
-    /* GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_GRIDGAIN_LOG_DIR);
+    /** GridGain Logging Directory. */
+    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
 
-    /* GridGain Work Directory. */
-    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_GRIDGAIN_WORK_DIR);
+    /** GridGain Work Directory. */
+    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
 
     /**
      * Initializes enterprise check.

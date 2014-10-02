@@ -441,13 +441,13 @@ public final class GridSystemProperties {
     /**
      * Environment variable to override logging directory that has been set in logger configuration.
      */
-    public static final String GG_GRIDGAIN_LOG_DIR = "GRIDGAIN_LOG_DIR";
+    public static final String GG_LOG_DIR = "GRIDGAIN_LOG_DIR";
 
     /**
-     * Environment variable to override default work directory is related to GRIDGAIN_HOME or temporary directory.
-     * The value of this variable could be overridden by workDirectory property in GridConfiguration.
+     * Environment variable to set work directory. The property {@link GridConfiguration#setWorkDirectory} has higher
+     * priority.
      */
-    public static final String GG_GRIDGAIN_WORK_DIR = "GRIDGAIN_WORK_DIR";
+    public static final String GG_WORK_DIR = "GRIDGAIN_WORK_DIR";
 
     /**
      * Enforces singleton.
