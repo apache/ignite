@@ -99,7 +99,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
         this.cctx = cctx;
         this.type = type;
-        this.clsName = CU.h2Escape(clsName);
+        this.clsName = clsName;
         this.clause = clause;
         this.prjPred = prjPred;
         this.filter = filter;
@@ -148,7 +148,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
-        this.clsName = CU.h2Escape(clsName);
+        this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
