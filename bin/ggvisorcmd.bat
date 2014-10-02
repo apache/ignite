@@ -42,7 +42,7 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if not "%GRIDGAIN_HOME%" == "" goto checkGridGainHome2
-    pushd "%~dp0"/../..
+    pushd "%~dp0"/../.. &:: Will be replaced by pushd "%~dp0"/..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -67,25 +67,31 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}\bin in release.
+
+:: Remove trailing spaces
+for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :run
 
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
-
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
-call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorcmd\*
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
+set CP=%GRIDGAIN_HOME%\bin\include\visorcmd\*;%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
@@ -128,6 +134,7 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
  org.gridgain.visor.commands.VisorConsole
 
 :error_finish
-:error_finish
+
+if not "%NO_PAUSE%" == "1" pause
 
 goto :eof

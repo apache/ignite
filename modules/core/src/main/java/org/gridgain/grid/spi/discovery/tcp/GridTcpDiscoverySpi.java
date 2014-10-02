@@ -5232,11 +5232,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
 
-                            // Direct join request requires special processing.
+                            // Direct join request - no need to handle this socket anymore.
                             if (!req.responded()) {
                                 processJoinRequestMessage(req);
 
-                                continue;
+                                break;
                             }
                         }
                         else if (msg instanceof GridTcpDiscoveryDuplicateIdMessage) {
@@ -5442,54 +5442,42 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             GridTcpDiscoverySpiState state = spiStateCopy();
 
             if (state == CONNECTED) {
-                // Direct join request - socket should be closed after handling.
-                try {
-                    writeToSocket(sock, RES_OK);
+                writeToSocket(sock, RES_OK);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
 
-                    msg.responded(true);
+                msg.responded(true);
 
-                    msgWorker.addMessage(msg);
-                }
-                finally {
-                    U.closeQuiet(sock);
-                }
+                msgWorker.addMessage(msg);
             }
             else {
-                // Direct join request - socket should be closed after handling.
-                try {
-                    stats.onMessageProcessingStarted(msg);
+                stats.onMessageProcessingStarted(msg);
 
-                    Integer res;
+                Integer res;
 
-                    SocketAddress rmtAddr = sock.getRemoteSocketAddress();
+                SocketAddress rmtAddr = sock.getRemoteSocketAddress();
 
-                    if (state == CONNECTING) {
-                        if (noResAddrs.contains(rmtAddr) || locNodeId.compareTo(msg.creatorNodeId()) < 0)
-                            // Remote node node has not responded to join request or loses UUID race.
-                            res = RES_WAIT;
-                        else
-                            // Remote node responded to join request and wins UUID race.
-                            res = RES_CONTINUE_JOIN;
-                    }
+                if (state == CONNECTING) {
+                    if (noResAddrs.contains(rmtAddr) || locNodeId.compareTo(msg.creatorNodeId()) < 0)
+                        // Remote node node has not responded to join request or loses UUID race.
+                        res = RES_WAIT;
                     else
-                        // Local node is stopping. Remote node should try next one.
+                        // Remote node responded to join request and wins UUID race.
                         res = RES_CONTINUE_JOIN;
-
-                    writeToSocket(sock, res);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
-
-                    fromAddrs.addAll(msg.node().socketAddresses());
-
-                    stats.onMessageProcessingFinished(msg);
                 }
-                finally {
-                    U.closeQuiet(sock);
-                }
+                else
+                    // Local node is stopping. Remote node should try next one.
+                    res = RES_CONTINUE_JOIN;
+
+                writeToSocket(sock, res);
+
+                if (log.isDebugEnabled())
+                    log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
+
+                fromAddrs.addAll(msg.node().socketAddresses());
+
+                stats.onMessageProcessingFinished(msg);
             }
         }
 

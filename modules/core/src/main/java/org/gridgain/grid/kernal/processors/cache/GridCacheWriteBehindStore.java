@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
@@ -43,7 +45,7 @@ import java.util.concurrent.locks.*;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware {
+public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware, GridInteropAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -274,6 +276,18 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
                 new GridThread(flushThreads[i]).start();
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(GridKernalContext ctx) throws GridException {
+        if (store instanceof GridInteropAware)
+            ((GridInteropAware)store).initialize(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy(GridKernalContext ctx) throws GridException {
+        if (store instanceof GridInteropAware)
+            ((GridInteropAware)store).destroy(ctx);
     }
 
     /**
@@ -693,7 +707,6 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
             flushLock.unlock();
         }
     }
-
 
     /**
      * Thread that performs time-based flushing of written values to the underlying storage.

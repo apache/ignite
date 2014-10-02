@@ -365,12 +365,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                     U.error(log, msg, e);
 
-                    try {
-                        rollback();
-                    }
-                    catch (GridException e1) {
-                        U.error(log, "Failed to rollback transaction: " + this, e1);
-                    }
+                    rollbackAsync();
 
                     fut.onError(null, null, new GridCacheTxRollbackException(msg, e));
                 }

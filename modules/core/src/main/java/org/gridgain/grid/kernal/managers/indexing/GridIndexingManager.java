@@ -1114,6 +1114,23 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
+     * Gets type for space and type name.
+     *
+     * @param space Space name.
+     * @param typeName Type name.
+     * @return Type.
+     * @throws GridException If failed.
+     */
+    public GridIndexingTypeDescriptor type(@Nullable String space, String typeName) throws GridException {
+        TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
+
+        if (type == null || !type.registered())
+            throw new GridException("Failed to find type descriptor for type name: " + typeName);
+
+        return type;
+    }
+
+    /**
      * @param cls Field type.
      * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
      * @throws GridException If failed.
@@ -1400,7 +1417,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = CU.h2Escape(name);
+            this.name = name;
         }
 
         /** {@inheritDoc} */

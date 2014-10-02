@@ -45,4 +45,18 @@
         <name>mapreduce.jobtracker.address</name>
         <value>localhost:11211</value>
     </property>
+
+    <!-- Parameters for job tuning. -->
+    <!--
+    <property>
+        <name>mapreduce.job.reduces</name>
+        <value>1</value>
+    </property>
+
+    <property>
+        <name>mapreduce.job.maps</name>
+        <value>4</value>
+    </property>
+    -->
+
 </configuration>

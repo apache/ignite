@@ -130,7 +130,7 @@ public class VisorLicense implements Serializable {
         l.maintenanceTime(lic.maintenanceTime());
         l.maxNodes(lic.maxNodes());
         l.maxComputers(lic.maxComputers());
-        l.maxComputers(lic.maxCpus());
+        l.maxCpus(lic.maxCpus());
         l.maxUpTime(lic.maxUpTime());
         l.gracePeriod(lic.gracePeriod());
         l.attributeName(lic.attributeName());

@@ -59,6 +59,8 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             ctx.registerBeanDefinition(SPRING_BEAN_RSRC_NAME, bf);
 
+            ctx.refresh();
+
             grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
             grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 

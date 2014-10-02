@@ -33,7 +33,7 @@ public class GridLicenseUseRegistry {
     /**
      * Callback for whenever component gets used.
      *
-     * @param ed Edition.
+     * @param ed Subsystem.
      * @param cls Component.
      */
     public static void onUsage(GridLicenseSubsystem ed, Class<?> cls) {
@@ -50,9 +50,9 @@ public class GridLicenseUseRegistry {
     }
 
     /**
-     * Gets used components for given edition.
+     * Gets used subsystems for given subsystem.
      *
-     * @param ed Edition.
+     * @param ed Subsystem.
      * @return Component.
      */
     public static Collection<Class<?>> usedClasses(GridLicenseSubsystem ed) {
@@ -62,9 +62,9 @@ public class GridLicenseUseRegistry {
     }
 
     /**
-     * Checks if edition is used.
+     * Checks if subsystem is used.
      *
-     * @param ed Edition to check.
+     * @param ed Subsystem to check.
      * @return {@code True} if used.
      */
     public static boolean used(GridLicenseSubsystem ed) {

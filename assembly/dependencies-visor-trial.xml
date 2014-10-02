@@ -40,6 +40,7 @@
             <includes>
                 <include>org.gridgain:gridgain-visor-trial</include>
             </includes>
+
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
@@ -50,6 +51,7 @@
                             <include>ggvisorui.*</include>
                         </includes>
                     </fileSet>
+
                     <fileSet>
                         <directory>${basedir}licenses</directory>
                         <outputDirectory>/include/visorui/licenses</outputDirectory>
@@ -57,22 +59,12 @@
                             <include>*.txt</include>
                         </includes>
                     </fileSet>
-                    <fileSet>
-                        <directory>${basedir}/target</directory>
-                        <outputDirectory>/include/visorui</outputDirectory>
-                        <includes>
-                            <include>*.jar</include>
-                        </includes>
-                        <excludes>
-                            <exclude>*-tests.jar</exclude>
-                            <exclude>*-javadoc.jar</exclude>
-                            <exclude>*-sources.jar</exclude>
-                        </excludes>
-                    </fileSet>
+
                     <fileSet>
                         <directory>${basedir}/target/libs</directory>
                         <outputDirectory>/include/visorui</outputDirectory>
                     </fileSet>
+
                     <fileSet>
                         <directory>${basedir}/licenses</directory>
                         <outputDirectory>/include/visorui/licenses</outputDirectory>

@@ -11,43 +11,125 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.apache.commons.collections.comparators.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.Job;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
-import java.io.IOException;
 import java.util.*;
-
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
 
 /**
  * Abstract class for maps test.
  */
 public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
-    static class TestComparator extends ComparableComparator implements RawComparator {
-        @Override public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-            return 0;
+    /**
+     * Test task context.
+     */
+    protected static class TaskContext extends GridHadoopTaskContext {
+        /**
+         */
+        protected TaskContext() {
+            super(null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopPartitioner partitioner() throws GridException {
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopSerialization keySerialization() throws GridException {
+            return new GridHadoopWritableSerialization(IntWritable.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopSerialization valueSerialization() throws GridException {
+            return new GridHadoopWritableSerialization(IntWritable.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Comparator<Object> sortComparator() {
+            return ComparableComparator.getInstance();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Comparator<Object> groupComparator() {
+            return ComparableComparator.getInstance();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() throws GridException {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            assert false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepareTaskEnvironment() throws GridException {
+            assert false;
+        }
+
+        @Override public void cleanupTaskEnvironment() throws GridException {
+            assert false;
         }
     }
 
-    public GridHadoopJob mockJob() throws GridException, IOException {
-        Job jobCtx = Job.getInstance();
+    /**
+     * Test job info.
+     */
+    protected static class JobInfo implements GridHadoopJobInfo {
+        /** {@inheritDoc} */
+        @Nullable @Override public String property(String name) {
+            return null;
+        }
 
-        jobCtx.setMapOutputKeyClass(IntWritable.class);
-        jobCtx.setMapOutputValueClass(IntWritable.class);
+        /** {@inheritDoc} */
+        @Override public boolean hasCombiner() {
+            assert false;
 
-        jobCtx.setGroupingComparatorClass(TestComparator.class);
-        jobCtx.setSortComparatorClass(TestComparator.class);
-        jobCtx.setCombinerKeyGroupingComparatorClass(TestComparator.class);
+            return false;
+        }
 
-        GridHadoopDefaultJobInfo jobInfo = createJobInfo(jobCtx.getConfiguration());
+        /** {@inheritDoc} */
+        @Override public boolean hasReducer() {
+            assert false;
 
-        return new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10), jobInfo, log);
-    }
+            return false;
+        }
 
-    public GridHadoopTaskContext mockTaskContext(GridHadoopJob job) throws GridException {
-        return job.getTaskContext(new GridHadoopTaskInfo(GridHadoopTaskType.MAP, null, 0, 0, null));
+        /** {@inheritDoc} */
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, GridLogger log) throws GridException {
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int reducers() {
+            assert false;
+
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String jobName() {
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String user() {
+            assert false;
+
+            return null;
+        }
     }
 }

@@ -500,6 +500,8 @@ public abstract class GridUtils {
                     }
                     catch (InterruptedException ignored) {
                         U.log(null, "Timer thread has been interrupted.");
+
+                        break;
                     }
                 }
             }

@@ -117,6 +117,9 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     /** Flag that controls whether file writes should be colocated on data node. */
     private boolean colocateFileWrites;
 
+    /** Prefer local writes. */
+    private boolean preferLocFileWrites;
+
     /**
      * @param name URI for file system.
      * @param cfg Configuration.
@@ -217,6 +220,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
             // Get file colocation control flag.
             colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
@@ -516,7 +520,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     return os;
             }
             else {
-                Map<String, String> permMap = permission(perm);
+                Map<String, String> permMap = F.asMap(PROP_PERMISSION, toString(perm),
+                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 GridGgfsHadoopStreamDelegate stream;
@@ -667,20 +672,17 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (mode == PROXY) {
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -688,7 +690,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return arr;
             }
             else {
-                List<GridGgfsFile> files = new ArrayList<>(rmtClient.listFiles(path));
+                Collection<GridGgfsFile> list = rmtClient.listFiles(path);
+
+                if (list == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                List<GridGgfsFile> files = new ArrayList<>(list);
 
                 FileStatus[] arr = new FileStatus[files.size()];
 
@@ -953,7 +960,15 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()));
+        return F.asMap(PROP_PERMISSION, toString(perm));
+    }
+
+    /**
+     * @param perm Permission.
+     * @return String.
+     */
+    private static String toString(FsPermission perm) {
+        return String.format("%04o", perm.toShort());
     }
 
     /**

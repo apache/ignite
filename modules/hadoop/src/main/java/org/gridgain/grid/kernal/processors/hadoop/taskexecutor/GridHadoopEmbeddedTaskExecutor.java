@@ -61,7 +61,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) {
+    @Override public void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
@@ -81,7 +81,8 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
         for (final GridHadoopTaskInfo info : tasks) {
             assert info != null;
 
-            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.shuffle().memory(), info) {
+            GridHadoopRunnableTask task = new GridHadoopRunnableTask(log, job, ctx.jobTracker().statistics(job.id()),
+                ctx.shuffle().memory(), info) {
                 @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
                     if (log.isDebugEnabled())
                         log.debug("Finished task execution [jobId=" + job.id() + ", taskInfo=" + info + ", " +

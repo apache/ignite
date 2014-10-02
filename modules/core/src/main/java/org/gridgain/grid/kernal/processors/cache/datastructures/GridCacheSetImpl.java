@@ -37,12 +37,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCacheSet<T> {
     /** */
-    private static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
-    private static final long RETRY_DELAY = 1;
-
-    /** */
     private static final int BATCH_SIZE = 100;
 
     /** Cache context. */
@@ -366,37 +360,15 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             throw new GridRuntimeException(e);
         }
     }
-
     /**
      * @param call Callable.
      * @return Callable result.
      */
     private <R> R retry(Callable<R> call) {
         try {
-            int cnt = 0;
-
-            while (true) {
-                try {
-                    return call.call();
-                }
-                catch (GridEmptyProjectionException e) {
-                    throw new GridRuntimeException(e);
-                }
-                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            return (R)ctx.dataStructures().retry(call);
         }
-        catch (GridRuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
+        catch (GridException e) {
             throw new GridRuntimeException(e);
         }
     }

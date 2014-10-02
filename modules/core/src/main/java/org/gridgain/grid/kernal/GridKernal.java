@@ -1817,10 +1817,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
 
         if (scala) {
-            Properties props = new Properties();
+            try (InputStream in = getClass().getResourceAsStream("/library.properties")) {
+                Properties props = new Properties();
 
-            try {
-                props.load(getClass().getResourceAsStream("/library.properties"));
+                if (in != null)
+                    props.load(in);
 
                 return "Scala ver. " + props.getProperty("version.number", "<unknown>");
             }
