@@ -15,8 +15,8 @@ import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.dto.{VisorCacheAggregatedMetrics, VisorCacheMetrics}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorCacheCollectMetricsTask
+import org.gridgain.grid.kernal.visor.cmd.dto.{VisorGridConfig, VisorCacheAggregatedMetrics, VisorCacheMetrics}
+import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorConfigCollectorTask, VisorCacheCollectMetricsTask}
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
 import org.gridgain.visor._
@@ -335,6 +335,10 @@ class VisorCacheCommand {
                         else k1.cacheName.compareTo(k2.cacheName) < 0
                     })
 
+                    val gCfg = node.map(config).collect({
+                        case cfg if cfg != null => cfg
+                    })
+
                     sorted.foreach(ad => {
                         val cacheNameVar = mkCacheName(ad.cacheName)
 
@@ -396,6 +400,84 @@ class VisorCacheCommand {
                         println("  Average execution time: " + X.timeSpan2HMSM(qm.avgTime.toLong))
                         println("  Total number of executions: " + qm.execs)
                         println("  Total number of failures:   " + qm.fails)
+                        
+                        gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
+                            val ccT = VisorTextTable()
+
+                            ccT #= ("Name", "Value")
+
+                            ccT += ("Mode", cfg.mode)
+                            ccT += ("Atomicity Mode", cfg.atomicityMode)
+                            ccT += ("Atomic Sequence Reserve Size", cfg.atomicSequenceReserveSize)
+                            ccT += ("Atomic Write Ordering Mode", cfg.atomicWriteOrderMode)
+                            ccT += ("Time To Live", cfg.defaultConfig().timeToLive())
+                            ccT += ("Time To Live Eager Flag", cfg.eagerTtl)
+                            ccT += ("Refresh Ahead Ratio", cfg.refreshAheadRatio)
+                            ccT += ("Write Synchronization Mode", cfg.writeSynchronizationMode)
+                            ccT += ("Swap Enabled", cfg.swapEnabled())
+                            ccT += ("Invalidate", cfg.invalidate())
+                            ccT += ("Start Size", cfg.startSize())
+                            ccT += ("Cloner", cfg.cloner())
+                            ccT += ("Batch Update", cfg.batchUpdateOnCommit())
+                            ccT += ("Transaction Manager Lookup", cfg.transactionManagerLookupClassName())
+                            ccT += ("Transaction Serializable", cfg.txSerializableEnabled)
+                            ccT += ("Affinity Function", cfg.affinityConfig().function())
+                            ccT += ("Affinity Backups", cfg.affinityConfig().partitionedBackups())
+                            ccT += ("Affinity Partitions", cfg.affinityConfig().partitions())
+                            ccT += ("Affinity Default Replicas", cfg.affinityConfig().defaultReplicas())
+                            ccT += ("Affinity Exclude Neighbors", cfg.affinityConfig().excludeNeighbors())
+                            ccT += ("Affinity Mapper", cfg.affinityConfig().mapper())
+                            ccT += ("Preload Mode", cfg.preloadConfig().mode())
+                            ccT += ("Preload Batch Size", cfg.preloadConfig().batchSize())
+                            ccT += ("Preload Thread Pool size", cfg.preloadConfig().threadPoolSize())
+                            ccT += ("Preload Timeout", cfg.preloadConfig().timeout())
+                            ccT += ("Preloading Delay", cfg.preloadConfig().partitionedDelay())
+                            ccT += ("Time Between Preload Messages", cfg.preloadConfig.throttle())
+                            ccT += ("Eviction Policy Enabled", cfg.evictConfig().policy() != null)
+                            ccT += ("Eviction Policy", cfg.evictConfig().policy())
+                            ccT += ("Eviction Policy Max Size", cfg.evictConfig.policyMaxSize())
+                            ccT += ("Eviction Filter", cfg.evictConfig().filter())
+                            ccT += ("Eviction Key Buffer Size", cfg.evictConfig().synchronizedKeyBufferSize())
+                            ccT += ("Eviction Synchronized", cfg.evictConfig().evictSynchronized())
+                            ccT += ("Eviction Overflow Ratio", cfg.evictConfig().maxOverflowRatio())
+                            ccT += ("Synchronous Eviction Timeout", cfg.evictConfig().synchronizedTimeout())
+                            ccT += ("Synchronous Eviction Concurrency Level", cfg.evictConfig().synchronizedConcurrencyLevel())
+                            ccT += ("Distribution Mode", cfg.distributionMode())
+                            ccT += ("Near Start Size", cfg.nearConfig().nearStartSize())
+                            ccT += ("Near Eviction Policy", cfg.nearConfig().nearEvictPolicy())
+                            ccT += ("Near Eviction Enabled", cfg.nearConfig().nearEnabled())
+                            ccT += ("Near Eviction Synchronized", cfg.evictConfig().nearSynchronized())
+                            ccT += ("Default Isolation", cfg.defaultConfig().txIsolation())
+                            ccT += ("Default Concurrency", cfg.defaultConfig().txConcurrency())
+                            ccT += ("Default Transaction Timeout", cfg.defaultConfig().txTimeout())
+                            ccT += ("Default Lock Timeout", cfg.defaultConfig().txLockTimeout())
+                            ccT += ("Default Query Timeout", cfg.defaultConfig().queryTimeout())
+                            ccT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
+                            ccT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
+                            ccT += ("Indexing SPI Name", cfg.indexingSpiName())
+                            ccT += ("Cache Interceptor", cfg.interceptor())
+                            ccT += ("DGC Frequency", cfg.dgcConfig().frequency())
+                            ccT += ("DGC Remove Locks Flag", cfg.dgcConfig().removedLocks())
+                            ccT += ("DGC Suspect Lock Timeout", cfg.dgcConfig().suspectLockTimeout())
+                            ccT += ("Store Enabled", cfg.storeConfig().enabled())
+                            ccT += ("Store", cfg.storeConfig().store())
+                            ccT += ("Store Values In Bytes", cfg.storeConfig().valueBytes())
+                            ccT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
+                            ccT += ("Write-Behind Enabled", cfg.writeBehind().enabled())
+                            ccT += ("Write-Behind Flush Size", cfg.writeBehind().flushSize())
+                            ccT += ("Write-Behind Frequency", cfg.writeBehind().flushFrequency())
+                            ccT += ("Write-Behind Flush Threads Count", cfg.writeBehind().flushThreadCount())
+                            ccT += ("Write-Behind Batch Size", cfg.writeBehind().batchSize())
+                            ccT += ("Pessimistic Tx Log Size", cfg.pessimisticTxLoggerSize())
+                            ccT += ("Pessimistic Tx Log Linger", cfg.pessimisticTxLoggerLinger())
+                            ccT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
+                            ccT += ("Memory Mode", cfg.memoryMode())
+
+                            nl()
+                            println("Cache configuration:")
+
+                            ccT.render()
+                        }))
                     })
 
                 }
@@ -461,6 +543,24 @@ class VisorCacheCommand {
         }
         catch {
             case e: GridException => Nil
+        }
+    }
+
+    /**
+     * Gets configuration of grid from specified node for callecting of node cache's configuration.
+     *
+     * @param node Specified node.
+     * @return Grid configuration for specified node.
+     */
+    private def config(node: GridNode): VisorGridConfig = {
+        try
+            grid.forNode(node).compute().withNoFailover()
+                .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id())).get
+        catch {
+            case e: GridException =>
+                scold(e.getMessage)
+
+                null
         }
     }
 
