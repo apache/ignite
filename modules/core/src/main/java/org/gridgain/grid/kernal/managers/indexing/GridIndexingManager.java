@@ -1417,7 +1417,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = CU.h2Escape(name);
+            this.name = name;
         }
 
         /** {@inheritDoc} */
