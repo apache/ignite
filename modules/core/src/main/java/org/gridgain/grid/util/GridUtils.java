@@ -275,6 +275,12 @@ public abstract class GridUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
+    /* GridGain Logging Directory. */
+    public static final String GRIDGAIN_LOG_DIR = System.getenv("GRIDGAIN_LOG_DIR");
+
+    /* GridGain Work Directory. */
+    public static final String GRIDGAIN_WORK_DIR = System.getenv("GRIDGAIN_WORK_DIR");
+
     /**
      * Initializes enterprise check.
      */
@@ -8379,6 +8385,8 @@ public abstract class GridUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
+                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
+                    workDir = new File(GRIDGAIN_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {

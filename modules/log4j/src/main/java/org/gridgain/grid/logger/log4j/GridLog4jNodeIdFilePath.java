@@ -37,6 +37,9 @@ class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
+        if (!F.isEmpty(U.GRIDGAIN_LOG_DIR))
+            return U.nodeIdLogFileName(nodeId, new File(U.GRIDGAIN_LOG_DIR, "gridgain.log").getAbsolutePath());
+
         if (oldPath != null) // fileName could be null if GRIDGAIN_HOME is not defined.
             return U.nodeIdLogFileName(nodeId, oldPath);
 
