@@ -439,6 +439,17 @@ public final class GridSystemProperties {
     public static final String GG_CACHE_KEY_VALIDATION_DISABLED = "GRIDGAIN_CACHE_KEY_VALIDATION_DISABLED";
 
     /**
+     * Environment variable to override logging directory that has been set in logger configuration.
+     */
+    public static final String GG_GRIDGAIN_LOG_DIR = "GRIDGAIN_LOG_DIR";
+
+    /**
+     * Environment variable to override default work directory is related to GRIDGAIN_HOME or temporary directory.
+     * The value of this variable could be overridden by workDirectory property in GridConfiguration.
+     */
+    public static final String GG_GRIDGAIN_WORK_DIR = "GRIDGAIN_WORK_DIR";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
