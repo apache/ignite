@@ -154,7 +154,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Scalar DSL, ver. <strong>${gridgain.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
                                         </tr>
                                         </table>

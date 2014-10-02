@@ -108,7 +108,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
-    static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
+    static final String SITE = "www.gridgain.com";
 
     /** System line separator. */
     private static final String NL = U.nl();
