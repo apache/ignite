@@ -48,6 +48,7 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.spi.indexing.GridIndexType.*;
 import static org.gridgain.grid.spi.indexing.h2.opt.GridH2AbstractKeyValueRow.*;
 import static org.h2.result.SortOrder.*;
@@ -1389,7 +1390,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             createSqlFunctions();
             runInitScript();
 
-            if (GridSystemProperties.getString(GridSystemProperties.GG_H2_DEBUG_CONSOLE) != null) {
+            if (getString(GG_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();

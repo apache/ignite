@@ -26,7 +26,7 @@ public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = U.isFutureNotificationSynchronous("true");
+    private static final boolean SYNC_NOTIFY = U.isFutureNotificationSynchronous(true);
 
     /** Complete value. */
     private T t;

@@ -7165,16 +7165,16 @@ public abstract class GridUtils {
      * @param dflt Default value.
      * @return {@code true} if future notification should work synchronously.
      */
-    public static boolean isFutureNotificationSynchronous(String dflt) {
-        return "true".equalsIgnoreCase(GridSystemProperties.getString(GG_FUT_SYNC_NOTIFICATION, dflt));
+    public static boolean isFutureNotificationSynchronous(boolean dflt) {
+        return GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, dflt);
     }
 
     /**
      * @param dflt Default value.
      * @return {@code true} if future notification should work concurrently.
      */
-    public static boolean isFutureNotificationConcurrent(String dflt) {
-        return "true".equalsIgnoreCase(GridSystemProperties.getString(GG_FUT_CONCURRENT_NOTIFICATION, dflt));
+    public static boolean isFutureNotificationConcurrent(boolean dflt) {
+        return GridSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, dflt);
     }
 
     /**

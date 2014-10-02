@@ -104,10 +104,10 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     private int lastLsnrExecCnt;
 
     /** Synchronous notification flag. */
-    private volatile boolean syncNotify = U.isFutureNotificationSynchronous("true");
+    private volatile boolean syncNotify = U.isFutureNotificationSynchronous(true);
 
     /** Concurrent notification flag. */
-    private volatile boolean concurNotify = U.isFutureNotificationConcurrent("false");
+    private volatile boolean concurNotify = U.isFutureNotificationConcurrent(false);
 
     /** Mutex. */
     private final Object mux = new Object();

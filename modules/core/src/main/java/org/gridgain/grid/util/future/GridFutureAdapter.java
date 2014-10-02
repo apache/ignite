@@ -37,10 +37,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     protected static GridLogger log;
 
     /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = U.isFutureNotificationSynchronous("true");
+    private static final boolean SYNC_NOTIFY = U.isFutureNotificationSynchronous(true);
 
     /** Concurrent notification flag. */
-    private static final boolean CONCUR_NOTIFY = U.isFutureNotificationConcurrent("false");
+    private static final boolean CONCUR_NOTIFY = U.isFutureNotificationConcurrent(false);
 
     /** Initial state. */
     private static final int INIT = 0;
