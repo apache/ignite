@@ -9,16 +9,27 @@
 
 package org.gridgain.grid.util.portable;
 
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Extended writer interface.
  */
-public interface GridPortableRawWriterEx extends GridPortableRawWriter {
+public interface GridPortableRawWriterEx extends GridPortableRawWriter, AutoCloseable {
     /**
      * @param obj Object to write.
      * @throws GridPortableException In case of error.
      */
     public void writeObjectDetached(@Nullable Object obj) throws GridPortableException;
+
+    /**
+     * @return Output stream.
+     */
+    public GridPortableOutputStream out();
+
+    /**
+     * Cleans resources.
+     */
+    @Override public void close();
 }
