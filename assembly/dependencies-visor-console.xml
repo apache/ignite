@@ -61,6 +61,15 @@
                     </fileSet>
 
                     <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/visor-common</outputDirectory>
+                        <includes>
+                            <include>scala-*.jar</include>
+                            <include>spring-*.jar</include>
+                        </includes>
+                    </fileSet>
+
+                    <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/visorcmd</outputDirectory>
                         <includes>
@@ -84,15 +93,6 @@
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
-                    <fileSet>
-                        <directory>target/libs</directory>
-                        <outputDirectory>/visor-common</outputDirectory>
-                        <includes>
-                            <include>scala-*.jar</include>
-                            <include>spring-*.jar</include>
-                        </includes>
-                    </fileSet>
-
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/visor-common</outputDirectory>
