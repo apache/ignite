@@ -703,7 +703,7 @@ public class GridBasicPerformanceTest {
             if (sort)
                 Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
             else
-                ArrayUtils.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;

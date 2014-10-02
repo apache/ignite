@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -479,9 +478,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @return 2 preconfigured data caches.
      */
     private GridCacheConfiguration[] dataCaches(int grpSize, String... cacheNames) {
-        assertTrue(ArrayUtils.isEmpty(cacheNames) || cacheNames.length == 2);
+        assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
 
-        if (ArrayUtils.isEmpty(cacheNames))
+        if (F.isEmpty(cacheNames))
             cacheNames = new String[] {dataCache1Name, dataCache2Name};
 
         GridCacheConfiguration[] res = new GridCacheConfiguration[cacheNames.length];
@@ -505,9 +504,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @return 2 preconfigured meta caches.
      */
     private GridCacheConfiguration[] metaCaches(String... cacheNames) {
-        assertTrue(ArrayUtils.isEmpty(cacheNames) || cacheNames.length == 2);
+        assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
 
-        if (ArrayUtils.isEmpty(cacheNames))
+        if (F.isEmpty(cacheNames))
             cacheNames = new String[] {metaCache1Name, metaCache2Name};
 
         GridCacheConfiguration[] res = new GridCacheConfiguration[cacheNames.length];
