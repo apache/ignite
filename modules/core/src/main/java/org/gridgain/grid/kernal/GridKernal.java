@@ -104,7 +104,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Ant-augmented compatible versions. */
+    /** Compatible versions. */
     private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
