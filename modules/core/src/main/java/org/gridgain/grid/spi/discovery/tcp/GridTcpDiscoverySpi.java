@@ -1823,7 +1823,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         GridTcpDiscoverySpiState spiState = spiStateCopy();
 
         if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-            Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
+            Collection<GridTcpDiscoveryNode> allNodes = F.concat(false, ring.allNodes(), clientNodes.values());
+
+            Collection<GridNode> top = new ArrayList<GridNode>(F.view(allNodes, VISIBLE_NODES));
 
             Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -1852,7 +1854,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 topHist.remove(topHist.firstKey());
 
             if (log.isDebugEnabled())
-                log.debug("Added topology snapshot to history, topVer=" + topVer + ", historySize=" + topHist);
+                log.debug("Added topology snapshot to history, topVer=" + topVer + ", historySize=" + topHist.size());
 
             return new TreeMap<>(topHist);
         }
@@ -2896,9 +2898,23 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 GridTcpDiscoveryNodeAddedMessage nodeAddedMsg =
                     (GridTcpDiscoveryNodeAddedMessage)msg;
 
+                GridTcpDiscoveryNode node = nodeAddedMsg.node();
+
+                boolean prepare = node.equals(next);
+
+                if (!prepare && nodeAddedMsg.client()) {
+                    for (ClientMessageWorker wrk : clientMsgWorkers) {
+                        if (wrk.nodeId.equals(node.id())) {
+                            prepare = true;
+
+                            break;
+                        }
+                    }
+                }
+
                 // If new node is next, then send topology to and all pending messages
                 // as a part of message.
-                if (nodeAddedMsg.node().equals(next)) {
+                if (prepare) {
                     Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
                     Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
 
@@ -2955,41 +2971,43 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             GridTcpDiscoveryNode node = msg.node();
 
-            boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
-                node.socketAddresses().iterator().next().getAddress().isLoopbackAddress();
+            if (!msg.client()) {
+                boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
+                    node.socketAddresses().iterator().next().getAddress().isLoopbackAddress();
 
-            // This check is performed by the node joining node is connected to, but not by coordinator
-            // because loopback problem message is sent directly to the joining node which may be unavailable
-            // if coordinator resides on another host.
-            if (locHost.isLoopbackAddress() != rmtHostLoopback) {
-                String firstNode = rmtHostLoopback ? "remote" : "local";
+                // This check is performed by the node joining node is connected to, but not by coordinator
+                // because loopback problem message is sent directly to the joining node which may be unavailable
+                // if coordinator resides on another host.
+                if (locHost.isLoopbackAddress() != rmtHostLoopback) {
+                    String firstNode = rmtHostLoopback ? "remote" : "local";
 
-                String secondNode = rmtHostLoopback ? "local" : "remote";
+                    String secondNode = rmtHostLoopback ? "local" : "remote";
 
-                String errMsg = "Failed to add node to topology because " + firstNode +
-                    " node is configured to use loopback address, but " + secondNode + " node is not " +
-                    "(consider changing 'localAddress' configuration parameter) " +
-                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(node) + ']';
+                    String errMsg = "Failed to add node to topology because " + firstNode +
+                        " node is configured to use loopback address, but " + secondNode + " node is not " +
+                        "(consider changing 'localAddress' configuration parameter) " +
+                        "[locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) + ']';
 
-                LT.warn(log, null, errMsg);
+                    LT.warn(log, null, errMsg);
 
-                // Always output in debug.
-                if (log.isDebugEnabled())
-                    log.debug(errMsg);
-
-                try {
-                    trySendMessageDirectly(node,
-                        new GridTcpDiscoveryLoopbackProblemMessage(locNodeId, locNode.addresses(), locNode.hostNames()));
-                }
-                catch (GridSpiException e) {
+                    // Always output in debug.
                     if (log.isDebugEnabled())
-                        log.debug("Failed to send loopback problem message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']');
-                }
+                        log.debug(errMsg);
 
-                // Ignore join request.
-                return;
+                    try {
+                        trySendMessageDirectly(node,
+                            new GridTcpDiscoveryLoopbackProblemMessage(locNodeId, locNode.addresses(), locNode.hostNames()));
+                    }
+                    catch (GridSpiException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send loopback problem message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                    }
+
+                    // Ignore join request.
+                    return;
+                }
             }
 
             if (isLocalNodeCoordinator()) {
@@ -3538,6 +3556,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             assert nodeId != null;
 
             GridTcpDiscoveryNode node = ring.node(nodeId);
+
+            if (node == null)
+                node = clientNodes.get(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -4509,8 +4530,17 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         return;
                     }
 
-                    if (client)
-                        clientMsgWorkers.add(new ClientMessageWorker(sock, nodeId));
+                    if (client) {
+                        if (log.isDebugEnabled())
+                            log.debug("Created client message worker [locNodeId=" + locNodeId +
+                                ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
+
+                        ClientMessageWorker clientMsgWrk = new ClientMessageWorker(sock, nodeId);
+
+                        clientMsgWrk.start();
+
+                        clientMsgWorkers.add(clientMsgWrk);
+                    }
 
                     if (log.isDebugEnabled())
                         log.debug("Initialized connection with remote node [nodeId=" + nodeId +
@@ -4949,12 +4979,16 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             try {
+                if (log.isDebugEnabled())
+                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
+                        ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+
                 writeToSocket(sock, msg);
             }
             catch (GridException | IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Caught exception on redirecting message to client [sock=" + sock +
-                        ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
+                        ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
             }
         }
     }

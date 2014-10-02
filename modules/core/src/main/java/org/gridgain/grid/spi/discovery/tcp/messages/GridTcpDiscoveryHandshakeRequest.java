@@ -50,6 +50,20 @@ public class GridTcpDiscoveryHandshakeRequest extends GridTcpDiscoveryAbstractMe
     }
 
     /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeBoolean(client);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        client = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpDiscoveryHandshakeRequest.class, this, "super", super.toString());
     }

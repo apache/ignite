@@ -898,7 +898,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
             if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
                 queue.addFirst(msg);
-
             else
                 queue.add(msg);
 
