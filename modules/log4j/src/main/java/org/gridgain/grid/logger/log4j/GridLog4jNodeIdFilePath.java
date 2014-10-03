@@ -11,6 +11,7 @@ package org.gridgain.grid.logger.log4j;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
