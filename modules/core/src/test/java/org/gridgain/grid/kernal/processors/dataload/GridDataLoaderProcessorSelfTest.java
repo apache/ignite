@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
@@ -72,8 +72,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setIncludeProperties();
-
-        cfg.setRestEnabled(false);
 
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
