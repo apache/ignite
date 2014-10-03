@@ -1707,6 +1707,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         @GridCacheQuerySqlField
         private int salary;
 
+        /** */
+        @GridCacheQuerySqlField(index = true)
+        private int fake$Field;
+
         /**
          * Required by {@link Externalizable}.
          */
