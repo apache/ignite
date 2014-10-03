@@ -22,6 +22,6 @@ public class ComputeNodeStartup {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/security-data-node.xml");
+        GridGain.start("examples/config/example-compute.xml");
     }
 }
