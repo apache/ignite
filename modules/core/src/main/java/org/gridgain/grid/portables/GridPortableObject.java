@@ -155,7 +155,8 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @throws GridPortableException In case of error.
      * @deprecated Use GridMutablePortableObject instead.
      */
-    @Deprecated public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
+    @Deprecated
+    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
      * Copies this portable object.
