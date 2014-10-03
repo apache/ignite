@@ -7402,6 +7402,21 @@ public class GridFunc {
      * @return {@code True} if array contains given value.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(long[] arr, long val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static boolean contains(Integer[] arr, Integer val) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i].equals(val))
