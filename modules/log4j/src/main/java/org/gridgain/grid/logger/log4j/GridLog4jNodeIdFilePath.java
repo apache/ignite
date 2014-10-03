@@ -11,6 +11,7 @@ package org.gridgain.grid.logger.log4j;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -49,6 +50,7 @@ class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
             return U.nodeIdLogFileName(nodeId, new File(tmpDir, "gridgain.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
+
         return null;
     }
 }
