@@ -85,21 +85,27 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @param cctx Context.
      * @param type Query type.
+     * @param clsName Class name.
      * @param clause Clause.
      * @param filter Scan filter.
      * @param incMeta Include metadata flag.
+     * @param keepPortable Keep portable flag.
      * @param prjPred Cache projection filter.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable String clsName,
-        @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta,
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+        GridCacheQueryType type,
+        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable String clsName,
+        @Nullable String clause,
+        @Nullable GridBiPredicate<Object, Object> filter,
+        boolean incMeta,
         boolean keepPortable) {
         assert cctx != null;
         assert type != null;
 
         this.cctx = cctx;
         this.type = type;
-        this.clsName = CU.h2Escape(clsName);
+        this.clsName = clsName;
         this.clause = clause;
         this.prjPred = prjPred;
         this.filter = filter;
@@ -130,13 +136,30 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
      * @param filter Key-value filter.
+     * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
+     * @param keepPortable Keep portable flag.
+     * @param subjId Security subject ID.
+     * @param taskHash Task hash.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
-        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, @Nullable String clsName,
-        String clause, boolean incMeta, boolean keepPortable, UUID subjId, int taskHash) {
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        GridCacheQueryType type,
+        GridLogger log,
+        int pageSize,
+        long timeout,
+        boolean keepAll,
+        boolean incBackups,
+        boolean dedup,
+        GridProjection prj,
+        GridBiPredicate<Object, Object> filter,
+        @Nullable String clsName,
+        String clause,
+        boolean incMeta,
+        boolean keepPortable,
+        UUID subjId,
+        int taskHash) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -148,7 +171,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
-        this.clsName = CU.h2Escape(clsName);
+        this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
@@ -159,7 +182,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return cache projection filter.
      */
-    public GridPredicate<GridCacheEntry<Object, Object>> projectionFilter() {
+    @Nullable public GridPredicate<GridCacheEntry<Object, Object>> projectionFilter() {
         return prjPred;
     }
 
@@ -221,6 +244,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         return taskHash;
     }
 
+    /**
+     * @param subjId Security subject ID.
+     */
     public void subjectId(UUID subjId) {
         this.subjId = subjId;
     }
@@ -316,7 +342,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    public <K, V> GridBiPredicate<K, V> scanFilter() {
+    @Nullable public <K, V> GridBiPredicate<K, V> scanFilter() {
         return (GridBiPredicate<K, V>)filter;
     }
 
