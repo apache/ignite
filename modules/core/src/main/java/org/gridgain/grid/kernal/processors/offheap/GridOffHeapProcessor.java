@@ -142,6 +142,23 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets value pointer from offheap space for the given key.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @return Tuple where first value is pointer and second is value size.
+     * @throws GridException If failed.
+     */
+    @Nullable public GridBiTuple<Long, Integer> getPointer(@Nullable String spaceName, int part, Object key,
+        byte[] keyBytes) throws GridException {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? null : m.getPointer(part, U.hash(key), keyBytes(key, keyBytes));
+    }
+
+    /**
      * Gets value from offheap space for the given key.
      *
      * @param spaceName Space name.

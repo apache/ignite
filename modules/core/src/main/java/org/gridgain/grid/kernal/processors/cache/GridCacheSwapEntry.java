@@ -10,187 +10,71 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Swap entry.
  */
-public class GridCacheSwapEntry<V> implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Key hash. */
-    private int keyHash;
-
-    /** Value bytes. */
-    private byte[] valBytes;
-
-    /** Value. */
-    private V val;
-
-    /** Falg indicating that value is byte array, so valBytes should not be unmarshalled. */
-    private boolean valIsByteArr;
-
-    /** Class loader ID. */
-    private GridUuid keyClsLdrId;
-
-    /** Class loader ID. */
-    private GridUuid valClsLdrId;
-
-    /** Version. */
-    private GridCacheVersion ver;
-
-    /** Time to live. */
-    private long ttl;
-
-    /** Expire time. */
-    private long expireTime;
-
-    /**
-     * Empty constructor.
-     */
-    public GridCacheSwapEntry() {
-        // No-op.
-    }
-
-    /**
-     * @param keyHash Key hash.
-     * @param valBytes Value.
-     * @param valIsByteArr Whether value of this entry is byte array.
-     * @param ver Version.
-     * @param ttl Entry time to live.
-     * @param expireTime Expire time.
-     * @param keyClsLdrId Class loader ID for entry key (can be {@code null} for local class loader).
-     * @param valClsLdrId Class loader ID for entry value (can be {@code null} for local class loader).
-     */
-    public GridCacheSwapEntry(int keyHash, byte[] valBytes, boolean valIsByteArr, GridCacheVersion ver, long ttl,
-        long expireTime, GridUuid keyClsLdrId, @Nullable GridUuid valClsLdrId) {
-        assert ver != null;
-
-        this.keyHash = keyHash;
-        this.valBytes = valBytes;
-        this.valIsByteArr = valIsByteArr;
-        this.ver = ver;
-        this.ttl = ttl;
-        this.expireTime = expireTime;
-        this.valClsLdrId = valClsLdrId;
-        this.keyClsLdrId = keyClsLdrId;
-    }
-
+public interface GridCacheSwapEntry<V> {
     /**
      * @return Key hash.
      */
-    public int keyHash() {
-        return keyHash;
-    }
+    public int keyHash();
 
     /**
      * @return Value bytes.
      */
-    public byte[] valueBytes() {
-        return valBytes;
-    }
+    public byte[] valueBytes();
 
     /**
      * @return Value.
      */
-    public V value() {
-        return val;
-    }
+    public V value();
 
     /**
      * @param val Value.
      */
-    void value(V val) {
-        this.val = val;
-
-        if (val instanceof byte[])
-            valBytes = null;
-    }
+    void value(V val);
 
     /**
      * @return Whether value is byte array.
      */
-    public boolean valueIsByteArray() {
-        return valIsByteArr;
-    }
+    public boolean valueIsByteArray();
 
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
-        return ver;
-    }
+    public GridCacheVersion version();
 
     /**
      * @return Time to live.
      */
-    public long ttl() {
-        return ttl;
-    }
+    public long ttl();
 
     /**
      * @return Expire time.
      */
-    public long expireTime() {
-        return expireTime;
-    }
+    public long expireTime();
 
     /**
      * @return Class loader ID for entry key ({@code null} for local class loader).
      */
-    @Nullable public GridUuid keyClassLoaderId() {
-        return keyClsLdrId;
-    }
+    @Nullable public GridUuid keyClassLoaderId();
 
     /**
      * @return Class loader ID for entry value ({@code null} for local class loader).
      */
-    @Nullable public GridUuid valueClassLoaderId() {
-        return valClsLdrId;
-    }
+    @Nullable public GridUuid valueClassLoaderId();
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, keyClsLdrId);
-        U.writeGridUuid(out, valClsLdrId);
-
-        U.writeByteArray(out, valBytes);
-
-        out.writeBoolean(valIsByteArr);
-
-        CU.writeVersion(out, ver);
-
-        out.writeLong(ttl);
-        out.writeLong(expireTime);
-
-        out.writeInt(keyHash);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        keyClsLdrId = U.readGridUuid(in);
-        valClsLdrId = U.readGridUuid(in);
-
-        valBytes = U.readByteArray(in);
-
-        valIsByteArr = in.readBoolean();
-
-        ver = CU.readVersion(in);
-
-        ttl = in.readLong();
-        expireTime = in.readLong();
-
-        keyHash = in.readInt();
-
-        assert ver != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCacheSwapEntry.class, this);
-    }
+    /**
+     * @return If entry is offheap based returns tuple where first value is pointer and second is value size.
+     */
+    @Nullable GridBiTuple<Long, Integer> offheapPointer();
 }

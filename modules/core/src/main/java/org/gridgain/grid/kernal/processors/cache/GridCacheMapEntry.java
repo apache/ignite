@@ -230,7 +230,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (valBytes == null && !valIsByteArr)
                         valBytes = CU.marshal(cctx, val);
 
-                    valPtr = mem.putOffHeap(valPtr, valIsByteArr ? (byte[]) val : valBytes, valIsByteArr);
+                    valPtr = mem.putOffHeap(valPtr, valIsByteArr ? (byte[])val : valBytes, valIsByteArr);
                 }
                 else {
                     mem.removeOffHeap(valPtr);
@@ -441,22 +441,25 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return info;
     }
 
-    /**
-     * Unswaps an entry.
-     *
-     * @throws GridException If failed.
-     */
+    /** {@inheritDoc} */
     @Override public V unswap() throws GridException {
         return unswap(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V unswap(boolean ignoreFlags) throws GridException {
+        return unswap(ignoreFlags, true);
     }
 
     /**
      * Unswaps an entry.
      *
      * @param ignoreFlags Whether to ignore swap flags.
+     * @param needVal If {@code false} then do not to deserialize value during unswap.
+     * @return Value.
      * @throws GridException If failed.
      */
-    @Override public V unswap(boolean ignoreFlags) throws GridException {
+    @Nullable private V unswap(boolean ignoreFlags, boolean needVal) throws GridException {
         boolean swapEnabled = cctx.swap().swapEnabled() && (ignoreFlags || !cctx.hasFlag(SKIP_SWAP));
 
         if (!swapEnabled && !cctx.isOffHeapEnabled())
@@ -464,7 +467,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         synchronized (this) {
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                GridCacheSwapEntry<V> e = detached() ? cctx.swap().read(this) : cctx.swap().readAndRemove(this);
+                GridCacheSwapEntry<V> e;
+
+                if (cctx.portableOffheap()) {
+                    e = cctx.swap().readOffheapPointer(this);
+
+                    if (e != null) {
+                        valPtr = e.offheapPointer().get1();
+
+                        if (needVal)
+                            // TODO 9198 create heap based object.
+                            e.value((V)cctx.portable().unmarshal(valPtr, 0));
+                    }
+                    else
+                        valPtr = 0;
+                }
+                else
+                    e = detached() ? cctx.swap().read(this) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
@@ -1507,9 +1526,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             checkObsolete();
 
-            // Load and remove from swap if it is new.
+            // Load from swap if it is new.
             if (isNew())
-                unswap(true);
+                unswap(true, false);
 
             boolean newTtlResolved = false;
 
@@ -1524,7 +1543,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (drNeedResolve) {
                     // Get old value.
-                    V oldVal = rawGetOrUnmarshalUnlocked();
+                    V oldVal = rawGetOrUnmarshalTemporary(false);
 
                     if (writeObj == null && valBytes != null)
                         writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
@@ -1532,7 +1551,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (op == TRANSFORM) {
                         transformClo = writeObj;
 
-                        writeObj = ((GridClosure<V, V>) writeObj).apply(oldVal);
+                        writeObj = ((GridClosure<V, V>)writeObj).apply(oldVal);
                     }
 
                     K k = key();
@@ -1646,7 +1665,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             // Possibly get old value form store.
-            old = needVal ? rawGetOrUnmarshalUnlocked() : val;
+            old = needVal ? rawGetOrUnmarshalTemporary(retval) : val;
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
@@ -1673,7 +1692,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass)
-                    return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                    return new GridCacheUpdateAtomicResult<>(false,
+                        retval ? old : null,
+                        null,
+                        0L,
+                        -1L,
+                        null,
+                        null,
+                        false);
             }
 
             // Apply metrics.
@@ -1701,8 +1727,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Incorporate DR version into new version if needed.
             if (drVer != null && drVer != newVer)
-                newVer = new GridCacheVersionEx(newVer.topologyVersion(), newVer.globalTime(), newVer.order(),
-                    newVer.nodeOrder(), newVer.dataCenterId(), drVer);
+                newVer = new GridCacheVersionEx(newVer.topologyVersion(),
+                    newVer.globalTime(),
+                    newVer.order(),
+                    newVer.nodeOrder(),
+                    newVer.dataCenterId(),
+                    drVer);
 
             GridBiTuple<Boolean, V> interceptRes = null;
 
@@ -1711,7 +1741,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     V interceptorVal = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
 
                     if (interceptorVal == null)
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false,
+                            retval ? old : null,
+                            null,
+                            0L,
+                            -1L,
+                            null,
+                            null,
+                            false);
                     else if (interceptorVal != updated) {
                         updated = interceptorVal;
                         valBytes = null;
@@ -1753,6 +1790,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 recordNodeId(affNodeId);
 
                 if (evt) {
+                    // TODO: 9198 convert offheap-based old.
+
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
@@ -1811,6 +1850,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, null, null, newVer);
 
                 if (evt) {
+                    // TODO: 9198 convert offheap-based old.
+
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, old, old != null || hadVal, old,
@@ -1832,6 +1873,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             if (primary || cctx.isReplicated())
+                // TODO: 9198 convert offheap-based old.
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
@@ -1850,6 +1892,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + old + ", entry=" + this + ']');
 
+        // TODO: 9198 convert offheap-based old.
         return new GridCacheUpdateAtomicResult<>(res, old, updated, newTtl, newDrExpireTime, enqueueVer, drRes, true);
     }
 
@@ -2703,6 +2746,21 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return val;
     }
 
+    protected V rawGetOrUnmarshalTemporary(boolean retVal) throws GridException {
+        if (retVal || !cctx.portableOffheap())
+            return rawGetOrUnmarshalUnlocked();
+
+        V val = this.val;
+
+        if (val != null)
+            return val;
+
+        if (valPtr != 0)
+            val = (V)cctx.portable().unmarshal(valPtr, 0);
+
+        return val;
+    }
+
     /** {@inheritDoc} */
     @Override public synchronized boolean hasValue() {
         return hasValueUnlocked();
@@ -3436,7 +3494,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException If failed.
      */
     protected GridCacheValueBytes createValueBytes(@Nullable V val) throws GridException {
-        return (val != null && val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
+        return (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
             GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
     }
 
