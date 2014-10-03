@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Entry for batch swap operations.
  */
-public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
+public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
     /** */
     private static final long serialVersionUID = 0L;
 

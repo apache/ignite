@@ -59,6 +59,16 @@ public interface GridOffHeapPartitionedMap {
     @Nullable public byte[] get(int p, int hash, byte[] keyBytes);
 
     /**
+     * Gets value pointer for given key.
+     *
+     * @param p Partition.
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     * @return Value pointer.
+     */
+    @Nullable public GridBiTuple<Long, Integer> getPointer(int p, int hash, byte[] keyBytes);
+
+    /**
      * Removes value from off-heap map.
      *
      * @param p Partition.

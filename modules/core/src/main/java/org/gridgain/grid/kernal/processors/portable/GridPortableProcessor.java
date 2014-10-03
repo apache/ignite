@@ -15,6 +15,7 @@ import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -29,6 +30,38 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Type ID.
      */
     public int typeId(String typeName);
+
+    /**
+     * @param obj Object to marshal.
+     * @param trim If {@code true} trims result byte buffer.
+     * @return Object bytes.
+     * @throws GridPortableException In case of error.
+     */
+    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws GridPortableException;
+
+    /**
+     * @param arr Byte array.
+     * @return Unmarshalled object.
+     * @throws GridPortableException In case of error.
+     */
+    public Object unmarshal(byte[] arr) throws GridPortableException;
+
+    /**
+     * @param ptr Offheap pointer.
+     * @param forceHeap If {@code true} creates heap-based object.
+     * @return Unmarshalled object.
+     * @throws GridPortableException In case of error.
+     */
+    Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
+
+    /**
+     * Converts offheap object to heap-based.
+     *
+     * @param obj Object.
+     * @return Heap-based object.
+     * @throws GridPortableException In case of error.
+     */
+    Object heapObject(Object obj) throws GridPortableException;
 
     /**
      * @param obj Object to marshal.

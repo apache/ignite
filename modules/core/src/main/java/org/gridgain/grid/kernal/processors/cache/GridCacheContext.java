@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
@@ -54,6 +55,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
@@ -295,7 +297,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         trueArr = new GridPredicate[]{F.alwaysTrue()};
 
         // Create unsafe memory only if writing values
-        unsafeMemory = cacheCfg.getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES ?
+        unsafeMemory = cacheCfg.getMemoryMode() == OFFHEAP_VALUES ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
@@ -1670,6 +1672,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable() {
+        return kernalContext().portable();
+    }
+
+    /**
      * @return Portable enabled flag.
      */
     public boolean portableEnabled() {
@@ -1677,11 +1686,31 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if portable enabled flag is set and memory mode is OFFHEAP_TIERED.
+     */
+    public boolean portableOffheap() {
+        return cacheCfg.isPortableEnabled() && cacheCfg.getMemoryMode() == OFFHEAP_TIERED;
+    }
+
+    /**
+     * Converts offheap object to heap-based.
+     *
+     * @param obj Object.
+     * @return Heap-based object.
+     */
+    public <T> T heapObject(@Nullable Object obj) {
+        if (!portableOffheap())
+            return (T)obj;
+
+        return (T)portable().heapObject(obj);
+    }
+
+    /**
      * @param obj Object.
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         assert portableEnabled();
 
         if (obj == null)
@@ -1703,7 +1732,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param col Collection to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
-     * @throws GridException
+     * @throws GridException If failed.
      */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable)
         throws GridException {

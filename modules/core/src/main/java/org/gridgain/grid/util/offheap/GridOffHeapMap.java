@@ -57,6 +57,15 @@ public interface GridOffHeapMap<K> {
     @Nullable public byte[] get(int hash, byte[] keyBytes);
 
     /**
+     * Gets value pointer for given key.
+     *
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     * @return Value pointer.
+     */
+    @Nullable public GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes);
+
+    /**
      * Removes value from off-heap map.
      *
      * @param hash Hash.

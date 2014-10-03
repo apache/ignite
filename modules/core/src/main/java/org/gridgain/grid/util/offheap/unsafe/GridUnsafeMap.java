@@ -289,6 +289,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes) {
+        return segmentFor(hash).getPointer(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] remove(int hash, byte[] keyBytes) {
         return segmentFor(hash).remove(hash, keyBytes);
     }
@@ -1186,6 +1191,35 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 readUnlock();
             }
 
+        }
+
+        /**
+         * @param hash Hash.
+         * @param keyBytes Key bytes.
+         * @return Value pointer.
+         */
+        @Nullable GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes) {
+            long binAddr = readLock(hash);
+
+            try {
+                long addr = Bin.first(binAddr, mem);
+
+                while (addr != 0) {
+                    if (Entry.keyEquals(addr, keyBytes, mem)) {
+                        int keyLen = Entry.readKeyLength(addr, mem);
+                        int valLen = Entry.readValueLength(addr, mem);
+
+                        return new GridBiTuple<>(addr + HEADER + keyLen, valLen);
+                    }
+
+                    addr = Entry.nextAddress(addr, mem);
+                }
+
+                return null;
+            }
+            finally {
+                readUnlock();
+            }
         }
 
         /**
