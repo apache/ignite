@@ -449,8 +449,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName))
-            typeName = cls.getName().substring(cls.getPackage().getName().length());
+        if (F.isEmpty(typeName)) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
 
         if (cls.isArray()) {
             assert typeName.endsWith("[]");

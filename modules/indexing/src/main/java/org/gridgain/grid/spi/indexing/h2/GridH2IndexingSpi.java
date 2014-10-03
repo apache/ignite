@@ -1184,6 +1184,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @return Escaped name.
      */
     private static String escapeName(String name, boolean escapeAll) {
+        if (escapeAll)
+            return "\"" + name + "\"";
+
         SB sb = null;
 
         for (int i = 0; i < name.length(); i++) {
@@ -1204,9 +1207,12 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             }
         }
 
-        String res = sb == null ? name : sb.a(name.substring(sb.length(), name.length())).toString();
+        if (sb == null)
+            return name;
 
-        return escapeAll ? ("\"" + res + "\"") : res;
+        sb.a(name.substring(sb.length(), name.length()));
+
+        return sb.toString();
     }
 
     /**
