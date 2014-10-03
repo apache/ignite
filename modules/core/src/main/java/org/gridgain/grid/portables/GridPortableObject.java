@@ -159,6 +159,13 @@ public interface GridPortableObject extends Serializable, Cloneable {
     public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
+     * Gets mutable portable object to edit existing portable object.
+     *
+     * @return Mutable portable object.
+     */
+    public GridMutablePortableObject toMutable();
+
+    /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
