@@ -2144,7 +2144,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
                     for (String field : idx.fields()) {
                         // H2 reserved keywords used as column name is case sensitive.
-                        String fieldName = escapeAll ? field : field.toUpperCase();
+                        String fieldName = escapeAll ? field : escapeName(field, escapeAll).toUpperCase();
 
                         Column col = tbl.getColumn(fieldName);
 
