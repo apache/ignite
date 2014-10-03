@@ -29,6 +29,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
@@ -137,7 +138,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (GridNode n : ctx.discovery().remoteNodes())
                 checkGgfsOnRemoteNode(n);
         }
@@ -394,7 +395,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new GridException("Meta cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -404,7 +405,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new GridException("Data cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -443,7 +444,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         if (!F.eq(rmtVal, locVal))
             throw new GridException(name + " should be the same on all nodes in grid for GGFS configuration " +
                 "(fix configuration or set " +
-                "-D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                 "property ) [rmtNodeId=" + rmtNodeId +
                 ", rmt" + propName + "=" + rmtVal +
                 ", loc" + propName + "=" + locVal +
