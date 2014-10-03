@@ -19,10 +19,10 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -33,9 +33,11 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
@@ -100,7 +102,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getResendTimeout();
+    private final long partResendTimeout = getLong(GG_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
     /**
      * @param cctx Cache context.
@@ -242,7 +244,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     void resendPartitions() {
         try {
-             refreshPartitions(0);
+            refreshPartitions(0);
         }
         catch (GridInterruptedException e) {
             U.warn(log, "Partitions were not refreshed (thread got interrupted): " + e,
@@ -565,19 +567,6 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
     }
 
-    /**
-     * @return Partition resend timeout get from system property.
-     */
-    private static long getResendTimeout() {
-        try {
-            return Long.parseLong(X.getSystemOrEnv(GridSystemProperties.GG_PRELOAD_RESEND_TIMEOUT,
-                String.valueOf(GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT)));
-        }
-        catch (NumberFormatException ignored) {
-            return GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionDemandPool.class, this);
@@ -759,7 +748,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws GridTopologyException If node left.
          * @throws GridException If failed to send message.
          */
-        private Set<Integer> demandFromNode(GridNode node, final long topVer,  GridDhtPartitionDemandMessage<K, V> d,
+        private Set<Integer> demandFromNode(GridNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
             GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, GridException {
             cntr++;
 
@@ -1129,7 +1118,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         syncFut.onWorkerDone(this);
                     }
 
-                     scheduleResendPartitions();
+                    scheduleResendPartitions();
                 }
             }
             finally {
