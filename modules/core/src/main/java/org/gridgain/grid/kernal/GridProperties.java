@@ -25,6 +25,9 @@ class GridProperties {
     /** Properties. */
     private static final Properties PROPS;
 
+    /**
+     *
+     */
     static {
         PROPS = new Properties();
 
@@ -37,20 +40,18 @@ class GridProperties {
      * @param throwExc Flag indicating whether to throw an exception or not.
      */
     private static void readProperties(String path, boolean throwExc) {
-        InputStream is = GridProductImpl.class.getClassLoader().getResourceAsStream(path);
+        try (InputStream is = GridProductImpl.class.getClassLoader().getResourceAsStream(path)) {
+            if (is == null) {
+                if (throwExc)
+                    throw new RuntimeException("Failed to find properties file: " + path);
+                else
+                    return;
+            }
 
-        if (is == null) {
-            if (throwExc)
-                throw new RuntimeException("Cannot find '" + path + "' file.");
-            else
-                return;
-        }
-
-        try {
             PROPS.load(is);
         }
         catch (IOException e) {
-            throw new RuntimeException("Cannot read '" + path + "' file.", e);
+            throw new RuntimeException("Failed to read properties file: " + path, e);
         }
     }
 
@@ -58,9 +59,16 @@ class GridProperties {
      * Gets property value.
      *
      * @param key Property key.
-     * @return Property value.
+     * @return Property value (possibly empty string, but never {@code null}).
      */
     public static String get(String key) {
         return PROPS.getProperty(key, "");
+    }
+
+    /**
+     *
+     */
+    private GridProperties() {
+        // No-op.
     }
 }
