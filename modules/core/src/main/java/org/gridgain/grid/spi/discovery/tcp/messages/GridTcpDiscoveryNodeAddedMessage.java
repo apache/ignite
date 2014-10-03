@@ -54,9 +54,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     /** Start time of the first grid node. */
     private long gridStartTime;
 
-    /** Client node flag. */
-    private boolean client;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -71,10 +68,9 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      * @param node Node to add to topology.
      * @param newNodeDiscoData New Node discovery data.
      * @param gridStartTime Start time of the first grid node.
-     * @param client Client node flag.
      */
     public GridTcpDiscoveryNodeAddedMessage(UUID creatorNodeId, GridTcpDiscoveryNode node,
-        List<Object> newNodeDiscoData, long gridStartTime, boolean client) {
+        List<Object> newNodeDiscoData, long gridStartTime) {
         super(creatorNodeId);
 
         assert node != null;
@@ -83,7 +79,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         this.node = node;
         this.newNodeDiscoData = newNodeDiscoData;
         this.gridStartTime = gridStartTime;
-        this.client = client;
 
         oldNodesDiscoData = new LinkedList<>();
     }
@@ -166,13 +161,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     }
 
     /**
-     * @return Client node flag.
-     */
-    public boolean client() {
-        return client;
-    }
-
-    /**
      * @param discoData Discovery data to add.
      */
     public void addDiscoveryData(List<Object> discoData) {
@@ -209,7 +197,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         out.writeObject(newNodeDiscoData);
         U.writeCollection(out, oldNodesDiscoData);
         out.writeLong(gridStartTime);
-        out.writeBoolean(client);
     }
 
     /** {@inheritDoc} */
@@ -224,7 +211,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
         newNodeDiscoData = (List<Object>)in.readObject();
         oldNodesDiscoData = U.readCollection(in);
         gridStartTime = in.readLong();
-        client = in.readBoolean();
     }
 
     /** {@inheritDoc} */

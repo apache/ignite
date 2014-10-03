@@ -21,9 +21,6 @@ public class GridTcpDiscoveryHandshakeRequest extends GridTcpDiscoveryAbstractMe
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private boolean client;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -36,31 +33,8 @@ public class GridTcpDiscoveryHandshakeRequest extends GridTcpDiscoveryAbstractMe
      *
      * @param creatorNodeId Creator node ID.
      */
-    public GridTcpDiscoveryHandshakeRequest(UUID creatorNodeId, boolean client) {
+    public GridTcpDiscoveryHandshakeRequest(UUID creatorNodeId) {
         super(creatorNodeId);
-
-        this.client = client;
-    }
-
-    /**
-     * @return Whether request is from client.
-     */
-    public boolean client() {
-        return client;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeBoolean(client);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        client = in.readBoolean();
     }
 
     /** {@inheritDoc} */

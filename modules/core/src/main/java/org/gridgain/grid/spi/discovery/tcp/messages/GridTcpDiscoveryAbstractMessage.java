@@ -34,6 +34,9 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** Topology version. */
     private long topVer;
 
+    /** Client node flag. */
+    private boolean client;
+
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -131,11 +134,30 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         this.topVer = topVer;
     }
 
+    /**
+     * Get client node flag.
+     *
+     * @return Client node flag.
+     */
+    public boolean client() {
+        return client;
+    }
+
+    /**
+     * Sets client node flag.
+     *
+     * @param client Client node flag.
+     */
+    public void client(boolean client) {
+        this.client = client;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         U.writeUuid(out, verifierNodeId);
         out.writeLong(topVer);
+        out.writeBoolean(client);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +165,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         id = U.readGridUuid(in);
         verifierNodeId = U.readUuid(in);
         topVer = in.readLong();
+        client = in.readBoolean();
     }
 
     /** {@inheritDoc} */

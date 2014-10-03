@@ -255,7 +255,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private RingMessageWorker msgWorker;
 
     /** Client message workers. */
-    private Collection<ClientMessageWorker> clientMsgWorkers = new GridConcurrentHashSet<>();
+    private ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
 
     /** Metrics sender. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -1249,7 +1249,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         sock = openSocket(addr);
 
                         // Handshake response will act as ping response.
-                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
+                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
                         GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
 
@@ -1498,7 +1498,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws GridSpiException {
         GridTcpDiscoveryAbstractMessage joinReq = new GridTcpDiscoveryJoinRequestMessage(locNode,
-            exchange.collect(locNodeId), false);
+            exchange.collect(locNodeId));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -1655,7 +1655,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 openSock = true;
 
                 // Handshake.
-                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
+                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
                 GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
@@ -2597,7 +2597,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 openSock = true;
 
                                 // Handshake.
-                                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, false));
+                                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
                                 GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
@@ -2902,15 +2902,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 boolean prepare = node.equals(next);
 
-                if (!prepare && nodeAddedMsg.client()) {
-                    for (ClientMessageWorker wrk : clientMsgWorkers) {
-                        if (wrk.nodeId.equals(node.id())) {
-                            prepare = true;
-
-                            break;
-                        }
-                    }
-                }
+                if (!prepare && nodeAddedMsg.client())
+                    prepare = clientMsgWorkers.containsKey(node.id());
 
                 // If new node is next, then send topology to and all pending messages
                 // as a part of message.
@@ -3358,8 +3351,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         log.debug("Internal order has been assigned to node: " + node);
                 }
 
-                processNodeAddedMessage(new GridTcpDiscoveryNodeAddedMessage(locNodeId, node, msg.discoveryData(),
-                    gridStartTime, msg.client()));
+                GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = new GridTcpDiscoveryNodeAddedMessage(locNodeId,
+                    node, msg.discoveryData(), gridStartTime);
+
+                nodeAddedMsg.client(msg.client());
+
+                processNodeAddedMessage(nodeAddedMsg);
             }
             else if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
@@ -3726,14 +3723,28 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 return;
             }
 
-            if (ring.node(msg.senderNodeId()) == null) {
+            if (ring.node(msg.senderNodeId()) == null && !clientNodes.containsKey(msg.senderNodeId())) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding node left message since sender node is not in topology: " + msg);
 
                 return;
             }
 
-            GridTcpDiscoveryNode leavingNode = ring.node(leavingNodeId);
+            if (msg.client() && msg.senderNodeId().equals(leavingNodeId)) {
+                ClientMessageWorker clientMsgWrk = clientMsgWorkers.remove(leavingNodeId);
+
+                assert clientMsgWrk != null;
+
+                U.interrupt(clientMsgWrk);
+                U.join(clientMsgWrk, log);
+
+                if (log.isDebugEnabled())
+                    log.debug("Stopped client worker because node left: " + leavingNodeId);
+            }
+
+
+            GridTcpDiscoveryNode leavingNode = msg.client() ? clientNodes.get(leavingNodeId) :
+                ring.node(leavingNodeId);
 
             if (leavingNode != null) {
                 synchronized (mux) {
@@ -3762,9 +3773,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (msg.verified() && !locNodeId.equals(leavingNodeId)) {
-                GridTcpDiscoveryNode leftNode = ring.removeNode(leavingNodeId);
+                GridTcpDiscoveryNode leftNode = msg.client() ? clientNodes.remove(leavingNodeId) :
+                    ring.removeNode(leavingNodeId);
 
                 assert leftNode != null;
+
+                if (log.isDebugEnabled())
+                    log.debug("Removed node from topology: " + leftNode);
 
                 // Clear pending messages map.
                 if (!ring.hasRemoteNodes())
@@ -3773,7 +3788,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (ipFinder.isShared()) {
+                    if (!msg.client() && ipFinder.isShared()) {
                         try {
                             ipFinder.unregisterAddresses(leftNode.socketAddresses());
                         }
@@ -3813,7 +3828,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     lastMsg = msg;
                 }
 
-                if (leftNode.equals(next) && sock != null) {
+                if (!msg.client() && leftNode.equals(next) && sock != null) {
                     try {
                         writeToSocket(sock, msg);
 
@@ -4539,7 +4554,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                         clientMsgWrk.start();
 
-                        clientMsgWorkers.add(clientMsgWrk);
+                        ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk);
+
+                        // TODO: GG-9174 - Handle duplicate node ID.
+                        assert old == null;
                     }
 
                     if (log.isDebugEnabled())
@@ -4734,7 +4752,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         msgWorker.addMessage(msg);
 
                         if (!client) {
-                            for (ClientMessageWorker clientMsgWorker : clientMsgWorkers)
+                            for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
                                 clientMsgWorker.addMessage(msg);
                         }
 

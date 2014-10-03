@@ -102,6 +102,26 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws GridSpiException {
+        rmtNodes = null;
+
+        synchronized (mux) {
+            spiState = LEFT;
+        }
+
+        Socket sock = sockRdr.sock;
+
+        try {
+            GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
+
+            msg.client(true);
+
+            writeToSocket(sock, msg);
+        }
+        catch (IOException | GridException e) {
+            if (log.isDebugEnabled())
+                U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
+        }
+
         closeConnection();
 
         U.interrupt(sockTimeoutWorker);
@@ -128,7 +148,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         if (locNodeId.equals(nodeId))
             return locNode;
 
-        return rmtNodes.get(nodeId);
+        Map<UUID, GridNode> rmtNodes0 = rmtNodes;
+
+        return rmtNodes0 != null ? rmtNodes0.get(nodeId) : null;
     }
 
     /** {@inheritDoc} */
@@ -170,8 +192,10 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
         Collections.shuffle(shuffled);
 
-        GridTcpDiscoveryJoinRequestMessage joinReq =
-            new GridTcpDiscoveryJoinRequestMessage(locNode, exchange.collect(locNodeId), true);
+        GridTcpDiscoveryJoinRequestMessage req = new GridTcpDiscoveryJoinRequestMessage(locNode,
+            exchange.collect(locNodeId));
+
+        req.client(true);
 
         while (true) {
             boolean retry = false;
@@ -190,7 +214,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                     stats.onClientSocketInitialized(U.currentTimeMillis() - ts);
 
-                    writeToSocket(sock, joinReq);
+                    writeToSocket(sock, req);
 
                     int res = readReceipt(sock, ackTimeout);
 
@@ -242,8 +266,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                             break;
 
                         default:
-                            if (log.isDebugEnabled())
-                                log.debug("Unexpected response to join request: " + res);
+                            throw new GridSpiException("Unexpected response to join request: " + res);
                     }
                 }
                 catch (GridException | IOException e) {
@@ -273,7 +296,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     private void initConnection(Socket sock) throws IOException, GridException {
         assert sock != null;
 
-        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId, true));
+        GridTcpDiscoveryHandshakeRequest req = new GridTcpDiscoveryHandshakeRequest(locNodeId);
+
+        req.client(true);
+
+        writeToSocket(sock, req);
 
         GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout);
 

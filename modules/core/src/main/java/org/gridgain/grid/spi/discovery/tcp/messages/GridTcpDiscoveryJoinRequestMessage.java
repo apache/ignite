@@ -32,9 +32,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
     /** Responded flag. */
     private boolean responded;
 
-    /** Client node flag. */
-    private boolean client;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -48,12 +45,11 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
      * @param node New node that wants to join.
      * @param discoData Discovery data.
      */
-    public GridTcpDiscoveryJoinRequestMessage(GridTcpDiscoveryNode node, List<Object> discoData, boolean client) {
+    public GridTcpDiscoveryJoinRequestMessage(GridTcpDiscoveryNode node, List<Object> discoData) {
         super(node.id());
 
         this.node = node;
         this.discoData = discoData;
-        this.client = client;
     }
 
     /**
@@ -86,13 +82,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         this.responded = responded;
     }
 
-    /**
-     * @return Client node flag.
-     */
-    public boolean client() {
-        return client;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
@@ -100,7 +89,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         out.writeObject(node);
         out.writeObject(discoData);
         out.writeBoolean(responded);
-        out.writeBoolean(client);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +98,6 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         node = (GridTcpDiscoveryNode)in.readObject();
         discoData = (List<Object>)in.readObject();
         responded = in.readBoolean();
-        client = in.readBoolean();
     }
 
     /** {@inheritDoc} */

@@ -10,10 +10,19 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.events.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
+
+import java.util.*;
+import java.util.concurrent.*;
+
+import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Client-based discovery tests.
@@ -21,6 +30,18 @@ import org.gridgain.testframework.junits.common.*;
 public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static Collection<UUID> srvNodeIds;
+
+    /** */
+    private static Collection<UUID> clientNodeIds;
+
+    /** */
+    private static CountDownLatch joinLatch;
+
+    /** */
+    private static CountDownLatch leftLatch;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -47,6 +68,12 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        srvNodeIds = new GridConcurrentHashSet<>();
+        clientNodeIds = new GridConcurrentHashSet<>();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -54,20 +81,130 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartClient() throws Exception {
-        for (int i = 0; i < 3; i++)
-            startGrid("server-" + i);
+    public void testClientNodeJoin() throws Exception {
+        joinLatch = new CountDownLatch(3);
 
-        Grid client = startGrid("client");
+        startServerNodes(3);
+        startClientNodes(1);
 
-        for (int i = 0; i < 3; i++) {
-            Grid g = G.grid("server-" + i);
+        assertTrue(joinLatch.await(1000, MILLISECONDS));
 
-            assertEquals(4, g.nodes().size());
-            assertFalse(g.localNode().isClient());
+        checkNodes(3, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeLeave() throws Exception {
+        leftLatch = new CountDownLatch(3);
+
+        startServerNodes(3);
+        startClientNodes(1);
+
+        stopGrid("client-0");
+
+        assertTrue(leftLatch.await(1000, MILLISECONDS));
+
+        checkNodes(3, 0);
+    }
+
+    /**
+     * @param cnt Number of nodes.
+     * @throws Exception In case of error.
+     */
+    private void startServerNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++) {
+            Grid g = startGrid("server-" + i);
+
+            srvNodeIds.add(g.localNode().id());
         }
 
-        assertEquals(4, client.nodes().size());
-        assertFalse(client.localNode().isClient());
+        if (joinLatch != null) {
+            for (int i = 0; i < cnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        joinLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_JOINED);
+            }
+        }
+
+        if (leftLatch != null) {
+            for (int i = 0; i < cnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        leftLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT);
+            }
+        }
+    }
+
+    /**
+     * @param cnt Number of nodes.
+     * @throws Exception In case of error.
+     */
+    private void startClientNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++) {
+            Grid g = startGrid("client-" + i);
+
+            clientNodeIds.add(g.localNode().id());
+        }
+    }
+
+    /**
+     * @param srvCnt Number of server nodes.
+     * @param clientCnt Number of client nodes.
+     */
+    private void checkNodes(int srvCnt, int clientCnt) {
+        for (int i = 0; i < srvCnt; i++) {
+            Grid g = G.grid("server-" + i);
+
+            assertTrue(srvNodeIds.contains(g.localNode().id()));
+
+            assertFalse(g.localNode().isClient());
+
+            checkRemoteNodes(g, srvCnt + clientCnt - 1);
+        }
+
+        for (int i = 0; i < clientCnt; i++) {
+            Grid g = G.grid("client-" + i);
+
+            assertTrue(clientNodeIds.contains(g.localNode().id()));
+
+            assertTrue(g.localNode().isClient());
+
+            checkRemoteNodes(g, srvCnt + clientCnt - 1);
+        }
+    }
+
+    /**
+     * @param grid Grid.
+     * @param expCnt Expected nodes count.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private void checkRemoteNodes(Grid grid, int expCnt) {
+        Collection<GridNode> nodes = grid.forRemotes().nodes();
+
+        assertEquals(expCnt, nodes.size());
+
+        for (GridNode node : nodes) {
+            UUID id = node.id();
+
+            if (clientNodeIds.contains(id))
+                assertTrue(node.isClient());
+            else if (srvNodeIds.contains(id))
+                assertFalse(node.isClient());
+            else
+                assert false : "Unexpected node ID: " + id;
+        }
     }
 }
