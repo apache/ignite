@@ -7607,7 +7607,6 @@ public class GridFunc {
                 if (v1 instanceof Map && v2 instanceof Map) {
                     if (!eqNotOrdered((Map)v1, (Map)v2))
                         return false;
-
                 }
                 else {
                     if (!eq(v1, v2))
