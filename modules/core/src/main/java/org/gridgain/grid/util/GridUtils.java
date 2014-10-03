@@ -1463,7 +1463,7 @@ public abstract class GridUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = X.getSystemOrEnv(GG_LOCAL_HOST);
+        String sysLocHost = GridSystemProperties.getString(GG_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -2185,18 +2185,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets boolean system or environment property.
-     *
-     * @param name Property name.
-     * @return {@code True} if system or environment property is set to {@code true}. Otherwise returns {@code false}.
-     */
-    public static boolean getBoolean(String name) {
-        String v = X.getSystemOrEnv(name);
-
-        return v != null && "true".equalsIgnoreCase(v.trim());
-    }
-
-    /**
      * Resolve project home directory based on source code base.
      *
      * @return Project home directory (or {@code null} if it cannot be resolved).
@@ -2205,7 +2193,7 @@ public abstract class GridUtils {
         assert Thread.holdsLock(GridUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = X.getSystemOrEnv(GG_HOME);
+        String ggHome0 = GridSystemProperties.getString(GG_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -7159,22 +7147,6 @@ public abstract class GridUtils {
                     return attrs.nearCacheEnabled();
 
         return false;
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work synchronously.
-     */
-    public static boolean isFutureNotificationSynchronous(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_SYNC_NOTIFICATION, dflt));
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work concurrently.
-     */
-    public static boolean isFutureNotificationConcurrent(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_CONCURRENT_NOTIFICATION, dflt));
     }
 
     /**

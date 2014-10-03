@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
@@ -53,8 +54,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
-    private final int maxTaskResults = Integer.getInteger(GridSystemProperties.GG_REST_MAX_TASK_RESULTS,
-        DFLT_MAX_TASK_RESULTS);
+    private final int maxTaskResults = getInteger(GG_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
 
     /** Task results. */
     private final Map<GridUuid, TaskDescriptor> taskDescs =
