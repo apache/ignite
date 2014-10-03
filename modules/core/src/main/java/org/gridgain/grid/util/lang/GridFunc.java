@@ -7599,13 +7599,20 @@ public class GridFunc {
             if (v1 == null || v2 == null)
                 return false;
 
-            if (v1 instanceof Collection) {
-                if (!eqNotOrdered((Collection<?>)v1, (Collection<?>)v2))
+            if (v1 instanceof Collection && v2 instanceof Collection) {
+                if (!eqNotOrdered((Collection)v1, (Collection)v2))
                     return false;
             }
             else {
-                if (!eq(v1, v2))
-                    return false;
+                if (v1 instanceof Map && v2 instanceof Map) {
+                    if (!eqNotOrdered((Map)v1, (Map)v2))
+                        return false;
+
+                }
+                else { // Both v1 and v2 are neither Collections nor Maps. Use general equality check.
+                    if (!eq(v1, v2))
+                        return false;
+                }
             }
         }
 
