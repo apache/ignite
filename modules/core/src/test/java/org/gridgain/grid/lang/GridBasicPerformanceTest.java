@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.lang;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.GridUnsafe;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -729,7 +727,7 @@ public class GridBasicPerformanceTest {
             if (sort)
                 Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
             else
-                ArrayUtils.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;
