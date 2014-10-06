@@ -18,6 +18,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
@@ -91,7 +92,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private String uriAuthority;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Server block size. */
     private long grpBlockSize;
@@ -247,10 +248,10 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsHadoopLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = GridGgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
-                clientLog = GridGgfsHadoopLogger.disabledLogger();
+                clientLog = GridGgfsLogger.disabledLogger();
 
             modeRslvr = new GridGgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
@@ -432,7 +433,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
                     long size = status != null ? status.getLen() : -1;
 
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
@@ -448,7 +449,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
@@ -507,7 +508,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     replication, blockSize, progress, checksumOpt, createParent);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     if (append)
                         clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
@@ -532,7 +533,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     stream = rmtClient.append(path, create, permMap);
 
                     if (clientLog.isLogEnabled()) {
-                        logId = GridGgfsHadoopLogger.nextId();
+                        logId = GridGgfsLogger.nextId();
 
                         clientLog.logAppend(logId, path, mode, bufSize);
                     }
@@ -545,7 +546,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                         permMap);
 
                     if (clientLog.isLogEnabled()) {
-                        logId = GridGgfsHadoopLogger.nextId();
+                        logId = GridGgfsLogger.nextId();
 
                         clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
                     }
@@ -672,20 +673,17 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             if (mode == PROXY) {
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -693,7 +691,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 return arr;
             }
             else {
-                List<GridGgfsFile> files = new ArrayList<>(rmtClient.listFiles(path));
+                Collection<GridGgfsFile> list = rmtClient.listFiles(path);
+
+                if (list == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                List<GridGgfsFile> files = new ArrayList<>(list);
 
                 FileStatus[] arr = new FileStatus[files.size()];
 

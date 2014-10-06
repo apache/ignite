@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -44,7 +44,7 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIdsGet() throws Exception {
-        File tokFile = new File(X.getSystemOrEnv("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), getTestGridName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 

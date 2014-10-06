@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.fs.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 
 import java.io.*;
 
@@ -21,7 +22,7 @@ public class GridGgfsHadoopProxyOutputStream extends OutputStream {
     private FSDataOutputStream os;
 
     /** Client logger. */
-    private final GridGgfsHadoopLogger clientLog;
+    private final GridGgfsLogger clientLog;
 
     /** Log stream ID. */
     private final long logStreamId;
@@ -48,7 +49,7 @@ public class GridGgfsHadoopProxyOutputStream extends OutputStream {
      * @param clientLog Client logger.
      * @param logStreamId Log stream ID.
      */
-    public GridGgfsHadoopProxyOutputStream(FSDataOutputStream os, GridGgfsHadoopLogger clientLog, long logStreamId) {
+    public GridGgfsHadoopProxyOutputStream(FSDataOutputStream os, GridGgfsLogger clientLog, long logStreamId) {
         assert os != null;
         assert clientLog != null;
 

@@ -23,7 +23,7 @@ fi
 #
 # Set SCRIPTS_HOME - base path to scripts.
 #
-SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replace by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
 
 source "${SCRIPTS_HOME}"/include/functions.sh
 
@@ -47,7 +47,7 @@ setGridGainHome
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorcmd/*"
+CP="${GRIDGAIN_HOME}/bin/include/visor-common/*${SEP}${GRIDGAIN_HOME}/bin/include/visorcmd/*${SEP}${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.

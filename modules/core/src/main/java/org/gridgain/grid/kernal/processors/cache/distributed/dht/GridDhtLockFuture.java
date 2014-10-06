@@ -28,6 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
@@ -1131,12 +1132,19 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                 boolean replicate = cctx.isDrEnabled();
 
+                boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+
                 for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
                     try {
                         GridCacheEntryEx<K,V> entry = cctx.cache().entryEx(info.key(), topVer);
 
-                        entry.initialValue(info.value(), info.valueBytes(), info.version(), info.ttl(),
-                            info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE);
+                        if (entry.initialValue(info.value(), info.valueBytes(), info.version(), info.ttl(),
+                            info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
+                            if (rec && !entry.isInternal())
+                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                    (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    false, null, null, null);
+                        }
                     }
                     catch (GridException e) {
                         onDone(e);

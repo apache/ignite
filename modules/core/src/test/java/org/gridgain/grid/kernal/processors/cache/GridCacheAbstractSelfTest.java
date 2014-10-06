@@ -103,14 +103,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws GridException {
                                     GridCache<String, Integer> cache = cache(fi);
 
-                                    if (txEnabled())
-                                        cache.removeAll();
-                                    else
-                                        cache.clearAll();
-
-                                    // clearAll() does not remove entries with readers.
-                                    if (!cache.isEmpty() && !txEnabled() && CU.isNearEnabled(cache.configuration()))
-                                        cache.removeAll();
+                                    cache.removeAll();
 
                                     return cache.isEmpty();
                                 }

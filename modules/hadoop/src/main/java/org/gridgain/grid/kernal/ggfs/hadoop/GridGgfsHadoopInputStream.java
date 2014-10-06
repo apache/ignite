@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -58,7 +59,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
     private Log log;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Read time. */
     private long readTime;
@@ -82,7 +83,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
      * @param clientLog Client logger.
      */
     public GridGgfsHadoopInputStream(GridGgfsHadoopStreamDelegate delegate, long limit, int bufSize, Log log,
-        GridGgfsHadoopLogger clientLog, long logStreamId) {
+        GridGgfsLogger clientLog, long logStreamId) {
         assert limit >= 0;
 
         this.delegate = delegate;

@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -1362,7 +1363,7 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +

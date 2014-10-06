@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.5.0</gridgain.version>
+        <gridgain.version>6.5.1</gridgain.version>
         <src.dir>src/main/java</src.dir>
     </properties>
 
@@ -38,12 +38,6 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-ggfs</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hadoop2-integration</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
@@ -116,7 +110,7 @@
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.1.6</version>
+                    <version>3.2.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>

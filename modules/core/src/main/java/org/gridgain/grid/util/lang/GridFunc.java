@@ -7402,6 +7402,21 @@ public class GridFunc {
      * @return {@code True} if array contains given value.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(long[] arr, long val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static boolean contains(Integer[] arr, Integer val) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i].equals(val))
@@ -7566,6 +7581,38 @@ public class GridFunc {
                 if (!c1.contains(o))
                     return false;
 
+        }
+
+        return true;
+    }
+
+    /**
+     * Compares two maps. Unlike {@code java.util.AbstractMap#equals(...)} method this implementation
+     * checks not only entry sets, but also the keys. Some optimization checks are also used.
+     *
+     * @param m1 First map to check.
+     * @param m2 Second map to check
+     * @return {@code True} is maps are equal, {@code False} otherwise.
+     */
+    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+        if (m1 == m2)
+            return true;
+
+        if (m1 == null || m2 == null)
+            return false;
+
+        if (m1.size() != m2.size())
+            return false;
+
+        for (Entry<K, V> e : m1.entrySet()) {
+            V v1 = e.getValue();
+            V v2 = m2.get(e.getKey());
+
+            if (v2 == null)
+                return false;
+
+            if (!eq(v1, v2))
+                return false;
         }
 
         return true;

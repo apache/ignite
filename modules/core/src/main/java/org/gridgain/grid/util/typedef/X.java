@@ -15,8 +15,12 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.lang.reflect.*;
+import java.sql.*;
 import java.util.*;
+
+import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Defines global scope.
@@ -26,8 +30,46 @@ import java.util.*;
  * when this typedef <b>does not sacrifice</b> the code readability.
  */
 public final class X {
+    /** An empty immutable {@code Object} array. */
+    public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+
     /** Time span dividers. */
     private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 60L};
+
+    /** The names of methods commonly used to access a wrapped exception. */
+    private static final String[] CAUSE_MTD_NAMES = new String[] {
+        "getCause",
+        "getNextException",
+        "getTargetException",
+        "getException",
+        "getSourceException",
+        "getRootCause",
+        "getCausedByException",
+        "getNested",
+        "getLinkedException",
+        "getNestedException",
+        "getLinkedCause",
+        "getThrowable"
+    };
+
+    /** The Method object for Java 1.4 getCause. */
+    private static final Method THROWABLE_CAUSE_METHOD;
+
+    /**
+     *
+     */
+    static {
+        Method causeMtd;
+
+        try {
+            causeMtd = Throwable.class.getMethod("getCause", null);
+        }
+        catch (Exception ignored) {
+            causeMtd = null;
+        }
+
+        THROWABLE_CAUSE_METHOD = causeMtd;
+    }
 
     /**
      * Ensures singleton.
@@ -139,9 +181,12 @@ public final class X {
      *
      * @param name Name of the system property or environment variable.
      * @param dflt Default value.
-     * @return Value of the system property or environment variable. Returns
-     *      {@code null} if neither can be found for given name.
+     * @return Value of the system property or environment variable.
+     *         Returns the default value if neither can be found for given name.
+     * @deprecated This method will be removed in the next major release.
+     *             Use {@link GridSystemProperties#getString(String)} instead.
      */
+    @Deprecated
     @Nullable public static String getSystemOrEnv(String name, String dflt) {
         assert name != null;
 
@@ -393,13 +438,15 @@ public final class X {
         assert cls != null;
 
         for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls)
+            for (Class<? extends Throwable> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
+            }
 
-            for (Throwable n : th.getSuppressed())
+            for (Throwable n : th.getSuppressed()) {
                 if (hasCause(n, cls))
                     return true;
+            }
 
             if (th.getCause() == th)
                 break;
@@ -452,17 +499,19 @@ public final class X {
         assert cls != null;
 
         for (Throwable th = t.getCause(); th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls)
+            for (Class<? extends Throwable> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
+            }
 
             if (th.getCause() == th)
                 break;
         }
 
-        for (Throwable n : t.getSuppressed())
+        for (Throwable n : t.getSuppressed()) {
             if (hasCause(n, cls))
                 return true;
+        }
 
         return false;
     }
@@ -498,6 +547,264 @@ public final class X {
         }
 
         return null;
+    }
+
+    /**
+     * @param throwable The exception to examine.
+     * @return The wrapped exception, or {@code null} if not found.
+     */
+    private static Throwable getCauseUsingWellKnownTypes(Throwable throwable) {
+        if (throwable instanceof SQLException)
+            return ((SQLException)throwable).getNextException();
+
+        if (throwable instanceof InvocationTargetException)
+            return ((InvocationTargetException)throwable).getTargetException();
+
+        return null;
+    }
+
+    /**
+     * Finds a {@code Throwable} by method name.
+     *
+     * @param throwable The exception to examine.
+     * @param mtdName The name of the method to find and invoke.
+     * @return The wrapped exception, or {@code null} if not found.
+     */
+    private static Throwable getCauseUsingMethodName(Throwable throwable, String mtdName) {
+        Method mtd = null;
+
+        try {
+            mtd = throwable.getClass().getMethod(mtdName, null);
+        }
+        catch (NoSuchMethodException | SecurityException ignored) {
+            // exception ignored
+        }
+
+        if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType())) {
+            try {
+                return (Throwable)mtd.invoke(throwable, EMPTY_OBJECT_ARRAY);
+            }
+            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ignored) {
+                // exception ignored
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds a {@code Throwable} by field name.
+     *
+     * @param throwable The exception to examine.
+     * @param fieldName The name of the attribute to examine.
+     * @return The wrapped exception, or {@code null} if not found.
+     */
+    private static Throwable getCauseUsingFieldName(Throwable throwable, String fieldName) {
+        Field field = null;
+
+        try {
+            field = throwable.getClass().getField(fieldName);
+        }
+        catch (NoSuchFieldException | SecurityException ignored) {
+            // exception ignored
+        }
+
+        if (field != null && Throwable.class.isAssignableFrom(field.getType())) {
+            try {
+                return (Throwable)field.get(throwable);
+            }
+            catch (IllegalAccessException | IllegalArgumentException ignored) {
+                // exception ignored
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if the Throwable class has a {@code getCause} method.
+     *
+     * This is true for JDK 1.4 and above.
+     *
+     * @return True if Throwable is nestable.
+     */
+    public static boolean isThrowableNested() {
+        return THROWABLE_CAUSE_METHOD != null;
+    }
+
+    /**
+     * Checks whether this {@code Throwable} class can store a cause.
+     *
+     * This method does not check whether it actually does store a cause.
+     *
+     * @param throwable The {@code Throwable} to examine, may be null.
+     * @return Boolean {@code true} if nested otherwise {@code false}.
+     */
+    public static boolean isNestedThrowable(Throwable throwable) {
+        if (throwable == null)
+            return false;
+
+        if (throwable instanceof SQLException || throwable instanceof InvocationTargetException)
+            return true;
+
+        if (isThrowableNested())
+            return true;
+
+        Class<?> cls = throwable.getClass();
+        for (String CAUSE_MTD_NAME : CAUSE_MTD_NAMES) {
+            try {
+                Method mtd = cls.getMethod(CAUSE_MTD_NAME, null);
+
+                if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType())) {
+                    return true;
+                }
+            }
+            catch (NoSuchMethodException | SecurityException ignored) {
+                // exception ignored
+            }
+        }
+
+        try {
+            Field field = cls.getField("detail");
+
+            if (field != null)
+                return true;
+        }
+        catch (NoSuchFieldException | SecurityException ignored) {
+            // exception ignored
+        }
+
+        return false;
+    }
+
+    /**
+     * Introspects the {@code Throwable} to obtain the cause.
+     *
+     * The method searches for methods with specific names that return a {@code Throwable} object.
+     * This will pick up most wrapping exceptions, including those from JDK 1.4.
+     *
+     * The default list searched for are:</p> <ul> <li>{@code getCause()}</li>
+     * <li>{@code getNextException()}</li> <li>{@code getTargetException()}</li>
+     * <li>{@code getException()}</li> <li>{@code getSourceException()}</li>
+     * <li>{@code getRootCause()}</li> <li>{@code getCausedByException()}</li>
+     * <li>{@code getNested()}</li> </ul>
+     *
+     * <p>In the absence of any such method, the object is inspected for a {@code detail}
+     * field assignable to a {@code Throwable}.</p>
+     *
+     * If none of the above is found, returns {@code null}.
+     *
+     * @param throwable The throwable to introspect for a cause, may be null.
+     * @return The cause of the {@code Throwable},
+     *         {@code null} if none found or null throwable input.
+     */
+    public static Throwable getCause(Throwable throwable) {
+        return getCause(throwable, CAUSE_MTD_NAMES);
+    }
+
+    /**
+     * Introspects the {@code Throwable} to obtain the cause.
+     *
+     * <ol> <li>Try known exception types.</li>
+     * <li>Try the supplied array of method names.</li>
+     * <li>Try the field 'detail'.</li> </ol>
+     *
+     * <p>A {@code null} set of method names means use the default set.
+     * A {@code null} in the set of method names will be ignored.</p>
+     *
+     * @param throwable The throwable to introspect for a cause, may be null.
+     * @param mtdNames The method names, null treated as default set.
+     * @return The cause of the {@code Throwable}, {@code null} if none found or null throwable input.
+     */
+    public static Throwable getCause(Throwable throwable, String[] mtdNames) {
+        if (throwable == null)
+            return null;
+
+        Throwable cause = getCauseUsingWellKnownTypes(throwable);
+
+        if (cause == null) {
+            if (mtdNames == null)
+                mtdNames = CAUSE_MTD_NAMES;
+
+            for (String mtdName : mtdNames) {
+                if (mtdName != null) {
+                    cause = getCauseUsingMethodName(throwable, mtdName);
+
+                    if (cause != null)
+                        break;
+                }
+            }
+
+            if (cause == null)
+                cause = getCauseUsingFieldName(throwable, "detail");
+        }
+
+        return cause;
+    }
+
+    /**
+     * Returns the list of {@code Throwable} objects in the exception chain.
+     *
+     * A throwable without cause will return a list containing one element - the input throwable.
+     * A throwable with one cause will return a list containing two elements - the input throwable
+     * and the cause throwable. A {@code null} throwable will return a list of size zero.
+     *
+     * This method handles recursive cause structures that might otherwise cause infinite loops.
+     * The cause chain is processed until the end is reached, or until the next item in the chain
+     * is already in the result set.</p>
+     *
+     * @param throwable The throwable to inspect, may be null.
+     * @return The list of throwables, never null.
+     */
+    public static List<Throwable> getThrowableList(Throwable throwable) {
+        List<Throwable> list = new ArrayList<>();
+
+        while (throwable != null && !list.contains(throwable)) {
+            list.add(throwable);
+            throwable = getCause(throwable);
+        }
+
+        return list;
+    }
+
+    /**
+     * Returns the list of {@code Throwable} objects in the exception chain.
+     *
+     * A throwable without cause will return an array containing one element - the input throwable.
+     * A throwable with one cause will return an array containing two elements - the input throwable
+     * and the cause throwable. A {@code null} throwable will return an array of size zero.
+     *
+     * @param throwable The throwable to inspect, may be null.
+     * @return The array of throwables, never null.
+     */
+    public static Throwable[] getThrowables(Throwable throwable) {
+        List<Throwable> list = getThrowableList(throwable);
+
+        return list.toArray(new Throwable[list.size()]);
+    }
+
+    /**
+     * A way to get the entire nested stack-trace of an throwable.
+     *
+     * The result of this method is highly dependent on the JDK version
+     * and whether the exceptions override printStackTrace or not.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw, true);
+        Throwable[] ts = getThrowables(throwable);
+
+        for (Throwable t : ts) {
+            t.printStackTrace(pw);
+
+            if (isNestedThrowable(t))
+                break;
+        }
+
+        return sw.getBuffer().toString();
     }
 
     /**
@@ -594,7 +901,7 @@ public final class X {
      * @throws GridException If GridGain home folder was not set.
      */
     public static String resolveGridGainHome() throws GridException {
-        String var = getSystemOrEnv("GRIDGAIN_HOME");
+        String var = GridSystemProperties.getString(GG_HOME);
 
         if (var != null)
             return var;
@@ -606,8 +913,7 @@ public final class X {
     /**
      * Parses double from possibly {@code null} or invalid string.
      *
-     * @param s String to parse double from. If string is null or invalid,
-     *          a default value is used.
+     * @param s String to parse double from. If string is null or invalid, a default value is used.
      * @param dflt Default value for double, if parsing failed.
      * @return Resulting double.
      */

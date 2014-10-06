@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,7 +24,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     private Log log;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Log stream ID. */
     private long logStreamId;
@@ -60,7 +61,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
      * @param clientLog Client logger.
      */
     public GridGgfsHadoopOutputStream(GridGgfsHadoopStreamDelegate delegate, Log log,
-        GridGgfsHadoopLogger clientLog, long logStreamId) {
+        GridGgfsLogger clientLog, long logStreamId) {
         this.delegate = delegate;
         this.log = log;
         this.clientLog = clientLog;

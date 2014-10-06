@@ -18,6 +18,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
@@ -114,7 +115,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     private String uriAuthority;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Secondary URI string. */
     private URI secondaryUri;
@@ -252,10 +253,10 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsHadoopLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = GridGgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
-                clientLog = GridGgfsHadoopLogger.disabledLogger();
+                clientLog = GridGgfsLogger.disabledLogger();
 
             modeRslvr = new GridGgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
@@ -493,7 +494,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                     long size = status != null ? status.getLen() : -1;
 
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
@@ -509,7 +510,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
@@ -561,7 +562,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                     secondaryFs.create(toSecondary(f), perm, overwrite, bufSize, replication, blockSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, PROXY, overwrite, bufSize, replication, blockSize);
 
@@ -581,7 +582,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
                 }
@@ -638,7 +639,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 FSDataOutputStream os = secondaryFs.append(toSecondary(f), bufSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
 
@@ -655,7 +656,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, mode, bufSize);
                 }
@@ -795,20 +796,17 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -819,7 +817,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 Collection<GridGgfsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
-                    return null;
+                    throw new FileNotFoundException("File " + f + " does not exist.");
 
                 List<GridGgfsFile> files = new ArrayList<>(list);
 
@@ -839,9 +837,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 return arr;
             }
-        }
-        catch (FileNotFoundException ignored) {
-            return null;
         }
         finally {
             leaveBusy();
