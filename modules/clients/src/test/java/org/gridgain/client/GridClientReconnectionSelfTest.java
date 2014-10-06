@@ -9,7 +9,6 @@
 
 package org.gridgain.client;
 
-import org.apache.commons.lang.exception.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
@@ -163,7 +162,7 @@ public class GridClientReconnectionSelfTest extends GridCommonAbstractTest {
             fail("Client operation should fail when server resets connections.");
         }
         catch (GridClientDisconnectedException e) {
-            assertTrue("Thrown exception doesn't have an expected cause: " + ExceptionUtils.getStackTrace(e),
+            assertTrue("Thrown exception doesn't have an expected cause: " + X.getFullStackTrace(e),
                 X.hasCause(e, GridClientConnectionResetException.class, ClosedChannelException.class));
         }
 

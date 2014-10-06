@@ -47,6 +47,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -1521,7 +1522,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!Boolean.getBoolean(GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (GridNode n : ctx.discovery().remoteNodes())
                 checkCache(n);
         }

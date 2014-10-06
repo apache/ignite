@@ -1571,7 +1571,7 @@ object visor extends VisorTag {
     def open(cfg: GridConfiguration, cfgPath: String) {
         val daemon = G.isDaemon
 
-        val shutdownHook = X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK, "false")
+        val shutdownHook = GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
         G.setDaemon(true)

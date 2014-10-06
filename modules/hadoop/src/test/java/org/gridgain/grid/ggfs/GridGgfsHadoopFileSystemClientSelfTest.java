@@ -13,6 +13,7 @@ import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -123,7 +124,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
             GridGgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 
             final GridGgfsHadoopOutputStream ggfsOut = new GridGgfsHadoopOutputStream(delegate, LOG,
-                GridGgfsHadoopLogger.disabledLogger(), 0);
+                GridGgfsLogger.disabledLogger(), 0);
 
             // This call should return fine as exception is thrown for the first time.
             ggfsOut.write(data);
