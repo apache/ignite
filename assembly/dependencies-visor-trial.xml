@@ -63,8 +63,15 @@
                     <fileSet>
                         <directory>${basedir}/target/libs</directory>
                         <outputDirectory>/include/visorui</outputDirectory>
+                        <excludes>
+                            <exclude>gridgain-spring-*.jar</exclude>
+                            <exclude>gridgain-ssh-*.jar</exclude>
+                            <exclude>commons-logging-*.jar</exclude>
+                            <exclude>jsch-*.jar</exclude>
+                            <exclude>scala-library-*.jar</exclude>
+                            <exclude>spring-*.jar</exclude>
+                        </excludes>
                     </fileSet>
-
                     <fileSet>
                         <directory>${basedir}/licenses</directory>
                         <outputDirectory>/include/visorui/licenses</outputDirectory>
