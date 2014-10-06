@@ -55,13 +55,13 @@ public interface GridPortableProcessor extends GridProcessor {
     Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
 
     /**
-     * Converts offheap object to heap-based.
+     * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
      * @return Heap-based object.
      * @throws GridPortableException In case of error.
      */
-    Object heapObject(Object obj) throws GridPortableException;
+    @Nullable Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param obj Object to marshal.

@@ -32,7 +32,6 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
-import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
@@ -1686,23 +1685,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if portable enabled flag is set and memory mode is OFFHEAP_TIERED.
+     * @return {@code True} if portable enabled flag is set and offheap storage is enabled.
      */
     public boolean portableOffheap() {
-        return cacheCfg.isPortableEnabled() && cacheCfg.getMemoryMode() == OFFHEAP_TIERED;
+        return cacheCfg.isPortableEnabled() && isOffHeapEnabled();
     }
 
     /**
-     * Converts offheap object to heap-based.
+     * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
      * @return Heap-based object.
      */
-    public <T> T heapObject(@Nullable Object obj) {
+    @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
         if (!portableOffheap())
             return (T)obj;
 
-        return (T)portable().heapObject(obj);
+        return (T)portable().unwrapTemporary(obj);
     }
 
     /**

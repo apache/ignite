@@ -290,6 +290,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                /*temporary*/false,
                                 subjId,
                                 null,
                                 taskName,

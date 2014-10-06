@@ -1110,9 +1110,6 @@ public class GridCacheUtils {
         throws GridException {
         assert ctx != null;
 
-        if (ctx.portableEnabled())
-            return ctx.kernalContext().portable().marshal(obj).array();
-
         if (ctx.gridDeploy().enabled()) {
             if (obj != null) {
                 if (obj instanceof Iterable)

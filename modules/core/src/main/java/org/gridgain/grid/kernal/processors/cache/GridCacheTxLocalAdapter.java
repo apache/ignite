@@ -480,12 +480,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal();
+                                    V old = e.cached().rawGetOrUnmarshalTemporary(false);
 
                                     val = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
 
                                     if (val == null)
                                         continue;
+
+                                    val = cctx.unwrapTemporary(val);
                                 }
 
                                 if (putMap == null)
@@ -503,7 +505,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal();
+                                    V old = e.cached().rawGetOrUnmarshalTemporary(false);
 
                                     GridBiTuple<Boolean, V> t = cctx.config().<K, V>getInterceptor()
                                         .onBeforeRemove(key, old);
@@ -645,7 +647,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
 
                                     if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true);
+                                        txEntry.cached().unswap(true, false);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         true);
@@ -1067,12 +1069,13 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         F.first(txEntry.transformClosures()) : null;
 
                                 val = txEntry.cached().innerGet(this,
-                                    true,
-                                    /*no read-through*/false,
-                                    true,
-                                    true,
-                                    true,
-                                    true,
+                                    /*swap*/true,
+                                    /*read-through*/false,
+                                    /*fail fast*/true,
+                                    /*unmarshal*/true,
+                                    /*metrics*/true,
+                                    /*event*/true,
+                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     transformClo,
                                     resolveTaskName(),
@@ -1146,6 +1149,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 /*unmarshal*/true,
                                 /*metrics*/true,
                                 /*event*/true,
+                                /*temporary*/false,
                                 CU.subjectId(this, cctx),
                                 null,
                                 resolveTaskName(),
@@ -1477,6 +1481,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*unmarshal*/true,
                                         /*metrics*/true,
                                         /*events*/true,
+                                        /*temporary*/true,
                                         CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
                                         transformClo,
                                         resolveTaskName(),
@@ -1916,7 +1921,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         else {
                             entry = entryEx(key, topologyVersion());
 
-                            entry.unswap(true);
+                            entry.unswap(true, false);
                         }
 
                         try {
@@ -1939,9 +1944,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*swap*/false,
                                         /*read-through*/readThrough,
                                         /*fail-fast*/false,
-                                        retval,
+                                        /*unmarshal*/retval,
                                         /*metrics*/retval,
                                         /*events*/retval,
+                                        /*temporary*/false,
                                         CU.subjectId(this, cctx),
                                         transformClo,
                                         resolveTaskName(),
@@ -2148,6 +2154,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*unmarshal*/retval,
                                         /*metrics*/true,
                                         /*event*/!dht() || transform,
+                                        /*temporary*/false,
                                         CU.subjectId(this, cctx),
                                         transform ? F.first(txEntry.transformClosures()) : null,
                                         resolveTaskName(),
@@ -2171,6 +2178,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             for (GridClosure<V, V> transformer : txEntry.transformClosures())
                                 val = transformer.apply(val);
+
+                            val = cctx.<V>unwrapTemporary(val);
 
                             transformed.put(k, val);
                         }

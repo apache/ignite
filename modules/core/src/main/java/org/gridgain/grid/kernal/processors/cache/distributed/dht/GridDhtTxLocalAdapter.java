@@ -575,7 +575,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 if (txEntry == null) {
                     GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topVer);
 
-                    cached.unswap(!read);
+                    cached.unswap(!read, read);
 
                     GridCacheTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
 

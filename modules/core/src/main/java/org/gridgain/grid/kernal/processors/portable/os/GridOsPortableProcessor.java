@@ -51,7 +51,7 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public Object heapObject(Object obj) throws GridPortableException {
+    @Override public Object unwrapTemporary(Object obj) throws GridPortableException {
         return null;
     }
 

@@ -306,6 +306,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V rawGetOrUnmarshalTemporary(boolean retVal) throws GridException {
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasValue() {
         return val != null;
     }
@@ -391,9 +396,18 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
-        String taskName, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx,
+        boolean readSwap,
+        boolean readThrough,
+        boolean failFast,
+        boolean unmarshal,
+        boolean updateMetrics,
+        boolean evt,
+        boolean temporary,
+        UUID subjId,
+        Object transformClo,
+        String taskName,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return val;
     }
 
@@ -733,7 +747,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public V unswap(boolean ignoreFlags) throws GridException {
+    @Override public V unswap(boolean ignoreFlags, boolean needVal) throws GridException {
         return null;
     }
 

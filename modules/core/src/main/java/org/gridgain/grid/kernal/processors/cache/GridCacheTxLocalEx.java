@@ -60,6 +60,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param keys Keys to get.
      * @param cached Cached entry if this method is called from entry wrapper.
      *      Cached entry is passed if and only if there is only one key in collection of keys.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Entry filter.
      * @return Future for this get.
      */

@@ -1826,9 +1826,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         }
 
                         try {
-                            V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
-                                /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, subjId, null, taskName, filter);
+                            V val = entry.innerGet(null,
+                                ctx.isSwapOrOffheapEnabled(),
+                                /*don't read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/true,
+                                /*event*/true,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                filter);
 
                             GridCacheVersion ver = entry.version();
 
