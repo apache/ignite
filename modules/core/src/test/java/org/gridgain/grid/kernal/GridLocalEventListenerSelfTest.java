@@ -17,13 +17,14 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Test ensuring that event listeners are picked by started node.
  */
 public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
     /** Whether event fired. */
-    private volatile boolean fired;
+    private final CountDownLatch fired = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -36,7 +37,7 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
 
             lsnrs.put(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    fired = true;
+                    fired.countDown();
 
                     return true;
                 }
@@ -59,14 +60,8 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListener() throws Exception {
-        final Grid grid = startGrids(2);
+        startGrids(2);
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return grid.nodes().size() == 2;
-            }
-        }, 5000);
-
-        assert fired;
+        assert fired.await(5000, TimeUnit.MILLISECONDS);
     }
 }
