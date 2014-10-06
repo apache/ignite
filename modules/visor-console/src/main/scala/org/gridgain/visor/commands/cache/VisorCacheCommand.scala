@@ -335,9 +335,9 @@ class VisorCacheCommand {
                         else k1.cacheName.compareTo(k2.cacheName) < 0
                     })
 
-                    val gCfg = node.map(config).collect({
+                    val gCfg = node.map(config).collect {
                         case cfg if cfg != null => cfg
-                    })
+                    }
 
                     sorted.foreach(ad => {
                         val cacheNameVar = mkCacheName(ad.cacheName)
