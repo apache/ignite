@@ -947,8 +947,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
-                            <finalName>visorcmd</finalName>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -1020,6 +1020,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/visor-common</directory>
                                 </fileset>
 
                                 <fileset>
