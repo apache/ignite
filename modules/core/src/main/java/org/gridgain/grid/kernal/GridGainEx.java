@@ -1309,6 +1309,7 @@ public class GridGainEx {
             myCfg.setMetricsExpireTime(cfg.getMetricsExpireTime());
             myCfg.setMetricsUpdateFrequency(cfg.getMetricsUpdateFrequency());
             myCfg.setLifecycleBeans(cfg.getLifecycleBeans());
+            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
             myCfg.setPeerClassLoadingMissedResourcesCacheSize(cfg.getPeerClassLoadingMissedResourcesCacheSize());
             myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
             myCfg.setDaemon(cfg.isDaemon());
