@@ -19,13 +19,13 @@ import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.commands.cache.VisorCacheCommand
 import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.control.Breaks._
-import org.gridgain.visor.commands.cache.VisorCacheCommand
 
 /**
  * ==Overview==
