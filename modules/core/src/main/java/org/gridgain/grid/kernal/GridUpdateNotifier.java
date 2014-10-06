@@ -29,7 +29,7 @@ import static java.net.URLEncoder.*;
 
 /**
  * This class is responsible for notification about new version availability. Note that this class
- * does not send any information and merely accesses the {@code www.gridgain.org} web site for the
+ * does not send any information and merely accesses the {@code www.gridgain.com} web site for the
  * latest version data.
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will

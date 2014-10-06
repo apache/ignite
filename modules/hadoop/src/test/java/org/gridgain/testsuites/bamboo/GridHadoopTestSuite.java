@@ -13,6 +13,7 @@ import junit.framework.*;
 import org.apache.commons.compress.archivers.tar.*;
 import org.apache.commons.compress.compressors.gzip.*;
 import org.gridgain.client.hadoop.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
@@ -113,7 +114,7 @@ public class GridHadoopTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static void downloadHadoop() throws Exception {
-        String hadoopHome = X.getSystemOrEnv("HADOOP_HOME");
+        String hadoopHome = GridSystemProperties.getString("HADOOP_HOME");
 
         if (!F.isEmpty(hadoopHome) && new File(hadoopHome).isDirectory()) {
             X.println("HADOOP_HOME is set to: " + hadoopHome);
@@ -121,7 +122,7 @@ public class GridHadoopTestSuite extends TestSuite {
             return;
         }
 
-        String ver = X.getSystemOrEnv("hadoop.version", "2.4.1");
+        String ver = GridSystemProperties.getString("hadoop.version", "2.4.1");
 
         X.println("Will use Hadoop version: " + ver);
 

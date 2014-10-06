@@ -91,7 +91,7 @@ public class GridCacheQueryTypeMetadata {
      * @param type Type name.
      */
     public void setType(String type) {
-        this.type = CU.h2Escape(type);
+        this.type = type;
     }
 
     /**

@@ -12,14 +12,14 @@ package org.gridgain.grid.util.offheap.unsafe;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.*;
 import org.gridgain.grid.util.tostring.*;
-import sun.misc.Unsafe;
+import org.gridgain.grid.util.typedef.internal.*;
+import sun.misc.*;
 
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**
@@ -39,8 +39,7 @@ public class GridUnsafeMemory {
     private static final int ADDR_SIZE = UNSAFE.addressSize();
 
     /** Safe offheap release flag. */
-    private static final boolean SAFE_RELEASE = Boolean.valueOf(
-        X.getSystemOrEnv(GridSystemProperties.GG_OFFHEAP_SAFE_RELEASE, "false"));
+    private static final boolean SAFE_RELEASE = GridSystemProperties.getBoolean(GG_OFFHEAP_SAFE_RELEASE);
 
     /** Total size. */
     @GridToStringInclude
@@ -96,7 +95,7 @@ public class GridUnsafeMemory {
 
         long max = total;
 
-        return max == 0 || mem <= max;
+        return mem <= max;
     }
 
     /**

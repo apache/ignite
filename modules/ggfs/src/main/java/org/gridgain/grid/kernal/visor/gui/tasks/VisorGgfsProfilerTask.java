@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.visor.gui.dto.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
 import static org.gridgain.grid.kernal.visor.gui.tasks.VisorGgfsTaskUtils.*;
 
 import java.io.*;
@@ -131,34 +132,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private static final int LOG_COL_USER_TIME = 17;
         private static final int LOG_COL_SYSTEM_TIME = 18;
         private static final int LOG_COL_TOTAL_BYTES = 19;
-
-        // Constants copied from GridGgfsHadoopLogger in module "gridgain-hadoop".
-        /** Field delimiter. */
-        private static final String DELIM_FIELD = ";";
-
-        /** Pre-defined header string. */
-        private static final String HDR = "Timestamp" + DELIM_FIELD + "ThreadID" + DELIM_FIELD + "PID" + DELIM_FIELD +
-            "Type" + DELIM_FIELD + "Path" + DELIM_FIELD + "Mode" + DELIM_FIELD + "StreamId" + DELIM_FIELD + "BufSize" +
-            DELIM_FIELD + "DataLen" + DELIM_FIELD + "Append" + DELIM_FIELD + "Overwrite" + DELIM_FIELD + "Replication" +
-            DELIM_FIELD + "BlockSize" + DELIM_FIELD + "Position" + DELIM_FIELD + "ReadLen" + DELIM_FIELD + "SkipCnt" +
-            DELIM_FIELD + "ReadLimit" + DELIM_FIELD + "UserTime" + DELIM_FIELD + "SystemTime" + DELIM_FIELD +
-            "TotalBytes" + DELIM_FIELD + "DestPath" + DELIM_FIELD + "Recursive" + DELIM_FIELD + "List";
-
-        /** File open. */
-        private static final int TYPE_OPEN_IN = 0;
-
-        /** File create or append. */
-        private static final int TYPE_OPEN_OUT = 1;
-
-        /** Random read. */
-        private static final int TYPE_RANDOM_READ = 2;
-
-        /** Close input stream. */
-        private static final int TYPE_CLOSE_IN = 7;
-
-        /** Close output stream. */
-        private static final int TYPE_CLOSE_OUT = 8;
-        // End of constants.
 
         /** List of log entries that should be parsed. */
         private static final Set<Integer> LOG_TYPES = F.asSet(

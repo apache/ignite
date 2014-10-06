@@ -100,13 +100,6 @@
         </dependency>
 
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
@@ -350,7 +343,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -560,7 +553,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -678,7 +671,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
