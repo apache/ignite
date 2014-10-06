@@ -50,7 +50,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * Initialize from system property.
      */
     {
-        String ips = X.getSystemOrEnv(GG_TCP_DISCOVERY_ADDRESSES);
+        String ips = GridSystemProperties.getString(GG_TCP_DISCOVERY_ADDRESSES);
 
         if (!F.isEmpty(ips)) {
             Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();

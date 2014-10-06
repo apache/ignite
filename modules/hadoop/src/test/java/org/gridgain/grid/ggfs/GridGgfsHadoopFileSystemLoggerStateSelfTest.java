@@ -14,7 +14,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -308,6 +308,6 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
 
         field.setAccessible(true);
 
-        return ((GridGgfsHadoopLogger)field.get(fs)).isLogEnabled();
+        return ((GridGgfsLogger)field.get(fs)).isLogEnabled();
     }
 }

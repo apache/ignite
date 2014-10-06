@@ -73,7 +73,7 @@ The easiest way to get started with GridGain in your project is to use Maven dep
 You can copy and paste this snippet into your Maven POM file. Make sure to replace version with the one you need.
 
 ## Binary Downloads & Documentation
-Grab the latest binary release and current documentation at [www.gridgain.org](http://www.gridgain.org)
+Grab the latest binary release and current documentation at [www.gridgain.com](http://www.gridgain.com)
 
 ## Issues
 Use GitHub [issues](https://github.com/gridgain/gridgain/issues) to file bugs.

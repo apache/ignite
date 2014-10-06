@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.apache.commons.lang.exception.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.ipc.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
 import java.util.*;
@@ -64,7 +64,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
 
             String msg = e.getMessage();
 
-            assertTrue("Invalid exception: " + ExceptionUtils.getFullStackTrace(e),
+            assertTrue("Invalid exception: " + X.getFullStackTrace(e),
                 msg.contains("(error code: 28)") ||
                 msg.contains("(error code: 24)") ||
                 msg.contains("(error code: 12)"));
