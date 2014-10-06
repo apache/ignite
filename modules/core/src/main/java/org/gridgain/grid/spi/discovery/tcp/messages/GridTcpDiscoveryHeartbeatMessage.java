@@ -43,6 +43,9 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     @GridToStringExclude
     private Map<UUID, byte[]> metrics;
 
+    /** Client node IDs. */
+    private Collection<UUID> clientNodeIds;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -59,6 +62,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         super(creatorNodeId);
 
         metrics = new HashMap<>(1, 1.0f);
+        clientNodeIds = new HashSet<>();
     }
 
     /**
@@ -76,6 +80,15 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         GridDiscoveryMetricsHelper.serialize(buf, 0, metrics);
 
         this.metrics.put(nodeId, buf);
+    }
+
+    /**
+     * @param clientNodeIds Client node IDs.
+     */
+    public void addClientNodeIds(Collection<UUID> clientNodeIds) {
+        assert clientNodeIds != null;
+
+        this.clientNodeIds.addAll(clientNodeIds);
     }
 
     /**
@@ -118,6 +131,22 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         return metrics.get(nodeId) != null;
     }
 
+    /**
+     * Gets client node IDs for  particular node.
+     *
+     * @return Client node IDs.
+     */
+    public Collection<UUID> clientNodeIds() {
+        return clientNodeIds;
+    }
+
+    /**
+     * Clears client node IDs collection.
+     */
+    public void clearClientNodeIds() {
+        clientNodeIds.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
@@ -131,18 +160,22 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
                 U.writeByteArray(out, e.getValue());
             }
         }
+
+        U.writeCollection(out, clientNodeIds);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        int size = in.readInt();
+        int metricsSize = in.readInt();
 
-        metrics = new HashMap<>(size + 1, 1.0f);
+        metrics = new HashMap<>(metricsSize + 1, 1.0f);
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < metricsSize; i++)
             metrics.put(U.readUuid(in), U.readByteArray(in));
+
+        clientNodeIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

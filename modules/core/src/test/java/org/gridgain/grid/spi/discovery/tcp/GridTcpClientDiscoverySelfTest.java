@@ -18,6 +18,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -42,6 +43,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static CountDownLatch leftLatch;
+
+    /** */
+    private static CountDownLatch failedLatch;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -109,6 +113,34 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeFail() throws Exception {
+        failedLatch = new CountDownLatch(3);
+
+        startServerNodes(3);
+        startClientNodes(1);
+
+        forceClientFail();
+
+        stopGrid("client-0");
+
+        assertTrue(failedLatch.await(5000, MILLISECONDS));
+
+        checkNodes(3, 0);
+    }
+
+    private void forceClientFail() throws Exception {
+        Field f = GridTcpClientDiscoverySpi.class.getDeclaredField("fail");
+
+        assert Modifier.isStatic(f.getModifiers());
+
+        f.setAccessible(true);
+
+        f.set(null, true);
+    }
+
+    /**
      * @param cnt Number of nodes.
      * @throws Exception In case of error.
      */
@@ -144,6 +176,20 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 }, EVT_NODE_LEFT);
+            }
+        }
+
+        if (failedLatch != null) {
+            for (int i = 0; i < cnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        failedLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_FAILED);
             }
         }
     }

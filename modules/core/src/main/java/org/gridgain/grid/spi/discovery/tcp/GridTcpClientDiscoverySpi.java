@@ -36,6 +36,10 @@ import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiSt
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
+    /** FOR TEST PURPOSES ONLY! */
+    @SuppressWarnings("UnusedDeclaration")
+    private static boolean fail;
+
     /** Mutex. */
     private final Object mux = new Object();
 
@@ -110,16 +114,18 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
         Socket sock = sockRdr.sock;
 
-        try {
-            GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
+        if (!fail) {
+            try {
+                GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
 
-            msg.client(true);
+                msg.client(true);
 
-            writeToSocket(sock, msg);
-        }
-        catch (IOException | GridException e) {
-            if (log.isDebugEnabled())
-                U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
+                writeToSocket(sock, msg);
+            }
+            catch (IOException | GridException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
+            }
         }
 
         closeConnection();
@@ -401,6 +407,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                             U.error(log, "Failed to read message [sock=" + sock + ", locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ']', e);
 
+                        IOException ioEx = X.cause(e, IOException.class);
+
+                        if (ioEx != null)
+                            throw ioEx;
+
                         ClassNotFoundException clsNotFoundEx = X.cause(e, ClassNotFoundException.class);
 
                         if (clsNotFoundEx != null)
@@ -414,8 +425,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 }
             }
             catch (IOException e) {
-                U.error(log, "Failed to initialize connection [sock=" + sock + ", locNodeId=" + locNodeId +
-                    ", rmtNodeId=" + nodeId + ']', e);
+                if (log.isDebugEnabled())
+                    U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
+                        ", rmtNodeId=" + nodeId + ']', e);
             }
             catch (GridInterruptedException e) {
                 if (log.isDebugEnabled())

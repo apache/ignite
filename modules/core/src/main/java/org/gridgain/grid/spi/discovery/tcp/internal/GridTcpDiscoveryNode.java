@@ -106,6 +106,9 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** Client node. */
     private boolean client;
 
+    /** Alive check (used by clients). */
+    private transient int aliveCheck;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -370,6 +373,24 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         return client;
+    }
+
+    /**
+     * @return Alive check value.
+     */
+    public int aliveCheck() {
+        assert client;
+
+        return aliveCheck;
+    }
+
+    /**
+     * @param aliveCheck Alive check value.
+     */
+    public void aliveCheck(int aliveCheck) {
+        assert client;
+
+        this.aliveCheck = aliveCheck;
     }
 
     /** {@inheritDoc} */

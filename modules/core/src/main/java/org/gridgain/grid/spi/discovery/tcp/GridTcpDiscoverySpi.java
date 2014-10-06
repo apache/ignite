@@ -3445,6 +3445,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     node.logger(log);
                 }
 
+                if (msg.client())
+                    node.aliveCheck(maxMissedHbs);
+
                 boolean topChanged = msg.client() ? clientNodes.putIfAbsent(node.id(), node) == null : ring.add(node);
 
                 if (topChanged) {
@@ -3918,6 +3921,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             GridTcpDiscoveryNode node = ring.node(nodeId);
 
+            if (node == null)
+                node = clientNodes.get(nodeId);
+
             if (node != null && node.internalOrder() != order) {
                 if (log.isDebugEnabled())
                     log.debug("Ignoring node failed message since node internal order does not match " +
@@ -3953,7 +3959,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (msg.verified()) {
-                node = ring.removeNode(nodeId);
+                node = node.isClient() ? clientNodes.remove(nodeId) : ring.removeNode(nodeId);
 
                 assert node != null;
 
@@ -3964,7 +3970,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (ipFinder.isShared()) {
+                    if (!node.isClient() && ipFinder.isShared()) {
                         try {
                             ipFinder.unregisterAddresses(node.socketAddresses());
                         }
@@ -4181,32 +4187,56 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (log.isDebugEnabled())
                     log.debug("Discarding heartbeat message that has made two passes: " + msg);
 
+                Collection<UUID> clientNodeIds = msg.clientNodeIds();
+
+                for (Map.Entry<UUID, GridTcpDiscoveryNode> e : clientNodes.entrySet()) {
+                    GridTcpDiscoveryNode clientNode = e.getValue();
+
+                    if (clientNodeIds.contains(e.getKey()))
+                        clientNode.aliveCheck(maxMissedHbs);
+                    else {
+                        int aliveCheck = clientNode.aliveCheck();
+
+                        if (--aliveCheck == 0) {
+                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, clientNode.id(),
+                                clientNode.order()));
+                        }
+                        else
+                            clientNode.aliveCheck(aliveCheck);
+                    }
+                }
+
                 return;
             }
 
             long tstamp = U.currentTimeMillis();
 
-            if (msg.hasMetrics() && spiStateCopy() == CONNECTED)
-                for (Map.Entry<UUID, GridNodeMetrics> e : msg.metrics().entrySet()) {
-                    GridTcpDiscoveryNode node = ring.node(e.getKey());
+            if (spiStateCopy() == CONNECTED) {
+                if (msg.hasMetrics()) {
+                    for (Map.Entry<UUID, GridNodeMetrics> e : msg.metrics().entrySet()) {
+                        GridTcpDiscoveryNode node = ring.node(e.getKey());
 
-                    if (node != null) {
-                        node.setMetrics(e.getValue());
+                        if (node != null) {
+                            node.setMetrics(e.getValue());
 
-                        node.lastUpdateTime(tstamp);
+                            node.lastUpdateTime(tstamp);
 
-                        notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
+                            notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
+                        }
+                        else if (log.isDebugEnabled())
+                            log.debug("Received metrics from unknown node: " + e.getKey());
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Received metrics from unknown node: " + e.getKey());
                 }
+            }
 
             if (ring.hasRemoteNodes()) {
                 if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
-                    !msg.hasMetrics(locNodeId)) && spiStateCopy() == CONNECTED)
-
+                    !msg.hasMetrics(locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, metricsProvider.getMetrics());
+
+                    msg.addClientNodeIds(clientMsgWorkers.keySet());
+                }
                 else
                     // Message is on its second ring.
                     msg.removeMetrics(locNodeId);
@@ -4804,6 +4834,14 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
             }
             finally {
+                if (client) {
+                    if (log.isDebugEnabled())
+                        log.debug("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
+                            ", rmtNodeId=" + nodeId + ']');
+
+                    U.interrupt(clientMsgWorkers.remove(nodeId));
+                }
+
                 U.closeQuiet(sock);
             }
         }
@@ -5005,8 +5043,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
             catch (GridException | IOException e) {
                 if (log.isDebugEnabled())
-                    U.error(log, "Caught exception on redirecting message to client [sock=" + sock +
-                        ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                    U.error(log, "Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
+                        ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+
+                U.interrupt(clientMsgWorkers.remove(nodeId));
+
+                U.closeQuiet(sock);
             }
         }
     }
