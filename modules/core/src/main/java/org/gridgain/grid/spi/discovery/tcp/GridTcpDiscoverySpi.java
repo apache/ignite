@@ -1990,6 +1990,59 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
+     * @param msg Message to prepare.
+     * @param msgs Messages to include.
+     */
+    private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, @Nullable GridTcpDiscoveryNode destNode,
+        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+        if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
+            GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
+
+            GridTcpDiscoveryNode node = nodeAddedMsg.node();
+
+            if (destNode == null || node.equals(destNode)) {
+                Collection<GridTcpDiscoveryNode> allNodes = F.concat(false, ring.allNodes(), clientNodes.values());
+                Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
+
+                for (GridTcpDiscoveryNode n0 : allNodes) {
+                    assert n0.internalOrder() != 0 : n0;
+
+                    // Skip next node and nodes added after next
+                    // in case this message is resent due to failures/leaves.
+                    // There will be separate messages for nodes with greater
+                    // internal order.
+                    if (n0.internalOrder() < nodeAddedMsg.node().internalOrder()) topToSend.add(n0);
+                }
+
+                nodeAddedMsg.topology(topToSend);
+                nodeAddedMsg.messages(msgs);
+
+                Map<Long, Collection<GridNode>> hist;
+
+                synchronized (mux) {
+                    hist = new TreeMap<>(topHist);
+                }
+
+                nodeAddedMsg.topologyHistory(hist);
+            }
+        }
+    }
+
+    /**
+     * @param msg Message to clear.
+     */
+    private void clearNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
+        if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
+            // Nullify topology before registration.
+            GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
+
+            nodeAddedMsg.topology(null);
+            nodeAddedMsg.topologyHistory(null);
+            nodeAddedMsg.messages(null);
+        }
+    }
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      * <p>
      * Simulates this node failure by stopping service threads. So, node will become
@@ -2718,7 +2771,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg);
+                                    prepareNodeAddedMessage(pendingMsg, next, pendingMsgs);
 
                                     try {
                                         writeToSocket(sock, pendingMsg);
@@ -2743,7 +2796,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 }
                             }
 
-                            prepareNodeAddedMessage(msg);
+                            prepareNodeAddedMessage(msg, next, pendingMsgs);
 
                             try {
                                 long tstamp = U.currentTimeMillis();
@@ -2873,66 +2926,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 for (GridTcpDiscoveryNode n : failedNodes)
                     msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
-            }
-        }
-
-        /**
-         * @param msg Message to clear.
-         */
-        private void clearNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
-                // Nullify topology before registration.
-                GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
-
-                nodeAddedMsg.topology(null);
-                nodeAddedMsg.topologyHistory(null);
-                nodeAddedMsg.messages(null);
-            }
-        }
-
-        /**
-         * @param msg Message to prepare.
-         */
-        private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
-                GridTcpDiscoveryNodeAddedMessage nodeAddedMsg =
-                    (GridTcpDiscoveryNodeAddedMessage)msg;
-
-                GridTcpDiscoveryNode node = nodeAddedMsg.node();
-
-                boolean prepare = node.equals(next);
-
-                if (!prepare && nodeAddedMsg.client())
-                    prepare = clientMsgWorkers.containsKey(node.id());
-
-                // If new node is next, then send topology to and all pending messages
-                // as a part of message.
-                if (prepare) {
-                    Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
-                    Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
-
-                    for (GridTcpDiscoveryNode n0 : allNodes) {
-                        assert n0.internalOrder() != 0 : n0;
-
-                        // Skip next node and nodes added after next
-                        // in case this message is resent due to failures/leaves.
-                        // There will be separate messages for nodes with greater
-                        // internal order.
-                        if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
-                            topToSend.add(n0);
-                    }
-
-                    nodeAddedMsg.topology(topToSend);
-                    nodeAddedMsg.messages(pendingMsgs);
-
-                    Map<Long, Collection<GridNode>> hist;
-
-                    synchronized (mux) {
-                        hist = new TreeMap<>(topHist);
-                    }
-
-                    nodeAddedMsg.topologyHistory(hist);
-                }
             }
         }
 
@@ -5039,7 +5032,16 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
                         ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
-                writeToSocket(sock, msg);
+                if (msg.verified()) {
+                    try {
+                        prepareNodeAddedMessage(msg, null, null);
+
+                        writeToSocket(sock, msg);
+                    }
+                    finally {
+                        clearNodeAddedMessage(msg);
+                    }
+                }
             }
             catch (GridException | IOException e) {
                 if (log.isDebugEnabled())

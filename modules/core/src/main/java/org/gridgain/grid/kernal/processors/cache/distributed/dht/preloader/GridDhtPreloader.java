@@ -112,7 +112,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 boolean set = topVer.setIfGreater(e.topologyVersion());
 
-                assert set : "Have you configured GridTcpDiscoverySpi for your in-memory data grid?";
+                assert set : "Have you configured GridTcpDiscoverySpi for your in-memory data grid? [newVer=" +
+                    e.topologyVersion() + ", curVer=" + topVer.get() + ']';
 
                 GridDhtPartitionExchangeId exchId = exchangeId(n.id(), e.topologyVersion(), e.type());
 

@@ -21,6 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
@@ -33,19 +34,34 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
+    private static final AtomicInteger srvIdx = new AtomicInteger();
+
+    /** */
+    private static final AtomicInteger clientIdx = new AtomicInteger();
+
+    /** */
     private static Collection<UUID> srvNodeIds;
 
     /** */
     private static Collection<UUID> clientNodeIds;
 
     /** */
-    private static CountDownLatch joinLatch;
+    private static CountDownLatch srvJoinLatch;
 
     /** */
-    private static CountDownLatch leftLatch;
+    private static CountDownLatch srvLeftLatch;
 
     /** */
-    private static CountDownLatch failedLatch;
+    private static CountDownLatch srvFailedLatch;
+
+    /** */
+    private static CountDownLatch clientJoinLatch;
+
+    /** */
+    private static CountDownLatch clientLeftLatch;
+
+    /** */
+    private static CountDownLatch clientFailedLatch;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -73,6 +89,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        srvIdx.set(0);
+        clientIdx.set(0);
+
         srvNodeIds = new GridConcurrentHashSet<>();
         clientNodeIds = new GridConcurrentHashSet<>();
     }
@@ -86,50 +105,141 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientNodeJoin() throws Exception {
-        joinLatch = new CountDownLatch(3);
-
         startServerNodes(3);
+        startClientNodes(3);
+
+        Thread.sleep(2000);
+
+        checkNodes(3, 3);
+
+        srvJoinLatch = new CountDownLatch(3);
+        clientJoinLatch = new CountDownLatch(3);
+
+        attachListeners(3, 3);
+
         startClientNodes(1);
 
-        assertTrue(joinLatch.await(1000, MILLISECONDS));
+        await(srvJoinLatch);
+        await(clientJoinLatch);
 
-        checkNodes(3, 1);
+        checkNodes(3, 4);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientNodeLeave() throws Exception {
-        leftLatch = new CountDownLatch(3);
-
         startServerNodes(3);
-        startClientNodes(1);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvLeftLatch = new CountDownLatch(3);
+        clientLeftLatch = new CountDownLatch(2);
+
+        attachListeners(3, 3);
 
         stopGrid("client-0");
 
-        assertTrue(leftLatch.await(1000, MILLISECONDS));
+        await(srvLeftLatch);
+        await(clientLeftLatch);
 
-        checkNodes(3, 0);
+        checkNodes(3, 2);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientNodeFail() throws Exception {
-        failedLatch = new CountDownLatch(3);
-
         startServerNodes(3);
-        startClientNodes(1);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvFailedLatch = new CountDownLatch(3);
+        clientFailedLatch = new CountDownLatch(2);
+
+        attachListeners(3, 3);
 
         forceClientFail();
 
         stopGrid("client-0");
 
-        assertTrue(failedLatch.await(5000, MILLISECONDS));
+        await(srvFailedLatch);
+        await(clientFailedLatch);
 
-        checkNodes(3, 0);
+        checkNodes(3, 2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerNodeJoin() throws Exception {
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvJoinLatch = new CountDownLatch(3);
+        clientJoinLatch = new CountDownLatch(3);
+
+        attachListeners(3, 3);
+
+        startServerNodes(1);
+
+        await(srvJoinLatch);
+        await(clientJoinLatch);
+
+        checkNodes(4, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerNodeLeave() throws Exception {
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvLeftLatch = new CountDownLatch(3);
+        clientLeftLatch = new CountDownLatch(2);
+
+        attachListeners(3, 3);
+
+        stopGrid("server-0");
+
+        await(srvLeftLatch);
+        await(clientLeftLatch);
+
+        checkNodes(2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerNodeFail() throws Exception {
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvFailedLatch = new CountDownLatch(3);
+        clientFailedLatch = new CountDownLatch(2);
+
+        attachListeners(3, 3);
+
+        ((GridTcpDiscoverySpi)G.grid("server-0").configuration().getDiscoverySpi()).simulateNodeFailure();
+
+        await(srvFailedLatch);
+        await(clientFailedLatch);
+
+        checkNodes(2, 3);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
     private void forceClientFail() throws Exception {
         Field f = GridTcpClientDiscoverySpi.class.getDeclaredField("fail");
 
@@ -146,51 +256,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private void startServerNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
-            Grid g = startGrid("server-" + i);
+            Grid g = startGrid("server-" + srvIdx.getAndIncrement());
 
             srvNodeIds.add(g.localNode().id());
-        }
-
-        if (joinLatch != null) {
-            for (int i = 0; i < cnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
-
-                        joinLatch.countDown();
-
-                        return true;
-                    }
-                }, EVT_NODE_JOINED);
-            }
-        }
-
-        if (leftLatch != null) {
-            for (int i = 0; i < cnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
-
-                        leftLatch.countDown();
-
-                        return true;
-                    }
-                }, EVT_NODE_LEFT);
-            }
-        }
-
-        if (failedLatch != null) {
-            for (int i = 0; i < cnt; i++) {
-                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
-
-                        failedLatch.countDown();
-
-                        return true;
-                    }
-                }, EVT_NODE_FAILED);
-            }
         }
     }
 
@@ -200,9 +268,99 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private void startClientNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
-            Grid g = startGrid("client-" + i);
+            Grid g = startGrid("client-" + clientIdx.getAndIncrement());
 
             clientNodeIds.add(g.localNode().id());
+        }
+    }
+
+    /**
+     * @param srvCnt Number of server nodes.
+     * @param clientCnt Number of client nodes.
+     */
+    private void attachListeners(int srvCnt, int clientCnt) throws Exception {
+        if (srvJoinLatch != null) {
+            for (int i = 0; i < srvCnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        srvJoinLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_JOINED);
+            }
+        }
+
+        if (srvLeftLatch != null) {
+            for (int i = 0; i < srvCnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        srvLeftLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT);
+            }
+        }
+
+        if (srvFailedLatch != null) {
+            for (int i = 0; i < srvCnt; i++) {
+                G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        srvFailedLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_FAILED);
+            }
+        }
+
+        if (clientJoinLatch != null) {
+            for (int i = 0; i < clientCnt; i++) {
+                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        clientJoinLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_JOINED);
+            }
+        }
+
+        if (clientLeftLatch != null) {
+            for (int i = 0; i < clientCnt; i++) {
+                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        clientLeftLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT);
+            }
+        }
+
+        if (clientFailedLatch != null) {
+            for (int i = 0; i < clientCnt; i++) {
+                G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
+                    @Override public boolean apply(GridEvent evt) {
+                        info("Event fired: " + evt);
+
+                        clientFailedLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_FAILED);
+            }
         }
     }
 
@@ -252,5 +410,13 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             else
                 assert false : "Unexpected node ID: " + id;
         }
+    }
+
+    /**
+     * @param latch Latch.
+     * @throws InterruptedException If interrupted.
+     */
+    private void await(CountDownLatch latch) throws InterruptedException {
+        assertTrue(latch.await(5000, MILLISECONDS));
     }
 }
