@@ -7402,6 +7402,21 @@ public class GridFunc {
      * @return {@code True} if array contains given value.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(long[] arr, long val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static boolean contains(Integer[] arr, Integer val) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i].equals(val))
@@ -7593,11 +7608,26 @@ public class GridFunc {
             V v1 = e.getValue();
             V v2 = m2.get(e.getKey());
 
-            if (v2 == null)
+            if (v1 == v2)
+                return true;
+
+            if (v1 == null || v2 == null)
                 return false;
 
-            if (!eq(v1, v2))
-                return false;
+            if (v1 instanceof Collection && v2 instanceof Collection) {
+                if (!eqNotOrdered((Collection)v1, (Collection)v2))
+                    return false;
+            }
+            else {
+                if (v1 instanceof Map && v2 instanceof Map) {
+                    if (!eqNotOrdered((Map)v1, (Map)v2))
+                        return false;
+                }
+                else {
+                    if (!eq(v1, v2))
+                        return false;
+                }
+            }
         }
 
         return true;

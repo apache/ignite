@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.commons.lang.builder.*;
 import org.gridgain.grid.ggfs.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
- * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsAttributes} test case.
+ * {@link GridGgfsAttributes} test case.
  */
 public class GridGgfsAttributesSelfTest extends GridGgfsCommonAbstractTest {
     /**
@@ -34,13 +34,34 @@ public class GridGgfsAttributesSelfTest extends GridGgfsCommonAbstractTest {
             pathModes, true);
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream os = new ObjectOutputStream(bos);
+        ObjectOutput os = new ObjectOutputStream(bos);
+
         os.writeObject(attrs);
         os.close();
 
         GridGgfsAttributes deserializedAttrs = (GridGgfsAttributes)new ObjectInputStream(
             new ByteArrayInputStream(bos.toByteArray())).readObject();
 
-        assertTrue(EqualsBuilder.reflectionEquals(attrs, deserializedAttrs));
+        assertTrue(eq(attrs, deserializedAttrs));
+    }
+
+    /**
+     * @param attr1 Attributes 1.
+     * @param attr2 Attributes 2.
+     * @return Whether equals or not.
+     * @throws Exception In case of error.
+     */
+    private boolean eq(GridGgfsAttributes attr1, GridGgfsAttributes attr2) throws Exception {
+        assert attr1 != null;
+        assert attr2 != null;
+
+        for (Field f : GridGgfsAttributes.class.getDeclaredFields()) {
+            f.setAccessible(true);
+
+            if (!Modifier.isStatic(f.getModifiers()) && !f.get(attr1).equals(f.get(attr2)))
+                return false;
+        }
+
+        return true;
     }
 }

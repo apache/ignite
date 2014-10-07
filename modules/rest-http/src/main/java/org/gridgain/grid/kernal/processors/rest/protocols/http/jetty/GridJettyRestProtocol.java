@@ -39,7 +39,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      */
     static {
-        if (!Boolean.getBoolean(GridSystemProperties.GG_JETTY_LOG_NO_OVERRIDE)) {
+        if (!GridSystemProperties.getBoolean(GG_JETTY_LOG_NO_OVERRIDE)) {
             Properties p = new Properties();
 
             p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
