@@ -237,28 +237,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(log.toString().contains(EXTERNALIZABLE_WARNING));
     }
 
-    /** */
-    public void testH2Escaping() {
-        assertEquals("\"cross\"", CU.h2Escape("cross"));
-        assertEquals("\"order\"", CU.h2Escape("order"));
-        assertEquals("\"where\"", CU.h2Escape("where"));
-
-        assertEquals("\"CROSS\"", CU.h2Escape("CROSS"));
-        assertEquals("\"Order\"", CU.h2Escape("Order"));
-        assertEquals("\"wHeRe\"", CU.h2Escape("wHeRe"));
-
-        assertEquals("and", CU.h2Escape("and"));
-        assertEquals("commit", CU.h2Escape("commit"));
-        assertEquals("row", CU.h2Escape("row"));
-
-        assertEquals("AND", CU.h2Escape("AND"));
-        assertEquals("Commit", CU.h2Escape("Commit"));
-        assertEquals("rOW", CU.h2Escape("rOW"));
-
-        assertEquals(null, CU.h2Escape(null));
-        assertEquals("", CU.h2Escape(""));
-    }
-
     /**
      * @param key Cache key.
      */
