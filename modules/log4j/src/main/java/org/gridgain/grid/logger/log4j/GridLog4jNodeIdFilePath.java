@@ -50,6 +50,7 @@ class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
             return U.nodeIdLogFileName(nodeId, new File(tmpDir, "gridgain.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
+
         return null;
     }
 }
