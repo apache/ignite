@@ -69,9 +69,8 @@ public class GridTreeBenchmark {
                         throw new IllegalStateException(e);
                     }
 
-                    for (int i = 0; i < ITERATIONS; i++) {
+                    for (int i = 0; i < ITERATIONS; i++)
                         x.incrementAndGet();
-                    }
                 }
             });
 

@@ -135,9 +135,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             fail(exCls.getSimpleName() + " must have been thrown.");
         }
         catch (Exception e) {
-            if (e.getClass() != exCls) {
+            if (e.getClass() != exCls)
                 throw e;
-            }
 
             info("Caught expected exception: " + e);
         }
@@ -186,9 +185,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         if (atomicityMode() == TRANSACTIONAL) {
             GridCacheTx tx = prj.txStart();
 
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size; i++)
                 prj.put("key" + i, i);
-            }
 
             prj.put("k", 11);
             prj.put("key", -1);
@@ -196,9 +194,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             tx.commit();
         }
         else {
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size; i++)
                 prj.put("key" + i, i);
-            }
 
             prj.put("k", 11);
             prj.put("key", -1);

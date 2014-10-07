@@ -58,9 +58,8 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
 
         refreshInitialData();
 
-        for (int i = 0; i < EXEC_COUNT; i++) {
+        for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
-        }
     }
 
     /**
@@ -92,9 +91,8 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**

@@ -781,18 +781,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridCacheTxEx t = tm.tx(v);
 
-            if (t.hasWriteKey("x1")) {
+            if (t.hasWriteKey("x1"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x2")) {
+            else if (t.hasWriteKey("x2"))
                 assertTrue(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x3")) {
+            else if (t.hasWriteKey("x3"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x4")) {
+            else if (t.hasWriteKey("x4"))
                 assertTrue(t.syncCommit());
-            }
         }
     }
 

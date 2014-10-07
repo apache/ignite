@@ -200,9 +200,8 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
         byte[] data = null;
 
-        if (obj instanceof String) {
+        if (obj instanceof String)
             data = ((String)obj).getBytes(UTF_8);
-        }
         else if (obj instanceof Boolean) {
             data = new byte[] {(byte)((Boolean)obj ? '1' : '0')};
 

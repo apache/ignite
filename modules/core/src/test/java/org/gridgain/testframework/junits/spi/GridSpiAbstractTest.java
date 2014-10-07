@@ -236,9 +236,8 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
         getTestData().setSpiContext(initSpiContext());
 
         // Initialize discovery SPI only once.
-        if (discoSpi != null && !discoSpi.equals(spi)) {
+        if (discoSpi != null && !discoSpi.equals(spi))
             discoSpi.onContextInitialized(getSpiContext());
-        }
 
         spi.onContextInitialized(getTestData().getSpiContext());
     }

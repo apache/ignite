@@ -135,9 +135,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                         try {
                             // Unwind in the order of discovery events.
                             for (GridDhtPartitionsExchangeFuture<K, V> f = pendingExchangeFuts.poll(); f != null;
-                                f = pendingExchangeFuts.poll()) {
+                                f = pendingExchangeFuts.poll())
                                 demandPool.onDiscoveryEvent(n.id(), f);
-                            }
                         }
                         finally {
                             leaveBusy();
@@ -492,9 +491,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         try {
             GridDhtForceKeysFuture<K, V> f = forceKeyFuts.get(msg.futureId());
 
-            if (f != null) {
+            if (f != null)
                 f.onResult(node.id(), msg);
-            }
             else if (log.isDebugEnabled())
                 log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
                     ", res=" + msg + ']');

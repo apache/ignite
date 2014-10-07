@@ -62,13 +62,11 @@ class GridScheduleStatistics {
     long getTotalIdleTime() {
         long now = U.currentTimeMillis();
 
-        if (totalIdleTime == 0) {
+        if (totalIdleTime == 0)
             return now - createTime;
-        }
 
-        if (running) {
+        if (running)
             return totalIdleTime;
-        }
 
         return totalIdleTime + (now - lastEndTime);
     }
@@ -80,9 +78,8 @@ class GridScheduleStatistics {
         long now = U.currentTimeMillis();
 
         // If first execution has not started.
-        if (totalIdleTime == 0) {
+        if (totalIdleTime == 0)
             return now - createTime;
-        }
 
         return execCnt == 0 ? totalIdleTime : (double)totalIdleTime / execCnt;
     }

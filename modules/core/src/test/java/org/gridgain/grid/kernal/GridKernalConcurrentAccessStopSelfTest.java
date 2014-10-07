@@ -24,16 +24,14 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 0; i < GRIDS; i++) {
+        for (int i = 0; i < GRIDS; i++)
             startGrid(i);
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (int i = GRIDS; i-- >= 0;) {
+        for (int i = GRIDS; i-- >= 0;)
             stopGrid(i);
-        }
     }
 
     /**

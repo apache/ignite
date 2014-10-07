@@ -102,9 +102,8 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName)) {
+        if (META_CACHE_NAME.equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
-        }
         else {
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);

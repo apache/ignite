@@ -143,9 +143,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) throws GridException {
             GridComputeJobResultPolicy plc = super.result(res, received);
 
-            if (received != null && received.size() == 2) {
+            if (received != null && received.size() == 2)
                 mapper.send(new TestJob());
-            }
 
             return plc;
         }
@@ -162,9 +161,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -173,9 +171,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -184,9 +181,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -195,9 +191,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             return null;
@@ -223,9 +218,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
             }
             catch (NullPointerException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -234,9 +228,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (NullPointerException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -245,9 +238,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (NullPointerException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -256,9 +248,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -267,9 +258,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (NullPointerException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -278,9 +268,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (NullPointerException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             try {
@@ -289,9 +278,8 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
                 assert false;
             }
             catch (GridException e) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
-                }
             }
 
             mapper.send(new TestJob());

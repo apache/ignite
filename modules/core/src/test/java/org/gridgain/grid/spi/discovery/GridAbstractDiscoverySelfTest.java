@@ -89,9 +89,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 }
             }
 
-            if (isAllDiscovered) {
+            if (isAllDiscovered)
                 info("All nodes discovered.");
-            }
             else {
                 if (System.currentTimeMillis() > spiStartTime + getMaxDiscoveryTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
@@ -128,9 +127,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
         /** {@inheritDoc} */
         @Override public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
             Map<Long, Collection<GridNode>> topHist) {
-            if (type == EVT_NODE_METRICS_UPDATED) {
+            if (type == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
-            }
         }
     }
 
@@ -164,9 +162,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 }
             }
 
-            if (isAllSpiMetricUpdated) {
+            if (isAllSpiMetricUpdated)
                 info("All SPI metrics updated.");
-            }
             else {
                 if (System.currentTimeMillis() > metricsStartTime + getMaxMetricsWaitTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
@@ -204,9 +201,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                     Collection<GridNode> topSnapshot, Map<Long, Collection<GridNode>> topHist) {
                     // If METRICS_UPDATED came from local node
                     if (type == EVT_NODE_METRICS_UPDATED
-                        && node.id().equals(spi.getLocalNode().id())) {
+                        && node.id().equals(spi.getLocalNode().id()))
                         spiCnt.addAndGet(1);
-                    }
                 }
             };
 
@@ -234,9 +230,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
         for (GridNode node : nodes) {
             assert node.id() != null;
 
-            if (node.id().equals(nodeId)) {
+            if (node.id().equals(nodeId))
                 return true;
-            }
         }
 
         return false;
@@ -285,9 +280,8 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                             node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
                     }
                 }
-                else {
+                else
                     error("Discovered unknown node [node=" + node + ", spiIdx=" + spis.indexOf(spi) + ']');
-                }
             }
         }
     }
@@ -300,12 +294,10 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
             for (GridTestResources rscrs : spiRsrcs) {
                 UUID nodeId = rscrs.getNodeId();
 
-                if (spi.pingNode(nodeId)) {
+                if (spi.pingNode(nodeId))
                     info("Ping node success [nodeId=" + nodeId + ", spiIdx=" + spis.indexOf(spi) + ']');
-                }
-                else {
+                else
                     fail("Ping node error [nodeId=" + nodeId + ", spiIdx=" + spis.indexOf(spi) + ']');
-                }
             }
         }
     }

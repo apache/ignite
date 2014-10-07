@@ -94,9 +94,8 @@ public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, 
 
         GridComputeJobResult res = results.get(0);
 
-        if (res.getException() != null) {
+        if (res.getException() != null)
             throw res.getException();
-        }
 
         return res.getData();
     }

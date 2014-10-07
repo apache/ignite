@@ -66,9 +66,8 @@ public class GridifyArgumentAdapter implements GridifyArgument {
         System.arraycopy(orig.getMethodParameterTypes(), 0, types, 0, types.length);
 
         // Override parameters, if any.
-        if (newParams.length > 0) {
+        if (newParams.length > 0)
             setMethodParameters(newParams);
-        }
     }
 
     /**

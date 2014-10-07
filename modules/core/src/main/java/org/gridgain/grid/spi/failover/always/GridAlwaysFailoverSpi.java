@@ -130,9 +130,8 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
 
         assertParameter(maxFailoverAttempts >= 0, "maxFailoverAttempts >= 0");
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(configInfo("maximumFailoverAttempts", maxFailoverAttempts));
-        }
 
         registerMBean(gridName, this, GridAlwaysFailoverSpiMBean.class);
 

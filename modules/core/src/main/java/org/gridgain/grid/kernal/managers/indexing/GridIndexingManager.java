@@ -375,12 +375,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         else {
                             GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
-                            if (keyMeta == null) {
+                            if (keyMeta == null)
                                 processAnnotationsInClass(true, d.keyCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(true, d.keyCls, keyMeta, d);
-                            }
                         }
 
                         if (val instanceof GridPortableObject) {
@@ -404,12 +402,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
-                            if (typeMeta == null) {
+                            if (typeMeta == null)
                                 processAnnotationsInClass(false, d.valCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(false, d.valCls, typeMeta, d);
-                            }
                         }
 
                         d.registered(getSpi(spi).registerType(space, d));

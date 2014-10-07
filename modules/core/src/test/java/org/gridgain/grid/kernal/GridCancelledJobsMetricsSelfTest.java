@@ -62,9 +62,8 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         Collection<GridComputeTaskFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++)
             futs.add(grid.compute().execute(CancelledTask.class, null));
-        }
 
         // Wait to be sure that metrics were updated.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -175,17 +174,15 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
             startStopwatch();
 
             // Ack start.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(startInfo());
-            }
         }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws GridSpiException {
             // Ack stop.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(stopInfo());
-            }
         }
 
         /** {@inheritDoc} */
@@ -197,9 +194,8 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         public void externalCollision() {
             GridCollisionExternalListener tmp = lsnr;
 
-            if (tmp != null) {
+            if (tmp != null)
                 tmp.onExternalCollision();
-            }
         }
     }
 }

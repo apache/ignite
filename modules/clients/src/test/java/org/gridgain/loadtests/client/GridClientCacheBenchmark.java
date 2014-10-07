@@ -161,9 +161,8 @@ public class GridClientCacheBenchmark {
             try {
                 GridClientData data = client.data("partitioned");
 
-                for (int i = 0; i < iterationCnt; i++) {
+                for (int i = 0; i < iterationCnt; i++)
                     performIteration(data);
-                }
             }
             catch (GridClientException e) {
                 e.printStackTrace();
@@ -176,12 +175,10 @@ public class GridClientCacheBenchmark {
          * @throws GridClientException If failed.
          */
         private void performIteration(GridClientData data) throws GridClientException {
-            if (rnd.nextDouble() <= WRITE_PROB) {
+            if (rnd.nextDouble() <= WRITE_PROB)
                 data.put(rnd.nextInt(KEY_COUNT), values[rnd.nextInt(KEY_COUNT)]);
-            }
-            else {
+            else
                 data.get(rnd.nextInt(KEY_COUNT));
-            }
 
             iters++;
         }

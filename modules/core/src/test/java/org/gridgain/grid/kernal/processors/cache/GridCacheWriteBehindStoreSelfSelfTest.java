@@ -95,9 +95,8 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
         initStore(1);
 
         try {
-            for (int i = 0; i < CACHE_SIZE * 2; i++) {
+            for (int i = 0; i < CACHE_SIZE * 2; i++)
                 store.put(null, i, "val" + i);
-            }
 
             U.sleep(200);
 

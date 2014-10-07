@@ -68,9 +68,8 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
 
             int idx = ((Double)node.attribute("load")).intValue() - 1;
 
-            if (cnts[idx] == 0) {
+            if (cnts[idx] == 0)
                 node.setAttribute("used", true);
-            }
 
             // Increment number of times a node was picked.
             cnts[idx]++;

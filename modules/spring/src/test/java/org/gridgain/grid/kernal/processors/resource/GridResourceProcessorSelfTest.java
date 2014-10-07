@@ -383,9 +383,8 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
         TestClassWithAnnotatedField target = new TestClassWithAnnotatedField();
 
-        for (int i = 0; i < injNum; i++) {
+        for (int i = 0; i < injNum; i++)
             ctx.resource().injectBasicResource(target, TestAnnotation.class, "Test string.");
-        }
 
         long duration = System.currentTimeMillis() - start;
 

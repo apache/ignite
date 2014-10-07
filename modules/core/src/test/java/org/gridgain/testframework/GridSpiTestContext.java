@@ -76,9 +76,8 @@ public class GridSpiTestContext implements GridSpiContext {
     @Override public Collection<GridNode> nodes() {
         Collection<GridNode> all = new ArrayList<>(rmtNodes);
 
-        if (locNode != null) {
+        if (locNode != null)
             all.add(locNode);
-        }
 
         return all;
     }
@@ -93,14 +92,12 @@ public class GridSpiTestContext implements GridSpiContext {
     /** {@inheritDoc} */
     @Nullable @Override
     public GridNode node(UUID nodeId) {
-        if (locNode != null && locNode.id().equals(nodeId)) {
+        if (locNode != null && locNode.id().equals(nodeId))
             return locNode;
-        }
 
         for (GridNode node : rmtNodes) {
-            if (node.id().equals(nodeId)) {
+            if (node.id().equals(nodeId))
                 return node;
-            }
         }
 
         return null;
@@ -115,9 +112,8 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param cnt Number of nodes.
      */
     public void createRemoteNodes(int cnt) {
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             addNode(new GridTestNode(UUID.randomUUID(), createMetrics(1, 1)));
-        }
     }
 
     /** */
@@ -149,9 +145,8 @@ public class GridSpiTestContext implements GridSpiContext {
         for (GridNode node : nodes) {
             assert !node.equals(locNode);
 
-            if (!rmtNodes.contains(node)) {
+            if (!rmtNodes.contains(node))
                 addNode(node);
-            }
         }
 
         if (rmv) {
@@ -188,9 +183,8 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param node Node to remove.
      */
     public void removeNode(GridNode node) {
-        if (rmtNodes.remove(node)) {
+        if (rmtNodes.remove(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
-        }
     }
 
     /**
@@ -212,18 +206,16 @@ public class GridSpiTestContext implements GridSpiContext {
      * @param node Node to fail.
      */
     public void failNode(GridNode node) {
-        if (rmtNodes.remove(node)) {
+        if (rmtNodes.remove(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
-        }
     }
 
     /**
      * @param node Node for metrics update.
      */
     public void updateMetrics(GridNode node) {
-        if (locNode.equals(node) || rmtNodes.contains(node)) {
+        if (locNode.equals(node) || rmtNodes.contains(node))
             notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
-        }
     }
 
     /** */
@@ -242,9 +234,8 @@ public class GridSpiTestContext implements GridSpiContext {
         assert evt.type() > 0;
 
         for (Map.Entry<GridLocalEventListener, Set<Integer>> entry : evtLsnrs.entrySet()) {
-            if (F.isEmpty(entry.getValue()) || entry.getValue().contains(evt.type())) {
+            if (F.isEmpty(entry.getValue()) || entry.getValue().contains(evt.type()))
                 entry.getKey().onEvent(evt);
-            }
         }
     }
 
@@ -376,12 +367,10 @@ public class GridSpiTestContext implements GridSpiContext {
         CachedObject<V> obj = cache.get(key);
 
         if (obj != null) {
-            if (obj.expire == 0 || obj.expire > System.currentTimeMillis()) {
+            if (obj.expire == 0 || obj.expire > System.currentTimeMillis())
                 res = obj.obj;
-            }
-            else {
+            else
                 cache.remove(key);
-            }
         }
 
         return res;
@@ -409,9 +398,8 @@ public class GridSpiTestContext implements GridSpiContext {
     @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws GridException {
         V v = get(cacheName, key);
 
-        if (v != null) {
+        if (v != null)
             return put(cacheName, key, val, ttl);
-        }
 
         return v;
     }
@@ -520,9 +508,8 @@ public class GridSpiTestContext implements GridSpiContext {
         synchronized (cache) {
             Map<K, V> map = cache.get(cacheName);
 
-            if (map == null) {
+            if (map == null)
                 cache.put(cacheName, map = new ConcurrentHashMap<>());
-            }
 
             return map;
         }
