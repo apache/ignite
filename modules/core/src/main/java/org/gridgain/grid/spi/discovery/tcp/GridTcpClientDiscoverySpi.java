@@ -413,8 +413,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
             try {
                 U.await(readLatch);
 
-                assert msgWrk != null;
-
                 InputStream in = new BufferedInputStream(sock.getInputStream());
 
                 sock.setKeepAlive(true);
@@ -510,7 +508,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 if (joinLatch.getCount() > 0) {
                     Collection<GridTcpDiscoveryNode> top = msg.topology();
 
-                    if (!F.isEmpty(top)) {
+                    if (top != null) {
                         for (GridTcpDiscoveryNode n : top) {
                             n.visible(true);
 

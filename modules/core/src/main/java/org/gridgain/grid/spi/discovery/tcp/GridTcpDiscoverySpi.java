@@ -3743,7 +3743,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
             }
 
-
             GridTcpDiscoveryNode leavingNode = msg.client() ? clientNodes.get(leavingNodeId) :
                 ring.node(leavingNodeId);
 
