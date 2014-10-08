@@ -83,8 +83,6 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
 
     public JCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
-    public JCache<K, V> withQueryConfiguration(QueryConfiguration cfg);
-
     /**
      * Delegates to {@link GridCacheStore#loadCache(GridBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
