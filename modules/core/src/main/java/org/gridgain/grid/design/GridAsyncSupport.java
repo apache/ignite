@@ -18,7 +18,7 @@ import org.gridgain.grid.*;
  * @version @java.version
  */
 public interface GridAsyncSupport<T extends GridAsyncSupport> {
-    public T enableAsync(boolean async);
+    public T enableAsync();
 
     public boolean isAsync();
 
