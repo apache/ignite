@@ -16,15 +16,22 @@ import java.util.*;
 
 /**
  * This example demonstrates use of Java client, connected to Grid through router.
- * To execute this example you should start an instance of
- * {@link RouterExampleNodeStartup} class which will start up a GridGain node.
- * And an instance of {@link RouterStartup} which will start up
- * a GridGain router.
+ * To execute this example you should start the following processes exactly in
+ * the order defined below:
+ * <ol>
+ *     <li>{@link RouterStartup} which will start up a GridGain router.</li>
+ *     <li>{@link RouterExampleNodeStartup} which will start up a GridGain node.</li>
+ * </ol>
  * <p>
  * Alternatively you can run node and router instances from command line.
  * To do so you need to execute commands
- * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-compute.xml}
- * and {@code GRIDGAIN_HOME/bin/ggrouter.sh config/router/default-router.xml}
+ * <ol>
+ *     <li>{@code GRIDGAIN_HOME/bin/ggrouter.sh config/router/default-router.xml}
+ *          which will start up a GridGain router.</li>
+ *     <li>{@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-compute.xml}
+ *          which will start up a GridGain node.</li>
+ * </ol>
+ * <p>
  * For more details on how to configure standalone router instances please refer to
  * configuration file {@code GRIDGAIN_HOME/config/router/default-router.xml}.
  * <p>
@@ -38,8 +45,6 @@ import java.util.*;
  * Another option for routing is to use one of node as a router itself. You can
  * transparently pass node address in {@link GridClientConfiguration#getRouters()}
  * an it will be routing incoming requests.
- * <p>
- * Before running this example you must run {@link RouterStartup}.
  */
 public class RouterExample {
     /** Grid node address to connect to. */
