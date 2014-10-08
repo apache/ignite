@@ -319,9 +319,8 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
                     break;
                 }
-                else {
+                else
                     cache.removex(itemKey);
-                }
             }
 
             tx.commit();

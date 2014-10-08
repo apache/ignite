@@ -214,9 +214,8 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         NodeInfo nodeInfo;
         int part = partition(key);
 
-        if (backupFilter == null) {
+        if (backupFilter == null)
             nodeInfo = nodeHash.node(part, nodeInfos);
-        }
         else {
             nodeInfo = nodeHash.node(part, primaryIdFilter, GridClientUtils.contains(nodeInfos));
 

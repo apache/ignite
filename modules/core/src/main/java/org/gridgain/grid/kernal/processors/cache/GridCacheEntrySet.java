@@ -66,9 +66,8 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean remove(Object o) {
-        if (!(o instanceof GridCacheEntryImpl)) {
+        if (!(o instanceof GridCacheEntryImpl))
             return false;
-        }
 
         GridCacheEntry<K, V> e = (GridCacheEntry<K,V>)o;
 
@@ -94,9 +93,8 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean contains(Object o) {
-        if (!(o instanceof GridCacheEntryImpl)) {
+        if (!(o instanceof GridCacheEntryImpl))
             return false;
-        }
 
         GridCacheEntry<K,V> e = (GridCacheEntry<K, V>)o;
 

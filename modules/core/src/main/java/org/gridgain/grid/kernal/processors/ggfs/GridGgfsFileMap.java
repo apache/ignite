@@ -257,9 +257,8 @@ public class GridGgfsFileMap implements Externalizable {
         assert F.eq(orig.affinityKey(), update.affinityKey());
         assert ranges.get(origIdx) == orig;
 
-        if (orig.regionEqual(update)) {
+        if (orig.regionEqual(update))
             ranges.set(origIdx, new GridGgfsFileAffinityRange(update, status));
-        }
         else {
             // If range was expanded, new one should be larger.
             assert orig.endOffset() > update.endOffset();

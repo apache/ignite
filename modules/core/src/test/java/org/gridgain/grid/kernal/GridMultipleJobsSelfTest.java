@@ -71,9 +71,8 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        if (getTestGridName(1).equals(gridName)) {
+        if (getTestGridName(1).equals(gridName))
             c.setCacheConfiguration(/* no configured caches */);
-        }
         else {
             GridCacheConfiguration cc = defaultCacheConfiguration();
 

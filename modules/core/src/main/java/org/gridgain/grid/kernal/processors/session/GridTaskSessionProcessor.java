@@ -39,18 +39,16 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * Starts session processor.
      */
     @Override public void start() throws GridException {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Session processor started.");
-        }
     }
 
     /**
      * Stops session processor.
      */
     @Override public void stop(boolean cancel) throws GridException {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Session processor stopped.");
-        }
     }
 
     /**

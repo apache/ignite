@@ -79,9 +79,8 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
 
             return res;
         }
-        else if (msg instanceof GridClientPingPacket || msg instanceof GridClientHandshakeResponse) {
+        else if (msg instanceof GridClientPingPacket || msg instanceof GridClientHandshakeResponse)
             return super.encode(ses, msg);
-        }
         else
             throw new GridException("Unsupported message: " + msg);
     }

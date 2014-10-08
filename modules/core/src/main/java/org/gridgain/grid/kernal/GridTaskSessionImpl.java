@@ -376,9 +376,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         checkFullSupport();
 
-        if (attrs.isEmpty()) {
+        if (attrs.isEmpty())
             return true;
-        }
 
         if (timeout == 0)
             timeout = Long.MAX_VALUE;

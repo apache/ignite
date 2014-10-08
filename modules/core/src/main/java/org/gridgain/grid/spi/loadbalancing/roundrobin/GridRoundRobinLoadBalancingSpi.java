@@ -170,16 +170,14 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
         @Override public void onEvent(GridEvent evt) {
             if (evt.type() == EVT_TASK_FAILED ||
-                evt.type() == EVT_TASK_FINISHED) {
+                evt.type() == EVT_TASK_FINISHED)
                 perTaskBalancers.remove(((GridTaskEvent)evt).taskSessionId());
-            }
             else if (evt.type() == EVT_JOB_MAPPED) {
                 GridRoundRobinPerTaskLoadBalancer balancer =
                     perTaskBalancers.get(((GridJobEvent)evt).taskSessionId());
 
-                if (balancer != null) {
+                if (balancer != null)
                     balancer.onMapped();
-                }
             }
         }
     };
@@ -213,18 +211,16 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
         startStopwatch();
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(configInfo("isPerTask", isPerTask));
-        }
 
         registerMBean(gridName, this, GridRoundRobinLoadBalancingSpiMBean.class);
 
         balancer = new GridRoundRobinGlobalLoadBalancer(log);
 
         // Ack ok start.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(startInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -236,16 +232,14 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
         unregisterMBean();
 
         // Ack ok stop.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(stopInfo());
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(GridSpiContext spiCtx) throws GridSpiException {
-        if (!isPerTask) {
+        if (!isPerTask)
             balancer.onContextInitialized(spiCtx);
-        }
         else {
             if (!getSpiContext().isEventRecordable(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED))
                 throw new GridSpiException("Required event types are disabled: " +
@@ -260,16 +254,14 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
         if (!isPerTask) {
-            if (balancer != null) {
+            if (balancer != null)
                 balancer.onContextDestroyed();
-            }
         }
         else {
             GridSpiContext spiCtx = getSpiContext();
 
-            if (spiCtx != null) {
+            if (spiCtx != null)
                 spiCtx.removeLocalEventListener(lsnr);
-            }
         }
     }
 
@@ -283,9 +275,8 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
             // allows us to use concurrent map and avoid synchronization.
             GridRoundRobinPerTaskLoadBalancer taskBalancer = perTaskBalancers.get(ses.getId());
 
-            if (taskBalancer == null) {
+            if (taskBalancer == null)
                 perTaskBalancers.put(ses.getId(), taskBalancer = new GridRoundRobinPerTaskLoadBalancer());
-            }
 
             return taskBalancer.getBalancedNode(top);
         }
@@ -303,9 +294,8 @@ public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements Gr
         if (isPerTask) {
             GridRoundRobinPerTaskLoadBalancer balancer = perTaskBalancers.get(ses.getId());
 
-            if (balancer == null) {
+            if (balancer == null)
                 return Collections.emptyList();
-            }
 
             List<UUID> ids = new ArrayList<>();
 
