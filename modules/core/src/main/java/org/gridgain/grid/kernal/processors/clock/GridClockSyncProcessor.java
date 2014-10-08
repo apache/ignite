@@ -192,9 +192,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to send time server reply to remote node: " + msg, e);
             }
         }
-        else {
+        else
             timeCoord.onMessage(msg, rcvTs);
-        }
     }
 
     /**
@@ -431,9 +430,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                         ", addr=" + addr + ", port=" + port + ']');
                 }
             }
-            else {
+            else
                 onNodeLeft(rmtNodeId);
-            }
         }
 
         /**

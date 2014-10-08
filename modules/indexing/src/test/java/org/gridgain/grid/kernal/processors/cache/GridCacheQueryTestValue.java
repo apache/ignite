@@ -126,26 +126,21 @@ public class GridCacheQueryTestValue implements Serializable {
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantIfStatement"})
     @Override public boolean equals(Object o) {
-        if (this == o) {
+        if (this == o)
             return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || getClass() != o.getClass())
             return false;
-        }
 
         GridCacheQueryTestValue that = (GridCacheQueryTestValue)o;
 
-        if (field2 != that.field2) {
+        if (field2 != that.field2)
             return false;
-        }
 
-        if (field3 != that.field3) {
+        if (field3 != that.field3)
             return false;
-        }
 
-        if (field1 != null ? !field1.equals(that.field1) : that.field1 != null) {
+        if (field1 != null ? !field1.equals(that.field1) : that.field1 != null)
             return false;
-        }
 
         return true;
     }

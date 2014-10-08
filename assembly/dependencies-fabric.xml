@@ -40,7 +40,6 @@
             <includes>
                 <include>org.gridgain:gridgain-spring</include>
                 <include>org.gridgain:gridgain-indexing</include>
-                <include>org.gridgain:gridgain-ggfs</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

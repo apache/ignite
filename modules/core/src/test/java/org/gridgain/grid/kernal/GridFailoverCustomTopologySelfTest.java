@@ -115,16 +115,14 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) throws GridException {
             assert locNodeId != null;
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Mapping jobs [subgrid=" + subgrid + ", arg=" + arg + ']');
-            }
 
             GridNode remoteNode = null;
 
             for (GridNode node : subgrid) {
-                if (!node.id().equals(locNodeId)) {
+                if (!node.id().equals(locNodeId))
                     remoteNode = node;
-                }
             }
 
             return Collections.singletonMap(new GridComputeJobAdapter(locNodeId) {
@@ -148,9 +146,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                             throw new GridComputeExecutionRejectedException("Expected interruption during execution.", e);
                         }
                     }
-                    else {
+                    else
                         return "success";
-                    }
 
                     throw new GridComputeExecutionRejectedException("Expected exception during execution.");
                 }

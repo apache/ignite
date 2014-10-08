@@ -294,9 +294,8 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean cancel() {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Attempting to cancel transaction: " + tx);
-        }
 
         // Attempt rollback.
         if (onCancelled()) {
@@ -307,9 +306,8 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
                 U.error(log, "Failed to rollback the transaction: " + tx, ex);
             }
 
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Transaction was cancelled and rolled back: " + tx);
-            }
 
             return true;
         }
@@ -321,9 +319,8 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      * Completeness callback.
      */
     private void onComplete() {
-        if (onDone(tx, err.get())) {
+        if (onDone(tx, err.get()))
             cctx.mvcc().removeFuture(this);
-        }
     }
 
     /**
@@ -332,9 +329,8 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      * @throws GridException If execution failed.
      */
     private void checkError() throws GridException {
-        if (err.get() != null) {
+        if (err.get() != null)
             throw U.cast(err.get());
-        }
     }
 
     /** {@inheritDoc} */

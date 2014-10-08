@@ -66,9 +66,8 @@ public final class GridSingleExecutionTest {
         boolean useSession = false;
 
         if (args.length == 3) {
-            if ("-session".equals(args[2].trim())) {
+            if ("-session".equals(args[2].trim()))
                 useSession = true;
-            }
         }
 
         try {
@@ -177,9 +176,8 @@ public final class GridSingleExecutionTest {
                 ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
         }
 
-        if (!path.isFile()) {
+        if (!path.isFile())
             throw new GridException("Provided file path is not a file: " + path);
-        }
 
         // Add no-op logger to remove no-appender warning.
         Appender app = new NullAppender();
@@ -206,16 +204,14 @@ public final class GridSingleExecutionTest {
                 e.getMessage() + ']', e);
         }
 
-        if (cfgMap == null) {
+        if (cfgMap == null)
             throw new GridException("Failed to find a single grid factory configuration in: " + path);
-        }
 
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
-        if (cfgMap.isEmpty()) {
+        if (cfgMap.isEmpty())
             throw new GridException("Can't find grid factory configuration in: " + path);
-        }
 
         Collection<GridConfiguration> res = new ArrayList<>();
 
@@ -242,9 +238,8 @@ public final class GridSingleExecutionTest {
                     @GridLoggerResource private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
-                        }
 
                         return argument(0);
                     }
@@ -277,9 +272,8 @@ public final class GridSingleExecutionTest {
                     @GridLoggerResource private GridLogger log;
 
                     @Override public Serializable execute() throws GridException {
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
-                        }
 
                         ses.setAttribute("attr3", 3);
                         ses.setAttribute("attr4", 4);

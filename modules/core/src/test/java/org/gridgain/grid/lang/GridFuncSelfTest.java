@@ -199,9 +199,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         assert r.size() == 8;
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++)
             assert r.get(i) == i;
-        }
     }
 
     /**
@@ -234,9 +233,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         cnt = 0;
 
-        for (; iter.hasNext(); iter.next()) {
+        for (; iter.hasNext(); iter.next())
             cnt++;
-        }
 
         assertEquals(0, cnt);
     }
@@ -2105,9 +2103,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             assert iter.next() % 2 == 0;
 
-            if (cnt % 2 == 0) {
+            if (cnt % 2 == 0)
                 iter.remove();
-            }
 
             cnt++;
         }
@@ -2154,9 +2151,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             assert iter.next() % 2 == 0;
 
-            if (cnt % 2 == 0) {
+            if (cnt % 2 == 0)
                 iter.remove();
-            }
 
             cnt++;
         }
@@ -2212,9 +2208,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         view.add(20);
 
-        for (Iterator<Integer> iter = view.iterator(); iter.hasNext(); iter.next()) {
+        for (Iterator<Integer> iter = view.iterator(); iter.hasNext(); iter.next())
             iter.remove();
-        }
 
         assert view.isEmpty();
 
@@ -2505,7 +2500,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testMapView1() {
         Map<Integer, Integer> c = new HashMap<>();
 
-        for (int i = 1; i <= 10; i++) { c.put(i, i); }
+        for (int i = 1; i <= 10; i++)
+            c.put(i, i);
 
         GridPredicate<Integer> p = new P1<Integer>() {
             @Override public boolean apply(Integer e) { return e % 2 == 0; }
@@ -2621,7 +2617,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testMapViewNullPredicates() {
         Map<Integer, Integer> c = new HashMap<>();
 
-        for (int i = 1; i <= 10; i++) { c.put(i, i); }
+        for (int i = 1; i <= 10; i++)
+            c.put(i, i);
 
         GridPredicate<Integer> p = new P1<Integer>() {
             @Override public boolean apply(Integer e) { return e % 2 == 0; }
@@ -2882,18 +2879,16 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         assert p != null;
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         // Always false.
         p = F.eventType(null);
 
         assert p != null;
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         p = F.eventType(1, 5, 10);
 
@@ -2913,16 +2908,14 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         // Always false.
         GridPredicate<GridEvent> p = F.eventId();
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         // Always false.
         p = F.eventId(null);
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         GridEvent evt1 = new TestEvent(1);
         GridEvent evt2 = new TestEvent(2);
@@ -2965,9 +2958,8 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         // Always false.
         GridPredicate<GridEvent> p = F.eventNode(null);
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
@@ -3059,18 +3051,16 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         // Always false.
         GridPredicate<GridEvent> p = F.eventNodeId();
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         UUID[] ids = null;
 
         // Always false.
         p = F.eventNodeId(ids);
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 100; i++)
             assert !p.apply(new TestEvent(i));
-        }
 
         GridEvent evt1 = new TestEvent(1);
         GridEvent evt2 = new TestEvent(2);

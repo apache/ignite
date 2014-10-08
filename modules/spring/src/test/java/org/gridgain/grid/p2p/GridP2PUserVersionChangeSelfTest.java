@@ -132,9 +132,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             grid2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME)) {
+                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
-                    }
 
                     return true;
                 }
@@ -182,9 +181,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             grid2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME)) {
+                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
-                    }
 
                     return true;
                 }
@@ -229,9 +227,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             grid2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME)) {
+                        ((GridDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
-                    }
 
                     return true;
                 }
@@ -241,9 +238,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             grid2.events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    if (evt.type() == EVT_NODE_LEFT) {
+                    if (evt.type() == EVT_NODE_LEFT)
                         discoLatch.countDown();
-                    }
 
                     return true;
                 }

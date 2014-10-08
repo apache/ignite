@@ -130,9 +130,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -142,16 +141,14 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                     public Serializable execute() throws GridException {
                         assert taskSes != null;
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
-                        }
 
                         startSignal.countDown();
 
                         try {
-                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false) {
+                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false)
                                 fail();
-                            }
 
                             synchronized (mux) {
                                 mux.wait(WAIT_TIME);
@@ -172,29 +169,25 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;
