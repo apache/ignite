@@ -58,14 +58,12 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
         Map<TestJob, GridNode> jobs = new HashMap<>(subgrid.size());
 
         for (GridNode node : subgrid) {
-            if (nodeIds.contains(node.id())) {
+            if (nodeIds.contains(node.id()))
                 jobs.put(new TestJob(node.id(), sleep), node);
-            }
         }
 
-        if (!jobs.isEmpty()) {
+        if (!jobs.isEmpty())
             return jobs;
-        }
 
         throw new GridException("Failed to find target node: " + arg);
     }

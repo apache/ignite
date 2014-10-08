@@ -224,9 +224,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
             info("Event storage event: evt=" + evt);
 
             // Count only started tasks.
-            if (evt.type() == EVT_TASK_STARTED) {
+            if (evt.type() == EVT_TASK_STARTED)
                 cnt.incrementAndGet();
-            }
 
             return true;
         }

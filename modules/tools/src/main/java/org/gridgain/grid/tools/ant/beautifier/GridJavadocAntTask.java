@@ -218,14 +218,12 @@ public class GridJavadocAntTask extends MatchingTask {
                     tokBuf.setLength(0);
                 }
             }
-            else {
+            else
                 tokBuf.append((char)ch);
-            }
         }
 
-        if (tokBuf.length() > 0) {
+        if (tokBuf.length() > 0)
             toks.add(new GridJavadocToken(GridJavadocTokenType.TOKEN_TEXT, tokBuf.toString()));
-        }
 
         for (GridJavadocToken tok : toks) {
             String val = tok.value();
@@ -451,9 +449,8 @@ public class GridJavadocAntTask extends MatchingTask {
 
         int n;
 
-        while ((n = input.read(buf)) != -1) {
+        while ((n = input.read(buf)) != -1)
             output.write(buf, 0, n);
-        }
 
         return output.toString();
     }

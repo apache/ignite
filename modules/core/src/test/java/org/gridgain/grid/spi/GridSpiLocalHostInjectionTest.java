@@ -97,9 +97,8 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
 
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
-        if (spiVal) {
+        if (spiVal)
             spi.setLocalAddress(SPI_LOCAL_ADDR_VALUE);
-        }
 
         proc.inject(spi);
 
@@ -120,9 +119,8 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
 
         GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
 
-        if (spiVal) {
+        if (spiVal)
             spi.setLocalAddress(SPI_LOCAL_ADDR_VALUE);
-        }
 
         proc.inject(spi);
 
@@ -138,9 +136,8 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     private GridResourceProcessor getResourceProcessor(boolean cfgVal) {
         GridTestKernalContext ctx = newContext();
 
-        if (cfgVal) {
+        if (cfgVal)
             ctx.config().setLocalHost(CONFIG_LOCAL_ADDR_VALUE);
-        }
 
         GridResourceProcessor proc = new GridResourceProcessor(ctx);
 

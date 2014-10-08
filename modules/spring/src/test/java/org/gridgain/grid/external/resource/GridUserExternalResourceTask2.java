@@ -66,9 +66,8 @@ public class GridUserExternalResourceTask2 extends GridComputeTaskSplitAdapter<O
 
         Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
-        for (int i = 0; i < gridSize; i++) {
+        for (int i = 0; i < gridSize; i++)
             jobs.add(new GridUserExternalResourceJob2());
-        }
 
         return jobs;
     }

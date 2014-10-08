@@ -245,9 +245,8 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
 
             Collection<GridComputeJob> jobs = new ArrayList<>();
 
-            for (int i = 0; i < JOB_COUNT; i++) {
+            for (int i = 0; i < JOB_COUNT; i++)
                 jobs.add(new SessionChainTestJob(0));
-            }
 
             return jobs;
         }

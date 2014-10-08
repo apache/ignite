@@ -64,9 +64,8 @@ public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailover
         registerMBean(gridName, this, GridNeverFailoverSpiMBean.class);
 
         // Ack ok start.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(startInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -74,9 +73,8 @@ public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailover
         unregisterMBean();
 
         // Ack ok stop.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(stopInfo());
-        }
     }
 
     /** {@inheritDoc} */

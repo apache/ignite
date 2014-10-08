@@ -66,9 +66,8 @@ public class GridDebug {
                 throw new IllegalStateException(e);
             }
         }
-        else {
+        else
             out = null;
-        }
     }
 
     /**

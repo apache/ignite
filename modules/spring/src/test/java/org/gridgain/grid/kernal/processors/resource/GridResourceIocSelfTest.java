@@ -177,9 +177,8 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
         File tmpPath = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
 
-        if (!tmpPath.mkdir()) {
+        if (!tmpPath.mkdir())
             throw new IOException("Can not create temp directory");
-        }
 
         try {
             File newGarFile = new File(tmpPath, garFileName);
@@ -204,9 +203,8 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
                     assert ioc.isCached(TEST_USER_RSRC);
 
-                    if (!newGarFile.delete()) {
+                    if (!newGarFile.delete())
                         throw new IOException("Can not delete temp gar file");
-                    }
 
                     newGarFile = null;
 
@@ -230,15 +228,13 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                if (newGarFile != null && !newGarFile.delete()) {
+                if (newGarFile != null && !newGarFile.delete())
                     error("Can not delete temp gar file");
-                }
             }
         }
         finally {
-            if (!tmpPath.delete()) {
+            if (!tmpPath.delete())
                 error("Can not delete temp directory");
-            }
         }
     }
 
@@ -352,13 +348,11 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
         info("Cleanup resources.");
 
-        for (Class<?> cls = UserResourceTask.class; !cls.equals(Object.class); cls = cls.getSuperclass()) {
+        for (Class<?> cls = UserResourceTask.class; !cls.equals(Object.class); cls = cls.getSuperclass())
             assert !ioc.isCached(cls) : "Class must be removed from cache: " + cls.getName();
-        }
 
-        for (Class<?> cls = rsrc.getClass(); !cls.equals(Object.class); cls = cls.getSuperclass()) {
+        for (Class<?> cls = rsrc.getClass(); !cls.equals(Object.class); cls = cls.getSuperclass())
             assert !ioc.isCached(cls) : "Class must be removed from cache: " + cls.getName();
-        }
     }
 
     /**

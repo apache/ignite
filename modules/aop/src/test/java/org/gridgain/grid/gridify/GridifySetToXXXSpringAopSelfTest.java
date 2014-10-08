@@ -146,9 +146,8 @@ public class GridifySetToXXXSpringAopSelfTest extends GridCommonAbstractTest {
     private <T> Collection<T> convert(Iterator<T> iter) {
         List<T> list = new ArrayList<>();
 
-        while (iter.hasNext()) {
+        while (iter.hasNext())
             list.add(iter.next());
-        }
 
         return list;
     }
@@ -162,9 +161,8 @@ public class GridifySetToXXXSpringAopSelfTest extends GridCommonAbstractTest {
     private <T> Collection<T> convert(Enumeration<T> iter) {
         List<T> list = new ArrayList<>();
 
-        while (iter.hasMoreElements()) {
+        while (iter.hasMoreElements())
             list.add(iter.nextElement());
-        }
 
         return list;
     }

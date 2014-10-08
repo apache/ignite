@@ -81,9 +81,8 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
 
         String scanDirPath = uri.getPath();
 
-        if (scanDirPath != null) {
+        if (scanDirPath != null)
             scanDir = new File(scanDirPath);
-        }
 
         if (scanDir == null || !scanDir.isDirectory()) {
             scanDir = null;
@@ -186,9 +185,8 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
         if (changed) {
             tstampCache.put(file, lastMod);
 
-            if (getLogger().isDebugEnabled()) {
+            if (getLogger().isDebugEnabled())
                 getLogger().debug("Discovered deployment file or directory: " + file);
-            }
 
             String fileName = file.getName();
 
@@ -241,9 +239,8 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
 
             garDirFilesTstampCache.put(dir, clssTstampCache = new HashMap<>());
         }
-        else {
+        else
             clssTstampCache = garDirFilesTstampCache.get(dir);
-        }
 
         assert clssTstampCache != null;
 
@@ -265,9 +262,8 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
                 }
 
                 // Calculate last modified file in folder.
-                if (fileLastModified > lastModified.get()) {
+                if (fileLastModified > lastModified.get())
                     lastModified.set(fileLastModified);
-                }
             }
         };
 
@@ -275,9 +271,8 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
         GridDeploymentFolderScannerHelper.scanFolder(dir, garDirFilesFilter, hnd);
 
         // Clear cache for deleted files.
-        if (!firstScan && clssTstampCache.keySet().retainAll(foundFiles)) {
+        if (!firstScan && clssTstampCache.keySet().retainAll(foundFiles))
             changed.set(true);
-        }
 
         return changed.get();
     }

@@ -144,9 +144,8 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     public void testIteratorDuplicates() {
         Map<Integer, String> tst = new ConcurrentLinkedHashMap<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++)
             tst.put(i, "val" + i);
-        }
 
         Iterator<Integer> it = tst.keySet().iterator();
         for (int i = 0; i < 5; i++) {

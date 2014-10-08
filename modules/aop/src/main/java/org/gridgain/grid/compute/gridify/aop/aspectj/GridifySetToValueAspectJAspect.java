@@ -83,9 +83,8 @@ public class GridifySetToValueAspectJAspect extends GridifySetToValueAbstractAsp
 
         if (!ann.interceptor().equals(GridifyInterceptor.class)) {
             // Check interceptor first.
-            if (!ann.interceptor().newInstance().isGridify(ann, arg)) {
+            if (!ann.interceptor().newInstance().isGridify(ann, arg))
                 return joinPnt.proceed();
-            }
         }
 
         // Proceed locally for negative threshold parameter.

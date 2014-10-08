@@ -44,9 +44,8 @@ class GridJdkMarshallerObjectInputStream extends ObjectInputStream {
 
     /** {@inheritDoc} */
     @Override protected Object resolveObject(Object o) throws IOException {
-        if (o != null && o.getClass().equals(GridJdkMarshallerDummySerializable.class)) {
+        if (o != null && o.getClass().equals(GridJdkMarshallerDummySerializable.class))
             return new Object();
-        }
 
         return super.resolveObject(o);
     }

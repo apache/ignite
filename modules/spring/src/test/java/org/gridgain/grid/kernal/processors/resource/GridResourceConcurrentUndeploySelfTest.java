@@ -410,9 +410,8 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
                         @Override public Serializable execute() {
                             saveLdr(getClass().getClassLoader());
 
-                            if (cnt != null) {
+                            if (cnt != null)
                                 cnt.countDown();
-                            }
 
                             Boolean arg = argument(0);
 

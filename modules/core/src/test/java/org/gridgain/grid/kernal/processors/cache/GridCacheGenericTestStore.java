@@ -255,8 +255,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
         if (shouldFail)
             throw new GridException("Store exception");
 
-        if (operationDelay > 0) {
+        if (operationDelay > 0)
             U.sleep(operationDelay);
-        }
     }
 }

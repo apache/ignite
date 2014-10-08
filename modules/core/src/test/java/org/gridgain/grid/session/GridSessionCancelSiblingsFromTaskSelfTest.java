@@ -110,9 +110,8 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
