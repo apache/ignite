@@ -57,7 +57,7 @@ public class RouterExample {
     // private static final int ROUTER_TCP_PORT = GridConfiguration.DFLT_TCP_PORT;
 
     /**
-     * Executes example
+     * Executes example.
      *
      * @param args Command line arguments, none required.
      * @throws GridClientException If example execution failed.
