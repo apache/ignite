@@ -10,11 +10,10 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.io.*;
 import java.util.*;
@@ -22,12 +21,12 @@ import java.util.*;
 /**
  * Swap entry.
  */
-public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externalizable, GridPortableMarshalAware {
+public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Key hash. */
-    private int keyHash;
+    /** */
+    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** Value bytes. */
     private byte[] valBytes;
@@ -54,14 +53,6 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externa
     private long expireTime;
 
     /**
-     * Empty constructor.
-     */
-    public GridCacheSwapEntryImpl() {
-        // No-op.
-    }
-
-    /**
-     * @param keyHash Key hash.
      * @param valBytes Value.
      * @param valIsByteArr Whether value of this entry is byte array.
      * @param ver Version.
@@ -70,7 +61,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externa
      * @param keyClsLdrId Class loader ID for entry key (can be {@code null} for local class loader).
      * @param valClsLdrId Class loader ID for entry value (can be {@code null} for local class loader).
      */
-    public GridCacheSwapEntryImpl(int keyHash,
+    public GridCacheSwapEntryImpl(
         byte[] valBytes,
         boolean valIsByteArr,
         GridCacheVersion ver,
@@ -80,7 +71,6 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externa
         @Nullable GridUuid valClsLdrId) {
         assert ver != null;
 
-        this.keyHash = keyHash;
         this.valBytes = valBytes;
         this.valIsByteArr = valIsByteArr;
         this.ver = ver;
@@ -90,10 +80,6 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externa
         this.keyClsLdrId = keyClsLdrId;
     }
 
-    /** {@inheritDoc} */
-    @Override public int keyHash() {
-        return keyHash;
-    }
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes() {
@@ -148,139 +134,190 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V>, Externa
         return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, keyClsLdrId);
-        U.writeGridUuid(out, valClsLdrId);
+    /**
+     * @param portable Portable enabled flag.
+     * @return Entry bytes.
+     */
+    public byte[] marshal(boolean portable) {
+        int size = 16 + 1 + 24; // Ttl + expire time + Ex Version flag + Version.
 
-        U.writeByteArray(out, valBytes);
+        if (ver instanceof GridCacheVersionEx)
+            size += 24;
 
-        out.writeBoolean(valIsByteArr);
+        size += 1; // Plain byte array flag.
 
-        CU.writeVersion(out, ver);
+        size += valBytes.length + 4; // Value bytes.
 
-        out.writeLong(ttl);
-        out.writeLong(expireTime);
+        byte[] arr = new byte[size];
 
-        out.writeInt(keyHash);
-    }
+        long off = BYTE_ARR_OFF;
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        keyClsLdrId = U.readGridUuid(in);
-        valClsLdrId = U.readGridUuid(in);
+        UNSAFE.putLong(arr, off, ttl);
 
-        valBytes = U.readByteArray(in);
+        off += 8;
 
-        valIsByteArr = in.readBoolean();
+        UNSAFE.putLong(arr, off, expireTime);
 
-        ver = CU.readVersion(in);
+        off += 8;
 
-        ttl = in.readLong();
-        expireTime = in.readLong();
+        off = writeVersion(arr, off, ver, true);
 
-        keyHash = in.readInt();
+        UNSAFE.putBoolean(arr, off++, valIsByteArr);
 
-        assert ver != null;
-    }
+        UNSAFE.putInt(arr, off, valBytes.length);
 
-    /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+        off += 4;
 
-        raw.writeLong(ttl);
-        raw.writeLong(expireTime);
+        UNSAFE.copyMemory(valBytes, BYTE_ARR_OFF, arr, off, valBytes.length);
 
-        writeVersion(raw, ver, true);
-
-        raw.writeBoolean(valIsByteArr);
-        raw.writeByteArray(valBytes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
-        GridPortableRawReader raw = reader.rawReader();
-
-        ttl = raw.readLong();
-        expireTime = raw.readLong();
-
-        ver = readVersion(raw);
-
-        valIsByteArr = raw.readBoolean();
-        valBytes = raw.readByteArray();
+        return arr;
     }
 
     /**
-     * @param raw Writer.
-     * @param uid UUID.
+     * @param arr Entry bytes.
+     * @return Entry.
      */
-    private void writeGridUuid(GridPortableRawWriter raw, @Nullable GridUuid uid) {
-        raw.writeBoolean(uid != null);
+    public static <T> GridCacheSwapEntryImpl<T> unmarshal(byte[] arr) {
+        long off = BYTE_ARR_OFF;
+
+        long ttl = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        long expireTime = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        boolean verEx = UNSAFE.getBoolean(arr, off++);
+
+        GridCacheVersion ver = readVersion(arr, off, verEx);
+
+        off += verEx ? 48 : 24;
+
+        boolean valIsByteArr = UNSAFE.getBoolean(arr, off++);
+
+        int arrLen = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        byte[] valBytes = new byte[arrLen];
+
+        UNSAFE.copyMemory(arr, off, valBytes, BYTE_ARR_OFF, arrLen);
+
+        return new GridCacheSwapEntryImpl<T>(valBytes, valIsByteArr, ver, ttl, expireTime, null, null);
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param uid UUID.
+     * @return Offset.
+     */
+    private long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
+        UNSAFE.putBoolean(arr, off++, uid != null);
 
         if (uid != null) {
-            raw.writeLong(uid.globalId().getMostSignificantBits());
-            raw.writeLong(uid.globalId().getLeastSignificantBits());
+            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
 
-            raw.writeLong(uid.localId());
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.localId());
+
+            off += 8;
         }
+
+        return off;
     }
 
     /**
-     * @param raw Writer.
+     * @param arr Array.
+     * @param off Offset.
      * @param ver Version.
      * @param checkEx If {@code true} checks if version is {@link GridCacheVersionEx}.
+     * @return Offset.
      */
-    private void writeVersion(GridPortableRawWriter raw, GridCacheVersion ver, boolean checkEx) {
+    private long writeVersion(byte[] arr, long off, GridCacheVersion ver, boolean checkEx) {
         boolean verEx = false;
 
         if (checkEx) {
             verEx = ver instanceof GridCacheVersionEx;
 
-            raw.writeBoolean(verEx);
+            UNSAFE.putBoolean(arr, off++, verEx);
         }
 
-        if (verEx)
-            writeVersion(raw, ver.drVersion(), false);
+        if (verEx) {
+            writeVersion(arr, off, ver.drVersion(), false);
 
-        raw.writeInt(ver.topologyVersion());
-        raw.writeInt(ver.nodeOrderAndDrIdRaw());
-        raw.writeLong(ver.globalTime());
-        raw.writeLong(ver.order());
+            off += 24;
+        }
+
+        UNSAFE.putInt(arr, off, ver.topologyVersion());
+
+        off += 4;
+
+        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+
+        off += 4;
+
+        UNSAFE.putLong(arr, off, ver.globalTime());
+
+        off += 8;
+
+        UNSAFE.putLong(arr, off, ver.order());
+
+        off += 8;
+
+        return off;
     }
 
     /**
-     * @param raw Reader.
+     * @param arr Array.
+     * @param off Offset.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
      * @return Version.
      */
-    @SuppressWarnings("IfMayBeConditional")
-    private GridCacheVersion readVersion(GridPortableRawReader raw) {
-        boolean verEx = raw.readBoolean();
+    private static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
+        int topVer = UNSAFE.getInt(arr, off);
 
-        GridCacheVersion ver = new GridCacheVersion(raw.readInt(), raw.readInt(), raw.readLong(), raw.readLong());
+        off += 4;
 
-        if (verEx)
-            ver = new GridCacheVersionEx(raw.readInt(), raw.readInt(), raw.readLong(), raw.readLong(), ver);
+        int nodeOrderDrId = UNSAFE.getInt(arr, off);
 
-        return ver;
-    }
+        off += 4;
 
-    /**
-     * @param raw Reader.
-     * @return Read UUID.
-     */
-    @Nullable private GridUuid readGridUuid(GridPortableRawReader raw) {
-        if (raw.readBoolean()) {
-            long most = raw.readLong();
-            long least = raw.readLong();
+        long globalTime = UNSAFE.getLong(arr, off);
 
-            UUID globalId = GridUuidCache.onGridUuidRead(new UUID(most, least));
+        off += 8;
 
-            long locId = raw.readLong();
+        long order = UNSAFE.getLong(arr, off);
 
-            return new GridUuid(globalId, locId);
+        off += 8;
+
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+        if (verEx) {
+            topVer = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            globalTime = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            order = UNSAFE.getLong(arr, off);
+
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
         }
 
-        return null;
+        return ver;
     }
 
     /** {@inheritDoc} */

@@ -480,10 +480,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.grid().security().authenticatedSubject(subjId);
                     }
 
-                    @SuppressWarnings("unchecked")
                     @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
                         @Nullable ClassLoader ldr) throws GridException {
-                        GridCache cache = ctx.cache().cache(spaceName);
+                        GridCache<Object, V> cache = ctx.cache().cache(spaceName);
 
                         String swapSpace = ((GridCacheProxyImpl)cache).context().swap().spaceName();
 
@@ -501,23 +500,18 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         if (swapEntryBytes == null)
                             return null;
 
-                        Object val;
+                        GridCacheSwapEntry e = GridCacheSwapEntryImpl.unmarshal(swapEntryBytes);
 
-                        if (cache.configuration().isPortableEnabled()) {
-                            GridCacheSwapEntry e =
-                                ((GridPortableObject)(ctx.portable().unmarshal(swapEntryBytes))).deserialize();
+                        if (e.valueIsByteArray())
+                            return (V)e.valueBytes();
 
-                            val = e.valueIsByteArray() ? e.valueBytes() : ctx.portable().unmarshal(e.valueBytes());
-                        }
+                        if (cache.configuration().isPortableEnabled())
+                            return (V)ctx.portable().unmarshal(e.valueBytes());
                         else {
                             ldr = ldr != null ? ldr : U.gridClassLoader();
 
-                            GridCacheSwapEntry e = marsh.unmarshal(swapEntryBytes, ldr);
-
-                            val = e.valueIsByteArray() ? e.valueBytes() : marsh.unmarshal(e.valueBytes(), ldr);
+                            return marsh.unmarshal(e.valueBytes(), ldr);
                         }
-
-                        return (V)val;
                     }
 
                     /**

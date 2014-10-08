@@ -368,7 +368,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (ldr == null)
                 return null;
 
-            e.value(this.<V>unmarshal(e.valueBytes(), ldr));
+            e.value(this.<V>unmarshalValue(e.valueBytes(), ldr));
         }
 
         return e;
@@ -638,8 +638,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 byte[] keyBytes = CU.marshal(cctx, key);
 
-                int hash = U.hash(key);
-
                 byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
 
                 if (entryBytes != null) {
@@ -663,7 +661,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     if (qryMgr != null)
                         qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
 
-                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key, keyBytes, hash,
+                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key, keyBytes,
                         part, entry.valueBytes(),entry.valueIsByteArray(), entry.version(), entry.ttl(),
                         entry.expireTime(), entry.keyClassLoaderId(), entry.valueClassLoaderId());
 
@@ -707,9 +705,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             K key = (K)swapKey.key();
 
                             GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
-                                swapKey.keyBytes(), U.hash(key), swapKey.partition(), entry.valueBytes(),
-                                entry.valueIsByteArray(), entry.version(), entry.ttl(), entry.expireTime(),
-                                entry.keyClassLoaderId(), entry.valueClassLoaderId());
+                                swapKey.keyBytes(),
+                                swapKey.partition(),
+                                entry.valueBytes(),
+                                entry.valueIsByteArray(),
+                                entry.version(),
+                                entry.ttl(),
+                                entry.expireTime(),
+                                entry.keyClassLoaderId(),
+                                entry.valueClassLoaderId());
 
                             unswapped.value(entry.value());
 
@@ -848,7 +852,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         int part = cctx.affinity().partition(key);
 
-        GridCacheSwapEntry<V> entry = new GridCacheSwapEntryImpl<>(keyHash, val, valIsByteArr, ver, ttl, expireTime,
+        GridCacheSwapEntryImpl<V> entry = new GridCacheSwapEntryImpl<>(val, valIsByteArr, ver, ttl, expireTime,
             keyClsLdrId, valClsLdrId);
 
         if (offheapEnabled) {
@@ -1419,16 +1423,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param bytes Bytes to unmarshal.
      * @param ldr Class loader.
      * @return Unmarshalled entry.
-     * @throws GridException If unmarshal failed.
      */
-    private GridCacheSwapEntry<V> unmarshalSwapEntry(byte[] bytes, ClassLoader ldr) throws GridException {
-        if (cctx.portableEnabled()) {
-            GridPortableObject obj = (GridPortableObject)cctx.portable().unmarshal(bytes);
-
-            return obj.deserialize();
-        }
-        else
-            return (GridCacheSwapEntry<V>)cctx.marshaller().unmarshal(bytes, ldr);
+    private GridCacheSwapEntry<V> unmarshalSwapEntry(byte[] bytes, ClassLoader ldr) {
+        return GridCacheSwapEntryImpl.unmarshal(bytes);
     }
 
     /**
@@ -1437,11 +1434,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Unmarshalled value.
      * @throws GridException If unmarshal failed.
      */
-    private <T> T unmarshal(byte[] bytes, ClassLoader ldr) throws GridException {
-        if (cctx.portableEnabled())
-            return (T)cctx.portable().unmarshal(bytes);
-        else
-            return cctx.marshaller().unmarshal(bytes, ldr);
+    private <T> T unmarshalValue(byte[] bytes, ClassLoader ldr) throws GridException {
+        return (T)(cctx.portableEnabled() ? cctx.portable().unmarshal(bytes) : cctx.marshaller().unmarshal(bytes, ldr));
     }
 
     /**
@@ -1457,10 +1451,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param obj Object to marshal.
      * @return Marshalled byte array.
-     * @throws GridException If marshalling failed.
      */
-    private byte[] marshal(Object obj) throws GridException {
-        return cctx.portableEnabled() ? cctx.portable().marshal(obj, true).array() : cctx.marshaller().marshal(obj);
+    private byte[] marshal(GridCacheSwapEntryImpl<?> obj) {
+        return obj.marshal(cctx.portableEnabled());
     }
 
     /**

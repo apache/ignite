@@ -24,11 +24,6 @@ import java.util.*;
  */
 public interface GridCacheSwapEntry<V> {
     /**
-     * @return Key hash.
-     */
-    public int keyHash();
-
-    /**
      * @return Value bytes.
      */
     public byte[] valueBytes();

@@ -709,7 +709,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         V ret = null;
 
         if (!F.isEmptyOrNulls(filter) && !cctx.isAll(
-            (new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshalUnlocked(true), this, true)), filter))
+            (new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this, true)), filter))
             return CU.<V>failed(failFast);
 
         boolean asyncRefresh = false;
@@ -3586,9 +3586,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (val != null)
                         valClsLdrId = cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(val));
 
-                    ret = new GridCacheBatchSwapEntry<>(key(), getOrMarshalKeyBytes(), hash, partition(),
-                        valBytes.get(), valBytes.isPlain(), ver, ttlExtras(), expireTimeExtras(),
-                        cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)), valClsLdrId);
+                    ret = new GridCacheBatchSwapEntry<>(key(),
+                        getOrMarshalKeyBytes(),
+                        partition(),
+                        valBytes.get(),
+                        valBytes.isPlain(),
+                        ver,
+                        ttlExtras(),
+                        expireTimeExtras(),
+                        cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)),
+                        valClsLdrId);
                 }
 
                 value(null, null);

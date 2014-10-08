@@ -19,27 +19,21 @@ import sun.misc.*;
 /**
  * GridCacheSwapEntry over offheap pointer.
  * <p>
- * Offheap pointer points to {@link GridCacheSwapEntryImpl} instance marshalled
- * with portable marshaller, marshaller data:
+ * Offheap pointer points to marshaller {@link GridCacheSwapEntryImpl} instance, marshalled data:
  * <ul>
  *     <li>TTL</li>
  *     <li>Expire time</li>
  *     <li>GridCacheVersion or GridCacheVersionEx</li>
  *     <li>Value is byte array flag</li>
- *     <li>Value byte array (marshalled with portable marshaller)</li>
+ *     <li>Value byte array (marshalled with portable or grid marshaller)</li>
  * </ul>
- *
- * TODO: 9189 handle big endian.
  */
 public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final int DATA_OFFSET = 18;
-
-    /** */
-    private final long dataStart;
+    private final long ptr;
 
     /** */
     private final long valPtr;
@@ -59,12 +53,11 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
      */
     public GridCacheOffheapSwapEntry(long ptr, int size) {
         assert ptr > 0 : ptr;
-        assert size > 0 && size > DATA_OFFSET: size;
-        assert UNSAFE.getByte(ptr) == 103 : UNSAFE.getByte(ptr);
+        assert size > 0 : size;
 
-        dataStart = ptr + DATA_OFFSET;
+        this.ptr = ptr;
 
-        long readPtr = dataStart + 16;
+        long readPtr = ptr + 16;
 
         boolean verEx = UNSAFE.getByte(readPtr++) != 0;
 
@@ -74,11 +67,9 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         valIsByteArr = UNSAFE.getByte(readPtr) != 0;
 
-        assert UNSAFE.getByte(readPtr + 1) == 12 : UNSAFE.getByte(readPtr + 1); // Expect byte array.
-
         valPtr = readPtr;
 
-        assert (ptr + size) == (UNSAFE.getInt(valPtr + 2) + valPtr + 6);
+        assert (ptr + size) == (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
     }
 
     /**
@@ -103,11 +94,6 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
         }
 
         return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int keyHash() {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -137,12 +123,12 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
     /** {@inheritDoc} */
     @Override public long ttl() {
-        return UNSAFE.getLong(dataStart);
+        return UNSAFE.getLong(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public long expireTime() {
-        return UNSAFE.getLong(dataStart + 8);
+        return UNSAFE.getLong(ptr + 8);
     }
 
     /** {@inheritDoc} */
