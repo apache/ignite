@@ -301,12 +301,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public V rawGetOrUnmarshal() throws GridException {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V rawGetOrUnmarshalTemporary(boolean retVal) throws GridException {
+    @Override public V rawGetOrUnmarshal(boolean temporary) throws GridException {
         return val;
     }
 

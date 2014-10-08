@@ -57,7 +57,7 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     @Override public GridCacheEntry<K, V> wrapFilterLocked() throws GridException {
         assert Thread.holdsLock(this);
 
-        return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshalTemporary(false), this);
+        return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this);
     }
 
     /** {@inheritDoc} */

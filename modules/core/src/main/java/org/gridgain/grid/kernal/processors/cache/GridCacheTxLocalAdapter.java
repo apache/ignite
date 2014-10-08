@@ -480,7 +480,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshalTemporary(false);
+                                    V old = e.cached().rawGetOrUnmarshal(true);
 
                                     val = (V)cctx.config().getInterceptor().onBeforePut(key, old, val);
 
@@ -505,7 +505,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshalTemporary(false);
+                                    V old = e.cached().rawGetOrUnmarshal(true);
 
                                     GridBiTuple<Boolean, V> t = cctx.config().<K, V>getInterceptor()
                                         .onBeforeRemove(key, old);
@@ -1960,7 +1960,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
                             }
                             else
-                                old = retval ? entry.rawGetOrUnmarshal() : entry.rawGet();
+                                old = retval ? entry.rawGetOrUnmarshal(false) : entry.rawGet();
 
                             if (!filter(entry, filter)) {
                                 skipped = skip(skipped, key);
@@ -2168,7 +2168,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         }
                         else {
                             if (!hasPrevVal)
-                                v = retval ? cached.rawGetOrUnmarshal() : cached.rawGet();
+                                v = retval ? cached.rawGetOrUnmarshal(false) : cached.rawGet();
                         }
 
                         if (transform) {

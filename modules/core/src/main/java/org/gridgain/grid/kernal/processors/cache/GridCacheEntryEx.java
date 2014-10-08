@@ -95,17 +95,13 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public V rawGet();
 
     /**
+     * @param temporary If {@code true} can return temporary instance valid while entry lock is held,
+     *        temporary object can used for filter evaluation or transform closure execution and
+     *        should not be returned to user.
      * @return Value (unmarshalled if needed).
      * @throws GridException If failed.
      */
-    public V rawGetOrUnmarshal() throws GridException;
-
-    /**
-     * @param retVal If {@code true} then value is returned to user.
-     * @return Value (unmarshalled if needed).
-     * @throws GridException If failed.
-     */
-    @Nullable public V rawGetOrUnmarshalTemporary(boolean retVal) throws GridException;
+    public V rawGetOrUnmarshal(boolean temporary) throws GridException;
 
     /**
      * @return {@code True} if has value or value bytes.
@@ -273,8 +269,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param temporary If {@code true} can return temporary instance valid while entry lock is held,
-     *        temporary object can used for filter evaluation or transform closure execution and should
-     *        be returned to user.
+     *        temporary object can used for filter evaluation or transform closure execution and
+     *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
      * @param taskName Task name.
      * @param filter Filter to check prior to getting the value. Note that filter check
