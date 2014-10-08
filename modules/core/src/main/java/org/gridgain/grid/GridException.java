@@ -18,7 +18,7 @@ import static org.gridgain.grid.util.GridUtils.*;
  * General grid exception. This exception is used to indicate any error condition
  * within Grid.
  */
-public class GridException extends Exception {
+public class GridException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
