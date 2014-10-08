@@ -99,9 +99,8 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
             Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto local node.
-            for (Iterator iter = subgrid.iterator(); iter.hasNext(); iter.next()) {
+            for (Iterator iter = subgrid.iterator(); iter.hasNext(); iter.next())
                 map.put(new GridJobStealingJob(5000L), grid.localNode());
-            }
 
             return map;
         }

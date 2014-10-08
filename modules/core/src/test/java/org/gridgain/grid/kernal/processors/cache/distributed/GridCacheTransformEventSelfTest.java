@@ -521,9 +521,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param ids Event IDs.
      */
     private void checkEventNodeIdsStrict(UUID... ids) {
-        if (ids == null) {
+        if (ids == null)
             assertTrue(evts.isEmpty());
-        }
         else {
             assertEquals(ids.length, evts.size());
 

@@ -86,9 +86,8 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
 
                         rsrc = new GridCacheXAResource((GridCacheTxEx)tx, cctx);
 
-                        if (!jtaTx.enlistResource(rsrc)) {
+                        if (!jtaTx.enlistResource(rsrc))
                             throw new GridException("Failed to enlist XA resource to JTA user transaction.");
-                        }
 
                         xaRsrc.set(rsrc);
                     }

@@ -243,9 +243,8 @@ public class GridCacheLruEvictionPolicySelfTest extends
 
             MockEntry[] lrus = new MockEntry[keys];
 
-            for (int i = 0; i < lrus.length; i++) {
+            for (int i = 0; i < lrus.length; i++)
                 lrus[i] = new MockEntry(Integer.toString(i));
-            }
 
             int runs = 500000;
 

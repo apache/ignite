@@ -72,9 +72,8 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     @Override public boolean remove(Object o) {
         GridCacheEntry<K, V> e = map.get(o);
 
-        if (e == null || !F.isAll(e, filter)) {
+        if (e == null || !F.isAll(e, filter))
             return false;
-        }
 
         map.remove(o);
 

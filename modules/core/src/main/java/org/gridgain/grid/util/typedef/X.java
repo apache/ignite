@@ -630,9 +630,8 @@ public final class X {
             try {
                 Method mtd = cls.getMethod(CAUSE_MTD_NAME, null);
 
-                if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType())) {
+                if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType()))
                     return true;
-                }
             }
             catch (NoSuchMethodException | SecurityException ignored) {
                 // exception ignored

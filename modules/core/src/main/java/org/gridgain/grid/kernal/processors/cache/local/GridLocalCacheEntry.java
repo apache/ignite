@@ -226,9 +226,8 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
         if (owner != prev) {
             cctx.mvcc().callback().onOwnerChanged(this, prev, owner);
 
-            if (owner != null) {
+            if (owner != null)
                 checkThreadChain(owner);
-            }
         }
     }
 
@@ -253,9 +252,8 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.
-                    if (e != null) {
+                    if (e != null)
                         e.recheck();
-                    }
 
                     break;
                 }

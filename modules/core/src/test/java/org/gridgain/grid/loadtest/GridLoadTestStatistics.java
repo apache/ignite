@@ -75,23 +75,19 @@ public class GridLoadTestStatistics {
         avgTaskTime = Math.round(1000.0f * totalTime / taskCnt) / 1000.0f;
         avgJobTime = Math.round(1000.0f * totalTime / jobCnt) / 1000.0f;
 
-        if (taskTime > maxTaskTime) {
+        if (taskTime > maxTaskTime)
             maxTaskTime = taskTime;
-        }
 
-        if (taskTime < minTaskTime) {
+        if (taskTime < minTaskTime)
             minTaskTime = taskTime;
-        }
 
         float jobTime = Math.round(1000.0f * taskTime / jobNum) / 1000.0f;
 
-        if (jobTime > maxJobTime) {
+        if (jobTime > maxJobTime)
             maxJobTime = jobTime;
-        }
 
-        if (jobTime < minJobTime) {
+        if (jobTime < minJobTime)
             minJobTime = jobTime;
-        }
 
         if (fut != null) {
             Iterable<UUID> nodeIds = (Iterable<UUID>)fut.getTaskSession().getAttribute("nodes");

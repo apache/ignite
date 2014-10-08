@@ -100,9 +100,8 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
                         assertTrue(false);
                     }
 
-                    for (int j = 1; j <= cnt; j++) {
+                    for (int j = 1; j <= cnt; j++)
                         ctx.ports().registerPort(j + k, TCP, GridTcpCommunicationSpi.class);
-                    }
 
                     finishLatch.countDown();
                 }
