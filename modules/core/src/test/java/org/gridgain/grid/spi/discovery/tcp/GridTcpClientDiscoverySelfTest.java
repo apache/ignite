@@ -18,7 +18,6 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -79,6 +78,12 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         else if (gridName.startsWith("client")) {
             GridTcpClientDiscoverySpi disco = new GridTcpClientDiscoverySpi();
 
+            GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+
+            String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).get(clientIdx.get() / 2).toString();
+
+            ipFinder.setAddresses(Arrays.asList(addr));
+
             disco.setIpFinder(IP_FINDER);
 
             cfg.setDiscoverySpi(disco);
@@ -107,8 +112,6 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     public void testClientNodeJoin() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
-
-        Thread.sleep(2000);
 
         checkNodes(3, 3);
 
@@ -139,7 +142,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(3, 3);
 
-        stopGrid("client-0");
+        stopGrid("client-2");
 
         await(srvLeftLatch);
         await(clientLeftLatch);
@@ -161,9 +164,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(3, 3);
 
-        forceClientFail();
-
-        stopGrid("client-0");
+        ((GridTcpClientDiscoverySpi)G.grid("client-2").configuration().getDiscoverySpi()).simulateNodeFailure();
 
         await(srvFailedLatch);
         await(clientFailedLatch);
@@ -202,12 +203,12 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        srvLeftLatch = new CountDownLatch(3);
-        clientLeftLatch = new CountDownLatch(2);
+        srvLeftLatch = new CountDownLatch(2);
+        clientLeftLatch = new CountDownLatch(3);
 
         attachListeners(3, 3);
 
-        stopGrid("server-0");
+        stopGrid("server-2");
 
         await(srvLeftLatch);
         await(clientLeftLatch);
@@ -224,30 +225,17 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        srvFailedLatch = new CountDownLatch(3);
-        clientFailedLatch = new CountDownLatch(2);
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(3);
 
         attachListeners(3, 3);
 
-        ((GridTcpDiscoverySpi)G.grid("server-0").configuration().getDiscoverySpi()).simulateNodeFailure();
+        ((GridTcpDiscoverySpi)G.grid("server-2").configuration().getDiscoverySpi()).simulateNodeFailure();
 
         await(srvFailedLatch);
         await(clientFailedLatch);
 
         checkNodes(2, 3);
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    private void forceClientFail() throws Exception {
-        Field f = GridTcpClientDiscoverySpi.class.getDeclaredField("fail");
-
-        assert Modifier.isStatic(f.getModifiers());
-
-        f.setAccessible(true);
-
-        f.set(null, true);
     }
 
     /**

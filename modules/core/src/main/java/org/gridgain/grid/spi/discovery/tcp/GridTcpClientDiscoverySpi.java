@@ -26,8 +26,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
-import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
 
 /**
  * TODO
@@ -37,21 +37,46 @@ import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiSt
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
-    /** FOR TEST PURPOSES ONLY! */
-    @SuppressWarnings("UnusedDeclaration")
-    private static boolean fail;
-
-    /** Mutex. */
-    private final Object mux = new Object();
+    /** Default disconnect check interval. */
+    public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, GridTcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
 
+    /** Socket. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    private volatile Socket sock;
+
+    /** Disconnect handler. */
+    private DisconnectHandler disconnectHnd;
+
     /** Socket reader. */
     private SocketReader sockRdr;
 
-    /** Message worker. */
-    private MessageWorker msgWrk;
+    /** Joined latch. */
+    private CountDownLatch joinLatch;
+
+    /** Disconnect check interval. */
+    private long disconnectCheckInt = DFLT_DISCONNECT_CHECK_INT;
+
+    /**
+     * Gets disconnect check interval.
+     *
+     * @return Disconnect check interval.
+     */
+    public long getDisconnectCheckInterval() {
+        return disconnectCheckInt;
+    }
+
+    /**
+     * Sets disconnect check interval.
+     *
+     * @param disconnectCheckInt Disconnect check interval.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setDisconnectCheckInterval(long disconnectCheckInt) {
+        this.disconnectCheckInt = disconnectCheckInt;
+    }
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
@@ -93,13 +118,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         locNode.local(true);
 
         sockTimeoutWorker = new SocketTimeoutWorker();
-        sockTimeoutWorker.start();
+        disconnectHnd = new DisconnectHandler();
 
-        stats.onJoinStarted();
+        sockTimeoutWorker.start();
+        disconnectHnd.start();
 
         joinTopology();
-
-        stats.onJoinFinished();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -109,30 +133,25 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     @Override public void spiStop() throws GridSpiException {
         rmtNodes.clear();
 
-        synchronized (mux) {
-            spiState = LEFT;
+        try {
+            GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
+
+            msg.client(true);
+
+            writeToSocket(sock, msg);
         }
-
-        Socket sock = sockRdr.sock;
-
-        if (!fail) {
-            try {
-                GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
-
-                msg.client(true);
-
-                writeToSocket(sock, msg);
-            }
-            catch (IOException | GridException e) {
-                if (log.isDebugEnabled())
-                    U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
-            }
+        catch (IOException | GridException e) {
+            if (log.isDebugEnabled())
+                U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
         }
 
         closeConnection();
 
         U.interrupt(sockTimeoutWorker);
         U.join(sockTimeoutWorker, log);
+
+        U.interrupt(disconnectHnd);
+        U.join(disconnectHnd, log);
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -180,11 +199,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
      * @throws GridSpiException In case of error.
      */
     private void joinTopology() throws GridSpiException {
-        synchronized (mux) {
-            assert spiState == DISCONNECTED;
-
-            spiState = CONNECTING;
-        }
+        stats.onJoinStarted();
 
         Collection<InetSocketAddress> addrs = resolvedAddresses();
 
@@ -211,9 +226,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 try {
                     long ts = U.currentTimeMillis();
 
-                    Socket sock = openSocket(addr);
-
-                    initConnection(sock);
+                    initConnection(addr);
 
                     stats.onClientSocketInitialized(U.currentTimeMillis() - ts);
 
@@ -225,39 +238,17 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                         case RES_OK:
                             sockRdr.allowRead();
 
-                            synchronized (mux) {
-                                long timeout = netTimeout;
-                                long threshold = U.currentTimeMillis() + timeout;
+                            if (U.await(joinLatch, netTimeout, MILLISECONDS)) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Successfully connected to topology [sock=" + sock + ']');
 
-                                while (spiState == CONNECTING && timeout > 0) {
-                                    try {
-                                        mux.wait(timeout);
+                                stats.onJoinFinished();
 
-                                        timeout = threshold - U.currentTimeMillis();
-                                    }
-                                    catch (InterruptedException ignored) {
-                                        Thread.currentThread().interrupt();
-
-                                        throw new GridSpiException("Thread has been interrupted.");
-                                    }
-                                }
-
-                                switch (spiState) {
-                                    case CONNECTING:
-                                        throw new GridSpiException("Join process timed out [sock=" + sock +
-                                            ", timeout=" + netTimeout + ']');
-
-                                    case CONNECTED:
-                                        if (log.isDebugEnabled())
-                                            log.debug("Successfully connected to topology [sock=" + sock + ']');
-
-                                        return;
-
-                                    // TODO: GG-9174 - Handle other states.
-                                    default:
-                                        throw new GridSpiException("Failed to join topology [spiState=" +
-                                            spiState + ']');
-                                }
+                                return;
+                            }
+                            else {
+                                throw new GridSpiException("Join process timed out [sock=" + sock +
+                                    ", timeout=" + netTimeout + ']');
                             }
 
                         case RES_CONTINUE_JOIN:
@@ -292,12 +283,17 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     }
 
     /**
-     * @param sock Socket.
+     * @param addr Address.
      * @throws IOException In case of I/O error.
      * @throws GridException In case of other error.
      */
-    private void initConnection(Socket sock) throws IOException, GridException {
-        assert sock != null;
+    private void initConnection(InetSocketAddress addr) throws IOException, GridException {
+        assert sock == null;
+        assert addr != null;
+
+        joinLatch = new CountDownLatch(1);
+
+        sock = openSocket(addr);
 
         GridTcpDiscoveryHandshakeRequest req = new GridTcpDiscoveryHandshakeRequest(locNodeId);
 
@@ -311,10 +307,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
         assert !locNodeId.equals(nodeId);
 
-        msgWrk = new MessageWorker(sock);
+        MessageWorker msgWrk = new MessageWorker(sock);
+
         msgWrk.start();
 
-        sockRdr = new SocketReader(sock, nodeId);
+        sockRdr = new SocketReader(sock, nodeId, msgWrk);
+
         sockRdr.start();
     }
 
@@ -322,24 +320,54 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
      * Closes connection.
      */
     private void closeConnection() {
+        U.closeQuiet(sock);
+
         U.interrupt(sockRdr);
         U.join(sockRdr, log);
 
-        U.interrupt(msgWrk);
-        U.join(msgWrk, log);
+        sock = null;
     }
 
     /**
-     * @return Spi state.
+     * FOR TEST PURPOSE ONLY!
      */
-    private GridTcpDiscoverySpiState spiState() {
-        GridTcpDiscoverySpiState state;
+    void simulateNodeFailure() {
+        U.warn(log, "Simulating client node failure: " + locNodeId);
 
-        synchronized (mux) {
-            state = spiState;
+        closeConnection();
+
+        U.interrupt(sockTimeoutWorker);
+        U.join(sockTimeoutWorker, log);
+    }
+
+    /**
+     * Disconnect handler.
+     */
+    private class DisconnectHandler extends GridSpiThread {
+        /**
+         */
+        protected DisconnectHandler() {
+            super(gridName, "tcp-client-disco-disconnect-hnd", log);
         }
 
-        return state;
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            try {
+                while (!isInterrupted()) {
+                    U.sleep(disconnectCheckInt);
+
+                    if (sock == null)
+                        joinTopology();
+                }
+            }
+            catch (GridInterruptedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Disconnect handler was interrupted.");
+            }
+            catch (GridSpiException e) {
+                U.error(log, "Failed to reconnect to topology after failure.", e);
+            }
+        }
     }
 
     /**
@@ -355,17 +383,23 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         /** Remote node ID. */
         private final UUID nodeId;
 
+        /** Message worker. */
+        private final MessageWorker msgWrk;
+
         /**
          * @param sock Socket.
+         * @param nodeId Node ID.
          */
-        protected SocketReader(Socket sock, UUID nodeId) {
+        protected SocketReader(Socket sock, UUID nodeId, MessageWorker msgWrk) {
             super(gridName, "tcp-client-disco-sock-reader", log);
 
             assert sock != null;
             assert nodeId != null;
+            assert msgWrk != null;
 
             this.sock = sock;
             this.nodeId = nodeId;
+            this.msgWrk = msgWrk;
         }
 
         /**
@@ -431,7 +465,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     U.error(log, "Socket reader was interrupted.", e);
             }
             finally {
-                U.closeQuiet(sock);
+                closeConnection();
             }
         }
     }
@@ -473,9 +507,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
             GridTcpDiscoveryNode node = msg.node();
 
             if (locNodeId.equals(node.id())) {
-                GridTcpDiscoverySpiState state = spiState();
-
-                if (state == CONNECTING) {
+                if (joinLatch.getCount() > 0) {
                     Collection<GridTcpDiscoveryNode> top = msg.topology();
 
                     if (!F.isEmpty(top)) {
@@ -500,7 +532,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Discarding node added message (this message has already been processed) " +
-                        "[spiState=" + state + ", msg=" + msg + ", locNode=" + locNode + ']');
+                        "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
                 boolean topChanged = rmtNodes.putIfAbsent(node.id(), node) == null;
@@ -519,24 +551,18 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
          */
         private void processNodeAddFinishedMessage(GridTcpDiscoveryNodeAddFinishedMessage msg) {
             if (locNodeId.equals(msg.nodeId())) {
-                GridTcpDiscoverySpiState state = spiState();
-
-                if (state == CONNECTING) {
+                if (joinLatch.getCount() > 0) {
                     long topVer = msg.topologyVersion();
 
                     locNode.order(topVer);
 
-                    synchronized (mux) {
-                        spiState = CONNECTED;
-
-                        mux.notifyAll();
-                    }
+                    joinLatch.countDown();
 
                     notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Discarding node add finished message (this message has already been processed) " +
-                        "[spiState=" + state + ", msg=" + msg + ", locNode=" + locNode + ']');
+                        "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
                 GridTcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
@@ -576,7 +602,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 return;
             }
 
-            notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node);
+            notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node);
 
             stats.onNodeLeft();
         }
@@ -607,8 +633,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
          * @param node Node.
          */
         private void notifyDiscovery(int type, long topVer, GridNode node) {
-            U.debug("NOTIFY [type=" + U.gridEventName(type) + ", ver=" + topVer + ']');
-
             GridDiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {
@@ -617,8 +641,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 lsnr.onDiscovery(type, topVer, node, F.concat(false, locNode, rmtNodes0), null);
             }
             else if (log.isDebugEnabled())
-                log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState() +
-                    ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
+                log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
+                    ", topVer=" + topVer + ']');
         }
     }
 }

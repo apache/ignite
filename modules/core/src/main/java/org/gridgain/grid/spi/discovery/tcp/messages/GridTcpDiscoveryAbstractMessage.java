@@ -37,6 +37,9 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** Client node flag. */
     private boolean client;
 
+    /** Whether to redirect to client nodes. */
+    private boolean redirectToClients;
+
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -150,6 +153,20 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      */
     public void client(boolean client) {
         this.client = client;
+    }
+
+    /**
+     * @return Whether to redirect to clients.
+     */
+    public boolean redirectToClients() {
+        return redirectToClients;
+    }
+
+    /**
+     * @param redirectToClients Whether to redirect to clients.
+     */
+    public void redirectToClients(boolean redirectToClients) {
+        this.redirectToClients = redirectToClients;
     }
 
     /** {@inheritDoc} */

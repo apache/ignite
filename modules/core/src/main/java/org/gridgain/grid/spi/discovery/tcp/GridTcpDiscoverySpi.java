@@ -2559,6 +2559,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
+            if (msg.redirectToClients()) {
+                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
+                    clientMsgWorker.addMessage(msg);
+            }
+
             stats.onMessageProcessingFinished(msg);
         }
 
@@ -3729,13 +3734,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             if (msg.client() && msg.senderNodeId().equals(leavingNodeId)) {
                 ClientMessageWorker clientMsgWrk = clientMsgWorkers.remove(leavingNodeId);
 
-                assert clientMsgWrk != null;
+                if (clientMsgWrk != null) {
+                    U.interrupt(clientMsgWrk);
+                    U.join(clientMsgWrk, log);
 
-                U.interrupt(clientMsgWrk);
-                U.join(clientMsgWrk, log);
-
-                if (log.isDebugEnabled())
-                    log.debug("Stopped client worker because node left: " + leavingNodeId);
+                    if (log.isDebugEnabled())
+                        log.debug("Stopped client worker because node left: " + leavingNodeId);
+                }
             }
 
 
@@ -4772,12 +4777,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             continue;
                         }
 
-                        msgWorker.addMessage(msg);
+                        if (!client)
+                            msg.redirectToClients(true);
 
-                        if (!client) {
-                            for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
-                                clientMsgWorker.addMessage(msg);
-                        }
+                        msgWorker.addMessage(msg);
 
                         // Send receipt back.
                         writeToSocket(sock, RES_OK);
