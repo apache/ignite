@@ -155,7 +155,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         byte[] keyBytes) throws GridException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
-        return m == null ? null : m.getPointer(part, U.hash(key), keyBytes(key, keyBytes));
+        return m == null ? null : m.valuePointer(part, U.hash(key), keyBytes(key, keyBytes));
     }
 
     /**

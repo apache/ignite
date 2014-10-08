@@ -15,8 +15,11 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -475,6 +478,46 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
                         return ctx.grid().security().authenticatedSubject(subjId);
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
+                        @Nullable ClassLoader ldr) throws GridException {
+                        GridCache cache = ctx.cache().cache(spaceName);
+
+                        String swapSpace = ((GridCacheProxyImpl)cache).context().swap().spaceName();
+
+                        int part = cache.affinity().partition(key);
+
+                        GridMarshaller marsh = ctx.grid().configuration().getMarshaller();
+
+                        byte[] keyBytes = marsh.marshal(key);
+
+                        byte[] swapEntryBytes = ctx.offheap().get(swapSpace, part, key, keyBytes);
+
+                        if (swapEntryBytes == null)
+                            swapEntryBytes = ctx.swap().read(swapSpace, new GridSwapKey(key, part, keyBytes), ldr);
+
+                        if (swapEntryBytes == null)
+                            return null;
+
+                        Object val;
+
+                        if (cache.configuration().isPortableEnabled()) {
+                            GridCacheSwapEntry e =
+                                ((GridPortableObject)(ctx.portable().unmarshal(swapEntryBytes))).deserialize();
+
+                            val = e.valueIsByteArray() ? e.valueBytes() : ctx.portable().unmarshal(e.valueBytes());
+                        }
+                        else {
+                            ldr = ldr != null ? ldr : U.gridClassLoader();
+
+                            GridCacheSwapEntry e = marsh.unmarshal(swapEntryBytes, ldr);
+
+                            val = e.valueIsByteArray() ? e.valueBytes() : marsh.unmarshal(e.valueBytes(), ldr);
+                        }
+
+                        return (V)val;
                     }
 
                     /**

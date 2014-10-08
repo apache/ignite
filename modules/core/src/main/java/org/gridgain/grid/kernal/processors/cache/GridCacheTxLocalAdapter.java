@@ -2179,8 +2179,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             for (GridClosure<V, V> transformer : txEntry.transformClosures())
                                 val = transformer.apply(val);
 
-                            val = cctx.<V>unwrapTemporary(val);
-
                             transformed.put(k, val);
                         }
 

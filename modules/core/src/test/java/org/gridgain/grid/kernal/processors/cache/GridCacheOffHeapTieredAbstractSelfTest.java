@@ -12,16 +12,15 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test with {@link GridCacheMemoryMode#OFFHEAP_TIERED} memory mode.
- *
- * TODO 9198: more tests, test eviction.
+ * TODO 9198: more tests.
  */
-public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSelfTest {
+public class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -40,6 +39,8 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
         ccfg.setOffHeapMaxMemory(0);

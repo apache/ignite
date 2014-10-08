@@ -289,8 +289,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes) {
-        return segmentFor(hash).getPointer(hash, keyBytes);
+    @Nullable @Override public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
+        return segmentFor(hash).valuePointer(hash, keyBytes);
     }
 
     /** {@inheritDoc} */
@@ -991,8 +991,17 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                                 isNew = false;
 
-                                if (lru != null)
-                                    lru.touch(Entry.queueAddress(cur, mem), cur);
+                                if (lru != null) {
+                                    qAddr = Entry.queueAddress(cur, mem);
+
+                                    if (qAddr == 0) {
+                                        qAddr = lru.offer(part, cur, hash);
+
+                                        Entry.queueAddress(cur, qAddr, mem);
+                                    }
+                                    else
+                                        lru.touch(qAddr, cur);
+                                }
 
                                 return false;
                             }
@@ -1003,6 +1012,12 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                 first = next;
 
                             qAddr = Entry.queueAddress(cur, mem);
+
+                            if (qAddr == 0 && lru != null) {
+                                qAddr = lru.offer(part, cur, hash);
+
+                                Entry.queueAddress(cur, qAddr, mem);
+                            }
 
                             // Prepare release of memory.
                             relSize = Entry.size(cur, mem);
@@ -1154,9 +1169,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
             finally {
                 // Remove current mapping.
                 if (relAddr != 0 && lru != null) {
-                    assert qAddr != 0;
-
-                    lru.remove(qAddr);
+                    if (qAddr != 0)
+                        lru.remove(qAddr);
                 }
 
                 writeUnlock();
@@ -1198,7 +1212,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param keyBytes Key bytes.
          * @return Value pointer.
          */
-        @Nullable GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes) {
+        @Nullable GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
             long binAddr = readLock(hash);
 
             try {
@@ -1206,6 +1220,16 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                 while (addr != 0) {
                     if (Entry.keyEquals(addr, keyBytes, mem)) {
+                        if (lru != null) {
+                            long qAddr = Entry.queueAddress(addr, mem);
+
+                            assert qAddr != 0;
+
+                            lru.remove(qAddr);
+
+                            Entry.queueAddress(addr, 0, mem);
+                        }
+
                         int keyLen = Entry.readKeyLength(addr, mem);
                         int valLen = Entry.readValueLength(addr, mem);
 

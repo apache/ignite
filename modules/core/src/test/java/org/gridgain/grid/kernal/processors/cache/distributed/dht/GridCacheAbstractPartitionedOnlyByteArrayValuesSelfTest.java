@@ -14,10 +14,10 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 
-import java.util.*;
-
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for byte array values in PARTITIONED-ONLY caches.
@@ -30,11 +30,17 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     /** Offheap cache name. */
     protected static final String CACHE_ATOMIC_OFFHEAP = "cache_atomic_offheap";
 
+    /** Offheap tiered cache name. */
+    protected static final String CACHE_ATOMIC_OFFHEAP_TIERED = "cache_atomic_offheap_tiered";
+
     /** Atomic caches. */
     private static GridCache<Integer, Object>[] cachesAtomic;
 
     /** Atomic offheap caches. */
     private static GridCache<Integer, Object>[] cachesAtomicOffheap;
+
+    /** Atomic offheap caches. */
+    private static GridCache<Integer, Object>[] cachesAtomicOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -49,10 +55,23 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         atomicOffheapCacheCfg.setName(CACHE_ATOMIC_OFFHEAP);
         atomicOffheapCacheCfg.setAtomicityMode(ATOMIC);
+        atomicOffheapCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
-        c.setCacheConfiguration(cacheConfiguration(), offheapCacheConfiguration(), atomicCacheCfg,
-            atomicOffheapCacheCfg);
+        GridCacheConfiguration atomicOffheapTieredCacheCfg = offheapTieredCacheConfiguration();
+
+        atomicOffheapTieredCacheCfg.setName(CACHE_ATOMIC_OFFHEAP_TIERED);
+        atomicOffheapTieredCacheCfg.setAtomicityMode(ATOMIC);
+        atomicOffheapTieredCacheCfg.setAtomicWriteOrderMode(PRIMARY);
+
+        c.setCacheConfiguration(cacheConfiguration(),
+            offheapCacheConfiguration(),
+            offheapTieredCacheConfiguration(),
+            atomicCacheCfg,
+            atomicOffheapCacheCfg,
+            atomicOffheapTieredCacheCfg);
+
         c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
         return c;
@@ -65,17 +84,19 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
         int gridCnt = gridCount();
 
         cachesAtomic = new GridCache[gridCnt];
         cachesAtomicOffheap = new GridCache[gridCnt];
+        cachesAtomicOffheapTiered = new GridCache[gridCnt];
 
         for (int i = 0; i < gridCount(); i++) {
             cachesAtomic[i] = grids[i].cache(CACHE_ATOMIC);
             cachesAtomicOffheap[i] = grids[i].cache(CACHE_ATOMIC_OFFHEAP);
+            cachesAtomicOffheapTiered[i] = grids[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
         }
     }
 
@@ -83,6 +104,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     @Override protected void afterTestsStopped() throws Exception {
         cachesAtomic = null;
         cachesAtomicOffheap = null;
+        cachesAtomicOffheapTiered = null;
 
         super.afterTestsStopped();
     }
@@ -106,6 +128,15 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     }
 
     /**
+     * Test atomic offheap cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAtomicOffheapTiered() throws Exception {
+        testAtomic0(cachesAtomicOffheapTiered);
+    }
+
+    /**
      * INternal routine for ATOMIC cache testing.
      *
      * @param caches Caches.
@@ -118,9 +149,11 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
             cache.put(KEY_1, val);
 
             for (GridCache<Integer, Object> cacheInner : caches)
-                Arrays.equals(val, (byte[]) cacheInner.get(KEY_1));
+                assertArrayEquals(val, (byte[])cacheInner.get(KEY_1));
 
             cache.remove(KEY_1);
+
+            assertNull(cache.get(KEY_1));
         }
     }
 }

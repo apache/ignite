@@ -63,7 +63,7 @@ public interface GridOffHeapMap<K> {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public GridBiTuple<Long, Integer> getPointer(int hash, byte[] keyBytes);
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map.

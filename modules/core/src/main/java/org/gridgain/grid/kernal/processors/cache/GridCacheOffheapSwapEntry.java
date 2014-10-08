@@ -72,15 +72,13 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         readPtr += verEx ? 48 : 24;
 
-        valIsByteArr = UNSAFE.getByte(readPtr++) != 0;
+        valIsByteArr = UNSAFE.getByte(readPtr) != 0;
 
-        assert UNSAFE.getByte(readPtr) == 12 : UNSAFE.getByte(readPtr);
-
-        readPtr++;
+        assert UNSAFE.getByte(readPtr + 1) == 12 : UNSAFE.getByte(readPtr + 1); // Expect byte array.
 
         valPtr = readPtr;
 
-        assert (ptr + size) == (UNSAFE.getInt(valPtr) + valPtr + 4);
+        assert (ptr + size) == (UNSAFE.getInt(valPtr + 2) + valPtr + 6);
     }
 
     /**

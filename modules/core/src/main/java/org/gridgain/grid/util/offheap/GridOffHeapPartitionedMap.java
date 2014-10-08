@@ -66,7 +66,7 @@ public interface GridOffHeapPartitionedMap {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public GridBiTuple<Long, Integer> getPointer(int p, int hash, byte[] keyBytes);
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map.

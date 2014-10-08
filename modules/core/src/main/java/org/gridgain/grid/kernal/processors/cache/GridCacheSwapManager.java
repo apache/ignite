@@ -1409,6 +1409,13 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @return Swap space name.
+     */
+    public String spaceName() {
+        return spaceName;
+    }
+
+    /**
      * @param bytes Bytes to unmarshal.
      * @param ldr Class loader.
      * @return Unmarshalled entry.

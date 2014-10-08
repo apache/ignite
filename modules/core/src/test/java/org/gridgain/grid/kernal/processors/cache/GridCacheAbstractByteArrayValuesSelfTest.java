@@ -25,6 +25,9 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
     /** Offheap cache name. */
     protected static final String CACHE_OFFHEAP = "cache_offheap";
 
+    /** Offheap tiered cache name. */
+    protected static final String CACHE_OFFHEAP_TIERED = "cache_offheap_tiered";
+
     /** Key 1. */
     protected static final Integer KEY_1 = 1;
 
@@ -48,7 +51,7 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -59,15 +62,11 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
      * @return Byte array.
      */
     protected byte[] wrap(int... vals) {
-        if (vals == null)
-            return null;
-        else {
-            byte[] res = new byte[vals.length];
+        byte[] res = new byte[vals.length];
 
-            for (int i = 0; i < vals.length; i++)
-                res[i] = (byte)vals[i];
+        for (int i = 0; i < vals.length; i++)
+            res[i] = (byte)vals[i];
 
-            return res;
-        }
+        return res;
     }
 }

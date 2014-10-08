@@ -162,8 +162,8 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridBiTuple<Long, Integer> getPointer(int p, int hash, byte[] keyBytes) {
-        return mapFor(p).getPointer(hash, keyBytes);
+    @Override public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes) {
+        return mapFor(p).valuePointer(hash, keyBytes);
     }
 
     /** {@inheritDoc} */
