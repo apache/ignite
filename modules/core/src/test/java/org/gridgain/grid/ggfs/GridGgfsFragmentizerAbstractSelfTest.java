@@ -16,7 +16,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -79,7 +78,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      * @return Meta cache configuration.
      */
     protected GridCacheConfiguration metaConfiguration() {
-        GridCacheConfiguration cfg = GridAbstractTest.defaultCacheConfiguration();
+        GridCacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(META_CACHE_NAME);
 
@@ -97,7 +96,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      * @return Data cache configuration.
      */
     protected GridCacheConfiguration dataConfiguration() {
-        GridCacheConfiguration cfg = GridAbstractTest.defaultCacheConfiguration();
+        GridCacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(DATA_CACHE_NAME);
 
