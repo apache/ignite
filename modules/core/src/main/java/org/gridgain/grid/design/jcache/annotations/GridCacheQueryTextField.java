@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.queries.annotations;
+package org.gridgain.grid.design.jcache.annotations;
 
 import org.gridgain.grid.cache.query.*;
 

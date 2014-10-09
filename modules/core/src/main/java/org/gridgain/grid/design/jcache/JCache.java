@@ -15,12 +15,11 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.design.*;
-import org.gridgain.grid.design.queries.*;
+import org.gridgain.grid.design.GridProjection;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.event.*;
 import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -215,6 +214,16 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      * @return {@code True} if key is locked by current thread.
      */
     public boolean isLockedByThread(K key);
+
+    public Iterator<Entry<K, V>> query(CachePredicate<K, V> filter);
+
+    public <R> Iterator<R> query(GridReducer<Entry<K, V>, R> rmtRdc, CachePredicate<K, V> filter);
+
+    public <R> Iterator<R> query(GridClosure<Entry<K, V>, R> rmtTransform, CachePredicate<K, V> filter);
+
+    public Iterator<List<?>> queryFields(CacheSqlPredicate<K, V> filter);
+
+    public <R> Iterator<R> queryFields(GridReducer<List<?>, R> rmtRdc, CacheSqlPredicate<K, V> filter);
 
     public Iterator<Entry<K, V>> localIterator(GridCachePeekMode... peekModes) throws CacheException;
 
