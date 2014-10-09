@@ -16,8 +16,10 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -43,6 +45,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static Collection<UUID> clientNodeIds;
+
+    /** */
+    private static int clientsPerSrv;
 
     /** */
     private static CountDownLatch srvJoinLatch;
@@ -80,11 +85,15 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
             GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-            String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).get(clientIdx.get() / 2).toString();
+            String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).
+                get((clientIdx.get() - 1) / clientsPerSrv).toString();
+
+            if (addr.startsWith("/"))
+                addr = addr.substring(1);
 
             ipFinder.setAddresses(Arrays.asList(addr));
 
-            disco.setIpFinder(IP_FINDER);
+            disco.setIpFinder(ipFinder);
 
             cfg.setDiscoverySpi(disco);
         }
@@ -94,11 +103,18 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Collection<InetSocketAddress> addrs = IP_FINDER.getRegisteredAddresses();
+
+        if (!F.isEmpty(addrs))
+            IP_FINDER.unregisterAddresses(addrs);
+
         srvIdx.set(0);
         clientIdx.set(0);
 
         srvNodeIds = new GridConcurrentHashSet<>();
         clientNodeIds = new GridConcurrentHashSet<>();
+
+        clientsPerSrv = 2;
     }
 
     /** {@inheritDoc} */
@@ -230,10 +246,40 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(3, 3);
 
+        assert U.<Map>field(G.grid("server-2").configuration().getDiscoverySpi(), "clientMsgWorkers").isEmpty();
+
         ((GridTcpDiscoverySpi)G.grid("server-2").configuration().getDiscoverySpi()).simulateNodeFailure();
 
         await(srvFailedLatch);
         await(clientFailedLatch);
+
+        checkNodes(2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        clientsPerSrv = 1;
+
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(2);
+        srvJoinLatch = new CountDownLatch(2);
+        clientJoinLatch = new CountDownLatch(2);
+
+        attachListeners(2, 2);
+
+        ((GridTcpDiscoverySpi)G.grid("server-2").configuration().getDiscoverySpi()).simulateNodeFailure();
+
+        await(srvFailedLatch);
+        await(clientFailedLatch);
+        await(srvJoinLatch);
+        await(clientJoinLatch);
 
         checkNodes(2, 3);
     }

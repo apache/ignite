@@ -120,10 +120,10 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         sockTimeoutWorker = new SocketTimeoutWorker();
         disconnectHnd = new DisconnectHandler();
 
+        joinTopology();
+
         sockTimeoutWorker.start();
         disconnectHnd.start();
-
-        joinTopology();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -133,19 +133,23 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     @Override public void spiStop() throws GridSpiException {
         rmtNodes.clear();
 
-        try {
-            GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
+        Socket sock0 = sock;
 
-            msg.client(true);
+        if (sock0 != null) {
+            try {
+                GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
 
-            writeToSocket(sock, msg);
+                msg.client(true);
+
+                writeToSocket(sock0, msg);
+            }
+            catch (IOException | GridException e) {
+                if (log.isDebugEnabled())
+                    U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock0 + ']', e);
+            }
+
+            closeConnection();
         }
-        catch (IOException | GridException e) {
-            if (log.isDebugEnabled())
-                U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
-        }
-
-        closeConnection();
 
         U.interrupt(sockTimeoutWorker);
         U.join(sockTimeoutWorker, log);
@@ -356,8 +360,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 while (!isInterrupted()) {
                     U.sleep(disconnectCheckInt);
 
-                    if (sock == null)
+                    if (sock == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Node disconnected from topology, will try to reconnect.");
+
                         joinTopology();
+                    }
                 }
             }
             catch (GridInterruptedException ignored) {
