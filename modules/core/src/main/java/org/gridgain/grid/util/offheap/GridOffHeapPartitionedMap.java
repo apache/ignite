@@ -59,7 +59,9 @@ public interface GridOffHeapPartitionedMap {
     @Nullable public byte[] get(int p, int hash, byte[] keyBytes);
 
     /**
-     * Gets value pointer for given key.
+     * Gets value pointer for given key. While pointer is in use eviction is
+     * disabled for corresponding entry. Eviction for entry is enabled when {@link #put} or
+     * {@link #enableEviction} is called.
      *
      * @param p Partition.
      * @param hash Hash.
@@ -67,6 +69,15 @@ public interface GridOffHeapPartitionedMap {
      * @return Value pointer.
      */
     @Nullable public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
+
+    /**
+     * Enables eviction for entry.
+     *
+     * @param p Partition.
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     */
+    public void enableEviction(int p, int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map.

@@ -41,8 +41,16 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
      * @param keyClsLdrId Key class loader ID.
      * @param valClsLdrId Optional value class loader ID.
      */
-    public GridCacheBatchSwapEntry(K key, byte[] keyBytes, int part, byte[] valBytes, boolean valIsByteArr,
-        GridCacheVersion ver, long ttl, long expireTime, GridUuid keyClsLdrId, @Nullable GridUuid valClsLdrId) {
+    public GridCacheBatchSwapEntry(K key,
+        byte[] keyBytes,
+        int part,
+        byte[] valBytes,
+        boolean valIsByteArr,
+        GridCacheVersion ver,
+        long ttl,
+        long expireTime,
+        GridUuid keyClsLdrId,
+        @Nullable GridUuid valClsLdrId) {
         super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;

@@ -10,14 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.portables.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
 
 /**
  * Swap entry.
@@ -69,7 +62,7 @@ public interface GridCacheSwapEntry<V> {
     @Nullable public GridUuid valueClassLoaderId();
 
     /**
-     * @return If entry is offheap based returns pointer.
+     * @return If entry is offheap based returns pointer, otherwise 0.
      */
-    long offheapPointer();
+    public long offheapPointer();
 }

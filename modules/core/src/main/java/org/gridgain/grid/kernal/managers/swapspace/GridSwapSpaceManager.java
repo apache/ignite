@@ -10,11 +10,9 @@
 package org.gridgain.grid.kernal.managers.swapspace;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
@@ -163,7 +161,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         throws GridException {
         assert key != null;
 
-        return unmarshal(spaceName, read(spaceName, key, ldr), ldr);
+        return unmarshal(read(spaceName, key, ldr), ldr);
     }
 
     /**
@@ -215,7 +213,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         throws GridException {
         assert key != null;
 
-        write(spaceName, new GridSwapKey(key), marshal(spaceName, val), ldr);
+        write(spaceName, new GridSwapKey(key), marsh.marshal(val), ldr);
     }
 
     /**
@@ -382,36 +380,17 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     }
 
     /**
-     * @param spaceName Space name.
      * @param swapBytes Swap bytes to unmarshal.
      * @param ldr Class loader.
      * @return Unmarshalled value.
      * @throws GridException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    private <T> T unmarshal(String spaceName, byte[] swapBytes, @Nullable ClassLoader ldr) throws GridException {
+    private <T> T unmarshal(byte[] swapBytes, @Nullable ClassLoader ldr) throws GridException {
         if (swapBytes == null)
             return null;
 
-        if (portableEnabled(spaceName))
-            return (T)ctx.portable().unmarshal(swapBytes);
-
         return marsh.unmarshal(swapBytes, ldr != null ? ldr : U.gridClassLoader());
-    }
-
-    /**
-     * Marshals object.
-     *
-     * @param spaceName Space name.
-     * @param obj Object to marshal.
-     * @return Marshalled array.
-     * @throws GridException If failed.
-     */
-    private byte[] marshal(String spaceName, Object obj) throws GridException {
-        if (portableEnabled(spaceName))
-            return ctx.portable().marshal(obj, true).array();
-
-        return ctx.config().getMarshaller().marshal(obj);
     }
 
     /**
@@ -424,15 +403,5 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         ctx.classLoader(clsLdr != null ? clsLdr : U.gridClassLoader());
 
         return ctx;
-    }
-
-    /**
-     * @param spaceName Space name.
-     * @return Value of {@link GridCacheConfiguration#isPortableEnabled()} flag for cache with given name.
-     */
-    private boolean portableEnabled(String spaceName) {
-        GridCacheAdapter cache = ctx.cache().internalCache(spaceName);
-
-        return cache != null && cache.configuration().isPortableEnabled();
     }
 }

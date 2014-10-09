@@ -294,6 +294,13 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
+    @Override public void enableEviction(int hash, byte[] keyBytes) {
+        assert lru != null;
+
+        segmentFor(hash).enableEviction(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] remove(int hash, byte[] keyBytes) {
         return segmentFor(hash).remove(hash, keyBytes);
     }
@@ -1223,11 +1230,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                         if (lru != null) {
                             long qAddr = Entry.queueAddress(addr, mem);
 
-                            assert qAddr != 0;
+                            if (qAddr != 0) {
+                                lru.remove(qAddr);
 
-                            lru.remove(qAddr);
-
-                            Entry.queueAddress(addr, 0, mem);
+                                Entry.queueAddress(addr, 0, mem);
+                            }
                         }
 
                         int keyLen = Entry.readKeyLength(addr, mem);
@@ -1243,6 +1250,39 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
             }
             finally {
                 readUnlock();
+            }
+        }
+
+        /**
+         * @param hash Hash.
+         * @param keyBytes Key bytes.
+         */
+        void enableEviction(int hash, byte[] keyBytes) {
+            assert lru != null;
+
+            long binAddr = writeLock(hash);
+
+            try {
+                long addr = Bin.first(binAddr, mem);
+
+                while (addr != 0) {
+                    if (Entry.keyEquals(addr, keyBytes, mem)) {
+                        long qAddr = Entry.queueAddress(addr, mem);
+
+                        if (qAddr == 0) {
+                            qAddr = lru.offer(part, addr, hash);
+
+                            Entry.queueAddress(addr, qAddr, mem);
+                        }
+
+                        return;
+                    }
+
+                    addr = Entry.nextAddress(addr, mem);
+                }
+            }
+            finally {
+                writeUnlock();
             }
         }
 

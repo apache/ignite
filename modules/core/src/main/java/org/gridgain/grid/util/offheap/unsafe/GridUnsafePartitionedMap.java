@@ -167,6 +167,14 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
+    @Override public void enableEviction(int p, int hash, byte[] keyBytes) {
+        if (lru == null)
+            return;
+
+        mapFor(p).enableEviction(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] remove(int p, int hash, byte[] keyBytes) {
         return mapFor(p).remove(hash, keyBytes);
     }

@@ -484,7 +484,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         @Nullable ClassLoader ldr) throws GridException {
                         GridCache<Object, V> cache = ctx.cache().cache(spaceName);
 
-                        String swapSpace = ((GridCacheProxyImpl)cache).context().swap().spaceName();
+                        GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+
+                        String swapSpace = cctx.swap().spaceName();
 
                         int part = cache.affinity().partition(key);
 
@@ -505,7 +507,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         if (e.valueIsByteArray())
                             return (V)e.valueBytes();
 
-                        if (cache.configuration().isPortableEnabled())
+                        if (cctx.offheapTiered() && cctx.portableEnabled())
                             return (V)ctx.portable().unmarshal(e.valueBytes());
                         else {
                             ldr = ldr != null ? ldr : U.gridClassLoader();

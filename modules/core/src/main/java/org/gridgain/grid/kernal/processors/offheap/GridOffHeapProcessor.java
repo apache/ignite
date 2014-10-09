@@ -142,7 +142,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets value pointer from offheap space for the given key.
+     * Gets value pointer from offheap space for the given key. While pointer is in use eviction is
+     * disabled for corresponding entry. Eviction for entry is enabled when {@link #put} or
+     * {@link #enableEviction} is called.
      *
      * @param spaceName Space name.
      * @param part Partition.
@@ -151,11 +153,25 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Tuple where first value is pointer and second is value size.
      * @throws GridException If failed.
      */
-    @Nullable public GridBiTuple<Long, Integer> getPointer(@Nullable String spaceName, int part, Object key,
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, Object key,
         byte[] keyBytes) throws GridException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? null : m.valuePointer(part, U.hash(key), keyBytes(key, keyBytes));
+    }
+
+    /**
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @throws GridException If failed.
+     */
+    public void enableEviction(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws GridException {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        if (m != null)
+            m.enableEviction(part, U.hash(key), keyBytes(key, keyBytes));
     }
 
     /**

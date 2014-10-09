@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Swap entry.
  */

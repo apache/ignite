@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -202,6 +201,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param map Listeners.
      * @param part Partition.
      * @param key Cache key.
      * @param keyBytes Key bytes.
@@ -589,7 +589,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         byte[] keyBytes = entry.getOrMarshalKeyBytes();
 
-        GridBiTuple<Long, Integer> ptr = offheap.getPointer(spaceName, part, key, keyBytes);
+        GridBiTuple<Long, Integer> ptr = offheap.valuePointer(spaceName, part, key, keyBytes);
 
         if (ptr != null) {
             assert ptr.get1() != null;
@@ -707,7 +707,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 @Override public void apply(GridSwapKey swapKey, byte[] rmv) {
                     if (rmv != null) {
                         try {
-                            // To unmarshal swap entry itself local class loader will be enough.
                             GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv));
 
                             if (entry == null)
@@ -775,7 +774,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} If succeeded.
      * @throws GridException If failed.
      */
-    boolean removexOffheap(final K key, byte[] keyBytes) throws GridException {
+    boolean removeOffheap(final K key, byte[] keyBytes) throws GridException {
         if (!offheapEnabled)
             return false;
 
@@ -783,7 +782,45 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         int part = cctx.affinity().partition(key);
 
-        return offheap.removex(spaceName, part, key, keyBytes);
+        byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
+
+        if (entryBytes != null) {
+            GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
+
+            onOffHeaped(part,
+                key,
+                keyBytes,
+                entry.value(),
+                entry.valueBytes(),
+                entry.version(),
+                entry.ttl(),
+                entry.expireTime());
+        }
+
+        return entryBytes != null;
+    }
+
+    /**
+     * @return {@code True} if offheap eviction is enabled.
+     */
+    boolean offheapEvictionEnabled() {
+        return offheapEnabled && cctx.config().getOffHeapMaxMemory() > 0;
+    }
+
+    /**
+     * @param key Key to remove.
+     * @param keyBytes Key bytes.
+     * @throws GridException If failed.
+     */
+    void enableOffheapEviction(final K key, byte[] keyBytes) throws GridException {
+        if (!offheapEnabled)
+            return;
+
+        checkIteratorQueue();
+
+        int part = cctx.affinity().partition(key);
+
+        offheap.enableEviction(spaceName, part, key, keyBytes);
     }
 
     /**
@@ -805,7 +842,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     return;
 
                 try {
-                    // To unmarshal swap entry itself local class loader will be enough.
                     GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv));
 
                     if (entry == null)

@@ -66,6 +66,14 @@ public interface GridOffHeapMap<K> {
     @Nullable public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
 
     /**
+     * Enables eviction for given key.
+     *
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     */
+    public void enableEviction(int hash, byte[] keyBytes);
+
+    /**
      * Removes value from off-heap map.
      *
      * @param hash Hash.

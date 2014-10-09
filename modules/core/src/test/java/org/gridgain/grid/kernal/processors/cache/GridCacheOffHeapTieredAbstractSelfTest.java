@@ -11,19 +11,23 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jetbrains.annotations.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * TODO 9198: more tests.
  */
-public class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -57,6 +61,8 @@ public class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSel
         checkTransform(primaryKey(cache));
 
         checkTransform(backupKey(cache));
+
+        checkTransform(nearKey(cache));
     }
 
     /**
@@ -111,5 +117,77 @@ public class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSel
         });
 
         assertNull(c.get(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetRemove() throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        checkPutGetRemove(primaryKey(c));
+
+        checkPutGetRemove(backupKey(c));
+
+        checkPutGetRemove(nearKey(c));
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemove(Integer key) throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        checkValue(key, null);
+
+        assertNull(c.put(key, key));
+
+        checkValue(key, key);
+
+        assertEquals(key, c.remove(key));
+
+        checkValue(key, null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            checkPutGetRemoveTx(key, PESSIMISTIC);
+
+            checkPutGetRemoveTx(key, OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param key Key,
+     * @param txConcurrency Transaction concurrency.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemoveTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        assertNull(c.put(key, key));
+
+        tx.commit();
+
+        checkValue(key, key);
+
+        tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        assertEquals(key, c.remove(key));
+
+        tx.commit();
+
+        checkValue(key, null);
+    }
+
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @throws Exception If failed.
+     */
+    private void checkValue(Object key, @Nullable Object val) throws Exception {
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals("Unexpected value for grid: " + i, val, grid(0).cache(null).get(key));
     }
 }

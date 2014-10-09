@@ -529,7 +529,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (expireTime > 0 && U.currentTimeMillis() >= expireTime) { // Don't swap entry if it's expired.
                 if (cctx.offheapTiered() && valPtr > 0) {
-                    boolean rmv = cctx.swap().removexOffheap(key(), getOrMarshalKeyBytes());
+                    boolean rmv = cctx.swap().removeOffheap(key(), getOrMarshalKeyBytes());
 
                     assert rmv;
 
@@ -543,13 +543,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (log.isDebugEnabled())
                     log.debug("Value did not change, skip write swap entry: " + this);
 
+                if (cctx.swap().offheapEvictionEnabled())
+                    cctx.swap().enableOffheapEviction(key(), getOrMarshalKeyBytes());
+
                 return;
             }
 
-            GridCacheValueBytes valBytes = cctx.portableEnabled() ? createSwapValueBytes(val) : valueBytesUnlocked();
-
-            if (valBytes.isNull())
-                valBytes = createSwapValueBytes(val);
+            GridCacheValueBytes valBytes = swapValueBytes();
 
             assert !valBytes.isNull() : "Null value is written in swap.";
 
@@ -1111,7 +1111,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             boolean startVer = isStartVersion();
 
             if (startVer)
-                unswap(true, false);
+                unswap(true, retval);
 
             newVer = explicitVer != null ? explicitVer : tx == null ?
                 nextVersion() : tx.writeVersion();
@@ -1257,7 +1257,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (startVer) {
                     if (tx != null && !tx.local() && tx.onePhaseCommit())
                         // Must promote to check version for one-phase commit tx.
-                        unswap(true, false);
+                        unswap(true, retval);
                     else
                         // Release swap.
                         releaseSwap();
@@ -1299,7 +1299,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 update(null, null, 0, 0, newVer);
 
                 if (cctx.offheapTiered() && valPtr != 0) {
-                    boolean rmv = cctx.swap().removexOffheap(key, getOrMarshalKeyBytes());
+                    boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;
 
@@ -1423,7 +1423,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Load and remove from swap if it is new.
             if (isNew())
-                unswap(true, false);
+                unswap(true, retval);
 
             long newTtl = ttl;
 
@@ -1635,7 +1635,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Load from swap if it is new.
             if (isNew())
-                unswap(true, false);
+                unswap(true, retval);
 
             boolean newTtlResolved = false;
 
@@ -1964,7 +1964,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 update(null, null, 0, 0, newVer);
 
                 if (cctx.offheapTiered() && valPtr != 0) {
-                    boolean rmv = cctx.swap().removexOffheap(key, getOrMarshalKeyBytes());
+                    boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;
 
@@ -3585,11 +3585,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         try {
             if (!hasReaders() && markObsolete0(obsoleteVer, false)) {
                 if (!isStartVersion()) {
-                    GridCacheValueBytes valBytes = cctx.portableEnabled() ? createSwapValueBytes(val) :
-                        valueBytesUnlocked();
-
-                    if (valBytes.isNull())
-                        valBytes = createSwapValueBytes(val);
+                    GridCacheValueBytes valBytes = swapValueBytes();
 
                     GridUuid valClsLdrId = null;
 
@@ -3622,16 +3618,27 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      * Create value bytes wrapper from the given object.
      *
-     * @param val Value.
      * @return Value bytes wrapper.
      * @throws GridException If failed.
      */
-    private GridCacheValueBytes createSwapValueBytes(@Nullable V val) throws GridException {
-        return (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-            GridCacheValueBytes.marshaled(
-                (cctx.offheapTiered() && cctx.portableEnabled()) ?
-                cctx.portable().marshal(val, true).array() :
-                CU.marshal(cctx, val));
+    private GridCacheValueBytes swapValueBytes() throws GridException {
+        assert val != null || valBytes != null;
+
+        if (val instanceof byte[])
+            return GridCacheValueBytes.plain(val);
+
+        if (cctx.offheapTiered() && cctx.portableEnabled()) {
+            if (val != null)
+                return GridCacheValueBytes.marshaled(cctx.portable().marshal(val, true).array());
+
+            V val0 = cctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
+
+            return GridCacheValueBytes.marshaled(cctx.portable().marshal(val0, true).array());
+        }
+        else
+            return valBytes != null ?
+                GridCacheValueBytes.marshaled(valBytes) :
+                GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
     }
 
     /**
