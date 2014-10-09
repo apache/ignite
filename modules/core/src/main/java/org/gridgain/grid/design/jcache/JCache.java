@@ -217,9 +217,7 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
 
     public Iterator<Entry<K, V>> query(CachePredicate<K, V> filter);
 
-    public <R> Iterator<R> query(GridReducer<Entry<K, V>, R> rmtRdc, CachePredicate<K, V> filter);
-
-    public <R> Iterator<R> query(GridClosure<Entry<K, V>, R> rmtTransform, CachePredicate<K, V> filter);
+    public <R> Iterator<R> query(CacheReducer<Entry<K, V>, R> rmtRdc, CachePredicate<K, V> filter);
 
     public Iterator<List<?>> queryFields(CacheSqlPredicate<K, V> filter);
 
