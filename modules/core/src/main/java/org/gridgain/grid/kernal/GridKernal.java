@@ -753,7 +753,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (!ctx.isEnterprise())
                 warnNotSupportedFeaturesForOs(cfg);
 
-            // Notify discovery manager the first to make sure that topology is discovered.
+            // Notify dis0covery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
 
             // Notify IO manager the second so further components can send and receive messages.
