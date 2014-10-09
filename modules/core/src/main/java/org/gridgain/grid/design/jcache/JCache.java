@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.design.*;
 import org.gridgain.grid.design.GridProjection;
+import org.gridgain.grid.design.jcache.predicates.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -217,11 +218,13 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
 
     public Iterator<Entry<K, V>> query(CachePredicate<K, V> filter);
 
-    public <R> Iterator<R> query(CacheReducer<Entry<K, V>, R> rmtRdc, CachePredicate<K, V> filter);
+    public <R> Iterator<R> query(CacheReducer<Entry<K, V>, R> rmtRdc);
 
     public Iterator<List<?>> queryFields(CacheSqlPredicate<K, V> filter);
 
-    public <R> Iterator<R> queryFields(GridReducer<List<?>, R> rmtRdc, CacheSqlPredicate<K, V> filter);
+    public Iterator<Entry<K, V>> localQuery(CachePredicate<K, V> filter);
+
+    public Iterator<List<?>> localQueryFields(CacheSqlPredicate<K, V> filter);
 
     public Iterator<Entry<K, V>> localIterator(GridCachePeekMode... peekModes) throws CacheException;
 

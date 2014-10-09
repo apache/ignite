@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.jcache;
+package org.gridgain.grid.design.jcache.predicates;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -19,61 +19,61 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheSqlPredicate<K, V> implements CachePredicate<K, V> {
+public class CacheTextPredicate<K, V> implements CachePredicate<K, V> {
     /** SQL clause. */
-    private String sql;
+    private String txt;
 
     /** Arguments. */
     private Object[] args;
 
-    public CacheSqlPredicate(String sql, Object... args) {
-        this.sql = sql;
+    public CacheTextPredicate(String txt, Object... args) {
+        this.txt = txt;
         this.args = args;
     }
 
     /**
-     * Gets SQL clause.
+     * Gets text search string.
      *
-     * @return SQL clause.
+     * @return Text search string.
      */
-    public String getSql() {
-        return sql;
+    public String getText() {
+        return txt;
     }
 
     /**
-     * Sets SQL clause.
+     * Sets text search string.
      *
-     * @param sql SQL clause.
+     * @param txt Text search string.
      */
-    public void setSql(String sql) {
-        this.sql = sql;
+    public void setText(String txt) {
+        this.txt = txt;
     }
 
     /**
-     * Gets SQL arguments.
+     * Gets text search arguments.
      *
-     * @return SQL arguments.
+     * @return Text search arguments.
      */
     public Object[] getArgs() {
         return args;
     }
 
     /**
-     * Sets SQL arguments.
+     * Sets text search arguments.
      *
-     * @param args SQL arguments.
+     * @param args Text search arguments.
      */
     public void setArgs(Object... args) {
         this.args = args;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
+    @Override public final boolean apply(Cache.Entry<K, V> entry) {
         return false; // Not used.
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheSqlPredicate.class, this);
+        return S.toString(CacheTextPredicate.class, this);
     }
 }
