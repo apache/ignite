@@ -36,13 +36,11 @@ import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 
-import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.regex.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -70,21 +68,25 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
+
+    /** */
+    private transient boolean startGrid;
+
+    /** */
+    protected transient GridLogger log;
+
+    /** */
+    private transient ClassLoader clsLdr;
+
+    /** */
+    private transient boolean stopGridErr;
+
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
     static {
         System.setProperty(GridSystemProperties.GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
     }
-
-    /** */
-    protected transient GridLogger log;
-    /** */
-    private transient boolean startGrid;
-    /** */
-    private transient ClassLoader clsLdr;
-    /** */
-    private transient boolean stopGridErr;
 
     /** */
     protected GridAbstractTest() {
@@ -107,43 +109,6 @@ public abstract class GridAbstractTest extends TestCase {
         log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
 
         this.startGrid = startGrid;
-    }
-
-    /**
-     * @return New cache configuration with modified defaults.
-     */
-    public static GridCacheConfiguration defaultCacheConfiguration() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
-
-        cfg.setStartSize(1024);
-        cfg.setQueryIndexEnabled(true);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setEvictionPolicy(null);
-
-        return cfg;
-    }
-
-    /**
-     * Gets external class loader.
-     *
-     * @return External class loader.
-     */
-    protected static ClassLoader getExternalClassLoader() {
-        String path = GridTestProperties.getProperty("p2p.uri.cls");
-
-        try {
-            String fixedPath = path.replaceAll("/", Matcher.quoteReplacement(File.separator));
-
-            fixedPath = fixedPath.replaceFirst(":\\\\","://");
-
-            return new URLClassLoader(new URL[] {new URL(fixedPath)}, U.gridClassLoader());
-        }
-        catch (MalformedURLException e) {
-            throw new RuntimeException("Failed to create URL: " + path, e);
-        }
     }
 
     /**
@@ -312,8 +277,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param r Runnable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected GridFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
         return multithreadedAsync(r, threadNum, getTestGridName());
@@ -327,8 +292,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param r Runnable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected GridFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(r, threadNum, threadName);
@@ -365,8 +330,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param c Callable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected GridFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
         return multithreadedAsync(c, threadNum, getTestGridName());
@@ -379,8 +344,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param c Callable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected GridFuture<?> multithreadedAsync(Callable<?> c, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(c, threadNum, threadName);
@@ -948,8 +913,8 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * This method should be overridden by subclasses to change configuration parameters.
      *
-     * @param rsrcs Resources.
      * @return Grid configuration used for starting of grid.
+     * @param rsrcs Resources.
      * @throws Exception If failed.
      */
     protected GridConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
@@ -1020,9 +985,9 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * This method should be overridden by subclasses to change configuration parameters.
      *
+     * @return Grid configuration used for starting of grid.
      * @param gridName Grid name.
      * @param rsrcs Resources.
-     * @return Grid configuration used for starting of grid.
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
@@ -1090,6 +1055,39 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setIncludeEventTypes(GridEventType.EVTS_ALL);
 
         return cfg;
+    }
+
+    /**
+     * @return New cache configuration with modified defaults.
+     */
+    public static GridCacheConfiguration defaultCacheConfiguration() {
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
+
+        cfg.setStartSize(1024);
+        cfg.setQueryIndexEnabled(true);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setEvictionPolicy(null);
+
+        return cfg;
+    }
+
+    /**
+     * Gets external class loader.
+     *
+     * @return External class loader.
+     */
+    protected static ClassLoader getExternalClassLoader() {
+        String path = GridTestProperties.getProperty("p2p.uri.cls");
+
+        try {
+            return new URLClassLoader(new URL[]{new URL(path)}, U.gridClassLoader());
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to create URL: " + path, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1198,7 +1196,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (runner.isAlive()) {
             U.error(log,
                 "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
 
             // We dump threads to stdout, because we can loose logs in case
             // the build is cancelled on TeamCity.
@@ -1211,7 +1209,7 @@ public abstract class GridAbstractTest extends TestCase {
             U.join(runner, log);
 
             throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']');
+                getTestTimeout() + ']' );
         }
 
         Throwable t = ex.get();
@@ -1227,7 +1225,7 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @return Error handler to process all uncaught exceptions of the test run
-     * ({@code null} by default).
+     *      ({@code null} by default).
      */
     protected GridClosure<Throwable, Throwable> errorHandler() {
         return null;
@@ -1287,17 +1285,17 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         /**
-         * @param reset Reset flag.
-         */
-        public void setReset(boolean reset) {
-            this.reset = reset;
-        }
-
-        /**
          * @return Test resources.
          */
         public GridTestResources getTestResources() {
             return rsrcs;
+        }
+
+        /**
+         * @param reset Reset flag.
+         */
+        public void setReset(boolean reset) {
+            this.reset = reset;
         }
 
         /** */
