@@ -3622,7 +3622,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException If failed.
      */
     private GridCacheValueBytes swapValueBytes() throws GridException {
-        assert val != null || valBytes != null;
+        assert val != null || valBytes != null || valPtr != 0;
 
         if (val instanceof byte[])
             return GridCacheValueBytes.plain(val);
@@ -3635,10 +3635,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             return GridCacheValueBytes.marshaled(cctx.portable().marshal(val0, true).array());
         }
-        else
-            return valBytes != null ?
-                GridCacheValueBytes.marshaled(valBytes) :
-                GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+        else {
+            GridCacheValueBytes res = valueBytesUnlocked();
+
+            if (res.isNull())
+                res = GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+
+            return res;
+        }
     }
 
     /**

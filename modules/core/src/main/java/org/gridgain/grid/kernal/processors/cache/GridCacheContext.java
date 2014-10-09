@@ -1731,10 +1731,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param col Collection to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
-     * @throws GridException If failed.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable)
-        throws GridException {
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
         if (!config().isPortableEnabled())
             return col;
 
@@ -1753,10 +1751,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
-     * @throws GridException If failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) throws GridException {
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         if (!config().isPortableEnabled())
             return o;
 

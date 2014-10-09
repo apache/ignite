@@ -95,6 +95,32 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
         return ptr;
     }
 
+    /**
+     * @param ptr Marshaled swap entry address.
+     * @return TTL.
+     */
+    public static long timeToLive(long ptr) {
+        return UNSAFE.getLong(ptr);
+    }
+
+    /**
+     * @param ptr Marshaled swap entry address.
+     * @return Expire time.
+     */
+    public static long expireTime(long ptr) {
+        return UNSAFE.getLong(ptr + 8);
+    }
+
+    /**
+     * @param ptr Marshaled swap entry address.
+     * @return Version.
+     */
+    public static GridCacheVersion version(long ptr) {
+        boolean verEx = UNSAFE.getByte(ptr + 16) != 0;
+
+        return U.readVersion(ptr + 17, verEx);
+    }
+
     /** {@inheritDoc} */
     @Override public byte[] valueBytes() {
         return null;
