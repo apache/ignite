@@ -19,13 +19,15 @@ import sun.misc.*;
 /**
  * GridCacheSwapEntry over offheap pointer.
  * <p>
- * Offheap pointer points to marshaller {@link GridCacheSwapEntryImpl} instance, marshalled data:
+ * Offheap pointer points to marshalled {@link GridCacheSwapEntryImpl} instance, marshalled data:
  * <ul>
  *     <li>TTL</li>
  *     <li>Expire time</li>
  *     <li>GridCacheVersion or GridCacheVersionEx</li>
  *     <li>Value is byte array flag</li>
  *     <li>Value byte array (marshalled with portable or grid marshaller)</li>
+ *     <li>Value classloader UUID</li>
+ *     <li>Key classloader UUID</li>
  * </ul>
  */
 public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
@@ -61,7 +63,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         boolean verEx = UNSAFE.getByte(readPtr++) != 0;
 
-        ver = readVersion(readPtr, verEx);
+        ver = U.readVersion(readPtr, verEx);
 
         readPtr += verEx ? 48 : 24;
 
@@ -69,31 +71,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         valPtr = readPtr;
 
-        assert (ptr + size) == (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    private static GridCacheVersion readVersion(long ptr, boolean verEx) {
-        GridCacheVersion ver = new GridCacheVersion(UNSAFE.getInt(ptr),
-            UNSAFE.getInt(ptr + 4),
-            UNSAFE.getLong(ptr + 8),
-            UNSAFE.getLong(ptr + 16));
-
-        if (verEx) {
-            ptr += 24;
-
-            ver = new GridCacheVersionEx(UNSAFE.getInt(ptr),
-                UNSAFE.getInt(ptr + 4),
-                UNSAFE.getLong(ptr + 8),
-                UNSAFE.getLong(ptr + 16),
-                ver);
-        }
-
-        return ver;
+        assert (ptr + size) > (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
     }
 
     /** {@inheritDoc} */

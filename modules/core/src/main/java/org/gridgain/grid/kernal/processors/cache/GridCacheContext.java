@@ -1685,10 +1685,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if portable enabled flag is set and offheap storage is enabled.
+     * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
      */
-    public boolean portableOffheap() {
-        return cacheCfg.isPortableEnabled() && isOffHeapEnabled();
+    public boolean offheapTiered() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
     }
 
     /**
@@ -1698,7 +1698,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Heap-based object.
      */
     @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
-        if (!portableOffheap())
+        if (!offheapTiered() || !portableEnabled())
             return (T)obj;
 
         return (T)portable().unwrapTemporary(obj);

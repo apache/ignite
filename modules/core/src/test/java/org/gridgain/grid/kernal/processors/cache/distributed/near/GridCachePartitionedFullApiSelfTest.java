@@ -21,7 +21,7 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests for local cache.
+ * Tests for partitioned cache.
  */
 public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */

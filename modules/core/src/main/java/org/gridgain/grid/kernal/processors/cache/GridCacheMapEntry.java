@@ -27,6 +27,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.io.*;
 import java.util.*;
@@ -47,6 +48,12 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
     private static final byte IS_REFRESHING_MASK = 0x01;
@@ -464,14 +471,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
                 GridCacheSwapEntry<V> e;
 
-                if (cctx.portableOffheap()) {
+                if (cctx.offheapTiered()) {
                     e = cctx.swap().readOffheapPointer(this);
 
                     if (e != null && e.offheapPointer() > 0) {
-                        if (needVal)
-                            e.value((V)cctx.portable().unmarshal(e.offheapPointer(), true));
-
                         valPtr = e.offheapPointer();
+
+                        if (needVal) {
+                            V val = unmarshalOffheap(false);
+
+                            e.value(val);
+                        }
                     }
                     else
                         valPtr = 0;
@@ -518,7 +528,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             long expireTime = expireTimeExtras();
 
             if (expireTime > 0 && U.currentTimeMillis() >= expireTime) { // Don't swap entry if it's expired.
-                if (cctx.portableOffheap() && valPtr > 0) {
+                if (cctx.offheapTiered() && valPtr > 0) {
                     boolean rmv = cctx.swap().removexOffheap(key(), getOrMarshalKeyBytes());
 
                     assert rmv;
@@ -529,7 +539,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return;
             }
 
-            if (val == null && cctx.portableOffheap() && valPtr != 0) {
+            if (val == null && cctx.offheapTiered() && valPtr != 0) {
                 if (log.isDebugEnabled())
                     log.debug("Value did not change, skip write swap entry: " + this);
 
@@ -1288,7 +1298,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(null, null, 0, 0, newVer);
 
-                if (cctx.portableOffheap() && valPtr != 0) {
+                if (cctx.offheapTiered() && valPtr != 0) {
                     boolean rmv = cctx.swap().removexOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;
@@ -1953,7 +1963,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, null, 0, 0, newVer);
 
-                if (cctx.portableOffheap() && valPtr != 0) {
+                if (cctx.offheapTiered() && valPtr != 0) {
                     boolean rmv = cctx.swap().removexOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;
@@ -2869,8 +2879,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             val = valBytes.isPlain() ? (V)valBytes.get() : cctx.marshaller().<V>unmarshal(valBytes.get(),
                 cctx.deploy().globalLoader());
 
-        if (val == null && cctx.portableOffheap() && valPtr != 0)
-            val = (V)cctx.portable().unmarshal(valPtr, !temporary);
+        if (val == null && cctx.offheapTiered() && valPtr != 0)
+            val = unmarshalOffheap(temporary);
 
         return val;
     }
@@ -3357,8 +3367,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 ver = this.ver;
                 valBytes = valueBytesUnlocked();
 
-                if (valBytes.isNull() && cctx.portableOffheap() && valPtr != 0)
-                    valBytes = GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true)));
+                if (valBytes.isNull() && cctx.offheapTiered() && valPtr != 0)
+                    valBytes = offheapValueBytes();
             }
             else
                 ver = null;
@@ -3619,7 +3629,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private GridCacheValueBytes createSwapValueBytes(@Nullable V val) throws GridException {
         return (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
             GridCacheValueBytes.marshaled(
-                cctx.portableEnabled() ? cctx.portable().marshal(val, true).array() :
+                (cctx.offheapTiered() && cctx.portableEnabled()) ?
+                cctx.portable().marshal(val, true).array() :
                 CU.marshal(cctx, val));
     }
 
@@ -4067,6 +4078,64 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     private int extrasSize() {
         return extras != null ? extras.size() : 0;
+    }
+
+    /**
+     * @return Value bytes read from offheap.
+     * @throws GridException If failed.
+     */
+    private GridCacheValueBytes offheapValueBytes() throws GridException {
+        assert cctx.offheapTiered() && valPtr != 0;
+
+        long ptr = valPtr;
+
+        boolean plainByteArr = UNSAFE.getByte(ptr++) != 0;
+
+        if (plainByteArr || !cctx.portableEnabled()) {
+            int size = UNSAFE.getInt(ptr);
+
+            byte[] bytes = new byte[size];
+
+            UNSAFE.copyMemory(null, ptr + 4, bytes, BYTE_ARR_OFF, size);
+
+            return plainByteArr ? GridCacheValueBytes.plain(bytes) : GridCacheValueBytes.marshaled(bytes);
+        }
+
+        assert cctx.portableEnabled();
+
+        return GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true))); // TODO 9198 temp obj.
+    }
+
+    /**
+     * @param temporary If {@code true} can return temporary object.
+     * @return Unmarshalled value.
+     * @throws GridException If unmarshalling failed.
+     */
+    private V unmarshalOffheap(boolean temporary) throws GridException {
+        assert cctx.offheapTiered() && valPtr != 0;
+
+        if (cctx.portableEnabled())
+            return (V)cctx.portable().unmarshal(valPtr, !temporary);
+
+        long ptr = valPtr;
+
+        boolean plainByteArr = UNSAFE.getByte(ptr++) != 0;
+
+        int size = UNSAFE.getInt(ptr);
+
+        byte[] res = new byte[size];
+
+        UNSAFE.copyMemory(null, ptr + 4, res, BYTE_ARR_OFF, size);
+
+        if (plainByteArr)
+            return (V)res;
+
+        GridUuid valClsLdrId = U.readGridUuid(ptr + 4 + size);
+
+        ClassLoader ldr = valClsLdrId != null ? cctx.deploy().getClassLoader(valClsLdrId) :
+            cctx.deploy().localLoader();
+
+        return cctx.marshaller().unmarshal(res, ldr);
     }
 
     /** {@inheritDoc} */

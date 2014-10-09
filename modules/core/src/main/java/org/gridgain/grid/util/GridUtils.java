@@ -8597,4 +8597,201 @@ public abstract class GridUtils {
             Map.class.isAssignableFrom(cls) ||
             Map.Entry.class.isAssignableFrom(cls);
     }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param uid UUID.
+     * @return Offset.
+     */
+    public static long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
+        UNSAFE.putBoolean(arr, off++, uid != null);
+
+        if (uid != null) {
+            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.localId());
+
+            off += 8;
+        }
+
+        return off;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(byte[] arr, long off) {
+        if (UNSAFE.getBoolean(arr, off++)) {
+            long most = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            long least = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(arr, off);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(long ptr) {
+        if (UNSAFE.getBoolean(null, ptr++)) {
+            long most = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            long least = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(ptr);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param ver Version.
+     * @return Offset.
+     */
+    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
+        boolean verEx = ver instanceof GridCacheVersionEx;
+
+        UNSAFE.putBoolean(arr, off++, verEx);
+
+        if (verEx) {
+            GridCacheVersion drVer = ver.drVersion();
+
+            assert drVer != null;
+
+            UNSAFE.putInt(arr, off, drVer.topologyVersion());
+
+            off += 4;
+
+            UNSAFE.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
+
+            off += 4;
+
+            UNSAFE.putLong(arr, off, drVer.globalTime());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, drVer.order());
+
+            off += 8;
+        }
+
+        UNSAFE.putInt(arr, off, ver.topologyVersion());
+
+        off += 4;
+
+        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+
+        off += 4;
+
+        UNSAFE.putLong(arr, off, ver.globalTime());
+
+        off += 8;
+
+        UNSAFE.putLong(arr, off, ver.order());
+
+        off += 8;
+
+        return off;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
+        GridCacheVersion ver = new GridCacheVersion(UNSAFE.getInt(ptr),
+            UNSAFE.getInt(ptr + 4),
+            UNSAFE.getLong(ptr + 8),
+            UNSAFE.getLong(ptr + 16));
+
+        if (verEx) {
+            ptr += 24;
+
+            ver = new GridCacheVersionEx(UNSAFE.getInt(ptr),
+                UNSAFE.getInt(ptr + 4),
+                UNSAFE.getLong(ptr + 8),
+                UNSAFE.getLong(ptr + 16),
+                ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
+        int topVer = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        int nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        long globalTime = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        long order = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+        if (verEx) {
+            topVer = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            globalTime = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            order = UNSAFE.getLong(arr, off);
+
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+        }
+
+        return ver;
+    }
 }

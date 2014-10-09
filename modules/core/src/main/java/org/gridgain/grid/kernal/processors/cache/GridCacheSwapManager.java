@@ -424,9 +424,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (offheapEnabled) {
             byte[] entryBytes = offheap.get(spaceName, part, key, keyBytes);
 
-            // To unmarshal entry itself local class loader will be enough.
             if (entryBytes != null)
-                return swapEntry(unmarshalSwapEntry(entryBytes, cctx.deploy().localLoader()));
+                return swapEntry(unmarshalSwapEntry(entryBytes));
         }
 
         if (!swapEnabled)
@@ -440,8 +439,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (valBytes == null)
             return null;
 
-        // To unmarshal swap entry itself local class loader will be enough.
-        return swapEntry(unmarshalSwapEntry(valBytes, cctx.deploy().localLoader()));
+        return swapEntry(unmarshalSwapEntry(valBytes));
     }
 
     /**
@@ -464,20 +462,37 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
 
             if (entryBytes != null) {
-                // To unmarshal swap entry itself local class loader will be enough.
-                GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes,
-                    cctx.deploy().localLoader()));
+                GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
 
                 if (entry == null)
                     return null;
 
                 // Always fire this event, since preloading depends on it.
-                onOffHeaped(part, key, keyBytes, entry.value(),
-                    entry.valueBytes(), entry.version(), entry.ttl(), entry.expireTime());
+                onOffHeaped(
+                    part,
+                    key,
+                    keyBytes,
+                    entry.value(),
+                    entry.valueBytes(),
+                    entry.version(),
+                    entry.ttl(),
+                    entry.expireTime());
 
                 if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
-                    cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
-                        EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
+                    cctx.events().addEvent(
+                        part,
+                        key,
+                        cctx.nodeId(),
+                        (GridUuid)null,
+                        null,
+                        EVT_CACHE_OBJECT_FROM_OFFHEAP,
+                        null,
+                        false,
+                        null,
+                        true,
+                        null,
+                        null,
+                        null);
 
                 GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
@@ -510,8 +525,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             @Override public void apply(byte[] rmv) {
                 if (rmv != null) {
                     try {
-                        // To unmarshal swap entry itself local class loader will be enough.
-                        GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv, cctx.deploy().localLoader()));
+                        GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv));
 
                         if (entry == null)
                             return;
@@ -641,9 +655,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
 
                 if (entryBytes != null) {
-                    // To unmarshal swap entry itself local class loader will be enough.
-                    GridCacheSwapEntry<V> entry = swapEntry(
-                        unmarshalSwapEntry(entryBytes, cctx.deploy().localLoader()));
+                    GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
 
                     if (entry == null)
                         continue;
@@ -696,8 +708,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     if (rmv != null) {
                         try {
                             // To unmarshal swap entry itself local class loader will be enough.
-                            GridCacheSwapEntry<V> entry = swapEntry(
-                                unmarshalSwapEntry(rmv, cctx.deploy().localLoader()));
+                            GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv));
 
                             if (entry == null)
                                 return;
@@ -795,7 +806,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 try {
                     // To unmarshal swap entry itself local class loader will be enough.
-                    GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv, cctx.deploy().localLoader()));
+                    GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(rmv));
 
                     if (entry == null)
                         return;
@@ -856,14 +867,14 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             keyClsLdrId, valClsLdrId);
 
         if (offheapEnabled) {
-            offheap.put(spaceName, part, key, keyBytes, marshal(entry));
+            offheap.put(spaceName, part, key, keyBytes, entry.marshal());
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_TO_OFFHEAP))
                 cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
                     EVT_CACHE_OBJECT_TO_OFFHEAP, null, false, null, true, null, null, null);
         }
         else if (swapEnabled)
-            writeToSwap(part, key, keyBytes, marshal(entry));
+            writeToSwap(part, key, keyBytes, entry.marshal());
 
         GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
@@ -886,8 +897,11 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         if (offheapEnabled) {
             for (GridCacheBatchSwapEntry<K, V> swapEntry : swapped) {
-                offheap.put(spaceName, swapEntry.partition(), swapEntry.key(), swapEntry.keyBytes(),
-                    marshal(swapEntry));
+                offheap.put(spaceName,
+                    swapEntry.partition(),
+                    swapEntry.key(),
+                    swapEntry.keyBytes(),
+                    swapEntry.marshal());
 
                 if (cctx.events().isRecordable(EVT_CACHE_OBJECT_TO_OFFHEAP))
                     cctx.events().addEvent(swapEntry.partition(), swapEntry.key(), cctx.nodeId(),
@@ -901,7 +915,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             Map<GridSwapKey, byte[]> batch = new LinkedHashMap<>();
 
             for (GridCacheBatchSwapEntry entry : swapped)
-                batch.put(new GridSwapKey(entry.key(), entry.partition(), entry.keyBytes()), marshal(entry));
+                batch.put(new GridSwapKey(entry.key(), entry.partition(), entry.keyBytes()), entry.marshal());
 
             swapMgr.writeAll(spaceName, batch, cctx.deploy().globalLoader());
 
@@ -1198,7 +1212,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     @Override public V getValue() {
                         try {
-                            GridCacheSwapEntry<V> e = unmarshalSwapEntry(cur0.getValue(), cctx.deploy().localLoader());
+                            GridCacheSwapEntry<V> e = unmarshalSwapEntry(cur0.getValue());
 
                             swapEntry(e);
 
@@ -1349,6 +1363,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Undeploy count.
      */
     public int onUndeploy(UUID leftNodeId, ClassLoader ldr) {
+        if (cctx.portableEnabled())
+            return 0;
+
         GridUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
 
         assert ldrId != null;
@@ -1362,11 +1379,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 int undeployCnt = 0;
 
                 try {
-                    ClassLoader locLdr = cctx.deploy().localLoader();
-
                     for (Map.Entry<byte[], byte[]> e : iter) {
                         try {
-                            GridCacheSwapEntry<V> swapEntry = unmarshalSwapEntry(e.getValue(), locLdr);
+                            GridCacheSwapEntry<V> swapEntry = unmarshalSwapEntry(e.getValue());
 
                             GridUuid valLdrId = swapEntry.valueClassLoaderId();
 
@@ -1377,7 +1392,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             }
                             else {
                                 if (valLdrId == null && swapEntry.value() == null && !swapEntry.valueIsByteArray()) {
-                                    // TODO: 9198
                                     // We need value here only for classloading purposes.
                                     V val =  cctx.marshaller().unmarshal(swapEntry.valueBytes(),
                                         cctx.deploy().globalLoader());
@@ -1421,10 +1435,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param bytes Bytes to unmarshal.
-     * @param ldr Class loader.
      * @return Unmarshalled entry.
      */
-    private GridCacheSwapEntry<V> unmarshalSwapEntry(byte[] bytes, ClassLoader ldr) {
+    private GridCacheSwapEntry<V> unmarshalSwapEntry(byte[] bytes) {
         return GridCacheSwapEntryImpl.unmarshal(bytes);
     }
 
@@ -1435,7 +1448,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridException If unmarshal failed.
      */
     private <T> T unmarshalValue(byte[] bytes, ClassLoader ldr) throws GridException {
-        return (T)(cctx.portableEnabled() ? cctx.portable().unmarshal(bytes) : cctx.marshaller().unmarshal(bytes, ldr));
+        return (T)(cctx.offheapTiered() && cctx.portableEnabled() ?
+            cctx.portable().unmarshal(bytes) :
+            cctx.marshaller().unmarshal(bytes, ldr));
     }
 
     /**
@@ -1446,14 +1461,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private <T> T unmarshalKey(byte[] bytes, ClassLoader ldr) throws GridException {
         return (T)cctx.marshaller().unmarshal(bytes, ldr);
-    }
-
-    /**
-     * @param obj Object to marshal.
-     * @return Marshalled byte array.
-     */
-    private byte[] marshal(GridCacheSwapEntryImpl<?> obj) {
-        return obj.marshal(cctx.portableEnabled());
     }
 
     /**
@@ -1486,8 +1493,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         @Override protected Map.Entry<byte[], GridCacheSwapEntry<V>> onNext() throws GridException {
             Map.Entry<byte[], byte[]> e = iter.nextX();
 
-            // To unmarshal swap entry itself local class loader will be enough.
-            GridCacheSwapEntry<V> unmarshalled = unmarshalSwapEntry(e.getValue(), cctx.deploy().localLoader());
+            GridCacheSwapEntry<V> unmarshalled = unmarshalSwapEntry(e.getValue());
 
             return F.t(e.getKey(), swapEntry(unmarshalled));
         }

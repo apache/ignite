@@ -135,10 +135,9 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     }
 
     /**
-     * @param portable Portable enabled flag.
      * @return Entry bytes.
      */
-    public byte[] marshal(boolean portable) {
+    public byte[] marshal() {
         int size = 16 + 1 + 24; // Ttl + expire time + Ex Version flag + Version.
 
         if (ver instanceof GridCacheVersionEx)
@@ -147,6 +146,10 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
         size += 1; // Plain byte array flag.
 
         size += valBytes.length + 4; // Value bytes.
+
+        size += (valClsLdrId == null ? 1 : 24);
+
+        size += (keyClsLdrId == null ? 1 : 24);
 
         byte[] arr = new byte[size];
 
@@ -160,7 +163,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         off += 8;
 
-        off = writeVersion(arr, off, ver, true);
+        off = U.writeVersion(arr, off, ver);
 
         UNSAFE.putBoolean(arr, off++, valIsByteArr);
 
@@ -169,6 +172,12 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
         off += 4;
 
         UNSAFE.copyMemory(valBytes, BYTE_ARR_OFF, arr, off, valBytes.length);
+
+        off += valBytes.length;
+
+        off = U.writeGridUuid(arr, off, valClsLdrId);
+
+        U.writeGridUuid(arr, off, keyClsLdrId);
 
         return arr;
     }
@@ -190,7 +199,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         boolean verEx = UNSAFE.getBoolean(arr, off++);
 
-        GridCacheVersion ver = readVersion(arr, off, verEx);
+        GridCacheVersion ver = U.readVersion(arr, off, verEx);
 
         off += verEx ? 48 : 24;
 
@@ -204,120 +213,21 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         UNSAFE.copyMemory(arr, off, valBytes, BYTE_ARR_OFF, arrLen);
 
-        return new GridCacheSwapEntryImpl<T>(valBytes, valIsByteArr, ver, ttl, expireTime, null, null);
-    }
+        off += arrLen;
 
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param uid UUID.
-     * @return Offset.
-     */
-    private long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
-        UNSAFE.putBoolean(arr, off++, uid != null);
+        GridUuid valClsLdrId = U.readGridUuid(arr, off);
 
-        if (uid != null) {
-            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
+        off += valClsLdrId == null ? 1 : 25;
 
-            off += 8;
+        GridUuid keyClsLdrId = U.readGridUuid(arr, off);
 
-            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
-
-            off += 8;
-
-            UNSAFE.putLong(arr, off, uid.localId());
-
-            off += 8;
-        }
-
-        return off;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param ver Version.
-     * @param checkEx If {@code true} checks if version is {@link GridCacheVersionEx}.
-     * @return Offset.
-     */
-    private long writeVersion(byte[] arr, long off, GridCacheVersion ver, boolean checkEx) {
-        boolean verEx = false;
-
-        if (checkEx) {
-            verEx = ver instanceof GridCacheVersionEx;
-
-            UNSAFE.putBoolean(arr, off++, verEx);
-        }
-
-        if (verEx) {
-            writeVersion(arr, off, ver.drVersion(), false);
-
-            off += 24;
-        }
-
-        UNSAFE.putInt(arr, off, ver.topologyVersion());
-
-        off += 4;
-
-        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
-
-        off += 4;
-
-        UNSAFE.putLong(arr, off, ver.globalTime());
-
-        off += 8;
-
-        UNSAFE.putLong(arr, off, ver.order());
-
-        off += 8;
-
-        return off;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    private static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
-        int topVer = UNSAFE.getInt(arr, off);
-
-        off += 4;
-
-        int nodeOrderDrId = UNSAFE.getInt(arr, off);
-
-        off += 4;
-
-        long globalTime = UNSAFE.getLong(arr, off);
-
-        off += 8;
-
-        long order = UNSAFE.getLong(arr, off);
-
-        off += 8;
-
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-
-        if (verEx) {
-            topVer = UNSAFE.getInt(arr, off);
-
-            off += 4;
-
-            nodeOrderDrId = UNSAFE.getInt(arr, off);
-
-            off += 4;
-
-            globalTime = UNSAFE.getLong(arr, off);
-
-            off += 8;
-
-            order = UNSAFE.getLong(arr, off);
-
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
-        }
-
-        return ver;
+        return new GridCacheSwapEntryImpl<T>(valBytes,
+            valIsByteArr,
+            ver,
+            ttl,
+            expireTime,
+            keyClsLdrId,
+            valClsLdrId);
     }
 
     /** {@inheritDoc} */
