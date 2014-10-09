@@ -522,7 +522,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException If failed.
      */
     private void swap() throws GridException {
-        if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked()) {
+        if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && hasValueUnlocked()) {
             assert Thread.holdsLock(this);
 
             long expireTime = expireTimeExtras();
