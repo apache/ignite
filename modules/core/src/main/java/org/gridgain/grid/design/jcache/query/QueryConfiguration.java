@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.jcache;
+package org.gridgain.grid.design.jcache.query;
 
 /**
  * TODO: Add class description.
@@ -15,11 +15,11 @@ package org.gridgain.grid.design.jcache;
  * @author @java.author
  * @version @java.version
  */
-public class CacheQueryConfiguration {
+public class QueryConfiguration {
     // TODO: all configuration from GridCacheQuery class.
     // TODO: all continuous query configuration (different from default query)
 
-    public Class<?> getKeyClass() {
-        return null; // TODO;
+    public int getPageSize() {
+        return 0; // TODO.
     }
 }

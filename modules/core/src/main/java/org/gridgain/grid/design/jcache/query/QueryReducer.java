@@ -7,11 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.jcache.predicates;
-
-import org.gridgain.grid.lang.*;
-
-import javax.cache.*;
+package org.gridgain.grid.design.jcache.query;
 
 /**
  * TODO: Add class description.
@@ -19,6 +15,8 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public interface CachePredicate<K, V> extends GridPredicate<Cache.Entry<K, V>> {
-    // No-op.
+public interface QueryReducer<T, R> {
+    public int collect(T entry);
+
+    public R reduce();
 }

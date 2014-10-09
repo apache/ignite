@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.jcache.predicates;
+package org.gridgain.grid.design.jcache.query;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,9 +20,9 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K, V>> {
+public final class QueryAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K, V>> {
     /** Predicate. */
-    private CachePredicate<K, V> p;
+    private QueryPredicate<K, V> p;
 
     /** Keys. */
     private K[] keys;
@@ -33,7 +33,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
     /**
      * Empty constructor.
      */
-    public CacheAffinityPredicate() {
+    public QueryAffinityPredicate() {
         // No-op.
     }
 
@@ -43,7 +43,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
      * @param p Predicate.
      * @param keys Affinity keys.
      */
-    public CacheAffinityPredicate(CachePredicate<K, V> p, K... keys) {
+    public QueryAffinityPredicate(QueryPredicate<K, V> p, K... keys) {
         this.p = p;
         this.keys = keys;
     }
@@ -54,7 +54,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
      * @param p Predicate.
      * @param parts Affinity partitions.
      */
-    public CacheAffinityPredicate(CachePredicate<K, V> p, int[] parts) {
+    public QueryAffinityPredicate(QueryPredicate<K, V> p, int[] parts) {
         this.p = p;
         this.parts = parts;
     }
@@ -64,7 +64,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
      *
      * @return Wrapped predicate.
      */
-    public CachePredicate<K, V> getPredicate() {
+    public QueryPredicate<K, V> getPredicate() {
         return p;
     }
 
@@ -73,7 +73,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
      *
      * @param p Wrapped predicate.
      */
-    public void setPredicate(CachePredicate<K, V> p) {
+    public void setPredicate(QueryPredicate<K, V> p) {
         this.p = p;
     }
 
@@ -114,12 +114,12 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean apply(Cache.Entry<K, V> entry) {
+    @Override public boolean apply(Cache.Entry<K, V> entry) {
         return p.apply(entry);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheAffinityPredicate.class, this);
+        return S.toString(QueryAffinityPredicate.class, this);
     }
 }

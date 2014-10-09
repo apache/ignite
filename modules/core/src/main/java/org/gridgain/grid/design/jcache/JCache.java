@@ -16,7 +16,7 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.design.*;
 import org.gridgain.grid.design.GridProjection;
-import org.gridgain.grid.design.jcache.predicates.*;
+import org.gridgain.grid.design.jcache.query.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -51,7 +51,7 @@ import java.util.concurrent.locks.*;
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #configuration()} to provide cache configuration bean.</li>
+ * <li>Method {@link #getConfiguration()} to provide cache configuration bean.</li>
  * </ul>
  *
  * @param <K> Cache key type.
@@ -115,7 +115,7 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putxIfAbsent(Object, Object)} should
+     * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -162,7 +162,7 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      * @return Peeked value.
      * @throws NullPointerException If key is {@code null}.
      */
-    @Nullable public V peek(K key, GridCachePeekMode... peekModes);
+    @Nullable public V localPeek(K key, GridCachePeekMode... peekModes);
 
     /**
      * Removes mappings from cache for entries for which the optionally passed in filters do
@@ -216,19 +216,21 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      */
     public boolean isLockedByThread(K key);
 
-    public Iterator<Entry<K, V>> query(CachePredicate<K, V> filter);
+    public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter);
 
-    public <R> Iterator<R> query(CacheReducer<Entry<K, V>, R> rmtRdc);
+    public <R> QueryCursor<R> query(QueryReducer<Entry<K, V>, R> rmtRdc, QueryPredicate<K, V> filter);
 
-    public Iterator<List<?>> queryFields(CacheSqlPredicate<K, V> filter);
+    public QueryCursor<List<?>> queryFields(QuerySqlPredicate<K, V> filter);
 
-    public Iterator<Entry<K, V>> localQuery(CachePredicate<K, V> filter);
+    public <R> QueryCursor<R> queryFields(QueryReducer<List<?>, R> rmtRdc, QuerySqlPredicate<K, V> filter);
 
-    public Iterator<List<?>> localQueryFields(CacheSqlPredicate<K, V> filter);
+    public QueryCursor<Entry<K, V>> localQuery(QueryPredicate<K, V> filter);
 
-    public Iterator<Entry<K, V>> localIterator(GridCachePeekMode... peekModes) throws CacheException;
+    public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter);
 
-    public Iterator<Entry<K, V>> localIterator(int part) throws CacheException;
+    public Iterable<Entry<K, V>> localEntries(GridCachePeekMode... peekModes) throws CacheException;
+
+    public Map<K, V> localPartition(int part) throws CacheException;
 
     /**
      * Attempts to evict all entries associated with keys. Note,
@@ -288,16 +290,16 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      * <p>
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
-     * @return Total cache size across all nodes.
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size across all nodes.
      */
-    public int size(CachePeekMode... peekMode) throws CacheException;
+    public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached across all nodes.
-     * <p>
-     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     * Gets the number of all entries cached on this nodes.
      *
-     * @return Total cache size across all nodes.
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size on this node.
      */
-    public int localSize(CachePeekMode... peekMode) throws CacheException;
+    public int localSize(CachePeekMode... peekModes);
 }
