@@ -463,6 +463,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                          * Batch database processing.
                          */
                         for (GridCacheTxEntry<K, V> e : writeEntries) {
+                            if (intercept || !F.isEmpty(e.transformClosures()))
+                                e.cached().unswap(true, false);
+
                             GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(e, false);
 
                             GridCacheOperation op = res.get1();

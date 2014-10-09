@@ -429,6 +429,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param args Arguments.
      * @param loc Local query or not.
+     * @param subjId Security subject ID.
+     * @param taskName Task name.
      * @return Collection of found keys.
      * @throws GridException In case of error.
      */
@@ -516,6 +518,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param args Arguments.
      * @param loc Local query or not.
+     * @param subjId Security subject ID.
+     * @param taskName Task name.
      * @return Collection of found keys.
      * @throws GridException In case of error.
      */
@@ -609,7 +613,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
-
         GridPredicate<GridCacheEntry<K, V>> filter = new P1<GridCacheEntry<K, V>>() {
             @Override public boolean apply(GridCacheEntry<K, V> e) {
                 return qry.projectionFilter() == null ||
@@ -701,6 +704,57 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 it.remove();
             }
         };
+    }
+
+    /**
+     *
+     */
+    private class OffheapEntryPredicate<K1, V1> implements P2<T2<Long, Integer>, T2<Long, Integer>> {
+        /** */
+        private GridBiPredicate<K1, V1> keyValFilter;
+
+        /** */
+        private boolean keepPortable;
+
+        /**
+         * @param keyValFilter Filter.
+         * @param keepPortable Keep portable flag.
+         */
+        private OffheapEntryPredicate(GridBiPredicate<K1, V1> keyValFilter, boolean keepPortable) {
+            this.keyValFilter = keyValFilter;
+            this.keepPortable = keepPortable;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
+            K1 key = (K1)unmarshalSwapEntry(keyPtr);
+            V1 val = (V1)unmarshalSwapEntry(valPtr);
+
+            return keyValFilter.apply(key, val);
+        }
+
+        /**
+         * @param ptr Object address.
+         * @return Unmarshalled object.
+         */
+        private Object unmarshalSwapEntry(T2<Long, Integer> ptr) {
+            try {
+                assert ptr != null && ptr.get1() != null && ptr.get2() != null : ptr;
+
+                long valPtr = GridCacheOffheapSwapEntry.valueAddress(ptr.get1(), ptr.get2());
+
+                Object val = cctx.portable().unmarshal(valPtr, false);
+
+                assert val != null; // Don't expected null key or value.
+
+                val = cctx.unwrapPortableIfNeeded(val, keepPortable);
+
+                return val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
     }
 
     /**

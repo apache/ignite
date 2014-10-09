@@ -357,7 +357,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
+    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
+        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred) {
         return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
             private GridCloseableIterator<GridBiTuple<byte[], byte[]>> curIt;
 
@@ -376,7 +377,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 curIt = null;
 
                 while (idx < segs.length) {
-                    curIt = segs[idx++].iterator();
+                    curIt = segs[idx++].iterator(pred);
 
                     if (curIt.hasNext())
                         return;
@@ -653,9 +654,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         }
 
         /**
+         * @param pred Key/value predicate.
          * @return Iterator.
          */
-        GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
+        GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
+            @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred) {
             return new GridCloseableIteratorAdapter<GridBiTuple<byte[],byte[]>>() {
                 private final Queue<GridBiTuple<byte[], byte[]>> bin = new LinkedList<>();
 
@@ -686,8 +689,17 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
 //                            bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), Entry.readValueBytes(entryAddr, mem)));
                             {
-                                int keyLen = Entry.readKeyLength(entryAddr, mem);
                                 int valLen = Entry.readValueLength(entryAddr, mem);
+                                int keyLen = Entry.readKeyLength(entryAddr, mem);
+
+                                if (pred != null) {
+                                    T2<Long, Integer> keyPtr = new T2<>(entryAddr + HEADER, keyLen);
+
+                                    T2<Long, Integer> valPtr = new T2<>(entryAddr + HEADER + keyLen, valLen);
+
+                                    if (!pred.apply(keyPtr, valPtr))
+                                        continue;
+                                }
 
                                 byte[] valBytes =  mem.readBytes(entryAddr + HEADER + keyLen, valLen);
 

@@ -50,6 +50,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         atomicCacheCfg.setName(CACHE_ATOMIC);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
+        atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         GridCacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
 

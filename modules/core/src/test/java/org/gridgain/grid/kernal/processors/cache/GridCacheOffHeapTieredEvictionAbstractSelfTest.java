@@ -68,9 +68,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
-        ccfg.setOffHeapMaxMemory(1024);
-
-        ccfg.setSwapEnabled(true);
+        ccfg.setOffHeapMaxMemory(0);
 
         return ccfg;
     }

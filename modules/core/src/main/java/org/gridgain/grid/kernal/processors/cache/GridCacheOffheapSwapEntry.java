@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -55,7 +56,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
      */
     public GridCacheOffheapSwapEntry(long ptr, int size) {
         assert ptr > 0 : ptr;
-        assert size > 0 : size;
+        assert size > 40 : size;
 
         this.ptr = ptr;
 
@@ -72,6 +73,26 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
         valPtr = readPtr;
 
         assert (ptr + size) > (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
+    }
+
+    /**
+     * @param ptr Marshaled swap entry address.
+     * @param size Marshalled data size.
+     * @return Value data address.
+     */
+    public static long valueAddress(long ptr, int size) {
+        assert ptr > 0 : ptr;
+        assert size > 40 : size;
+
+        ptr += 16; // Skip ttl, expire time.
+
+        boolean verEx = UNSAFE.getByte(ptr++) != 0;
+
+        ptr += verEx ? 48 : 24;
+
+        assert (ptr + size) > (UNSAFE.getInt(ptr + 1) + ptr + 5);
+
+        return ptr;
     }
 
     /** {@inheritDoc} */

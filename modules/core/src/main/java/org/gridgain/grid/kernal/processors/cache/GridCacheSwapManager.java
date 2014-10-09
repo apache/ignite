@@ -782,22 +782,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         int part = cctx.affinity().partition(key);
 
-        byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
-
-        if (entryBytes != null) {
-            GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
-
-            onOffHeaped(part,
-                key,
-                keyBytes,
-                entry.value(),
-                entry.valueBytes(),
-                entry.version(),
-                entry.ttl(),
-                entry.expireTime());
-        }
-
-        return entryBytes != null;
+        return offheap.removex(spaceName, part, key, keyBytes);
     }
 
     /**
@@ -1032,6 +1017,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             private GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> it;
 
             private boolean offheap = true;
+
             private boolean done;
 
             {

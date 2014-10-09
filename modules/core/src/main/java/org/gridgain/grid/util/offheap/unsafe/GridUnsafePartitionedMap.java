@@ -14,6 +14,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -258,6 +259,12 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
+        return iterator(null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
+        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred) {
         return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
             private int p;
 
@@ -276,7 +283,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 curIt = null;
 
                 while (p < parts) {
-                    curIt = mapFor(p++).iterator();
+                    curIt = mapFor(p++).iterator(pred);
 
                     if (curIt.hasNext())
                         return;
@@ -319,7 +326,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(int p) {
-        return mapFor(p).iterator();
+        return mapFor(p).iterator(null);
     }
 
     /**

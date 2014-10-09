@@ -11,6 +11,7 @@ package org.gridgain.grid.util.offheap;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -171,6 +172,15 @@ public interface GridOffHeapPartitionedMap {
      * @return Iterator over the whole map.
      */
     public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+
+    /**
+     * Gets iterator over the whole map.
+     *
+     * @param pred Key/value predicate.
+     * @return Iterator over the whole map.
+     */
+    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
+        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred);
 
     /**
      * Gets iterator over certain partition.
