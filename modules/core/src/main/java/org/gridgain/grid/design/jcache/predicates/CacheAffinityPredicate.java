@@ -114,7 +114,7 @@ public class CacheAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
+    @Override public final boolean apply(Cache.Entry<K, V> entry) {
         return p.apply(entry);
     }
 
