@@ -49,7 +49,7 @@ public class GridCacheUtils {
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Security system cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-utility-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;

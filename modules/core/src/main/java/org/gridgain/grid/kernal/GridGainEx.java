@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
@@ -2021,6 +2022,7 @@ public class GridGainEx {
             cache.setQueryIndexEnabled(false);
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new GridCacheRendezvousAffinityFunction(false, 100));
 
             return cache;
         }
