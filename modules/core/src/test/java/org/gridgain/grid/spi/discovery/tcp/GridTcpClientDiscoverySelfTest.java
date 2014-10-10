@@ -50,7 +50,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     private static int clientsPerSrv;
 
     /** */
-    private static CountDownLatch srvJoinLatch;
+    private static CountDownLatch srvJoinedLatch;
 
     /** */
     private static CountDownLatch srvLeftLatch;
@@ -59,7 +59,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     private static CountDownLatch srvFailedLatch;
 
     /** */
-    private static CountDownLatch clientJoinLatch;
+    private static CountDownLatch clientJoinedLatch;
 
     /** */
     private static CountDownLatch clientLeftLatch;
@@ -131,15 +131,15 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        srvJoinLatch = new CountDownLatch(3);
-        clientJoinLatch = new CountDownLatch(3);
+        srvJoinedLatch = new CountDownLatch(3);
+        clientJoinedLatch = new CountDownLatch(3);
 
         attachListeners(3, 3);
 
         startClientNodes(1);
 
-        await(srvJoinLatch);
-        await(clientJoinLatch);
+        await(srvJoinedLatch);
+        await(clientJoinedLatch);
 
         checkNodes(3, 4);
     }
@@ -180,7 +180,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(3, 3);
 
-        ((GridTcpClientDiscoverySpi)G.grid("client-2").configuration().getDiscoverySpi()).simulateNodeFailure();
+        failClient(2);
 
         await(srvFailedLatch);
         await(clientFailedLatch);
@@ -197,15 +197,15 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        srvJoinLatch = new CountDownLatch(3);
-        clientJoinLatch = new CountDownLatch(3);
+        srvJoinedLatch = new CountDownLatch(3);
+        clientJoinedLatch = new CountDownLatch(3);
 
         attachListeners(3, 3);
 
         startServerNodes(1);
 
-        await(srvJoinLatch);
-        await(clientJoinLatch);
+        await(srvJoinedLatch);
+        await(clientJoinedLatch);
 
         checkNodes(4, 3);
     }
@@ -248,7 +248,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         assert U.<Map>field(G.grid("server-2").configuration().getDiscoverySpi(), "clientMsgWorkers").isEmpty();
 
-        ((GridTcpDiscoverySpi)G.grid("server-2").configuration().getDiscoverySpi()).simulateNodeFailure();
+        failServer(2);
 
         await(srvFailedLatch);
         await(clientFailedLatch);
@@ -267,21 +267,41 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        srvFailedLatch = new CountDownLatch(2);
-        clientFailedLatch = new CountDownLatch(2);
-        srvJoinLatch = new CountDownLatch(2);
-        clientJoinLatch = new CountDownLatch(2);
+        resetClientIpFinder(2);
+
+        srvFailedLatch = new CountDownLatch(4);
+        clientFailedLatch = new CountDownLatch(4);
+        srvJoinedLatch = new CountDownLatch(2);
+        clientJoinedLatch = new CountDownLatch(2);
 
         attachListeners(2, 2);
 
-        ((GridTcpDiscoverySpi)G.grid("server-2").configuration().getDiscoverySpi()).simulateNodeFailure();
+        failServer(2);
 
         await(srvFailedLatch);
         await(clientFailedLatch);
-        await(srvJoinLatch);
-        await(clientJoinLatch);
+        await(srvJoinedLatch);
+        await(clientJoinedLatch);
 
         checkNodes(2, 3);
+    }
+
+    /**
+     * @param idx Index.
+     * @throws Exception In case of error.
+     */
+    private void resetClientIpFinder(int idx) throws Exception {
+        GridTcpClientDiscoverySpi disco =
+            (GridTcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi();
+
+        GridTcpDiscoveryVmIpFinder ipFinder = (GridTcpDiscoveryVmIpFinder)disco.getIpFinder();
+
+        String addr = IP_FINDER.getRegisteredAddresses().iterator().next().toString();
+
+        if (addr.startsWith("/"))
+            addr = addr.substring(1);
+
+        ipFinder.setAddresses(Arrays.asList(addr));
     }
 
     /**
@@ -309,17 +329,31 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param idx Index.
+     */
+    private void failServer(int idx) {
+        ((GridTcpDiscoverySpi)G.grid("server-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
+    }
+
+    /**
+     * @param idx Index.
+     */
+    private void failClient(int idx) {
+        ((GridTcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
+    }
+
+    /**
      * @param srvCnt Number of server nodes.
      * @param clientCnt Number of client nodes.
      */
     private void attachListeners(int srvCnt, int clientCnt) throws Exception {
-        if (srvJoinLatch != null) {
+        if (srvJoinedLatch != null) {
             for (int i = 0; i < srvCnt; i++) {
                 G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Joined event fired on server: " + evt);
 
-                        srvJoinLatch.countDown();
+                        srvJoinedLatch.countDown();
 
                         return true;
                     }
@@ -331,7 +365,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvCnt; i++) {
                 G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Left event fired on server: " + evt);
 
                         srvLeftLatch.countDown();
 
@@ -345,7 +379,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvCnt; i++) {
                 G.grid("server-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Failed event fired on server: " + evt);
 
                         srvFailedLatch.countDown();
 
@@ -355,13 +389,13 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             }
         }
 
-        if (clientJoinLatch != null) {
+        if (clientJoinedLatch != null) {
             for (int i = 0; i < clientCnt; i++) {
                 G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Joined event fired on client: " + evt);
 
-                        clientJoinLatch.countDown();
+                        clientJoinedLatch.countDown();
 
                         return true;
                     }
@@ -373,7 +407,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < clientCnt; i++) {
                 G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Left event fired on client: " + evt);
 
                         clientLeftLatch.countDown();
 
@@ -387,7 +421,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < clientCnt; i++) {
                 G.grid("client-" + i).events().localListen(new GridPredicate<GridEvent>() {
                     @Override public boolean apply(GridEvent evt) {
-                        info("Event fired: " + evt);
+                        info("Failed event fired on client: " + evt);
 
                         clientFailedLatch.countDown();
 

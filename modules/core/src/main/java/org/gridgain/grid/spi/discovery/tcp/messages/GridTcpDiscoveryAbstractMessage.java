@@ -38,7 +38,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     private boolean client;
 
     /** Whether to redirect to client nodes. */
-    private boolean redirectToClients;
+    private boolean redirectToClients = true;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.

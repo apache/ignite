@@ -1823,6 +1823,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         GridTcpDiscoverySpiState spiState = spiStateCopy();
 
         if (lsnr != null && node.visible() && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+            if (log.isDebugEnabled())
+                log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
+                    ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
+
             Collection<GridTcpDiscoveryNode> allNodes = F.concat(false, ring.allNodes(), clientNodes.values());
 
             Collection<GridNode> top = new ArrayList<GridNode>(F.view(allNodes, VISIBLE_NODES));
@@ -3947,6 +3951,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
+                    msg.redirectToClients(false);
+
                     addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
@@ -4776,8 +4782,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             continue;
                         }
 
-                        if (!client)
-                            msg.redirectToClients(true);
+                        if (client)
+                            msg.redirectToClients(false);
 
                         msgWorker.addMessage(msg);
 
@@ -5030,11 +5036,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             try {
-                if (log.isDebugEnabled())
-                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
-                        ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
-
                 if (msg.verified()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" + locNodeId +
+                            ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+
                     try {
                         prepareNodeAddedMessage(msg, null, null);
 
