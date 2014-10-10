@@ -543,6 +543,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param name Service name.
+     * @param svc Service class.
+     * @param sticky Whether multi-node request should be done.
+     * @param <T> Service class type.
+     * @return The proxy of a service by its name and class.
+     */
+    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) {
+        return null;
+    }
+
+    /**
      * Reassigns service to nodes.
      *
      * @param dep Service deployment.

@@ -179,6 +179,17 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) {
+        guard();
+        try {
+            return ctx.service().serviceProxy(name, svc, sticky);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> Collection<T> services(String name) {
         guard();
 
