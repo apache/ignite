@@ -818,7 +818,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            ret = readThrough(tx0, key, false, filter, subjId, taskName);
+           // ret = readThrough(tx0, key, false, filter, subjId, taskName);
 
             loadedFromStore = true;
         }
