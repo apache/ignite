@@ -92,6 +92,7 @@ public final class MessagingExample {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
+
             try {
                 prj.forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
