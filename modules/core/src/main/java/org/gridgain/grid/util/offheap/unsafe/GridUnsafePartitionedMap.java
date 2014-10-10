@@ -383,7 +383,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(int p) {
-        return mapFor(p).iterator(null);
+        return mapFor(p).iterator();
     }
 
     /**

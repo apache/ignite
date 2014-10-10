@@ -1087,7 +1087,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         checkIteratorQueue();
 
         if (offHeapEnabled() && !swapEnabled())
-            return rawOffHeapIterator(null);
+            return rawOffHeapIterator();
 
         if (swapEnabled() && !offHeapEnabled())
             return rawSwapIterator();
@@ -1103,7 +1103,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             private Map.Entry<byte[], byte[]> cur;
 
             {
-                it = rawOffHeapIterator(null);
+                it = rawOffHeapIterator();
 
                 advance();
             }

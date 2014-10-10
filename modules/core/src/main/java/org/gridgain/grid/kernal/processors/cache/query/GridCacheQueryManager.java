@@ -758,7 +758,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return cctx.swap().rawOffHeapIterator(c);
         }
         else {
-            Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator(null);
+            Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator();
 
             return scanIterator(it, prjPred, filter, qry.keepPortable());
         }
@@ -806,6 +806,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             private void advance() {
+                next = null;
+
                 while (it.hasNext()) {
                     final LazySwapEntry e = new LazySwapEntry(it.next());
 
@@ -919,7 +921,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override protected byte[] keyBytes() {
-            return e.getValue();
+            return e.getKey();
         }
 
         /** {@inheritDoc} */
