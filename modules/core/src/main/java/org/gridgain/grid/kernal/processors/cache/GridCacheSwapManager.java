@@ -174,30 +174,20 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition.
      * @param key Cache key.
      * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param ver Version.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
+     * @param e Entry.
      */
-    private void onUnswapped(int part, K key, byte[] keyBytes, V val, byte[] valBytes, GridCacheVersion ver,
-        long ttl, long expireTime) {
-        onEntryUnswapped(swapLsnrs, part, key, keyBytes, val, valBytes, ver, ttl, expireTime);
+    private void onUnswapped(int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> e) {
+        onEntryUnswapped(swapLsnrs, part, key, keyBytes, e);
     }
 
     /**
      * @param part Partition.
      * @param key Cache key.
      * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param ver Version.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
+     * @param e Entry.
      */
-    private void onOffHeaped(int part, K key, byte[] keyBytes, V val, byte[] valBytes, GridCacheVersion ver,
-        long ttl, long expireTime) {
-        onEntryUnswapped(offheapLsnrs, part, key, keyBytes, val, valBytes, ver, ttl, expireTime);
+    private void onOffHeaped(int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> e) {
+        onEntryUnswapped(offheapLsnrs, part, key, keyBytes, e);
     }
 
     /**
@@ -205,14 +195,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition.
      * @param key Cache key.
      * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param ver Version.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
+     * @param e Entry.
      */
     private void onEntryUnswapped(ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>> map,
-        int part, K key, byte[] keyBytes, V val, byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime) {
+        int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> e) {
         Collection<GridCacheSwapListener<K, V>> lsnrs = map.get(part);
 
         if (lsnrs == null) {
@@ -223,7 +209,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         for (GridCacheSwapListener<K, V> lsnr : lsnrs)
-            lsnr.onEntryUnswapped(part, key, keyBytes, val, valBytes, ver, ttl, expireTime);
+            lsnr.onEntryUnswapped(part, key, keyBytes, e);
     }
 
     /**
@@ -260,6 +246,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param part Partition.
+     * @param map Listeners.
      * @param lsnr Listener.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -300,6 +287,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param part Partition.
+     * @param map Listeners.
      * @param lsnr Listener.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -348,27 +336,45 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * Recreates raw swap entry (that just has been received from swap storage).
-     *
      * @param e Swap entry to reconstitute.
      * @return Reconstituted swap entry or {@code null} if entry is obsolete.
      * @throws GridException If failed.
      */
     @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e) throws GridException {
+        return swapEntry(e, true);
+    }
+
+    /**
+     * Recreates raw swap entry (that just has been received from swap storage).
+     *
+     * @param e Swap entry to reconstitute.
+     * @param unmarshal If {@code true} then value is unmarshalled.
+     * @return Reconstituted swap entry or {@code null} if entry is obsolete.
+     * @throws GridException If failed.
+     */
+    @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e, boolean unmarshal) throws GridException {
         assert e != null;
 
         checkIteratorQueue();
 
         if (e.valueIsByteArray())
             e.value((V)e.valueBytes());
-        else {
-            ClassLoader ldr = e.valueClassLoaderId() != null ? cctx.deploy().getClassLoader(e.valueClassLoaderId()) :
-                cctx.deploy().localLoader();
+        else if (unmarshal) {
+            V val;
 
-            if (ldr == null)
-                return null;
+            if (cctx.portableEnabled() && cctx.offheapTiered())
+                val = (V)cctx.portable().unmarshal(e.valueBytes(), 0);
+            else {
+                ClassLoader ldr = e.valueClassLoaderId() != null ? cctx.deploy().getClassLoader(e.valueClassLoaderId()) :
+                    cctx.deploy().localLoader();
 
-            e.value(this.<V>unmarshalValue(e.valueBytes(), ldr));
+                if (ldr == null)
+                    return null;
+
+                val = cctx.marshaller().unmarshal(e.valueBytes(), ldr);
+            }
+
+            e.value(val);
         }
 
         return e;
@@ -468,15 +474,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     return null;
 
                 // Always fire this event, since preloading depends on it.
-                onOffHeaped(
-                    part,
-                    key,
-                    keyBytes,
-                    entry.value(),
-                    entry.valueBytes(),
-                    entry.version(),
-                    entry.ttl(),
-                    entry.expireTime());
+                onOffHeaped(part, key, keyBytes, entry);
 
                 if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
                     cctx.events().addEvent(
@@ -541,8 +539,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                                 EVT_CACHE_OBJECT_UNSWAPPED, null, false, v, true, null, null, null);
 
                         // Always fire this event, since preloading depends on it.
-                        onUnswapped(part, key, keyBytes, v,
-                            valBytes, entry.version(), entry.ttl(), entry.expireTime());
+                        onUnswapped(part, key, keyBytes, entry);
 
                         GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
@@ -663,8 +660,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     iter.remove();
 
                     // Always fire this event, since preloading depends on it.
-                    onOffHeaped(part, key, keyBytes, entry.value(),
-                        entry.valueBytes(), entry.version(), entry.ttl(), entry.expireTime());
+                    onOffHeaped(part, key, keyBytes, entry);
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
                         cctx.events().addEvent(part, key, cctx.nodeId(), (GridUuid)null, null,
@@ -736,8 +732,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                                     true, null, null, null);
 
                             // Always fire this event, since preloading depends on it.
-                            onUnswapped(swapKey.partition(), key, swapKey.keyBytes(), entry.value(),
-                                entry.valueBytes(), entry.version(), entry.ttl(), entry.expireTime());
+                            onUnswapped(swapKey.partition(), key, swapKey.keyBytes(), entry);
 
                             if (qryMgr != null)
                                 qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
@@ -996,10 +991,13 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Gets offheap and swap iterator over partition.
      *
      * @param part Partition to iterate over.
+     * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
      * @throws GridException If failed.
      */
-    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> iterator(final int part)
+    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> iterator(
+        final int part,
+        final boolean unmarshal)
         throws GridException {
         if (!swapEnabled() && !offHeapEnabled())
             return null;
@@ -1007,10 +1005,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         checkIteratorQueue();
 
         if (offHeapEnabled() && !swapEnabled())
-            return offHeapIterator(part);
+            return offHeapIterator(part, unmarshal);
 
         if (swapEnabled() && !offHeapEnabled())
-            return swapIterator(part);
+            return swapIterator(part, unmarshal);
 
         // Both, swap and off-heap are enabled.
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], GridCacheSwapEntry<V>>>() {
@@ -1021,7 +1019,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             private boolean done;
 
             {
-                it = offHeapIterator(part);
+                it = offHeapIterator(part, unmarshal);
 
                 advance();
             }
@@ -1035,7 +1033,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (offheap) {
                     offheap = false;
 
-                    it = swapIterator(part);
+                    it = swapIterator(part, unmarshal);
 
                     assert it != null;
 
@@ -1089,7 +1087,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         checkIteratorQueue();
 
         if (offHeapEnabled() && !swapEnabled())
-            return rawOffHeapIterator();
+            return rawOffHeapIterator(null);
 
         if (swapEnabled() && !offHeapEnabled())
             return rawSwapIterator();
@@ -1099,11 +1097,13 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             private GridCloseableIterator<Map.Entry<byte[], byte[]>> it;
 
             private boolean offheapFlag = true;
+
             private boolean done;
+
             private Map.Entry<byte[], byte[]> cur;
 
             {
-                it = rawOffHeapIterator();
+                it = rawOffHeapIterator(null);
 
                 advance();
             }
@@ -1302,23 +1302,41 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Gets offheap iterator over partition.
      *
      * @param part Partition to iterate over.
+     * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
      * @throws GridException If failed.
      */
-    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> offHeapIterator(int part)
+    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> offHeapIterator(
+        int part,
+        boolean unmarshal)
         throws GridException {
         if (!offheapEnabled)
             return null;
 
         checkIteratorQueue();
 
-        return new IteratorWrapper(offheap.iterator(spaceName, part));
+        return new IteratorWrapper(offheap.iterator(spaceName, part), unmarshal);
+    }
+
+    /**
+     * @param c Key/value closure.
+     * @return Off-heap iterator.
+     */
+    public <T> GridCloseableIterator<T> rawOffHeapIterator(CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+        assert c != null;
+
+        if (!offheapEnabled)
+            return new GridEmptyCloseableIterator<>();
+
+        checkIteratorQueue();
+
+        return offheap.iterator(spaceName, c);
     }
 
     /**
      * @return Raw off-heap iterator.
      */
-    private GridCloseableIterator<Map.Entry<byte[], byte[]>> rawOffHeapIterator() {
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawOffHeapIterator() {
         if (!offheapEnabled)
             return new GridEmptyCloseableIterator<>();
 
@@ -1353,24 +1371,27 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Gets swap space iterator over partition.
      *
      * @param part Partition to iterate over.
+     * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
      * @throws GridException If failed.
      */
-    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> swapIterator(int part)
+    @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> swapIterator(
+        int part,
+        boolean unmarshal)
         throws GridException {
         if (!swapEnabled)
             return null;
 
         checkIteratorQueue();
 
-        return new IteratorWrapper(swapMgr.rawIterator(spaceName, part));
+        return new IteratorWrapper(swapMgr.rawIterator(spaceName, part), unmarshal);
     }
 
     /**
      * @return Raw off-heap iterator.
      * @throws GridException If failed.
      */
-    private GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator() throws GridException {
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator() throws GridException {
         if (!swapEnabled)
             return new GridEmptyCloseableIterator<>();
 
@@ -1469,18 +1490,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Unmarshalled value.
      * @throws GridException If unmarshal failed.
      */
-    private <T> T unmarshalValue(byte[] bytes, ClassLoader ldr) throws GridException {
-        return (T)(cctx.offheapTiered() && cctx.portableEnabled() ?
-            cctx.portable().unmarshal(bytes) :
-            cctx.marshaller().unmarshal(bytes, ldr));
-    }
-
-    /**
-     * @param bytes Bytes to unmarshal.
-     * @param ldr Class loader.
-     * @return Unmarshalled value.
-     * @throws GridException If unmarshal failed.
-     */
     private <T> T unmarshalKey(byte[] bytes, ClassLoader ldr) throws GridException {
         return (T)cctx.marshaller().unmarshal(bytes, ldr);
     }
@@ -1502,13 +1511,18 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         /** */
         private final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> iter;
 
+        /** */
+        private final boolean unmarshal;
+
         /**
          * @param iter Iterator.
+         * @param unmarshal Unmarshal value flag.
          */
-        private IteratorWrapper(GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> iter) {
+        private IteratorWrapper(GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> iter, boolean unmarshal) {
             assert iter != null;
 
             this.iter = iter;
+            this.unmarshal = unmarshal;
         }
 
         /** {@inheritDoc} */
@@ -1517,7 +1531,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             GridCacheSwapEntry<V> unmarshalled = unmarshalSwapEntry(e.getValue());
 
-            return F.t(e.getKey(), swapEntry(unmarshalled));
+            return F.t(e.getKey(), swapEntry(unmarshalled, unmarshal));
         }
 
         /** {@inheritDoc} */

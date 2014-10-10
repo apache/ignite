@@ -8794,4 +8794,17 @@ public abstract class GridUtils {
 
         return ver;
     }
+
+    /**
+     * @param ptr Address.
+     * @param size Size.
+     * @return Bytes.
+     */
+    public static byte[] copyMemory(long ptr, int size) {
+        byte[] res = new byte[size];
+
+        UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
+
+        return res;
+    }
 }

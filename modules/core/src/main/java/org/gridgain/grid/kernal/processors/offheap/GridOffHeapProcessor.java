@@ -17,6 +17,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -258,6 +259,22 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? new GridEmptyCloseableIterator<GridBiTuple<byte[], byte[]>>() : m.iterator();
+    }
+
+    /**
+     * Gets iterator over contents of the given space.
+     *
+     * @param spaceName Space name.
+     * @param c Key/value closure.
+     * @return Iterator.
+     */
+    public <T> GridCloseableIterator<T> iterator(@Nullable String spaceName,
+        CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+        assert c != null;
+
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? new GridEmptyCloseableIterator<T>() : m.iterator(c);
     }
 
     /**

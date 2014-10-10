@@ -357,8 +357,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
-        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred) {
+    @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
         return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
             private GridCloseableIterator<GridBiTuple<byte[], byte[]>> curIt;
 
@@ -377,7 +376,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 curIt = null;
 
                 while (idx < segs.length) {
-                    curIt = segs[idx++].iterator(pred);
+                    curIt = segs[idx++].iterator();
 
                     if (curIt.hasNext())
                         return;
@@ -393,6 +392,67 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                     throw new NoSuchElementException();
 
                 GridBiTuple<byte[], byte[]> t = curIt.next();
+
+                if (!curIt.hasNext()) {
+                    curIt.close();
+
+                    advance();
+                }
+
+                return t;
+            }
+
+            @Override protected boolean onHasNext() {
+                return curIt != null;
+            }
+
+            @Override protected void onRemove() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override protected void onClose() throws GridException {
+                if (curIt != null)
+                    curIt.close();
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> GridCloseableIterator<T> iterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+        return new GridCloseableIteratorAdapter<T>() {
+            private GridCloseableIterator<T> curIt;
+
+            private int idx;
+
+            {
+                try {
+                    advance();
+                }
+                catch (GridException e) {
+                    e.printStackTrace(); // Should never happen.
+                }
+            }
+
+            private void advance() throws GridException {
+                curIt = null;
+
+                while (idx < segs.length) {
+                    curIt = segs[idx++].iterator(c);
+
+                    if (curIt.hasNext())
+                        return;
+                    else
+                        curIt.close();
+                }
+
+                curIt = null;
+            }
+
+            @Override protected T onNext() throws GridException {
+                if (curIt == null)
+                    throw new NoSuchElementException();
+
+                T t = curIt.next();
 
                 if (!curIt.hasNext()) {
                     curIt.close();
@@ -654,11 +714,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         }
 
         /**
-         * @param pred Key/value predicate.
          * @return Iterator.
          */
-        GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
-            @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred) {
+        GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
             return new GridCloseableIteratorAdapter<GridBiTuple<byte[],byte[]>>() {
                 private final Queue<GridBiTuple<byte[], byte[]>> bin = new LinkedList<>();
 
@@ -692,15 +750,6 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                 int valLen = Entry.readValueLength(entryAddr, mem);
                                 int keyLen = Entry.readKeyLength(entryAddr, mem);
 
-                                if (pred != null) {
-                                    T2<Long, Integer> keyPtr = new T2<>(entryAddr + HEADER, keyLen);
-
-                                    T2<Long, Integer> valPtr = new T2<>(entryAddr + HEADER + keyLen, valLen);
-
-                                    if (!pred.apply(keyPtr, valPtr))
-                                        continue;
-                                }
-
                                 byte[] valBytes =  mem.readBytes(entryAddr + HEADER + keyLen, valLen);
 
                                 bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), valBytes));
@@ -717,6 +766,82 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                 @Override protected GridBiTuple<byte[], byte[]> onNext() {
                     GridBiTuple<byte[], byte[]> t = bin.poll();
+
+                    if (t == null)
+                        throw new NoSuchElementException();
+
+                    return t;
+                }
+
+                @Override protected void onRemove() {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override protected void onClose() {
+                    // No-op.
+                }
+            };
+        }
+
+        /**
+         * @param c Key/value closure.
+         * @return Iterator.
+         */
+        <T> GridCloseableIterator<T> iterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+            return new GridCloseableIteratorAdapter<T>() {
+                private final Queue<T> bin = new LinkedList<>();
+
+                {
+                    lock.readLock().lock();
+
+                    try {
+                        advance();
+                    }
+                    finally {
+                        lock.readLock().unlock();
+                    }
+                }
+
+                private void advance() {
+                    assert bin.isEmpty();
+
+                    long tblEnd = tblAddr + memCap;
+
+                    for (long binAddr = tblAddr; binAddr < tblEnd; binAddr += 8) {
+                        long entryAddr = Bin.first(binAddr, mem);
+
+                        if (entryAddr == 0)
+                            continue;
+
+                        while (entryAddr != 0) {
+                            // Read key and value bytes.
+                            // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
+//                            bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), Entry.readValueBytes(entryAddr, mem)));
+                            {
+                                int valLen = Entry.readValueLength(entryAddr, mem);
+                                int keyLen = Entry.readKeyLength(entryAddr, mem);
+
+                                T2<Long, Integer> keyPtr = new T2<>(entryAddr + HEADER, keyLen);
+
+                                T2<Long, Integer> valPtr = new T2<>(entryAddr + HEADER + keyLen, valLen);
+
+                                T res = c.apply(keyPtr, valPtr);
+
+                                if (res != null)
+                                    bin.add(res);
+                            }
+
+                            entryAddr = Entry.nextAddress(entryAddr, mem);
+                        }
+                    }
+                }
+
+                @Override protected boolean onHasNext() {
+                    return !bin.isEmpty();
+                }
+
+                @Override protected T onNext() {
+                    T t = bin.poll();
 
                     if (t == null)
                         throw new NoSuchElementException();

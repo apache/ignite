@@ -1705,6 +1705,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param bytes Object marshalled with portable marshaller.
+     * @return Object marshalled with grid marshaller.
+     * @throws GridException If failed.
+     */
+    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+        assert portableEnabled() && offheapTiered();
+
+        return marshaller().marshal(portable().unmarshal(bytes, 0));
+    }
+
+    /**
      * @param obj Object.
      * @return Portable object.
      * @throws GridPortableException In case of error.

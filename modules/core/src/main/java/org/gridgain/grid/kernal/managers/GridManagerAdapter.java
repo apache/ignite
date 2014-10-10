@@ -508,7 +508,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                             return (V)e.valueBytes();
 
                         if (cctx.offheapTiered() && cctx.portableEnabled())
-                            return (V)ctx.portable().unmarshal(e.valueBytes());
+                            return (V)ctx.portable().unmarshal(e.valueBytes(), 0);
                         else {
                             ldr = ldr != null ? ldr : U.gridClassLoader();
 

@@ -41,7 +41,7 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object unmarshal(byte[] arr) throws GridPortableException {
+    @Nullable @Override public Object unmarshal(byte[] arr, int off) throws GridPortableException {
         return null;
     }
 

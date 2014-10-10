@@ -41,10 +41,11 @@ public interface GridPortableProcessor extends GridProcessor {
 
     /**
      * @param arr Byte array.
+     * @param off Offset.
      * @return Unmarshalled object.
      * @throws GridPortableException In case of error.
      */
-    public Object unmarshal(byte[] arr) throws GridPortableException;
+    public Object unmarshal(byte[] arr, int off) throws GridPortableException;
 
     /**
      * @param ptr Offheap pointer.

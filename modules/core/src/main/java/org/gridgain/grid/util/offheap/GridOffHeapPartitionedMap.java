@@ -176,11 +176,10 @@ public interface GridOffHeapPartitionedMap {
     /**
      * Gets iterator over the whole map.
      *
-     * @param pred Key/value predicate.
+     * @param c Key/value closure.
      * @return Iterator over the whole map.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
-        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred);
+    public <T> GridCloseableIterator<T> iterator(CX2<T2<Long, Integer>, T2<Long, Integer>, T> c);
 
     /**
      * Gets iterator over certain partition.

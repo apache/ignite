@@ -159,11 +159,17 @@ public interface GridOffHeapMap<K> {
     /**
      * Gets iterator over map.
      *
-     * @param pred Key/value predicate.
      * @return Iterator over map.
      */
-    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator(
-        @Nullable final P2<T2<Long, Integer>, T2<Long, Integer>> pred);
+    public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+
+    /**
+     * Gets iterator over map.
+     *
+     * @param c Key/value closure.
+     * @return Iterator over map.
+     */
+    public <T> GridCloseableIterator<T> iterator(@Nullable CX2<T2<Long, Integer>, T2<Long, Integer>, T> c);
 
     /**
      * Sets callback for when entries are evicted due to memory constraints.

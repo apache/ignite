@@ -77,6 +77,37 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
         this.keyClsLdrId = keyClsLdrId;
     }
 
+    public static long timeToLive(byte[] bytes) {
+        return 0; // TODO 9198
+    }
+
+    public static long expireTime(byte[] bytes) {
+        return 0; // TODO 9198
+    }
+
+    public static GridCacheVersion version(byte[] bytes) {
+        return null; // TODO 9198
+    }
+
+    public static byte[] getValueIfByteArray(byte[] bytes) {
+        return null; // TODO 9198
+    }
+
+    public static int valueOffset(byte[] bytes) {
+        assert bytes.length > 40 : bytes.length;
+
+        int off = 16; // Skip ttl, expire time.
+
+        boolean verEx = bytes[off++] != 0;
+
+        off += verEx ? 48 : 24;
+
+        off += 5; // Byte array flag + array size.
+
+        assert bytes.length >= off;
+
+        return off;
+    }
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes() {

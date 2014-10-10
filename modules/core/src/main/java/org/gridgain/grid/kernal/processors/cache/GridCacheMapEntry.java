@@ -2973,11 +2973,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         checkObsolete();
 
         if (isNew()) {
+            V val = unswapped.value();
+
             if (cctx.portableEnabled())
                 val = (V)cctx.kernalContext().portable().detachPortable(val);
 
             // Version does not change for load ops.
-            update(unswapped.value(),
+            update(val,
                 unswapped.valueBytes(),
                 unswapped.expireTime(),
                 unswapped.ttl(),
@@ -4114,7 +4116,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         assert cctx.portableEnabled();
 
-        return GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true))); // TODO 9198 temp obj.
+        return GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true)));
     }
 
     /**

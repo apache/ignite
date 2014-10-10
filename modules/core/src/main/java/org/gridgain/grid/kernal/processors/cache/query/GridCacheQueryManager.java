@@ -28,6 +28,7 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -613,20 +614,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
-        GridPredicate<GridCacheEntry<K, V>> filter = new P1<GridCacheEntry<K, V>>() {
-            @Override public boolean apply(GridCacheEntry<K, V> e) {
-                return qry.projectionFilter() == null ||
-                    qry.projectionFilter().apply((GridCacheEntry<Object, Object>)e);
-            }
-        };
+        GridPredicate<GridCacheEntry<K, V>> filter = null;
 
-        final GridCacheProjection<K, V> prj = cctx.cache().projection(filter);
+        if (qry.projectionFilter() != null) {
+            filter = new P1<GridCacheEntry<K, V>>() {
+                @Override public boolean apply(GridCacheEntry<K, V> e) {
+                    return qry.projectionFilter().apply((GridCacheEntry<Object, Object>)e);
+                }
+            };
+        }
+
+        final GridCacheProjection<K, V> prj = filter != null ? cctx.cache().projection(filter) : cctx.cache();
 
         final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         injectResources(keyValFilter);
 
-        final GridIterator<GridIndexingKeyValueRow<K, V>> it = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+        GridIterator<GridIndexingKeyValueRow<K, V>> heapIt = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
             private GridIndexingKeyValueRow<K, V> next;
 
             private Iterator<K> iter = prj.keySet().iterator();
@@ -682,13 +686,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             private boolean checkPredicate(Map.Entry<K, V> e) {
                 if (keyValFilter != null) {
                     Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
-    
+
                     return keyValFilter.apply(e0.getKey(), e0.getValue());
                 }
-                
+
                 return true;
             }
         };
+
+        final GridIterator<GridIndexingKeyValueRow<K, V>> it;
+
+        if (cctx.isSwapOrOffheapEnabled()) {
+            List<GridIterator<GridIndexingKeyValueRow<K, V>>> iters = new ArrayList<>(3);
+
+            iters.add(heapIt);
+
+            if (cctx.isOffHeapEnabled())
+                iters.add(offheapIterator(qry));
+
+            if (cctx.swap().swapEnabled())
+                iters.add(swapIterator(qry));
+
+            it = new CompoundIterator<>(iters);
+        }
+        else
+            it = heapIt;
 
         return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
             @Override protected boolean onHasNext() {
@@ -706,343 +728,343 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * @param qry Query.
+     * @return Swap iterator.
+     * @throws GridException If failed.
+     */
+    private GridIterator<GridIndexingKeyValueRow<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
+        throws GridException {
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+
+        GridBiPredicate<K, V> filter = qry.scanFilter();
+
+        Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawSwapIterator();
+
+        return scanIterator(it, prjPred, filter, qry.keepPortable());
+    }
+
+    /**
+     * @param qry Query.
+     * @return Offheap iterator.
+     */
+    private GridIterator<GridIndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+
+        GridBiPredicate<K, V> filter = qry.scanFilter();
+
+        if ((cctx.portableEnabled() && cctx.offheapTiered()) && (prjPred != null || filter != null)) {
+            OffheapIteratorClosure c = new OffheapIteratorClosure(prjPred, filter, qry.keepPortable());
+
+            return cctx.swap().rawOffHeapIterator(c);
+        }
+        else {
+            Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator(null);
+
+            return scanIterator(it, prjPred, filter, qry.keepPortable());
+        }
+    }
+
+    /**
+     * @param it Lazy swap or offheap iterator.
+     * @param prjPred Projection predicate.
+     * @param filter Scan filter.
+     * @param keepPortable Keep portable flag.
+     * @return Iterator.
+     */
+    private GridIteratorAdapter<GridIndexingKeyValueRow<K, V>> scanIterator(
+        @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
+        @Nullable final GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable final GridBiPredicate<K, V> filter,
+        final boolean keepPortable) {
+        if (it == null)
+            return new GridEmptyCloseableIterator<>();
+
+        return new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+            private GridIndexingKeyValueRow<K, V> next;
+
+            {
+                advance();
+            }
+
+            @Override public boolean hasNextX() {
+                return next != null;
+            }
+
+            @Override public GridIndexingKeyValueRow<K, V> nextX() {
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                GridIndexingKeyValueRow<K, V> next0 = next;
+
+                advance();
+
+                return next0;
+            }
+
+            @Override public void removeX() {
+                throw new UnsupportedOperationException();
+            }
+
+            private void advance() {
+                while (it.hasNext()) {
+                    final LazySwapEntry e = new LazySwapEntry(it.next());
+
+                    if (prjPred != null) {
+                        GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+
+                        if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
+                            continue;
+                    }
+
+                    if (filter != null) {
+                        K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+                        V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+                        if (!filter.apply(key, val))
+                            continue;
+                    }
+
+                    next = new GridIndexingKeyValueRowAdapter<>(e.key(), e.value());
+
+                    break;
+                }
+            }
+        };
+    }
+
+    /**
      *
      */
-    private class OffheapEntryPredicate implements P2<T2<Long, Integer>, T2<Long, Integer>> {
+    private abstract class AbstractLazySwapEntry {
         /** */
-        private GridPredicate<GridCacheEntry<K, V>> prjFilter;
-        
+        private K key;
+
         /** */
-        private GridBiPredicate<K, V> keyValFilter;
+        private V val;
+
+        /**
+         * @return Key bytes.
+         */
+        protected abstract byte[] keyBytes();
+
+        /**
+         * @return Value.
+         * @throws GridException If failed.
+         */
+        protected abstract V unmarshalValue() throws GridException;
+
+        /**
+         * @return Key.
+         */
+        K key() {
+            try {
+                if (key != null)
+                    return key;
+
+                key = cctx.marshaller().unmarshal(keyBytes(), cctx.deploy().globalLoader());
+
+                return key;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return Value.
+         */
+        V value() {
+            try {
+                if (val != null)
+                    return val;
+
+                val = unmarshalValue();
+
+                return val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return TTL.
+         */
+        abstract long timeToLive();
+
+        /**
+         * @return Expire time.
+         */
+        abstract long expireTime();
+
+        /**
+         * @return Version.
+         */
+        abstract GridCacheVersion version();
+    }
+
+    /**
+     *
+     */
+    private class LazySwapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final Map.Entry<byte[], byte[]> e;
+
+        /**
+         * @param e Entry with
+         */
+        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return e.getValue();
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("IfMayBeConditional")
+        @Override protected V unmarshalValue() throws GridException {
+            byte[] bytes = e.getValue();
+
+            byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
+
+            if (val != null)
+                return (V)val;
+
+            if (cctx.offheapTiered() && cctx.portableEnabled())
+                return (V)cctx.portable().unmarshal(bytes, GridCacheSwapEntryImpl.valueOffset(bytes));
+            else {
+                GridByteArrayInputStream in = new GridByteArrayInputStream(bytes,
+                    GridCacheSwapEntryImpl.valueOffset(bytes),
+                    bytes.length);
+
+                return cctx.marshaller().unmarshal(in, cctx.deploy().globalLoader());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheSwapEntryImpl.timeToLive(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheSwapEntryImpl.expireTime(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheSwapEntryImpl.version(e.getValue());
+        }
+    }
+
+    /**
+     *
+     */
+    private class LazyOffheapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final T2<Long, Integer> keyPtr;
+
+        /** */
+        private final T2<Long, Integer> valPtr;
+
+        /**
+         * @param keyPtr Key address.
+         * @param valPtr Value address.
+         */
+        private LazyOffheapEntry(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
+            assert keyPtr != null;
+            assert valPtr != null;
+
+            this.keyPtr = keyPtr;
+            this.valPtr = valPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return U.copyMemory(keyPtr.get1(), keyPtr.get2());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected V unmarshalValue() throws GridException {
+            long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
+
+            V val = (V)cctx.portable().unmarshal(ptr, false);
+
+            assert val != null;
+
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheOffheapSwapEntry.timeToLive(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheOffheapSwapEntry.version(valPtr.get1());
+        }
+    }
+
+    /**
+     *
+     */
+    private class OffheapIteratorClosure
+        extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
+        /** */
+        private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
+
+        /** */
+        private GridBiPredicate<K, V> filter;
 
         /** */
         private boolean keepPortable;
 
         /**
-         * @param prjFilter Projection filter.
-         * @param keyValFilter Filter.
+         * @param prjPred Projection filter.
+         * @param filter Filter.
          * @param keepPortable Keep portable flag.
          */
-        private OffheapEntryPredicate(
-            @Nullable GridPredicate<GridCacheEntry<K, V>> prjFilter,
-            @Nullable GridBiPredicate<K, V> keyValFilter, 
+        private OffheapIteratorClosure(
+            @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+            @Nullable GridBiPredicate<K, V> filter,
             boolean keepPortable) {
-            assert prjFilter != null || keyValFilter != null;
-            
-            this.prjFilter = prjFilter;
-            this.keyValFilter = keyValFilter;
+            assert prjPred != null || filter != null;
+
+            this.prjPred = prjPred;
+            this.filter = filter;
             this.keepPortable = keepPortable;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
-            final long valPtr0 = valPtr.get1();
-
-            final K key = (K)unmarshalOffheapKey(keyPtr);
-            final V val = (V)unmarshalOffheapValue(valPtr);
-
-            if (prjFilter != null) {
-                boolean pass = prjFilter.apply(new GridCacheEntry<K, V>() {
-                    @Override public GridCacheProjection<K, V> projection() {
-                        return null;
-                    }
-
-                    @Nullable @Override public V peek() {
-                        return val;
-                    }
-
-                    @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) 
-                       throws GridException {
-                        return cctx.cache().peek(key, modes);
-                    }
-
-                    @Nullable @Override public V reload() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<V> reloadAsync() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean isLocked() {
-                        return false;
-                    }
-
-                    @Override public boolean isLockedByThread() {
-                        return false;
-                    }
-
-                    @Override public Object version() {
-                        return GridCacheOffheapSwapEntry.version(valPtr0);
-                    }
-
-                    @Override public long expirationTime() {
-                        return GridCacheOffheapSwapEntry.expireTime(valPtr0);
-                    }
-
-                    @Override public long timeToLive() {
-                        return GridCacheOffheapSwapEntry.timeToLive(valPtr0);
-                    }
-
-                    @Override public void timeToLive(long ttl) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean primary() {
-                        return cctx.affinity().
-                                primary(cctx.localNode(), key, cctx.affinity().affinityTopologyVersion());
-                    }
-
-                    @Override public boolean backup() {
-                        return cctx.affinity().
-                                backups(key, cctx.affinity().affinityTopologyVersion()).contains(cctx.localNode());
-                    }
-
-                    @Override public int partition() {
-                        return cctx.affinity().partition(key);
-                    }
-
-                    @Nullable @Override public V getValue() {
-                        return val;
-                    }
-
-                    @Nullable @Override public V get() {
-                        return val;
-                    }
-
-                    @Override public GridFuture<V> getAsync() {
-                        return new GridFinishedFuture<V>(cctx.kernalContext(), val);
-                    }
-
-                    @Nullable @Override public V setValue(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public V set(V val,  GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<V> setAsync(V val,  GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public V setIfAbsent(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<V> setIfAbsentAsync(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> setxAsync(V val, 
-                        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean setxIfAbsent(@Nullable V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> setxIfAbsentAsync(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public void transform(GridClosure<V, V> transformer) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public V replace(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<V> replaceAsync(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean replacex(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> replacexAsync(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean replace(V oldVal, V newVal) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> replaceAsync(V oldVal, V newVal) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<V> removeAsync(GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean removex(GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> removexAsync(
-                        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean remove(V val) throws GridException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> removeAsync(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean evict() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean clear() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean compact() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean lock(long timeout, 
-                        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public GridFuture<Boolean> lockAsync(long timeout, 
-                        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public boolean isCached() {
-                        return true;
-                    }
-
-                    @Override public int memorySize() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public K getKey() {
-                        return key;
-                    }
-
-                    @Override public void copyMeta(GridMetadataAware from) {
-                        throw new UnsupportedOperationException();
-
-                    }
-
-                    @Override public void copyMeta(Map<String, ?> data) {
-                        throw new UnsupportedOperationException();
-
-                    }
-
-                    @Nullable @Override public <V> V addMeta(String name, V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public <V> V addMetaIfAbsent(String name, V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public <V> V meta(String name) {
-                        return null;
-                    }
-
-                    @Override public <V> V removeMeta(String name) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public <V> boolean removeMeta(String name, V val) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override public <V> Map<String, V> allMeta() {
-                        return null;
-                    }
-
-                    @Override public boolean hasMeta(String name) {
-                        return false;
-                    }
-
-                    @Override public <V> boolean hasMeta(String name, V val) {
-                        return false;
-                    }
-
-                    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
-                        throw new UnsupportedOperationException();
-                    }
-                });
-
-                if (!pass)
-                    return false;
+        @Nullable @Override public GridIndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
+            T2<Long, Integer> valPtr)
+            throws GridException {
+            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
+
+            if (prjPred != null) {
+                GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+
+                if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
+                    return null;
             }
-            
-            if (keyValFilter != null) {
-                K key0 = (K)cctx.unwrapPortableIfNeeded(key, keepPortable);
-                V val0 = (V)cctx.unwrapPortableIfNeeded(val, keepPortable);
-                
-                return keyValFilter.apply(key0, val0);
+
+            if (filter != null) {
+                K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+                V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+                if (!filter.apply(key, val))
+                    return null;
             }
-            
-            return true;
-        }
 
-        /**
-         * @param ptr Marshalled key address.
-         * @return Unmarshalled key.
-         */
-        private Object unmarshalOffheapKey(T2<Long, Integer> ptr) {
-            assert ptr != null && ptr.get1() != null && ptr.get2() != null : ptr;
-
-            return null;
-        }
-
-        /**
-         * @param ptr Marshalled swap entry address.
-         * @return Unmarshalled value.
-         */
-        private Object unmarshalOffheapValue(T2<Long, Integer> ptr) {
-            assert ptr != null && ptr.get1() != null && ptr.get2() != null : ptr;
-
-            long valPtr = GridCacheOffheapSwapEntry.valueAddress(ptr.get1(), ptr.get2());
-
-            Object val = cctx.portable().unmarshal(valPtr, false);
-
-            assert val != null; // Don't expected null key or value.
-
-            return val;
+            return new GridIndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
         }
     }
 
@@ -2373,6 +2395,398 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CompoundIterator<T> extends GridIteratorAdapter<T> {
+        /** */
+        private final List<GridIterator<T>> iters;
+
+        /** */
+        private int idx;
+
+        /** */
+        private GridIterator<T> iter;
+
+        /**
+         * @param iters Iterators.
+         */
+        private CompoundIterator(List<GridIterator<T>> iters) {
+            if (iters.isEmpty())
+                throw new IllegalArgumentException();
+
+            this.iters = iters;
+
+            iter = F.first(iters);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNextX() throws GridException {
+            if (iter.hasNextX())
+                return true;
+
+            idx++;
+
+            while(idx < iters.size()) {
+                iter = iters.get(idx);
+
+                if (iter.hasNextX())
+                    return true;
+
+                idx++;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T nextX() throws GridException {
+            if (!hasNextX())
+                throw new NoSuchElementException();
+
+            return iter.nextX();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() throws GridException {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     *
+     */
+    private class GridCacheScanSwapEntry implements GridCacheEntry<K, V> {
+        /** */
+        private final AbstractLazySwapEntry e;
+
+        /**
+         * @param e Entry.
+         */
+        private GridCacheScanSwapEntry(AbstractLazySwapEntry e) {
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V peek() {
+            return e.value();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object version() {
+            return e.version();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long expirationTime() {
+            return e.expireTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeToLive() {
+            return e.timeToLive();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V getValue() {
+            return e.value();
+        }
+
+        /** {@inheritDoc} */
+        @Override public K getKey() {
+            return e.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheProjection<K, V> projection() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V reload() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> reloadAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isLocked() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isLockedByThread() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void timeToLive(long ttl) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean primary() {
+            return cctx.affinity().
+                primary(cctx.localNode(), getKey(), cctx.affinity().affinityTopologyVersion());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean backup() {
+            return cctx.affinity().
+                backups(getKey(), cctx.affinity().affinityTopologyVersion()).contains(cctx.localNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition() {
+            return cctx.affinity().partition(getKey());
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V get() {
+            return getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> getAsync() {
+            return new GridFinishedFuture<V>(cctx.kernalContext(), getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V setValue(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V set(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> setAsync(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V setIfAbsent(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> setIfAbsentAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> setxAsync(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setxIfAbsent(@Nullable V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> setxIfAbsentAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void transform(GridClosure<V, V> transformer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V replace(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> replaceAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replacex(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> replacexAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(V oldVal, V newVal) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> removeAsync(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removex(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> removexAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(V val) throws GridException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> removeAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evict() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean compact() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean lock(long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> lockAsync(long timeout,
+            @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCached() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int memorySize() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(GridMetadataAware from) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(Map<String, ?> data) {
+            throw new UnsupportedOperationException();
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMeta(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V addMetaIfAbsent(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V meta(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V removeMeta(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean removeMeta(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> Map<String, V> allMeta() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasMeta(String name) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean hasMeta(String name, V val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+            throw new UnsupportedOperationException();
         }
     }
 }
