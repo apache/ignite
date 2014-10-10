@@ -20,9 +20,11 @@ import org.gridgain.grid.resources.*;
  * @version @java.version
  */
 public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implements GridAsyncSupport<T> {
+    /** Marshaller. */
     @GridMarshallerResource
     private GridMarshaller m;
 
+    /** Async flag. */
     private boolean async;
 
     /** {@inheritDoc} */
