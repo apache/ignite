@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.design.jcache;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.Grid;
 import org.gridgain.grid.design.GridProjection;
 import org.gridgain.grid.design.jcache.query.*;
 import org.gridgain.grid.lang.*;
@@ -84,6 +84,17 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
     public JCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
+     * Executes {@link #localLoadCache(GridBiPredicate, Object...)} on all cache nodes.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link GridCacheStore#loadCache(GridBiInClosure, Object...)} method.
+     * @throws CacheException If loading failed.
+     */
+    public void loadCache(@Nullable GridBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+
+    /**
      * Delegates to {@link GridCacheStore#loadCache(GridBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
@@ -104,7 +115,7 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      *      {@link GridCacheStore#loadCache(GridBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
-    public void loadCache(@Nullable GridBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+    public void localLoadCache(@Nullable GridBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache

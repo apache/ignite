@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.design.jcache.query;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -20,7 +19,7 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public final class QueryAffinityPredicate<K, V> implements GridPredicate<Cache.Entry<K, V>> {
+public final class QueryAffinityPredicate<K, V> extends QueryPredicate<K, V> {
     /** Predicate. */
     private QueryPredicate<K, V> p;
 
@@ -114,7 +113,7 @@ public final class QueryAffinityPredicate<K, V> implements GridPredicate<Cache.E
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
+    @Override public final boolean apply(Cache.Entry<K, V> entry) {
         return p.apply(entry);
     }
 
