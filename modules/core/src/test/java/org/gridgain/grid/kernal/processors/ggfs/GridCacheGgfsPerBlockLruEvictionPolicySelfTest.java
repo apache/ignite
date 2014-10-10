@@ -149,7 +149,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(512);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_REST_CFG));
+        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(SECONDARY_REST_CFG));
 
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
