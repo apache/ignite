@@ -51,10 +51,12 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implemen
         }
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <R> GridFuture<R> future() {
         return null; // TODO: CODE: implement.
     }
