@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * TODO:
  * 1. Get rid of SKIP_STORE, SKIP_SWAP, LOCAL, READ, CLONE
  * 2. Other properties should be moved to cache configuration.
+ * 3. This enum should become obsolete and removed.
  */
 public enum CacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */
