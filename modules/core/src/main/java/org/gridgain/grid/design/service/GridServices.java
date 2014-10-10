@@ -309,10 +309,11 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * then local instance is returned, otherwise, a remote proxy is dynamically
      * created and provided for the specified service.
      *
+     * @param name Service name.
      * @param svc Interface for the service.
      * @param sticky Whether or not GridGain should always contact the same remote
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    public <T> T serviceProxy(Class<T> svc, boolean sticky);
+    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky);
 }

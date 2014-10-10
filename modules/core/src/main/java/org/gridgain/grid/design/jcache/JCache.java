@@ -149,33 +149,6 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
-     * Returns {@code true} if this cache contains a mapping for the specified
-     * key.
-     *
-     * @param key key whose presence in this map is to be tested.
-     * @return {@code true} if this map contains a mapping for the specified key.
-     * @throws NullPointerException if the key is {@code null}.
-     */
-    public boolean containsKey(K key, CachePeekMode... peekMode);
-
-    /**
-     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
-     * peek mode.
-     * <p>
-     * This method will not load value from any persistent store or from a remote node.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
-     * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link GridCache#peek(Object, Collection)} method.
-     *
-     * @param key Entry key.
-     * @return Peeked value.
-     * @throws NullPointerException If key is {@code null}.
-     */
-    @Nullable public V localPeek(K key, GridCachePeekMode... peekModes);
-
-    /**
      * Removes mappings from cache for entries for which the optionally passed in filters do
      * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
      * into transaction.
@@ -258,6 +231,23 @@ public interface JCache<K, V> extends Cache<K, V>, GridAsyncSupport<JCache<K, V>
      * @param keys Keys to evict.
      */
     public void localEvict(Collection<? extends K> keys);
+
+    /**
+     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
+     * peek mode.
+     * <p>
+     * This method will not load value from any persistent store or from a remote node.
+     * <h2 class="header">Transactions</h2>
+     * This method does not participate in any transactions, however, it will
+     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
+     * semantics. If you need to look at global cached value even from within transaction,
+     * you can use {@link GridCache#peek(Object, Collection)} method.
+     *
+     * @param key Entry key.
+     * @return Peeked value.
+     * @throws NullPointerException If key is {@code null}.
+     */
+    @Nullable public V localPeek(K key, GridCachePeekMode... peekModes);
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage
