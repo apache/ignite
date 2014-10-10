@@ -184,6 +184,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
     };
 
+    /** Predicate to filter client nodes. */
+    private static final GridPredicate<GridTcpDiscoveryNode> CLIENT_NODES = new P1<GridTcpDiscoveryNode>() {
+        @Override public boolean apply(GridTcpDiscoveryNode node) {
+            return node.isClient();
+        }
+    };
+
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -243,9 +250,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /** Socket readers. */
     private final Collection<SocketReader> readers = new LinkedList<>();
-
-    /** Client nodes. */
-    private final ConcurrentMap<UUID, GridTcpDiscoveryNode> clientNodes = new ConcurrentHashMap8<>();
 
     /** TCP server for discovery SPI. */
     private TcpServer tcpSrvr;
@@ -677,9 +681,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
         GridTcpDiscoveryNode node = ring.node(nodeId);
 
-        if (node == null)
-            node = clientNodes.get(nodeId);
-
         if (node != null && !node.visible())
             return null;
 
@@ -691,7 +692,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         Collection<GridNode> nodes = new ArrayList<>();
 
         nodes.addAll(F.view(ring.remoteNodes(), VISIBLE_NODES));
-        nodes.addAll(F.view(clientNodes.values(), VISIBLE_NODES));
 
         return nodes;
     }
@@ -1827,9 +1827,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<GridTcpDiscoveryNode> allNodes = F.concat(false, ring.allNodes(), clientNodes.values());
-
-            Collection<GridNode> top = new ArrayList<GridNode>(F.view(allNodes, VISIBLE_NODES));
+            Collection<GridNode> top = new ArrayList<GridNode>(F.view(ring.allNodes(), VISIBLE_NODES));
 
             Map<Long, Collection<GridNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -2005,7 +2003,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             GridTcpDiscoveryNode node = nodeAddedMsg.node();
 
             if (destNode == null || node.equals(destNode)) {
-                Collection<GridTcpDiscoveryNode> allNodes = F.concat(false, ring.allNodes(), clientNodes.values());
+                Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
                 Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
 
                 for (GridTcpDiscoveryNode n0 : allNodes) {
@@ -2015,7 +2013,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     // in case this message is resent due to failures/leaves.
                     // There will be separate messages for nodes with greater
                     // internal order.
-                    if (n0.internalOrder() < nodeAddedMsg.node().internalOrder()) topToSend.add(n0);
+                    if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
+                        topToSend.add(n0);
                 }
 
                 nodeAddedMsg.topology(topToSend);
@@ -2549,7 +2548,15 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 processNodeFailedMessage((GridTcpDiscoveryNodeFailedMessage)msg);
 
             else if (msg instanceof GridTcpDiscoveryHeartbeatMessage) {
-                if (metricsStore != null)
+                if (msg.client()) {
+                    ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+
+                    if (wrk != null)
+                        wrk.addMessage(msg);
+                    else if (log.isDebugEnabled())
+                        log.debug("Received heartbeat message from unknown client node: " + msg);
+                }
+                else if (metricsStore != null)
                     processHeartbeatMessageMetricsStore((GridTcpDiscoveryHeartbeatMessage)msg);
                 else
                     processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
@@ -3450,7 +3457,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (msg.client())
                     node.aliveCheck(maxMissedHbs);
 
-                boolean topChanged = msg.client() ? clientNodes.putIfAbsent(node.id(), node) == null : ring.add(node);
+                boolean topChanged = ring.add(node);
 
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
@@ -3558,9 +3565,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             assert nodeId != null;
 
             GridTcpDiscoveryNode node = ring.node(nodeId);
-
-            if (node == null)
-                node = clientNodes.get(nodeId);
 
             if (node == null) {
                 if (log.isDebugEnabled())
@@ -3728,7 +3732,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 return;
             }
 
-            if (ring.node(msg.senderNodeId()) == null && !clientNodes.containsKey(msg.senderNodeId())) {
+            if (ring.node(msg.senderNodeId()) == null) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding node left message since sender node is not in topology: " + msg);
 
@@ -3747,8 +3751,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
             }
 
-            GridTcpDiscoveryNode leavingNode = msg.client() ? clientNodes.get(leavingNodeId) :
-                ring.node(leavingNodeId);
+            GridTcpDiscoveryNode leavingNode = ring.node(leavingNodeId);
 
             if (leavingNode != null) {
                 synchronized (mux) {
@@ -3777,8 +3780,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (msg.verified() && !locNodeId.equals(leavingNodeId)) {
-                GridTcpDiscoveryNode leftNode = msg.client() ? clientNodes.remove(leavingNodeId) :
-                    ring.removeNode(leavingNodeId);
+                GridTcpDiscoveryNode leftNode = ring.removeNode(leavingNodeId);
 
                 assert leftNode != null;
 
@@ -3922,9 +3924,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
             GridTcpDiscoveryNode node = ring.node(nodeId);
 
-            if (node == null)
-                node = clientNodes.get(nodeId);
-
             if (node != null && node.internalOrder() != order) {
                 if (log.isDebugEnabled())
                     log.debug("Ignoring node failed message since node internal order does not match " +
@@ -3962,7 +3961,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (msg.verified()) {
-                node = node.isClient() ? clientNodes.remove(nodeId) : ring.removeNode(nodeId);
+                node = ring.removeNode(nodeId);
 
                 assert node != null;
 
@@ -4192,10 +4191,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 Collection<UUID> clientNodeIds = msg.clientNodeIds();
 
-                for (Map.Entry<UUID, GridTcpDiscoveryNode> e : clientNodes.entrySet()) {
-                    GridTcpDiscoveryNode clientNode = e.getValue();
-
-                    if (clientNodeIds.contains(e.getKey()))
+                for (GridTcpDiscoveryNode clientNode : F.view(ring.allNodes(), CLIENT_NODES)) {
+                    if (clientNodeIds.contains(clientNode.id()))
                         clientNode.aliveCheck(maxMissedHbs);
                     else {
                         int aliveCheck = clientNode.aliveCheck();

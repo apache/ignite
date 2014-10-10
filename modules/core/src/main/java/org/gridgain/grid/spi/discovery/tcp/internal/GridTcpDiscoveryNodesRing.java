@@ -72,7 +72,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return Collections.unmodifiableCollection(nodes);
+            return Collections.unmodifiableCollection(nodesMap.values());
         }
         finally {
             rwLock.readLock().unlock();
@@ -88,7 +88,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return Collections.unmodifiableCollection(F.view(nodes,
+            return Collections.unmodifiableCollection(F.view(nodesMap.values(),
                 F.<GridTcpDiscoveryNode>remoteNodes(locNode.id())));
         }
         finally {
@@ -105,7 +105,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return nodes.size() > 1;
+            return nodesMap.size() > 1;
         }
         finally {
             rwLock.readLock().unlock();
@@ -129,18 +129,20 @@ public class GridTcpDiscoveryNodesRing {
             if (nodesMap.containsKey(node.id()))
                 return false;
 
-            assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
-                "[ring=" + this + ", node=" + node + ']';
+            node.lastUpdateTime(U.currentTimeMillis());
 
             nodesMap.put(node.id(), node);
 
-            nodes = new TreeSet<>(nodes);
+            if (!node.isClient()) {
+                assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
+                    "[ring=" + this + ", node=" + node + ']';
 
-            node.lastUpdateTime(U.currentTimeMillis());
+                nodes = new TreeSet<>(nodes);
 
-            nodes.add(node);
+                nodes.add(node);
 
-            nodeOrder = node.internalOrder();
+                nodeOrder = node.internalOrder();
+            }
         }
         finally {
             rwLock.writeLock().unlock();
@@ -193,19 +195,22 @@ public class GridTcpDiscoveryNodesRing {
                 if (nodesMap.containsKey(node.id()))
                     continue;
 
-                nodesMap.put(node.id(), node);
-
-                if (firstAdd) {
-                    this.nodes = new TreeSet<>(this.nodes);
-
-                    firstAdd = false;
-                }
-
                 node.lastUpdateTime(U.currentTimeMillis());
 
-                this.nodes.add(node);
+                nodesMap.put(node.id(), node);
+
+                if (!node.isClient()) {
+                    if (firstAdd) {
+                        this.nodes = new TreeSet<>(this.nodes);
+
+                        firstAdd = false;
+                    }
+
+                    this.nodes.add(node);
+                }
             }
 
+            // TODO: GG-9174 - What if topology has clients?
             nodeOrder = topVer;
         }
         finally {
@@ -247,7 +252,7 @@ public class GridTcpDiscoveryNodesRing {
         try {
             GridTcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
-            if (rmv != null) {
+            if (rmv != null && !rmv.isClient()) {
                 nodes = new TreeSet<>(nodes);
 
                 nodes.remove(rmv);
@@ -280,15 +285,18 @@ public class GridTcpDiscoveryNodesRing {
                 GridTcpDiscoveryNode rmv = nodesMap.remove(id);
 
                 if (rmv != null) {
-                    if (firstRmv) {
-                        nodes = new TreeSet<>(nodes);
+                    if (!rmv.isClient()) {
+                        if (firstRmv) {
+                            nodes = new TreeSet<>(nodes);
 
-                        res = new ArrayList<>(nodeIds.size());
+                            firstRmv = false;
+                        }
 
-                        firstRmv = false;
+                        nodes.remove(rmv);
                     }
 
-                    nodes.remove(rmv);
+                    if (res == null)
+                        res = new ArrayList<>(nodeIds.size());
 
                     res.add(rmv);
                 }
