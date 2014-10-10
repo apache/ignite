@@ -391,7 +391,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
             }
         }
-        catch (GridException e) {
+        catch (Exception e) {
             synchronized (mux) {
                 enqueue(Collections.emptyList());
 
