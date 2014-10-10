@@ -78,6 +78,8 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         if (tcpCfg == null)
             throw new GridException("GridTcpRouterConfiguration is not found");
 
+        tcpCfg.setPortRange(Math.max(0, RMT_NODES_CNT - 1)); // RMT_NODES_CNT amount of nodes have reserved TCP ports.
+
         GridRouterFactory.startTcpRouter(tcpCfg);
     }
 
