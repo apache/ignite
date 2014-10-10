@@ -231,9 +231,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return map;
         }
-        else {
+        else
             return Collections.emptyMap();
-        }
     }
 
     /**
@@ -281,9 +280,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return map;
         }
-        else {
+        else
             return Collections.emptyMap();
-        }
     }
 
     /**

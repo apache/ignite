@@ -64,18 +64,14 @@ public final class GridifyUtils {
      * @return Elements size of {@code UNKNOWN_SIZE}.
      */
     public static int getLength(Object obj) {
-        if (obj == null) {
+        if (obj == null)
             return 0;
-        }
-        else if (obj instanceof Collection) {
+        else if (obj instanceof Collection)
             return ((Collection<?>)obj).size();
-        }
-        else if (obj instanceof CharSequence) {
+        else if (obj instanceof CharSequence)
             return ((CharSequence)obj).length();
-        }
-        else if (obj.getClass().isArray()) {
+        else if (obj.getClass().isArray())
             return Array.getLength(obj);
-        }
 
         return UNKNOWN_SIZE;
     }
@@ -89,9 +85,8 @@ public final class GridifyUtils {
     public static Iterator<?> getIterator(final Object obj) {
         assert obj != null;
 
-        if (obj instanceof Iterable) {
+        if (obj instanceof Iterable)
             return ((Iterable<?>)obj).iterator();
-        }
         else if (obj instanceof Enumeration) {
             final Enumeration<?> enumeration = (Enumeration<?>)obj;
 
@@ -101,9 +96,8 @@ public final class GridifyUtils {
                 }
 
                 @Override public Object next() {
-                    if (!hasNext()) {
+                    if (!hasNext())
                         throw new NoSuchElementException();
-                    }
 
                     return enumeration.nextElement();
                 }
@@ -113,9 +107,8 @@ public final class GridifyUtils {
                 }
             };
         }
-        else if (obj instanceof Iterator) {
+        else if (obj instanceof Iterator)
             return (Iterator<?>)obj;
-        }
         else if (obj instanceof CharSequence) {
             final CharSequence cSeq = (CharSequence)obj;
 
@@ -127,9 +120,8 @@ public final class GridifyUtils {
                 }
 
                 @Override public Object next() {
-                    if (!hasNext()) {
+                    if (!hasNext())
                         throw new NoSuchElementException();
-                    }
 
                     idx++;
 
@@ -150,9 +142,8 @@ public final class GridifyUtils {
                 }
 
                 @Override public Object next() {
-                    if (!hasNext()) {
+                    if (!hasNext())
                         throw new NoSuchElementException();
-                    }
 
                     idx++;
 
@@ -177,9 +168,8 @@ public final class GridifyUtils {
      */
     public static boolean isMethodReturnTypeValid(Class<?> cls) {
         for (Class<?> mtdReturnType : ALLOWED_MTD_RETURN_TYPES) {
-            if (mtdReturnType.equals(cls)) {
+            if (mtdReturnType.equals(cls))
                 return true;
-            }
         }
 
         return cls.isArray();
@@ -195,14 +185,12 @@ public final class GridifyUtils {
     @SuppressWarnings({"UnusedCatchParameter"})
     public static boolean isMethodParameterTypeAllowed(Class<?> cls) {
         for (Class<?> mtdReturnType : ALLOWED_MTD_PARAM_TYPES) {
-            if (mtdReturnType.equals(cls)) {
+            if (mtdReturnType.equals(cls))
                 return true;
-            }
         }
 
-        if (cls.isArray()) {
+        if (cls.isArray())
             return true;
-        }
 
         int mod = cls.getModifiers();
 
@@ -211,9 +199,8 @@ public final class GridifyUtils {
 
             for (Constructor ctor : ctors) {
                 try {
-                    if (ctor.getParameterTypes().length == 0 && ctor.newInstance() != null) {
+                    if (ctor.getParameterTypes().length == 0 && ctor.newInstance() != null)
                         return true;
-                    }
                 }
                 catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
                     // No-op.
@@ -234,9 +221,8 @@ public final class GridifyUtils {
     public static boolean isMethodParameterTypeAnnotated(Annotation[] anns) {
         if (anns != null && anns.length > 0) {
             for (Annotation ann : anns) {
-                if (ann.annotationType().equals(GridifyInput.class)) {
+                if (ann.annotationType().equals(GridifyInput.class))
                     return true;
-                }
             }
         }
 
@@ -286,15 +272,13 @@ public final class GridifyUtils {
     @SuppressWarnings({"unchecked"})
     @Nullable
     public static Collection parameterToCollection(Object arg) {
-        if (arg instanceof Collection) {
+        if (arg instanceof Collection)
             return (Collection)arg;
-        }
         else if (arg instanceof Iterator) {
             Collection res = new ArrayList();
 
-            for (Iterator iter = (Iterator)arg; iter.hasNext();) {
+            for (Iterator iter = (Iterator)arg; iter.hasNext();)
                 res.add(iter.next());
-            }
 
             return res;
         }
@@ -312,18 +296,16 @@ public final class GridifyUtils {
 
             Enumeration elements = (Enumeration)arg;
 
-            while (elements.hasMoreElements()) {
+            while (elements.hasMoreElements())
                 res.add(elements.nextElement());
-            }
 
             return res;
         }
         else if (arg != null && arg.getClass().isArray()) {
             Collection res = new ArrayList();
 
-            for (int i = 0; i < Array.getLength(arg); i++) {
+            for (int i = 0; i < Array.getLength(arg); i++)
                 res.add(Array.get(arg, i));
-            }
 
             return res;
         }
@@ -332,9 +314,8 @@ public final class GridifyUtils {
 
             Collection<Character> res = new ArrayList<>(elements.length());
 
-            for (int i = 0; i < elements.length(); i++) {
+            for (int i = 0; i < elements.length(); i++)
                 res.add(elements.charAt(i));
-            }
 
             return res;
         }
@@ -352,27 +333,20 @@ public final class GridifyUtils {
     @SuppressWarnings({"unchecked"})
     @Nullable
     public static Object collectionToParameter(Class<?> paramCls, Collection data) {
-        if (Collection.class.equals(paramCls)) {
+        if (Collection.class.equals(paramCls))
             return data;
-        }
-        else if (Iterable.class.equals(paramCls)) {
+        else if (Iterable.class.equals(paramCls))
             return data;
-        }
-        else if (Iterator.class.equals(paramCls)) {
+        else if (Iterator.class.equals(paramCls))
             return new IteratorAdapter(data);
-        }
-        else if (Enumeration.class.equals(paramCls)) {
+        else if (Enumeration.class.equals(paramCls))
             return new EnumerationAdapter(data);
-        }
-        else if (Set.class.equals(paramCls)) {
+        else if (Set.class.equals(paramCls))
             return new HashSet(data);
-        }
-        else if (List.class.equals(paramCls)) {
+        else if (List.class.equals(paramCls))
             return new LinkedList(data);
-        }
-        else if (Queue.class.equals(paramCls)) {
+        else if (Queue.class.equals(paramCls))
             return new LinkedList(data);
-        }
         else if (CharSequence.class.equals(paramCls)) {
             SB sb = new SB();
 

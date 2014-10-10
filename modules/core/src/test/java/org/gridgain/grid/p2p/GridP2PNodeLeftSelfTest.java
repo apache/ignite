@@ -76,12 +76,10 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
             // Task will be deployed after stop node1
             int[] res2 = (int[])grid3.compute().execute(task1, grid2.localNode().id()).get();
 
-            if (isExpectUndeploy) {
+            if (isExpectUndeploy)
                 assert isNotSame(res1, res2);
-            }
-            else {
+            else
                 assert Arrays.equals(res1, res2);
-            }
         }
         finally {
             stopGrid(1);

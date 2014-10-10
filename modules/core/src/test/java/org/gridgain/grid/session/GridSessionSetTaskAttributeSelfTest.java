@@ -46,9 +46,8 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
 
         grid.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
-        for (int i = 0; i < EXEC_COUNT; i++) {
+        for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
-        }
     }
 
     /**
@@ -78,9 +77,8 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
@@ -114,9 +112,8 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
             assert taskSes != null;
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -125,20 +122,17 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
                     @Override public Serializable execute() throws GridException {
                         assert taskSes != null;
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
-                        }
 
                         try {
                             String val = (String)taskSes.waitForAttribute("testName", 20000);
 
-                            if (log.isInfoEnabled()) {
+                            if (log.isInfoEnabled())
                                 log.info("Received attribute 'testName': " + val);
-                            }
 
-                            if ("testVal".equals(val)) {
+                            if ("testVal".equals(val))
                                 return 1;
-                            }
                         }
                         catch (InterruptedException e) {
                             throw new GridException("Failed to get attribute due to interruption.", e);
@@ -149,9 +143,8 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
                 });
             }
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Set attribute 'testName'.");
-            }
 
             taskSes.setAttribute("testName", "testVal");
 
@@ -161,9 +154,8 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             if (log.isInfoEnabled()) {
                 log.info("Received result from job [res=" + result + ", size=" + received.size() +
@@ -175,20 +167,17 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;

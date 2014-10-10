@@ -103,9 +103,8 @@ public class GridFutureQueueTest {
 
                             if (size == 0) {
                                 synchronized (mux) {
-                                    while (queue.isEmpty()) {
+                                    while (queue.isEmpty())
                                         mux.wait();
-                                    }
                                 }
                             }
                         }
@@ -141,9 +140,8 @@ public class GridFutureQueueTest {
 
                                 Boolean res = fut.get();
 
-                                if (!res) {
+                                if (!res)
                                     System.out.println("Error");
-                                }
                             }
                         }
                         catch (Exception e ) {

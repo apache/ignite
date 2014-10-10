@@ -97,9 +97,8 @@ public class AmortizedPQueue<E> extends AbstractQueue<E> implements PQueue<E> {
 
     /* Amortized O(1), worst-case O(n) */
     public AmortizedPQueue<E> minus() {
-        if (size() == 0) {
+        if (size() == 0)
             return this;
-        }
 
         int fsize = front.size();
 

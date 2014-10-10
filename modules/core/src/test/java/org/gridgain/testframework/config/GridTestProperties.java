@@ -63,9 +63,8 @@ public final class GridTestProperties {
         if (ggHome == null || ggHome.isEmpty()) {
             ggHome = System.getenv("GRIDGAIN_HOME");
 
-            if (ggHome != null && !ggHome.isEmpty()) {
+            if (ggHome != null && !ggHome.isEmpty())
                 System.setProperty("GRIDGAIN_HOME", ggHome);
-            }
         }
 
         // Load default properties.
@@ -207,17 +206,15 @@ public final class GridTestProperties {
 
                 String val = System.getenv(key);
 
-                if (val == null) {
+                if (val == null)
                     val = System.getProperty(key);
-                }
 
                 if (val != null) {
                     // Take care of back slashes.
                     match = val.replaceAll("\\\\", "\\\\\\\\");
                 }
-                else if (match.startsWith("$")) {
+                else if (match.startsWith("$"))
                     match = match.replace("$", "\\$");
-                }
             }
 
             matcher.appendReplacement(buf, match);

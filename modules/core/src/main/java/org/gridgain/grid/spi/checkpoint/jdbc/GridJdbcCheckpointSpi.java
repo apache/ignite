@@ -459,9 +459,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
 
             while (true) {
                 try {
-                    if (!isCheckpointTableExists(conn)) {
+                    if (!isCheckpointTableExists(conn))
                         createCheckpointTable(conn);
-                    }
 
                     conn.commit();
 
@@ -470,9 +469,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
                 catch (SQLException e) {
                     U.rollbackConnection(conn, log);
 
-                    if(++errCnt >= retryNum) {
+                    if(++errCnt >= retryNum)
                         throw new GridSpiException("Failed to create checkpoint table: " + tblName, e);
-                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug("Failed to create checkpoint table as it may already exist (will try again): " +
@@ -489,17 +487,15 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
         }
 
         // Ack ok start.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(startInfo());
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws GridSpiException {
         // Ack ok stop.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(stopInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -576,9 +572,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
 
                 GridCheckpointListener tmp = lsnr;
 
-                if (tmp != null) {
+                if (tmp != null)
                     tmp.onCheckpointRemoved(key);
-                }
             }
 
             conn.commit();
@@ -603,9 +598,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
         throws GridSpiException {
         Time expTime = null;
 
-        if (timeout != NON_EXPIRABLE_TIMEOUT) {
+        if (timeout != NON_EXPIRABLE_TIMEOUT)
             expTime = new Time(U.currentTimeMillis() + timeout);
-        }
 
         Connection conn = null;
 
@@ -632,9 +626,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
                         }
                     }
                     else {
-                        if (!overwrite) {
+                        if (!overwrite)
                             return false;
-                        }
                         if (updateCheckpoint(conn, key, state, expTime) == 0) {
                             ++errCnt;
 
@@ -809,9 +802,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
 
             st.executeUpdate(crtTblSql);
 
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Successfully created checkpoint table: " + tblName);
-            }
         }
         finally {
             U.close(st, log);
@@ -845,9 +837,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
 
                 rs = selSt.executeQuery();
 
-                while (rs.next()) {
+                while (rs.next())
                     tmp.onCheckpointRemoved(rs.getString(1));
-                }
             }
 
             delSt = conn.prepareStatement(delExpSql);
@@ -862,9 +853,8 @@ public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpo
             U.close(delSt, log);
         }
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Successfully removed expired checkpoints from: " + tblName );
-        }
 
         return delCnt;
     }

@@ -69,9 +69,8 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        for (Iterator<Integer> iter = set.iterator(); iter.hasNext(); cnt++) {
+        for (Iterator<Integer> iter = set.iterator(); iter.hasNext(); cnt++)
             c1.contains(iter.next());
-        }
 
         assert set.size() == cnt;
 
@@ -202,9 +201,8 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
                     start.await();
 
                     for (int i = 0; i < cnt; i++) {
-                        for (int j = 0; j < cnt; j++) {
+                        for (int j = 0; j < cnt; j++)
                             set.add(new SampleBean(i));
-                        }
                     }
                 }
                 catch (Exception e) {
@@ -215,9 +213,8 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        for (int i = 0; i < threadCnt; i++) {
+        for (int i = 0; i < threadCnt; i++)
             new Thread(r).start();
-        }
 
         start.countDown();
 
@@ -247,9 +244,8 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
                     start.await();
 
                     for (int i = 0; i < cnt; i++) {
-                        for (int j = 0; j < cnt; j++) {
+                        for (int j = 0; j < cnt; j++)
                             set.add(new SampleBean(i));
-                        }
                     }
                 }
                 catch (Exception e) {
@@ -266,9 +262,8 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
                     start.await();
 
                     for (int i = 0; i < cnt; i++) {
-                        for (int j = 0; j < cnt; j++) {
+                        for (int j = 0; j < cnt; j++)
                             set.remove(new SampleBean(i));
-                        }
                     }
                 }
                 catch (Exception e) {
@@ -357,23 +352,19 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings({"RedundantIfStatement"})
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (!(o instanceof SampleBean)) {
+            if (!(o instanceof SampleBean))
                 return false;
-            }
 
             SampleBean that = (SampleBean)o;
 
-            if (num != that.num) {
+            if (num != that.num)
                 return false;
-            }
 
-            if (str != null ? !str.equals(that.str) : that.str != null) {
+            if (str != null ? !str.equals(that.str) : that.str != null)
                 return false;
-            }
 
             return true;
         }

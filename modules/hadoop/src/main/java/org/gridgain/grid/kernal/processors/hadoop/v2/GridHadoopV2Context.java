@@ -81,12 +81,10 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
                 inputSplit = new FileSplit(new Path(fileBlock.file()), fileBlock.start(), fileBlock.length(), null);
             }
-            else if (split instanceof GridHadoopExternalSplit) {
+            else if (split instanceof GridHadoopExternalSplit)
                 throw new UnsupportedOperationException(); // TODO
-            }
-            else if (split instanceof GridHadoopSplitWrapper) {
+            else if (split instanceof GridHadoopSplitWrapper)
                 inputSplit = (InputSplit)GridHadoopUtils.unwrapSplit((GridHadoopSplitWrapper)split);
-            }
             else
                 throw new IllegalStateException();
         }
@@ -104,9 +102,8 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public Object getCurrentKey() throws IOException, InterruptedException {
-        if (reader != null) {
+        if (reader != null)
             return reader.getCurrentKey();
-        }
 
         return input.key();
     }

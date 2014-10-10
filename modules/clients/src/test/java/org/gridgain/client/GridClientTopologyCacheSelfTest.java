@@ -194,9 +194,8 @@ public class GridClientTopologyCacheSelfTest extends GridCommonAbstractTest {
 
             return node && cache;
         }
-        else {
+        else
             return nodeMetricsAvailable(client);
-        }
     }
 
     /**

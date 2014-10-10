@@ -78,9 +78,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Grid grid) {
         try {
-            if (grid != null) {
+            if (grid != null)
                 G.stop(grid.name(), true);
-            }
         }
         catch (Throwable e) {
             error("Got error when stopping grid.", e);
@@ -399,18 +398,15 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
             boolean ignoreLocNode = false;
 
-            if (subgrid.size() == 1) {
+            if (subgrid.size() == 1)
                 assert subgrid.get(0).id().equals(locId) : "Wrong node id.";
-            }
-            else {
+            else
                 ignoreLocNode = true;
-            }
 
             for (GridNode node : subgrid) {
                 // Ignore local node.
-                if (ignoreLocNode && node.id().equals(locId)) {
+                if (ignoreLocNode && node.id().equals(locId))
                     continue;
-                }
 
                 map.put(new GridDeploymentResourceTestJob(), node);
             }
@@ -434,9 +430,8 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Executing grid job: " + this);
-            }
 
             try {
                 ClassLoader ldr = Thread.currentThread().getContextClassLoader();

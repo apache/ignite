@@ -163,11 +163,10 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
                     latch.countDown();
 
-                    if (latch.getCount() > 0) {
+                    if (latch.getCount() > 0)
                         respond("PING");
-                    } else {
+                    else
                         stop();
-                    }
                 }
             }
         });
@@ -202,11 +201,10 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     System.out.println(Thread.currentThread().getName() + "Calling stop...");
 
                     stop();
-                } else if (cnt.intValue() < rcv) {
+                } else if (cnt.intValue() < rcv)
                     skip();
-                } else {
+                else
                     assert false;
-                }
             }
         });
 

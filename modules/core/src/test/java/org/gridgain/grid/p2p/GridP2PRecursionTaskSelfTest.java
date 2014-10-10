@@ -108,9 +108,8 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     private long factorial(long num) {
         assert num > 0;
 
-        if (num == 1) {
+        if (num == 1)
             return num;
-        }
 
         return num * factorial(num - 1);
     }
@@ -129,9 +128,8 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < arg; i++) {
                 // Recycle iterator.
-                if (iter.hasNext() == false) {
+                if (iter.hasNext() == false)
                     iter = subgrid.iterator();
-                }
 
                 GridNode node = iter.next();
 
@@ -174,9 +172,8 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
             assert arg != null;
             assert arg > 0;
 
-            if (arg == 1) {
+            if (arg == 1)
                 return 1L;
-            }
 
             grid.compute().localDeployTask(FactorialTask.class, FactorialTask.class.getClassLoader());
 

@@ -38,13 +38,11 @@ class GridUriDeploymentFtpFile {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
 
-        if (!(obj instanceof GridUriDeploymentFtpFile)) {
+        if (!(obj instanceof GridUriDeploymentFtpFile))
             return false;
-        }
 
         GridUriDeploymentFtpFile other = (GridUriDeploymentFtpFile)obj;
 

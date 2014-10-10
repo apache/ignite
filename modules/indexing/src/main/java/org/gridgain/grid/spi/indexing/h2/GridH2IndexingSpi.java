@@ -1154,9 +1154,8 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         // Do not register if value is not primitive and
         // there are no indexes or fields defined.
         if (!type.valueTextIndex() && type.indexes().isEmpty() &&
-            type.keyFields().isEmpty() && type.valueFields().isEmpty()) {
+            type.keyFields().isEmpty() && type.valueFields().isEmpty())
             return keyPrimitive && isIndexPrimitiveKey(spaceName) || valPrimitive && isIndexPrimitiveValue(spaceName);
-        }
 
         Collection<String> names = new HashSet<>();
 
