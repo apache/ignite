@@ -77,9 +77,8 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
             ses.setAttribute("fail", true);
 
             for (int i = 0; i < 10; i++) {
-                for (int ii = 0; ii < 10; ii++) {
+                for (int ii = 0; ii < 10; ii++)
                     ses.setAttribute("test.task.attr." + i, ii);
-                }
             }
 
             return Collections.singletonMap(new GridComputeJobAdapter(arg) {
@@ -101,9 +100,8 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                         ses.setAttribute("fail", false);
 
                         for (int i = 0; i < 10; i++) {
-                            for (int ii = 0; ii < 10; ii++) {
+                            for (int ii = 0; ii < 10; ii++)
                                 ses.setAttribute("test.job.attr." + i, ii);
-                            }
                         }
 
                         throw new GridException("Job exception.");

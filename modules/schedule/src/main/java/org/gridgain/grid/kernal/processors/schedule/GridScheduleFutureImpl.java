@@ -146,9 +146,8 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         @Override public void run() {
             CountDownLatch latch = onStart();
 
-            if (latch == null) {
+            if (latch == null)
                 return;
-            }
 
             R res = null;
 

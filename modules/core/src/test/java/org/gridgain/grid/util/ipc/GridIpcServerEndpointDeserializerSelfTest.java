@@ -59,7 +59,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
     public void testDeserializeIfShmemAndNoTypeInfoInJson() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(
+                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
                     JSONSerializer.toJSON(shmemSrvEndpoint).toString()));
             }
         }, GridException.class, "Failed to create server endpoint (type is not specified)");
@@ -74,7 +74,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
                 JSONObject json = (JSONObject)JSONSerializer.toJSON(shmemSrvEndpoint);
                 json.accumulate("type", "unknownEndpointType");
 
-                return GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(json.toString()));
+                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json.toString()));
             }
         }, GridException.class, "Failed to create server endpoint (type is unknown): unknownEndpointType");
     }
@@ -85,7 +85,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
     public void testDeserializeIfLoopbackAndJsonIsLightlyBroken() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(
+                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
                     JSONSerializer.toJSON(tcpSrvEndpoint).toString()));
             }
         }, GridException.class, null);
@@ -100,7 +100,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
         // Add endpoint type info into json.
         json = "{\"type\" : \"shmem\"," + json.substring(1);
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
 
         assertTrue(deserialized instanceof GridIpcSharedMemoryServerEndpoint);
 
@@ -123,7 +123,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
         // Add endpoint type info into json.
         json = "{\"type\" : \"shmem\"," + json.substring(1);
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
 
         assertTrue(deserialized instanceof GridIpcSharedMemoryServerEndpoint);
 
@@ -143,7 +143,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
         // Add endpoint type info into json.
         json = "{\"type\" : \"tcp\"," + json.substring(1);
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridHadoopTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
 
         assertTrue(deserialized instanceof GridIpcServerTcpEndpoint);
 

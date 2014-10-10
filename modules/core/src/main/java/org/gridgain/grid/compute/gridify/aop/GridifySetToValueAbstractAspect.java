@@ -39,9 +39,8 @@ public class GridifySetToValueAbstractAspect {
         for (int i = 0; i < paramTypes.length; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (GridifyUtils.isMethodParameterTypeAllowed(paramType)) {
+            if (GridifyUtils.isMethodParameterTypeAllowed(paramType))
                 allowedParamIdxs.add(i);
-            }
         }
 
         if (allowedParamIdxs.isEmpty()) {
@@ -54,9 +53,8 @@ public class GridifySetToValueAbstractAspect {
         for (int i = 0; i < paramTypes.length; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (GridifyUtils.isMethodParameterTypeAnnotated(paramType.getDeclaredAnnotations())) {
+            if (GridifyUtils.isMethodParameterTypeAnnotated(paramType.getDeclaredAnnotations()))
                 annParamIdxs.add(i);
-            }
         }
 
         if (annParamIdxs.size() > 1) {
@@ -121,22 +119,19 @@ public class GridifySetToValueAbstractAspect {
         long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;
 
         // Prevent overflow.
-        if (end < 0) {
+        if (end < 0)
             end = Long.MAX_VALUE;
-        }
 
         Collection<?> res = null;
 
         while (true) {
-            if (now > end) {
+            if (now > end)
                 throw new GridComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
-            }
 
             GridifyRangeArgument taskArg = createGridifyArgument(arg, res);
 
-            if (taskArg == null) {
+            if (taskArg == null)
                 return result(res);
-            }
             else if (taskArg.getInputSize() != UNKNOWN_SIZE && taskArg.getInputSize() <= threshold) {
                 // Note, that we can't cancel by timeout locally started method.
                 try {
@@ -168,13 +163,11 @@ public class GridifySetToValueAbstractAspect {
     private GridifyRangeArgument createGridifyArgument(GridifyRangeArgument arg, Collection<?> taskRes)
         throws GridException {
         // If first run.
-        if (taskRes == null) {
+        if (taskRes == null)
             return arg;
-        }
 
-        if (taskRes.size() == 1) {
+        if (taskRes.size() == 1)
             return null;
-        }
 
         return new GridifyArgumentBuilder().createTaskArgument(arg, taskRes);
     }

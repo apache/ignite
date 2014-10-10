@@ -46,9 +46,8 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
 
         grid.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++)
             checkTask(i);
-        }
     }
 
     /**
@@ -78,9 +77,8 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
@@ -112,9 +110,8 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -143,16 +140,14 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             try {
                 String val = (String)taskSes.waitForAttribute("testName", 20000);
 
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Received attribute 'testName': " + val);
-                }
 
                 assert "testVal".equals(val) : "Invalid attribute value: " + val;
             }
@@ -165,20 +160,17 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;

@@ -515,9 +515,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             @Override public void onTimeout() {
                 info("Received timeout callback: " + this);
 
-                if (++cnt > 1) {
+                if (++cnt > 1)
                     fail("Timeout should not be called more than once: " + this);
-                }
             }
 
             /** {@inheritDoc} */

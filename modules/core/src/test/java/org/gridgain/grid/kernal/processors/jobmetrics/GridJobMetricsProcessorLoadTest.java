@@ -52,9 +52,8 @@ public class GridJobMetricsProcessorLoadTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     int i = 0;
-                    while (i++ < 1000) {
+                    while (i++ < 1000)
                         ctx.jobMetric().addSnapshot(new GridJobMetricsSnapshot());
-                    }
                 }
                 catch (Exception e) {
                     fail(e.getMessage());
@@ -68,9 +67,8 @@ public class GridJobMetricsProcessorLoadTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     int i = 0;
-                    while (i++ < 100000) {
+                    while (i++ < 100000)
                         ctx.jobMetric().addSnapshot(new GridJobMetricsSnapshot());
-                    }
                 }
                 catch (Exception e) {
                     fail(e.getMessage());

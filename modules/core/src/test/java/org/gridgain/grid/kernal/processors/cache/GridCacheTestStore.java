@@ -276,9 +276,8 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
         if (shouldFail)
             throw new GridException("Store exception.");
 
-        if (operationDelay > 0) {
+        if (operationDelay > 0)
             U.sleep(operationDelay);
-        }
     }
 
     /**

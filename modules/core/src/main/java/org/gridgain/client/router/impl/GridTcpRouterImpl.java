@@ -70,6 +70,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
      */
     public GridTcpRouterImpl(GridTcpRouterConfiguration cfg) {
         this.cfg = cfg;
+
         log = cfg.getLogger() != null ?
             cfg.getLogger().getLogger(getClass()) : new GridJavaLogger().getLogger(getClass());
     }
@@ -127,7 +128,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
             throw new GridException("Failed to create SSL context.", e);
         }
 
-        for (int port = cfg.getPort(), last= port + cfg.getPortRange(); port <= last; port++) {
+        for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
             if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), sslCtx, cfg.isSslClientAuth(),
                 cfg.isSslClientAuth())) {
                 if (log.isInfoEnabled())
@@ -142,6 +143,11 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
                 U.warn(log, "TCP REST router failed to start on endpoint: " + hostAddr.getHostAddress() + ":" + port +
                     ". Will try next port within allowed port range.");
         }
+
+        if (bindPort == 0)
+            throw new GridException("Failed to bind TCP router server (possibly all ports in range " +
+                "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
+                ", addr=" + hostAddr + ']');
 
         try {
             ObjectName objName = U.registerMBean(

@@ -120,9 +120,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
         processHttp(foundFiles);
 
-        if (getLogger().isDebugEnabled()) {
+        if (getLogger().isDebugEnabled())
             getLogger().debug("HTTP scanner time in ms: " + (U.currentTimeMillis() - start));
-        }
 
         if (!isFirstScan()) {
             Collection<String> deletedFiles = new HashSet<>(tstampCache.keySet());
@@ -176,9 +175,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
                         httpsConn.setSSLSocketFactory(sockFactory);
                     }
 
-                    if (lastModified != null) {
+                    if (lastModified != null)
                         conn.setIfModifiedSince(lastModified);
-                    }
 
                     in = conn.getInputStream();
 
@@ -186,9 +184,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
                     if (in == null || lastModified != null && (lastModified == rcvLastModified ||
                         conn instanceof HttpURLConnection &&
-                        ((HttpURLConnection)conn).getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)) {
+                        ((HttpURLConnection)conn).getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED))
                         continue;
-                    }
 
                     tstampCache.put(url, rcvLastModified);
 
@@ -227,9 +224,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
                     U.closeQuiet(out);
                 }
 
-                if (file != null && file.exists() && file.length() > 0) {
+                if (file != null && file.exists() && file.length() > 0)
                     getListener().onNewOrUpdatedFile(file, getFileUri(fileName), lastModified);
-                }
             }
         }
     }
@@ -262,17 +258,15 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
                     }
                 }
 
-                if (url != null) {
+                if (url != null)
                     res.add(url.toString());
-                }
             }
         }
 
         NodeList childNodes = node.getChildNodes();
 
-        for (int i = 0; i < childNodes.getLength(); i++) {
+        for (int i = 0; i < childNodes.getLength(); i++)
             findReferences(childNodes.item(i), res, baseUrl);
-        }
     }
 
     /**
@@ -304,9 +298,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
             in = conn.getInputStream();
 
-            if (in == null) {
+            if (in == null)
                 throw new IOException("Failed to open connection: " + U.hidePassword(url.toString()));
-            }
 
             dom = tidy.parseDOM(in, null);
         }
@@ -328,9 +321,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
             U.closeQuiet(in);
         }
 
-        if (dom != null) {
+        if (dom != null)
             findReferences(dom, urls, url);
-        }
 
         return urls;
     }
@@ -374,9 +366,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
                     buf.append(']');
 
-                    if (getLogger().isDebugEnabled()) {
+                    if (getLogger().isDebugEnabled())
                         getLogger().debug(buf.toString());
-                    }
                 }
 
                 /** {@inheritDoc} */
@@ -397,9 +388,8 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
                     buf.append(']');
 
-                    if (getLogger().isDebugEnabled()) {
+                    if (getLogger().isDebugEnabled())
                         getLogger().debug(buf.toString());
-                    }
                 }
             }
         };

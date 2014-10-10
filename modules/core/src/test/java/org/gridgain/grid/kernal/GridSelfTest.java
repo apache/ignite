@@ -121,9 +121,8 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         g.message().localListen(null, new P2<UUID, String>() {
             @Override
             public boolean apply(UUID nodeId, String msg) {
-                if (!locNodeId.equals(nodeId)) {
+                if (!locNodeId.equals(nodeId))
                     cnt.incrementAndGet();
-                }
 
                 return true;
             }

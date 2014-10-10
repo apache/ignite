@@ -84,9 +84,8 @@ public class VisorDrReceiverHubInMetrics implements Serializable {
                 GridDrReceiverHubInMetrics m = dr.receiverHubAggregatedInMetrics(rmtDrId);
 
                 // Add to map only non empty metrics.
-                if (m.batchesReceived() > 0 || m.entriesReceived() > 0 || m.bytesReceived() > 0) {
+                if (m.batchesReceived() > 0 || m.entriesReceived() > 0 || m.bytesReceived() > 0)
                     map.put(rmtDrId, from(m));
-                }
             }
             catch (IllegalStateException | IllegalArgumentException ignored) {
                 // No-op.

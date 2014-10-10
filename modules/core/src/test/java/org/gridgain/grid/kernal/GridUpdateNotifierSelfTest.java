@@ -28,7 +28,8 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNotifier() throws Exception {
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, "x.x.x", GridKernal.SITE, TEST_GATEWAY, false);
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, GridProperties.get("gridgain.version"),
+            GridKernal.SITE, TEST_GATEWAY, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 

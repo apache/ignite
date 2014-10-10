@@ -32,9 +32,8 @@ public class GridLog4jLoggingPathTest extends TestCase {
     public void testLog() {
         assert log.isInfoEnabled() == true;
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
-        }
 
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");

@@ -97,12 +97,10 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
             int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
             int[] res2 = (int[])grid1.compute().execute(task2, grid2.localNode().id()).get();
 
-            if (expectEquals) {
+            if (expectEquals)
                 assert Arrays.equals(res1, res2);
-            }
-            else {
+            else
                 assert isNotSame(res1, res2);
-            }
         }
         finally {
             stopGrid(1);

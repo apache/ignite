@@ -106,9 +106,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
                 U.close(in, log());
             }
         }
-        else {
+        else
             return false;
-        }
     }
 
     /**
@@ -202,9 +201,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
             assert false;
         }
         catch (BuildException e) {
-            if (log().isInfoEnabled()) {
+            if (log().isInfoEnabled())
                 log().info(e.getMessage());
-            }
         }
     }
 
@@ -247,9 +245,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
             assert false;
         }
         catch (BuildException e) {
-            if (log().isInfoEnabled()) {
+            if (log().isInfoEnabled())
                 log().info(e.getMessage());
-            }
         }
     }
 

@@ -523,10 +523,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int partition(Object key) {
-            if (key instanceof Number) {
+            if (key instanceof Number)
                 return ((Number)key).intValue() % 2;
-
-            }
 
             return key == null ? 0 : U.safeAbs(key.hashCode() % 2);
         }
@@ -535,9 +533,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
             List<List<GridNode>> res = new ArrayList<>(partitions());
 
-            for (int part = 0; part < partitions(); part++) {
+            for (int part = 0; part < partitions(); part++)
                 res.add(nodes(part, affCtx.currentTopologySnapshot()));
-            }
 
             return res;
         }

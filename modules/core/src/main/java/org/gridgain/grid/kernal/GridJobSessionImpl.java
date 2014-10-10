@@ -181,9 +181,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     @Override public void setAttributes(Map<?, ?> attrs) throws GridException {
         ses.setAttributes(attrs);
 
-        if (!isTaskNode()) {
+        if (!isTaskNode())
             ctx.job().setAttributes(this, attrs);
-        }
     }
 
 

@@ -85,9 +85,8 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
                 assert res1[0] != res2[0]; // Resources are not same
                 assert res1[1] == res2[1]; // Class loaders are same
             }
-            else {
+            else
                 assert Arrays.equals(res1, res2);
-            }
 
             int[] res3 = (int[])grid3.compute().execute(task1, grid2.localNode().id()).get();
             int[] res4 = (int[])grid3.compute().execute(task2, grid2.localNode().id()).get();
@@ -96,16 +95,13 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
                 assert res3[0] != res4[0]; // Resources are not same
                 assert res3[1] == res4[1]; // Class loaders are same
             }
-            else {
+            else
                 assert Arrays.equals(res3, res4);
-            }
 
-            if (isIsolatedDifferentNode) {
+            if (isIsolatedDifferentNode)
                 assert isNotSame(res1, res4);
-            }
-            else {
+            else
                 assert Arrays.equals(res1, res4);
-            }
         }
         finally {
             stopGrid(1);

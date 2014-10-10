@@ -37,12 +37,6 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-ggfs</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hibernate</artifactId>
             <version>${gridgain.version}</version>
         </dependency>

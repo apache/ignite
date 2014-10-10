@@ -108,9 +108,8 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws GridException {
-        if (sched.isStarted()) {
+        if (sched.isStarted())
             sched.stop();
-        }
 
         sched = null;
     }

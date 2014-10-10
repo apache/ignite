@@ -611,9 +611,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
                                 keys.clear();
 
-                                for (int i = 0; i < txKeys; i++) {
+                                for (int i = 0; i < txKeys; i++)
                                     keys.add(RAND.nextInt(keyCnt));
-                                }
 
                                 // Ensure lock order.
                                 Collections.sort(keys);

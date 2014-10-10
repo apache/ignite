@@ -63,6 +63,8 @@ public class RouterStartup {
         GridTcpRouterConfiguration cfg = new GridTcpRouterConfiguration();
 
         cfg.setNoDelay(TCP_NODELAY);
+        cfg.setPort(GridTcpRouterConfiguration.DFLT_TCP_PORT);
+        cfg.setPortRange(0);
 
         return cfg;
     }

@@ -225,9 +225,8 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     private UUID[] nodes(int nodes) {
         UUID[] ids = new UUID[nodes];
 
-        for (int i = 0; i < nodes; i++) {
+        for (int i = 0; i < nodes; i++)
             ids[i] = UUID.randomUUID();
-        }
 
         return ids;
     }
@@ -276,9 +275,8 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
 
             AtomicInteger i = cnts.get(id);
 
-            if (i == null) {
+            if (i == null)
                 cnts.put(id, i = new AtomicInteger());
-            }
 
             i.incrementAndGet();
 
@@ -304,9 +302,8 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
             assert id1 != null;
             assert id2 != null;
 
-            if (!id1.equals(id2)) {
+            if (!id1.equals(id2))
                 cnt++;
-            }
         }
 
         return cnt;
@@ -319,9 +316,8 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     private String[] keys(int cnt) {
         String[] keys = new String[cnt];
 
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             keys[i] = UUID.randomUUID().toString();
-        }
 
         return keys;
     }
