@@ -159,9 +159,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>2,000ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 2000;
-
     /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
     public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
 
@@ -213,10 +210,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Join timeout. */
     @SuppressWarnings("RedundantFieldInitialization")
     private long joinTimeout = DFLT_JOIN_TIMEOUT;
-
-    /** Heartbeat messages issuing frequency. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private long hbFreq = DFLT_HEARTBEAT_FREQ;
 
     /** Max heartbeats count node can miss without initiating status check. */
     private int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
@@ -473,24 +466,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     @GridSpiConfiguration(optional = true)
     public void setLocalPortRange(int locPortRange) {
         this.locPortRange = locPortRange;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getHeartbeatFrequency() {
-        return hbFreq;
-    }
-
-    /**
-     * Sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-     * in configurable time interval to other nodes to notify them about its state.
-     * <p>
-     * If not provided, default value is {@link #DFLT_HEARTBEAT_FREQ}.
-     *
-     * @param hbFreq Heartbeat frequency in milliseconds.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setHeartbeatFrequency(long hbFreq) {
-        this.hbFreq = hbFreq;
     }
 
     /** {@inheritDoc} */
@@ -1398,28 +1373,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 if (spiState == CONNECTED)
                     break;
-                else if (spiState == DUPLICATE_ID) {
-                    GridTcpDiscoveryDuplicateIdMessage msg = (GridTcpDiscoveryDuplicateIdMessage)joinRes.get();
-
-                    throw new GridSpiException("Local node has the same ID as existing node in topology " +
-                        "(fix configuration and restart local node) " +
-                        "[localNode=" + locNode + ", existingNode=" + msg.node() + ']');
-                }
-                else if (spiState == AUTH_FAILED) {
-                    GridTcpDiscoveryAuthFailedMessage msg =
-                        (GridTcpDiscoveryAuthFailedMessage)joinRes.get();
-
-                    throw new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
-                        msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
-                }
-                else if (spiState == CHECK_FAILED) {
-                    GridTcpDiscoveryCheckFailedMessage msg = (GridTcpDiscoveryCheckFailedMessage)joinRes.get();
-
-                    if (versionCheckFailed(msg))
-                        throw new GridSpiVersionCheckException(msg.error());
-                    else
-                        throw new GridSpiException(msg.error());
-                }
+                else if (spiState == DUPLICATE_ID)
+                    throw duplicateIdError((GridTcpDiscoveryDuplicateIdMessage)joinRes.get());
+                else if (spiState == AUTH_FAILED)
+                    throw authenticationFailedError((GridTcpDiscoveryAuthFailedMessage)joinRes.get());
+                else if (spiState == CHECK_FAILED)
+                    throw checkFailedError((GridTcpDiscoveryCheckFailedMessage)joinRes.get());
                 else if (spiState == LOOPBACK_PROBLEM) {
                     GridTcpDiscoveryLoopbackProblemMessage msg = (GridTcpDiscoveryLoopbackProblemMessage)joinRes.get();
 
@@ -1449,17 +1408,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
-    }
-
-    /**
-     * @param msg Failed message.
-     * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
-     * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it
-     *      and create separate message for failed version check with next major release.
-     */
-    @Deprecated
-    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
-        return msg.error().contains("versions are not compatible");
     }
 
     /**
@@ -2998,8 +2946,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         log.debug(errMsg);
 
                     try {
-                        trySendMessageDirectly(node,
-                            new GridTcpDiscoveryLoopbackProblemMessage(locNodeId, locNode.addresses(), locNode.hostNames()));
+                        trySendMessageDirectly(node, new GridTcpDiscoveryLoopbackProblemMessage(
+                            locNodeId, locNode.addresses(), locNode.hostNames()));
                     }
                     catch (GridSpiException e) {
                         if (log.isDebugEnabled())
@@ -3380,6 +3328,19 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          */
         private void trySendMessageDirectly(GridTcpDiscoveryNode node, GridTcpDiscoveryAbstractMessage msg)
             throws GridSpiException {
+            if (node.isClient()) {
+                GridTcpDiscoveryNode routerNode = ring.node(node.clientRouterNodeId());
+
+                if (routerNode == null)
+                    throw new GridSpiException("Router node for client does not exist: " + node);
+
+                assert !routerNode.isClient();
+
+                trySendMessageDirectly(routerNode, msg);
+
+                return;
+            }
+
             GridSpiException ex = null;
 
             for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
@@ -4584,10 +4545,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                         clientMsgWrk.start();
 
-                        ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk);
-
-                        // TODO: GG-9174 - Handle duplicate node ID.
-                        assert old == null;
+                        clientMsgWorkers.put(nodeId, clientMsgWrk);
                     }
 
                     if (log.isDebugEnabled())
@@ -4638,6 +4596,24 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 while (!isInterrupted()) {
                     try {
                         GridTcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
+
+                        UUID destClientNodeId = msg.destinationClientNodeId();
+
+                        if (destClientNodeId != null) {
+                            ClientMessageWorker wrk = clientMsgWorkers.get(destClientNodeId);
+
+                            if (wrk != null) {
+                                msg.senderNodeId(locNodeId);
+
+                                wrk.addMessage(msg);
+
+                                writeToSocket(sock, RES_OK);
+                            }
+                            else if (log.isDebugEnabled())
+                                log.debug("Discarding routed message since client has already left: " + msg);
+
+                            continue;
+                        }
 
                         msg.senderNodeId(nodeId);
 

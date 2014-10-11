@@ -37,6 +37,9 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /** Client node flag. */
     private boolean client;
 
+    /** Destination client node ID. */
+    private UUID destClientNodeId;
+
     /** Whether to redirect to client nodes. */
     private boolean redirectToClients = true;
 
@@ -156,6 +159,20 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     }
 
     /**
+     * @return Destination client node ID.
+     */
+    public UUID destinationClientNodeId() {
+        return destClientNodeId;
+    }
+
+    /**
+     * @param destClientNodeId Destination client node ID.
+     */
+    public void destinationClientNodeId(UUID destClientNodeId) {
+        this.destClientNodeId = destClientNodeId;
+    }
+
+    /**
      * @return Whether to redirect to clients.
      */
     public boolean redirectToClients() {
@@ -175,6 +192,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         U.writeUuid(out, verifierNodeId);
         out.writeLong(topVer);
         out.writeBoolean(client);
+        U.writeUuid(out, destClientNodeId);
     }
 
     /** {@inheritDoc} */
@@ -183,6 +201,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
         verifierNodeId = U.readUuid(in);
         topVer = in.readLong();
         client = in.readBoolean();
+        destClientNodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */

@@ -109,6 +109,9 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     /** Alive check (used by clients). */
     private transient int aliveCheck;
 
+    /** Client router node ID. */
+    private UUID clientRouterNodeId;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -393,6 +396,20 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         this.aliveCheck = aliveCheck;
     }
 
+    /**
+     * @return Client router node ID.
+     */
+    public UUID clientRouterNodeId() {
+        return clientRouterNodeId;
+    }
+
+    /**
+     * @param clientRouterNodeId Client router node ID.
+     */
+    public void clientRouterNodeId(UUID clientRouterNodeId) {
+        this.clientRouterNodeId = clientRouterNodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable GridTcpDiscoveryNode node) {
         if (node == null)
@@ -427,6 +444,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         out.writeLong(intOrder);
         out.writeObject(ver);
         out.writeBoolean(client);
+        U.writeUuid(out, clientRouterNodeId);
     }
 
     /** {@inheritDoc} */
@@ -451,6 +469,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         intOrder = in.readLong();
         ver = (GridProductVersion)in.readObject();
         client = in.readBoolean();
+        clientRouterNodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */

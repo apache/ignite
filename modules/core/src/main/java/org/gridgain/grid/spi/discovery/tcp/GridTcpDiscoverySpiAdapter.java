@@ -54,6 +54,9 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
+    /** Default heartbeat messages issuing frequency (value is <tt>2,000ms</tt>). */
+    public static final long DFLT_HEARTBEAT_FREQ = 2000;
+
     /** Response OK. */
     protected static final int RES_OK = 1;
 
@@ -80,6 +83,9 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
     /** Thread priority for all threads started by SPI. */
     protected int threadPri = DFLT_THREAD_PRI;
+
+    /** Heartbeat messages issuing frequency. */
+    protected long hbFreq = DFLT_HEARTBEAT_FREQ;
 
     /** Grid discovery listener. */
     protected volatile GridDiscoverySpiListener lsnr;
@@ -252,6 +258,24 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     @GridSpiConfiguration(optional = true)
     public void setThreadPriority(int threadPri) {
         this.threadPri = threadPri;
+    }
+
+    /** {@inheritDoc} */
+    public long getHeartbeatFrequency() {
+        return hbFreq;
+    }
+
+    /**
+     * Sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
+     * in configurable time interval to other nodes to notify them about its state.
+     * <p>
+     * If not provided, default value is {@link #DFLT_HEARTBEAT_FREQ}.
+     *
+     * @param hbFreq Heartbeat frequency in milliseconds.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setHeartbeatFrequency(long hbFreq) {
+        this.hbFreq = hbFreq;
     }
 
     /** {@inheritDoc} */
@@ -640,6 +664,51 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
         }
 
         return res;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Error.
+     */
+    protected GridSpiException duplicateIdError(GridTcpDiscoveryDuplicateIdMessage msg) {
+        assert msg != null;
+
+        return new GridSpiException("Local node has the same ID as existing node in topology " +
+            "(fix configuration and restart local node) [localNode=" + locNode +
+            ", existingNode=" + msg.node() + ']');
+    }
+
+    /**
+     * @param msg Message.
+     * @return Error.
+     */
+    protected GridSpiException authenticationFailedError(GridTcpDiscoveryAuthFailedMessage msg) {
+        assert msg != null;
+
+        return new GridSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+            msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
+    }
+
+    /**
+     * @param msg Message.
+     * @return Error.
+     */
+    protected GridSpiException checkFailedError(GridTcpDiscoveryCheckFailedMessage msg) {
+        assert msg != null;
+
+        return versionCheckFailed(msg) ? new GridSpiVersionCheckException(msg.error()) :
+            new GridSpiException(msg.error());
+    }
+
+    /**
+     * @param msg Failed message.
+     * @return {@code True} if specified failed message relates to version incompatibility, {@code false} otherwise.
+     * @deprecated Parsing of error message was used for preserving backward compatibility. We should remove it
+     *      and create separate message for failed version check with next major release.
+     */
+    @Deprecated
+    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
+        return msg.error().contains("versions are not compatible");
     }
 
     /**
