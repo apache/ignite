@@ -1601,6 +1601,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param ptr Pointer.
          * @param qAddr Queue address.
          * @param mem Memory.
+         * @return {@code True} if changed to zero.
          */
         static boolean clearQueueAddress(long ptr, long qAddr, GridUnsafeMemory mem) {
             return mem.casLong(ptr + 12, qAddr, 0);
