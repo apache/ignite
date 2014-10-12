@@ -1367,11 +1367,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                         if (lru != null) {
                             long qAddr = Entry.queueAddress(addr, mem);
 
-                            if (qAddr != 0) {
+                            if (qAddr != 0 && Entry.clearQueueAddress(addr, qAddr, mem))
                                 lru.remove(qAddr);
-
-                                Entry.queueAddress(addr, 0, mem);
-                            }
                         }
 
                         int keyLen = Entry.readKeyLength(addr, mem);
@@ -1592,14 +1589,21 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         }
 
         /**
-         * Writes value length.
-         *
          * @param ptr Pointer.
          * @param qAddr Queue address.
          * @param mem Memory.
          */
         static void queueAddress(long ptr, long qAddr, GridUnsafeMemory mem) {
             mem.writeLong(ptr + 12, qAddr);
+        }
+
+        /**
+         * @param ptr Pointer.
+         * @param qAddr Queue address.
+         * @param mem Memory.
+         */
+        static boolean clearQueueAddress(long ptr, long qAddr, GridUnsafeMemory mem) {
+            return mem.casLong(ptr + 12, qAddr, 0);
         }
 
         /**
