@@ -124,13 +124,14 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
             }
         });
 
-        assertEquals((Integer)2, c.get(key));
+        assertEquals((Integer) 2, c.get(key));
 
         c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+            @Override
+            public Integer apply(Integer val) {
                 assertNotNull("Unexpected value: " + val, val);
 
-                assertEquals((Integer)2, val);
+                assertEquals((Integer) 2, val);
 
                 return null;
             }
@@ -295,6 +296,103 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
             Assert.assertArrayEquals(val.val, val0.val);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAllRemoveAll() throws Exception {
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i);
+
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        Map<Integer, Integer> map0 = c.getAll(map.keySet());
+
+        assertTrue(map0.isEmpty());
+
+        c.putAll(map);
+
+        map0 = c.getAll(map.keySet());
+
+        assertEquals(map, map0);
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet())
+            checkValue(e.getKey(), e.getValue());
+
+        c.transformAll(map.keySet(), new C1<Integer, Integer>() {
+            @Override public Integer apply(Integer val) {
+                return val + 1;
+            }
+        });
+
+        map0 = c.getAll(map.keySet());
+
+        for (Map.Entry<Integer, Integer> e : map0.entrySet())
+            assertEquals((Integer)(e.getKey() + 1), e.getValue());
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet())
+            checkValue(e.getKey(), e.getValue() + 1);
+
+        c.removeAll(map.keySet());
+
+        map0 = c.getAll(map.keySet());
+
+        assertTrue(map0.isEmpty());
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet())
+            checkValue(e.getKey(), null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            checkPutAllGetAllRemoveAllTx(PESSIMISTIC);
+
+            checkPutAllGetAllRemoveAllTx(OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param txConcurrency Transaction concurrency.
+     * @throws Exception If failed.
+     */
+    private void checkPutAllGetAllRemoveAllTx(GridCacheTxConcurrency txConcurrency) throws Exception {
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i);
+
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        Map<Integer, Integer> map0 = c.getAll(map.keySet());
+
+        assertTrue(map0.isEmpty());
+
+        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+            c.putAll(map);
+
+            tx.commit();
+        }
+
+        map0 = c.getAll(map.keySet());
+
+        assertEquals(map, map0);
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet())
+            checkValue(e.getKey(), e.getValue());
+
+        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+            c.removeAll(map.keySet());
+
+            tx.commit();
+        }
+
+        map0 = c.getAll(map.keySet());
+
+        assertTrue(map0.isEmpty());
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet())
+            checkValue(e.getKey(), null);
     }
 
     /**
