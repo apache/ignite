@@ -21,15 +21,18 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.portable.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -550,7 +553,38 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) {
-        return null;
+        synchronized (locSvcs) {
+            Collection<GridServiceContextImpl> srvcContexts = locSvcs.get(name);
+
+            if (srvcContexts == null) {
+                Collection<GridServiceDescriptor> srvcDescriptors = this.deployedServices();
+                for (GridServiceDescriptor gsd : srvcDescriptors) {
+                    if (gsd.name().equals(name)) {
+                        UUID nodeId = gsd.originNodeId();
+                        return (T)Proxy.newProxyInstance(getClass().getClassLoader(),
+                            new Class<?>[] {svc},
+                            new InvocationHandler() {
+                                @Override public Object invoke(Object proxy, Method mtd,
+                                    Object[] args) throws Throwable {
+                                    return proxy.;
+                                }
+                            }
+                        );
+                    }
+                }
+
+                if (sticky) {
+                    // Connect to random node
+                    return null;
+                }
+                else {
+                    // Random each time
+                    return null;
+                }
+            }
+            else
+                return (T)srvcContexts.iterator().next().service();
+        }
     }
 
     /**
