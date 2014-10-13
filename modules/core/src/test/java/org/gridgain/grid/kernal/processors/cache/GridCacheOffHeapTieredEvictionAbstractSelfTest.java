@@ -47,6 +47,11 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
