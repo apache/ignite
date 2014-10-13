@@ -317,5 +317,5 @@ public interface GridServices {
      * service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky);
+    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException;
 }
