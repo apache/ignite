@@ -66,8 +66,8 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Set
                         res.add(new GridBiTuple<>(ipIt.next(), hostIt.next()));
                 }
             }
-            catch (IOException e) {
-                e.printStackTrace();
+            catch (Throwable e) {
+                throw new GridException("Failed to resolve host name", e);
             }
 
             return res;
