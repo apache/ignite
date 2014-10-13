@@ -9,9 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
+import org.junit.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -22,7 +27,7 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
- * TODO 9198: more tests.
+ *
  */
 public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -41,13 +46,28 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        if (portableEnabled()) {
+            GridPortableConfiguration pCfg = new GridPortableConfiguration();
+
+            pCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
+
+            cfg.setPortableConfiguration(pCfg);
+        }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
-        ccfg.setOffHeapMaxMemory(0);
+        ccfg.setOffHeapMaxMemory(1024 * 1024);
 
         return ccfg;
     }
@@ -133,6 +153,19 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetRemoveByteArray() throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        checkPutGetRemoveByteArray(primaryKey(c));
+
+        checkPutGetRemoveByteArray(backupKey(c));
+
+        checkPutGetRemoveByteArray(nearKey(c));
+    }
+
+    /**
      * @param key Key.
      * @throws Exception If failed.
      */
@@ -153,6 +186,32 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
             checkPutGetRemoveTx(key, PESSIMISTIC);
 
             checkPutGetRemoveTx(key, OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemoveByteArray(Integer key) throws Exception {
+        GridCache<Integer, byte[]> c = grid(0).cache(null);
+
+        checkValue(key, null);
+
+        byte[] val = new byte[] {key.byteValue()};
+
+        assertNull(c.put(key, val));
+
+        checkValue(key, val);
+
+        Assert.assertArrayEquals(val, c.remove(key));
+
+        checkValue(key, null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            checkPutGetRemoveTxByteArray(key, PESSIMISTIC);
+
+            checkPutGetRemoveTxByteArray(key, OPTIMISTIC);
         }
     }
 
@@ -182,12 +241,99 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /**
+     * @param key Key,
+     * @param txConcurrency Transaction concurrency.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemoveTxByteArray(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+        GridCache<Integer, byte[]> c = grid(0).cache(null);
+
+        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        byte[] val = new byte[] {key.byteValue()};
+
+        assertNull(c.put(key, val));
+
+        tx.commit();
+
+        checkValue(key, val);
+
+        tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        Assert.assertArrayEquals(val, c.remove(key));
+
+        tx.commit();
+
+        checkValue(key, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPromote() throws Exception {
+        GridCache<Integer, TestValue> c = grid(0).cache(null);
+
+        TestValue val = new TestValue(new byte[100 * 1024]);
+
+        List<Integer> keys = primaryKeys(c, 200);
+
+        for (Integer key : keys)
+            c.putx(key, val);
+
+        for (int i = 0; i < 50; i++) {
+            TestValue val0 = c.promote(keys.get(i));
+
+            Assert.assertArrayEquals(val.val, val0.val);
+        }
+
+        List<Integer> keys0 = keys.subList(50, 100);
+
+        c.promoteAll(keys0);
+
+        for (Integer key : keys0) {
+            TestValue val0 = c.get(key);
+
+            Assert.assertArrayEquals(val.val, val0.val);
+        }
+    }
+
+    /**
      * @param key Key.
      * @param val Value.
      * @throws Exception If failed.
      */
     private void checkValue(Object key, @Nullable Object val) throws Exception {
-        for (int i = 0; i < gridCount(); i++)
-            assertEquals("Unexpected value for grid: " + i, val, grid(0).cache(null).get(key));
+        for (int i = 0; i < gridCount(); i++) {
+            if (val != null && val.getClass() == byte[].class) {
+                Assert.assertArrayEquals("Unexpected value for grid: " + i,
+                    (byte[]) val,
+                    (byte[]) grid(0).cache(null).get(key));
+            }
+            else
+                assertEquals("Unexpected value for grid: " + i, val, grid(0).cache(null).get(key));
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestValue {
+        /** */
+        @SuppressWarnings("PublicField")
+        public byte[] val;
+
+        /**
+         * Default constructor.
+         */
+        public TestValue() {
+            // No-op.
+        }
+
+        /**
+         * @param val Value.
+         */
+        public TestValue(byte[] val) {
+            this.val = val;
+        }
     }
 }

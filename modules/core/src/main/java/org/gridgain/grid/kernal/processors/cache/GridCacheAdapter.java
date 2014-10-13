@@ -3504,8 +3504,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public V promote(K key) throws GridException {
+        return promote(key, true);
+    }
+
+    /**
+     * @param key Key.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Value.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    @Nullable public V promote(K key, boolean deserializePortable) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         A.notNull(key, "key");
@@ -3531,7 +3541,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return null;
         }
 
-        return ctx.cloneOnFlag(unswapped.value());
+        V val = unswapped.value();
+
+        if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+            return ctx.cloneOnFlag((V)((GridPortableObject)val).deserialize());
+        else
+            return ctx.cloneOnFlag(val);
     }
 
     /** {@inheritDoc} */

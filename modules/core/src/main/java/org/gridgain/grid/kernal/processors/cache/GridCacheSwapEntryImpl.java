@@ -77,22 +77,65 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
         this.keyClsLdrId = keyClsLdrId;
     }
 
+    /**
+     * @param bytes Entry bytes.
+     * @return TTL.
+     */
     public static long timeToLive(byte[] bytes) {
-        return 0; // TODO 9198
+        return UNSAFE.getLong(bytes, BYTE_ARR_OFF);
     }
 
+    /**
+     * @param bytes Entry bytes.
+     * @return Expire time.
+     */
     public static long expireTime(byte[] bytes) {
-        return 0; // TODO 9198
+        return UNSAFE.getLong(bytes, BYTE_ARR_OFF + 8);
     }
 
+    /**
+     * @param bytes Entry bytes.
+     * @return Version.
+     */
     public static GridCacheVersion version(byte[] bytes) {
-        return null; // TODO 9198
+        int off = 16; // Skip ttl, expire time.
+
+        boolean verEx = bytes[off++] != 0;
+
+        return U.readVersion(bytes, off, verEx);
     }
 
-    public static byte[] getValueIfByteArray(byte[] bytes) {
-        return null; // TODO 9198
+    /**
+     * @param bytes Entry bytes.
+     * @return Value if value is byte array, otherwise {@code null}.
+     */
+    @Nullable public static byte[] getValueIfByteArray(byte[] bytes) {
+        int off = 16; // Skip ttl, expire time.
+
+        boolean verEx = bytes[off++] != 0;
+
+        off += verEx ? 48 : 24;
+
+        if (bytes[off++] > 0) {
+            int size = UNSAFE.getInt(bytes, BYTE_ARR_OFF + off);
+
+            assert size >= 0;
+            assert bytes.length > size + off + 4;
+
+            byte[] res = new byte[size];
+
+            UNSAFE.copyMemory(bytes, BYTE_ARR_OFF + off + 4, res, BYTE_ARR_OFF, size);
+
+            return res;
+        }
+
+        return null;
     }
 
+    /**
+     * @param bytes Entry bytes.
+     * @return Value bytes offset.
+     */
     public static int valueOffset(byte[] bytes) {
         assert bytes.length > 40 : bytes.length;
 

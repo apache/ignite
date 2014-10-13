@@ -19,9 +19,11 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -137,13 +139,15 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             assertTrue(cache.putx(new Key(i), new Person("p-" + i, i)));
 
         try {
-            GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(new GridBiPredicate<Key, Person>() {
-                @Override public boolean apply(Key key, Person p) {
-                    assertEquals(key.id, (Integer)p.salary);
+            GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
+                new GridBiPredicate<Key, Person>() {
+                    @Override public boolean apply(Key key, Person p) {
+                        assertEquals(key.id, (Integer)p.salary);
 
-                    return key.id % 2 == 0;
+                        return key.id % 2 == 0;
+                    }
                 }
-            });
+            );
 
             Collection<Map.Entry<Key, Person>> res = qry.execute().get();
 
@@ -162,11 +166,103 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             res = qry.execute().get();
 
             assertEquals(ENTRY_CNT, res.size());
+
+            checkProjectionFilter(cache, ENTRY_CNT / 2 - 5);
+
+            testMultithreaded(cache, ENTRY_CNT / 2);
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertTrue(cache.removex(new Key(i)));
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param expCnt Expected entries in query result.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
+    private void checkProjectionFilter(GridCache cache, int expCnt) throws Exception {
+        GridCacheProjection prj;
+
+        if (portableEnabled()) {
+            prj = cache.projection(new GridPredicate<GridCacheEntry<GridPortableObject, GridPortableObject>>() {
+                @Override public boolean apply(GridCacheEntry<GridPortableObject, GridPortableObject> e) {
+                    Key key = e.getKey().deserialize();
+                    Person val = e.peek().deserialize();
+
+                    assertNotNull(e.version());
+
+                    assertEquals(key.id, (Integer)val.salary);
+
+                    return key.id % 100 != 0;
+                }
+            });
+        }
+        else {
+            prj = cache.projection(new GridPredicate<GridCacheEntry<Key, Person>>() {
+                @Override public boolean apply(GridCacheEntry<Key, Person> e) {
+                    Key key = e.getKey();
+                    Person val = e.peek();
+
+                    assertNotNull(e.version());
+
+                    assertEquals(key.id, (Integer)val.salary);
+
+                    return key.id % 100 != 0;
+                }
+            });
+        }
+
+        GridCacheQuery<Map.Entry<Key, Person>> qry = prj.queries().createScanQuery(
+            new GridBiPredicate<Key, Person>() {
+                @Override public boolean apply(Key key, Person p) {
+                    assertEquals(key.id, (Integer)p.salary);
+
+                    return key.id % 2 == 0;
+                }
+            }
+        );
+
+        Collection<Map.Entry<Key, Person>> res = qry.execute().get();
+
+        assertEquals(expCnt, res.size());
+    }
+
+    /**
+     * @param cache Cache.
+     * @param expCnt Expected entries in query result.
+     * @throws Exception If failed.
+     */
+    private void testMultithreaded(final GridCache cache, final int expCnt) throws Exception {
+        log.info("Starting multithreaded queries.");
+
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @SuppressWarnings("unchecked")
+            @Override public Void call() throws Exception {
+                GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
+                    new GridBiPredicate<Key, Person>() {
+                        @Override public boolean apply(Key key, Person p) {
+                            assertEquals(key.id, (Integer)p.salary);
+
+                            return key.id % 2 == 0;
+                        }
+                    }
+                );
+
+                for (int i = 0; i < 250; i++) {
+                    Collection<Map.Entry<Key, Person>> res = qry.execute().get();
+
+                    assertEquals(expCnt, res.size());
+
+                    if (i % 50 == 0)
+                        log.info("Iteration " + i);
+                }
+
+                return null;
+            }
+        }, 8, "test");
     }
 
     /**
@@ -190,13 +286,15 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             assertTrue(cache.putx(String.valueOf(i), (long) i));
 
         try {
-            GridCacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(new GridBiPredicate<String, Long>() {
-                @Override public boolean apply(String key, Long val) {
-                    assertEquals(key, String.valueOf(val));
+            GridCacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(
+                new GridBiPredicate<String, Long>() {
+                    @Override public boolean apply(String key, Long val) {
+                        assertEquals(key, String.valueOf(val));
 
-                    return val % 2 == 0;
+                        return val % 2 == 0;
+                    }
                 }
-            });
+            );
 
             Collection<Map.Entry<String, Long>> res = qry.execute().get();
 
@@ -220,6 +318,62 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertTrue(cache.removex(String.valueOf(i)));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryValueByteArray() throws Exception {
+        checkQueryValueByteArray(grid(0).cache(ATOMIC_CACHE_NAME));
+
+        checkQueryValueByteArray(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkQueryValueByteArray(GridCache cache) throws Exception {
+        final int ENTRY_CNT = 100;
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            assertTrue(cache.putx(i, new byte[i]));
+
+        try {
+            GridCacheQuery<Map.Entry<Integer, byte[]>> qry = cache.queries().createScanQuery(
+                new GridBiPredicate<Integer, byte[]>() {
+                    @Override public boolean apply(Integer key, byte[] val) {
+                        assertEquals(key, (Integer)val.length);
+
+                        return key % 2 == 0;
+                    }
+                }
+            );
+
+            Collection<Map.Entry<Integer, byte[]>> res = qry.execute().get();
+
+            assertEquals(ENTRY_CNT / 2, res.size());
+
+            for (Map.Entry<Integer, byte[]> e : res) {
+                Integer key = e.getKey();
+                byte[] val = e.getValue();
+
+                assertEquals(key, (Integer)val.length);
+
+                assertEquals(0, key % 2);
+            }
+
+            qry = cache.queries().createScanQuery(null);
+
+            res = qry.execute().get();
+
+            assertEquals(ENTRY_CNT, res.size());
+        }
+        finally {
+            for (int i = 0; i < ENTRY_CNT; i++)
+                assertTrue(cache.removex(i));
         }
     }
 

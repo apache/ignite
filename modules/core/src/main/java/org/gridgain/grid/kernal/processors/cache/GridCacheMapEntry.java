@@ -2981,8 +2981,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (isNew()) {
             V val = unswapped.value();
 
-            if (cctx.portableEnabled())
+            if (cctx.portableEnabled()) {
                 val = (V)cctx.kernalContext().portable().detachPortable(val);
+
+                if (cctx.offheapTiered() && !unswapped.valueIsByteArray())
+                    unswapped.valueBytes(cctx.convertPortableBytes(unswapped.valueBytes()));
+            }
 
             // Version does not change for load ops.
             update(val,
