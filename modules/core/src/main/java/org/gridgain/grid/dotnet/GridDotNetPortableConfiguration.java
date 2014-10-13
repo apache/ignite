@@ -16,7 +16,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDotNetPortableConfiguration implements GridPortableMarshalAware {
+public class GridDotNetPortableConfiguration implements GridPortableMarshalAware, Cloneable {
     /** */
     private Collection<GridDotNetPortableTypeConfiguration> typesCfg;
 
@@ -151,5 +151,28 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         dfltSerializer = rawReader.readString();
 
         dfltMetadataEnabled = rawReader.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneCallsConstructors"})
+    @Override public GridDotNetPortableConfiguration clone() {
+        try {
+            GridDotNetPortableConfiguration res = (GridDotNetPortableConfiguration)super.clone();
+
+            if (typesCfg != null) {
+                res.typesCfg = new ArrayList<>(typesCfg.size());
+
+                for (GridDotNetPortableTypeConfiguration typeCfg : typesCfg)
+                    res.typesCfg.add(typeCfg.clone());
+            }
+
+            if (types != null)
+                res.types = new ArrayList<>(types);
+
+            return res;
+        }
+        catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

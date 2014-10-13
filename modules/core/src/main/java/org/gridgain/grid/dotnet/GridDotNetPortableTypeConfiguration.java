@@ -14,7 +14,7 @@ import org.gridgain.grid.portables.*;
 /**
  *
  */
-public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware {
+public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware, Cloneable {
     /** */
     private String assemblyName;
 
@@ -156,5 +156,16 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         affinityKeyFieldName = rawReader.readString();
 
         metadataEnabled = (Boolean)rawReader.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
+    @Override public GridDotNetPortableTypeConfiguration clone() {
+        try {
+            return (GridDotNetPortableTypeConfiguration)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
