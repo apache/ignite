@@ -15,8 +15,8 @@ package org.gridgain.examples;
 public class GridRouterExamplesMultiNodeSelfTest extends GridRouterExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
-        // Start up a router.
         startRouter("config/router/default-router.xml");
+
+        startRemoteNodes();
     }
 }
