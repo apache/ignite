@@ -15,6 +15,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import java.nio.*;
+
 /**
  * Swap entry.
  */
@@ -26,7 +28,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** Value bytes. */
-    private byte[] valBytes;
+    private ByteBuffer valBytes;
 
     /** Value. */
     private V val;
@@ -59,7 +61,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
      * @param valClsLdrId Class loader ID for entry value (can be {@code null} for local class loader).
      */
     public GridCacheSwapEntryImpl(
-        byte[] valBytes,
+        ByteBuffer valBytes,
         boolean valIsByteArr,
         GridCacheVersion ver,
         long ttl,
@@ -154,12 +156,18 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes() {
-        return valBytes;
+        if (valBytes != null) {
+            assert valBytes.capacity() == valBytes.limit();
+
+            return valBytes.array();
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public void valueBytes(@Nullable byte[] valBytes) {
-        this.valBytes = valBytes;
+        this.valBytes = valBytes != null ? ByteBuffer.wrap(valBytes) : null;
     }
 
     /** {@inheritDoc} */
@@ -221,7 +229,9 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         size += 1; // Plain byte array flag.
 
-        size += valBytes.length + 4; // Value bytes.
+        int len = valBytes.limit();
+
+        size += len + 4; // Value bytes.
 
         size += (valClsLdrId == null ? 1 : 24);
 
@@ -243,13 +253,13 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         UNSAFE.putBoolean(arr, off++, valIsByteArr);
 
-        UNSAFE.putInt(arr, off, valBytes.length);
+        UNSAFE.putInt(arr, off, len);
 
         off += 4;
 
-        UNSAFE.copyMemory(valBytes, BYTE_ARR_OFF, arr, off, valBytes.length);
+        UNSAFE.copyMemory(valBytes.array(), BYTE_ARR_OFF, arr, off, len);
 
-        off += valBytes.length;
+        off += len;
 
         off = U.writeGridUuid(arr, off, valClsLdrId);
 
@@ -297,7 +307,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         GridUuid keyClsLdrId = U.readGridUuid(arr, off);
 
-        return new GridCacheSwapEntryImpl<T>(valBytes,
+        return new GridCacheSwapEntryImpl<T>(ByteBuffer.wrap(valBytes),
             valIsByteArr,
             ver,
             ttl,

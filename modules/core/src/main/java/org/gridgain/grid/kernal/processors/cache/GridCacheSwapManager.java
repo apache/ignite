@@ -25,6 +25,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.ref.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -669,9 +670,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     if (qryMgr != null)
                         qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
 
-                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key, keyBytes,
-                        part, entry.valueBytes(),entry.valueIsByteArray(), entry.version(), entry.ttl(),
-                        entry.expireTime(), entry.keyClassLoaderId(), entry.valueClassLoaderId());
+                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
+                        keyBytes,
+                        part,
+                        ByteBuffer.wrap(entry.valueBytes()),
+                        entry.valueIsByteArray(),
+                        entry.version(), entry.ttl(),
+                        entry.expireTime(),
+                        entry.keyClassLoaderId(),
+                        entry.valueClassLoaderId());
 
                     unswapped.value(entry.value());
 
@@ -713,7 +720,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                                 swapKey.keyBytes(),
                                 swapKey.partition(),
-                                entry.valueBytes(),
+                                ByteBuffer.wrap(entry.valueBytes()),
                                 entry.valueIsByteArray(),
                                 entry.version(),
                                 entry.ttl(),
@@ -860,7 +867,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      * @param key Key.
      * @param keyBytes Key bytes.
-     * @param keyHash Key hash.
      * @param val Value.
      * @param valIsByteArr Whether value is byte array.
      * @param ver Version.
@@ -870,8 +876,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param valClsLdrId Class loader ID for entry value.
      * @throws GridException If failed.
      */
-    void write(K key, byte[] keyBytes, int keyHash, byte[] val, boolean valIsByteArr, GridCacheVersion ver, long ttl,
-        long expireTime, @Nullable GridUuid keyClsLdrId, @Nullable GridUuid valClsLdrId)
+    void write(K key,
+        byte[] keyBytes,
+        ByteBuffer val,
+        boolean valIsByteArr,
+        GridCacheVersion ver,
+        long ttl,
+        long expireTime,
+        @Nullable GridUuid keyClsLdrId,
+        @Nullable GridUuid valClsLdrId)
         throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return;

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Entry for batch swap operations.
@@ -44,7 +44,7 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
     public GridCacheBatchSwapEntry(K key,
         byte[] keyBytes,
         int part,
-        byte[] valBytes,
+        ByteBuffer valBytes,
         boolean valIsByteArr,
         GridCacheVersion ver,
         long ttl,

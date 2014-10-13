@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -552,17 +553,22 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return;
             }
 
-            GridCacheValueBytes valBytes = swapValueBytes();
-
-            assert !valBytes.isNull() : "Null value is written in swap.";
+            boolean plain = val instanceof byte[];
 
             GridUuid valClsLdrId = null;
 
             if (val != null)
                 valClsLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
 
-            cctx.swap().write(key(), getOrMarshalKeyBytes(), hash, valBytes.get(), valBytes.isPlain(), ver,
-                ttlExtras(), expireTime, cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)), valClsLdrId);
+            cctx.swap().write(key(),
+                getOrMarshalKeyBytes(),
+                plain ? ByteBuffer.wrap((byte[])val) : swapValueBytes(),
+                plain,
+                ver,
+                ttlExtras(),
+                expireTime,
+                cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(key)),
+                valClsLdrId);
 
             if (log.isDebugEnabled())
                 log.debug("Wrote swap entry: " + this);
@@ -3597,7 +3603,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         try {
             if (!hasReaders() && markObsolete0(obsoleteVer, false)) {
                 if (!isStartVersion()) {
-                    GridCacheValueBytes valBytes = swapValueBytes();
+                    boolean plain = val instanceof byte[];
 
                     GridUuid valClsLdrId = null;
 
@@ -3607,8 +3613,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     ret = new GridCacheBatchSwapEntry<>(key(),
                         getOrMarshalKeyBytes(),
                         partition(),
-                        valBytes.get(),
-                        valBytes.isPlain(),
+                        plain ? ByteBuffer.wrap((byte[])val) : swapValueBytes(),
+                        plain,
                         ver,
                         ttlExtras(),
                         expireTimeExtras(),
@@ -3633,19 +3639,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @return Value bytes wrapper.
      * @throws GridException If failed.
      */
-    private GridCacheValueBytes swapValueBytes() throws GridException {
+    private ByteBuffer swapValueBytes() throws GridException {
         assert val != null || valBytes != null || valPtr != 0;
-
-        if (val instanceof byte[])
-            return GridCacheValueBytes.plain(val);
 
         if (cctx.offheapTiered() && cctx.portableEnabled()) {
             if (val != null)
-                return GridCacheValueBytes.marshaled(cctx.portable().marshal(val, true).array());
+                return cctx.portable().marshal(val, false);
 
             V val0 = cctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
 
-            return GridCacheValueBytes.marshaled(cctx.portable().marshal(val0, true).array());
+            return cctx.portable().marshal(val0, false);
         }
         else {
             GridCacheValueBytes res = valueBytesUnlocked();
@@ -3653,7 +3656,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (res.isNull())
                 res = GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
 
-            return res;
+            assert res.get() != null;
+
+            return ByteBuffer.wrap(res.get());
         }
     }
 
