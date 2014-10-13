@@ -46,48 +46,61 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
-    /** Time to wait before reassignment retries. */
-    private static final long RETRY_TIMEOUT = 1000;
-    /** Local service instances. */
-    private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
-    /** Remote services by their names */
-    private final Map<String, UUID> rmtSvcs = new HashMap<>();
-    /** Deployment futures. */
-    private final ConcurrentMap<String, GridFutureAdapter<?>> depFuts = new ConcurrentHashMap8<>();
-    /** Deployment futures. */
-    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
-    /** Deployment executor service. */
-    private final ExecutorService depExe = Executors.newSingleThreadExecutor();
-    /** Busy lock. */
-    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
     /** Thread factory. */
     private ThreadFactory threadFactory = new GridThreadFactory(ctx.gridName());
+
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
+
+    /** Time to wait before reassignment retries. */
+    private static final long RETRY_TIMEOUT = 1000;
+
     /**
      * Service configuration cache.
      *
      * @deprecated Object are used for projection for preserving backward compatibility.
-     * Need to return strongly-typed projection (GridServiceDeploymentKey -> GridServiceDeployment)
-     * in the next major release.
+     *      Need to return strongly-typed projection (GridServiceDeploymentKey -> GridServiceDeployment)
+     *      in the next major release.
      */
     @Deprecated
     private GridCacheProjectionEx<Object, Object> depCache;
+
     /**
      * Service assignments cache.
      *
      * @deprecated Object are used for projection for preserving backward compatibility.
-     * Need to return strongly-typed projection (GridServiceAssignmentsKey -> GridServiceAssignments)
-     * in the next major release.
+     *      Need to return strongly-typed projection (GridServiceAssignmentsKey -> GridServiceAssignments)
+     *      in the next major release.
      */
     @Deprecated
     private GridCacheProjectionEx<Object, Object> assignCache;
+
+    /** Local service instances. */
+    private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
+
+    /** Remote service instances. */
+    private final Map<String, UUID> rmtNodeSvcs = new HashMap<>();
+
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();
+
     /** Deployment listener. */
     private GridCacheContinuousQueryAdapter<Object, Object> cfgQry;
+
     /** Assignment listener. */
     private GridCacheContinuousQueryAdapter<Object, Object> assignQry;
+
+    /** Deployment futures. */
+    private final ConcurrentMap<String, GridFutureAdapter<?>> depFuts = new ConcurrentHashMap8<>();
+
+    /** Deployment futures. */
+    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
+
+    /** Deployment executor service. */
+    private final ExecutorService depExe = Executors.newSingleThreadExecutor();
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /**
      * @param ctx Kernal context.
@@ -296,7 +309,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svc Service.
      * @param cacheName Cache name.
-     * @param affKey Affinity key.
+     * @param  affKey Affinity key.
      * @return Future.
      */
     public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, String cacheName, Object affKey) {
@@ -510,31 +523,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /**
      * @param name Service name.
-     * @param <T> Service type.
-     * @return Services by specified service name.
-     */
-    public <T> Collection<T> services(String name) {
-        Collection<GridServiceContextImpl> ctxs;
-
-        synchronized (locSvcs) {
-            ctxs = locSvcs.get(name);
-        }
-
-        if (ctxs == null)
-            return null;
-
-        synchronized (ctxs) {
-            Collection<T> res = new ArrayList<>(ctxs.size());
-
-            for (GridServiceContextImpl ctx : ctxs)
-                res.add((T)ctx.service());
-
-            return res;
-        }
-    }
-
-    /**
-     * @param name Service name.
      * @param svc Service class.
      * @param sticky Whether multi-node request should be done.
      * @param <T> Service class type.
@@ -575,15 +563,49 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         UUID rmtNodeId = null;
 
         if (sticky) {
-            rmtNodeId = rmtSvcs.get(name);
+            rmtNodeId = rmtNodeSvcs.get(name);
         }
-
-        List<GridServiceDescriptor> deployedServices = new ArrayList(deployedServices());
 
         if (!sticky || rmtNodeId == null) {
+            List<GridServiceDescriptor> deployedServices = new ArrayList();
+            for (GridServiceDescriptor gsd : deployedServices) {
+                if (gsd.name().equals(name))
+                    deployedServices.add(gsd);
+            }
 
+            if (!deployedServices.isEmpty()) {
+                int deployedServicesSize = deployedServices.size();
+                int randomIndex = (int)Math.random() * deployedServicesSize;
+                rmtNodeId = deployedServices.get(randomIndex).originNodeId();
+
+            }
         }
         return rmtNodeId;
+    }
+
+    /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Services by specified service name.
+     */
+    public <T> Collection<T> services(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+             ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            Collection<T> res = new ArrayList<>(ctxs.size());
+
+            for (GridServiceContextImpl ctx : ctxs)
+                res.add((T)ctx.service());
+
+            return res;
+        }
     }
 
     /**
@@ -847,7 +869,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param cancelCnt Number of contexts to cancel.
      */
     private void cancel(Iterable<GridServiceContextImpl> ctxs, int cancelCnt) {
-        for (Iterator<GridServiceContextImpl> it = ctxs.iterator(); it.hasNext(); ) {
+        for (Iterator<GridServiceContextImpl> it = ctxs.iterator(); it.hasNext();) {
             GridServiceContextImpl ctx = it.next();
 
             // Flip cancelled flag.
