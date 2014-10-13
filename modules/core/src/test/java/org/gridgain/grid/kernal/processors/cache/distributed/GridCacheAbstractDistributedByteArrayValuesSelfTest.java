@@ -278,7 +278,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         GridCache<Integer, Object> primaryCache = null;
 
         for (GridCache<Integer, Object> cache : caches) {
-            if (cache.entry(KEY_1).primary()) {
+            if (cache.entry(SWAP_TEST_KEY).primary()) {
                 primaryCache = cache;
 
                 break;
@@ -287,15 +287,15 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         assert primaryCache != null;
 
-        primaryCache.put(KEY_1, val1);
+        primaryCache.put(SWAP_TEST_KEY, val1);
 
-        assert Arrays.equals(val1, (byte[])primaryCache.get(1));
+        assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
 
-        assert primaryCache.evict(1);
+        assert primaryCache.evict(SWAP_TEST_KEY);
 
-        assert primaryCache.peek(1) == null;
+        assert primaryCache.peek(SWAP_TEST_KEY) == null;
 
-        assert Arrays.equals(val1, (byte[])primaryCache.promote(1));
+        assert Arrays.equals(val1, (byte[])primaryCache.promote(SWAP_TEST_KEY));
     }
 
     /**

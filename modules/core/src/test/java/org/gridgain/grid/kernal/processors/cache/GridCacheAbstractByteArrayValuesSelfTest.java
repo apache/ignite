@@ -34,6 +34,9 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
     /** Key 2. */
     protected static final Integer KEY_2 = 2;
 
+    /** Use special key for swap test, otherwise entry with readers is not evicted. */
+    protected static final Integer SWAP_TEST_KEY = 3;
+
     /** Shared IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
