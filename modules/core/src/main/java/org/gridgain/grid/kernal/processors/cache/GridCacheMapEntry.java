@@ -53,9 +53,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
     private static final byte IS_REFRESHING_MASK = 0x01;
 
     /** */
@@ -661,6 +658,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param key Key.
      * @param reload flag.
      * @param filter Filter.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
      * @return Read value.
      * @throws GridException If failed.
      */
@@ -772,7 +771,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
             // Attempt to load from swap.
-            if (val == null && !hasOldBytes && readSwap && !deletedUnlocked()) {
+            if (val == null && !hasOldBytes && readSwap) {
                 // Only promote when loading initial state.
                 if (isNew() || !valid) {
                     // If this entry is already expired (expiration time was too low),
@@ -1395,7 +1394,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             cctx.config().getInterceptor().onAfterRemove(key, old);
 
         return valid ?
-            new GridCacheUpdateTxResult<>(true, cctx.<V>unwrapTemporary(interceptRes != null ? interceptRes.get2() : old)) :
+            new GridCacheUpdateTxResult<>(true,
+                cctx.<V>unwrapTemporary(interceptRes != null ? interceptRes.get2() : old)) :
             new GridCacheUpdateTxResult<V>(false, null);
     }
 
@@ -1538,7 +1538,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             evtOld = cctx.unwrapTemporary(old);
 
                         cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
-                            (GridCacheVersion) null, EVT_CACHE_OBJECT_PUT, updated, updated != null, evtOld,
+                            (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, evtOld,
                             evtOld != null || hadVal, subjId, null, taskName);
                     }
                 }
@@ -1639,7 +1639,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             checkObsolete();
 
-            // Load from swap if it is new.
+            // Load and remove from swap if it is new.
             if (isNew())
                 unswap(true, retval);
 
@@ -4117,9 +4117,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (plainByteArr || !cctx.portableEnabled()) {
             int size = UNSAFE.getInt(ptr);
 
-            byte[] bytes = new byte[size];
-
-            UNSAFE.copyMemory(null, ptr + 4, bytes, BYTE_ARR_OFF, size);
+            byte[] bytes = U.copyMemory(ptr + 4, size);
 
             return plainByteArr ? GridCacheValueBytes.plain(bytes) : GridCacheValueBytes.marshaled(bytes);
         }
@@ -4146,9 +4144,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         int size = UNSAFE.getInt(ptr);
 
-        byte[] res = new byte[size];
-
-        UNSAFE.copyMemory(null, ptr + 4, res, BYTE_ARR_OFF, size);
+        byte[] res = U.copyMemory(ptr + 4, size);
 
         if (plainByteArr)
             return (V)res;

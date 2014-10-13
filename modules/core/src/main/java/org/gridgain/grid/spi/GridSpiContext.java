@@ -383,7 +383,7 @@ public interface GridSpiContext {
      * @param key Key.
      * @param ldr Class loader for unmarshalling.
      * @return Value.
-     * @throws GridException If failed.
+     * @throws GridException If any exception occurs.
      */
     @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
         @Nullable ClassLoader ldr) throws GridException;

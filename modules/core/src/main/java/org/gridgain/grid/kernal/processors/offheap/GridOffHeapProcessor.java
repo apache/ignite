@@ -162,6 +162,8 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Enables eviction for entry after {@link #valuePointer} was called.
+     *
      * @param spaceName Space name.
      * @param part Partition.
      * @param key Key.

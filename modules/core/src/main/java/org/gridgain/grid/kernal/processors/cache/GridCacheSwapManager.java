@@ -787,6 +787,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * Enables eviction for offheap entry after {@link #readOffheapPointer} was called.
+     *
      * @param key Key.
      * @param keyBytes Key bytes.
      * @throws GridException If failed.

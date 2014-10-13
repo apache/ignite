@@ -392,7 +392,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
-                                /*temporary*/true,
+                                /*temporary*/false,
                                 subjId,
                                 null,
                                 taskName,

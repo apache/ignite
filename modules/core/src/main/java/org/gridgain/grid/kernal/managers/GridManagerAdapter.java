@@ -19,11 +19,11 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -502,17 +502,23 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         if (swapEntryBytes == null)
                             return null;
 
-                        GridCacheSwapEntry e = GridCacheSwapEntryImpl.unmarshal(swapEntryBytes);
+                        byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(swapEntryBytes);
 
-                        if (e.valueIsByteArray())
-                            return (V)e.valueBytes();
+                        if (val != null)
+                            return (V)val;
+
+                        int valOff = GridCacheSwapEntryImpl.valueOffset(swapEntryBytes);
 
                         if (cctx.offheapTiered() && cctx.portableEnabled())
-                            return (V)ctx.portable().unmarshal(e.valueBytes(), 0);
+                            return (V)ctx.portable().unmarshal(swapEntryBytes, valOff);
                         else {
                             ldr = ldr != null ? ldr : U.gridClassLoader();
 
-                            return marsh.unmarshal(e.valueBytes(), ldr);
+                            GridByteArrayInputStream in = new GridByteArrayInputStream(swapEntryBytes,
+                                valOff,
+                                swapEntryBytes.length);
+
+                            return marsh.unmarshal(in, ldr);
                         }
                     }
 

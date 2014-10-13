@@ -213,7 +213,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         throws GridException {
         assert key != null;
 
-        write(spaceName, new GridSwapKey(key), marsh.marshal(val), ldr);
+        write(spaceName, new GridSwapKey(key), marshal(val), ldr);
     }
 
     /**
@@ -391,6 +391,17 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
             return null;
 
         return marsh.unmarshal(swapBytes, ldr != null ? ldr : U.gridClassLoader());
+    }
+
+    /**
+     * Marshals object.
+     *
+     * @param obj Object to marshal.
+     * @return Marshalled array.
+     * @throws GridException If failed.
+     */
+    private byte[] marshal(Object obj) throws GridException {
+        return ctx.config().getMarshaller().marshal(obj);
     }
 
     /**

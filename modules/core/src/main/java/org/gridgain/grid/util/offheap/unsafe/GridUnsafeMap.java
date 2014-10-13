@@ -747,8 +747,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
 //                            bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), Entry.readValueBytes(entryAddr, mem)));
                             {
-                                int valLen = Entry.readValueLength(entryAddr, mem);
                                 int keyLen = Entry.readKeyLength(entryAddr, mem);
+                                int valLen = Entry.readValueLength(entryAddr, mem);
 
                                 byte[] valBytes =  mem.readBytes(entryAddr + HEADER + keyLen, valLen);
 
@@ -818,8 +818,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
 //                            bin.add(F.t(Entry.readKeyBytes(entryAddr, mem), Entry.readValueBytes(entryAddr, mem)));
                             {
-                                int valLen = Entry.readValueLength(entryAddr, mem);
                                 int keyLen = Entry.readKeyLength(entryAddr, mem);
+                                int valLen = Entry.readValueLength(entryAddr, mem);
 
                                 T2<Long, Integer> keyPtr = new T2<>(entryAddr + HEADER, keyLen);
 

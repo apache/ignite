@@ -336,7 +336,9 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
      * @param c Closure.
+     * @param deserializePortable Deserialize portable flag.
      * @return Future with {@code True} value if loading took place.
      */
-    public GridFuture<Boolean> loadMissing(boolean async, Collection<? extends K> keys, boolean deserializePortable, GridBiInClosure<K, V> c);
+    public GridFuture<Boolean> loadMissing(boolean async, Collection<? extends K> keys, boolean deserializePortable,
+        GridBiInClosure<K, V> c);
 }

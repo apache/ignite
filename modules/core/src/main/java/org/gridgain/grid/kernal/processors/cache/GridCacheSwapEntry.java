@@ -67,7 +67,7 @@ public interface GridCacheSwapEntry<V> {
     @Nullable public GridUuid valueClassLoaderId();
 
     /**
-     * @return If entry is offheap based returns pointer, otherwise 0.
+     * @return If entry is offheap based returns offheap address, otherwise 0.
      */
     public long offheapPointer();
 }

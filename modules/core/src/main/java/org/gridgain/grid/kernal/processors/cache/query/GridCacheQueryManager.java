@@ -835,242 +835,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
-     */
-    private abstract class AbstractLazySwapEntry {
-        /** */
-        private K key;
-
-        /** */
-        private V val;
-
-        /**
-         * @return Key bytes.
-         */
-        protected abstract byte[] keyBytes();
-
-        /**
-         * @return Value.
-         * @throws GridException If failed.
-         */
-        protected abstract V unmarshalValue() throws GridException;
-
-        /**
-         * @return Key.
-         */
-        K key() {
-            try {
-                if (key != null)
-                    return key;
-
-                key = cctx.marshaller().unmarshal(keyBytes(), cctx.deploy().globalLoader());
-
-                return key;
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        /**
-         * @return Value.
-         */
-        V value() {
-            try {
-                if (val != null)
-                    return val;
-
-                val = unmarshalValue();
-
-                return val;
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        /**
-         * @return TTL.
-         */
-        abstract long timeToLive();
-
-        /**
-         * @return Expire time.
-         */
-        abstract long expireTime();
-
-        /**
-         * @return Version.
-         */
-        abstract GridCacheVersion version();
-    }
-
-    /**
-     *
-     */
-    private class LazySwapEntry extends AbstractLazySwapEntry {
-        /** */
-        private final Map.Entry<byte[], byte[]> e;
-
-        /**
-         * @param e Entry with
-         */
-        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
-            this.e = e;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected byte[] keyBytes() {
-            return e.getKey();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("IfMayBeConditional")
-        @Override protected V unmarshalValue() throws GridException {
-            byte[] bytes = e.getValue();
-
-            byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
-
-            if (val != null)
-                return (V)val;
-
-            if (cctx.offheapTiered() && cctx.portableEnabled())
-                return (V)cctx.portable().unmarshal(bytes, GridCacheSwapEntryImpl.valueOffset(bytes));
-            else {
-                GridByteArrayInputStream in = new GridByteArrayInputStream(bytes,
-                    GridCacheSwapEntryImpl.valueOffset(bytes),
-                    bytes.length);
-
-                return cctx.marshaller().unmarshal(in, cctx.deploy().globalLoader());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override long timeToLive() {
-            return GridCacheSwapEntryImpl.timeToLive(e.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override long expireTime() {
-            return GridCacheSwapEntryImpl.expireTime(e.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheSwapEntryImpl.version(e.getValue());
-        }
-    }
-
-    /**
-     *
-     */
-    private class LazyOffheapEntry extends AbstractLazySwapEntry {
-        /** */
-        private final T2<Long, Integer> keyPtr;
-
-        /** */
-        private final T2<Long, Integer> valPtr;
-
-        /**
-         * @param keyPtr Key address.
-         * @param valPtr Value address.
-         */
-        private LazyOffheapEntry(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
-            assert keyPtr != null;
-            assert valPtr != null;
-
-            this.keyPtr = keyPtr;
-            this.valPtr = valPtr;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected byte[] keyBytes() {
-            return U.copyMemory(keyPtr.get1(), keyPtr.get2());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected V unmarshalValue() throws GridException {
-            long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
-
-            V val = (V)cctx.portable().unmarshal(ptr, false);
-
-            assert val != null;
-
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override long timeToLive() {
-            return GridCacheOffheapSwapEntry.timeToLive(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override long expireTime() {
-            return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheOffheapSwapEntry.version(valPtr.get1());
-        }
-    }
-
-    /**
-     *
-     */
-    private class OffheapIteratorClosure
-        extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
-        /** */
-        private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
-
-        /** */
-        private GridBiPredicate<K, V> filter;
-
-        /** */
-        private boolean keepPortable;
-
-        /**
-         * @param prjPred Projection filter.
-         * @param filter Filter.
-         * @param keepPortable Keep portable flag.
-         */
-        private OffheapIteratorClosure(
-            @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-            @Nullable GridBiPredicate<K, V> filter,
-            boolean keepPortable) {
-            assert prjPred != null || filter != null;
-
-            this.prjPred = prjPred;
-            this.filter = filter;
-            this.keepPortable = keepPortable;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridIndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
-            T2<Long, Integer> valPtr)
-            throws GridException {
-            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
-
-            if (prjPred != null) {
-                GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
-
-                if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
-                    return null;
-            }
-
-            if (filter != null) {
-                K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
-                V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
-
-                if (!filter.apply(key, val))
-                    return null;
-            }
-
-            return new GridIndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
-        }
-    }
-
-    /**
      * @param o Object to inject resources to.
      * @throws GridException If failure occurred while injecting resources.
      */
@@ -2397,6 +2161,242 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private abstract class AbstractLazySwapEntry {
+        /** */
+        private K key;
+
+        /** */
+        private V val;
+
+        /**
+         * @return Key bytes.
+         */
+        protected abstract byte[] keyBytes();
+
+        /**
+         * @return Value.
+         * @throws GridException If failed.
+         */
+        protected abstract V unmarshalValue() throws GridException;
+
+        /**
+         * @return Key.
+         */
+        K key() {
+            try {
+                if (key != null)
+                    return key;
+
+                key = cctx.marshaller().unmarshal(keyBytes(), cctx.deploy().globalLoader());
+
+                return key;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return Value.
+         */
+        V value() {
+            try {
+                if (val != null)
+                    return val;
+
+                val = unmarshalValue();
+
+                return val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return TTL.
+         */
+        abstract long timeToLive();
+
+        /**
+         * @return Expire time.
+         */
+        abstract long expireTime();
+
+        /**
+         * @return Version.
+         */
+        abstract GridCacheVersion version();
+    }
+
+    /**
+     *
+     */
+    private class LazySwapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final Map.Entry<byte[], byte[]> e;
+
+        /**
+         * @param e Entry with
+         */
+        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return e.getKey();
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("IfMayBeConditional")
+        @Override protected V unmarshalValue() throws GridException {
+            byte[] bytes = e.getValue();
+
+            byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
+
+            if (val != null)
+                return (V)val;
+
+            if (cctx.offheapTiered() && cctx.portableEnabled())
+                return (V)cctx.portable().unmarshal(bytes, GridCacheSwapEntryImpl.valueOffset(bytes));
+            else {
+                GridByteArrayInputStream in = new GridByteArrayInputStream(bytes,
+                    GridCacheSwapEntryImpl.valueOffset(bytes),
+                    bytes.length);
+
+                return cctx.marshaller().unmarshal(in, cctx.deploy().globalLoader());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheSwapEntryImpl.timeToLive(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheSwapEntryImpl.expireTime(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheSwapEntryImpl.version(e.getValue());
+        }
+    }
+
+    /**
+     *
+     */
+    private class LazyOffheapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final T2<Long, Integer> keyPtr;
+
+        /** */
+        private final T2<Long, Integer> valPtr;
+
+        /**
+         * @param keyPtr Key address.
+         * @param valPtr Value address.
+         */
+        private LazyOffheapEntry(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
+            assert keyPtr != null;
+            assert valPtr != null;
+
+            this.keyPtr = keyPtr;
+            this.valPtr = valPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return U.copyMemory(keyPtr.get1(), keyPtr.get2());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected V unmarshalValue() throws GridException {
+            long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
+
+            V val = (V)cctx.portable().unmarshal(ptr, false);
+
+            assert val != null;
+
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheOffheapSwapEntry.timeToLive(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheOffheapSwapEntry.version(valPtr.get1());
+        }
+    }
+
+    /**
+     *
+     */
+    private class OffheapIteratorClosure
+        extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
+        /** */
+        private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
+
+        /** */
+        private GridBiPredicate<K, V> filter;
+
+        /** */
+        private boolean keepPortable;
+
+        /**
+         * @param prjPred Projection filter.
+         * @param filter Filter.
+         * @param keepPortable Keep portable flag.
+         */
+        private OffheapIteratorClosure(
+            @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+            @Nullable GridBiPredicate<K, V> filter,
+            boolean keepPortable) {
+            assert prjPred != null || filter != null;
+
+            this.prjPred = prjPred;
+            this.filter = filter;
+            this.keepPortable = keepPortable;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridIndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
+            T2<Long, Integer> valPtr)
+            throws GridException {
+            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
+
+            if (prjPred != null) {
+                GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+
+                if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
+                    return null;
+            }
+
+            if (filter != null) {
+                K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+                V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+                if (!filter.apply(key, val))
+                    return null;
+            }
+
+            return new GridIndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
         }
     }
 
