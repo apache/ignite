@@ -529,7 +529,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param read Read flag.
      * @return Lock future.
      */
-    /** {@inheritDoc} */
     GridFuture<GridCacheReturn<V>> lockAllAsync(
         Collection<GridCacheEntryEx<K, V>> entries,
         List<GridCacheTxEntry<K, V>> writeEntries,

@@ -2583,7 +2583,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             keys0 = keys;
 
         assert keys0 != null;
-        assert cached == null || (keys0 != null && keys0.size() == 1);
+        assert cached == null || keys0.size() == 1;
 
         if (log.isDebugEnabled())
             log.debug("Called removeAllAsync(...) [tx=" + this + ", keys=" + keys0 + ", implicit=" + implicit +

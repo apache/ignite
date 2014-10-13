@@ -714,7 +714,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean failFast,
         boolean unmarshal,
         boolean updateMetrics,
-        boolean temporary,
+        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -772,7 +772,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             hasOldBytes = valBytes != null || valPtr != 0;
 
             if ((unmarshal || isOffHeapValuesOnly()) && !expired && val == null && hasOldBytes)
-                val = rawGetOrUnmarshalUnlocked(temporary);
+                val = rawGetOrUnmarshalUnlocked(tmp);
 
             boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
@@ -790,7 +790,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                     else {
                         // Read and remove swap entry.
-                        if (temporary) {
+                        if (tmp) {
                             unswap(false, false);
 
                             val = rawGetOrUnmarshalUnlocked(true);
@@ -890,7 +890,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 failFast,
                 unmarshal,
                 updateMetrics,
-                temporary,
+                tmp,
                 subjId,
                 transformClo,
                 taskName,
@@ -966,7 +966,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             failFast,
             unmarshal,
             updateMetrics,
-            temporary,
+            tmp,
             subjId,
             transformClo,
             taskName,
@@ -2868,8 +2868,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public synchronized V rawGetOrUnmarshal(boolean temporary) throws GridException {
-        return rawGetOrUnmarshalUnlocked(temporary);
+    @Nullable @Override public synchronized V rawGetOrUnmarshal(boolean tmp) throws GridException {
+        return rawGetOrUnmarshalUnlocked(tmp);
     }
 
     /**

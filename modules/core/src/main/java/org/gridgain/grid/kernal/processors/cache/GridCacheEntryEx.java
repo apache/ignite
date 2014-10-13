@@ -95,13 +95,13 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public V rawGet();
 
     /**
-     * @param temporary If {@code true} can return temporary instance which is valid while entry lock is held,
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
      *        temporary object can used for filter evaluation or transform closure execution and
      *        should not be returned to user.
      * @return Value (unmarshalled if needed).
      * @throws GridException If failed.
      */
-    public V rawGetOrUnmarshal(boolean temporary) throws GridException;
+    public V rawGetOrUnmarshal(boolean tmp) throws GridException;
 
     /**
      * @return {@code True} if has value or value bytes.
