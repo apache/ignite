@@ -341,13 +341,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected void body() {
-        assert dep != null;
-
         evtLsnr.onTaskStarted(this);
 
         try {
             // Use either user task or deployed one.
             if (task == null) {
+                assert taskCls != null;
                 assert GridComputeTask.class.isAssignableFrom(taskCls);
 
                 try {

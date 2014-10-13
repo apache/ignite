@@ -116,9 +116,9 @@ import java.util.*;
  */
 public interface GridServices {
     /**
-     * Gets grid projection to which this {@code GridCompute} instance belongs.
+     * Gets grid projection to which this {@code GridServices} instance belongs.
      *
-     * @return Grid projection to which this {@code GridCompute} instance belongs.
+     * @return Grid projection to which this {@code GridServices} instance belongs.
      */
     public GridProjection projection();
 
