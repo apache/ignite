@@ -22,6 +22,11 @@ public interface GridCacheSwapEntry<V> {
     public byte[] valueBytes();
 
     /**
+     * @param valBytes Value bytes.
+     */
+    public void valueBytes(@Nullable byte[] valBytes);
+
+    /**
      * @return Value.
      */
     public V value();

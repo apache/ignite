@@ -474,17 +474,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (cctx.offheapTiered()) {
                     e = cctx.swap().readOffheapPointer(this);
 
-                    if (e != null && e.offheapPointer() > 0) {
-                        valPtr = e.offheapPointer();
+                    if (e != null) {
+                        if (e.offheapPointer() > 0) {
+                            valPtr = e.offheapPointer();
 
-                        if (needVal) {
-                            V val = unmarshalOffheap(false);
+                            if (needVal) {
+                                V val = unmarshalOffheap(false);
 
-                            e.value(val);
+                                e.value(val);
+                            }
+                        }
+                        else { // Read from swap.
+                            valPtr = 0;
+
+                            if (cctx.portableEnabled() && !e.valueIsByteArray())
+                                e.valueBytes(null); // Clear bytes marshalled with portable marshaller.
                         }
                     }
-                    else
-                        valPtr = 0;
                 }
                 else
                     e = detached() ? cctx.swap().read(this) : cctx.swap().readAndRemove(this);
@@ -529,7 +535,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (expireTime > 0 && U.currentTimeMillis() >= expireTime) { // Don't swap entry if it's expired.
                 if (cctx.offheapTiered() && valPtr > 0) {
-                    boolean rmv = cctx.swap().removeOffheap(key(), getOrMarshalKeyBytes());
+                    boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;
 
@@ -1298,7 +1304,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(null, null, 0, 0, newVer);
 
-                if (cctx.offheapTiered() && valPtr != 0) {
+                if (cctx.offheapTiered() && valPtr > 0) {
                     boolean rmv = cctx.swap().removeOffheap(key, getOrMarshalKeyBytes());
 
                     assert rmv;

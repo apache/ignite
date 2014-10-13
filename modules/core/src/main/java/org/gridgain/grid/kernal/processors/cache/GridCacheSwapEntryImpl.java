@@ -115,6 +115,11 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void valueBytes(@Nullable byte[] valBytes) {
+        this.valBytes = valBytes;
+    }
+
+    /** {@inheritDoc} */
     @Override public V value() {
         return val;
     }

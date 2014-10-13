@@ -2562,6 +2562,23 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             keys0 = drMap.keySet();
         }
+        else if (cctx.portableEnabled()) {
+            try {
+                if (keys != null) {
+                    Collection<K> pKeys = new ArrayList<>(keys.size());
+
+                    for (K key : keys)
+                        pKeys.add((K)cctx.marshalToPortable(key));
+
+                    keys0 = pKeys;
+                }
+                else
+                    keys0 = null;
+            }
+            catch (GridPortableException e) {
+                return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            }
+        }
         else
             keys0 = keys;
 

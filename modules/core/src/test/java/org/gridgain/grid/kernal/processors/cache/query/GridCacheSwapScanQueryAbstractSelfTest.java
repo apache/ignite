@@ -23,16 +23,24 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- *
+ * Tests scan query over entries in offheap and swap.
  */
 public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static final String ATOMIC_CACHE_NAME = "atomicCache";
+
+    /** */
+    protected static final String TRANSACTIONAL_CACHE_NAME = "transactionalCache";
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -48,19 +56,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
-
-        ccfg.setSwapEnabled(true);
-
-        ccfg.setMemoryMode(OFFHEAP_TIERED);
-
-        ccfg.setOffHeapMaxMemory(10);
-
-        ccfg.setCacheMode(PARTITIONED);
-
-        ccfg.setAtomicityMode(ATOMIC);
-
-        ccfg.setPortableEnabled(portableEnabled());
+        cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
+            cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
 
         if (portableEnabled()) {
             GridPortableConfiguration pCfg = new GridPortableConfiguration();
@@ -70,9 +67,36 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             cfg.setPortableConfiguration(pCfg);
         }
 
-        cfg.setCacheConfiguration(ccfg);
-
         return cfg;
+    }
+
+    /**
+     * @param name Cache name.
+     * @param atomicityMode Atomicity mode.
+     * @return Cache configuration.
+     */
+    private GridCacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
+        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+
+        ccfg.setName(name);
+
+        ccfg.setSwapEnabled(true);
+
+        ccfg.setMemoryMode(OFFHEAP_TIERED);
+
+        ccfg.setOffHeapMaxMemory(1024); // Set small offheap size to provoke eviction in swap.
+
+        ccfg.setCacheMode(PARTITIONED);
+
+        ccfg.setAtomicityMode(atomicityMode);
+
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
+
+        ccfg.setPortableEnabled(portableEnabled());
+
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return ccfg;
     }
 
     /**
@@ -82,7 +106,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(4);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -93,12 +119,22 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testQuery() throws Exception {
-        GridCache<Key, Person> cache = grid(0).cache(null);
+        checkQuery(grid(0).cache(ATOMIC_CACHE_NAME));
 
-        for (int i = 0; i < 100; i++)
-            cache.putx(new Key(i), new Person("p-" + i, i));
+        checkQuery(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkQuery(GridCache cache) throws Exception {
+        final int ENTRY_CNT = 500;
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            assertTrue(cache.putx(new Key(i), new Person("p-" + i, i)));
 
         try {
             GridCacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(new GridBiPredicate<Key, Person>() {
@@ -111,7 +147,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
             Collection<Map.Entry<Key, Person>> res = qry.execute().get();
 
-            assertEquals(50, res.size());
+            assertEquals(ENTRY_CNT / 2, res.size());
 
             for (Map.Entry<Key, Person> e : res) {
                 Key k = e.getKey();
@@ -120,10 +156,70 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
                 assertEquals(k.id, (Integer)p.salary);
                 assertEquals(0, k.id % 2);
             }
+
+            qry = cache.queries().createScanQuery(null);
+
+            res = qry.execute().get();
+
+            assertEquals(ENTRY_CNT, res.size());
         }
         finally {
-            for (int i = 0; i < 10; i++)
-                cache.removex(new Key(i));
+            for (int i = 0; i < ENTRY_CNT; i++)
+                assertTrue(cache.removex(new Key(i)));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryPrimitives() throws Exception {
+        checkQueryPrimitives(grid(0).cache(ATOMIC_CACHE_NAME));
+
+        checkQueryPrimitives(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkQueryPrimitives(GridCache cache) throws Exception {
+        final int ENTRY_CNT = 500;
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            assertTrue(cache.putx(String.valueOf(i), (long) i));
+
+        try {
+            GridCacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(new GridBiPredicate<String, Long>() {
+                @Override public boolean apply(String key, Long val) {
+                    assertEquals(key, String.valueOf(val));
+
+                    return val % 2 == 0;
+                }
+            });
+
+            Collection<Map.Entry<String, Long>> res = qry.execute().get();
+
+            assertEquals(ENTRY_CNT / 2, res.size());
+
+            for (Map.Entry<String, Long> e : res) {
+                String key = e.getKey();
+                Long val = e.getValue();
+
+                assertEquals(key, String.valueOf(val));
+
+                assertEquals(0, val % 2);
+            }
+
+            qry = cache.queries().createScanQuery(null);
+
+            res = qry.execute().get();
+
+            assertEquals(ENTRY_CNT, res.size());
+        }
+        finally {
+            for (int i = 0; i < ENTRY_CNT; i++)
+                assertTrue(cache.removex(String.valueOf(i)));
         }
     }
 
@@ -154,7 +250,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             Key key = (Key)o;
 
             return id.equals(key.id);
-
         }
 
         /** {@inheritDoc} */

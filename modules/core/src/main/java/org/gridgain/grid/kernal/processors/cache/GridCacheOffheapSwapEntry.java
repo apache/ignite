@@ -127,6 +127,11 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void valueBytes(byte[] valBytes) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public V value() {
         return val;
     }

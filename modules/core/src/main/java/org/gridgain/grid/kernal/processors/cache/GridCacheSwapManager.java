@@ -770,8 +770,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridException If failed.
      */
     boolean removeOffheap(final K key, byte[] keyBytes) throws GridException {
-        if (!offheapEnabled)
-            return false;
+        assert offheapEnabled;
 
         checkIteratorQueue();
 
@@ -788,7 +787,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * @param key Key to remove.
+     * @param key Key.
      * @param keyBytes Key bytes.
      * @throws GridException If failed.
      */
