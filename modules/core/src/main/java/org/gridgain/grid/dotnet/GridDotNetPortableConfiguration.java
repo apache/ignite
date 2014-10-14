@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Mirror of .Net class GridDotNetPortableConfiguration.cs
  */
-public class GridDotNetPortableConfiguration implements GridPortableMarshalAware, Cloneable {
+public class GridDotNetPortableConfiguration implements GridPortableMarshalAware {
     /** */
     private Collection<GridDotNetPortableTypeConfiguration> typesCfg;
 
@@ -35,6 +35,34 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
 
     /** */
     private boolean dfltMetadataEnabled;
+
+    /**
+     * Default constructor.
+     */
+    public GridDotNetPortableConfiguration() {
+
+    }
+
+    /**
+     * Copy constructor.
+     * @param cfg configuration to copy.
+     */
+    public GridDotNetPortableConfiguration(GridDotNetPortableConfiguration cfg) {
+        if (cfg.getTypesConfiguration() != null) {
+            typesCfg = new ArrayList<>();
+
+            for (GridDotNetPortableTypeConfiguration typeCfg : cfg.getTypesConfiguration())
+                typesCfg.add(new GridDotNetPortableTypeConfiguration(typeCfg));
+        }
+
+        if (cfg.getTypes() != null)
+            types = new ArrayList<>(cfg.getTypes());
+
+        dfltNameMapper = cfg.getDefaultNameMapper();
+        dfltIdMapper = cfg.getDefaultIdMapper();
+        dfltSerializer = cfg.getDefaultSerializer();
+        dfltMetadataEnabled = cfg.getDefaultMetadataEnabled();
+    }
 
     /**
      * @return Type cfgs.
@@ -155,26 +183,8 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneCallsConstructors"})
-    @Override public GridDotNetPortableConfiguration clone() {
-        try {
-            GridDotNetPortableConfiguration res = (GridDotNetPortableConfiguration)super.clone();
-
-            if (typesCfg != null) {
-                res.typesCfg = new ArrayList<>(typesCfg.size());
-
-                for (GridDotNetPortableTypeConfiguration typeCfg : typesCfg)
-                    res.typesCfg.add(typeCfg.clone());
-            }
-
-            if (types != null)
-                res.types = new ArrayList<>(types);
-
-            return res;
-        }
-        catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+    @Override public String toString() {
+        return S.toString(GridDotNetPortableConfiguration.class, this);
     }
 
     /** {@inheritDoc} */

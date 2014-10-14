@@ -663,7 +663,8 @@ public class GridConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        dotNetCfg = cfg.getDotNetConfiguration() == null ? null : cfg.getDotNetConfiguration().clone();
+        dotNetCfg = cfg.getDotNetConfiguration() == null ?
+            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**

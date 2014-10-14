@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
  */
-public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware, Cloneable {
+public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware {
     /** */
     private String assemblyName;
 
@@ -36,6 +36,27 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
 
     /** */
     private Boolean metadataEnabled;
+
+    /**
+     * Default constructor.
+     */
+    public GridDotNetPortableTypeConfiguration() {
+
+    }
+
+    /**
+     * Copy constructor.
+     * @param cfg configuration to copy.
+     */
+    public GridDotNetPortableTypeConfiguration(GridDotNetPortableTypeConfiguration cfg) {
+        assemblyName = cfg.getAssemblyName();
+        typeName = cfg.getTypeName();
+        nameMapper = cfg.getNameMapper();
+        idMapper = cfg.getIdMapper();
+        serializer = cfg.getSerializer();
+        affinityKeyFieldName = cfg.getAffinityKeyFieldName();
+        metadataEnabled = cfg.getMetadataEnabled();
+    }
 
     /**
      * @return Assembly name.
@@ -121,6 +142,20 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         this.metadataEnabled = metadataEnabled;
     }
 
+    /**
+     * @return Affinity key field name.
+     */
+    public String getAffinityKeyFieldName() {
+        return affinityKeyFieldName;
+    }
+
+    /**
+     * @param affinityKeyFieldName Affinity key field name.
+     */
+    public void setAffinityKeyFieldName(String affinityKeyFieldName) {
+        this.affinityKeyFieldName = affinityKeyFieldName;
+    }
+
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
@@ -157,17 +192,6 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         affinityKeyFieldName = rawReader.readString();
 
         metadataEnabled = (Boolean)rawReader.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
-    @Override public GridDotNetPortableTypeConfiguration clone() {
-        try {
-            return (GridDotNetPortableTypeConfiguration)super.clone();
-        }
-        catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /** {@inheritDoc} */

@@ -17,12 +17,31 @@ import java.util.*;
 /**
  * Mirror of .Net class GridDotNetConfiguration.cs
  */
-public class GridDotNetConfiguration implements GridPortableMarshalAware, Cloneable {
+public class GridDotNetConfiguration implements GridPortableMarshalAware {
     /** */
     private GridDotNetPortableConfiguration portableCfg;
 
     /** */
     private List<String> assemblies;
+
+    /**
+     * Default constructor.
+     */
+    public GridDotNetConfiguration() {
+
+    }
+
+    /**
+     * Copy constructor.
+     * @param cfg configuration to copy.
+     */
+    public GridDotNetConfiguration(GridDotNetConfiguration cfg) {
+        if (cfg.getPortableCfg() != null)
+            portableCfg = new GridDotNetPortableConfiguration(cfg.getPortableCfg());
+
+        if (cfg.getAssemblies() != null)
+            assemblies = new ArrayList<>(cfg.getAssemblies());
+    }
 
     /**
      * @return Configuration.
@@ -70,22 +89,8 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware, Clonea
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneCallsConstructors"})
-    @Override public GridDotNetConfiguration clone() {
-        try {
-            GridDotNetConfiguration res = (GridDotNetConfiguration)super.clone();
-
-            if (portableCfg != null)
-                res.portableCfg = portableCfg.clone();
-
-            if (assemblies != null)
-                res.assemblies = new ArrayList<>(assemblies);
-
-            return res;
-        }
-        catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+    @Override public String toString() {
+        return S.toString(GridDotNetConfiguration.class, this);
     }
 
     /** {@inheritDoc} */
