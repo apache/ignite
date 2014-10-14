@@ -480,46 +480,16 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.grid().security().authenticatedSubject(subjId);
                     }
 
-                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-                        @Nullable ClassLoader ldr) throws GridException {
+                    @SuppressWarnings("unchecked")
+                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
+                        Object key, @Nullable ClassLoader ldr) throws GridException {
                         GridCache<Object, V> cache = ctx.cache().cache(spaceName);
 
                         GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 
-                        String swapSpace = cctx.swap().spaceName();
+                        GridCacheSwapEntry e = cctx.swap().read(key);
 
-                        int part = cache.affinity().partition(key);
-
-                        GridMarshaller marsh = ctx.grid().configuration().getMarshaller();
-
-                        byte[] keyBytes = marsh.marshal(key);
-
-                        byte[] swapEntryBytes = ctx.offheap().get(swapSpace, part, key, keyBytes);
-
-                        if (swapEntryBytes == null)
-                            swapEntryBytes = ctx.swap().read(swapSpace, new GridSwapKey(key, part, keyBytes), ldr);
-
-                        if (swapEntryBytes == null)
-                            return null;
-
-                        byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(swapEntryBytes);
-
-                        if (val != null)
-                            return (V)val;
-
-                        int valOff = GridCacheSwapEntryImpl.valueOffset(swapEntryBytes);
-
-                        if (cctx.offheapTiered() && cctx.portableEnabled())
-                            return (V)ctx.portable().unmarshal(swapEntryBytes, valOff);
-                        else {
-                            ldr = ldr != null ? ldr : U.gridClassLoader();
-
-                            GridByteArrayInputStream in = new GridByteArrayInputStream(swapEntryBytes,
-                                valOff,
-                                swapEntryBytes.length);
-
-                            return marsh.unmarshal(in, ldr);
-                        }
+                        return e != null ? (V)e.value() : null;
                     }
 
                     /**

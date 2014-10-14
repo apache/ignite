@@ -268,7 +268,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param temporary If {@code true} can return temporary instance which is valid while entry lock is held,
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
      *        temporary object can used for filter evaluation or transform closure execution and
      *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
@@ -288,7 +288,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
-        boolean temporary,
+        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,

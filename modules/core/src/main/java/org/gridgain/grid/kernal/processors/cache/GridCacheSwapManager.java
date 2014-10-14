@@ -415,11 +415,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param key Key to read.
      * @param keyBytes Key bytes.
+     * @param entryLocked {@code True} if cache entry is locked.
      * @return Value from swap or {@code null}.
      * @throws GridException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable GridCacheSwapEntry<V> read(K key, byte[] keyBytes) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(K key, byte[] keyBytes, boolean entryLocked) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -427,26 +428,39 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         int part = cctx.affinity().partition(key);
 
-        // First check off-heap store.
-        if (offheapEnabled) {
-            byte[] entryBytes = offheap.get(spaceName, part, key, keyBytes);
+        KeySwapListener<K, V> lsnr = null;
 
-            if (entryBytes != null)
-                return swapEntry(unmarshalSwapEntry(entryBytes));
+        try {
+            if (offheapEnabled && swapEnabled && !entryLocked) {
+                lsnr = new KeySwapListener(key);
+
+                addSwapListener(part, lsnr);
+            }
+
+            // First check off-heap store.
+            if (offheapEnabled) {
+                byte[] bytes = offheap.get(spaceName, part, key, keyBytes);
+
+                if (bytes != null)
+                    return swapEntry(unmarshalSwapEntry(bytes));
+            }
+
+            if (!swapEnabled)
+                return null;
+
+            assert key != null;
+
+            byte[] bytes = swapMgr.read(spaceName, new GridSwapKey(key, part, keyBytes), cctx.deploy().globalLoader());
+
+            if (bytes == null && lsnr != null)
+                return lsnr.entry;
+
+            return bytes != null ? swapEntry(unmarshalSwapEntry(bytes)) : null;
         }
-
-        if (!swapEnabled)
-            return null;
-
-        assert key != null;
-
-        byte[] valBytes = swapMgr.read(spaceName, new GridSwapKey(key, part, keyBytes),
-            cctx.deploy().globalLoader());
-
-        if (valBytes == null)
-            return null;
-
-        return swapEntry(unmarshalSwapEntry(valBytes));
+        finally {
+            if (lsnr != null)
+                removeSwapListener(part, lsnr);
+        }
     }
 
     /**
@@ -562,14 +576,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param entry Entry to read.
+     * @param locked {@code True} if cache entry is locked.
      * @return Read value.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(GridCacheMapEntry<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(GridCacheMapEntry<K, V> entry, boolean locked) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return read(entry.key(), entry.getOrMarshalKeyBytes());
+        return read(entry.key(), entry.getOrMarshalKeyBytes(), locked);
     }
 
     /**
@@ -604,11 +619,11 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(K key) throws GridException {
+    @Nullable public GridCacheSwapEntry<V> read(K key) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return read(key, CU.marshal(cctx, key));
+        return read(key, CU.marshal(cctx, key), false);
     }
 
     /**
@@ -1561,6 +1576,36 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         /** {@inheritDoc} */
         @Override protected void onRemove() {
             iter.remove();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class KeySwapListener<K1, V1> implements GridCacheSwapListener<K1, V1> {
+        /** */
+        private final K1 key;
+
+        /** */
+        private volatile GridCacheSwapEntry entry;
+
+        /**
+         * @param key Key.
+         */
+        KeySwapListener(K1 key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onEntryUnswapped(int part, K1 key, byte[] keyBytes, GridCacheSwapEntry<V1> e) {
+            if (this.key.equals(key))
+                entry = new GridCacheSwapEntryImpl(ByteBuffer.wrap(e.valueBytes()),
+                    e.valueIsByteArray(),
+                    e.version(),
+                    e.ttl(),
+                    e.expireTime(),
+                    e.keyClassLoaderId(),
+                    e.valueClassLoaderId());
         }
     }
 }

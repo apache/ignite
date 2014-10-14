@@ -99,6 +99,9 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);
 
+                if (offheapTiered(nodeCache))
+                    continue;
+
                 Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.localNode(), key)) {
@@ -137,6 +140,9 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);
+
+                if (offheapTiered(nodeCache))
+                    continue;
 
                 // First node with this partition will remove first key from partition.
                 if (nodeCache.affinity().isPrimaryOrBackup(g.localNode(), key)) {
@@ -202,6 +208,9 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 // This node has the partition.
                 GridCache<String, Integer> nodeCache = g.cache(null);
+
+                if (offheapTiered(nodeCache))
+                    continue;
 
                 Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 

@@ -391,16 +391,29 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
             }
         }
-        catch (Exception e) {
-            synchronized (mux) {
-                enqueue(Collections.emptyList());
+        catch (Error e) {
+            onPageError(nodeId, e);
 
-                onPage(nodeId, true);
+            throw e;
+        }
+        catch (Throwable e) {
+            onPageError(nodeId, e);
+        }
+    }
 
-                onDone(e);
+    /**
+     * @param nodeId Sender node id.
+     * @param e Error.
+     */
+    private void onPageError(@Nullable UUID nodeId, Throwable e) {
+        synchronized (mux) {
+            enqueue(Collections.emptyList());
 
-                mux.notifyAll();
-            }
+            onPage(nodeId, true);
+
+            onDone(e);
+
+            mux.notifyAll();
         }
     }
 

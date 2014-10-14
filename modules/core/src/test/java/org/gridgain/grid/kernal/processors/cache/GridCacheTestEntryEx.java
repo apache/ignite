@@ -398,7 +398,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
-        boolean temporary,
+        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,

@@ -491,7 +491,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
                 else
-                    e = detached() ? cctx.swap().read(this) : cctx.swap().readAndRemove(this);
+                    e = detached() ? cctx.swap().read(this, true) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
@@ -683,7 +683,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
-        boolean temporary,
+        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -698,7 +698,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             failFast,
             unmarshal,
             updateMetrics,
-            temporary,
+            tmp,
             subjId,
             transformClo,
             taskName,
@@ -2805,7 +2805,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return null;
         }
 
-        GridCacheSwapEntry<V> e = cctx.swap().read(this);
+        GridCacheSwapEntry<V> e = cctx.swap().read(this, false);
 
         return e != null ? F.t(e.value()) : null;
     }
@@ -2873,11 +2873,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @param temporary If {@code true} can return temporary instance.
+     * @param tmp If {@code true} can return temporary instance.
      * @return Value (unmarshalled if needed).
      * @throws GridException If failed.
      */
-    @Nullable protected V rawGetOrUnmarshalUnlocked(boolean temporary) throws GridException {
+    @Nullable protected V rawGetOrUnmarshalUnlocked(boolean tmp) throws GridException {
         assert Thread.holdsLock(this);
 
         V val = this.val;
@@ -2892,7 +2892,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.deploy().globalLoader());
 
         if (val == null && cctx.offheapTiered() && valPtr != 0)
-            val = unmarshalOffheap(temporary);
+            val = unmarshalOffheap(tmp);
 
         return val;
     }
@@ -4133,15 +4133,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @param temporary If {@code true} can return temporary object.
+     * @param tmp If {@code true} can return temporary object.
      * @return Unmarshalled value.
      * @throws GridException If unmarshalling failed.
      */
-    private V unmarshalOffheap(boolean temporary) throws GridException {
+    private V unmarshalOffheap(boolean tmp) throws GridException {
         assert cctx.offheapTiered() && valPtr != 0;
 
         if (cctx.portableEnabled())
-            return (V)cctx.portable().unmarshal(valPtr, !temporary);
+            return (V)cctx.portable().unmarshal(valPtr, !tmp);
 
         long ptr = valPtr;
 
