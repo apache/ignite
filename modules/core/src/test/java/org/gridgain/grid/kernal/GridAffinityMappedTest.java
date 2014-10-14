@@ -46,9 +46,8 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.endsWith("1")) {
+        if (gridName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
-        }
         else {
             assert gridName.endsWith("2") || gridName.endsWith("3");
 

@@ -130,9 +130,8 @@ public abstract class GridAbstractDiscoveryTest<T extends GridDiscoverySpi> exte
 
         JOptionPane.showMessageDialog(null, "Press OK to end test.");
 
-        if (pinger != null) {
+        if (pinger != null)
             pinger.interrupt();
-        }
     }
 
     /** {@inheritDoc} */

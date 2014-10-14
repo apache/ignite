@@ -186,9 +186,8 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException {
-            if (evt == GridLifecycleEventType.BEFORE_GRID_START) {
+            if (evt == GridLifecycleEventType.BEFORE_GRID_START)
                 ((GridKernalContextImpl)((GridKernal)g).context()).timeSource(new TimeShiftClockSource(delta));
-            }
         }
     }
 

@@ -58,9 +58,8 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
         refreshInitialData();
 
-        for (int i = 0; i < EXEC_COUNT; i++) {
+        for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
-        }
     }
 
     /**
@@ -92,9 +91,8 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
@@ -165,9 +163,8 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             assert arg != null;
 
@@ -195,14 +192,12 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
                         try {
                             // Wait until future receive attribute.
-                            if (!stopSignal[taskNum].await(WAIT_TIME, TimeUnit.MILLISECONDS)) {
+                            if (!stopSignal[taskNum].await(WAIT_TIME, TimeUnit.MILLISECONDS))
                                 fail();
-                            }
                         }
                         catch (InterruptedException e) {
-                            if (log.isInfoEnabled()) {
+                            if (log.isInfoEnabled())
                                 log.info("Job got interrupted [arg=" + argument(0) + ", e=" + e + ']');
-                            }
 
                             return 0;
                         }
@@ -218,29 +213,25 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;

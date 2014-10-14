@@ -303,9 +303,8 @@ public class VisorThreadInfo implements Serializable {
             }
         }
 
-        if (maxFrames < stackTrace.length) {
+        if (maxFrames < stackTrace.length)
             sb.append("\t...").append('\n');
-        }
 
         if (locks.length > 0) {
             sb.append("\n\tNumber of locked synchronizers = ").append(locks.length).append('\n');

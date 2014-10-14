@@ -114,9 +114,8 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -126,25 +125,22 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                     public Serializable execute() throws GridException {
                         assert taskSes != null;
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
-                        }
 
                         startSignal.countDown();
 
                         try {
-                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false) {
+                            if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false)
                                 fail();
-                            }
 
                             GridTaskSessionAttributeTestListener lsnr =
                                 new GridTaskSessionAttributeTestListener(log);
 
                             taskSes.addAttributeListener(lsnr, false);
 
-                            if (log.isInfoEnabled()) {
+                            if (log.isInfoEnabled())
                                 log.info("Set attribute 'testName'.");
-                            }
 
                             taskSes.setAttribute("testName", "testVal");
 
@@ -166,29 +162,25 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received) throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;
@@ -218,9 +210,8 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         @Override public synchronized void onAttributeSet(Object key, Object val) {
             assert key != null;
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Received attribute [name=" + key + ", val=" + val + ']');
-            }
 
             attrs.put(key, val);
 

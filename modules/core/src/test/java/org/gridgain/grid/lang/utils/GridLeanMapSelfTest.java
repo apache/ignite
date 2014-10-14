@@ -292,9 +292,8 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
 
         Iterator<String> kIter = map.keySet().iterator();
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
             assert kIter.next().contains("k");
-        }
 
         assert !kIter.hasNext();
 
@@ -313,9 +312,8 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
 
         Iterator<String> vIter = map.values().iterator();
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
             assert vIter.next().contains("v");
-        }
 
         assert !vIter.hasNext();
     }
@@ -621,12 +619,10 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
 
         Map impl = (Map)f.get(map);
 
-        if (implName != null) {
+        if (implName != null)
             assertEquals(implName, impl.getClass().getSimpleName());
-        }
-        else {
+        else
             assert impl == null;
-        }
     }
 
     /**
@@ -636,26 +632,19 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
     private void checkImplBySize(Map map) throws Exception {
         assert map != null;
 
-        if (map.isEmpty()) {
+        if (map.isEmpty())
             checkImpl(map, null);
-        }
-        else if (map.size() == 1) {
+        else if (map.size() == 1)
             checkImpl(map, "Map1");
-        }
-        else if (map.size() == 2) {
+        else if (map.size() == 2)
             checkImpl(map, "Map2");
-        }
-        else if (map.size() == 3) {
+        else if (map.size() == 3)
             checkImpl(map, "Map3");
-        }
-        else if (map.size() == 4) {
+        else if (map.size() == 4)
             checkImpl(map, "Map4");
-        }
-        else if (map.size() == 5) {
+        else if (map.size() == 5)
             checkImpl(map, "Map5");
-        }
-        else {
+        else
             checkImpl(map, "LeanHashMap");
-        }
     }
 }

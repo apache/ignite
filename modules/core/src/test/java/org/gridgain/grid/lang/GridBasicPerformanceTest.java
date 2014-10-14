@@ -187,9 +187,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             n += 2;
-        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -204,9 +203,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             v += 2;
-        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -221,9 +219,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             n = v;
-        }
 
         long time = System.currentTimeMillis() - start;
 

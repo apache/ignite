@@ -80,7 +80,8 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
 
         int max = 1 + backups;
 
-        if (max > nodes.size()) { max = nodes.size(); }
+        if (max > nodes.size())
+            max = nodes.size();
 
         Collection<GridNode> ret = new ArrayList<>(max);
 
@@ -95,12 +96,15 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
 
                     int nodeIdx = n.<Integer>attribute(IDX_ATTR);
 
-                    if (part <= nodeIdx) { break; }
-                    else { n = null; }
+                    if (part <= nodeIdx)
+                        break;
+                    else
+                        n = null;
                 }
             }
             else {
-                if (it.hasNext()) { n = it.next(); }
+                if (it.hasNext())
+                    n = it.next();
                 else {
                     it = sorted.iterator();
 
@@ -112,7 +116,8 @@ public class GridExternalAffinityFunction implements GridCacheAffinityFunction {
 
             assert n != null || nodes.size() < parts;
 
-            if (n == null) { n = (it = sorted.iterator()).next(); }
+            if (n == null)
+                n = (it = sorted.iterator()).next();
 
             ret.add(n);
         }

@@ -51,23 +51,20 @@ final class GridUriDeploymentDiscovery {
         throws GridSpiException {
         Set<Class<? extends GridComputeTask<?, ?>>> rsrcs = new HashSet<>();
 
-        if (file.exists() == false) {
+        if (file.exists() == false)
             return rsrcs;
-        }
 
         GridUriDeploymentFileResourceLoader fileRsrcLdr = new GridUriDeploymentFileResourceLoader(clsLdr, file);
 
-        if (file.isDirectory()) {
+        if (file.isDirectory())
             findResourcesInDirectory(fileRsrcLdr, file, rsrcs);
-        }
         else {
             try {
                 for (JarEntry entry : U.asIterable(new JarFile(file.getAbsolutePath()).entries())) {
                     Class<? extends GridComputeTask<?, ?>> rsrc = fileRsrcLdr.createResource(entry.getName(), false);
 
-                    if (rsrc != null) {
+                    if (rsrc != null)
                         rsrcs.add(rsrc);
-                    }
                 }
             }
             catch (IOException e) {
@@ -106,9 +103,8 @@ final class GridUriDeploymentDiscovery {
                     assert false;
                 }
 
-                if (rsrc != null) {
+                if (rsrc != null)
                     rsrcs.add(rsrc);
-                }
             }
         }
     }

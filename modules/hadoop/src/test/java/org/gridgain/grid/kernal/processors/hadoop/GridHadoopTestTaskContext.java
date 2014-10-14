@@ -96,15 +96,13 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (iter == null) {
+            if (iter == null)
                 iter = mockInput().entrySet().iterator();
-            }
 
-            if (iter.hasNext()) {
+            if (iter.hasNext())
                 currEntry = iter.next();
-            } else {
+            else
                 currEntry = null;
-            }
 
             return currEntry != null;
         }
@@ -161,9 +159,8 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
                 mockInput.put(key, valList);
                 key = new Text();
             }
-            else {
+            else
                 valList = (ArrayList<IntWritable>) mockInput.get(key);
-            }
             valList.add(new IntWritable(pair.value()));
         }
     }

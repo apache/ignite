@@ -128,9 +128,8 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 futThread.interrupt();
             }
 
-            if (G.state(getTestGridName()) != GridGainState.STOPPED) {
+            if (G.state(getTestGridName()) != GridGainState.STOPPED)
                 stopGrid(getTestGridName());
-            }
         }
     }
 
@@ -142,24 +141,21 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
-            for (int i = 0; i < SPLIT_COUNT; i++) {
+            for (int i = 0; i < SPLIT_COUNT; i++)
                 jobs.add(new GridStopTestJob());
-            }
 
             return jobs;
         }
 
         /** {@inheritDoc} */
         @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
-            }
 
             int res = 0;
 
@@ -179,9 +175,8 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Executing job [job=" + this + ']');
-            }
 
             startSignal.countDown();
 
@@ -195,14 +190,12 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 Thread.sleep(Integer.MAX_VALUE);
             }
             catch (InterruptedException ignore) {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Job got interrupted: " + this);
-                }
             }
 
-            if (!Thread.currentThread().isInterrupted()) {
+            if (!Thread.currentThread().isInterrupted())
                 log.error("Job not interrupted: " + this);
-            }
 
             return !Thread.currentThread().isInterrupted() ? 0 : 1;
         }

@@ -23,6 +23,13 @@ public class GridException extends Exception {
     private static final long serialVersionUID = 0L;
 
     /**
+     * Create empty exception.
+     */
+    public GridException() {
+        super();
+    }
+
+    /**
      * Creates new exception with given error message.
      *
      * @param msg Error message.

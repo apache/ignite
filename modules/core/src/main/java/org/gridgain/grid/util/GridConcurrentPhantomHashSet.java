@@ -102,9 +102,8 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
 
         removeStale();
 
-        if (!contains(e)) {
+        if (!contains(e))
             return store.add(fact.apply(e));
-        }
 
         return false;
     }
@@ -169,9 +168,8 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
             for (PhantomReferenceElement ref : store) {
                 Object reft = ref.get();
 
-                if (reft != null && reft.equals(o)) {
+                if (reft != null && reft.equals(o))
                     return true;
-                }
             }
         }
 
@@ -180,16 +178,14 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
 
     /** {@inheritDoc} */
     @Override public boolean containsAll(@Nullable Collection<?> c) {
-        if (F.isEmpty(c)) {
+        if (F.isEmpty(c))
             return false;
-        }
 
         assert c != null;
 
         for (Object o : c) {
-            if (!contains(o)) {
+            if (!contains(o))
                 return false;
-            }
         }
 
         return true;
@@ -211,9 +207,8 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
         for (PhantomReferenceElement<E> ref : store) {
             E e = ref.get();
 
-            if (e != null) {
+            if (e != null)
                 elems.add(e);
-            }
         }
 
         return elems.toArray(a);
@@ -243,9 +238,8 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
 
                             break;
                         }
-                        else {
+                        else
                             removeStale();
-                        }
                     }
                 }
 
@@ -256,9 +250,8 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
             @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
             @Override public E next() {
                 if (elem == null) {
-                    if (!hasNext()) {
+                    if (!hasNext())
                         throw new NoSuchElementException();
-                    }
                 }
 
                 E res = elem;
@@ -316,13 +309,11 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
 
     /** {@inheritDoc} */
     @Override public boolean equals(@Nullable Object o) {
-        if (this == o) {
+        if (this == o)
             return true;
-        }
 
-        if (!(o instanceof GridConcurrentPhantomHashSet)) {
+        if (!(o instanceof GridConcurrentPhantomHashSet))
             return false;
-        }
 
         GridConcurrentPhantomHashSet that = (GridConcurrentPhantomHashSet)o;
 
@@ -377,13 +368,11 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (!(o instanceof PhantomReferenceElement)) {
+            if (!(o instanceof PhantomReferenceElement))
                 return false;
-            }
 
             E thisRef = get();
 

@@ -171,7 +171,6 @@ public class GridHadoopSetup {
         Collection<File> jarFiles = new ArrayList<>();
 
         addJarsInFolder(jarFiles, gridgainLibs);
-        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-ggfs"));
         addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-hadoop"));
 
         boolean jarsLinksCorrect = true;

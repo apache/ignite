@@ -305,9 +305,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyDefault("1");
 
-            if (res != 1) {
+            if (res != 1)
                 fail("Method gridifyDefault returns wrong value [result=" + res + ", expect=1]");
-            }
 
             info("Executed @Gridify method gridifyDefault(1) [result=" + res + ']');
         }
@@ -332,9 +331,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyNonDefaultClass("1");
 
-            if (res != 10) {
+            if (res != 10)
                 fail("Method gridifyNonDefault returns wrong value [result=" + res + ", expect=1]");
-            }
 
             info("Executed @Gridify method gridifyNonDefaultClass(0) [result=" + res + ']');
         }
@@ -359,9 +357,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyNonDefaultName("2");
 
-            if (res != 20) {
+            if (res != 20)
                 fail("Method gridifyNonDefault returns wrong value [result=" + res + ", expect=2]");
-            }
 
             info("Executed @Gridify method gridifyNonDefaultName(0) [result=" + res + ']');
         }
@@ -429,9 +426,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
             stopGrid();
         }
 
-        if (isException == false) {
+        if (isException == false)
             fail("@Gridify method gridifyDefaultException(0) does not return any exception.");
-        }
     }
 
     /**
@@ -450,9 +446,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyDefaultResource("0");
 
-            if (res != 0) {
+            if (res != 0)
                 fail("Method gridifyDefaultResource returns wrong value [result=" + res + ", expect=0]");
-            }
 
             info("Executed @Gridify method gridifyDefaultResource(0) [result=" + res + ']');
         }
@@ -477,9 +472,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyNonDefaultClassResource("3");
 
-            if (res != 30) {
+            if (res != 30)
                 fail("Method gridifyNonDefaultClassResource returns wrong value [result=" + res + ", expect=3]");
-            }
 
             info("Executed @Gridify method gridifyNonDefaultClassResource(3) [result=" + res + ']');
         }
@@ -504,9 +498,8 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             int res = getTarget().gridifyNonDefaultNameResource("4");
 
-            if (res != 40) {
+            if (res != 40)
                 fail("Method gridifyNonDefaultNameResource returns wrong value [result=" + res + ", expect=4]");
-            }
 
             info("Executed @Gridify method gridifyNonDefaultNameResource(4) [result=" + res + ']');
         }

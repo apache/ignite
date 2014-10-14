@@ -53,9 +53,8 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
     private Collection<GridNode> createNodes(int nodesCnt, int replicas) {
         Collection<GridNode> nodes = new ArrayList<>(nodesCnt);
 
-        for (int i = 0; i < nodesCnt; i++) {
+        for (int i = 0; i < nodesCnt; i++)
             nodes.add(new TestRichNode(replicas));
-        }
 
         return nodes;
     }

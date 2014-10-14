@@ -51,7 +51,6 @@
                 <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-visor-plugins</exclude>
                 <exclude>org.gridgain:gridgain-visor-trial</exclude>
-                <exclude>org.gridgain:gridgain-ggfs</exclude>
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
             </excludes>
             <sources>

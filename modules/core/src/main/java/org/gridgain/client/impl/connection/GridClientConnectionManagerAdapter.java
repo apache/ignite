@@ -455,9 +455,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
             GridSecurityCredentials cred = null;
 
             try {
-                if (cfg.getSecurityCredentialsProvider() != null) {
+                if (cfg.getSecurityCredentialsProvider() != null)
                     cred = cfg.getSecurityCredentialsProvider().credentials();
-                }
             }
             catch (GridException e) {
                 throw new GridClientException("Failed to obtain client credentials.", e);

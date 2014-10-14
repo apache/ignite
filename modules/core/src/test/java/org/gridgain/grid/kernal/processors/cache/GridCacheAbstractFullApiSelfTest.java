@@ -2352,9 +2352,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);
 
-                if (cache().affinity().mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
+                if (cache().affinity().mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
                     assertEquals((Integer)i, cache(g).peek(key));
-                }
                 else
                     assertNull(cache(g).peek(key));
             }

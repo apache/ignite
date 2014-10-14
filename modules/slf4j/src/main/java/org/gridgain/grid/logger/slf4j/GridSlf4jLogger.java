@@ -82,9 +82,8 @@ public class GridSlf4jLogger extends GridMetadataAwareAdapter implements GridLog
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
-        if (!impl.isInfoEnabled()) {
+        if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
-        }
 
         impl.info(msg);
     }

@@ -218,9 +218,8 @@ public class GridStandardMBean extends StandardMBean {
             // Parameter type is either a primitive type or class. Try both.
             Class<?> type = primCls.get(signature[i].getType().toLowerCase());
 
-            if (type == null) {
+            if (type == null)
                 type = Class.forName(signature[i].getType());
-            }
 
             params[i] = type;
         }
@@ -246,9 +245,8 @@ public class GridStandardMBean extends StandardMBean {
         try {
             res = itf.getDeclaredMethod(methodName, params);
 
-            if (res != null) {
+            if (res != null)
                 return res;
-            }
         }
         catch (NoSuchMethodException e) {
             // No-op. Default value will be returned.
@@ -260,9 +258,8 @@ public class GridStandardMBean extends StandardMBean {
         for (Class superItf: superItfs) {
             res = findMethod(superItf, methodName, params);
 
-            if (res != null) {
+            if (res != null)
                 return res;
-            }
         }
 
         return res;

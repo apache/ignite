@@ -90,9 +90,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
             if (msg instanceof GridTestMessage) {
                 GridTestMessage testMsg = (GridTestMessage)msg;
 
-                if (!testMsg.getSourceNodeId().equals(nodeId)) {
+                if (!testMsg.getSourceNodeId().equals(nodeId))
                     fail("Listener nodeId not equals to message nodeId.");
-                }
 
                 synchronized (mux) {
                     // Get list of all recipients for the message.
@@ -100,23 +99,19 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
 
                     if (recipients != null) {
                         // Remove this node from a list of recipients.
-                        if (!recipients.remove(locNodeId)) {
+                        if (!recipients.remove(locNodeId))
                             fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
-                        }
 
                         // If all recipients received their messages,
                         // remove source nodes from sent messages map.
-                        if (recipients.isEmpty()) {
+                        if (recipients.isEmpty())
                             msgDestMap.remove(testMsg.getSourceNodeId());
-                        }
 
-                        if (msgDestMap.isEmpty()) {
+                        if (msgDestMap.isEmpty())
                             mux.notifyAll();
-                        }
                     }
-                    else {
+                    else
                         fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
-                    }
                 }
             }
         }
@@ -143,9 +138,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         for (Entry<UUID, GridCommunicationSpi<GridTcpCommunicationMessageAdapter>> entry : spis.entrySet()) {
             for (GridNode node : nodes) {
                 synchronized (mux) {
-                    if (!msgDestMap.containsKey(entry.getKey())) {
+                    if (!msgDestMap.containsKey(entry.getKey()))
                         msgDestMap.put(entry.getKey(), new HashSet<UUID>());
-                    }
 
                     msgDestMap.get(entry.getKey()).add(node.id());
                 }
@@ -190,9 +184,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
 
             for (GridNode node : nodes) {
                 synchronized (mux) {
-                    if (!msgDestMap.containsKey(sndId)) {
+                    if (!msgDestMap.containsKey(sndId))
                         msgDestMap.put(sndId, new HashSet<UUID>());
-                    }
 
                     msgDestMap.get(sndId).add(node.id());
                 }

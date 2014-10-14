@@ -27,9 +27,8 @@ public class GridSingleSplitTestTask extends GridComputeTaskSplitAdapter<Integer
 
         Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
-        for (int i = 0; i < arg; i++) {
+        for (int i = 0; i < arg; i++)
             jobs.add(new GridSingleSplitTestJob(1));
-        }
 
         return jobs;
     }

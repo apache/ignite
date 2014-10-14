@@ -380,9 +380,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
-        if (F.isEmpty(flags)) {
+        if (F.isEmpty(flags))
             return this;
-        }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
             EnumSet.copyOf(F.asList(flags)), null, false);
@@ -1561,16 +1560,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                         ctx.evicts().touch(entry, topVer);
 
                                         if (map != null) {
-                                            if (set || wasNew) {
+                                            if (set || wasNew)
                                                 map.put(key, val);
-                                            }
                                             else {
                                                 try {
                                                     GridTuple<V> v = peek0(false, key, GLOBAL, filter);
 
-                                                    if (v != null) {
+                                                    if (v != null)
                                                         map.put(key, val);
-                                                    }
                                                 }
                                                 catch (GridCacheFilterFailedException ex) {
                                                     ex.printStackTrace();
@@ -3794,9 +3791,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     ctx.near().dht().context().tm().txContextReset();
             }
         }
-        else {
+        else
             return op.op(tx);
-        }
     }
 
     /**

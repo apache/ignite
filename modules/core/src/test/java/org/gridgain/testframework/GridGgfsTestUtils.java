@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Utility class for tests.
  */
-public class GridHadoopTestUtils {
+public class GridGgfsTestUtils {
     /**
      * Converts json string to Map<String,String>.
      *
