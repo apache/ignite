@@ -537,6 +537,10 @@
                                     <title>Spring Caching</title>
                                     <packages>org.gridgain.grid.cache.spring</packages>
                                 </group>
+                                <group>
+                                    <title>.Net Configuration</title>
+                                    <packages>org.gridgain.grid.dotnet</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
