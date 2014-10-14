@@ -1216,7 +1216,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private GridNode rmtNode;
 
         /** The proxy object to return. */
-        private GridService proxy;
+        private T proxy;
 
         /** Deployed nodes list. */
         private CopyOnWriteArrayList<UUID> deployedNodesList = new CopyOnWriteArrayList<>();
@@ -1228,33 +1228,48 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         }
 
+        private GridServiceDescriptor getServiceDescriptor(String serviceName) {
+            for (GridServiceDescriptor gsd : deployedServices()) {
+                if (gsd.name().equals(serviceName))
+                    return gsd;
+            }
+
+            return null;
+        }
+
         /**
          * @param topNodes Current topology nodes.
          */
         private void validate(Collection<GridNode> topNodes) {
             if (topNodes.contains(rmtNode)) {
                 // Continue working with the current remote node.
-            }else{
-                for (GridServiceDescriptor gsd : deployedServices()) {
-                    if (gsd.name().equals(name)) {
-                        List<UUID> deployedNodesIds = new ArrayList<>(gsd.topologySnapshot().keySet());
+            }
+            else {
+                GridServiceDescriptor gsd = getServiceDescriptor(name);
+                if (gsd == null)
+                    deployService();
+                else {
+                    List<UUID> deployedNodesIds = new ArrayList<>(gsd.topologySnapshot().keySet());
 
-                        rmtNode = G.grid().node(getRandomNodeId(deployedNodesIds));
+                    rmtNode = G.grid().node(getRandomNodeId(deployedNodesIds));
 
-                        proxy = getProxyFromNode(rmtNode.id());
+                    proxy = getProxyFromNode(rmtNode.id());
 
-                        deployedNodesList = new CopyOnWriteArrayList<>(deployedNodesIds);
-                    }
+                    deployedNodesList = new CopyOnWriteArrayList<>(deployedNodesIds);
                 }
             }
+        }
+
+        private void deployService() {
+            // TODO: implement.
         }
 
         /**
          * @param nodeId ID of node to use as a target for proxy invocations.
          * @return Proxy of a {@code GridService}.
          */
-        private GridService getProxyFromNode(final UUID nodeId) {
-            return (GridService)Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {svc},
+        private T getProxyFromNode(final UUID nodeId) {
+            return (T)Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {svc},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, final Method mtd,
                         final Object[] args) throws Throwable {
@@ -1273,7 +1288,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /**
          * @return Proxy for a {@code GridService}.
          */
-        public GridService proxy() {
+        public T proxy() {
             if(sticky)
                 proxy = getProxyFromNode(getRandomNodeId(deployedNodesList));
 
