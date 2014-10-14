@@ -71,7 +71,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         assertTrue(queue.isEmpty());
 
-        GridFuture<?> fut = grid(0).forLocal().compute().run(new PutJob(queueName));
+        PutJob putJob = new PutJob(queueName);
+
+        GridFuture<?> fut = grid(0).forLocal().compute().run(putJob);
 
         Collection<GridFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
@@ -97,6 +99,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         for (TakeJob job : jobs)
             job.awaitItems();
 
+        log.info("Start one more grid.");
+
         Grid joined = startGrid(GRID_CNT);
 
         // We expect at least one item to be taken.
@@ -109,7 +113,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         for (GridFuture<?> f : futs)
             f.cancel();
 
-        fut.cancel();
+        putJob.stop(true);
+
+        fut.get();
     }
 
     /**
@@ -123,6 +129,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         /** Queue name. */
         private final String queueName;
+
+        /** */
+        private volatile boolean stop;
 
         /**
          * @param queueName Queue name.
@@ -138,24 +147,29 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
-                    .queue(queueName, 0, true, true);
+                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, true);
 
                 assertNotNull(queue);
 
                 int i = 0;
 
-                while (!Thread.currentThread().isInterrupted())
+                while (!stop)
                     queue.add(i++);
             }
-            catch (GridInterruptedException e) {
-                log.info("Cancelling job due to interruption: " + e.getMessage());
-            }
-            catch (GridException e) {
+            catch (Exception e) {
                 error("Failed to put value to the queue", e);
+
+                fail("Unexpected exception: " + e);
             }
 
             log.info("PutJob finished");
+        }
+
+        /**
+         * @param stop Stop flag.
+         */
+        void stop(boolean stop) {
+            this.stop = stop;
         }
 
         /** {@inheritDoc} */
@@ -212,8 +226,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             Integer lastPolled = null;
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
-                    .queue(queueName, 0, true, true);
+                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, true);
 
                 assertNotNull(queue);
 
@@ -223,8 +236,11 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                     takeLatch.countDown();
                 }
             }
-            catch (GridInterruptedException e) {
-                log.info("Cancelling job due to interruption: " + e.getMessage());
+            catch (GridRuntimeException e) {
+                if (e.getCause() instanceof GridInterruptedException)
+                    log.info("Cancelling job due to interruption: " + e.getMessage());
+                else
+                    fail("Unexpected error: " + e);
             }
             catch (GridException e) {
                 error("Failed to get value from the queue", e);
