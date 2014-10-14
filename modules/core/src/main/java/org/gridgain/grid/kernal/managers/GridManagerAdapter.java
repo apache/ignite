@@ -487,6 +487,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                         GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 
+                        if (cctx.isNear())
+                            cctx = cctx.near().dht().context();
+
                         GridCacheSwapEntry e = cctx.swap().read(key);
 
                         return e != null ? (V)e.value() : null;
