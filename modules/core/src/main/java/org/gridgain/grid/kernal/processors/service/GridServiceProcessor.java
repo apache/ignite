@@ -529,36 +529,56 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
-        synchronized (locSvcs) {
-            Collection<GridServiceContextImpl> srvcContexts = locSvcs.get(name);
+        Collection<GridServiceContextImpl> srvcContexts;
 
-            if (srvcContexts == null) { // Service is not deployed on the local node.
-                return remoteServiceProxy(name, svc, sticky);
-            }
-            else
-                return (T)srvcContexts.iterator().next().service();
+        synchronized (locSvcs) {
+            srvcContexts = locSvcs.get(name);
         }
+
+        if (srvcContexts == null) { // Service is not deployed on the local node.
+            return remoteServiceProxy(name, svc, sticky);
+        }
+        else
+            return getServiceProxy(name, svc, G.grid().localNode().id());
+
     }
 
+    /**
+     * @param name Service name.
+     * @param svc Service class.
+     * @param sticky Whether multi-node request should be done.
+     * @param <T> Service class type.
+     * @return The proxy of a service by its name and class.
+     * @throws GridException If given service was not deployed to remote nodes.
+     */
     private <T> T remoteServiceProxy(final String name, Class<T> svc, boolean sticky) throws GridException {
         final UUID rmtNodeId = getRemoteNodeId(name, sticky);
 
-        if (rmtNodeId != null) {
-            return (T)Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class<?>[] {svc}, new InvocationHandler() {
-                    @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        return G.grid().forNodeId(rmtNodeId).compute().call(new Callable<Object>() {
-                            @Override public Object call() throws Exception {
-                                return G.grid().services().service(name);
-                            }
-                        });
-                    }
-                });
-        }
+        if (rmtNodeId != null)
+            return getServiceProxy(name, svc, rmtNodeId);
         else
             throw new GridException("No deployed service with given name: " + name);
     }
 
+    private <T> T getServiceProxy(final String name, Class<T> svc, final UUID rmtNodeId) {
+        return (T)Proxy.newProxyInstance(getClass().getClassLoader(),
+            new Class<?>[] {svc},
+            new InvocationHandler() {
+                @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                    return G.grid().forNodeId(rmtNodeId).compute().call(new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return G.grid().services().service(name);
+                        }
+                    });
+                }
+            });
+    }
+
+    /**
+     * @param name Service name.
+     * @param sticky Whether multi-node request should be done.
+     * @return ID of remote node with deployed service.
+     */
     private UUID getRemoteNodeId(String name, boolean sticky) {
         UUID rmtNodeId = null;
 
@@ -568,7 +588,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (!sticky || rmtNodeId == null) {
             List<GridServiceDescriptor> deployedServices = new ArrayList<>();
 
-            for (GridServiceDescriptor gsd : deployedServices) {
+            for (GridServiceDescriptor gsd : deployedServices()) {
                 if (gsd.name().equals(name))
                     deployedServices.add(gsd);
             }
@@ -576,9 +596,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (!deployedServices.isEmpty()) {
                 int deployedServicesSize = deployedServices.size();
 
-                int randomIndex = (int)(Math.random() * deployedServicesSize);
+                int randomIdx = (int)(Math.random() * deployedServicesSize);
 
-                rmtNodeId = deployedServices.get(randomIndex).originNodeId();
+                rmtNodeId = deployedServices.get(randomIdx).originNodeId();
+
+                rmtNodeSvcs.put(name, rmtNodeId);
             }
         }
 
