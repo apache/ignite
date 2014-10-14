@@ -560,6 +560,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             throw new GridException("No deployed service with given name: " + name);
     }
 
+    /**
+     * @param name Service name.
+     * @param svc Service class.
+     * @param <T> Service class type.
+     * @return The proxy of a service by its name and class.
+     */
     private <T> T getServiceProxy(final String name, Class<T> svc, final UUID rmtNodeId) {
         return (T)Proxy.newProxyInstance(getClass().getClassLoader(),
             new Class<?>[] {svc},
