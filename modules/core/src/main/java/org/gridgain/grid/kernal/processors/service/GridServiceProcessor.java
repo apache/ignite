@@ -562,12 +562,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private UUID getRemoteNodeId(String name, boolean sticky) {
         UUID rmtNodeId = null;
 
-        if (sticky) {
+        if (sticky)
             rmtNodeId = rmtNodeSvcs.get(name);
-        }
 
         if (!sticky || rmtNodeId == null) {
-            List<GridServiceDescriptor> deployedServices = new ArrayList();
+            List<GridServiceDescriptor> deployedServices = new ArrayList<>();
+
             for (GridServiceDescriptor gsd : deployedServices) {
                 if (gsd.name().equals(name))
                     deployedServices.add(gsd);
@@ -575,11 +575,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             if (!deployedServices.isEmpty()) {
                 int deployedServicesSize = deployedServices.size();
-                int randomIndex = (int)Math.random() * deployedServicesSize;
-                rmtNodeId = deployedServices.get(randomIndex).originNodeId();
 
+                int randomIndex = (int)(Math.random() * deployedServicesSize);
+
+                rmtNodeId = deployedServices.get(randomIndex).originNodeId();
             }
         }
+
         return rmtNodeId;
     }
 
