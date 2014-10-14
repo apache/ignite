@@ -92,9 +92,4 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware {
     @Override public String toString() {
         return S.toString(GridDotNetConfiguration.class, this);
     }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDotNetConfiguration.class, this);
-    }
 }
