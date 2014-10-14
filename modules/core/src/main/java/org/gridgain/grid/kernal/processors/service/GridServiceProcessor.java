@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -30,9 +31,9 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static java.util.Map.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -51,7 +52,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
-
+    /** Local service instances. */
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -78,8 +79,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Local service instances. */
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
 
-    /** Remote service instances. */
-    private final Map<String, UUID> rmtNodeSvcs = new HashMap<>();
+    /** Services proxy map. * */
+    private final ConcurrentMap<String, ServiceProxy<?>> proxyServices = new ConcurrentHashMap<>();
 
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();
@@ -529,18 +530,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
-        Collection<GridServiceContextImpl> srvcContexts;
+        T locSrvc = service(name);
 
-        synchronized (locSvcs) {
-            srvcContexts = locSvcs.get(name);
-        }
-
-        if (srvcContexts == null) { // Service is not deployed on the local node.
-            return remoteServiceProxy(name, svc, sticky);
-        }
-        else
-            return getServiceProxy(name, svc, G.grid().localNode().id());
-
+        return locSrvc == null ? remoteServiceProxy(name, svc, sticky) : locSrvc;
     }
 
     /**
@@ -552,65 +544,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @throws GridException If given service was not deployed to remote nodes.
      */
     private <T> T remoteServiceProxy(final String name, Class<T> svc, boolean sticky) throws GridException {
-        final UUID rmtNodeId = getRemoteNodeId(name, sticky);
+        ServiceProxy<?> srvcProxy = proxyServices.get(name);
+        if (!srvcProxy.getClass().equals(svc))
+            throw new GridException("Another type of method is already deployed for name: " + name);
 
-        if (rmtNodeId != null)
-            return getServiceProxy(name, svc, rmtNodeId);
-        else
-            throw new GridException("No deployed service with given name: " + name);
-    }
+        if (srvcProxy == null) {
+            srvcProxy = new ServiceProxy<>(name, svc, sticky);
 
-    /**
-     * @param name Service name.
-     * @param svc Service class.
-     * @param <T> Service class type.
-     * @return The proxy of a service by its name and class.
-     */
-    private <T> T getServiceProxy(final String name, Class<T> svc, final UUID rmtNodeId) {
-        return (T)Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] {svc},
-            new InvocationHandler() {
-                @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                    return G.grid().forNodeId(rmtNodeId).compute().call(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            return G.grid().services().service(name);
-                        }
-                    });
-                }
-            });
-    }
-
-    /**
-     * @param name Service name.
-     * @param sticky Whether multi-node request should be done.
-     * @return ID of remote node with deployed service.
-     */
-    private UUID getRemoteNodeId(String name, boolean sticky) {
-        UUID rmtNodeId = null;
-
-        if (sticky)
-            rmtNodeId = rmtNodeSvcs.get(name);
-
-        if (!sticky || rmtNodeId == null) {
-            List<GridServiceDescriptor> deployedServices = new ArrayList<>();
-
-            for (GridServiceDescriptor gsd : deployedServices()) {
-                if (gsd.name().equals(name))
-                    deployedServices.add(gsd);
-            }
-
-            if (!deployedServices.isEmpty()) {
-                int deployedServicesSize = deployedServices.size();
-
-                int randomIdx = (int)(Math.random() * deployedServicesSize);
-
-                rmtNodeId = deployedServices.get(randomIdx).originNodeId();
-
-                rmtNodeSvcs.put(name, rmtNodeId);
-            }
+            srvcProxy = proxyServices.putIfAbsent(name, srvcProxy);
         }
 
-        return rmtNodeId;
+        return (T)srvcProxy.service();
     }
 
     /**
@@ -1109,6 +1053,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                             if (!retries.isEmpty())
                                 onReassignmentFailed(topVer, retries);
+
+                            for(ServiceProxy ps : proxyServices.values())
+                                ps.validate(t);
                         }
                     }
                 });
@@ -1263,5 +1210,63 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * Abstract run method protected by busy lock.
          */
         public abstract void run0();
+    }
+
+    /**
+     * Wrapper for making {@link GridService} class proxies.
+     */
+    private class ServiceProxy<T> {
+        /** Topology snapshot on which this proxy was started. */
+        private final AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot;
+
+        private final String name;
+
+        private final boolean sticky;
+
+        private final Class<T> svc;
+
+        private GridNode rmtNode;
+
+        private GridService proxy;
+
+        public ServiceProxy(String name, Class<T> svc, boolean sticky) {
+            this.name = name;
+            this.sticky = sticky;
+            this.svc = svc;
+            topSnapshot(topSnapshot())
+        }
+
+        private void validate(){
+            Collection<GridNode> nodes = topSnapshot.get().topologyNodes();
+            if(nodes.contains(rmtNode)){
+                // Continue working with the current remote node.
+            }else{
+                List<UUID> rmtNodes = new ArrayList<>();
+                for(GridServiceDescriptor gsd : deployedServices()){
+                    for(services(name)
+                }
+            }
+        }
+
+        /**
+         * Sets topology snapshot on which this tx was started.
+         *
+         * @param topSnapshot Topology snapshot.
+         * @return {@code True} if snapshot was set by this call.
+         */
+        boolean topologySnapshot(GridDiscoveryTopologySnapshot topSnapshot) {
+            return this.topSnapshot.compareAndSet(null, topSnapshot);
+        }
+
+        /**
+         * @return Topology snapshot on which this tx was started.
+         */
+        GridDiscoveryTopologySnapshot topSnapshot() {
+            return topSnapshot.get();
+        }
+
+        public GridService service() {
+            return proxy;
+        }
     }
 }
