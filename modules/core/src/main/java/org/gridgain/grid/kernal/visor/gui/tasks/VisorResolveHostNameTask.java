@@ -11,13 +11,11 @@ package org.gridgain.grid.kernal.visor.gui.tasks;
 
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
-import org.gridgain.grid.kernal.visor.cmd.VisorJob;
-import org.gridgain.grid.kernal.visor.cmd.VisorOneNodeTask;
+import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.util.GridUtils;
 import org.gridgain.grid.util.typedef.internal.S;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
 
@@ -25,7 +23,7 @@ import java.util.*;
  * Task that resolve host name for specified IP address from node.
  */
 @GridInternal
-public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Set<GridBiTuple<String, String>>> {
+public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Map<String, String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +35,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Set
     /**
      * Job that resolve host name for specified IP address.
      */
-    private static class VisorResolveHostNameJob extends VisorJob<List<String>, Set<GridBiTuple<String, String>>> {
+    private static class VisorResolveHostNameJob extends VisorJob<List<String>, Map<String, String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -51,19 +49,19 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Set
         }
 
         /** {@inheritDoc} */
-        @Override protected Set<GridBiTuple<String, String>> run(List<String> arg) throws GridException {
-            Set<GridBiTuple<String, String>> res = new HashSet<>();
+        @Override protected Map<String, String> run(List<String> arg) throws GridException {
+            Map<String, String> res = new HashMap<>();
 
             try {
                 for (String addr: arg) {
-                    GridBiTuple<Collection<String>, Collection<String>> tmp =
+                    GridBiTuple<Collection<String>, Collection<String>> adrs =
                         GridUtils.resolveLocalAddresses(InetAddress.getByName(addr));
 
-                    Iterator<String> ipIt = tmp.get1().iterator();
-                    Iterator<String> hostIt = tmp.get2().iterator();
+                    Iterator<String> ipIt = adrs.get1().iterator();
+                    Iterator<String> hostIt = adrs.get2().iterator();
 
                     while(ipIt.hasNext())
-                        res.add(new GridBiTuple<>(ipIt.next(), hostIt.next()));
+                        res.put(ipIt.next(), hostIt.next());
                 }
             }
             catch (Throwable e) {
