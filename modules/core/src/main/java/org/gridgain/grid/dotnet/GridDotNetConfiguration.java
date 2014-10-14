@@ -56,16 +56,16 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware, Clonea
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
 
-        rawWriter.writeCollection(assemblies);
         rawWriter.writeObject(portableCfg);
+        rawWriter.writeCollection(assemblies);
     }
 
     /** {@inheritDoc} */
     @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
         GridPortableRawReader rawReader = reader.rawReader();
 
-        assemblies = (List<String>)rawReader.<String>readCollection();
         portableCfg = (GridDotNetPortableConfiguration)rawReader.readObject();
+        assemblies = (List<String>)rawReader.<String>readCollection();
     }
 
     /** {@inheritDoc} */
