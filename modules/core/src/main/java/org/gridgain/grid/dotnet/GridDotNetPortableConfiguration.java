@@ -10,6 +10,7 @@
 package org.gridgain.grid.dotnet;
 
 import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -174,5 +175,10 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDotNetPortableConfiguration.class, this);
     }
 }

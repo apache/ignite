@@ -10,6 +10,7 @@
 package org.gridgain.grid.dotnet;
 
 import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
@@ -167,5 +168,10 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDotNetPortableTypeConfiguration.class, this);
     }
 }
