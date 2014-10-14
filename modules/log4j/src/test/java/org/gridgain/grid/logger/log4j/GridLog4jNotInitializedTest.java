@@ -22,19 +22,15 @@ public class GridLog4jNotInitializedTest extends TestCase {
     public void testLogInitialize() {
         GridLogger log = new GridLog4jLogger().getLogger(GridLog4jNotInitializedTest.class);
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");
-        }
-        else {
+        else
             System.out.println("DEBUG level is not enabled.");
-        }
 
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled())
             log.info("This is 'info' message.");
-        }
-        else {
+        else
             System.out.println("INFO level is not enabled.");
-        }
 
         log.warning("This is 'warning' message.");
         log.error("This is 'error' message.");

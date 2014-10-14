@@ -118,17 +118,14 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
             checkFinishedState("future:session:key", "future:global:key", "future:global:testval");
 
             // Check states saved by jobs.
-            for (int i = 0; i < SPLIT_COUNT; i++) {
+            for (int i = 0; i < SPLIT_COUNT; i++)
                 checkFinishedState("job:session:key:" + i, "job:global:key:" + i, "job:global:testval:" + i);
-            }
             // Check states saved by map(..).
-            for (int i = 0; i < SPLIT_COUNT; i++) {
+            for (int i = 0; i < SPLIT_COUNT; i++)
                 checkFinishedState("map:session:key:" + i, "map:global:key:" + i, "map:global:testval:" + i);
-            }
             // Check states saved by reduce(..).
-            for (int i = 0; i < SPLIT_COUNT; i++) {
+            for (int i = 0; i < SPLIT_COUNT; i++)
                 checkFinishedState("reduce:session:key:" + i, "reduce:global:key:" + i, "reduce:global:testval:" + i);
-            }
         }
         finally {
             G.stop(getTestGridName(), false);

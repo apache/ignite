@@ -71,9 +71,8 @@ public class GridNioBenchmarkClient {
      * @throws InterruptedException If benchmark was interrupted.
      */
     public void run() throws IOException, InterruptedException {
-        for (int i = 0; i < connCnt; i++) {
+        for (int i = 0; i < connCnt; i++)
             exec.submit(new ClientThread());
-        }
 
         Thread.sleep(5*60*1000);
 

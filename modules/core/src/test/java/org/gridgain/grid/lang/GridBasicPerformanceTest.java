@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.lang;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.GridUnsafe;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -189,9 +187,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             n += 2;
-        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -206,9 +203,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             v += 2;
-        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -223,9 +219,8 @@ public class GridBasicPerformanceTest {
 
         long start = System.currentTimeMillis();
 
-        for (long i = 0; i < MAX; i++) {
+        for (long i = 0; i < MAX; i++)
             n = v;
-        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -703,7 +698,7 @@ public class GridBasicPerformanceTest {
             if (sort)
                 Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
             else
-                ArrayUtils.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;
@@ -729,7 +724,7 @@ public class GridBasicPerformanceTest {
             if (sort)
                 Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
             else
-                ArrayUtils.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;

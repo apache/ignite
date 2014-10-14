@@ -333,9 +333,8 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
-            for (int i = 0; i < gridSize; i++) {
+            for (int i = 0; i < gridSize; i++)
                 jobs.add(new GridSharedJob1());
-            }
 
             return jobs;
         }

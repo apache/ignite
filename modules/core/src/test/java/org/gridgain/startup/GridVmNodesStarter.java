@@ -87,9 +87,8 @@ public final class GridVmNodesStarter {
      * @param exitCode Exit code.
      */
     private static void exit(String errMsg, Options options, int exitCode) {
-        if (errMsg != null) {
+        if (errMsg != null)
             echo("ERROR: " + errMsg);
-        }
 
         String runner = System.getProperty(GRIDGAIN_PROG_NAME, "randggstart.{sh|bat}");
 
@@ -153,9 +152,8 @@ public final class GridVmNodesStarter {
 
         final GridConfiguration[] cfgs = new GridConfiguration[nodesCnt];
 
-        for (int i = 0; i < nodesCnt; i++) {
+        for (int i = 0; i < nodesCnt; i++)
             cfgs[i] = getConfigurations(cfgPath).iterator().next();
-        }
 
         final AtomicInteger cfgIdx = new AtomicInteger(0);
 
@@ -219,9 +217,8 @@ public final class GridVmNodesStarter {
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
-        if (cfgMap.isEmpty()) {
+        if (cfgMap.isEmpty())
             throw new GridException("Can't find grid factory configuration in: " + path);
-        }
 
         Collection<GridConfiguration> res = new ArrayList<>();
 

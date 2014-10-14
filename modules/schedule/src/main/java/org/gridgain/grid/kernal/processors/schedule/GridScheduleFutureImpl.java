@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Implementation of {@link GridSchedulerFuture} interface.
@@ -104,10 +105,10 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     private int lastLsnrExecCnt;
 
     /** Synchronous notification flag. */
-    private volatile boolean syncNotify = U.isFutureNotificationSynchronous("true");
+    private volatile boolean syncNotify = GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private volatile boolean concurNotify = U.isFutureNotificationConcurrent("false");
+    private volatile boolean concurNotify = GridSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -145,9 +146,8 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         @Override public void run() {
             CountDownLatch latch = onStart();
 
-            if (latch == null) {
+            if (latch == null)
                 return;
-            }
 
             R res = null;
 

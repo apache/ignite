@@ -55,9 +55,8 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
         Iterator<String> iter = set.iterator();
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
             assert iter.next().contains("v");
-        }
 
         assert !iter.hasNext();
     }

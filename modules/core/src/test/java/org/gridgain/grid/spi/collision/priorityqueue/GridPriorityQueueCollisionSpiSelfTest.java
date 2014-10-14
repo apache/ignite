@@ -60,9 +60,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
             Integer p = ctx.getJobContext().getAttribute(jobAttrKey);
 
-            if (p != null) {
+            if (p != null)
                 assert p == incVal + ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
-            }
         }
 
         for (GridCollisionJobContext ctx : activeJobs) {
@@ -145,9 +144,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
             Integer p = ctx.getJobContext().<String, Integer>getAttribute(jobAttrKey);
 
-            if (p != null) {
+            if (p != null)
                 assert p == incVal + ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
-            }
         }
 
         for (GridCollisionJobContext ctx : activeJobs) {
@@ -227,9 +225,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
                 ((GridTestCollisionJobContext)ctx).setJobContext(new GridTestJobContext() {
                     @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
                     @Override public <K, V> V getAttribute(K key) {
-                        if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key)) {
+                        if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key))
                             return null;
-                        }
 
                         return super.<K, V>getAttribute(key);
                     }
@@ -273,9 +270,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
                     DFLT_PRIORITY_ATTRIBUTE_KEY) {
                     @SuppressWarnings("unchecked")
                     @Override public <K, V> V getAttribute(K key) {
-                        if (getPriorityAttributeKey() != null && getPriorityAttributeKey().equals(key)) {
+                        if (getPriorityAttributeKey() != null && getPriorityAttributeKey().equals(key))
                             return (V)"wrong-attr";
-                        }
 
                         return null;
                     }
@@ -284,9 +280,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
                 ((GridTestCollisionJobContext)ctx).setJobContext(new GridTestJobContext() {
                     @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
                     @Override public <K, V> V getAttribute(K key) {
-                        if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key)) {
+                        if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key))
                             return (V)"wrong-attr";
-                        }
 
                         return super.<K, V>getAttribute(key);
                     }
@@ -409,13 +404,11 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         List<GridCollisionJobContext> jobs = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++)
             jobs.add(new GridTestCollisionJobContext(new GridTestCollisionTaskSession(i, attrKey)));
-        }
 
-        if (shuffle) {
+        if (shuffle)
             Collections.shuffle(jobs);
-        }
 
         return jobs;
     }

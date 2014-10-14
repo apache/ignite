@@ -220,9 +220,8 @@ public class VisorCache implements Serializable {
         if (drSndMetrics != null) {
             GridDrStatus status = drSndMetrics.status();
 
-            if (status != null) {
+            if (status != null)
                 return status.paused();
-            }
         }
 
         return false;

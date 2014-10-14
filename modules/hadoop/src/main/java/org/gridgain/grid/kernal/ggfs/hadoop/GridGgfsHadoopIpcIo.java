@@ -544,9 +544,8 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                                         res = buf;
                                     }
                                 }
-                                else {
+                                else
                                     res = marsh.unmarshall(cmd, hdr, dis);
-                                }
 
                                 fut.onDone(res);
                             }

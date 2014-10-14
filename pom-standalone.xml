@@ -62,7 +62,6 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/ggfs</module>
     </modules>
 
     <dependencyManagement>
@@ -96,13 +95,6 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
             <scope>test</scope>
         </dependency>
 
@@ -350,7 +342,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -560,7 +552,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -678,7 +670,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
@@ -954,8 +946,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
-                            <finalName>visorcmd</finalName>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -1027,6 +1019,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/visor-common</directory>
                                 </fileset>
 
                                 <fileset>

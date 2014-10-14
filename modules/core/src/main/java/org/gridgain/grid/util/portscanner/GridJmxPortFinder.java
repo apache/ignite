@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portscanner;
 
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.*;
 
 import java.io.*;
 import java.net.*;
@@ -51,15 +51,10 @@ public class GridJmxPortFinder {
             return;
         }
 
-        String jmxPort = X.getSystemOrEnv(GG_JMX_PORT);
+        int jmxPort = GridSystemProperties.getInteger(GG_JMX_PORT, -1);
 
-        if (jmxPort != null) {
-            try {
-                System.out.println(Integer.parseInt(jmxPort));
-            }
-            catch (NumberFormatException ignored) {
-                // Do not return anything to signal inability to run JMX.
-            }
+        if (jmxPort != -1) {
+            System.out.println(jmxPort);
 
             return;
         }

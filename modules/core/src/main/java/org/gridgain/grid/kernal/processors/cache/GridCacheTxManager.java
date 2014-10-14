@@ -1896,9 +1896,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     else {
                         // Pessimistic.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.state() != COMMITTING && tx.state() != COMMITTED) {
+                            if (tx.state() != COMMITTING && tx.state() != COMMITTED)
                                 commitIfRemotelyCommitted(tx);
-                            }
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("Skipping pessimistic transaction check (transaction is being committed) " +

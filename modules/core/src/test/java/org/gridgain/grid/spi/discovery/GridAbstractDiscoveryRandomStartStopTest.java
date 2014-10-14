@@ -149,12 +149,10 @@ public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends GridDis
 
             toggleState();
 
-            if (isRunning) {
+            if (isRunning)
                 info("Spi stopped for the interval of " + interval + " seconds...");
-            }
-            else {
+            else
                 info("Spi started for the interval of " + interval + " seconds...");
-            }
 
             try {
                 Thread.sleep(interval * 1000);
@@ -173,21 +171,18 @@ public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends GridDis
      * @throws Exception If failed.
      */
     private void toggleState() throws Exception {
-        if (isRunning) {
+        if (isRunning)
             spiStop();
-        }
-        else {
+        else
             spiStart();
-        }
 
         isRunning = !isRunning;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (getSpiContext() != null) {
+        if (getSpiContext() != null)
             getSpiContext().addLocalEventListener(new DiscoveryListener());
-        }
 
         pinger = new Pinger();
 

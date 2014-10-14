@@ -119,14 +119,12 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
         // Filter nodes.
         if (nodeFilter != null) {
             for (GridNode node : subgrid) {
-                if (!nodeFilter.apply(node, ses)) {
+                if (!nodeFilter.apply(node, ses))
                     exclNodes.add(node);
-                }
             }
 
-            if (exclNodes.size() == subgrid.size()) {
+            if (exclNodes.size() == subgrid.size())
                 throw new GridException("Failed to execute on grid where all nodes excluded.");
-            }
         }
 
         int inputPerNode = splitSize;
@@ -134,9 +132,8 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
         // Calculate input elements size per node for default annotation splitSize parameter.
         if (splitSize <= 0) {
             // For iterable input splitSize will be assigned with threshold value.
-            if (threshold > 0 && arg.getInputSize() == UNKNOWN_SIZE) {
+            if (threshold > 0 && arg.getInputSize() == UNKNOWN_SIZE)
                 inputPerNode = threshold;
-            }
             // Otherwise, splitSize equals (inputSize / nodesCount)
             else {
                 assert arg.getInputSize() != UNKNOWN_SIZE;
@@ -162,9 +159,8 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
         while (inputIter.hasNext()) {
             Collection<Object> nodeInput = new LinkedList<>();
 
-            for (int i = 0; i < inputPerNode && inputIter.hasNext(); i++) {
+            for (int i = 0; i < inputPerNode && inputIter.hasNext(); i++)
                 nodeInput.add(inputIter.next());
-            }
 
             // Create job argument.
             GridifyArgument jobArg = argBuilder.createJobArgument(arg, nodeInput);
@@ -185,9 +181,8 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
         Collection<Object> data = new ArrayList<>(results.size());
 
         for (GridComputeJobResult res : results) {
-            if (res.getException() != null) {
+            if (res.getException() != null)
                 throw res.getException();
-            }
 
             data.add(res.getData());
         }
@@ -210,23 +205,20 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
 
             int inputPerNode = (int)Math.ceil((double)inputSize / (double)gridSize);
 
-            while (inputSize % inputPerNode <= threshold) {
+            while (inputSize % inputPerNode <= threshold)
                 inputPerNode++;
-            }
 
             return inputPerNode;
         }
 
         // Use only one node for calculation.
-        if (limitedSplit && inputSize <= gridSize) {
+        if (limitedSplit && inputSize <= gridSize)
             return inputSize;
-        }
 
         int inputPerNode = (int)Math.ceil((double)inputSize / (double)gridSize);
 
-        while (inputSize % inputPerNode == 1) {
+        while (inputSize % inputPerNode == 1)
             inputPerNode++;
-        }
 
         return inputPerNode;
     }

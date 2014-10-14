@@ -41,9 +41,8 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
 
         List<Object> elems = new ArrayList<>();
 
-        while (iter.hasNext()) {
+        while (iter.hasNext())
             elems.add(iter.next());
-        }
 
         assert elems.size() == 1;
         assert str.equals(elems.get(0));
@@ -73,9 +72,8 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
 
         List<Object> elems = new ArrayList<>();
 
-        while (iter.hasNext()) {
+        while (iter.hasNext())
             elems.add(iter.next());
-        }
 
         assert elems.size() == 2;
         assert str1.equals(elems.get(0));
@@ -107,9 +105,8 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
 
         List<Object> elems = new ArrayList<>();
 
-        while (iter.hasNext()) {
+        while (iter.hasNext())
             elems.add(iter.next());
-        }
 
         assert elems.size() == 3;
         assert str1.equals(elems.get(0));
@@ -142,9 +139,8 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
 
         List<Object> elems = new ArrayList<>();
 
-        while (iter.hasNext()) {
+        while (iter.hasNext())
             elems.add(iter.next());
-        }
 
         assert elems.size() == 3;
         assert strVal.equals(elems.get(0));
