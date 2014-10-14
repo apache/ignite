@@ -77,7 +77,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     private Collection<K> keys;
 
     /** Future map time. */
-    private long mapTime;
+    private volatile long mapTime;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -156,7 +156,9 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
     /** {@inheritDoc} */
     @Override public void checkTimeout(long timeout) {
-        if (mapTime > 0 && U.currentTimeMillis() > mapTime + timeout) {
+        long mapTime0 = mapTime;
+
+        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
             GridException ex = new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property).");
 

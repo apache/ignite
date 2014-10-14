@@ -1801,6 +1801,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
     }
 
+    /**
+     * Checks if future timeout happened.
+     */
     private void scheduleAtomicFutureRecheck() {
         final long timeout = ctx.kernalContext().config().getNetworkTimeout();
 
