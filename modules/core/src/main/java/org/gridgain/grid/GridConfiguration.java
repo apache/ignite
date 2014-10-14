@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
@@ -52,6 +53,7 @@ import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -393,6 +395,9 @@ public class GridConfiguration {
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
 
+    /** Configuration for .Net nodes. */
+    private GridDotNetConfiguration dotNetCfg;
+
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
@@ -658,6 +663,8 @@ public class GridConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        dotNetCfg = cfg.getDotNetConfiguration() == null ?
+            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**
@@ -3184,6 +3191,22 @@ public class GridConfiguration {
      */
     public void setWarmupClosure(GridInClosure<GridConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
+    }
+
+    /**
+     * Returns configuration for .Net nodes.
+     * @return Configuration for .Net nodes.
+     */
+    @Nullable public GridDotNetConfiguration getDotNetConfiguration() {
+        return dotNetCfg;
+    }
+
+    /**
+     * Sets configuration for .Net nodes.
+     * @param dotNetCfg Configuration for .Net nodes
+     */
+    public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
+        this.dotNetCfg = dotNetCfg;
     }
 
     /** {@inheritDoc} */
