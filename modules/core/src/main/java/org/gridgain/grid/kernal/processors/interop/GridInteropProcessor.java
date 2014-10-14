@@ -53,4 +53,14 @@ public interface GridInteropProcessor extends GridProcessor {
      * @param cancel Cancel flag.
      */
     public void close(boolean cancel);
+
+    /**
+     * Write /Net-specific configuration to the stream.
+     *
+     * @param stream Stream pointer.
+     * @param arr Data pointer.
+     * @param cap Capacity.
+     * @throws GridException If failed.
+     */
+    public void dotNetConfiguration(long stream, long arr, int cap) throws GridException;
 }
