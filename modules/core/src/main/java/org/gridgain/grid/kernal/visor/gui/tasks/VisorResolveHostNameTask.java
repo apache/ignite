@@ -54,11 +54,11 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Map
 
             try {
                 for (String addr: arg) {
-                    GridBiTuple<Collection<String>, Collection<String>> adrs =
+                    GridBiTuple<Collection<String>, Collection<String>> addrs =
                         GridUtils.resolveLocalAddresses(InetAddress.getByName(addr));
 
-                    Iterator<String> ipIt = adrs.get1().iterator();
-                    Iterator<String> hostIt = adrs.get2().iterator();
+                    Iterator<String> ipIt = addrs.get1().iterator();
+                    Iterator<String> hostIt = addrs.get2().iterator();
 
                     while(ipIt.hasNext())
                         res.put(ipIt.next(), hostIt.next());
