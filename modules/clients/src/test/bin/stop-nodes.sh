@@ -16,11 +16,11 @@
 
 echo Kill all grid nodes.
 
-for X in `jps | grep -i -G Grid.*CommandLineLoader | awk {'print $1'}`; do
+for X in `$JAVA_HOME/bin/jps | grep -i -G Grid.*CommandLineLoader | awk {'print $1'}`; do
     kill -9 $X
 done
 
-for X in `jps | grep -i -G Grid.*CommandLineStartup | awk {'print $1'}`; do
+for X in `$JAVA_HOME/bin/jps | grep -i -G Grid.*CommandLineStartup | awk {'print $1'}`; do
     kill -9 $X
 done
 
