@@ -11,6 +11,7 @@ package org.gridgain.grid.dotnet;
 
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
@@ -36,6 +37,9 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
 
     /** */
     private Boolean metadataEnabled;
+
+    /** */
+    private Boolean keepDeserialized;
 
     /**
      * Default constructor.
@@ -156,6 +160,20 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         this.affinityKeyFieldName = affinityKeyFieldName;
     }
 
+    /**
+     * @return Keep deserialized flag.
+     */
+    @Nullable public Boolean isKeepDeserialized() {
+        return keepDeserialized;
+    }
+
+    /**
+     * @param keepDeserialized Keep deserialized flag.
+     */
+    public void setKeepDeserialized(@Nullable Boolean keepDeserialized) {
+        this.keepDeserialized = keepDeserialized;
+    }
+
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
@@ -173,6 +191,8 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         rawWriter.writeString(affinityKeyFieldName);
 
         rawWriter.writeObject(metadataEnabled);
+
+        rawWriter.writeObject(keepDeserialized);
     }
 
     /** {@inheritDoc} */
@@ -192,6 +212,8 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         affinityKeyFieldName = rawReader.readString();
 
         metadataEnabled = (Boolean)rawReader.readObject();
+
+        keepDeserialized = (Boolean)rawReader.readObject();
     }
 
     /** {@inheritDoc} */
