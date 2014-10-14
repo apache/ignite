@@ -12,7 +12,7 @@ package org.gridgain.grid.dotnet;
 import org.gridgain.grid.portables.*;
 
 /**
- *
+ * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
  */
 public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware, Cloneable {
     /** */

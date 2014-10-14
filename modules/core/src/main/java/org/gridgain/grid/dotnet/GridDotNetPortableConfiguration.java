@@ -14,7 +14,7 @@ import org.gridgain.grid.portables.*;
 import java.util.*;
 
 /**
- *
+ * Mirror of .Net class GridDotNetPortableConfiguration.cs
  */
 public class GridDotNetPortableConfiguration implements GridPortableMarshalAware, Cloneable {
     /** */
