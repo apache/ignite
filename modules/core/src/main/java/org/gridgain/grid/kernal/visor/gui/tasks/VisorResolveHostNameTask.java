@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.util.GridUtils;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.S;
 
 /**
@@ -67,7 +68,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
                     String hostName = hostIt.next();
 
-                    if (hostName.length() > 0 && !hostName.equals(ip))
+                    if (!F.isEmpty(hostName) && !hostName.equals(ip))
                         res.put(ip, hostName);
                 }
             }
