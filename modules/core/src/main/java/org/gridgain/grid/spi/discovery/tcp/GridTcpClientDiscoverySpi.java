@@ -454,16 +454,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 while (!isInterrupted()) {
                     U.sleep(hbFreq);
 
-                    writeToSocket(sock0, new GridTcpDiscoveryHeartbeatMessage(locNodeId));
+                    sockRdr.addMessage(new GridTcpDiscoveryHeartbeatMessage(locNodeId));
                 }
             }
             catch (GridInterruptedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Heartbeat sender was interrupted.");
-            }
-            catch (IOException | GridException e) {
-                if (log.isDebugEnabled())
-                    U.error(log, "Failed to send heartbeat message [sock=" + sock0 + ']', e);
             }
             finally {
                 U.closeQuiet(sock0);
@@ -589,6 +585,15 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 sock = null;
             }
         }
+
+        /**
+         * @param msg Message.
+         */
+        void addMessage(GridTcpDiscoveryAbstractMessage msg) {
+            assert msg != null;
+
+            msgWrk.addMessage(msg);
+        }
     }
 
     /**
@@ -607,7 +612,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         /** {@inheritDoc} */
         @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
             assert msg != null;
-            assert msg.verified();
+            assert msg.verified() || msg.senderNodeId() == null;
 
             stats.onMessageProcessingStarted(msg);
 
@@ -759,7 +764,35 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
          */
         private void processHeartbeatMessage(GridTcpDiscoveryHeartbeatMessage msg) {
             if (locNodeId.equals(msg.creatorNodeId())) {
-                if (log.isDebugEnabled())
+                if (msg.senderNodeId() == null) {
+                    Socket sock0 = sock;
+
+                    if (sock0 != null) {
+                        try {
+                            writeToSocket(sock0, msg);
+
+                            int res = readReceipt(sock0, sockTimeout);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Heartbeat message sent [sock=" + sock0 + ", msg=" + msg +
+                                    ", res=" + res + ']');
+                        }
+                        catch (IOException | GridException e) {
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to send heartbeat message [sock=" + sock0 +
+                                    ", msg=" + msg + ']', e);
+
+                            U.closeQuiet(sock0);
+
+                            sock = null;
+
+                            interrupt();
+                        }
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to send heartbeat message (node is disconnected): " + msg);
+                }
+                else if (log.isDebugEnabled())
                     log.debug("Received heartbeat response: " + msg);
             }
             else {

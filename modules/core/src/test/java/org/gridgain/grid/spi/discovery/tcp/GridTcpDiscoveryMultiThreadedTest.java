@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,10 +28,28 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    public static final int GRID_CNT = 15;
+    public static final int GRID_CNT = 1;
+
+    /** */
+    public static final int CLIENT_GRID_CNT = 15;
 
     /** */
     public static final int THREAD_CNT = 14;
+
+    /** */
+    private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
+
+    /** */
+    private static volatile boolean clientFlagGlobal;
+
+    /**
+     * @return Client node flag.
+     */
+    private static boolean client() {
+        Boolean client = clientFlagPerThread.get();
+
+        return client != null ? client : clientFlagGlobal;
+    }
 
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -57,11 +74,23 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        if (client()) {
+            GridTcpClientDiscoverySpi spi = new GridTcpClientDiscoverySpi();
 
-        spi.setIpFinder(ipFinder);
+            spi.setIpFinder(ipFinder);
 
-        cfg.setDiscoverySpi(spi);
+            cfg.setDiscoverySpi(spi);
+        }
+        else {
+            GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+
+            spi.setIpFinder(ipFinder);
+
+            if (useMetricsStore)
+                spi.setMetricsStore(metricsStore);
+
+            cfg.setDiscoverySpi(spi);
+        }
 
         cfg.setCacheConfiguration();
 
@@ -70,11 +99,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         cfg.setIncludeProperties();
 
         cfg.setLocalHost("127.0.0.1");
-
-        cfg.setRestEnabled(false);
-
-        if (useMetricsStore)
-            spi.setMetricsStore(metricsStore);
 
         return cfg;
     }
@@ -138,6 +162,12 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRID_CNT);
 
+        clientFlagGlobal = true;
+
+//        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+        for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
+            startGrid(i);
+
         final AtomicBoolean done = new AtomicBoolean();
         final AtomicBoolean done0 = new AtomicBoolean();
 
@@ -145,7 +175,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         final List<Integer> idxs = new ArrayList<>();
 
-        for (int i = 0; i < GRID_CNT; i++)
+        for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
             idxs.add(i);
 
         final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT, new Runnable() {
@@ -155,7 +185,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                 Collections.shuffle(idxs);
 
-                idx.set(0);
+                idx.set(GRID_CNT);
             }
         });
 
@@ -171,6 +201,8 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                         int i = idxs.get(idx.getAndIncrement());
 
                         stopGrid(i);
+
+                        clientFlagPerThread.set(i >= GRID_CNT);
 
                         startGrid(i);
                     }

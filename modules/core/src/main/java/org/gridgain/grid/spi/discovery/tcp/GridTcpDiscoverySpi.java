@@ -1152,7 +1152,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
         boolean res = pingNode(node);
 
-        if (!res) {
+        if (!res && !node.isClient()) {
             LT.warn(log, null, "Failed to ping node (status check will be initiated): " + nodeId);
 
             msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode, node.id()));
@@ -2518,11 +2518,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
-            if (msg.redirectToClients()) {
-                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
-                    clientMsgWorker.addMessage(msg);
-            }
-
             stats.onMessageProcessingFinished(msg);
         }
 
@@ -2565,6 +2560,12 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                         if (debugMode)
                             debugLog("No next node in topology.");
+
+                        if (ring.hasRemoteNodes()) {
+                            msg.senderNodeId(locNodeId);
+
+                            addMessage(msg);
+                        }
 
                         break;
                     }
@@ -2890,6 +2891,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 for (GridTcpDiscoveryNode n : failedNodes)
                     msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+            }
+
+            if (msg.redirectToClients()) {
+                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
+                    clientMsgWorker.addMessage(msg);
             }
         }
 
@@ -3658,7 +3664,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     }
                 }
 
-                if (msg.verified() || !ring.hasRemoteNodes()) {
+                if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
                     if (ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
                             ipFinder.unregisterAddresses(locNode.socketAddresses());

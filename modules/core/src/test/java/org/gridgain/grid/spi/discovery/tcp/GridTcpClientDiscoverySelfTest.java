@@ -287,6 +287,63 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeJoinOneServer() throws Exception {
+        startServerNodes(1);
+
+        srvJoinedLatch = new CountDownLatch(1);
+
+        attachListeners(1, 0);
+
+        startClientNodes(1);
+
+        await(srvJoinedLatch);
+
+        checkNodes(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeLeaveOneServer() throws Exception {
+        startServerNodes(1);
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+
+        srvLeftLatch = new CountDownLatch(1);
+
+        attachListeners(1, 0);
+
+        stopGrid("client-0");
+
+        await(srvLeftLatch);
+
+        checkNodes(1, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeFailOneServer() throws Exception {
+        startServerNodes(1);
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+
+        srvFailedLatch = new CountDownLatch(1);
+
+        attachListeners(1, 0);
+
+        failClient(0);
+
+        await(srvFailedLatch);
+
+        checkNodes(1, 0);
+    }
+
+    /**
      * @param idx Index.
      * @throws Exception In case of error.
      */
