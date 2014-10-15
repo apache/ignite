@@ -34,10 +34,10 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     private String dfltSerializer;
 
     /** */
-    private boolean dfltMetadataEnabled;
+    private boolean dfltMetadataEnabled = true;
 
-    /** */
-    private boolean keepDeserialized;
+    /** Whether to cache deserialized value in IGridPortableObject */
+    private boolean keepDeserialized = true;
 
     /**
      * Default constructor.
@@ -153,7 +153,7 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     }
 
     /**
-     * @return Keep deferialized flag.
+     * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
      */
     public boolean getKeepDeserialized() {
         return keepDeserialized;

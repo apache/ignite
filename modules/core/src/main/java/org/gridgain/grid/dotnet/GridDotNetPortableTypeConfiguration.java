@@ -38,7 +38,7 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
     /** */
     private Boolean metadataEnabled;
 
-    /** */
+    /** Whether to cache deserialized value in IGridPortableObject */
     private Boolean keepDeserialized;
 
     /**
@@ -161,7 +161,7 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
     }
 
     /**
-     * @return Keep deserialized flag.
+     * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
      */
     @Nullable public Boolean isKeepDeserialized() {
         return keepDeserialized;
