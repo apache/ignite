@@ -543,6 +543,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private <T> T remoteServiceProxy(final String name, Class<T> svc, boolean sticky) throws GridException {
         ServiceProxy<?> srvcProxy = proxyServices.get(name);
+
         if (!srvcProxy.getClass().equals(svc))
             throw new GridException("Another type of method is already deployed for name: " + name);
 
@@ -1286,7 +1287,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @return Proxy of a {@code GridService}.
          */
         private T getProxyFromNode(final UUID nodeId) {
-            return (T)Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {svc},
+            return (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class<?>[] {svc},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, final Method mtd,
                         final Object[] args) throws Throwable {
