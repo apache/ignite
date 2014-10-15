@@ -19,6 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,6 +70,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
             .queue(queueName, 0, true, true);
 
+        assertNotNull(queue);
+
         assertTrue(queue.isEmpty());
 
         PutJob putJob = new PutJob(queueName);
@@ -104,7 +107,11 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         Grid joined = startGrid(GRID_CNT);
 
         // We expect at least one item to be taken.
-        Integer polled = joined.forLocal().compute().call(new TakeJob(queueName, 1, 1)).get();
+        TakeJob joinedJob = new TakeJob(queueName, 1, 1);
+
+        jobs.add(joinedJob);
+
+        Integer polled = joined.forLocal().compute().call(joinedJob).get();
 
         assertNotNull("Joined node should poll item", polled);
 
@@ -116,6 +123,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         putJob.stop(true);
 
         fut.get();
+
+        for (TakeJob job : jobs)
+            job.awaitDone();
     }
 
     /**
@@ -147,7 +157,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, true);
+                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 
@@ -196,6 +206,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /** Latch for waiting for items. */
         private final CountDownLatch takeLatch;
 
+        /** Latch for waiting for job completion. */
+        private final CountDownLatch doneLatch;
+
         /**
          * @param queueName Queue name.
          * @param maxTakeCnt Maximum count of items to be taken from queue.
@@ -206,6 +219,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             this.maxTakeCnt = maxTakeCnt;
 
             takeLatch = new CountDownLatch(waitCnt);
+
+            doneLatch = new CountDownLatch(1);
         }
 
         /**
@@ -217,8 +232,17 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             U.await(takeLatch);
         }
 
+        /**
+         * Awaits for a given count of items to be taken.
+         *
+         * @throws GridInterruptedException If interrupted.
+         */
+        private void awaitDone() throws GridInterruptedException {
+            U.await(doneLatch);
+        }
+
         /** {@inheritDoc} */
-        @Override public Integer call() {
+        @Nullable @Override public Integer call() {
             assertNotNull(grid);
 
             log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
@@ -226,7 +250,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             Integer lastPolled = null;
 
             try {
-                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, true);
+                GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 
@@ -237,13 +261,16 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 }
             }
             catch (GridRuntimeException e) {
-                if (e.getCause() instanceof GridInterruptedException)
+                if (e.getCause() instanceof GridInterruptedException || e.getCause() instanceof InterruptedException)
                     log.info("Cancelling job due to interruption: " + e.getMessage());
                 else
                     fail("Unexpected error: " + e);
             }
             catch (GridException e) {
                 error("Failed to get value from the queue", e);
+            }
+            finally {
+                doneLatch.countDown();
             }
 
             log.info("TakeJob finished, last polled value: " + lastPolled);
