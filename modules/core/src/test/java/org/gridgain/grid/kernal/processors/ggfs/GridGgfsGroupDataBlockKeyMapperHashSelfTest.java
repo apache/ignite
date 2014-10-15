@@ -75,6 +75,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
                      catch(Exception e) {
                          System.out.println("ak=" + ak + ", i=" + i + ", j=" + j);
                          System.out.println(e.getMessage());
+                         throw e;
                      }
 
                     firstInGroup = false;
