@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
+import java.net.InetAddress;
+import java.util.*;
+
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
@@ -16,26 +19,23 @@ import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.util.GridUtils;
 import org.gridgain.grid.util.typedef.internal.S;
 
-import java.net.InetAddress;
-import java.util.*;
-
 /**
  * Task that resolve host name for specified IP address from node.
  */
 @GridInternal
-public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Map<String, String>> {
+public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String, String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorResolveHostNameJob job(List<String> arg) {
+    @Override protected VisorResolveHostNameJob job(Void arg) {
         return new VisorResolveHostNameJob(arg);
     }
 
     /**
      * Job that resolve host name for specified IP address.
      */
-    private static class VisorResolveHostNameJob extends VisorJob<List<String>, Map<String, String>> {
+    private static class VisorResolveHostNameJob extends VisorJob<Void, Map<String, String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -44,29 +44,41 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<List<String>, Map
          *
          * @param arg List of IP address for resolve.
          */
-        private VisorResolveHostNameJob(List<String> arg) {
+        private VisorResolveHostNameJob(Void arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, String> run(List<String> arg) throws GridException {
-            Map<String, String> res = new HashMap<>();
+        @Override protected Map<String, String> run(Void arg) throws GridException {
+            Map<String, String> res = new LinkedHashMap<>();
 
             try {
-                for (String addr: arg) {
-                    GridBiTuple<Collection<String>, Collection<String>> addrs =
-                        GridUtils.resolveLocalAddresses(InetAddress.getByName(addr));
+                GridBiTuple<Collection<String>, Collection<String>> addrs =
+                    GridUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
 
-                    Iterator<String> ipIt = addrs.get1().iterator();
-                    Iterator<String> hostIt = addrs.get2().iterator();
+                assert(addrs.get1() != null);
+                assert(addrs.get2() != null);
 
-                    while(ipIt.hasNext())
-                        res.put(ipIt.next(), hostIt.next());
+                Iterator<String> ipIt = addrs.get1().iterator();
+                Iterator<String> hostIt = addrs.get2().iterator();
+
+                while(ipIt.hasNext() && hostIt.hasNext()) {
+                    String ip = ipIt.next();
+
+                    String hostName = hostIt.next();
+
+                    if (hostName.length() > 0 && !hostName.equals(ip))
+                        res.put(ip, hostName);
                 }
             }
             catch (Throwable e) {
                 throw new GridException("Failed to resolve host name", e);
             }
+
+            System.out.println("Resolving of node host name");
+
+            for (Map.Entry<String, String> ent: res.entrySet())
+                System.out.println(" IP: " + ent.getKey() + ", name: " + ent.getValue());
 
             return res;
         }
