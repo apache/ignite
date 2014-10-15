@@ -27,6 +27,8 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
             int grpSize = ThreadLocalRandom.current().nextInt(2, 100000);
             int partCnt = ThreadLocalRandom.current().nextInt(1, grpSize);
 
+            System.out.println("i=" + i + ", grpSize=" + grpSize + ", partCnt=" + partCnt);
+
             checkDistribution(grpSize, partCnt);
         }
     }
@@ -60,13 +62,20 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
             for (int j = 0; j < grpSize; j++) {
                 GridGgfsBlockKey key = new GridGgfsBlockKey(fileId, null, false, i * grpSize + j);
 
-                Integer part = (Integer) mapper.affinityKey(key) % partCnt;
+                Integer ak = (Integer) mapper.affinityKey(key);
+                Integer part = ak % partCnt;
 
                 if (firstInGroup) {
                     if (first)
                         first = false;
                     else
-                        checkPartition(lastPart, part, partCnt);
+                     try {
+                         checkPartition(lastPart, part, partCnt);
+                     }
+                     catch(Exception e) {
+                         System.out.println("ak=" + ak + ", i=" + i + ", j=" + j);
+                         System.out.println(e.getMessage());
+                     }
 
                     firstInGroup = false;
                 }
@@ -108,8 +117,8 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      * @param totalParts Total partitions.
      */
     private void checkPartition(int prevPart, int part, int totalParts) {
-        assert U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1) :
-            "Total=" + totalParts + ", prevPart=" + prevPart + ", part=" + part + ']';
+        if (!(U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1)))
+            throw new RuntimeException("Total=" + totalParts + ", prevPart=" + prevPart + ", part=" + part + ']');
     }
 }
 
