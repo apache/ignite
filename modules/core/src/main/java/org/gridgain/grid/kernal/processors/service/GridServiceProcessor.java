@@ -1292,6 +1292,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     @Override public Object invoke(Object proxy, final Method mtd,
                         final Object[] args) throws Throwable {
 
+                        // ctx.closure().callAsyncNoFailover();
+
                         return G.grid().forNodeId(nodeId).compute().call(new Callable<Object>() {
                             @Override public Object call() throws Exception {
                                 Object srvc = G.grid().services().service(name);
