@@ -125,7 +125,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * Sets concurrency level for the write cache. Concurrency level is expected count of concurrent threads
      * attempting to update cache.
      *
-     *@param concurLvl Concurrency level.
+     * @param concurLvl Concurrency level.
      */
     public void setConcurrencyLevel(int concurLvl) {
         this.concurLvl = concurLvl;
