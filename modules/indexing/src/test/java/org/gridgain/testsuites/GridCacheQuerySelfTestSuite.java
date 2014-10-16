@@ -14,9 +14,9 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.query.reducefields.*;
-import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Test suite for cache queries.
@@ -82,6 +82,8 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReduceFieldsQueryReplicatedSelfTest.class);
 
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
+
+        suite.addTestSuite(GridCacheSwapScanQuerySelfTest.class);
 
         return suite;
     }
