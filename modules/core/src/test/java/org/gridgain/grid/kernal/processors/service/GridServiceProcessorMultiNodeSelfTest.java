@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.service.*;
 
 import java.util.concurrent.*;
 
@@ -148,5 +149,27 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         finally {
             stopExtraNodes(newNodes);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceProxy() throws Exception {
+        Grid g = randomGrid();
+
+        GridServices services = grid().forNode(g.localNode()).services();
+
+        services.deployNodeSingleton("test", new DummyService()).get();
+
+        services.deployNodeSingleton("test2", new DummyService()).get();
+
+        assertEquals(2, grid().services().deployedServices().size());
+
+        GridService dummySrvc = grid().services().service("test");
+
+        DummyService dummySrvcProxy = grid().services().serviceProxy("test", DummyService.class, false);
+
+        assertEquals(dummySrvc.getClass(), dummySrvcProxy.getClass());
+
     }
 }
