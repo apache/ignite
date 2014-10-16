@@ -45,6 +45,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         ccfg.setOffHeapMaxMemory(1024 * 1024);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
+        ccfg.setPortableEnabled(portableEnabled());
 
         return ccfg;
     }

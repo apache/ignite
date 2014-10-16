@@ -11,6 +11,7 @@ package org.gridgain.grid.util.offheap;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -55,6 +56,23 @@ public interface GridOffHeapMap<K> {
      * @return Value bytes.
      */
     @Nullable public byte[] get(int hash, byte[] keyBytes);
+
+    /**
+     * Gets value pointer for given key.
+     *
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     * @return Value pointer.
+     */
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
+
+    /**
+     * Enables eviction for given key.
+     *
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     */
+    public void enableEviction(int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map.
@@ -144,6 +162,14 @@ public interface GridOffHeapMap<K> {
      * @return Iterator over map.
      */
     public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+
+    /**
+     * Gets iterator over map.
+     *
+     * @param c Key/value closure.
+     * @return Iterator over map.
+     */
+    public <T> GridCloseableIterator<T> iterator(@Nullable CX2<T2<Long, Integer>, T2<Long, Integer>, T> c);
 
     /**
      * Sets callback for when entries are evicted due to memory constraints.

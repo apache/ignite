@@ -11,6 +11,7 @@ package org.gridgain.grid.util.offheap;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -57,6 +58,27 @@ public interface GridOffHeapPartitionedMap {
      * @return Value bytes.
      */
     @Nullable public byte[] get(int p, int hash, byte[] keyBytes);
+
+    /**
+     * Gets value pointer for given key. While pointer is in use eviction is
+     * disabled for corresponding entry. Eviction for entry is enabled when {@link #put} or
+     * {@link #enableEviction} is called.
+     *
+     * @param p Partition.
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     * @return Value pointer.
+     */
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
+
+    /**
+     * Enables eviction for entry.
+     *
+     * @param p Partition.
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     */
+    public void enableEviction(int p, int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map.
@@ -150,6 +172,14 @@ public interface GridOffHeapPartitionedMap {
      * @return Iterator over the whole map.
      */
     public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator();
+
+    /**
+     * Gets iterator over the whole map.
+     *
+     * @param c Key/value closure.
+     * @return Iterator over the whole map.
+     */
+    public <T> GridCloseableIterator<T> iterator(CX2<T2<Long, Integer>, T2<Long, Integer>, T> c);
 
     /**
      * Gets iterator over certain partition.
