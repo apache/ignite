@@ -230,10 +230,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        checkContainsKey(true, "key1", F.<GridCacheEntry<String, Integer>>alwaysTrue());
-        checkContainsKey(false, "key1", F.<GridCacheEntry<String, Integer>>alwaysFalse());
-        checkContainsKey(false, "key1", gte100);
-        checkContainsKey(true, "key2", gte100);
+        checkProjectionContainsKey(true, "key1", F.<GridCacheEntry<String, Integer>>alwaysTrue());
+        checkProjectionContainsKey(false, "key1", F.<GridCacheEntry<String, Integer>>alwaysFalse());
+        checkProjectionContainsKey(false, "key1", gte100);
+        checkProjectionContainsKey(true, "key2", gte100);
     }
 
     /**
@@ -276,10 +276,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        checkContainsValue(true, 1, F.<GridCacheEntry<String, Integer>>alwaysTrue());
-        checkContainsValue(false, 1, F.<GridCacheEntry<String, Integer>>alwaysFalse());
-        checkContainsValue(false, 1, gte100);
-        checkContainsValue(true, 100, gte100);
+        checkProjectionContainsValue(true, 1, F.<GridCacheEntry<String, Integer>>alwaysTrue());
+        checkProjectionContainsValue(false, 1, F.<GridCacheEntry<String, Integer>>alwaysFalse());
+        checkProjectionContainsValue(false, 1, gte100);
+        checkProjectionContainsValue(true, 100, gte100);
     }
 
     /**
@@ -1004,7 +1004,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), "key"))
-                assertEquals(exp, cache(i).peek("key"));
+                assertEquals(exp, peek(cache(i), "key"));
         }
     }
 
@@ -1431,7 +1431,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         boolean passed = false;
 
         for (int i = 0; i < gridCount(); i++)
-            passed |= cache(i).containsKey("key1");
+            passed |= containsKey(cache(i), "key1");
 
         assert passed;
 
@@ -1469,7 +1469,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         boolean passed = false;
 
         for (int i = 0; i < gridCount(); i++)
-            passed |= cache(i).containsKey("key1");
+            passed |= containsKey(cache(i), "key1");
 
         assert passed;
 
@@ -1510,7 +1510,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         boolean passed = false;
 
         for (int i = 0; i < gridCount(); i++)
-            passed |= cache(i).containsKey("key1");
+            passed |= containsKey(cache(i), "key1");
 
         assert passed;
 
@@ -2635,6 +2635,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testKeySetFiltered() throws Exception {
+        if (offheapTiered(cache()))
+            return;
+
         cache().put("key1", 1);
         cache().put("key2", 100);
         cache().put("key3", 101);
@@ -2750,9 +2753,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.clearAll();
 
         assertNull(cache.projection(entryKeyFilterInv).reload("key"));
-        assertEquals((Integer) 1, cache.projection(entryKeyFilter).reload("key"));
+        assertEquals((Integer)1, cache.projection(entryKeyFilter).reload("key"));
 
-        assertEquals((Integer)1, cache.peek("key"));
+        assertEquals((Integer)1, peek(cache, "key"));
     }
 
     /**
@@ -3012,12 +3015,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.peek(key));
+            assertEquals(vals.get(key), peek(cache, key));
 
         cache.clearAll();
 
         for (String key : keys)
-            assertNull(cache.peek(key));
+            assertNull(peek(cache, key));
 
         for (i = 0; i < gridCount(); i++)
             cache(i).clearAll();
@@ -3029,7 +3032,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.peek(key));
+            assertEquals(vals.get(key), peek(cache, key));
 
         String first = F.first(keys);
 
@@ -3038,7 +3041,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.clearAll();
 
-            assertEquals(vals.get(first), cache.peek(first));
+            assertEquals(vals.get(first), peek(cache, first));
 
             cache.unlock(first);
         }
@@ -3050,7 +3053,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.projection(gte100).clear(first);
 
-        assertNotNull(cache.peek(first));
+        assertNotNull(peek(cache, first));
 
         cache.put(first, 101);
 
@@ -3070,7 +3073,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (String key : keys) {
             if (!first.equals(key))
-                assertEquals(vals.get(key), cache.peek(key));
+                assertEquals(vals.get(key), peek(cache, key));
         }
 
         cache().put("key1", 1);
@@ -3156,6 +3159,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEntrySet() throws Exception {
+        if (offheapTiered(cache()))
+            return;
+
         cache().put("key1", 1);
         cache().put("key2", 2);
         cache().put("key3", 3);
@@ -3991,8 +3997,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache1.put("key1", 1);
         cache2.put("key2", 100);
 
-        assertNull(cache1.projection(gte100).peek("key1"));
-        assertEquals((Integer) 100, cache2.projection(gte100).peek("key2"));
+        assertNull(peek(cache1.projection(gte100), "key1"));
+        assertEquals((Integer)100, peek(cache2.projection(gte100), "key2"));
 
         if (txEnabled()) {
             GridCacheTx tx = cache().txStart();
@@ -4000,8 +4006,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals((Integer)1, cache1.replace("key1", 101));
             assertEquals((Integer)100, cache2.replace("key2", 2));
 
-            assertEquals((Integer) 101, cache1.projection(gte100).peek("key1"));
-            assertNull(cache2.projection(gte100).peek("key2"));
+            assertEquals((Integer)101, peek(cache1.projection(gte100), "key1"));
+            assertNull(peek(cache2.projection(gte100), "key2"));
 
             tx.close();
         }
@@ -4093,7 +4099,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Will do near get request.
         cache.reload(key);
 
-        assertEquals((Integer)1, cache.peek(key));
+        assertEquals((Integer)1, peek(cache, key));
     }
 
     /**
@@ -4746,6 +4752,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPrimaryData() throws Exception {
+        if (offheapTiered(cache(0)))
+            return;
+
         final List<String> keys = new ArrayList<>(3);
 
         for (int i = 0; i < 3; i++) {
@@ -4839,6 +4848,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testToMap() throws Exception {
+        if (offheapTiered(cache()))
+            return;
+
         cache().put("key1", 1);
         cache().put("key2", 2);
 
@@ -4863,6 +4875,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         else {
             for (int i = 0; i < gridCount(); i++) {
                 GridCacheContext<String, Integer> ctx = context(i);
+
+                if (offheapTiered(ctx.cache()))
+                    continue;
 
                 int size = 0;
 
@@ -4927,18 +4942,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param exp Expected value.
      * @param key Key.
-     * @param f Filter.
      * @throws Exception If failed.
      */
-    private void checkContainsKey(boolean exp, String key,
-        @Nullable GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+    private void checkContainsKey(boolean exp, String key) throws Exception {
         if (nearEnabled())
-            assertEquals(exp, projection(cache(), f).containsKey(key));
+            assertEquals(exp, cache().containsKey(key));
         else {
             boolean contains = false;
 
             for (int i = 0; i < gridCount(); i++)
-                if (projection(cache(i), f).containsKey(key)) {
+                if (containsKey(cache(i), key)) {
                     contains = true;
 
                     break;
@@ -4950,23 +4963,77 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @param exp Expected value.
+     * @param key Key.
+     * @param f Filter.
+     * @throws Exception If failed.
+     */
+    private void checkProjectionContainsKey(boolean exp, String key,
+        GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+        if (nearEnabled())
+            assertEquals(exp, projection(cache(), f).containsKey(key));
+        else {
+            boolean contains = false;
+
+            for (int i = 0; i < gridCount(); i++) {
+                if (offheapTiered(cache(i)))
+                    return;
+
+                if (projection(cache(i), f).containsKey(key)) {
+                    contains = true;
+
+                    break;
+                }
+            }
+
+            assertEquals("Key: " + key, exp, contains);
+        }
+    }
+
+    /**
+     * @param exp Expected value.
+     * @param val Value.
+     * @throws Exception If failed.
+     */
+    private void checkContainsValue(boolean exp, Integer val) throws Exception {
+        if (nearEnabled())
+            assertEquals(exp, cache().containsValue(val));
+        else {
+            boolean contains = false;
+
+            for (int i = 0; i < gridCount(); i++)
+                if (containsValue(cache(i), val)) {
+                    contains = true;
+
+                    break;
+                }
+
+            assertEquals("Value: " + val, exp, contains);
+        }
+    }
+
+    /**
+     * @param exp Expected value.
      * @param val Value.
      * @param f Filter.
      * @throws Exception If failed.
      */
-    private void checkContainsValue(boolean exp, Integer val,
-        @Nullable GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+    private void checkProjectionContainsValue(boolean exp, Integer val,
+        GridPredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
         if (nearEnabled())
             assertEquals(exp, projection(cache(), f).containsValue(val));
         else {
             boolean contains = false;
 
-            for (int i = 0; i < gridCount(); i++)
+            for (int i = 0; i < gridCount(); i++) {
+                if (offheapTiered(cache(i)))
+                    return;
+
                 if (projection(cache(i), f).containsValue(val)) {
                     contains = true;
 
                     break;
                 }
+            }
 
             assertEquals("Value: " + val, exp, contains);
         }

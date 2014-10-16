@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.service.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -148,5 +150,30 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         finally {
             stopExtraNodes(newNodes);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceProxy() throws Exception {
+        String name = "dummyService";
+
+        Grid g = randomGrid();
+
+        CountDownLatch latch = new CountDownLatch(nodeCount());
+
+        DummyService.exeLatch(name, latch);
+
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        DummyService proxy = g.services().serviceProxy(name, DummyService.class, true);
     }
 }

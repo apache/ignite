@@ -799,51 +799,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testServiceProxy() throws Exception {
-        GridConfiguration cfg = optimize(getConfiguration("g1"));
-
-        try (Grid g1 = G.start(cfg)) {
-            GridServices services = grid().forNode(g1.localNode()).services();
-
-            services.deployNodeSingleton("test", new DummyService()).get();
-
-            services.deployNodeSingleton("test2", new DummyService()).get();
-
-            assertEquals(2,grid().services().deployedServices().size());
-
-            GridService dummySrvc = grid().services().service("test");
-
-            dummySrvc.execute(new GridServiceContext(){
-                @Override public String name() {
-                    return "test";
-                }
-
-                @Override public UUID executionId() {
-                    return grid().localNode().id();
-                }
-
-                @Override public boolean isCancelled() {
-                    return false;
-                }
-
-                @Nullable @Override public String cacheName() {
-                    return "g1";
-                }
-
-                @Nullable @Override public <K> K affinityKey() {
-                    return null;
-                }
-            });
-
-            DummyService dummySrvcProxy = grid().services().serviceProxy("test", DummyService.class, false);
-
-            assertEquals(dummySrvc.getClass(), dummySrvcProxy.getClass());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testDataStructures() throws Exception {
         GridCacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
 
