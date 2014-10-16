@@ -563,6 +563,53 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUnswap() throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        checkUnswap(primaryKey(c));
+
+        checkUnswap(backupKey(c));
+
+        checkUnswap(nearKey(c));
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkUnswap(Integer key) throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).offHeapEntriesCount());
+
+            assertEquals("Unexpected offheap size for grid: " + i, 0, grid(i).cache(null).offHeapAllocatedSize());
+        }
+
+        assertNull(c.peek(key));
+
+        c.put(key, key);
+
+        assertNull(c.peek(key));
+
+        assertEquals(key, c.get(key));
+
+        assertNull(c.peek(key));
+
+        assertTrue(c.removex(key));
+
+        assertNull(c.peek(key));
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).offHeapEntriesCount());
+
+            assertEquals("Unexpected offheap size for grid: " + i, 0, grid(i).cache(null).offHeapAllocatedSize());
+        }
+    }
+
+    /**
      *
      */
     @SuppressWarnings("PublicInnerClass")
