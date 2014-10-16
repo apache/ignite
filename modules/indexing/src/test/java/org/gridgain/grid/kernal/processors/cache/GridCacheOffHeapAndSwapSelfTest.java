@@ -303,7 +303,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
             GridCacheContext<Long, Object> ctx = cache.dht().context();
 
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<Object>>> it = ctx.swap().iterator(part);
+            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<Object>>> it = ctx.swap().iterator(part, true);
 
             assert it != null || vals.isEmpty();
 

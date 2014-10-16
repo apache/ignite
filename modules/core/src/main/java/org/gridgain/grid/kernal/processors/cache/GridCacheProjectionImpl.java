@@ -1193,7 +1193,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws GridException {
-        return cache.promote(key);
+        return cache.promote(key, deserializePortables());
     }
 
     /** {@inheritDoc} */

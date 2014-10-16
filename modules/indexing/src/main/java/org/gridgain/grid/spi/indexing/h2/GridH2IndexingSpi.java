@@ -2433,20 +2433,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         @Override public Object readFromSwap(Object key) throws GridException {
             GridSpiContext ctx = getSpiContext();
 
-            int part = ctx.partition(schema.spaceName, key);
-
-            byte[] keyBytes = gridMarshaller.marshal(key);
-
-            GridCacheSwapEntry swapEntry = ctx.readFromOffheap(schema.swapSpaceName, part, key, keyBytes, valClsLdr);
-
-            if (swapEntry == null) {
-                swapEntry = ctx.readFromSwap(schema.swapSpaceName, new GridSwapKey(key, part, keyBytes), valClsLdr);
-
-                if (swapEntry == null)
-                    return null;
-            }
-
-            return gridMarshaller.unmarshal(swapEntry.valueBytes(), valClsLdr);
+            return ctx.readValueFromOffheapAndSwap(schema.spaceName, key, valClsLdr);
         }
 
         /** {@inheritDoc} */

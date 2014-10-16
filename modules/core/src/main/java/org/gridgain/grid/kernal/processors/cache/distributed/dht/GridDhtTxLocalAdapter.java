@@ -529,7 +529,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param read Read flag.
      * @return Lock future.
      */
-    /** {@inheritDoc} */
     GridFuture<GridCacheReturn<V>> lockAllAsync(
         Collection<GridCacheEntryEx<K, V>> entries,
         List<GridCacheTxEntry<K, V>> writeEntries,
@@ -575,7 +574,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 if (txEntry == null) {
                     GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topVer);
 
-                    cached.unswap(!read);
+                    cached.unswap(!read, read);
 
                     GridCacheTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
 

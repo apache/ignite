@@ -9,15 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.gridgain.grid.cache.*;
+
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+
 /**
- * Provides ability to listen to swap events in cache which is necessary for preloading.
+ * Test with TRANSACTIONAL cache.
  */
-public interface GridCacheSwapListener<K, V> {
-    /**
-     * @param part Partition.
-     * @param key Cache key.
-     * @param keyBytes Key bytes.
-     * @param e Entry.
-     */
-    public void onEntryUnswapped(int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> e);
+public class GridCacheOffHeapTieredEvictionSelfTest extends GridCacheOffHeapTieredEvictionAbstractSelfTest {
+    /** {@inheritDoc} */
+    @SuppressWarnings("RedundantMethodOverride")
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
 }

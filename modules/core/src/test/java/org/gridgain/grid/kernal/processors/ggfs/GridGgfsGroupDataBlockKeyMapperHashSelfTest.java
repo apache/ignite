@@ -67,7 +67,9 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
                     if (first)
                         first = false;
                     else
-                        checkPartition(lastPart, part, partCnt);
+                        assert checkPartition(lastPart, part, partCnt) :
+                            "[fileId = " + fileId + ", i=" + i + ", j=" + j + ", grpSize= " + grpSize +
+                            ", partCnt=" + partCnt + ", lastPart=" + lastPart +", part=" + part + ']';
 
                     firstInGroup = false;
                 }
@@ -97,8 +99,11 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
         Integer part3 = (Integer) mapper.affinityKey(new GridGgfsBlockKey(fileId, null, false,
             (long)Integer.MAX_VALUE + 1)) % partCnt;
 
-        checkPartition(part1, part2, partCnt);
-        checkPartition(part2, part3, partCnt);
+        assert checkPartition(part1, part2, partCnt) :
+            "[fileId = " + fileId + "part1=" + part1 + ", part2=" + part2 + ", partCnt=" + partCnt + ']';
+
+        assert checkPartition(part2, part3, partCnt) :
+            "[fileId = " + fileId + "part1=" + part2 + ", part3=" + part3 + ", partCnt=" + partCnt + ']';
     }
 
     /**
@@ -108,9 +113,8 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
      * @param part Current partition.
      * @param totalParts Total partitions.
      */
-    private void checkPartition(int prevPart, int part, int totalParts) {
-        assert U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1) :
-            "Total=" + totalParts + ", prevPart=" + prevPart + ", part=" + part + ']';
+    private boolean checkPartition(int prevPart, int part, int totalParts) {
+        return U.safeAbs(prevPart - part) == 1 || (part == 0 && prevPart == totalParts - 1);
     }
 }
 
