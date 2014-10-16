@@ -55,7 +55,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<String, GridFutureAdapter<?>> depFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap8<>();
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
@@ -71,6 +71,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
+
     /**
      * Service configuration cache.
      *
@@ -158,7 +159,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             Collection<GridFuture<?>> futs = new ArrayList<>();
 
             for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
-                futs.add(deploy(c, false));
+                futs.add(deploy(c));
 
             // Await for services to deploy.
             for (GridFuture<?> f : futs)
@@ -327,30 +328,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Service configuration.
-     * @return Future.
-     */
-    public GridFuture<?> deploy(GridServiceConfiguration cfg) {
-        return deploy(cfg, true);
-    }
-
-    /**
-     * @param cfg Service configuration.
-     * @param failDups Fail on duplicates.
      * @return Future for deployment.
      */
-    private GridFuture<?> deploy(GridServiceConfiguration cfg, boolean failDups) {
+    public GridFuture<?> deploy(GridServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         validate(cfg);
 
         while (true) {
             try {
-                GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
+                GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(ctx, cfg);
 
-                GridFutureAdapter<?> old;
+                GridServiceDeploymentFuture old;
 
                 if ((old = depFuts.putIfAbsent(cfg.getName(), fut)) != null) {
-                    if (failDups) {
+                    if (!old.configuration().equals(cfg)) {
                         fut.onDone(new GridException("Failed to deploy service " +
                             "(service exists and must be undeployed first): " + cfg.getName()));
 
@@ -370,14 +362,28 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                         if (dep != null) {
-                            // Remove future from local map.
-                            depFuts.remove(cfg.getName());
+                            if (!dep.configuration().equals(cfg)) {
+                                // Remove future from local map.
+                                depFuts.remove(cfg.getName(), fut);
 
-                            if (failDups)
                                 fut.onDone(new GridException("Failed to deploy service " +
-                                    "(service already exists and must be undeployed first): " + cfg.getName()));
+                                    "(service already exists with different configuration): " + cfg.getName()));
+                            }
                             else {
-                                fut.onDone();
+                                for (GridCacheEntry<Object, Object> e : assignCache.entrySetx()) {
+                                    if (e.getKey() instanceof GridServiceAssignmentsKey) {
+                                        GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+
+                                        if (assigns.name().equals(cfg.getName())) {
+                                            // Remove future from local map.
+                                            depFuts.remove(cfg.getName(), fut);
+
+                                            fut.onDone();
+
+                                            break;
+                                        }
+                                    }
+                                }
 
                                 if (!dep.configuration().equals(cfg))
                                     U.warn(log, "Service already deployed with different configuration (will ignore) " +
@@ -478,7 +484,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
+                GridServiceAssignments assigns = (GridServiceAssignments)assignCache.//flagsOn(GridCacheFlag.GET_PRIMARY).
                     get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
@@ -576,8 +582,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)assignCache.get(key);
 
-                GridServiceAssignments assigns = new GridServiceAssignments(cfg.getName(), cfg.getService(),
-                    cfg.getCacheName(), cfg.getAffinityKey(), dep.nodeId(), topVer, cfg.getNodeFilter());
+                GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
 
                 Map<UUID, Integer> cnts = null;
 
@@ -1116,15 +1121,16 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (assigns != null) {
                             svcName.set(assigns.name());
 
-                            if (assigns.nodeId().equals(ctx.localNodeId())) {
-                                GridFutureAdapter<?> fut = depFuts.remove(assigns.name());
+                            redeploy(assigns);
+
+                            GridServiceDeploymentFuture fut = depFuts.get(assigns.name());
+
+                            if (fut != null && fut.configuration().equals(assigns.configuration())) {
+                                depFuts.remove(assigns.name(), fut);
 
                                 // Complete deployment futures once the assignments have been stored in cache.
-                                if (fut != null)
-                                    fut.onDone();
+                                fut.onDone();
                             }
-
-                            redeploy(assigns);
                         }
                         // Handle undeployment.
                         else {
@@ -1201,7 +1207,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private ServiceProxy(final String name, Class<T> svc, final boolean sticky) {
             assert svc.isInterface();
 
-            proxy = (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class[] {svc}, new InvocationHandler() {
+            proxy = (T)Proxy.newProxyInstance(svc.getClassLoader(), new Class[] {svc}, new InvocationHandler() {
                 @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
                     GridNode newRmtNode = getRemoteNode(sticky, name);
 

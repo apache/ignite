@@ -108,11 +108,32 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDuplicateName() throws Exception {
+    public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
         GridFuture<?> fut1 = randomGrid().services().deployClusterSingleton(name, new DummyService());
         GridFuture<?> fut2 = randomGrid().services().deployClusterSingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut1.get();
+
+        info("Finished waiting for service future1: " + name);
+
+        // This must succeed without exception because configuration is the same.
+        fut2.get();
+
+        info("Finished waiting for service future2: " + name);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentConfiguration() throws Exception {
+        String name = "dupService";
+
+        GridFuture<?> fut1 = randomGrid().services().deployClusterSingleton(name, new DummyService());
+        GridFuture<?> fut2 = randomGrid().services().deployNodeSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -123,10 +144,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         try {
             fut2.get();
 
-            fail("Failed to receive duplicate service exception.");
+            fail("Failed to receive mismatching configuration exception.");
         }
         catch (GridException e) {
-            info("Received duplicate service exception: " + e.getMessage());
+            info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
 
