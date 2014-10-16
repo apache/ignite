@@ -10,7 +10,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -256,7 +255,9 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
         }
 
         Map<Integer, String> underlyingMap = delegate.getMap();
+        List<Integer> underlyingMapKeys = new ArrayList<Integer>(underlyingMap.keySet());
 
-        assertTrue(F.eqOrdered(underlyingMap.values(), intList));
+        for (int i = 0; i < CACHE_SIZE; i++)
+            assertEquals("Batch order differs with underlying store: ", underlyingMapKeys.get(i), intList.get(i));
     }
 }
