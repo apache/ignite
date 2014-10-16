@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -396,6 +397,155 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetRemoveObject() throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        checkPutGetRemoveObject(primaryKey(c));
+
+        checkPutGetRemoveObject(backupKey(c));
+
+        checkPutGetRemoveObject(nearKey(c));
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemoveObject(Integer key) throws Exception {
+        GridCache<Integer, TestValue> c = grid(0).cache(null);
+
+        checkValue(key, null);
+
+        TestValue val = new TestValue(new byte[10]);
+
+        assertNull(c.put(key, val));
+
+        checkValue(key, val);
+
+        TestValue val2 = new TestValue(new byte[10]);
+
+        if (portableEnabled()) // TODO: 9271, check return value when fixed.
+            c.put(key, val);
+        else
+            assertEquals(val, c.put(key, val));
+
+        checkValue(key, val2);
+
+        if (portableEnabled()) // TODO: 9271, check return value when fixed.
+            c.remove(key);
+        else
+            assertEquals(val2, c.remove(key));
+
+        checkValue(key, null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            checkPutGetRemoveTx(key, PESSIMISTIC);
+
+            checkPutGetRemoveTx(key, OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param key Key,
+     * @param txConcurrency Transaction concurrency.
+     * @throws Exception If failed.
+     */
+    private void checkPutGetRemoveObjectTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+        GridCache<Integer, TestValue> c = grid(0).cache(null);
+
+        TestValue val = new TestValue(new byte[10]);
+
+        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        assertNull(c.put(key, val));
+
+        tx.commit();
+
+        checkValue(key, val);
+
+        tx = c.txStart(txConcurrency, REPEATABLE_READ);
+
+        assertEquals(val, c.remove(key));
+
+        tx.commit();
+
+        checkValue(key, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockUnlock() throws Exception {
+        if (atomicityMode() == ATOMIC)
+            return;
+
+        GridCache<Integer, TestValue> c = grid(0).cache(null);
+
+        checkLockUnlock(primaryKey(c));
+
+        checkLockUnlock(backupKey(c));
+
+        checkLockUnlock(nearKey(c));
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    private void checkLockUnlock(Integer key) throws Exception {
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        Integer val = key;
+
+        c.put(key, val);
+
+        assertNull(c.peek(key));
+
+        assertTrue(c.lock(key, 0));
+
+        assertTrue(c.isLocked(key));
+
+        c.unlock(key);
+
+        assertFalse(c.isLocked(key));
+
+        assertNull(c.peek(key));
+
+        checkValue(key, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    public void _testLockUnlockFiltered() throws Exception { // TODO: 9288, enable when fixed.
+        if (atomicityMode() == ATOMIC)
+            return;
+
+        GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        Integer key = primaryKey(c);
+        Integer val = key;
+
+        c.put(key, val);
+
+        assertTrue(c.lock(key, 0, new TestEntryPredicate(val)));
+
+        assertTrue(c.isLocked(key));
+
+        c.unlock(key);
+
+        assertFalse(c.isLocked(key));
+
+        assertNull(c.peek(key));
+
+        checkValue(key, val);
+    }
+
+    /**
      * @param key Key.
      * @param val Value.
      * @throws Exception If failed.
@@ -404,17 +554,41 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (int i = 0; i < gridCount(); i++) {
             if (val != null && val.getClass() == byte[].class) {
                 Assert.assertArrayEquals("Unexpected value for grid: " + i,
-                    (byte[]) val,
-                    (byte[]) grid(0).cache(null).get(key));
+                    (byte[])val,
+                    (byte[])grid(i).cache(null).get(key));
             }
             else
-                assertEquals("Unexpected value for grid: " + i, val, grid(0).cache(null).get(key));
+                assertEquals("Unexpected value for grid: " + i, val, grid(i).cache(null).get(key));
         }
     }
 
     /**
      *
      */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestEntryPredicate implements GridPredicate<GridCacheEntry<Integer, Integer>> {
+        /** */
+        private Integer expVal;
+
+        /**
+         * @param expVal Expected value.
+         */
+        TestEntryPredicate(Integer expVal) {
+            this.expVal = expVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(GridCacheEntry<Integer, Integer> e) {
+            assertEquals(expVal, e.peek());
+
+            return true;
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("PublicInnerClass")
     public static class TestValue {
         /** */
         @SuppressWarnings("PublicField")
@@ -432,6 +606,31 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
          */
         public TestValue(byte[] val) {
             this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestValue other = (TestValue)o;
+
+            return Arrays.equals(val, other.val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestValue{" +
+                "val=" + Arrays.toString(val) +
+                '}';
         }
     }
 }

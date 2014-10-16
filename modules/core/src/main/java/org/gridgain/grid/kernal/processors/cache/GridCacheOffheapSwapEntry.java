@@ -15,6 +15,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import static org.gridgain.grid.kernal.processors.cache.GridCacheSwapEntryImpl.*;
+
 /**
  * GridCacheSwapEntry over offheap pointer.
  * <p>
@@ -58,13 +60,13 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         this.ptr = ptr;
 
-        long readPtr = ptr + 16;
+        long readPtr = ptr + VERSION_OFFSET;
 
         boolean verEx = UNSAFE.getByte(readPtr++) != 0;
 
         ver = U.readVersion(readPtr, verEx);
 
-        readPtr += verEx ? 48 : 24;
+        readPtr += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
         valIsByteArr = UNSAFE.getByte(readPtr) != 0;
 
@@ -82,11 +84,11 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
         assert ptr > 0 : ptr;
         assert size > 40 : size;
 
-        ptr += 16; // Skip ttl, expire time.
+        ptr += VERSION_OFFSET; // Skip ttl, expire time.
 
         boolean verEx = UNSAFE.getByte(ptr++) != 0;
 
-        ptr += verEx ? 48 : 24;
+        ptr += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
         assert (ptr + size) > (UNSAFE.getInt(ptr + 1) + ptr + 5);
 
@@ -106,7 +108,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
      * @return Expire time.
      */
     public static long expireTime(long ptr) {
-        return UNSAFE.getLong(ptr + 8);
+        return UNSAFE.getLong(ptr + EXPIRE_TIME_OFFSET);
     }
 
     /**
@@ -114,9 +116,13 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
      * @return Version.
      */
     public static GridCacheVersion version(long ptr) {
-        boolean verEx = UNSAFE.getByte(ptr + 16) != 0;
+        long addr = ptr + VERSION_OFFSET;
 
-        return U.readVersion(ptr + 17, verEx);
+        boolean verEx = UNSAFE.getByte(addr) != 0;
+
+        addr++;
+
+        return U.readVersion(addr, verEx);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +162,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
     /** {@inheritDoc} */
     @Override public long expireTime() {
-        return UNSAFE.getLong(ptr + 8);
+        return UNSAFE.getLong(ptr + EXPIRE_TIME_OFFSET);
     }
 
     /** {@inheritDoc} */

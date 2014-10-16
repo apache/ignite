@@ -727,8 +727,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (!reload && !forcePrimary) {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
 
-            GridCacheVersion obsoleteVer = null;
-
             boolean success = true;
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
@@ -758,8 +756,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
-                                if (obsoleteVer == null)
-                                    obsoleteVer = context().versions().next();
+                                GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
                                     removeIfObsolete(key);

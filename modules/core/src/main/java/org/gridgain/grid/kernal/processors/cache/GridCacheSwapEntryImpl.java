@@ -27,6 +27,21 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     /** */
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
+    /** */
+    static final int EXPIRE_TIME_OFFSET = 8;
+
+    /** */
+    static final int VERSION_OFFSET = 16;
+
+    /** */
+    static final int VERSION_SIZE = 24;
+
+    /** */
+    static final int VERSION_EX_SIZE = 48;
+
+    /** */
+    static final int GUID_SIZE = 24;
+
     /** Value bytes. */
     private ByteBuffer valBytes;
 
@@ -92,7 +107,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
      * @return Expire time.
      */
     public static long expireTime(byte[] bytes) {
-        return UNSAFE.getLong(bytes, BYTE_ARR_OFF + 8);
+        return UNSAFE.getLong(bytes, BYTE_ARR_OFF + EXPIRE_TIME_OFFSET);
     }
 
     /**
@@ -100,7 +115,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
      * @return Version.
      */
     public static GridCacheVersion version(byte[] bytes) {
-        int off = 16; // Skip ttl, expire time.
+        int off = VERSION_OFFSET; // Skip ttl, expire time.
 
         boolean verEx = bytes[off++] != 0;
 
@@ -112,11 +127,11 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
      * @return Value if value is byte array, otherwise {@code null}.
      */
     @Nullable public static byte[] getValueIfByteArray(byte[] bytes) {
-        int off = 16; // Skip ttl, expire time.
+        int off = VERSION_OFFSET; // Skip ttl, expire time.
 
         boolean verEx = bytes[off++] != 0;
 
-        off += verEx ? 48 : 24;
+        off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
         if (bytes[off++] > 0) {
             int size = UNSAFE.getInt(bytes, BYTE_ARR_OFF + off);
@@ -141,11 +156,11 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
     public static int valueOffset(byte[] bytes) {
         assert bytes.length > 40 : bytes.length;
 
-        int off = 16; // Skip ttl, expire time.
+        int off = VERSION_OFFSET; // Skip ttl, expire time.
 
         boolean verEx = bytes[off++] != 0;
 
-        off += verEx ? 48 : 24;
+        off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
         off += 5; // Byte array flag + array size.
 
@@ -222,10 +237,8 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
      * @return Entry bytes.
      */
     public byte[] marshal() {
-        int size = 16 + 1 + 24; // Ttl + expire time + Ex Version flag + Version.
-
-        if (ver instanceof GridCacheVersionEx)
-            size += 24;
+        // Ttl + expire time + Ex Version flag + Version.
+        int size = 16 + 1 + ((ver instanceof GridCacheVersionEx) ? VERSION_EX_SIZE : VERSION_SIZE);
 
         size += 1; // Plain byte array flag.
 
@@ -233,9 +246,9 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         size += len + 4; // Value bytes.
 
-        size += (valClsLdrId == null ? 1 : 24);
+        size += (valClsLdrId == null ? 1 : (1 + GUID_SIZE));
 
-        size += (keyClsLdrId == null ? 1 : 24);
+        size += (keyClsLdrId == null ? 1 : (1 + GUID_SIZE));
 
         byte[] arr = new byte[size];
 
@@ -287,7 +300,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         GridCacheVersion ver = U.readVersion(arr, off, verEx);
 
-        off += verEx ? 48 : 24;
+        off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
         boolean valIsByteArr = UNSAFE.getBoolean(arr, off++);
 
@@ -303,7 +316,7 @@ public class GridCacheSwapEntryImpl<V> implements GridCacheSwapEntry<V> {
 
         GridUuid valClsLdrId = U.readGridUuid(arr, off);
 
-        off += valClsLdrId == null ? 1 : 25;
+        off += valClsLdrId == null ? 1 : (1 + GUID_SIZE);
 
         GridUuid keyClsLdrId = U.readGridUuid(arr, off);
 
