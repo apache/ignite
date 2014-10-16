@@ -67,7 +67,7 @@ public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonA
                         first = false;
                     else
                         assert checkPartition(lastPart, part, partCnt) :
-                            "[fileId = " + fileId + "i=" + i + ", j=" + j + ", grpSize= " + grpSize +
+                            "[fileId = " + fileId + ", i=" + i + ", j=" + j + ", grpSize= " + grpSize +
                             ", partCnt=" + partCnt + ", lastPart=" + lastPart +", part=" + part + ']';
 
                     firstInGroup = false;
