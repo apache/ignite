@@ -240,7 +240,7 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
      * @throws Exception If failed.
      */
     public void testBatchApply() throws Exception {
-        initStore(2);
+        initStore(1);
 
         List<Integer> intList = new ArrayList<>(CACHE_SIZE);
 
@@ -257,6 +257,6 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
 
         Map<Integer, String> underlyingMap = delegate.getMap();
 
-        assertTrue(F.eqOrdered(underlyingMap.values(), intList));
+        assertTrue("Store map key set: " + underlyingMap.keySet(), F.eqOrdered(underlyingMap.keySet(), intList));
     }
 }
