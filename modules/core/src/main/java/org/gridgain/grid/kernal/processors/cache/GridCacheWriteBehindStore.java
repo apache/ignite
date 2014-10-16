@@ -593,7 +593,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
         StoreOperation operation = null;
 
         // Construct a map for underlying store
-        Map<K, V> batch = new HashMap<>(valMap.size());
+        Map<K, V> batch = new LinkedHashMap<>(valMap.size());
 
         for (Map.Entry<K, StatefulValue<V>> e : valMap.entrySet()) {
             if (operation == null)
