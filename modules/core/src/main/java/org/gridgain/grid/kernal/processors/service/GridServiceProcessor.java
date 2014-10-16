@@ -1205,26 +1205,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
                     GridNode newRmtNode = getRemoteNode(sticky, name);
 
-                    try {
-                        return ctx.closure().callAsyncNoFailover(GridClosureCallMode.BALANCE, new Callable<Object>() {
+                    return ctx.closure().callAsyncNoFailover(GridClosureCallMode.BALANCE, new Callable<Object>() {
                                 @Override public Object call() throws Exception {
                                     rmtNode.set(ctx.discovery().node(ctx.localNodeId()));
 
-                                    try {
-                                        return mtd.invoke(ctx.service().service(name), args);
-                                    }
-                                    catch (Throwable t) {
-                                        throw new GridProxyInvocationException(t);
-                                    }
+                                    return mtd.invoke(ctx.service().service(name), args);
                                 }
-                            },
-                            Collections.singleton(newRmtNode),
-                            false
-                        );
-                    }
-                    catch (GridProxyInvocationException e) {
-                        throw e.getCause();
-                    }
+                    }, Collections.singleton(newRmtNode), false);
                 }
             });
         }
@@ -1234,12 +1221,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-
         private GridNode getRemoteNode(boolean sticky, String name) {
             GridNode rmtNodeCurr;
             GridNode newRmtNode;
 
-            do {
+            do { // Repeat if reference to remote node was changed.
                 rmtNodeCurr = rmtNode.get();
 
                 if (sticky && rmtNode != null) { // Check if node still exists.
@@ -1255,7 +1241,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     newRmtNode = getNodeWithService(name);
 
             }
-            while (!rmtNode.compareAndSet(rmtNodeCurr, newRmtNode)); // Repeat if reference was changed.
+            while (!rmtNode.compareAndSet(rmtNodeCurr, newRmtNode));
 
             return newRmtNode;
         }
@@ -1265,7 +1251,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @return Node which has a given service deployed (if any).
          * {@code null} If given service is not deployed to any node.
          */
-
         private GridNode getNodeWithService(String name) {
             Map<UUID, Integer> snapshot = getServiceTopologySnapshot(name);
 
@@ -1314,18 +1299,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          */
         private T getProxy() {
             return proxy;
-        }
-
-        /**
-         * Wrapper for exceptions occurred during the proxy invocation.
-         */
-        private class GridProxyInvocationException extends RuntimeException {
-            /**
-             * @param cause {@code Throwable} that was caused by target service invocation.
-             */
-            private GridProxyInvocationException(Throwable cause) {
-                super(cause.getMessage(), cause);
-            }
         }
     }
 }
