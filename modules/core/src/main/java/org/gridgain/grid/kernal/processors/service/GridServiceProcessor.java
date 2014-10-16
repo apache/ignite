@@ -34,6 +34,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static java.util.Map.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -526,7 +527,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
-        return new ServiceProxy<T>().getProxy(name, svc, sticky);
+        return new ServiceProxy<T>(name, svc, sticky).getProxy();
     }
 
     /**
@@ -1185,32 +1186,146 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Wrapper for making {@link GridService} class proxies.
      */
     private class ServiceProxy<T> implements Serializable {
+        /** Proxy object. */
+        private final T proxy;
+
         /** Remote node to use for proxy invocation. */
-        private UUID rmtNodeId;
+        private final AtomicReference<GridNode> rmtNode = new AtomicReference<>();
 
         /**
-         * @param <T> The type of a target service.
-         * @return The proxy object that delegates invocations to remote service.
+         * @param name Service name.
+         * @param svc Service type class.
+         * @param sticky Whether multi-node request should be done.
          */
         @SuppressWarnings("unchecked")
-        private <T> T getProxy(final String name, Class<T> svc, final boolean sticky) {
-            return (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class[] {svc}, new InvocationHandler() {
+        private ServiceProxy(final String name, Class<T> svc, final boolean sticky) {
+            assert svc.isInterface();
+
+            proxy = (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class[] {svc}, new InvocationHandler() {
                 @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
-                    GridNode rmtNode = null;
+                    GridNode newRmtNode = getRemoteNode(sticky, name);
 
-                    if (sticky && rmtNodeId != null)
-                        rmtNode = ctx.grid().node(rmtNodeId);
+                    try {
+                        return ctx.closure().callAsyncNoFailover(GridClosureCallMode.BALANCE, new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    rmtNode.set(ctx.discovery().node(ctx.localNodeId()));
 
-                    return ctx.closure().callAsyncNoFailover(GridClosureCallMode.BALANCE, new Callable<Object>() {
-                            @Override public Object call() throws Exception {
-                                rmtNodeId = ctx.localNodeId();
-
-                                return mtd.invoke(ctx.service().service(name), args);
-                            }
-                        },
-                        rmtNode == null ? ctx.grid().nodes() : Collections.singletonList(rmtNode), false).get();
+                                    try {
+                                        return mtd.invoke(ctx.service().service(name), args);
+                                    }
+                                    catch (Throwable t) {
+                                        throw new GridProxyInvocationException(t);
+                                    }
+                                }
+                            },
+                            Collections.singleton(newRmtNode),
+                            false
+                        );
+                    }
+                    catch (GridProxyInvocationException e) {
+                        throw e.getCause();
+                    }
                 }
             });
+        }
+
+        /**
+         * @param sticky Whether multi-node request should be done.
+         * @param name Service name.
+         * @return Node with deployed service or {@code null} if there is no such node.
+         */
+
+        private GridNode getRemoteNode(boolean sticky, String name) {
+            GridNode rmtNodeCurr;
+            GridNode newRmtNode;
+
+            do {
+                rmtNodeCurr = rmtNode.get();
+
+                if (sticky && rmtNode != null) { // Check if node still exists.
+                    boolean nodeIsAlive = ctx.discovery().alive(rmtNodeCurr);
+                    boolean srvcIsDeployed = isServiceDeployed(name, rmtNodeCurr.id());
+
+                    if (nodeIsAlive && srvcIsDeployed)
+                        newRmtNode = rmtNodeCurr;
+                    else
+                        newRmtNode = getNodeWithService(name);
+                }
+                else
+                    newRmtNode = getNodeWithService(name);
+
+            }
+            while (!rmtNode.compareAndSet(rmtNodeCurr, newRmtNode)); // Repeat if reference was changed.
+
+            return newRmtNode;
+        }
+
+        /**
+         * @param name Service name.
+         * @return Node which has a given service deployed (if any).
+         * {@code null} If given service is not deployed to any node.
+         */
+
+        private GridNode getNodeWithService(String name) {
+            Map<UUID, Integer> snapshot = getServiceTopologySnapshot(name);
+
+            if (snapshot == null || snapshot.isEmpty())
+                return null;
+
+            for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
+                if (e.getValue() > 0)
+                    return ctx.discovery().node(e.getKey());
+            }
+
+            return null;
+        }
+
+        /**
+         * @param name Service name.
+         * @return Map of number of service instances per node ID.
+         */
+        private Map<UUID, Integer> getServiceTopologySnapshot(String name) {
+            for (GridServiceDescriptor gsd : deployedServices()) {
+                if (gsd.name().equals(name))
+                    return gsd.topologySnapshot();
+            }
+
+            return null;
+        }
+
+        /**
+         * @param name Service name.
+         * @param nodeId ID of a remote node to check.
+         * @return {@code True} If a service with given name was deployed to a node.
+         */
+        private boolean isServiceDeployed(String name, UUID nodeId) {
+            Map<UUID, Integer> snapshot = getServiceTopologySnapshot(name);
+
+            if (snapshot == null)
+                return false;
+
+            Integer deployCnt = snapshot.get(nodeId);
+
+            return deployCnt != null && deployCnt > 0;
+        }
+
+        /**
+         * @return Proxy object for a given instance.
+         */
+        private T getProxy() {
+            return proxy;
+        }
+
+        /**
+         * Wrapper for exceptions occurred during the proxy invocation.
+         */
+        private class GridProxyInvocationException extends RuntimeException {
+            /**
+             * @param cause {@code Throwable} that was caused by target service invocation.
+             */
+            private GridProxyInvocationException(Throwable cause) {
+                super(cause.getMessage(), cause);
+            }
         }
     }
 }

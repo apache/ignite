@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.service;
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -160,11 +159,17 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         Grid g = randomGrid();
 
-        CountDownLatch latch = new CountDownLatch(nodeCount());
+        final int[] cntr = new int[1];
 
-        DummyService.exeLatch(name, latch);
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, new GridIntService(cntr) {
+            @Override public void cancel(GridServiceContext ctx) {
+                // No-op
+            }
 
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, new DummyService());
+            @Override public void execute(GridServiceContext ctx) throws Exception {
+                cntr[0] = 239;
+            }
+        });
 
         info("Deployed service: " + name);
 
@@ -172,8 +177,35 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        GridService proxy = g.services().serviceProxy(name, GridService.class, true);
 
-        DummyService proxy = g.services().serviceProxy(name, DummyService.class, true);
+        proxy.execute(new GridServiceContextImpl(null, null, null, null, null, null));
+
+        assertEquals("Proxy service was not executed", 239, cntr[0]);
+    }
+
+    /**
+     * Class for testing purposes. Used for service proxy checking.
+     */
+    private static class GridIntService implements GridService {
+        /** Array testing purposes. */
+        private final int[] a;
+
+        /**
+         * @param arr Array.
+         */
+        private GridIntService(int[] arr) {
+            a = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(GridServiceContext ctx) {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) throws Exception {
+            a[0] = 239;
+        }
     }
 }
