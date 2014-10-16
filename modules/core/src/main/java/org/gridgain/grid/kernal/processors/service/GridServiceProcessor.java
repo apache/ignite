@@ -30,6 +30,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -525,7 +526,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
-        return new ServiceProxy<T>(name, svc, sticky).getProxy();
+        return new ServiceProxy<T>().getProxy(name, svc, sticky);
     }
 
     /**
@@ -1183,38 +1184,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Wrapper for making {@link GridService} class proxies.
      */
-    private class ServiceProxy<T> {
-        /** Service name. */
-        private final String name;
-
-        /** Sticky. */
-        private final boolean sticky;
-
-        /** Svc. */
-        private final Class<T> svc;
-
+    private class ServiceProxy<T> implements Serializable {
         /** Remote node to use for proxy invocation. */
         private UUID rmtNodeId;
-
-        /**
-         * @param name Service name.
-         * @param svc Service class.
-         * @param sticky Whether to invoke the same remote node..
-         */
-        private ServiceProxy(String name, Class<T> svc, boolean sticky) {
-            this.name = name;
-            this.sticky = sticky;
-            this.svc = svc;
-            rmtNodeId = null;
-        }
 
         /**
          * @param <T> The type of a target service.
          * @return The proxy object that delegates invocations to remote service.
          */
         @SuppressWarnings("unchecked")
-        private <T> T getProxy() {
-            return (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class<?>[] {svc}, new InvocationHandler() {
+        private <T> T getProxy(final String name, Class<T> svc, final boolean sticky) {
+            return (T)Proxy.newProxyInstance(U.gridClassLoader(), new Class[] {svc}, new InvocationHandler() {
                 @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
                     GridNode rmtNode = null;
 
@@ -1228,7 +1208,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 return mtd.invoke(ctx.service().service(name), args);
                             }
                         },
-                        Collections.singletonList(rmtNode), false).get();
+                        rmtNode == null ? ctx.grid().nodes() : Collections.singletonList(rmtNode), false).get();
                 }
             });
         }
