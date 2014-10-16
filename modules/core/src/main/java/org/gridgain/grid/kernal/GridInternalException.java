@@ -12,12 +12,21 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.
  */
 public class GridInternalException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * {@link Externalizable} support.
+     */
+    public GridInternalException() {
+        // No-op.
+    }
 
     /**
      * Creates new internal exception with given error message.

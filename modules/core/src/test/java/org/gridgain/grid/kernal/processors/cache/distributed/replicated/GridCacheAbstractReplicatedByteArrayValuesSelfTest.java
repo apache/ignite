@@ -51,4 +51,19 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheConfiguration offheapTieredCacheConfiguration0() {
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
+
+        cfg.setCacheMode(REPLICATED);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setTxSerializableEnabled(true);
+        cfg.setMemoryMode(OFFHEAP_TIERED);
+        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
+        cfg.setQueryIndexEnabled(false);
+
+        return cfg;
+    }
 }

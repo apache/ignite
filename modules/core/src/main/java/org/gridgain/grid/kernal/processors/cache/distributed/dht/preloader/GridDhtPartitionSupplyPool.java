@@ -238,6 +238,8 @@ class GridDhtPartitionSupplyPool<K, V> {
             // If demander node left grid.
             boolean nodeLeft = false;
 
+            boolean convertPortable = cctx.portableEnabled() && cctx.offheapTiered();
+
             try {
                 // Partition map exchange is finished which means that all near transactions with given
                 // topology version are committed. We can wait for local locks here as it will not take
@@ -259,11 +261,11 @@ class GridDhtPartitionSupplyPool<K, V> {
                         continue;
                     }
 
-                    SwapListener<K, V> swapLsnr = null;
+                    GridCacheEntryInfoCollectSwapListener<K, V> swapLsnr = null;
 
                     try {
                         if (cctx.isSwapOrOffheapEnabled()) {
-                            swapLsnr = new SwapListener<>();
+                            swapLsnr = new GridCacheEntryInfoCollectSwapListener<>(log, cctx);
 
                             cctx.swap().addOffHeapListener(part, swapLsnr);
                             cctx.swap().addSwapListener(part, swapLsnr);
@@ -317,7 +319,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                         if (cctx.isSwapOrOffheapEnabled()) {
                             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> iter =
-                                cctx.swap().iterator(part);
+                                cctx.swap().iterator(part, false);
 
                             // Iterator may be null if space does not exist.
                             if (iter != null) {
@@ -361,11 +363,18 @@ class GridDhtPartitionSupplyPool<K, V> {
                                         GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
 
                                         info.keyBytes(e.getKey());
-                                        info.value(swapEntry.value());
-                                        info.valueBytes(swapEntry.valueBytes());
                                         info.ttl(swapEntry.ttl());
                                         info.expireTime(swapEntry.expireTime());
                                         info.version(swapEntry.version());
+
+                                        if (!swapEntry.valueIsByteArray()) {
+                                            if (convertPortable)
+                                                info.valueBytes(cctx.convertPortableBytes(swapEntry.valueBytes()));
+                                            else
+                                                info.valueBytes(swapEntry.valueBytes());
+                                        }
+                                        else
+                                            info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))
                                             s.addEntry0(part, info, cctx);
@@ -549,43 +558,6 @@ class GridDhtPartitionSupplyPool<K, V> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "DemandMessage [senderId=" + senderId() + ", msg=" + message() + ']';
-        }
-    }
-
-    /**
-     *
-     */
-    private class SwapListener<K, V> implements GridCacheSwapListener<K, V> {
-        /** */
-        private final Map<K, GridCacheEntryInfo<K, V>> swappedEntries =
-            new ConcurrentHashMap8<>();
-
-        /** {@inheritDoc} */
-        @Override public void onEntryUnswapped(int part, K key, byte[] keyBytes,
-            V val, byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime) {
-            if (log.isDebugEnabled())
-                log.debug("Received unswapped event for key: " + key);
-
-            assert key != null;
-            assert val != null;
-
-            GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
-
-            info.keyBytes(keyBytes);
-            info.value(val);
-            info.valueBytes(valBytes);
-            info.ttl(ttl);
-            info.expireTime(expireTime);
-            info.version(ver);
-
-            swappedEntries.put(key, info);
-        }
-
-        /**
-         * @return Entries, received by listener.
-         */
-        Collection<GridCacheEntryInfo<K, V>> entries() {
-            return swappedEntries.values();
         }
     }
 }

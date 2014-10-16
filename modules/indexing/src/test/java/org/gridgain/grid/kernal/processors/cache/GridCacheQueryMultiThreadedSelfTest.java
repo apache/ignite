@@ -762,7 +762,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedScanQuery() throws Exception {
         int threadCnt = 50;
-        final int keyCnt = 100;
+        final int keyCnt = 500;
         final int logMod = 5000;
 
         final Grid g = grid(0);

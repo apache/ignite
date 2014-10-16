@@ -7,15 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.near;
+package org.gridgain.grid.kernal.processors.cache;
+
+import org.gridgain.grid.cache.*;
+
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
- * Tests for byte array values in NEAR-PARTITIONED caches with P2P disabled.
+ *
  */
-public class GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest extends
-    GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
+public class GridCacheOffHeapTieredSelfTest extends GridCacheOffHeapTieredAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean peerClassLoading() {
-        return false;
+    @SuppressWarnings("RedundantMethodOverride")
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }
