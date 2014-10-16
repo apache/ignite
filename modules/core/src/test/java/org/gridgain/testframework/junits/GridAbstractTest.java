@@ -1083,7 +1083,7 @@ public abstract class GridAbstractTest extends TestCase {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            return new URLClassLoader(new URL[]{new URL(path)}, U.gridClassLoader());
+            return new URLClassLoader(new URL[] {new URL(path.replaceAll("\\\\", "/"))}, U.gridClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL: " + path, e);

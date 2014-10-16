@@ -64,7 +64,7 @@ import java.util.concurrent.*;
  * @see GridCacheDataStructures#removeQueue(String)
  * @see GridCacheDataStructures#removeQueue(String, int)
  */
-public interface GridCacheQueue<T> extends  BlockingQueue<T> {
+public interface GridCacheQueue<T> extends BlockingQueue<T> {
     /**
      * Gets queue name.
      *
