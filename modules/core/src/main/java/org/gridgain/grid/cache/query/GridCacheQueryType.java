@@ -9,17 +9,30 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.gridgain.grid.events.*;
+
 /**
- * TODO
+ * Cache query type.
+ * <p>
+ * Used in {@link GridCacheQueryExecutedEvent} and {@link GridCacheQueryReadEvent}
+ * to identify the type of query for which an event was fired.
+ *
+ * @see GridCacheQueryExecutedEvent#queryType()
+ * @see GridCacheQueryReadEvent#queryType()
  */
 public enum GridCacheQueryType {
+    /** SQL query. */
     SQL,
 
+    /** SQL fields query. */
     SQL_FIELDS,
 
+    /** Full text query. */
     FULL_TEXT,
 
+    /** Scan query. */
     SCAN,
 
+    /** Continuous query. */
     CONTINUOUS
 }
