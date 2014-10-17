@@ -212,7 +212,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.isEnterprise()) {
+                if (ctx.secureSession().enabled()) {
                     try {
                         res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
                     }
