@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.service;
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -187,7 +188,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * Class for testing purposes. Used for service proxy checking.
      */
-    private static class GridIntService implements GridService {
+    private static class GridIntService implements GridService, Serializable{
         /** Array testing purposes. */
         private final int[] a;
 
