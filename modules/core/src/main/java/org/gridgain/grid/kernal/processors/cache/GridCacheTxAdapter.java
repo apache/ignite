@@ -1132,6 +1132,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*unmarshal*/true,
                         /*metrics*/metrics,
                         /*event*/recordEvt,
+                        /*temporary*/true,
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
                         resolveTaskName(),
@@ -1148,7 +1149,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 
-                return F.t(op, val, null);
+                return F.t(op, cctx.<V>unwrapTemporary(val), null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;

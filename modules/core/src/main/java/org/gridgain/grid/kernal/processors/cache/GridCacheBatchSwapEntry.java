@@ -12,15 +12,12 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Entry for batch swap operations.
  */
-public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
     /** Key. */
     private K key;
 
@@ -31,18 +28,10 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
     private int part;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridCacheBatchSwapEntry() {
-        // No-op.
-    }
-
-    /**
      * Creates batch swap entry.
      *
      * @param key Key.
      * @param keyBytes Key bytes.
-     * @param keyHash Key hash code.
      * @param part Partition id.
      * @param valBytes Value bytes.
      * @param valIsByteArr Whether value is byte array.
@@ -52,9 +41,17 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
      * @param keyClsLdrId Key class loader ID.
      * @param valClsLdrId Optional value class loader ID.
      */
-    public GridCacheBatchSwapEntry(K key, byte[] keyBytes, int keyHash, int part, byte[] valBytes, boolean valIsByteArr,
-        GridCacheVersion ver, long ttl, long expireTime, GridUuid keyClsLdrId, @Nullable GridUuid valClsLdrId) {
-        super(keyHash, valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
+    public GridCacheBatchSwapEntry(K key,
+        byte[] keyBytes,
+        int part,
+        ByteBuffer valBytes,
+        boolean valIsByteArr,
+        GridCacheVersion ver,
+        long ttl,
+        long expireTime,
+        GridUuid keyClsLdrId,
+        @Nullable GridUuid valClsLdrId) {
+        super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;
         this.keyBytes = keyBytes;

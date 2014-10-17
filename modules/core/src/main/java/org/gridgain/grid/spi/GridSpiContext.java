@@ -363,6 +363,7 @@ public interface GridSpiContext {
      * Gets collection of authenticated subjects together with their permissions.
      *
      * @return Collection of authenticated subjects.
+     * @throws GridException If any exception occurs.
      */
     public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
 
@@ -371,6 +372,19 @@ public interface GridSpiContext {
      *
      * @param subjId Subject ID.
      * @return Authorized security subject.
+     * @throws GridException If any exception occurs.
      */
     public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
+
+    /**
+     * Reads swapped cache value from off-heap and swap.
+     *
+     * @param spaceName Off-heap space name.
+     * @param key Key.
+     * @param ldr Class loader for unmarshalling.
+     * @return Value.
+     * @throws GridException If any exception occurs.
+     */
+    @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
+        @Nullable ClassLoader ldr) throws GridException;
 }

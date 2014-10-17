@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
@@ -152,22 +151,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * Reads value from swap.
      *
      * @param spaceName Space name.
-     * @param key Key.
-     * @param ldr Class loader (optional).
-     * @return Value.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T read(@Nullable String spaceName, Object key, @Nullable ClassLoader ldr) throws GridException {
-        assert key != null;
-
-        return unmarshal(read(spaceName, new GridSwapKey(key), ldr), ldr);
-    }
-
-    /**
-     * Reads value from swap.
-     *
-     * @param spaceName Space name.
      * @param key Swap key.
      * @param ldr Class loader (optional).
      * @return Value.
@@ -208,17 +191,12 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * Writes batch to swap.
      *
      * @param spaceName Space name.
-     * @param swapped Swapped entries.
+     * @param batch Swapped entries.
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public <K, V> void writeAll(String spaceName, Iterable<GridCacheBatchSwapEntry<K, V>> swapped,
+    public <K, V> void writeAll(String spaceName, Map<GridSwapKey, byte[]> batch,
         @Nullable ClassLoader ldr) throws GridException {
-        Map<GridSwapKey, byte[]> batch = new LinkedHashMap<>();
-
-        for (GridCacheBatchSwapEntry entry : swapped)
-            batch.put(new GridSwapKey(entry.key(), entry.partition(), entry.keyBytes()), marshal(entry));
-
         getSpi().storeAll(spaceName, batch, context(ldr));
     }
 

@@ -128,6 +128,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Task name hash. */
     private final int taskNameHash;
 
+    /** Map time. */
+    private volatile long mapTime;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -277,6 +280,15 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
+    @Override public void checkTimeout(long timeout) {
+        long mapTime0 = mapTime;
+
+        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
+            onDone(new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
+                "(consider increasing networkTimeout configuration property)."));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean trackable() {
         return true;
     }
@@ -411,6 +423,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             topVer = snapshot.topologyVersion();
 
+            mapTime = U.currentTimeMillis();
+
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
         }
@@ -422,8 +436,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         finally {
             cache.topology().readUnlock();
         }
-
-        assert snapshot != null;
 
         map0(snapshot, keys, remap, oldNodeId);
     }

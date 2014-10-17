@@ -286,6 +286,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @return Collection of pending atomic futures.
+     */
+    public Collection<GridCacheAtomicFuture<K, ?>> atomicFutures() {
+        return atomicFuts.values();
+    }
+
+    /**
      * Gets future by given future ID.
      *
      * @param futVer Future ID.

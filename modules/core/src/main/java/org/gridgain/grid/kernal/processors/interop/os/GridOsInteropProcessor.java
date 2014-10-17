@@ -32,6 +32,11 @@ public class GridOsInteropProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
+    @Override public long environmentPointer() {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
     @Override public String gridName() {
         throw new UnsupportedOperationException(ERR_MSG);
     }
