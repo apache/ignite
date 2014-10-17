@@ -1573,7 +1573,7 @@ public abstract class GridUtils {
      * @return List of all known local IPs (empty list if no addresses available).
      */
     public static synchronized Collection<String> allLocalIps() {
-        Collection<String> ips = new HashSet<>(4);
+        List<String> ips = new ArrayList<>(4);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1583,10 +1583,14 @@ public abstract class GridUtils {
                     if (!itf.isLoopback()) {
                         Enumeration<InetAddress> addrs = itf.getInetAddresses();
 
-                        if (addrs != null)
-                            for (InetAddress addr : asIterable(addrs))
-                                if (!addr.isLoopbackAddress())
-                                    ips.add(addr.getHostAddress());
+                        if (addrs != null) {
+                            for (InetAddress addr : asIterable(addrs)) {
+                                String hostAddr = addr.getHostAddress();
+
+                                if (!addr.isLoopbackAddress() && !ips.contains(hostAddr))
+                                    ips.add(hostAddr);
+                            }
+                        }
                     }
                 }
             }
@@ -1594,6 +1598,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(ips);
 
         return ips;
     }
@@ -1614,7 +1620,7 @@ public abstract class GridUtils {
      *      if no MACs could be found.
      */
     public static synchronized Collection<String> allLocalMACs() {
-        Collection<String> macs = new HashSet<>(3);
+        List<String> macs = new ArrayList<>(3);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1627,7 +1633,8 @@ public abstract class GridUtils {
                     if (hwAddr != null && hwAddr.length > 0) {
                         String mac = byteArray2HexString(hwAddr);
 
-                        macs.add(mac);
+                        if (!macs.contains(mac))
+                            macs.add(mac);
                     }
                 }
             }
@@ -1635,6 +1642,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(macs);
 
         return macs;
     }

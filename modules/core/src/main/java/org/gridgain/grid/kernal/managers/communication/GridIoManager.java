@@ -61,6 +61,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
 
+    /** Disconnect listeners. */
+    private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
+
     /** Public pool. */
     private ExecutorService pubPool;
 
@@ -176,6 +179,11 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                         msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
                         "which is illegal - make sure to send messages only via GridProjection API.");
                 }
+            }
+
+            @Override public void onDisconnected(UUID nodeId) {
+                for (GridDisconnectListener lsnr : disconnectLsnrs)
+                    lsnr.onNodeDisconnected(nodeId);
             }
         });
 
@@ -1251,6 +1259,13 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener((Object)topic, lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to add.
+     */
+    public void addDisconnectListener(GridDisconnectListener lsnr) {
+        disconnectLsnrs.add(lsnr);
     }
 
     /**
