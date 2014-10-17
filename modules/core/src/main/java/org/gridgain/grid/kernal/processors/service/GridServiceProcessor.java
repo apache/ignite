@@ -1226,7 +1226,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BALANCE,
-                            new ProxyCallable(),
+                            new ProxyCallable(mtd, ctx.service().service(name),args).instance,
                             Collections.singleton(newRmtNode),
                             false
                         ).get();
@@ -1362,13 +1362,30 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
+     * Callable proxy class.
      */
     private static class ProxyCallable implements Callable<Object> {
+        /** Instance. */
+        private static Callable<?> instance;
+
+        /** Method. */
+        private Method mtd;
+
+        /** Service. */
+        private Object svc;
+
+        /** Args. */
+        private Object[] args;
+
+        private ProxyCallable(Method mtd, Object svc, Object[] args) {
+            this.mtd = mtd;
+            this.svc = svc;
+            this.args = args;
+        }
+
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-           return 239;
-           // return mtd.invoke(ctx.service().service(name), args);
+           return mtd.invoke(svc, args);
         }
     }
 }

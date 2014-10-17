@@ -160,17 +160,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         Grid g = randomGrid();
 
+        startExtraNodes(2);
+
         final int[] cntr = new int[1];
 
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, new GridIntService(cntr) {
-            @Override public void cancel(GridServiceContext ctx) {
-                // No-op
-            }
-
-            @Override public void execute(GridServiceContext ctx) throws Exception {
-                cntr[0] = 239;
-            }
-        });
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, GridIntService.instance);
 
         info("Deployed service: " + name);
 
@@ -180,17 +174,18 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         GridService proxy = g.services().serviceProxy(name, GridService.class, true);
 
-        proxy.execute(new GridServiceContextImpl(null, null, null, null, null, null));
-
         assertEquals("Proxy service was not executed", 239, cntr[0]);
     }
 
     /**
      * Class for testing purposes. Used for service proxy checking.
      */
-    private static class GridIntService implements GridService, Serializable{
+    static class GridIntService implements GridService, Serializable {
         /** Array testing purposes. */
-        private final int[] a;
+        private int[] a;
+
+        /** Instance. */
+        private static GridIntService instance = new GridIntService(new int[] {1, 2, 3});
 
         /**
          * @param arr Array.
