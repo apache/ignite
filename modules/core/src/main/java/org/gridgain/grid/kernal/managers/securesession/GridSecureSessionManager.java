@@ -22,13 +22,6 @@ import java.util.*;
  */
 public interface GridSecureSessionManager extends GridManager {
     /**
-     * Checks if security check is enabled.
-     *
-     * @return {@code True} if secure session check is enabled.
-     */
-    public boolean securityEnabled();
-
-    /**
      * @param subjType Subject type.
      * @param subjId Subject ID.
      * @param tok Token.
