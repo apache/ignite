@@ -533,7 +533,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
-        return new ServiceProxy<T>(name, svc, sticky).getProxy();
+        return new ServiceProxy<>(name, svc, sticky).getProxy();
     }
 
     /**
@@ -1211,13 +1211,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
                     GridNode newRmtNode = getRemoteNode(sticky, name);
 
+                    if (newRmtNode == null)
+                        throw new GridException("There are no deployed instances for service: " + name);
+
                     return ctx.closure().callAsyncNoFailover(GridClosureCallMode.BALANCE, new Callable<Object>() {
                                 @Override public Object call() throws Exception {
-                                    rmtNode.set(ctx.discovery().node(ctx.localNodeId()));
-
                                     return mtd.invoke(ctx.service().service(name), args);
                                 }
-                    }, Collections.singleton(newRmtNode), false);
+                    }, Collections.singleton(newRmtNode), false).get();
                 }
             });
         }
@@ -1241,10 +1242,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     if (nodeIsAlive && srvcIsDeployed)
                         newRmtNode = rmtNodeCurr;
                     else
-                        newRmtNode = getNodeWithService(name);
+                        newRmtNode = getRandomNodeWithService(name);
                 }
                 else
-                    newRmtNode = getNodeWithService(name);
+                    newRmtNode = getRandomNodeWithService(name);
 
             }
             while (!rmtNode.compareAndSet(rmtNodeCurr, newRmtNode));
@@ -1254,21 +1255,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         /**
          * @param name Service name.
-         * @return Node which has a given service deployed (if any).
-         * {@code null} If given service is not deployed to any node.
+         * @return Random node which has a given service deployed (if any).
+         *         {@code null} If given service is not deployed to any node.
          */
-        private GridNode getNodeWithService(String name) {
+        private GridNode getRandomNodeWithService(String name) {
             Map<UUID, Integer> snapshot = getServiceTopologySnapshot(name);
 
             if (snapshot == null || snapshot.isEmpty())
                 return null;
 
-            for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
-                if (e.getValue() > 0)
-                    return ctx.discovery().node(e.getKey());
-            }
+            final List<UUID> nodesList = new ArrayList<>();
 
-            return null;
+            F.forEach(snapshot.entrySet(),
+                new CI1<Entry<UUID, Integer>>() {
+                    @Override public void apply(Entry<UUID, Integer> entry) {
+                        nodesList.add(entry.getKey());
+                    }
+                },
+                new P1<Entry<UUID, Integer>>() {
+                    @Override public boolean apply(Entry<UUID, Integer> entry) {
+                        Integer val = entry.getValue();
+                        return val != null && val > 0;
+                    }
+                });
+
+            if(nodesList.isEmpty())
+                return null;
+
+            int randomIndex = (int) (nodesList.size() * Math.random());
+
+            return ctx.discovery().node(nodesList.get(randomIndex));
         }
 
         /**
