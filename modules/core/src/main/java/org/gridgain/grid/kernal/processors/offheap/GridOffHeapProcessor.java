@@ -17,6 +17,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -142,6 +143,41 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets value pointer from offheap space for the given key. While pointer is in use eviction is
+     * disabled for corresponding entry. Eviction for entry is enabled when {@link #put} or
+     * {@link #enableEviction} is called.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @return Tuple where first value is pointer and second is value size.
+     * @throws GridException If failed.
+     */
+    @Nullable public GridBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, Object key,
+        byte[] keyBytes) throws GridException {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? null : m.valuePointer(part, U.hash(key), keyBytes(key, keyBytes));
+    }
+
+    /**
+     * Enables eviction for entry after {@link #valuePointer} was called.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @throws GridException If failed.
+     */
+    public void enableEviction(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws GridException {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        if (m != null)
+            m.enableEviction(part, U.hash(key), keyBytes(key, keyBytes));
+    }
+
+    /**
      * Gets value from offheap space for the given key.
      *
      * @param spaceName Space name.
@@ -225,6 +261,22 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? new GridEmptyCloseableIterator<GridBiTuple<byte[], byte[]>>() : m.iterator();
+    }
+
+    /**
+     * Gets iterator over contents of the given space.
+     *
+     * @param spaceName Space name.
+     * @param c Key/value closure.
+     * @return Iterator.
+     */
+    public <T> GridCloseableIterator<T> iterator(@Nullable String spaceName,
+        CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+        assert c != null;
+
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? new GridEmptyCloseableIterator<T>() : m.iterator(c);
     }
 
     /**

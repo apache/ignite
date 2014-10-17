@@ -331,8 +331,10 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
 
             if (entry != null) {
                 assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore, entry.hasValue());
-                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null, entry.rawGetOrUnmarshal());
+                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
+                    entry.hasValue());
+                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
+                    entry.rawGetOrUnmarshal(false));
             }
 
             if (cache.isNear()) {
@@ -344,7 +346,8 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
                     assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                         entry.hasValue());
-                    assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null, entry.rawGetOrUnmarshal());
+                    assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
+                        entry.rawGetOrUnmarshal(false));
                 }
             }
         }
