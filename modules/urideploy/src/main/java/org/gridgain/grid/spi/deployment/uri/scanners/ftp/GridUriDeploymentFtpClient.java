@@ -60,9 +60,8 @@ class GridUriDeploymentFtpClient {
 
         String dirName = rmtFile.getParentDirectory();
 
-        if (dirName.length() == 0 || '/' != dirName.charAt(dirName.length() - 1)) {
+        if (dirName.length() == 0 || '/' != dirName.charAt(dirName.length() - 1))
             dirName += '/';
-        }
 
         String srcPath = dirName + rmtFile.getName();
 
@@ -124,9 +123,8 @@ class GridUriDeploymentFtpClient {
      * @throws GridUriDeploymentFtpException Thrown in case of any error.
      */
     void close() throws GridUriDeploymentFtpException {
-        if (!isConnected) {
+        if (!isConnected)
             return;
-        }
 
         assert ftp != null;
 
@@ -148,9 +146,8 @@ class GridUriDeploymentFtpClient {
                 }
                 catch (IOException | FTPException e1) {
                     // Don't loose the initial exception.
-                    if (e == null) {
+                    if (e == null)
                         e = e1;
-                    }
                 }
             }
         }
@@ -159,9 +156,8 @@ class GridUriDeploymentFtpClient {
 
         isConnected = false;
 
-        if (e != null) {
+        if (e != null)
             throw new GridUriDeploymentFtpException("Failed to close FTP client.", e);
-        }
     }
 
     /**

@@ -94,9 +94,8 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
@@ -175,9 +174,8 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }

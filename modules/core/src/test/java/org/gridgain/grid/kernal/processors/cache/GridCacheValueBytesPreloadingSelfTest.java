@@ -113,10 +113,8 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
 
         byte[] val = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 
-        for (int i = 0; i < keyCnt; i++) {
-
+        for (int i = 0; i < keyCnt; i++)
             grid(0).cache(null).put(String.valueOf(i), val);
-        }
 
         for (int i = 0; i < keyCnt; i++)
             grid(0).cache(null).get(String.valueOf(i));

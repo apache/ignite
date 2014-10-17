@@ -538,11 +538,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     GridNearCacheEntry<K, V> nearCached = null;
 
-                                    if (updateNearCache())
+                                    if (updateNearCache(txEntry.key(), topVer))
                                         nearCached = cctx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true);
+                                        txEntry.cached().unswap(true, false);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         false);

@@ -25,27 +25,11 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If test failed.
-     */
-    public void testEnt() throws Exception {
-        testNotifier(true);
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testOs() throws Exception {
-        testNotifier(false);
-    }
-
-    /**
-     * @param ent Enterprise flag.
      * @throws Exception If failed.
      */
-    private void testNotifier(boolean ent) throws Exception {
-        String site = "www.gridgain." + (ent ? "com" : "org");
-
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, "x.x.x", site, TEST_GATEWAY, false);
+    public void testNotifier() throws Exception {
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, GridProperties.get("gridgain.version"),
+            GridKernal.SITE, TEST_GATEWAY, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 

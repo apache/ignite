@@ -92,6 +92,13 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /**
+     * @return Cache context.
+     */
+    public GridCacheContext context() {
+        return ctx;
+    }
+
+    /**
      * @return Proxy delegate.
      */
     public GridCacheProjectionEx<K, V> delegate() {

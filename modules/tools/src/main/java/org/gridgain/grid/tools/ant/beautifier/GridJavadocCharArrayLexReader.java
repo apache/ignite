@@ -62,18 +62,16 @@ class GridJavadocCharArrayLexReader {
      * Skips next character in the buffer.
      */
     void skip() {
-        if (index < chars.length) {
+        if (index < chars.length)
             index++;
-        }
     }
 
     /**
      * Puts back last read character.
      */
     void back() {
-        if (index > 0) {
+        if (index > 0)
             index--;
-        }
     }
 
     /**

@@ -1138,10 +1138,15 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         GridCache<Integer, Object> cache = grid.cache(null);
 
         Object val = new Object() {
+            @GridCacheQuerySqlField
+            private int field1 = 10;
+
             @Override public String toString() {
                 return "Test anonymous object.";
             }
         };
+
+        assertTrue(val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$16"));
 
         assertTrue(cache.putx(1, val));
 
@@ -1152,6 +1157,20 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         Collection<Map.Entry<Integer, Object>> res = q.execute().get();
 
         assertEquals(1, res.size());
+
+        GridCacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
+            "select field1 from GridCacheAbstractQuerySelfTest_16");
+
+        fieldsQry.enableDedup(true);
+
+        Collection<List<?>> fieldsRes = fieldsQry.execute().get();
+
+        assertEquals(1, fieldsRes.size());
+
+        List<?> fields =  F.first(fieldsRes);
+
+        assertEquals(1, fields.size());
+        assertEquals(10, fields.get(0));
     }
 
     /**
@@ -1697,6 +1716,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         @GridCacheQuerySqlField
         private int salary;
 
+        /** */
+        @GridCacheQuerySqlField(index = true)
+        private int fake$Field;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -1817,13 +1840,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
 
             ObjectValue other = (ObjectValue)o;
 
@@ -1868,13 +1889,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
 
             ObjectValueOther other = (ObjectValueOther)o;
 

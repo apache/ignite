@@ -961,12 +961,10 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     protected String getDefaultCheckpointPath(GridMarshaller marshaller) {
-        if (marshaller instanceof GridJdkMarshaller) {
+        if (marshaller instanceof GridJdkMarshaller)
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
-        }
-        else {
+        else
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
-        }
     }
 
     /**
@@ -1085,7 +1083,7 @@ public abstract class GridAbstractTest extends TestCase {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            return new URLClassLoader(new URL[]{new URL(path)}, U.gridClassLoader());
+            return new URLClassLoader(new URL[] {new URL(path.replaceAll("\\\\", "/"))}, U.gridClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL: " + path, e);

@@ -25,12 +25,12 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
     private int keys;
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public GridHadoopHashMultimap(GridHadoopJob job, GridUnsafeMemory mem, int cap) {
-        super(job, mem);
+    public GridHadoopHashMultimap(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+        super(jobInfo, mem);
 
         assert U.isPow2(cap) : cap;
 

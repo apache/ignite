@@ -152,9 +152,8 @@ public class GridEmbeddedHttpServer {
 
             httpSrv = httpsSrv;
         }
-        else {
+        else
             httpSrv = HttpServer.create(addrToBind, 0);
-        }
 
         GridEmbeddedHttpServer embeddedHttpSrv = new GridEmbeddedHttpServer();
 

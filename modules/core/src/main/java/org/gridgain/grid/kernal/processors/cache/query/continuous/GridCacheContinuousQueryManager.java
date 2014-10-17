@@ -100,6 +100,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         if (F.isEmpty(lsnrCol))
             return;
 
+        oldVal = cctx.unwrapTemporary(oldVal);
+
         GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
             cctx, e.wrap(false), key, newVal, newBytes, oldVal, oldBytes);
 

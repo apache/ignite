@@ -243,6 +243,11 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                         ((GridTcpNioCommunicationClient)rmv).session() == ses &&
                         clients.remove(id, rmv))
                         rmv.forceClose();
+
+                    GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
+
+                    if (lsnr0 != null)
+                        lsnr0.onDisconnected(id);
                 }
             }
 
@@ -393,7 +398,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int minBufferedMsgCnt = Integer.getInteger(GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
 
     /** Buffer size ratio. */
-    private double bufSizeRatio = X.parseDouble(X.getSystemOrEnv(GG_COMMUNICATION_BUF_RESIZE_RATIO), 0.8);
+    private double bufSizeRatio = GridSystemProperties.getDouble(GG_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
 
     /** Dual socket connection flag. */
     private boolean dualSockConn = DFLT_DUAL_SOCKET_CONNECTION;

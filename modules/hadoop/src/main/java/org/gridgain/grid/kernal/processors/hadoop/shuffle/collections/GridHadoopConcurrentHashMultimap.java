@@ -44,12 +44,12 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     private final AtomicInteger inputs = new AtomicInteger();
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public GridHadoopConcurrentHashMultimap(GridHadoopJob job, GridUnsafeMemory mem, int cap) {
-        super(job, mem);
+    public GridHadoopConcurrentHashMultimap(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+        super(jobInfo, mem);
 
         assert U.isPow2(cap);
 

@@ -30,4 +30,11 @@ public interface GridCommunicationListener<T extends Serializable> {
      * @param msgC Runnable to call when message processing finished.
      */
     public void onMessage(UUID nodeId, T msg, GridRunnable msgC);
+
+    /**
+     * Callback invoked when connection with remote node is lost.
+     *
+     * @param nodeId Node ID.
+     */
+    public void onDisconnected(UUID nodeId);
 }

@@ -50,10 +50,33 @@
         <!-- Third party dependencies -->
 
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
         </dependency>
-
         <!-- Third party dependencies -->
     </dependencies>
 
@@ -69,7 +92,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration combine.self="override">
-                            <excludeArtifactIds>gridgain-core</excludeArtifactIds>
+                            <excludeArtifactIds>gridgain-core,jdk8-backport</excludeArtifactIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>

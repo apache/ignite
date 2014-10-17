@@ -341,9 +341,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 log.debug("Will preload key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
-        else if (locPart.state() != OWNING) {
+        else if (locPart.state() != OWNING)
             invalidParts.add(part);
-        }
         else {
             if (log.isDebugEnabled())
                 log.debug("Will not preload key (local partition is not MOVING) [cacheName=" + cctx.name() +

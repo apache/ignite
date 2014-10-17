@@ -177,9 +177,8 @@ public final class GridTestIoUtils {
      * @throws IOException If failed to close resource.
      */
     private static void close(Closeable c) throws IOException {
-        if (c != null) {
+        if (c != null)
             c.close();
-        }
     }
 
     /**

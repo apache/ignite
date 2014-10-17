@@ -122,9 +122,8 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
 
         cls.add(new ReducerTestClosure(true)); // Fast closure.
 
-        for (int i = 1; i < size; i++) {
+        for (int i = 1; i < size; i++)
             cls.add(new ReducerTestClosure(false)); // Normal closures.
-        }
 
         return cls;
     }

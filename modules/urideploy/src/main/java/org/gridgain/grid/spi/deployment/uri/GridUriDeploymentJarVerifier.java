@@ -141,26 +141,23 @@ final class GridUriDeploymentJarVerifier {
             Manifest manifest = jin.getManifest();
 
             // Manifest must be included in signed GAR file.
-            if (manifest == null) {
+            if (manifest == null)
                 return pubKey == null;
-            }
 
             Set<String> manifestFiles = getSignedFiles(manifest);
 
             JarEntry jarEntry;
 
             while((jarEntry = jin.getNextJarEntry()) != null) {
-                if (jarEntry.isDirectory()) {
+                if (jarEntry.isDirectory())
                     continue;
-                }
 
                 // Verify by reading the file if altered.
                 // Will return quietly if no problem.
                 verifyDigestsImplicitly(jin);
 
-                if (verifyEntry(jarEntry, manifest, pubKey, allSigned, true) == false) {
+                if (verifyEntry(jarEntry, manifest, pubKey, allSigned, true) == false)
                     return false;
-                }
 
                 manifestFiles.remove(jarEntry.getName());
             }
@@ -168,9 +165,8 @@ final class GridUriDeploymentJarVerifier {
             return manifestFiles.size() <= 0;
         }
         catch (SecurityException e) {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Got security error (ignoring): " + e.getMessage());
-            }
         }
         finally {
             U.close(jin, log);
@@ -204,9 +200,8 @@ final class GridUriDeploymentJarVerifier {
             Manifest manifest = jarFile.getManifest();
 
             // Manifest must be included in signed GAR file.
-            if (manifest == null) {
+            if (manifest == null)
                 return pubKey == null;
-            }
 
             Set<String> manifestFiles = getSignedFiles(manifest);
 
@@ -215,17 +210,15 @@ final class GridUriDeploymentJarVerifier {
             while (entries.hasMoreElements()) {
                 JarEntry jarEntry = entries.nextElement();
 
-                if (jarEntry.isDirectory()) {
+                if (jarEntry.isDirectory())
                     continue;
-                }
 
                 // Verify by reading the file if altered.
                 // Will return quietly if no problem.
                 verifyDigestsImplicitly(jarFile.getInputStream(jarEntry));
 
-                if (verifyEntry(jarEntry, manifest, pubKey, allSigned, false) == false) {
+                if (verifyEntry(jarEntry, manifest, pubKey, allSigned, false) == false)
                     return false;
-                }
 
                 manifestFiles.remove(jarEntry.getName());
             }
@@ -233,9 +226,8 @@ final class GridUriDeploymentJarVerifier {
             return manifestFiles.size() <= 0;
         }
         catch (SecurityException e) {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Got security error (ignoring): " + e.getMessage());
-            }
         }
         finally {
             U.close(jarFile, log);
@@ -270,14 +262,12 @@ final class GridUriDeploymentJarVerifier {
 
         // Check that entry name contains in manifest file.
         if (manifest.getAttributes(entryName) != null || manifest.getAttributes("./" + entryName) != null ||
-            manifest.getAttributes('/' + entryName) != null) {
+            manifest.getAttributes('/' + entryName) != null)
             inManifest = true;
-        }
 
         // Don't ignore files not listed in manifest and META-INF directory.
-        if (allSigned == true && inManifest == false && entryName.toUpperCase().startsWith("META-INF/") == false) {
+        if (allSigned == true && inManifest == false && entryName.toUpperCase().startsWith("META-INF/") == false)
             return false;
-        }
 
         // Looking at entries in manifest file.
         if (inManifest) {
@@ -285,9 +275,8 @@ final class GridUriDeploymentJarVerifier {
 
             boolean isSigned = certs != null && certs.length > 0;
 
-            if (isSigned == false || pubKey != null && findKeyInCertificates(pubKey, certs) == false) {
+            if (isSigned == false || pubKey != null && findKeyInCertificates(pubKey, certs) == false)
                 return false;
-            }
         }
 
         return true;
@@ -320,14 +309,12 @@ final class GridUriDeploymentJarVerifier {
      *      {@code false} if not.
      */
     private static boolean findKeyInCertificates(PublicKey key, Certificate[] certs) {
-        if (key == null || certs == null) {
+        if (key == null || certs == null)
             return false;
-        }
 
         for (Certificate cert : certs) {
-            if (cert.getPublicKey().equals(key)) {
+            if (cert.getPublicKey().equals(key))
                 return true;
-            }
         }
 
         return false;

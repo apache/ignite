@@ -160,9 +160,8 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
             assignPendingToUnderloaded(tier, pendingMap, fullMap, underloadedNodes, topSnapshot, true);
         }
 
-        if (!pending.isEmpty()) {
+        if (!pending.isEmpty())
             assignPendingToNodes(tier, pendingMap, fullMap, topSnapshot);
-        }
 
         assert pending.isEmpty();
 
