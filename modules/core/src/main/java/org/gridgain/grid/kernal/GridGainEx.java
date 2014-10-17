@@ -520,7 +520,7 @@ public class GridGainEx {
      */
     public static Grid startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
         throws GridException {
-        GridInteropProcessor.ENV_PTR.set(envPtr);
+        GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
 
         return start(springCfgPath, gridName);
     }

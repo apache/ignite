@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * Interop processor.
  */
 public interface GridInteropProcessor extends GridProcessor {
-    /** Managed environment pointer. */
-    public static ThreadLocal<Long> ENV_PTR = new ThreadLocal<>();
-
     /**
      * @return Environment pointer.
      */
