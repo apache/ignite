@@ -27,9 +27,8 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
 
         List<GridCacheAffinityKey<Integer>> keys = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++)
             keys.add(new GridCacheAffinityKey<>(i, Integer.toString(i)));
-        }
 
         for (int i = 1; i <= 10; i++) {
             GridCacheAffinityKey<Integer> key = keys.get(i - 1);
@@ -52,9 +51,8 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
 
         List<FieldAffinityKey<Integer>> keys = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++)
             keys.add(new FieldAffinityKey<>(i, Integer.toString(i)));
-        }
 
         for (int i = 1; i <= 10; i++) {
             FieldAffinityKey<Integer> key = keys.get(i - 1);

@@ -133,7 +133,7 @@ public class GridPortableConfiguration {
     }
 
     /**
-     * If {@true}, meta data will be collected or all types. If you need to override this behaviour for
+     * If {@code true}, meta data will be collected or all types. If you need to override this behaviour for
      * some specific type, use {@link GridPortableTypeConfiguration#setMetaDataEnabled(Boolean)} method.
      * <p>
      * Default value if {@code true}.

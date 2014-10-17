@@ -49,7 +49,7 @@ import java.util.*;
  * based on provided GridGain configuration. You can provide path to a
  * Spring configuration XML file, like below (path can be absolute or
  * relative to {@code GRIDGAIN_HOME}):
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
@@ -66,7 +66,7 @@ import java.util.*;
  * &lt;/beans&gt;
  * </pre>
  * Or you can provide a {@link GridConfiguration} bean, like below:
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
@@ -92,7 +92,7 @@ import java.util.*;
  * If you already have GridGain node running within your application,
  * simply provide correct Grid name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
- * <pre>
+ * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  *        xmlns:cache="http://www.springframework.org/schema/cache"
@@ -269,9 +269,39 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         /** {@inheritDoc} */
+        @Override public <T> T get(Object key, Class<T> type) {
+            try {
+                Object val = cache.get(key);
+
+                if (val != null && type != null && !type.isInstance(val))
+                    throw new IllegalStateException("Cached value is not of required type [cacheName=" + cache.name() +
+                        ", key=" + key + ", val=" + val + ", requiredType=" + type + ']');
+
+                return (T)val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException("Failed to get value from cache [cacheName=" + cache.name() +
+                    ", key=" + key + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public void put(Object key, Object val) {
             try {
                 cache.putx(key, val);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +
+                    ", key=" + key + ", val=" + val + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public ValueWrapper putIfAbsent(Object key, Object val) {
+            try {
+                Object old = cache.putIfAbsent(key, val);
+
+                return old != null ? new SimpleValueWrapper(old) : null;
             }
             catch (GridException e) {
                 throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +

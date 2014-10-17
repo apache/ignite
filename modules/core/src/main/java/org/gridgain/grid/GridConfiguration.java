@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
@@ -394,6 +395,9 @@ public class GridConfiguration {
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
 
+    /** Configuration for .Net nodes. */
+    private GridDotNetConfiguration dotNetCfg;
+
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
@@ -530,6 +534,9 @@ public class GridConfiguration {
     /** Portable configuration. */
     private GridPortableConfiguration portableCfg;
 
+    /** Warmup closure. Will be invoked before actual grid start. */
+    private GridInClosure<GridConfiguration> warmupClos;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -655,6 +662,9 @@ public class GridConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
+        warmupClos = cfg.getWarmupClosure();
+        dotNetCfg = cfg.getDotNetConfiguration() == null ?
+            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**
@@ -678,7 +688,7 @@ public class GridConfiguration {
      * @return Custom license file URL or {@code null} to use the default
      *      {@code $GRIDGAIN_HOME}-related location.
      */
-    @Nullable public String getLicenseUrl() {
+    public String getLicenseUrl() {
         return licUrl;
     }
 
@@ -734,7 +744,7 @@ public class GridConfiguration {
      * @return SMTP host name or {@code null} if SMTP is not configured.
      * @see GridSystemProperties#GG_SMTP_HOST
      */
-    @Nullable public String getSmtpHost() {
+    public String getSmtpHost() {
         return smtpHost;
     }
 
@@ -771,7 +781,7 @@ public class GridConfiguration {
      * @return SMTP username or {@code null}.
      * @see GridSystemProperties#GG_SMTP_USERNAME
      */
-    @Nullable public String getSmtpUsername() {
+    public String getSmtpUsername() {
         return smtpUsername;
     }
 
@@ -789,7 +799,7 @@ public class GridConfiguration {
      * @return SMTP password or {@code null}.
      * @see GridSystemProperties#GG_SMTP_PWD
      */
-    @Nullable public String getSmtpPassword() {
+    public String getSmtpPassword() {
         return smtpPwd;
     }
 
@@ -819,7 +829,7 @@ public class GridConfiguration {
      * @see #DFLT_SMTP_FROM_EMAIL
      * @see GridSystemProperties#GG_SMTP_FROM
      */
-    @Nullable public String getSmtpFromEmail() {
+    public String getSmtpFromEmail() {
         return smtpFromEmail;
     }
 
@@ -1359,7 +1369,7 @@ public class GridConfiguration {
      *      infer it automatically.
      * @see GridSystemProperties#GG_HOME
      */
-    @Nullable public String getGridGainHome() {
+    public String getGridGainHome() {
         return ggHome;
     }
 
@@ -1385,7 +1395,7 @@ public class GridConfiguration {
      * @see GridConfiguration#getGridGainHome()
      * @see GridSystemProperties#GG_HOME
      */
-    @Nullable public String getWorkDirectory() {
+    public String getWorkDirectory() {
         return ggWork;
     }
 
@@ -1434,7 +1444,7 @@ public class GridConfiguration {
      * @param nodeId Unique identifier for local node.
      * @see GridConfiguration#getNodeId()
      */
-    public void setNodeId(@Nullable UUID nodeId) {
+    public void setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -1899,7 +1909,7 @@ public class GridConfiguration {
      *
      * @return Segmentation resolvers.
      */
-    @Nullable public GridSegmentationResolver[] getSegmentationResolvers() {
+    public GridSegmentationResolver[] getSegmentationResolvers() {
         return segResolvers;
     }
 
@@ -1908,7 +1918,7 @@ public class GridConfiguration {
      *
      * @param segResolvers Segmentation resolvers.
      */
-    public void setSegmentationResolvers(@Nullable GridSegmentationResolver... segResolvers) {
+    public void setSegmentationResolvers(GridSegmentationResolver... segResolvers) {
         this.segResolvers = segResolvers;
     }
 
@@ -2307,7 +2317,7 @@ public class GridConfiguration {
      *
      * @return Include event types.
      */
-    @Nullable public int[] getIncludeEventTypes() {
+    public int[] getIncludeEventTypes() {
         return inclEvtTypes;
     }
 
@@ -2812,7 +2822,7 @@ public class GridConfiguration {
      *
      * @return Local address or host to bind to.
      */
-    @Nullable public String getLocalHost() {
+    public String getLocalHost() {
         return locHost;
     }
 
@@ -2862,7 +2872,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#setRestSecretKey(String)}.
      */
     @Deprecated
-    public void setRestSecretKey(@Nullable String restSecretKey) {
+    public void setRestSecretKey(String restSecretKey) {
         this.restSecretKey = restSecretKey;
     }
 
@@ -2875,7 +2885,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#getRestSecretKey()}.
      */
     @Deprecated
-    @Nullable public String getRestSecretKey() {
+    public String getRestSecretKey() {
         return restSecretKey;
     }
 
@@ -2888,7 +2898,7 @@ public class GridConfiguration {
      *
      * @return Array of system or environment properties to include into node attributes.
      */
-    @Nullable public String[] getIncludeProperties() {
+    public String[] getIncludeProperties() {
         return includeProps;
     }
 
@@ -2944,7 +2954,7 @@ public class GridConfiguration {
      * @deprecated Use {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
     @Deprecated
-    @Nullable public GridClientMessageInterceptor getClientMessageInterceptor() {
+    public GridClientMessageInterceptor getClientMessageInterceptor() {
         return clientMsgInterceptor;
     }
 
@@ -2969,7 +2979,7 @@ public class GridConfiguration {
      *
      * @return GGFS configurations.
      */
-    @Nullable public GridGgfsConfiguration[] getGgfsConfiguration() {
+    public GridGgfsConfiguration[] getGgfsConfiguration() {
         return ggfsCfg;
     }
 
@@ -2987,7 +2997,7 @@ public class GridConfiguration {
      *
      * @return Streamers configurations.
      */
-    @Nullable public GridStreamerConfiguration[] getStreamerConfiguration() {
+    public GridStreamerConfiguration[] getStreamerConfiguration() {
         return streamerCfg;
     }
 
@@ -3005,7 +3015,7 @@ public class GridConfiguration {
      *
      * @return Data center receiver hub configuration.
      */
-    @Nullable public GridDrReceiverHubConfiguration getDrReceiverHubConfiguration() {
+    public GridDrReceiverHubConfiguration getDrReceiverHubConfiguration() {
         return drRcvHubCfg;
     }
 
@@ -3023,7 +3033,7 @@ public class GridConfiguration {
      *
      * @return Data center sender hub configuration.
      */
-    @Nullable public GridDrSenderHubConfiguration getDrSenderHubConfiguration() {
+    public GridDrSenderHubConfiguration getDrSenderHubConfiguration() {
         return drSndHubCfg;
     }
 
@@ -3149,7 +3159,7 @@ public class GridConfiguration {
      * @return Pre-configured event listeners map.
      * @see GridEventType
      */
-    @Nullable public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
+    public Map<GridPredicate<? extends GridEvent>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3161,6 +3171,42 @@ public class GridConfiguration {
      */
     public void setLocalEventListeners(Map<GridPredicate<? extends GridEvent>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
+    }
+
+    /**
+     * Gets grid warmup closure. This closure will be executed before actual grid instance start. Configuration of
+     * a starting instance will be passed to the closure so it can decide what operations to warm up.
+     *
+     * @return Warmup closure to execute.
+     */
+    public GridInClosure<GridConfiguration> getWarmupClosure() {
+        return warmupClos;
+    }
+
+    /**
+     * Sets warmup closure to execute before grid startup.
+     *
+     * @param warmupClos Warmup closure to execute.
+     * @see #getWarmupClosure()
+     */
+    public void setWarmupClosure(GridInClosure<GridConfiguration> warmupClos) {
+        this.warmupClos = warmupClos;
+    }
+
+    /**
+     * Returns configuration for .Net nodes.
+     * @return Configuration for .Net nodes.
+     */
+    @Nullable public GridDotNetConfiguration getDotNetConfiguration() {
+        return dotNetCfg;
+    }
+
+    /**
+     * Sets configuration for .Net nodes.
+     * @param dotNetCfg Configuration for .Net nodes
+     */
+    public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
+        this.dotNetCfg = dotNetCfg;
     }
 
     /** {@inheritDoc} */

@@ -111,9 +111,8 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
             Collection<GridComputeJob> res = new ArrayList<>(gridSize);
 
-            for (int i = 0; i < gridSize; i++) {
+            for (int i = 0; i < gridSize; i++)
                 res.add(new GridTestFailoverJob((GridException)arg));
-            }
 
             return res;
         }
@@ -121,9 +120,8 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
             List<GridComputeJobResult> received) throws GridException {
-            if (res.getException() != null) {
+            if (res.getException() != null)
                 return GridComputeJobResultPolicy.FAILOVER;
-            }
 
             return super.result(res, received);
         }

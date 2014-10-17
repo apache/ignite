@@ -103,9 +103,8 @@ public class GridDeploymentGarAntTask extends Zip {
 
             File desc = null;
 
-            if (files.length == 1) {
+            if (files.length == 1)
                 desc = files[0];
-            }
 
             // File was defined in source.
             if (desc != null) {
@@ -136,9 +135,8 @@ public class GridDeploymentGarAntTask extends Zip {
 
     /** {@inheritDoc} */
     @Override protected void initZipOutputStream(ZipOutputStream zOut) throws IOException {
-        if (descFile != null) {
+        if (descFile != null)
             zipFile(descFile, zOut, getFullPath(DESC_PATH, DESC_NAME), ArchiveFileSet.DEFAULT_FILE_MODE);
-        }
     }
 
     /**

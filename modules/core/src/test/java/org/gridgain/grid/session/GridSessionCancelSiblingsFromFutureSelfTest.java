@@ -229,9 +229,8 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
                             return "interrupt-job-data";
                         }
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Completing job: " + taskSes);
-                        }
 
                         return argument(0);
                     }

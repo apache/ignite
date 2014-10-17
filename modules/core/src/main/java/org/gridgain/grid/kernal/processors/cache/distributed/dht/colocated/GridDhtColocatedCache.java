@@ -257,14 +257,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
         boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        if (F.isEmpty(keys))
+        if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
-
-            GridCacheVersion obsoleteVer = null;
 
             boolean success = true;
 
@@ -287,6 +288,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                /*temporary*/false,
                                 subjId,
                                 null,
                                 taskName,
@@ -294,8 +296,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
-                                if (obsoleteVer == null)
-                                    obsoleteVer = context().versions().next();
+                                GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
                                     removeIfObsolete(key);

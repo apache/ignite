@@ -354,9 +354,8 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-            else {
+            else
                 return false;
-            }
         }
     }
 }

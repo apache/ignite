@@ -124,9 +124,8 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
 
     /** {@inheritDoc} */
     @Override public void afterPropertiesSet() throws Exception {
-        if (cfg == null) {
+        if (cfg == null)
             cfg = new GridConfiguration();
-        }
 
         g = GridGainSpring.start(cfg, appCtx);
     }

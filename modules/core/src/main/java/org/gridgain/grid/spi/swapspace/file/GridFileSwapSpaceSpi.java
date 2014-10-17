@@ -247,9 +247,8 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
             int readStripesNum0 = 1;
             int cpuCnt = Runtime.getRuntime().availableProcessors();
 
-            while (readStripesNum0 <= cpuCnt) {
+            while (readStripesNum0 <= cpuCnt)
                 readStripesNum0 <<= 1;
-            }
 
             if (readStripesNum0 > cpuCnt)
                 readStripesNum0 >>= 1;
@@ -1289,9 +1288,8 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
                             buf = ByteBuffer.wrap(bytes);
                         }
-                        else if (compacted == vals.size()) {
+                        else if (compacted == vals.size())
                             break; // Finish current compaction, nothing new collected.
-                        }
                         else { // Read region and compact values in buffer.
                             readAndCompact();
 

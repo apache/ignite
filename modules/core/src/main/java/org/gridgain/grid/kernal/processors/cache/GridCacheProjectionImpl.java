@@ -269,9 +269,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             GridCacheFlag[] f = cctx.forceLocalRead();
 
             try {
-                if (!p.apply(k, v)) {
+                if (!p.apply(k, v))
                     return false;
-                }
             }
             finally {
                 cctx.forceFlags(f);
@@ -287,9 +286,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @return {@code True} if filter passed.
      */
     Map<? extends K, ? extends V> isAll(Map<? extends K, ? extends V> map, boolean noNulls) {
-        if (F.isEmpty(map)) {
+        if (F.isEmpty(map))
             return Collections.<K, V>emptyMap();
-        }
 
         boolean failed = false;
 
@@ -305,9 +303,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             }
         }
 
-        if (!failed) {
+        if (!failed)
             return map;
-        }
 
         Map<K, V> cp = new HashMap<>(map.size(), 1.0f);
 
@@ -315,9 +312,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             K k = e.getKey();
             V v = e.getValue();
 
-            if (isAll(k, v, noNulls)) {
+            if (isAll(k, v, noNulls))
                 cp.put(k, v);
-            }
         }
 
         return cp;
@@ -332,9 +328,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     private GridInClosure<GridCacheEntry<K, V>> visitor(final GridInClosure<GridCacheEntry<K, V>> vis) {
         return new CI1<GridCacheEntry<K, V>>() {
             @Override public void apply(GridCacheEntry<K, V> e) {
-                if (isAll(e, true)) {
+                if (isAll(e, true))
                     vis.apply(e);
-                }
             }
         };
     }
@@ -480,9 +475,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
-        if (!F.isEmpty(this.flags)) {
+        if (!F.isEmpty(this.flags))
             res.addAll(this.flags);
-        }
 
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
@@ -499,9 +493,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
-        if (!F.isEmpty(this.flags)) {
+        if (!F.isEmpty(this.flags))
             res.addAll(this.flags);
-        }
 
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
@@ -1200,7 +1193,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws GridException {
-        return cache.promote(key);
+        return cache.promote(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -1327,7 +1320,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         /** Key filter. */
         private KeyValueFilter<K, V> kvFilter;
 
-        /** Constant array to avoid recreation. */
+        /** Entry filter. */
         private GridPredicate<? super GridCacheEntry<K, V>> entryFilter;
 
         /**

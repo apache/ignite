@@ -255,6 +255,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter,
@@ -528,6 +531,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         super.clearAll0(keys, filter);
 
         dht().clearAll0(keys, filter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V promote(K key, boolean deserializePortable) throws GridException {
+        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
+
+        // Unswap only from dht(). Near cache does not have swap storage.
+        return dht().promote(key, deserializePortable);
     }
 
     /** {@inheritDoc} */

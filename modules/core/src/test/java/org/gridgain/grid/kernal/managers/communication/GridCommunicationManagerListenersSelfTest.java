@@ -105,9 +105,8 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
                 assert false : "Failed to execute task [iteration=" + i + ", err=" + e.getMessage() + ']';
             }
 
-            if (i % 100 == 0) {
+            if (i % 100 == 0)
                 info(getName() + ": through " + i);
-            }
         }
     }
 

@@ -114,9 +114,8 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
             assert evts.size() == 1 : "Invalid events count: " + evts.size();
         }
         finally {
-            if (spi != null) {
+            if (spi != null)
                 spi.clearAll();
-            }
         }
     }
 

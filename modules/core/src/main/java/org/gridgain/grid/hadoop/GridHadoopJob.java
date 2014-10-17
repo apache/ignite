@@ -48,14 +48,6 @@ public interface GridHadoopJob {
     public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException;
 
     /**
-     * Creates task to be executed.
-     *
-     * @param taskInfo Task info.
-     * @return Task.
-     */
-    public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo);
-
-    /**
      * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
      * be executed.
      * <p>
@@ -78,6 +70,22 @@ public interface GridHadoopJob {
      * @throws GridException If failed.
      */
     public void dispose(boolean external) throws GridException;
+
+    /**
+     * Prepare local environment for the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
+
+    /**
+     * Cleans up local environment of the task.
+     *
+     * @param info Task info.
+     * @throws GridException If failed.
+     */
+    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
 
     /**
      * Cleans up the job staging directory.

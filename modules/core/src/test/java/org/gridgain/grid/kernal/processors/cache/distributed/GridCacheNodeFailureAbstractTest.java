@@ -22,6 +22,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridGainState.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.events.GridEventType.*;
@@ -174,7 +175,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             f.get();
 
-            U.sleep(Integer.getInteger(GridSystemProperties.GG_TX_SALVAGE_TIMEOUT, 3000));
+            U.sleep(getInteger(GG_TX_SALVAGE_TIMEOUT, 3000));
 
             GridCache<Integer, String> checkCache = cache(checkIdx);
 

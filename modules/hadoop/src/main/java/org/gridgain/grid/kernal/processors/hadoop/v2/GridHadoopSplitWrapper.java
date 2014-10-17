@@ -9,25 +9,25 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.io.*;
-
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.hadoop.*;
 
 import java.io.*;
 
-import org.jetbrains.annotations.*;
-
 /**
  * The wrapper for native hadoop input splits.
+ *
+ * Warning!! This class must not depend on any Hadoop classes directly or indirectly.
  */
 public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Native hadoop input split. */
-    private Object innerSplit;
+    private byte[] bytes;
+
+    /** */
+    private String clsName;
 
     /** Internal ID */
     private int id;
@@ -43,37 +43,43 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
      * Creates new split wrapper.
      *
      * @param id Split ID.
-     * @param innerSplit Native hadoop input split to wrap or {@code null} if it is serialized in external file.
+     * @param clsName Class name.
+     * @param bytes Serialized class.
      * @param hosts Hosts where split is located.
+     * @throws IOException If failed.
      */
-    public GridHadoopSplitWrapper(int id, @Nullable Object innerSplit, String[] hosts) {
+    public GridHadoopSplitWrapper(int id, String clsName, byte[] bytes, String[] hosts) throws IOException {
         assert hosts != null;
+        assert clsName != null;
+        assert bytes != null;
 
-        this.innerSplit = innerSplit;
         this.hosts = hosts;
         this.id = id;
-    }
 
-    /**
-     * @return Inner split.
-     */
-    @SuppressWarnings("unchecked")
-    public Object innerSplit() {
-        return innerSplit;
+        this.clsName = clsName;
+        this.bytes = bytes;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(id);
 
-        boolean writable = innerSplit instanceof Writable;
+        out.writeUTF(clsName);
+        U.writeByteArray(out, bytes);
+    }
 
-        out.writeUTF(writable ? innerSplit.getClass().getName() : null);
+    /**
+     * @return Class name.
+     */
+    public String className() {
+        return clsName;
+    }
 
-        if (writable)
-            ((Writable)innerSplit).write(out);
-        else
-            out.writeObject(innerSplit);
+    /**
+     * @return Class bytes.
+     */
+    public byte[] bytes() {
+        return bytes;
     }
 
     /** {@inheritDoc} */
@@ -81,23 +87,8 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = in.readInt();
 
-        String clsName = in.readUTF();
-
-        if (clsName == null)
-            innerSplit = in.readObject();
-        else {
-            // Split wrapper only used when classes available in our classpath, so Class.forName is ok here.
-            Class<Writable> cls = (Class<Writable>)Class.forName(clsName);
-
-            try {
-                innerSplit = U.newInstance(cls);
-            }
-            catch (GridException e) {
-                throw new IOException(e);
-            }
-
-            ((Writable)innerSplit).readFields(in);
-        }
+        clsName = in.readUTF();
+        bytes = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */

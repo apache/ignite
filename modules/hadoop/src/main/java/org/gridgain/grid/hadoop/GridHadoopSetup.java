@@ -27,6 +27,13 @@ public class GridHadoopSetup {
     /** */
     public static final String WINUTILS_EXE = "winutils.exe";
 
+    /** */
+    private static final FilenameFilter GRIDGAIN_JARS = new FilenameFilter() {
+        @Override public boolean accept(File dir, String name) {
+            return name.startsWith("gridgain-") && name.endsWith(".jar");
+        }
+    };
+
     /**
      * The main method.
      * @param ignore Params.
@@ -64,15 +71,29 @@ public class GridHadoopSetup {
 
         checkGridGainHome(gridgainHome);
 
-        String hadoopHome = System.getenv("HADOOP_HOME");
+        String homeVar = "HADOOP_HOME";
+        String hadoopHome = System.getenv(homeVar);
 
-        if (hadoopHome == null || hadoopHome.isEmpty())
-            exit("HADOOP_HOME environment variable is not set. Please set HADOOP_HOME to " +
+        if (F.isEmpty(hadoopHome)) {
+            homeVar = "HADOOP_PREFIX";
+            hadoopHome = System.getenv(homeVar);
+        }
+
+        if (F.isEmpty(hadoopHome))
+            exit("Neither HADOOP_HOME nor HADOOP_PREFIX environment variable is set. Please set one of them to a " +
                 "valid Hadoop installation directory and run setup tool again.", null);
 
         hadoopHome = hadoopHome.replaceAll("\"", "");
 
-        println("HADOOP_HOME is set to '" + hadoopHome + "'.");
+        println(homeVar + " is set to '" + hadoopHome + "'.");
+
+        String hiveHome = System.getenv("HIVE_HOME");
+
+        if (!F.isEmpty(hiveHome)) {
+            hiveHome = hiveHome.replaceAll("\"", "");
+
+            println("HIVE_HOME is set to '" + hiveHome + "'.");
+        }
 
         File hadoopDir = new File(hadoopHome);
         
@@ -149,22 +170,8 @@ public class GridHadoopSetup {
 
         Collection<File> jarFiles = new ArrayList<>();
 
-        jarFiles.addAll(Arrays.asList(gridgainLibs.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(".jar");
-            }
-        })));
-
-        File gridgainHadoopLibs = new File(gridgainLibs, "gridgain-hadoop");
-
-        if (!gridgainHadoopLibs.exists())
-            exit("Folder '" + gridgainHadoopLibs.getAbsolutePath() + "' is not found.", null);
-
-        jarFiles.addAll(Arrays.asList(gridgainHadoopLibs.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(".jar");
-            }
-        })));
+        addJarsInFolder(jarFiles, gridgainLibs);
+        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-hadoop"));
 
         boolean jarsLinksCorrect = true;
 
@@ -180,11 +187,7 @@ public class GridHadoopSetup {
         if (!jarsLinksCorrect) {
             if (ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
                 "Create appropriate symbolic links?")) {
-                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return name.startsWith("gridgain-");
-                    }
-                });
+                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(GRIDGAIN_JARS);
 
                 if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
                     "installation. They must be deleted to continue. Continue?")) {
@@ -221,25 +224,46 @@ public class GridHadoopSetup {
 
         File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
 
+        File gridgainDocs = new File(gridgainHome, "docs");
+
+        if (!gridgainDocs.canRead())
+            exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.", null);
+
         if (hadoopEtc.canWrite()) { // TODO Bigtop
             if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates " +
                 "(existing files will be backed up)?")) {
-                File gridgainDocs = new File(gridgainHome, "docs");
+                replaceWithBackup(new File(gridgainDocs, "core-site.gridgain.xml"), new File(hadoopEtc, "core-site.xml"));
 
-                if (!gridgainDocs.canRead())
-                    exit("Failed to read GridGain 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.", null);
-
-                replace(new File(gridgainDocs, "core-site.gridgain.xml"),
-                    renameToBak(new File(hadoopEtc, "core-site.xml")));
-
-                replace(new File(gridgainDocs, "mapred-site.gridgain.xml"),
-                    renameToBak(new File(hadoopEtc, "mapred-site.xml")));
+                replaceWithBackup(new File(gridgainDocs, "mapred-site.gridgain.xml"), new File(hadoopEtc, "mapred-site.xml"));
             }
             else
                 println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
         }
 
+        if (!F.isEmpty(hiveHome)) {
+            File hiveConfDir = new File(hiveHome + File.separator + "conf");
+
+            if (!hiveConfDir.canWrite())
+                warn("Can not write to '" + hiveConfDir.getAbsolutePath() + "'. To run Hive queries you have to " +
+                    "configure 'hive-site.xml' manually. The template is available at GridGain's 'docs' directory.");
+            else if (ask("Replace 'hive-site.xml' with preconfigured template (existing file will be backed up)?"))
+                replaceWithBackup(new File(gridgainDocs, "hive-site.gridgain.xml"), new File(hiveConfDir, "hive-site.xml"));
+            else
+                println("Ok. You can configure it later, the template is available at GridGain's 'docs' directory...");
+        }
+
         println("Apache Hadoop setup is complete.");
+    }
+
+    /**
+     * @param jarFiles Jars.
+     * @param folder Folder.
+     */
+    private static void addJarsInFolder(Collection<File> jarFiles, File folder) {
+        if (!folder.exists())
+            exit("Folder '" + folder.getAbsolutePath() + "' is not found.", null);
+
+        jarFiles.addAll(Arrays.asList(folder.listFiles(GRIDGAIN_JARS)));
     }
 
     /**
@@ -281,7 +305,7 @@ public class GridHadoopSetup {
      * @param from From.
      * @param to To.
      */
-    private static void replace(File from, File to) {
+    private static void replaceWithBackup(File from, File to) {
         if (!from.canRead())
             exit("Failed to read source file '" + from.getAbsolutePath() + "'.", null);
 
@@ -376,6 +400,7 @@ public class GridHadoopSetup {
      * @param msg Exit message.
      */
     private static void exit(String msg, Exception e) {
+        X.println("    ");
         X.println("  # " + msg);
         X.println("  # Setup failed, exiting... ");
 

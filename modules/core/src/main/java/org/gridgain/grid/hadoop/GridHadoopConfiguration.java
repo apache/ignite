@@ -11,8 +11,6 @@ package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.concurrent.*;
-
 /**
  * Hadoop configuration.
  */
@@ -22,6 +20,12 @@ public class GridHadoopConfiguration {
 
     /** Default value for external execution flag. */
     public static final boolean DFLT_EXTERNAL_EXECUTION = false;
+
+    /** Default value for the max parallel tasks. */
+    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
+
+    /** Default value for the max task queue size. */
+    public static final int DFLT_MAX_TASK_QUEUE_SIZE = 1000;
 
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
@@ -33,7 +37,10 @@ public class GridHadoopConfiguration {
     private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
 
     /** */
-    private ExecutorService embeddedExecutor;
+    private int maxParallelTasks = DFLT_MAX_PARALLEL_TASKS;
+
+    /** */
+    private int maxTaskQueueSize = DFLT_MAX_TASK_QUEUE_SIZE;
 
     /**
      * Default constructor.
@@ -49,30 +56,47 @@ public class GridHadoopConfiguration {
      */
     public GridHadoopConfiguration(GridHadoopConfiguration cfg) {
         // Preserve alphabetic order.
-        embeddedExecutor = cfg.getEmbeddedExecutor();
         extExecution = cfg.isExternalExecution();
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         planner = cfg.getMapReducePlanner();
+        maxParallelTasks = cfg.getMaxParallelTasks();
+        maxTaskQueueSize = cfg.getMaxTaskQueueSize();
     }
 
     /**
-     * Sets executor service to run task in embedded mode.
-     * Embedded mode means that {@linkplain #isExternalExecution()} is {@code false}.
+     * Gets max number of local tasks that may be executed in parallel.
      *
-     * @param embeddedExecutor Executor service.
+     * @return Max number of local tasks that may be executed in parallel.
      */
-    public void setEmbeddedExecutor(ExecutorService embeddedExecutor) {
-        this.embeddedExecutor = embeddedExecutor;
+    public int getMaxParallelTasks() {
+        return maxParallelTasks;
     }
 
     /**
-     * Gets executor service to run task in embedded mode.
-     * Embedded mode means that {@linkplain #isExternalExecution()} is {@code false}.
+     * Sets max number of local tasks that may be executed in parallel.
      *
-     * @return Executor service.
+     * @param maxParallelTasks Max number of local tasks that may be executed in parallel.
      */
-    public ExecutorService getEmbeddedExecutor() {
-        return embeddedExecutor;
+    public void setMaxParallelTasks(int maxParallelTasks) {
+        this.maxParallelTasks = maxParallelTasks;
+    }
+
+    /**
+     * Gets max task queue size.
+     *
+     * @return Max task queue size.
+     */
+    public int getMaxTaskQueueSize() {
+        return maxTaskQueueSize;
+    }
+
+    /**
+     * Sets max task queue size.
+     *
+     * @param maxTaskQueueSize Max task queue size.
+     */
+    public void setMaxTaskQueueSize(int maxTaskQueueSize) {
+        this.maxTaskQueueSize = maxTaskQueueSize;
     }
 
     /**

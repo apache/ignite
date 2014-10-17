@@ -102,9 +102,8 @@ abstract class GridP2PAbstractUserResource {
             used = usage.get(cls);
         }
 
-        if (used == null) {
+        if (used == null)
             used = 0;
-        }
 
         assert used == cnt : "Invalid count [expected=" + cnt + ", actual=" + used + ", usageMap=" + usage + ']';
     }

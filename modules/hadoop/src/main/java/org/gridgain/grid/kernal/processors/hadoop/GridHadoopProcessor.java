@@ -18,12 +18,12 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopClassLoader.*;
 
 /**
  * Hadoop processor.
@@ -63,7 +63,21 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         validate(cfg);
 
-        if (checkHadoopInstallation()) {
+        if (hadoopHome() != null)
+            U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
+
+        boolean ok = false;
+
+        try { // Check for Hadoop installation.
+            hadoopUrls();
+
+            ok = true;
+        }
+        catch (GridException e) {
+            U.quietAndWarn(log, e.getMessage());
+        }
+
+        if (ok) {
             hctx = new GridHadoopContext(
                 ctx,
                 cfg,
@@ -77,34 +91,6 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
             hadoop = new GridHadoopImpl(this);
         }
-    }
-
-    /**
-     * Checks Hadoop installation.
-     */
-    private boolean checkHadoopInstallation() {
-        String hadoopHome = System.getenv("HADOOP_HOME");
-
-        if (!F.isEmpty(hadoopHome))
-            U.quietAndInfo(log, "Apache Hadoop is found at " + hadoopHome);
-
-        URL location = null;
-
-        try {
-            location = Class.forName("org.apache.hadoop.conf.Configuration").getProtectionDomain().getCodeSource()
-                .getLocation();
-        }
-        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-            U.quietAndWarn(log, "Hadoop accelerator is disabled (Hadoop is not in classpath, " +
-                "is HADOOP_HOME environment variable set?)");
-
-            return false;
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Hadoop classes are loaded from " + location);
-
-        return true;
     }
 
     /** {@inheritDoc} */

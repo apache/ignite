@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Defines functionality necessary to deploy distributed services services on the grid. Instance of
+ * Defines functionality necessary to deploy distributed services on the grid. Instance of
  * {@code GridServices} is obtained from grid projection as follows:
  * <pre name="code" class="java">
  * GridServices svcs = GridGain.grid().services();
@@ -116,9 +116,9 @@ import java.util.*;
  */
 public interface GridServices {
     /**
-     * Gets grid projection to which this {@code GridCompute} instance belongs.
+     * Gets grid projection to which this {@code GridServices} instance belongs.
      *
-     * @return Grid projection to which this {@code GridCompute} instance belongs.
+     * @return Grid projection to which this {@code GridServices} instance belongs.
      */
     public GridProjection projection();
 
@@ -288,4 +288,22 @@ public interface GridServices {
      * @return Metadata about all deployed services.
      */
     public Collection<GridServiceDescriptor> deployedServices();
+
+    /**
+     * Gets deployed service with specified name.
+     *
+     * @param name Service name.
+     * @param <T> Service type
+     * @return Deployed service with specified name.
+     */
+    public <T> T service(String name);
+
+    /**
+     * Gets all deployed services with specified name.
+     *
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return all deployed services with specified name.
+     */
+    public <T> Collection<T> services(String name);
 }

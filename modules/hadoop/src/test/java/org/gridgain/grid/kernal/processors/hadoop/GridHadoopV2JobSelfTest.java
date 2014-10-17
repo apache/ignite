@@ -20,6 +20,8 @@ import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Self test of {@link GridHadoopV2Job}.
  */
@@ -57,15 +59,14 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
         cfg.setMapOutputValueClass(Text.class);
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-        GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1),
-            new GridHadoopDefaultJobInfo(cfg), log);
+        GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1), createJobInfo(cfg), log);
 
-        GridHadoopTaskContext taskCtx = job.getTaskContext(new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, null, 0,
-            0, null));
+        GridHadoopTaskContext taskCtx = job.getTaskContext(new GridHadoopTaskInfo(GridHadoopTaskType.MAP, null, 0, 0,
+            null));
 
         GridHadoopSerialization ser = taskCtx.keySerialization();
 
-        assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
+        assertEquals(GridHadoopSerializationWrapper.class.getName(), ser.getClass().getName());
 
         DataInput in = new DataInputStream(new ByteArrayInputStream(new byte[0]));
 
@@ -73,7 +74,7 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
 
         ser = taskCtx.valueSerialization();
 
-        assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
+        assertEquals(GridHadoopSerializationWrapper.class.getName(), ser.getClass().getName());
 
         assertEquals(TEST_SERIALIZED_VALUE, ser.read(in, null).toString());
     }

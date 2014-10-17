@@ -18,6 +18,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
@@ -114,7 +115,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     private String uriAuthority;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Secondary URI string. */
     private URI secondaryUri;
@@ -134,8 +135,11 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
     /** GGFS group block size. */
     private long ggfsGrpBlockSize;
 
-    /** Flag that controls whether file wites should be colocated. */
+    /** Flag that controls whether file writes should be colocated. */
     private boolean colocateFileWrites;
+
+    /** Prefer local writes. */
+    private boolean preferLocFileWrites;
 
     /** Custom-provided sequential reads before prefetch. */
     private int seqReadsBeforePrefetch;
@@ -221,6 +225,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
             // Get file colocation control flag.
             colocateFileWrites = parameter(cfg, PARAM_GGFS_COLOCATED_WRITES, uriAuthority, false);
+            preferLocFileWrites = cfg.getBoolean(PARAM_GGFS_PREFER_LOCAL_WRITES, false);
 
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
@@ -248,10 +253,10 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 Integer batchSize = parameter(cfg, PARAM_GGFS_LOG_BATCH_SIZE, uriAuthority, DFLT_GGFS_LOG_BATCH_SIZE);
 
-                clientLog = GridGgfsHadoopLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
+                clientLog = GridGgfsLogger.logger(uriAuthority, handshake.ggfsName(), logDir, batchSize);
             }
             else
-                clientLog = GridGgfsHadoopLogger.disabledLogger();
+                clientLog = GridGgfsLogger.disabledLogger();
 
             modeRslvr = new GridGgfsModeResolver(paths.defaultMode(), paths.pathModes());
 
@@ -266,20 +271,23 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             }
 
             if (initSecondary) {
-                if (paths.secondaryConfigurationPath() == null)
+                Map<String, String> props = paths.properties();
+
+                String secUri = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
+                String secConfPath = props.get(GridGgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
+
+                if (secConfPath == null)
                     throw new IOException("Failed to connect to the secondary file system because configuration " +
                         "path is not provided.");
 
-                if (paths.secondaryUri() == null)
+                if (secUri == null)
                     throw new IOException("Failed to connect to the secondary file system because URI is not " +
                         "provided.");
 
-                String secondaryConfPath = paths.secondaryConfigurationPath();
-
                 try {
-                    secondaryUri = new URI(paths.secondaryUri());
+                    secondaryUri = new URI(secUri);
 
-                    URL secondaryCfgUrl = U.resolveGridGainUrl(secondaryConfPath);
+                    URL secondaryCfgUrl = U.resolveGridGainUrl(secConfPath);
 
                     Configuration conf = new Configuration();
 
@@ -294,15 +302,14 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 }
                 catch (URISyntaxException ignore) {
                     if (!mgmt)
-                        throw new IOException("Failed to resolve secondary file system URI: " + paths.secondaryUri());
+                        throw new IOException("Failed to resolve secondary file system URI: " + secUri);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect).");
                 }
                 catch (IOException e) {
                     if (!mgmt)
-                        throw new IOException("Failed to connect to the secondary file system: " +
-                            paths.secondaryUri(), e);
+                        throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect): " + e.getMessage());
@@ -425,8 +432,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 secondaryFs.setPermission(toSecondary(p), perm);
             }
             else if (rmtClient.update(convert(p), permission(perm)) == null) {
-                    throw new IOException("Failed to set file permission (file not found?)" +
-                        " [path=" + p + ", perm=" + perm + ']');
+                throw new IOException("Failed to set file permission (file not found?)" +
+                    " [path=" + p + ", perm=" + perm + ']');
             }
         }
         finally {
@@ -487,7 +494,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                     long size = status != null ? status.getLen() : -1;
 
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, PROXY, bufSize, size);
 
@@ -503,7 +510,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logOpen(logId, path, mode, bufSize, stream.length());
                 }
@@ -555,7 +562,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                     secondaryFs.create(toSecondary(f), perm, overwrite, bufSize, replication, blockSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, PROXY, overwrite, bufSize, replication, blockSize);
 
@@ -567,14 +574,15 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             else {
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 GridGgfsHadoopStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
-                    replication, blockSize, permission(perm));
+                    replication, blockSize, F.asMap(PROP_PERMISSION, toString(perm),
+                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites)));
 
                 assert stream != null;
 
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
                 }
@@ -631,7 +639,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 FSDataOutputStream os = secondaryFs.append(toSecondary(f), bufSize, progress);
 
                 if (clientLog.isLogEnabled()) {
-                    long logId = GridGgfsHadoopLogger.nextId();
+                    long logId = GridGgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, PROXY, bufSize); // Don't have stream ID.
 
@@ -648,7 +656,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 long logId = -1;
 
                 if (clientLog.isLogEnabled()) {
-                    logId = GridGgfsHadoopLogger.nextId();
+                    logId = GridGgfsLogger.nextId();
 
                     clientLog.logAppend(logId, path, mode, bufSize);
                 }
@@ -788,20 +796,17 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
 
-                if (arr != null) {
-                    for (int i = 0; i < arr.length; i++)
-                        arr[i] = toPrimary(arr[i]);
-                }
+                if (arr == null)
+                    throw new FileNotFoundException("File " + f + " does not exist.");
+
+                for (int i = 0; i < arr.length; i++)
+                    arr[i] = toPrimary(arr[i]);
 
                 if (clientLog.isLogEnabled()) {
-                    String[] fileArr = null;
+                    String[] fileArr = new String[arr.length];
 
-                    if (arr != null) {
-                        fileArr = new String[arr.length];
-
-                        for (int i = 0; i < arr.length; i++)
-                            fileArr[i] = arr[i].getPath().toString();
-                    }
+                    for (int i = 0; i < arr.length; i++)
+                        fileArr[i] = arr[i].getPath().toString();
 
                     clientLog.logListDirectory(path, PROXY, fileArr);
                 }
@@ -812,7 +817,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 Collection<GridGgfsFile> list = rmtClient.listFiles(path);
 
                 if (list == null)
-                    return null;
+                    throw new FileNotFoundException("File " + f + " does not exist.");
 
                 List<GridGgfsFile> files = new ArrayList<>(list);
 
@@ -832,9 +837,6 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
                 return arr;
             }
-        }
-        catch (FileNotFoundException ignored) {
-            return null;
         }
         finally {
             leaveBusy();
@@ -1205,7 +1207,15 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()));
+        return F.asMap(PROP_PERMISSION, toString(perm));
+    }
+
+    /**
+     * @param perm Permission.
+     * @return String.
+     */
+    private static String toString(FsPermission perm) {
+        return String.format("%04o", perm.toShort());
     }
 
     /**

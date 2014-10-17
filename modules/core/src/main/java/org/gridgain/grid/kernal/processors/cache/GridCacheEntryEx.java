@@ -95,10 +95,13 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public V rawGet();
 
     /**
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
+     *        temporary object can used for filter evaluation or transform closure execution and
+     *        should not be returned to user.
      * @return Value (unmarshalled if needed).
      * @throws GridException If failed.
      */
-    public V rawGetOrUnmarshal() throws GridException;
+    public V rawGetOrUnmarshal(boolean tmp) throws GridException;
 
     /**
      * @return {@code True} if has value or value bytes.
@@ -262,22 +265,35 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param readThrough Flag indicating whether to read through.
      * @param failFast If {@code true}, then throw {@link GridCacheFilterFailedException} if
      *      filter didn't pass.
-     * @param subjId Subject ID initiated this read.
-     * @param filter Filter to check prior to getting the value. Note that filter check
-     *      together with getting the value is an atomic operation.
      * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
+     *        temporary object can used for filter evaluation or transform closure execution and
+     *        should not be returned to user.
+     * @param subjId Subject ID initiated this read.
+     * @param taskName Task name.
+     * @param filter Filter to check prior to getting the value. Note that filter check
+     *      together with getting the value is an atomic operation.
      * @param transformClo Transform closure to record event.
      * @return Cached value.
      * @throws GridException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
-    @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, UUID subjId, Object transformClo,
-        String taskName, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
-        GridCacheFilterFailedException;
+    @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx,
+        boolean readSwap,
+        boolean readThrough,
+        boolean failFast,
+        boolean unmarshal,
+        boolean updateMetrics,
+        boolean evt,
+        boolean tmp,
+        UUID subjId,
+        Object transformClo,
+        String taskName,
+        GridPredicate<GridCacheEntry<K, V>>[] filter)
+        throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
      * Reloads entry from underlying storage.
@@ -301,10 +317,13 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param ttl Time to live.
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics update.
+     * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
      * @param drExpireTime DR expire time (if any).
      * @param explicitVer Explicit version (if any).
+     * @param subjId Subject ID initiated this update.
+     * @param taskName Task name.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws GridException If storing value failed.
@@ -338,9 +357,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param retval {@code True} if value should be returned (and unmarshalled if needed).
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
+     * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
      * @param explicitVer Explicit version (if any).
+     * @param subjId Subject ID initiated this update.
+     * @param taskName Task name.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws GridException If remove failed.
@@ -384,6 +406,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param drVer DR version (if any).
      * @param drResolve If {@code true} then performs DR conflicts resolution.
      * @param intercept If {@code true} then calls cache interceptor.
+     * @param subjId Subject ID initiated this update.
+     * @param taskName Task name.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -430,6 +454,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
      * @param intercept If {@code true} then calls cache interceptor.
+     * @param subjId Subject ID initiated this update.
+     * @param taskName Task name.
      * @return Tuple containing success flag and old value.
      * @throws GridException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
@@ -607,6 +633,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param ttl Time to live.
      * @param expireTime Expiration time.
      * @param preload Flag indicating whether entry is being preloaded.
+     * @param topVer Topology version.
      * @param drType DR type.
      * @return {@code True} if initial value was set.
      * @throws GridException In case of error.
@@ -855,8 +882,9 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * Unswap ignoring flags.
      *
      * @param ignoreFlags Whether to ignore swap flags.
+     * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws GridException If failed.
      */
-    @Nullable public V unswap(boolean ignoreFlags) throws GridException;
+    @Nullable public V unswap(boolean ignoreFlags, boolean needVal) throws GridException;
 }

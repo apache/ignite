@@ -375,12 +375,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         else {
                             GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
-                            if (keyMeta == null) {
+                            if (keyMeta == null)
                                 processAnnotationsInClass(true, d.keyCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(true, d.keyCls, keyMeta, d);
-                            }
                         }
 
                         if (val instanceof GridPortableObject) {
@@ -404,12 +402,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
-                            if (typeMeta == null) {
+                            if (typeMeta == null)
                                 processAnnotationsInClass(false, d.valCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(false, d.valCls, typeMeta, d);
-                            }
                         }
 
                         d.registered(getSpi(spi).registerType(space, d));
@@ -449,8 +445,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName))
-            typeName = cls.getName().substring(cls.getPackage().getName().length());
+        if (F.isEmpty(typeName)) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
 
         if (cls.isArray()) {
             assert typeName.endsWith("[]");
@@ -1114,6 +1113,23 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
+     * Gets type for space and type name.
+     *
+     * @param space Space name.
+     * @param typeName Type name.
+     * @return Type.
+     * @throws GridException If failed.
+     */
+    public GridIndexingTypeDescriptor type(@Nullable String space, String typeName) throws GridException {
+        TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
+
+        if (type == null || !type.registered())
+            throw new GridException("Failed to find type descriptor for type name: " + typeName);
+
+        return type;
+    }
+
+    /**
      * @param cls Field type.
      * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
      * @throws GridException If failed.
@@ -1400,7 +1416,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = CU.h2Escape(name);
+            this.name = name;
         }
 
         /** {@inheritDoc} */

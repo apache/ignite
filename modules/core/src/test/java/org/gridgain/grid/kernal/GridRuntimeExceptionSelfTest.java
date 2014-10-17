@@ -211,15 +211,13 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         @SuppressWarnings({"ProhibitedExceptionThrown"})
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, Serializable arg)
             throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Mapping job [job=" + this + ", grid=" + subgrid + ", arg=" + arg + ']');
-            }
 
             failType = (FailType)arg;
 
-            if (failType == FailType.MAP) {
+            if (failType == FailType.MAP)
                 throw new RuntimeException("Failed out of map method.");
-            }
 
             Map<GridComputeJob, GridNode> map = new HashMap<>(2);
 
@@ -235,13 +233,11 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received) throws GridException {
-            if (failType == FailType.RESULT) {
+            if (failType == FailType.RESULT)
                 throw new RuntimeException("Failing out of result method.");
-            }
 
-            if (res.getException() != null) {
+            if (res.getException() != null)
                 throw res.getException();
-            }
 
             return GridComputeJobResultPolicy.WAIT;
         }
@@ -251,9 +247,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
             assert results != null;
 
-            if (failType == FailType.REDUCE) {
+            if (failType == FailType.REDUCE)
                 throw new RuntimeException("Failed out of reduce method.");
-            }
 
             return (Serializable)results;
         }
@@ -278,9 +273,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Executing job [job=" + this + ", arg=" + argument(0) + ']');
-            }
 
             if (argument(0) != null && argument(0) == FailType.EXECUTE) {
                 // Throw exception.

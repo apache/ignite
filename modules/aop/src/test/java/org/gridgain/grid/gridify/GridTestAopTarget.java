@@ -112,21 +112,19 @@ public class GridTestAopTarget implements GridTestAopTargetInterface {
      * @throws GridTestGridifyException If failed.
      */
     private Integer getResource() throws GridTestGridifyException {
-        InputStream in = getClass().getResourceAsStream("test_resource.properties");
+        try (InputStream in = getClass().getResourceAsStream("test_resource.properties")) {
+            assert in != null;
 
-        assert in != null;
+            Properties prop = new Properties();
 
-        Properties prop = new Properties();
-
-        try {
             prop.load(in);
+
+            String val = prop.getProperty("param1");
+
+            return Integer.parseInt(val);
         }
         catch (IOException e) {
             throw new GridTestGridifyException("Failed to test load properties file.", e);
         }
-
-        String val = prop.getProperty("param1");
-
-        return Integer.parseInt(val);
     }
 }

@@ -13,13 +13,13 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for byte array values in distributed caches.
@@ -32,15 +32,22 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /** Regular caches. */
     private static GridCache<Integer, Object>[] caches;
 
-    /** Offheap caches. */
+    /** Offheap values caches. */
     private static GridCache<Integer, Object>[] cachesOffheap;
+
+    /** Offheap tiered caches. */
+    private static GridCache<Integer, Object>[] cachesOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
-        c.setCacheConfiguration(cacheConfiguration(), offheapCacheConfiguration());
+        c.setCacheConfiguration(cacheConfiguration(),
+            offheapCacheConfiguration(),
+            offheapTieredCacheConfiguration());
+
         c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
         return c;
@@ -50,6 +57,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @return Whether peer class loading is enabled.
      */
     protected abstract boolean peerClassLoading();
+
+    /**
+     * @return Whether portable mode is enabled.
+     */
+    protected boolean portableEnabled() {
+        return false;
+    }
 
     /**
      * @return How many grids to start.
@@ -65,6 +79,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         GridCacheConfiguration cfg = cacheConfiguration0();
 
         cfg.setName(CACHE_REGULAR);
+        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -81,6 +96,19 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         GridCacheConfiguration cfg = offheapCacheConfiguration0();
 
         cfg.setName(CACHE_OFFHEAP);
+        cfg.setPortableEnabled(portableEnabled());
+
+        return cfg;
+    }
+
+    /**
+     * @return Offheap tiered cache configuration.
+     */
+    protected GridCacheConfiguration offheapTieredCacheConfiguration() {
+        GridCacheConfiguration cfg = offheapTieredCacheConfiguration0();
+
+        cfg.setName(CACHE_OFFHEAP_TIERED);
+        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -90,31 +118,40 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      */
     protected abstract GridCacheConfiguration offheapCacheConfiguration0();
 
+    /**
+     * @return Internal offheap cache configuration.
+     */
+    protected abstract GridCacheConfiguration offheapTieredCacheConfiguration0();
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         int gridCnt = gridCount();
 
         assert gridCnt > 0;
 
         grids = new Grid[gridCnt];
+
         caches = new GridCache[gridCnt];
         cachesOffheap = new GridCache[gridCnt];
+        cachesOffheapTiered = new GridCache[gridCnt];
 
         for (int i = 0; i < gridCnt; i++) {
             grids[i] = startGrid(i);
 
             caches[i] = grids[i].cache(CACHE_REGULAR);
             cachesOffheap[i] = grids[i].cache(CACHE_OFFHEAP);
+            cachesOffheapTiered[i] = grids[i].cache(CACHE_OFFHEAP_TIERED);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
         caches = null;
         cachesOffheap = null;
+        cachesOffheapTiered = null;
 
         grids = null;
     }
@@ -151,8 +188,26 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    public void testPessimisticOffheapTiered() throws Exception {
+        testTransaction0(cachesOffheapTiered, PESSIMISTIC, KEY_1, wrap(1));
+    }
+
+    /**
+     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
     public void testPessimisticOffheapMixed() throws Exception {
         testTransactionMixed0(cachesOffheap, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
+    }
+
+    /**
+     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPessimisticOffheapTieredMixed() throws Exception {
+        testTransactionMixed0(cachesOffheapTiered, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -187,8 +242,26 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    public void testOptimisticOffheapTiered() throws Exception {
+        testTransaction0(cachesOffheapTiered, OPTIMISTIC, KEY_1, wrap(1));
+    }
+
+    /**
+     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
     public void testOptimisticOffheapMixed() throws Exception {
         testTransactionMixed0(cachesOffheap, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
+    }
+
+    /**
+     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOffheapTieredMixed() throws Exception {
+        testTransactionMixed0(cachesOffheapTiered, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -205,7 +278,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         GridCache<Integer, Object> primaryCache = null;
 
         for (GridCache<Integer, Object> cache : caches) {
-            if (cache.entry(KEY_1).primary()) {
+            if (cache.entry(SWAP_TEST_KEY).primary()) {
                 primaryCache = cache;
 
                 break;
@@ -214,15 +287,15 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         assert primaryCache != null;
 
-        primaryCache.put(KEY_1, val1);
+        primaryCache.put(SWAP_TEST_KEY, val1);
 
-        assert Arrays.equals(val1, (byte[])primaryCache.get(1));
+        assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
 
-        assert primaryCache.evict(1);
+        assert primaryCache.evict(SWAP_TEST_KEY);
 
-        assert primaryCache.peek(1) == null;
+        assert primaryCache.peek(SWAP_TEST_KEY) == null;
 
-        assert Arrays.equals(val1, (byte[])primaryCache.promote(1));
+        assert Arrays.equals(val1, (byte[])primaryCache.promote(SWAP_TEST_KEY));
     }
 
     /**
@@ -271,12 +344,12 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
                 tx = cacheInner.txStart(concurrency, REPEATABLE_READ);
 
                 try {
-                    assert Arrays.equals(val1, (byte[])cacheInner.get(key1));
+                    assertArrayEquals(val1, (byte[])cacheInner.get(key1));
 
                     if (key2 != null) {
                         Object actual = cacheInner.get(key2);
 
-                        assert F.eq(val2, actual) : "Invalid result [val2=" + val2 + ", actual=" + actual + ']';
+                        assertEquals(val2, actual);
                     }
 
                     tx.commit();
@@ -299,6 +372,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
             finally {
                 tx.close();
             }
+
+            assertNull(cache.get(key1));
         }
     }
 }

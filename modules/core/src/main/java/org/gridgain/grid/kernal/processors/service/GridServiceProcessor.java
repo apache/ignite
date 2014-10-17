@@ -195,9 +195,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<GridServiceContextImpl> ctxs = new ArrayList<>();
 
         synchronized (locSvcs) {
-            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values()) {
+            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
-            }
         }
 
         for (GridServiceContextImpl ctx : ctxs) {
@@ -493,6 +492,54 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
 
         return descs;
+    }
+
+    /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Service by specified service name.
+     */
+    public <T> T service(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+            ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            if (ctxs.isEmpty())
+                return null;
+
+            return (T)ctxs.iterator().next().service();
+        }
+    }
+
+    /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Services by specified service name.
+     */
+    public <T> Collection<T> services(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+             ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            Collection<T> res = new ArrayList<>(ctxs.size());
+
+            for (GridServiceContextImpl ctx : ctxs)
+                res.add((T)ctx.service());
+
+            return res;
+        }
     }
 
     /**
@@ -829,7 +876,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctxs = locSvcs.remove(name);
                             }
 
-                            if (ctx != null) {
+                            if (ctxs != null) {
                                 synchronized (ctxs) {
                                     cancel(ctxs, ctxs.size());
                                 }
@@ -1078,7 +1125,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctxs = locSvcs.remove(name);
                             }
 
-                            if (ctx != null) {
+                            if (ctxs != null) {
                                 synchronized (ctxs) {
                                     cancel(ctxs, ctxs.size());
                                 }

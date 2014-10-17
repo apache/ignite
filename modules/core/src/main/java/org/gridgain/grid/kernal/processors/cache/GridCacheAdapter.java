@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
@@ -48,13 +48,14 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
@@ -78,7 +79,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     };
 
     /** */
-    private boolean keyCheck = true;
+    protected boolean keyCheck = !Boolean.getBoolean(GG_CACHE_KEY_VALIDATION_DISABLED);
 
     /** */
     private boolean valCheck = true;
@@ -379,9 +380,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
-        if (F.isEmpty(flags)) {
+        if (F.isEmpty(flags))
             return this;
-        }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
             EnumSet.copyOf(F.asList(flags)), null, false);
@@ -693,7 +693,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridCacheFilterFailedException {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -740,9 +741,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
-        assert keys != null;
-
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -815,7 +815,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -881,9 +882,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return emptyMap();
 
-        assert keys != null;
-
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         Map<K, V> ret = new HashMap<>(keys.size(), 1.0f);
 
@@ -966,7 +966,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Nullable @Override public GridCacheEntry<K, V> entry(K key) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return entryEx(key, true).wrap(true);
     }
@@ -1221,11 +1222,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param readers Readers flag.
      */
     public void clearAll(Collection<? extends K> keys, boolean readers) {
-        if (F.isEmpty(keys)) {
+        if (F.isEmpty(keys))
             return;
-        }
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
@@ -1485,7 +1486,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                 assert keys != null;
 
-                validateCacheKeys(keys);
+                if (keyCheck)
+                    validateCacheKeys(keys);
 
                 for (K key : keys) {
                     if (key == null)
@@ -1558,16 +1560,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                         ctx.evicts().touch(entry, topVer);
 
                                         if (map != null) {
-                                            if (set || wasNew) {
+                                            if (set || wasNew)
                                                 map.put(key, val);
-                                            }
                                             else {
                                                 try {
                                                     GridTuple<V> v = peek0(false, key, GLOBAL, filter);
 
-                                                    if (v != null) {
+                                                    if (v != null)
                                                         map.put(key, val);
-                                                    }
                                                 }
                                                 catch (GridCacheFilterFailedException ex) {
                                                     ex.printStackTrace();
@@ -1774,7 +1774,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         GridCacheTxLocalAdapter<K, V> tx = null;
 
@@ -1822,9 +1823,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         }
 
                         try {
-                            V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
-                                /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, subjId, null, taskName, filter);
+                            V val = entry.innerGet(null,
+                                ctx.isSwapOrOffheapEnabled(),
+                                /*don't read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/true,
+                                /*event*/true,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                filter);
 
                             GridCacheVersion ver = entry.version();
 
@@ -2043,7 +2053,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final long ttl, @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2066,7 +2077,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final long ttl, @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2096,7 +2108,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final long ttl, @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2120,7 +2133,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2184,7 +2198,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public void transform(final K key, final GridClosure<V, V> transformer) throws GridException {
         A.notNull(key, "key", transformer, "valTransform");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnLocalRead();
 
@@ -2204,7 +2219,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnLocalRead();
 
@@ -2231,7 +2247,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2260,7 +2277,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable final GridCacheEntryEx<K, V> entry, final long ttl) {
         A.notNull(key, "key", transformer, "transformer");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnLocalRead();
 
@@ -2281,7 +2299,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Nullable @Override public V putIfAbsent(final K key, final V val) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2304,7 +2323,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<V> putIfAbsentAsync(final K key, final V val) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2327,7 +2347,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public boolean putxIfAbsent(final K key, final V val) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2350,7 +2371,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<Boolean> putxIfAbsentAsync(final K key, final V val) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2374,7 +2396,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public V replace(final K key, final V val) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2397,7 +2420,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<V> replaceAsync(final K key, final V val) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2420,7 +2444,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public boolean replacex(final K key, final V val) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2443,7 +2468,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<Boolean> replacexAsync(final K key, final V val) {
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2466,7 +2492,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public boolean replace(final K key, final V oldVal, final V newVal) throws GridException {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(oldVal);
 
@@ -2495,7 +2522,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<Boolean> replaceAsync(final K key, final V oldVal, final V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(oldVal);
 
@@ -2532,7 +2560,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(m))
             return;
 
-        validateCacheKeys(m.keySet());
+        if (keyCheck)
+            validateCacheKeys(m.keySet());
 
         validateCacheValues(m.values());
 
@@ -2557,7 +2586,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(m))
             return;
 
-        validateCacheKeys(m.keySet());
+        if (keyCheck)
+            validateCacheKeys(m.keySet());
 
         ctx.denyOnLocalRead();
 
@@ -2595,7 +2625,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(m))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
-        validateCacheKeys(m.keySet());
+        if (keyCheck)
+            validateCacheKeys(m.keySet());
 
         validateCacheValues(m.values());
 
@@ -2617,7 +2648,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(m))
             return new GridFinishedFuture<>(ctx.kernalContext());
 
-        validateCacheKeys(m.keySet());
+        if (keyCheck)
+            validateCacheKeys(m.keySet());
 
         ctx.denyOnLocalRead();
 
@@ -2660,7 +2692,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override
@@ -2687,7 +2720,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override
@@ -2710,7 +2744,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return;
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         syncOp(new SyncInOp(keys.size() == 1) {
             @Override public void inOp(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
@@ -2729,7 +2764,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         ctx.denyOnLocalRead();
 
@@ -2757,7 +2793,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return syncOp(new SyncOp<Boolean>(true) {
             @Override
@@ -2784,7 +2821,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override
@@ -2805,7 +2843,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return syncOp(new SyncOp<GridCacheReturn<V>>(true) {
             @Override
@@ -2869,7 +2908,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridCacheReturn<V> replacex(final K key, final V oldVal, final V newVal) throws GridException {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnLocalRead();
 
@@ -2896,7 +2936,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return asyncOp(new AsyncOp<GridCacheReturn<V>>(key) {
             @Override
@@ -2924,7 +2965,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public GridFuture<GridCacheReturn<V>> replacexAsync(final K key, final V oldVal, final V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnLocalRead();
 
@@ -2956,7 +2998,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -2983,7 +3026,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key", val, "val");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         validateCacheValue(val);
 
@@ -3098,7 +3142,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return true;
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         return lockAllAsync(keys, timeout, filter).get();
     }
@@ -3108,7 +3153,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         return lockAllAsync(Collections.singletonList(key), timeout, filter);
     }
@@ -3118,7 +3164,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         throws GridException {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         unlockAll(Collections.singletonList(key), filter);
     }
@@ -3127,7 +3174,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public boolean isLocked(K key) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         while (true) {
             try {
@@ -3145,7 +3193,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public boolean isLockedByThread(K key) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         GridCacheEntryEx<K, V> entry = peekEx(key);
 
@@ -3455,13 +3504,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public V promote(K key) throws GridException {
+        return promote(key, true);
+    }
+
+    /**
+     * @param key Key.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Value.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    @Nullable public V promote(K key, boolean deserializePortable) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         GridCacheSwapEntry<V> unswapped = ctx.swap().readAndRemove(key);
 
@@ -3481,7 +3541,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return null;
         }
 
-        return ctx.cloneOnFlag(unswapped.value());
+        V val = unswapped.value();
+
+        if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+            return (V)((GridPortableObject)val).deserialize();
+        else
+            return ctx.cloneOnFlag(val);
     }
 
     /** {@inheritDoc} */
@@ -3491,7 +3556,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return;
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         Collection<K> unswap = new ArrayList<>(keys.size());
 
@@ -3749,9 +3815,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     ctx.near().dht().context().tm().txContextReset();
             }
         }
-        else {
+        else
             return op.op(tx);
-        }
     }
 
     /**
@@ -4065,11 +4130,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
-        if (F.isEmpty(keys)) {
+        if (F.isEmpty(keys))
             return;
-        }
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
@@ -4085,7 +4150,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public boolean clear0(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
@@ -4105,7 +4171,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         GridCacheEntryEx<K, V> entry = peekEx(key);
 
@@ -4132,7 +4199,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public boolean evict(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         ctx.denyOnFlag(READ);
 
@@ -4150,7 +4218,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return;
 
-        validateCacheKey(keys);
+        if (keyCheck)
+            validateCacheKey(keys);
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
@@ -4176,7 +4245,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public boolean containsKey(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         GridCacheEntryEx<K, V> e = peekEx(key);
 
@@ -4201,9 +4271,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return true;
 
-        assert keys != null;
-
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         for (K k : keys)
             if (!containsKey(k, filter))
@@ -4222,9 +4291,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return true;
 
-        assert keys != null;
-
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         for (K k : keys) {
             if (containsKey(k, filter))
@@ -4316,7 +4384,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(keys))
             return emptySet();
 
-        validateCacheKeys(keys);
+        if (keyCheck)
+            validateCacheKeys(keys);
 
         return new GridCacheEntrySet<>(ctx, F.viewReadOnly(keys, CU.cacheKey2Entry(ctx), keyFilter), filter);
     }
@@ -4431,7 +4500,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         A.notNull(key, "key");
 
-        validateCacheKey(key);
+        if (keyCheck)
+            validateCacheKey(key);
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -4592,10 +4662,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param keys Cache keys.
      * @throws GridRuntimeException If validation fails.
      */
-    private void validateCacheKeys(Iterable<?> keys) {
+    protected void validateCacheKeys(Iterable<?> keys) {
+        if (keys == null)
+            return;
+
         if (keyCheck) {
             for (Object key : keys) {
-                if (key == null)
+                if (key == null || key instanceof GridCacheInternal)
                     continue;
 
                 CU.validateCacheKey(log, key);
@@ -4665,7 +4738,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             log.debug("Processing check committed transaction request [nodeId=" + nodeId + ", req=" + req + ']');
 
         // First check if we have near transaction with this ID.
-        GridCacheTxEx<K, V> tx = ctx.tm().localTxForRecovery(req.nearXidVersion());
+        GridCacheTxEx<K, V> tx = ctx.tm().localTxForRecovery(req.nearXidVersion(), !req.nearOnlyCheck());
 
         // Either we found near transaction or one of transactions is being committed by user.
         // Wait for it and send reply.

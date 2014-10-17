@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -85,7 +84,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             final String queueName = "queue-name-" + UUID.randomUUID();
 
-            System.out.println(StringUtils.repeat("\n", 20));
+            System.out.println(U.filler(20, '\n'));
 
             final CountDownLatch latch1 = new CountDownLatch(1);
             //final CountDownLatch latch2 = new CountDownLatch(1);
@@ -126,7 +125,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             startAdditionalNodes(BACKUP_CNT + 2, queueName);
 
-            System.out.println(StringUtils.repeat("\n", 20));
+            System.out.println(U.filler(20, '\n'));
 
             //latch2.countDown();
 

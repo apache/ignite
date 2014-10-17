@@ -36,12 +36,6 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hadoop</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hibernate</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
@@ -73,31 +67,31 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-aop</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
@@ -122,12 +116,6 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-io</artifactId>
             <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
         </dependency>
 
         <dependency>
@@ -177,8 +165,8 @@
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.10</artifactId>
-            <version>2.1.5</version>
+            <artifactId>scalatest_2.11</artifactId>
+            <version>2.2.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -201,16 +189,6 @@
                 <directory>config</directory>
             </resource>
         </resources>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.1.6</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
 
         <plugins>
             <plugin>

@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Copyright (C) GridGain Systems. All Rights Reserved.
+# @sh.file.header
 #  _________        _____ __________________        _____
 #  __  ____/___________(_)______  /__  ____/______ ____(_)_______
 #  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
 #  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 #  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 #
-# Version: 6.2.1-p1
+# Version: @sh.file.version
 #
 
 #
@@ -22,7 +22,12 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+#
+# Set SCRIPTS_HOME - base path to scripts.
+#
+SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/os/bin" # Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME_TMP}/bin in release.
+
+source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -37,32 +42,14 @@ setGridGainHome
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/bin/include/parseargs.sh
+. "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
-
-
-#
-# Remove slf4j, log4j libs from classpath for hadoop edition, because they already exist in hadoop.
-#
-if [ -d "$HADOOP_COMMON_HOME" ]
-    then
-        for file in ${GRIDGAIN_HOME}/bin/include/visorui/*
-        do
-            file_name=$(basename $file)
-
-            if [ -f ${file} ] && [[ "${file_name}" != slf4j*.jar ]] && [[ "${file_name}" != log4j*.jar ]] ; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}
-            fi
-        done
-    else
-        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*
-fi
-
-CP="${GRIDGAIN_LIBS}"
+. "${SCRIPTS_HOME}"/include/setenv.sh
+. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
+CP="${GRIDGAIN_HOME}/bin/include/visor-common/*${SEP}${GRIDGAIN_HOME}/bin/include/visorui/*${SEP}${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp
@@ -86,7 +73,7 @@ if [ "${DOCK_OPTS}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Visor - GridGain Admin Console"
 fi
 
-if [ -z "$MAC_OS_OPTS" ] ; then
+if [ -z "${MAC_OS_OPTS}" ] ; then
     MAC_OS_OPTS=-Dsun.java2d.opengl=false
 fi
 
@@ -115,20 +102,23 @@ trap restoreSttySettings INT
 #
 VISOR_PLUGINS_DIR="${GRIDGAIN_HOME}/bin/include/visorui/plugins"
 
+# Force to use OpenGL
+# JVM_OPTS_VISOR="${JVM_OPTS_VISOR} -Dsun.java2d.opengl=True"
+
 #
 # Starts Visor Dashboard.
 #
 case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} ${MAC_OS_OPTS} "${DOCK_OPTS}" -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" \
         -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
         -DGRIDGAIN_PROG_NAME="$0" -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
         -Dpf4j.pluginsDir="${VISOR_PLUGINS_DIR}" \
         org.gridgain.visor.gui.VisorGuiLauncher

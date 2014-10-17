@@ -40,6 +40,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** */
     protected static final long RETRY_DELAY = 1;
 
+    /** */
+    private static final int DFLT_CLEAR_BATCH_SIZE = 100;
+
     /** Logger. */
     protected final GridLogger log;
 
@@ -320,6 +323,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
+    @Override public void clear() {
+        clear(DFLT_CLEAR_BATCH_SIZE);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void clear(int batchSize) throws GridRuntimeException {
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
@@ -403,7 +411,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected final void checkRemoved(Long idx) {
         if (idx == QUEUE_REMOVED_IDX)
-            onRemoved();
+            onRemoved(true);
     }
 
     /**
@@ -413,18 +421,21 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected final void checkRemoved(@Nullable GridCacheQueueHeader hdr) {
         if (queueRemoved(hdr, id))
-            onRemoved();
+            onRemoved(true);
     }
 
     /**
-     * Marks queue as removed and throws {@link GridCacheDataStructureRemovedRuntimeException}.
+     * Marks queue as removed.
+     *
+     * @param throw0 If {@code true} then throws {@link GridCacheDataStructureRemovedRuntimeException}.
      */
-    private void onRemoved() {
+    void onRemoved(boolean throw0) {
         rmvd = true;
 
         releaseSemaphores();
 
-        throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
+        if (throw0)
+            throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
     }
 
     /**
@@ -662,11 +673,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         @Override public GridBiTuple<GridCacheQueueHeader, GridBiTuple<Long, Long>> apply(GridCacheQueueHeader hdr) {
             boolean rmvd = queueRemoved(hdr, id);
 
-            if (rmvd || hdr.empty()) {
-                long idx = rmvd ? QUEUE_REMOVED_IDX : null;
-
-                return new GridBiTuple<>(hdr, new GridBiTuple<>(idx, idx));
-            }
+            if (rmvd)
+                return new GridBiTuple<>(hdr, new GridBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX));
+            else if (hdr.empty())
+                return new GridBiTuple<>(hdr, null);
 
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.tail(), hdr.tail(), null);

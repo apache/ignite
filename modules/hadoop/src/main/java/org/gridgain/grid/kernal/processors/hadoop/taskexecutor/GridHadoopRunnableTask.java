@@ -13,11 +13,12 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
+import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
@@ -25,7 +26,7 @@ import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 /**
  * Runnable task.
  */
-public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> {
+public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** */
     private final GridUnsafeMemory mem;
 
@@ -39,7 +40,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private final GridHadoopTaskInfo info;
 
     /** Submit time. */
-    private final long submitTs = System.currentTimeMillis();
+    private final long submitTs = U.currentTimeMillis();
 
     /** Execution start timestamp. */
     private long execStartTs;
@@ -51,7 +52,10 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     private GridHadoopMultimap local;
 
     /** */
-    private volatile GridHadoopTask task;
+    private volatile GridHadoopTaskContext ctx;
+
+    /** */
+    GridHadoopJobStatistics stats;
 
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
@@ -59,12 +63,15 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     /**
      * @param log Log.
      * @param job Job.
+     * @param stats Statistics.
      * @param mem Memory.
      * @param info Task info.
      */
-    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info) {
+    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridHadoopJobStatistics stats,
+        GridUnsafeMemory mem, GridHadoopTaskInfo info) {
         this.log = log.getLogger(GridHadoopRunnableTask.class);
         this.job = job;
+        this.stats = stats;
         this.mem = mem;
         this.info = info;
     }
@@ -85,25 +92,25 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
 
     /** {@inheritDoc} */
     @Override public Void call() throws GridException {
-        execStartTs = System.currentTimeMillis();
+        execStartTs = U.currentTimeMillis();
 
         final GridHadoopCounters counters = new GridHadoopCountersImpl();
 
-        GridHadoopTaskContext ctx = job.getTaskContext(info);
-
-        ctx.counters(counters);
-
-        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
         Throwable err = null;
 
+        GridHadoopTaskState state = GridHadoopTaskState.COMPLETED;
+
         try {
+            ctx = job.getTaskContext(info);
+
+            ctx.counters(counters);
+
             ctx.prepareTaskEnvironment();
 
             runTask(ctx);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new GridHadoopTaskInfo(info.nodeId(), COMBINE, info.jobId(), info.taskNumber(),
-                    info.attempt(), null));
+                ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
                     runTask(ctx);
@@ -123,14 +130,17 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             U.error(log, "Task execution failed.", e);
         }
         finally {
-            execEndTs = System.currentTimeMillis();
+            execEndTs = U.currentTimeMillis();
+
+            stats.onTaskEnd(info);
 
             onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
 
             if (local != null)
                 local.close();
 
-            ctx.cleanupTaskEnvironment();
+            if (ctx != null)
+                ctx.cleanupTaskEnvironment();
         }
 
         return null;
@@ -140,8 +150,7 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
      * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx)
-        throws GridException {
+    private void runTask(GridHadoopTaskContext ctx) throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -151,12 +160,9 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
             ctx.input(in);
             ctx.output(out);
 
-            task = job.createTask(ctx.taskInfo());
+            stats.onTaskStart(ctx.taskInfo());
 
-            if (cancelled)
-                throw new GridHadoopTaskCancelledException("Task cancelled.");
-
-            task.run(ctx);
+            ctx.run();
         }
     }
 
@@ -166,8 +172,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
     public void cancel() {
         cancelled = true;
 
-        if (task != null)
-            task.cancel();
+        if (ctx != null)
+            ctx.cancel();
     }
 
     /**
@@ -231,8 +237,8 @@ public abstract class GridHadoopRunnableTask implements GridPlainCallable<Void> 
                     assert local == null;
 
                     local = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
-                        new GridHadoopHashMultimap(job, mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
-                        new GridHadoopSkipList(job, mem); // TODO replace with red-black tree
+                        new GridHadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                        new GridHadoopSkipList(job.info(), mem); // TODO replace with red-black tree
 
                     return local.startAdding(ctx);
                 }

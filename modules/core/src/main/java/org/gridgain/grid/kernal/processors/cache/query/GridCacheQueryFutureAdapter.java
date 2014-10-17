@@ -167,6 +167,29 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @throws GridException If fetch failed.
      */
     public Collection<R> nextPage() throws GridException {
+        return nextPage(qry.query().timeout(), startTime);
+    }
+
+    /**
+     * Returns next page for the query.
+     *
+     * @param timeout Timeout.
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    public Collection<R> nextPage(long timeout) throws GridException {
+        return nextPage(timeout, U.currentTimeMillis());
+    }
+
+    /**
+     * Returns next page for the query.
+     *
+     * @param timeout Timeout.
+     * @param startTime Timeout wait start time.
+     * @return Next page or {@code null} if no more pages available.
+     * @throws GridException If fetch failed.
+     */
+    private Collection<R> nextPage(long timeout, long startTime) throws GridException {
         Collection<R> res = null;
 
         while (res == null) {
@@ -177,8 +200,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (res == null) {
                 if (!isDone()) {
                     loadPage();
-
-                    long timeout = qry.query().timeout();
 
                     long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
 
@@ -370,16 +391,29 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
             }
         }
-        catch (GridException e) {
-            synchronized (mux) {
-                enqueue(Collections.emptyList());
+        catch (Error e) {
+            onPageError(nodeId, e);
 
-                onPage(nodeId, true);
+            throw e;
+        }
+        catch (Throwable e) {
+            onPageError(nodeId, e);
+        }
+    }
 
-                onDone(e);
+    /**
+     * @param nodeId Sender node id.
+     * @param e Error.
+     */
+    private void onPageError(@Nullable UUID nodeId, Throwable e) {
+        synchronized (mux) {
+            enqueue(Collections.emptyList());
 
-                mux.notifyAll();
-            }
+            onPage(nodeId, true);
+
+            onDone(e);
+
+            mux.notifyAll();
         }
     }
 

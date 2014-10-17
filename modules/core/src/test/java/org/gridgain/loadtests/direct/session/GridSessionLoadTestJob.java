@@ -53,16 +53,14 @@ public class GridSessionLoadTestJob extends GridComputeJobAdapter {
         int val = (Integer)ser + 1;
 
         // Generate garbage.
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++)
             taskSes.setAttribute(arg, i);
-        }
 
         // Set final value.
         taskSes.setAttribute(arg, val);
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Set session attribute [name=" + arg + ", value=" + val + ']');
-        }
 
         return val;
     }

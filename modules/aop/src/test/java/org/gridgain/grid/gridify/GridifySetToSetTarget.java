@@ -112,9 +112,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
         for (Long val : input) {
             Long divisor = checkPrime(val, 2, val);
 
-            if (divisor == null) {
+            if (divisor == null)
                 res.add(val);
-            }
         }
 
         return res;
@@ -136,9 +135,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
         for (Long val : input) {
             Long divisor = checkPrime(val, 2, val);
 
-            if (divisor == null) {
+            if (divisor == null)
                 res.add(val);
-            }
         }
 
         return res.toArray(new Long[res.size()]);
@@ -160,9 +158,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
         for (Long val : input) {
             Long divisor = checkPrime(val, 2, val);
 
-            if (divisor == null) {
+            if (divisor == null)
                 res.add(val);
-            }
         }
 
         long[] arr = new long[res.size()];
@@ -197,9 +194,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
 
             Long divisor = checkPrime(val, 2, val);
 
-            if (divisor == null) {
+            if (divisor == null)
                 res.add(val);
-            }
         }
 
         return new MathIteratorAdapter<>(res);
@@ -224,9 +220,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
 
             Long divisor = checkPrime(val, 2, val);
 
-            if (divisor == null) {
+            if (divisor == null)
                 res.add(val);
-            }
         }
 
         return new MathEnumerationAdapter<>(res);
@@ -247,9 +242,8 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
         // Note that we also check for thread interruption which may happen
         // if the job was cancelled from the grid task.
         for (long divisor = minRage; divisor <= maxRange && !Thread.currentThread().isInterrupted(); divisor++) {
-            if (divisor != 1 && divisor != val && val % divisor == 0) {
+            if (divisor != 1 && divisor != val && val % divisor == 0)
                 return divisor;
-            }
         }
 
         return null;

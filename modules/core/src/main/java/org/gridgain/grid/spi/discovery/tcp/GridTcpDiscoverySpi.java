@@ -33,12 +33,14 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -149,7 +151,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
-@GridDiscoverySpiReconnectSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscoverySpi, GridTcpDiscoverySpiMBean {
     /** Default port to listen (value is <tt>47500</tt>). */
@@ -394,9 +395,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     /** Addresses that incoming join requests send were send from (for resolving concurrent start). */
     private final Collection<SocketAddress> fromAddrs = new GridConcurrentHashSet<>();
 
-    /** SPI reconnect flag to filter initial node connected event. */
-    private volatile boolean recon;
-
     /** Response on join request from coordinator (in case of duplicate ID or auth failure). */
     private final GridTuple<GridTcpDiscoveryAbstractMessage> joinRes = F.t1();
 
@@ -412,6 +410,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** Start time of the very first grid node. */
     private volatile long gridStartTime;
+
+    /** Map with proceeding ping requests. */
+    private final ConcurrentMap<InetSocketAddress, GridFuture<UUID>> pingMap = new ConcurrentHashMap8<>();
 
     /** Debug mode. */
     private boolean debugMode;
@@ -1455,7 +1456,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 return node.id().equals(pingNode(addr));
             }
-            catch (GridSpiException e) {
+            catch (GridException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']');
 
@@ -1473,54 +1474,78 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
      * @return ID of the remote node if node alive.
      * @throws GridSpiException If an error occurs.
      */
-    private UUID pingNode(InetSocketAddress addr) throws GridSpiException {
+    private UUID pingNode(InetSocketAddress addr) throws GridException {
         assert addr != null;
 
         if (F.contains(locNodeAddrs, addr))
             return locNodeId;
 
-        Collection<Throwable> errs = null;
+        GridFutureAdapterEx<UUID> fut = new GridFutureAdapterEx<>();
 
-        Socket sock = null;
+        GridFuture<UUID> oldFut = pingMap.putIfAbsent(addr, fut);
 
-        for (int i = 0; i < reconCnt; i++) {
+        if (oldFut != null)
+            return oldFut.get();
+        else {
+            Collection<Throwable> errs = null;
+
             try {
-                if (addr.isUnresolved())
-                    addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
+                Socket sock = null;
 
-                long tstamp = U.currentTimeMillis();
+                for (int i = 0; i < reconCnt; i++) {
+                    try {
+                        if (addr.isUnresolved())
+                            addr = new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort());
 
-                sock = openSocket(addr);
+                        long tstamp = U.currentTimeMillis();
 
-                // Handshake response will act as ping response.
-                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                        sock = openSocket(addr);
 
-                GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+                        // Handshake response will act as ping response.
+                        writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
 
-                if (locNodeId.equals(res.creatorNodeId())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Handshake response from local node: " + res);
+                        GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
 
-                    break;
+                        if (locNodeId.equals(res.creatorNodeId())) {
+                            if (log.isDebugEnabled())
+                                log.debug("Handshake response from local node: " + res);
+
+                            break;
+                        }
+
+                        stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                        fut.onDone(res.creatorNodeId());
+
+                        return res.creatorNodeId();
+                    }
+                    catch (IOException | GridException e) {
+                        if (errs == null)
+                            errs = new ArrayList<>();
+
+                        errs.add(e);
+                    }
+                    finally {
+                        U.closeQuiet(sock);
+                    }
                 }
-
-                stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
-
-                return res.creatorNodeId();
             }
-            catch (IOException | GridException e) {
-                if (errs == null)
-                    errs = new ArrayList<>();
+            catch (Throwable t) {
+                fut.onDone(t);
 
-                errs.add(e);
+                throw U.cast(t);
             }
             finally {
-                U.closeQuiet(sock);
-            }
-        }
+                if (!fut.isDone())
+                    fut.onDone(U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
 
-        throw new GridSpiException("Failed to ping node by address: " + addr,
-            U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
+                boolean b = pingMap.remove(addr, fut);
+
+                assert b;
+            }
+
+            return fut.get();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1530,7 +1555,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
     /** {@inheritDoc} */
     @Override public void reconnect() throws GridSpiException {
-        spiStart0(true);
+        throw new UnsupportedOperationException("Reconnect is not supported in current version of GridGain.");
     }
 
     /** {@inheritDoc} */
@@ -1598,16 +1623,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     mux.notifyAll();
                 }
 
-                // Alter flag here and fire event here, since it has not been done in msgWorker.
-                if (recon)
-                    // Node has reconnected and it is the first.
-                    notifyDiscovery(EVT_NODE_RECONNECTED, 1, locNode);
-                else {
-                    // This is initial start, node is the first.
-                    recon = true;
-
-                    notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
-                }
+                notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
 
                 break;
             }
@@ -2953,7 +2969,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 try {
                                     res = pingNode(addr) != null;
                                 }
-                                catch (GridSpiException e) {
+                                catch (GridException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to ping node [addr=" + addr +
                                             ", err=" + e.getMessage() + ']');
@@ -4295,14 +4311,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     mux.notifyAll();
                 }
 
-                if (recon)
-                    notifyDiscovery(EVT_NODE_RECONNECTED, topVer, locNode);
-                else {
-                    recon = true;
-
-                    // Discovery manager must create local joined event before spiStart completes.
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
-                }
+                // Discovery manager must create local joined event before spiStart completes.
+                notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
             }
 
             if (ring.hasRemoteNodes())
@@ -5222,11 +5232,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
                             GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
 
-                            // Direct join request requires special processing.
+                            // Direct join request - no need to handle this socket anymore.
                             if (!req.responded()) {
                                 processJoinRequestMessage(req);
 
-                                continue;
+                                break;
                             }
                         }
                         else if (msg instanceof GridTcpDiscoveryDuplicateIdMessage) {
@@ -5432,54 +5442,42 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             GridTcpDiscoverySpiState state = spiStateCopy();
 
             if (state == CONNECTED) {
-                // Direct join request - socket should be closed after handling.
-                try {
-                    writeToSocket(sock, RES_OK);
+                writeToSocket(sock, RES_OK);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
 
-                    msg.responded(true);
+                msg.responded(true);
 
-                    msgWorker.addMessage(msg);
-                }
-                finally {
-                    U.closeQuiet(sock);
-                }
+                msgWorker.addMessage(msg);
             }
             else {
-                // Direct join request - socket should be closed after handling.
-                try {
-                    stats.onMessageProcessingStarted(msg);
+                stats.onMessageProcessingStarted(msg);
 
-                    Integer res;
+                Integer res;
 
-                    SocketAddress rmtAddr = sock.getRemoteSocketAddress();
+                SocketAddress rmtAddr = sock.getRemoteSocketAddress();
 
-                    if (state == CONNECTING) {
-                        if (noResAddrs.contains(rmtAddr) || locNodeId.compareTo(msg.creatorNodeId()) < 0)
-                            // Remote node node has not responded to join request or loses UUID race.
-                            res = RES_WAIT;
-                        else
-                            // Remote node responded to join request and wins UUID race.
-                            res = RES_CONTINUE_JOIN;
-                    }
+                if (state == CONNECTING) {
+                    if (noResAddrs.contains(rmtAddr) || locNodeId.compareTo(msg.creatorNodeId()) < 0)
+                        // Remote node node has not responded to join request or loses UUID race.
+                        res = RES_WAIT;
                     else
-                        // Local node is stopping. Remote node should try next one.
+                        // Remote node responded to join request and wins UUID race.
                         res = RES_CONTINUE_JOIN;
-
-                    writeToSocket(sock, res);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
-
-                    fromAddrs.addAll(msg.node().socketAddresses());
-
-                    stats.onMessageProcessingFinished(msg);
                 }
-                finally {
-                    U.closeQuiet(sock);
-                }
+                else
+                    // Local node is stopping. Remote node should try next one.
+                    res = RES_CONTINUE_JOIN;
+
+                writeToSocket(sock, res);
+
+                if (log.isDebugEnabled())
+                    log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
+
+                fromAddrs.addAll(msg.node().socketAddresses());
+
+                stats.onMessageProcessingFinished(msg);
             }
         }
 

@@ -609,6 +609,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
+        if (map != null && keyCheck)
+            validateCacheKeys(map.keySet());
+
         ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
         UUID subjId = ctx.subjectIdPerCall(null);
@@ -663,6 +666,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         assert keys != null || drMap != null;
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         UUID subjId = ctx.subjectIdPerCall(null);
@@ -712,13 +718,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
+        if (keyCheck)
+            validateCacheKeys(keys);
+
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
-
-            GridCacheVersion obsoleteVer = null;
 
             boolean success = true;
 
@@ -734,14 +741,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, /*event*/true, subjId, null, taskName,
+                            V v = entry.innerGet(null,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /*event*/true,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
                                 filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
-                                if (obsoleteVer == null)
-                                    obsoleteVer = context().versions().next();
+                                GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
                                     removeIfObsolete(key);
@@ -1048,6 +1063,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
+                        /*temporary*/true,
                         req.subjectId(),
                         transform,
                         taskName,
@@ -1140,7 +1156,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (putMap == null)
                             putMap = new LinkedHashMap<>(size, 1.0f);
 
-                        putMap.put(entry.key(), updated);
+                        putMap.put(entry.key(), ctx.<V>unwrapTemporary(updated));
                     }
                 }
                 else if (op == UPDATE) {
@@ -1155,6 +1171,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
+                            /*temporary*/true,
                             req.subjectId(),
                             null,
                             taskName,
@@ -1164,6 +1181,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (updated == null)
                             continue;
+
+                        updated = ctx.unwrapTemporary(updated);
                     }
 
                     assert updated != null;
@@ -1185,6 +1204,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
+                            /*temporary*/true,
                             req.subjectId(),
                             null,
                             taskName,
@@ -1252,6 +1272,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param dhtFut Optional DHT future.
      * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param replicate Whether DR is enabled for that cache.
+     * @param taskName Task name.
      * @return Return value.
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */

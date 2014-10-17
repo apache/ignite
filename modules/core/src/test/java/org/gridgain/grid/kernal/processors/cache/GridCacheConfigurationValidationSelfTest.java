@@ -90,9 +90,8 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
             dfltCacheCfg.setPreloadMode(SYNC);
-        else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME)) {
+        else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
-        }
         else if (gridName.contains(WRONG_AFFINITY_GRID_NAME)) {
             dfltCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction() {
                 // No-op. Just to have another class name.

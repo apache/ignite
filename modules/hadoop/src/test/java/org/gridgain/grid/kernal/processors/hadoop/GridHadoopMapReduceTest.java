@@ -22,6 +22,8 @@ import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopUtils.*;
+
 /**
  * Test of whole cycle of map-reduce processing via Job tracker.
  */
@@ -77,7 +79,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             job.setJarByClass(GridHadoopWordCount2.class);
 
             GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                    new GridHadoopDefaultJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration()));
 
             fut.get();
 
