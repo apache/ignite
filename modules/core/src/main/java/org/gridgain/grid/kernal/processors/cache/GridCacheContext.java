@@ -54,6 +54,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
@@ -295,7 +296,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         trueArr = new GridPredicate[]{F.alwaysTrue()};
 
         // Create unsafe memory only if writing values
-        unsafeMemory = cacheCfg.getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES ?
+        unsafeMemory = cacheCfg.getMemoryMode() == OFFHEAP_VALUES ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
@@ -1670,6 +1671,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable() {
+        return kernalContext().portable();
+    }
+
+    /**
      * @return Portable enabled flag.
      */
     public boolean portableEnabled() {
@@ -1677,11 +1685,42 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
+     */
+    public boolean offheapTiered() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+    }
+
+    /**
+     * Converts temporary offheap object to heap-based.
+     *
+     * @param obj Object.
+     * @return Heap-based object.
+     */
+    @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
+        if (!offheapTiered() || !portableEnabled())
+            return (T)obj;
+
+        return (T)portable().unwrapTemporary(obj);
+    }
+
+    /**
+     * @param bytes Object marshalled with portable marshaller.
+     * @return Object marshalled with grid marshaller.
+     * @throws GridException If failed.
+     */
+    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+        assert portableEnabled() && offheapTiered();
+
+        return marshaller().marshal(portable().unmarshal(bytes, 0));
+    }
+
+    /**
      * @param obj Object.
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         assert portableEnabled();
 
         if (obj == null)
@@ -1703,10 +1742,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param col Collection to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
-     * @throws GridException
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable)
-        throws GridException {
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
         if (!config().isPortableEnabled())
             return col;
 
@@ -1725,10 +1762,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
-     * @throws GridException If failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) throws GridException {
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         if (!config().isPortableEnabled())
             return o;
 

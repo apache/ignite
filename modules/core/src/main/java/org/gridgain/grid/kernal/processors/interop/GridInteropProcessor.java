@@ -18,6 +18,11 @@ import org.jetbrains.annotations.*;
  */
 public interface GridInteropProcessor extends GridProcessor {
     /**
+     * @return Environment pointer.
+     */
+    public long environmentPointer();
+
+    /**
      * @return Grid name.
      */
     public String gridName();

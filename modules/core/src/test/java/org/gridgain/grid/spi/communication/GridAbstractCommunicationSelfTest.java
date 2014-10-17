@@ -115,6 +115,11 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
                 }
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public void onDisconnected(UUID nodeId) {
+            // No-op.
+        }
     }
 
     /** */

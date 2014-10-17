@@ -47,6 +47,23 @@ public class GridCacheVersionEx extends GridCacheVersion {
         this.drVer = drVer;
     }
 
+    /**
+     * Constructor.
+     *
+     * @param topVer Topology version.
+     * @param nodeOrderDrId Node order and DR ID.
+     * @param globalTime Globally adjusted time.
+     * @param order Version order.
+     * @param drVer DR version.
+     */
+    public GridCacheVersionEx(int topVer, int nodeOrderDrId, long globalTime, long order, GridCacheVersion drVer) {
+        super(topVer, nodeOrderDrId, globalTime, order);
+
+        assert drVer != null && !(drVer instanceof GridCacheVersionEx); // DR version can only be plain here.
+
+        this.drVer = drVer;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion drVersion() {
         return drVer;
