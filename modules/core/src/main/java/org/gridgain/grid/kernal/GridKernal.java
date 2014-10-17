@@ -1268,8 +1268,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         String ips = F.concat(U.allLocalIps(), ", "); // Exclude loopbacks.
         String macs = F.concat(U.allLocalMACs(), ", "); // Only enabled network interfaces.
 
-        System.out.println("=============: " + macs);
-
         // Ack network context.
         if (log.isInfoEnabled()) {
             log.info("Non-loopback local IPs: " + (F.isEmpty(ips) ? "N/A" : ips));
