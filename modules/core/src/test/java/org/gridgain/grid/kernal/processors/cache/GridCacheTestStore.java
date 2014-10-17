@@ -15,10 +15,10 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridCacheTestStore implements GridCacheStore<Integer, String> {
     /** Store. */
-    private final Map<Integer, String> map = new ConcurrentHashMap<>();
+    private final Map<Integer, String> map = new ConcurrentLinkedHashMap<>();
 
     /** Transactions. */
     private final Collection<GridCacheTx> txs = new GridConcurrentHashSet<>();

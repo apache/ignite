@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -197,6 +198,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
+
+        ctx.io().addDisconnectListener(new GridDisconnectListener() {
+            @Override public void onNodeDisconnected(UUID nodeId) {
+                scheduleAtomicFutureRecheck();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -1804,6 +1811,36 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (entry != null && (skip == null || !skip.contains(entry.key())))
                 ctx.evicts().touch(entry, topVer);
         }
+    }
+
+    /**
+     * Checks if future timeout happened.
+     */
+    private void scheduleAtomicFutureRecheck() {
+        final long timeout = ctx.kernalContext().config().getNetworkTimeout();
+
+        ctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout * 2) {
+            @Override public void onTimeout() {
+                boolean leave = false;
+
+                try {
+                    ctx.gate().enter();
+
+                    leave = true;
+
+                    for (GridCacheAtomicFuture fut : ctx.mvcc().atomicFutures())
+                        fut.checkTimeout(timeout);
+                }
+                catch (IllegalStateException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Will not check pending atomic update futures for timeout (Grid is stopping).");
+                }
+                finally {
+                    if (leave)
+                        ctx.gate().leave();
+                }
+            }
+        });
     }
 
     /**
