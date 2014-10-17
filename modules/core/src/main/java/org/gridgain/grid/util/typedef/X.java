@@ -456,6 +456,31 @@ public final class X {
     }
 
     /**
+     * Checks if passed throwable has given class in one of the suppressed exceptions.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Class to check.
+     * @return {@code True} if one of the suppressed exceptions is an instance of passed class,
+     *      {@code false} otherwise.
+     */
+    public static boolean hasSuppressed(@Nullable Throwable t, @Nullable Class<? extends Throwable> cls) {
+        if (t == null || cls == null)
+            return false;
+
+        if (t.getSuppressed() != null) {
+            for (Throwable th : t.getSuppressed()) {
+                if (cls.isAssignableFrom(th.getClass()))
+                    return true;
+
+                if (hasSuppressed(th, cls))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
      * <b>excluding</b> that throwable itself.
      * <p>

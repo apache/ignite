@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
@@ -507,6 +508,22 @@ public class GridGainEx {
         }
         else
             return start(springCfgPath, gridName, null);
+    }
+
+    /**
+     * Start Grid for interop scenario.
+     *
+     * @param springCfgPath Spring config path.
+     * @param gridName Grid name.
+     * @param envPtr Environment pointer.
+     * @return Started Grid.
+     * @throws GridException If failed.
+     */
+    public static Grid startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
+        throws GridException {
+        GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
+
+        return start(springCfgPath, gridName);
     }
 
     /**
