@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.service;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Service deployment future.
@@ -20,6 +21,7 @@ import org.gridgain.grid.util.future.*;
  * @version @java.version
  */
 public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
+    /** */
     private final GridServiceConfiguration cfg;
 
     /**
@@ -37,5 +39,10 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
      */
     GridServiceConfiguration configuration() {
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridServiceDeploymentFuture.class, this);
     }
 }
