@@ -79,6 +79,8 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         if (tcpCfg == null)
             throw new GridException("GridTcpRouterConfiguration is not found");
 
+        tcpCfg.setHost("127.0.0.1");
+
         GridRouterFactory.startTcpRouter(tcpCfg);
     }
 
