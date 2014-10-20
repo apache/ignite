@@ -221,3 +221,4 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
         return S.toString(GridDotNetPortableTypeConfiguration.class, this);
     }
 }
+
