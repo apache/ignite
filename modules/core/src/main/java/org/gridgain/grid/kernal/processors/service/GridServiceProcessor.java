@@ -1189,6 +1189,46 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Callable proxy class.
+     */
+    private static class ProxyCallable implements Callable<Object> {
+        /** Method. */
+        private Method mtd;
+
+        /** Service. */
+        private Object svc;
+
+        /** Args. */
+        private Object[] args;
+
+        /**
+         * @param mtd Service method to invoke.
+         * @param svc Service class.
+         * @param args Arguments for invocation.
+         */
+        private ProxyCallable(Method mtd, Object svc, Object[] args) {
+            this.mtd = mtd;
+            this.svc = svc;
+            this.args = args;
+        }
+
+        /**
+         * @param mtd Service method to invoke.
+         * @param svc Service class.
+         * @param args Arguments for invocation.
+         * @return New instance of {@code ProxyCallable}.
+         */
+        private static ProxyCallable getInstance(Method mtd, Object svc, Object[] args) {
+            return new ProxyCallable(mtd,svc,args);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+           return mtd.invoke(svc, args);
+        }
+    }
+
+    /**
      * Wrapper for making {@link GridService} class proxies.
      */
     private class ServiceProxy<T> implements Serializable {
@@ -1226,7 +1266,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BALANCE,
-                            new ProxyCallable(mtd, ctx.service().service(name),args).instance,
+                            ProxyCallable.getInstance(mtd, ctx.service().service(name), args),
                             Collections.singleton(newRmtNode),
                             false
                         ).get();
@@ -1261,7 +1301,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             do { // Repeat if reference to remote node was changed.
                 rmtNodeCurr = rmtNode.get();
 
-                if (sticky && rmtNode != null) { // Check if node still exists.
+                if (sticky && rmtNodeCurr != null) { // Check if node still exists.
                     boolean nodeIsAlive = ctx.discovery().alive(rmtNodeCurr);
                     boolean srvcIsDeployed = isServiceDeployed(name, rmtNodeCurr.id());
 
@@ -1359,33 +1399,5 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             return proxy;
         }
 
-    }
-
-    /**
-     * Callable proxy class.
-     */
-    private static class ProxyCallable implements Callable<Object> {
-        /** Instance. */
-        private static Callable<?> instance;
-
-        /** Method. */
-        private Method mtd;
-
-        /** Service. */
-        private Object svc;
-
-        /** Args. */
-        private Object[] args;
-
-        private ProxyCallable(Method mtd, Object svc, Object[] args) {
-            this.mtd = mtd;
-            this.svc = svc;
-            this.args = args;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-           return mtd.invoke(svc, args);
-        }
     }
 }

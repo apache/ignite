@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.service;
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -72,8 +71,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     public void testAffinityDeployUpdateTopology() throws Exception {
         Grid g = randomGrid();
 
-        String name = "serviceAffinityUpdateTopology";
-
         final Integer affKey = 1;
 
         // Store a cache key.
@@ -81,6 +78,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         CountDownLatch latch = new CountDownLatch(1);
 
+        String name = "serviceAffinityUpdateTopology";
         GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(latch, affKey),
             CACHE_NAME, affKey);
 
@@ -153,18 +151,37 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     }
 
     /**
+     * @return Instance of {@code GridDummyService} for testing purposes.
+     */
+    private static GridDummyService getDummyService() {
+        return new GridDummyService() {
+            private DummyService ds = new DummyService();
+
+            @Override public int getInt() {
+                return 239;
+            }
+
+            @Override public void cancel(GridServiceContext ctx) {
+                ds.cancel(ctx);
+            }
+
+            @Override public void execute(GridServiceContext ctx) throws Exception {
+                ds.execute(ctx);
+            }
+        };
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    public void testServiceProxy() throws Exception {
-        String name = "dummyService";
+    public void testClusterSingletonServiceProxy() throws Exception {
+        String name = "remoteService";
 
-        Grid g = randomGrid();
+        Grid gLoc = startGrid(getTestGridName() + "local");
 
-        startExtraNodes(2);
+        Grid gRemote = startGrid(getTestGridName() + "remote");
 
-        final int[] cntr = new int[1];
-
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, GridIntService.instance);
+        GridFuture<?> fut = gRemote.services().deployClusterSingleton(name, getDummyService());
 
         info("Deployed service: " + name);
 
@@ -172,36 +189,41 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        GridService proxy = g.services().serviceProxy(name, GridService.class, true);
+        GridDummyService proxy = gLoc.services().serviceProxy(name, GridDummyService.class, true);
 
-        assertEquals("Proxy service was not executed", 239, cntr[0]);
+        assertEquals("Proxy service was not executed", 239, proxy.getInt());
     }
 
     /**
-     * Class for testing purposes. Used for service proxy checking.
+     * @throws Exception If failed.
      */
-    static class GridIntService implements GridService, Serializable {
-        /** Array testing purposes. */
-        private int[] a;
+    public void testNodeSingletonServiceProxy() throws Exception {
+        Grid g = randomGrid();
 
-        /** Instance. */
-        private static GridIntService instance = new GridIntService(new int[] {1, 2, 3});
+        startExtraNodes(2);
 
+        String name = "dummyService";
+
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, getDummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        GridDummyService proxy = g.services().serviceProxy(name, GridDummyService.class, true);
+
+        assertEquals("Proxy service was not executed", 239, proxy.getInt());
+    }
+
+    /**
+     * Dummy interface for testing purposes.
+     */
+    private interface GridDummyService extends GridService {
         /**
-         * @param arr Array.
+         * @return Some integer value.
          */
-        private GridIntService(int[] arr) {
-            a = arr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) throws Exception {
-            a[0] = 239;
-        }
+        int getInt();
     }
 }
