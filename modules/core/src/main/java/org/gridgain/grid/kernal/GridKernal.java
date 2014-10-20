@@ -2310,7 +2310,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         if (log.isInfoEnabled())
             log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
-                "secure-session=" + onOff(ctx.secureSession().securityEnabled()) + ']');
+                "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
     }
 
     /**

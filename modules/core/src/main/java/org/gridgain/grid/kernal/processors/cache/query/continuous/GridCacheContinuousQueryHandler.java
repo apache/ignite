@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -120,11 +121,12 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
-                if (ctx.event().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_EXECUTED)) {
+                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new GridCacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
-                        EVT_CACHE_CONTINUOUS_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        GridCacheQueryType.CONTINUOUS,
                         cacheName,
                         null,
                         null,
@@ -183,7 +185,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         ctx.event().record(new GridCacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
-                            EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ,
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            GridCacheQueryType.CONTINUOUS,
                             cacheName,
                             null,
                             null,
