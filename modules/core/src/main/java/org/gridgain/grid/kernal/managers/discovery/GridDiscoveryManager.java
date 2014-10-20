@@ -1085,7 +1085,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         if (cache == null) {
             throw new GridRuntimeException("Failed to resolve nodes topology [cacheName=" + cacheName +
                 ", topVer=" + topVer + ", history=" + discoCacheHist.keySet() +
-                ",  locNode=" + ctx.discovery().localNode() + ']');
+                ", locNode=" + ctx.discovery().localNode() + ']');
         }
 
         return cache;
