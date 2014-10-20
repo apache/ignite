@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.*;
 /**
  * This class provides basic tests for {@link GridCacheWriteBehindStore}.
  */
-public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
+public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
     /**
      * Tests correct store shutdown when underlying store fails,
      *
