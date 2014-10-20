@@ -512,6 +512,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param <T> Service type.
      * @return Service by specified service name.
      */
+    @SuppressWarnings("unchecked")
     public <T> T service(String name) {
         Collection<GridServiceContextImpl> ctxs;
 
@@ -527,6 +528,28 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 return null;
 
             return (T)ctxs.iterator().next().service();
+        }
+    }
+
+    /**
+     * @param name Service name.
+     * @return Service by specified service name.
+     */
+    public GridServiceContextImpl serviceContext(String name) {
+        Collection<GridServiceContextImpl> ctxs;
+
+        synchronized (locSvcs) {
+            ctxs = locSvcs.get(name);
+        }
+
+        if (ctxs == null)
+            return null;
+
+        synchronized (ctxs) {
+            if (ctxs.isEmpty())
+                return null;
+
+            return ctxs.iterator().next();
         }
     }
 
@@ -1235,24 +1258,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            GridService svc = grid.services().service(svcName);
+            GridServiceContextImpl svcCtx = ((GridKernal)grid).context().service().serviceContext(svcName);
 
-            if (svc == null)
+            if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);
 
-            Class<?> svcCls = svc.getClass();
+            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, args);
 
-            Class<?>[] argTypes = new Class[args == null ? 0 : args.length];
-
-            for (int i = 0; args != null && i < args.length; i++)
-                argTypes[i] = args[i].getClass();
-
-            Method mtd = svcCls.getMethod(mtdName, argTypes);
+            Method mtd = svcCtx.method(key);
 
             if (mtd == null)
-                throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
+                throw new GridServiceMethodNotFoundException(svcName, mtdName, key.argTypes());
 
-            return mtd.invoke(svc, args);
+            return mtd.invoke(svcCtx.service(), args);
         }
 
         /** {@inheritDoc} */
@@ -1341,8 +1359,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-        private GridNode nodeForService
-        (String name, boolean sticky) {
+        private GridNode nodeForService(String name, boolean sticky) {
             do { // Repeat if reference to remote node was changed.
                 if (sticky) {
                     GridNode curNode = rmtNode.get();
