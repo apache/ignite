@@ -1212,16 +1212,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             this.args = args;
         }
 
-        /**
-         * @param mtd Service method to invoke.
-         * @param svc Service class.
-         * @param args Arguments for invocation.
-         * @return New instance of {@code ProxyCallable}.
-         */
-        private static ProxyCallable getInstance(Method mtd, Object svc, Object[] args) {
-            return new ProxyCallable(mtd,svc,args);
-        }
-
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
            return mtd.invoke(svc, args);
@@ -1256,37 +1246,22 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             newRmtNode = getNodeWithService(name, sticky);
 
                             if (newRmtNode == null)
-                                throw new GridException("There are no deployed instances for service: " + name);
+                                throw new GridException("Failed to find deployed service: " + name);
+
+                            return ctx.closure().callAsyncNoFailover(
+                                GridClosureCallMode.BALANCE,
+                                new ProxyCallable(mtd, ctx.service().service(name), args),
+                                Collections.singleton(newRmtNode),
+                                false
+                            ).get();
                         }
                         catch (GridTopologyException e) {
                             if (log.isDebugEnabled())
-                                log.debug("Topology changed during service proxy get  (will retry): " + e.getMessage());
-                            continue;
+                                log.debug("Topology changed during service proxy get (will retry): " + e.getMessage());
                         }
-
-                        return ctx.closure().callAsyncNoFailover(
-                            GridClosureCallMode.BALANCE,
-                            ProxyCallable.getInstance(mtd, ctx.service().service(name), args),
-                            Collections.singleton(newRmtNode),
-                            false
-                        ).get();
                     }
                 }
             });
-        }
-
-        /**
-         * @param name Service name.
-         * @return List of service descriptors.
-         */
-        private List<GridServiceDescriptor> getServiceDescriptors(String name) {
-            List<GridServiceDescriptor> res = new ArrayList<>();
-            for (GridServiceDescriptor ctx : deployedServices()) {
-                if (ctx.name().equals(name))
-                    res.add(ctx);
-            }
-
-            return res;
         }
 
         /**
@@ -1368,9 +1343,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @return Map of number of service instances per node ID.
          */
         private Map<UUID, Integer> getServiceTopologySnapshot(String name) {
-            for (GridServiceDescriptor gsd : deployedServices()) {
-                if (gsd.name().equals(name))
-                    return gsd.topologySnapshot();
+            for (GridServiceDescriptor desc : deployedServices()) {
+                if (desc.name().equals(name))
+                    return desc.topologySnapshot();
             }
 
             return null;
@@ -1398,6 +1373,5 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private T getProxy() {
             return proxy;
         }
-
     }
 }
