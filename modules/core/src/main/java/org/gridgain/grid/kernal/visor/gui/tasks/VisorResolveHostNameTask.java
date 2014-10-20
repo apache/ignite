@@ -9,9 +9,6 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
-import java.net.InetAddress;
-import java.util.*;
-
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.visor.cmd.*;
@@ -19,6 +16,9 @@ import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.util.GridUtils;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.S;
+
+import java.net.InetAddress;
+import java.util.*;
 
 /**
  * Task that resolve host name for specified IP address from node.
@@ -51,7 +51,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
         /** {@inheritDoc} */
         @Override protected Map<String, String> run(Void arg) throws GridException {
-            Map<String, String> res = new LinkedHashMap<>();
+            Map<String, String> res = new HashMap<>();
 
             try {
                 GridBiTuple<Collection<String>, Collection<String>> addrs =
