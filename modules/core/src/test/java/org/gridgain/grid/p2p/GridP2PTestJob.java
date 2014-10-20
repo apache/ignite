@@ -46,9 +46,8 @@ public class GridP2PTestJob extends GridComputeJobAdapter {
 
         ClassLoader ldr = getClass().getClassLoader();
 
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled())
             log.info("Executing job loaded by class loader: " + ldr.getClass().getName());
-        }
 
         if (argument(0) != null && locNodeId.equals(taskSes.getTaskNodeId())) {
             log.error("Remote job is executed on local node.");
@@ -84,9 +83,8 @@ public class GridP2PTestJob extends GridComputeJobAdapter {
 
         String rsrcVal = new String(bytes).trim();
 
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled())
             log.info("Remote resource content is : " + rsrcVal);
-        }
 
         if (!"resource=loaded".equals(rsrcVal)) {
             log.error("Invalid loaded resource value: " + rsrcVal);

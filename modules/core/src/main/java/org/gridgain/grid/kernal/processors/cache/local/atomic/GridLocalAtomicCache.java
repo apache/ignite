@@ -67,7 +67,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     @Override public GridCacheEntry<K, V> wrapFilterLocked() throws GridException {
                         assert Thread.holdsLock(this);
 
-                        return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(), this);
+                        return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshalUnlocked(true), this);
                     }
                 };
             }
@@ -602,6 +602,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             /*unmarshal*/true,
                             /**update-metrics*/true,
                             /**event*/true,
+                            /**temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -910,12 +911,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         GridClosure<V, V> transform = (GridClosure<V, V>)val;
 
                         V old = entry.innerGet(null,
-                            true,
-                            true,
-                            false,
-                            true,
-                            true,
-                            true,
+                            /*swap*/true,
+                            /*read-through*/true,
+                            /*fail-fast*/false,
+                            /*unmarshal*/true,
+                            /**update-metrics*/true,
+                            /**event*/true,
+                            /**temporary*/true,
                             subjId,
                             transform,
                             taskName,
@@ -981,18 +983,19 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             if (putMap == null)
                                 putMap = new LinkedHashMap<>(size, 1.0f);
 
-                            putMap.put(entry.key(), updated);
+                            putMap.put(entry.key(), ctx.<V>unwrapTemporary(updated));
                         }
                     }
                     else if (op == UPDATE) {
                         if (intercept) {
                             V old = entry.innerGet(null,
-                                true,
-                                true,
-                                false,
-                                true,
-                                true,
-                                true,
+                                /*swap*/true,
+                                /*read-through*/true,
+                                /*fail-fast*/false,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /**event*/true,
+                                /**temporary*/true,
                                 subjId,
                                 null,
                                 taskName,
@@ -1002,6 +1005,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                             if (val == null)
                                 continue;
+
+                            val = ctx.unwrapTemporary(val);
                         }
 
                         if (putMap == null)
@@ -1014,12 +1019,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (intercept) {
                             V old = entry.innerGet(null,
-                                true,
-                                true,
-                                false,
-                                true,
-                                true,
-                                true,
+                                /*swap*/true,
+                                /*read-through*/true,
+                                /*fail-fast*/false,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /**event*/true,
+                                /**temporary*/true,
                                 subjId,
                                 null,
                                 taskName,
@@ -1083,6 +1089,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param rmvKeys Keys to remove.
      * @param err Optional partial update exception.
      * @param subjId Subject ID.
+     * @param taskName Task name.
      * @return Partial update exception.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})

@@ -685,7 +685,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             try {
                 GridNode n = cctx.node(nodeId);
 
-                if (n != null && oldestNode.get().id().equals(cctx.nodeId()))
+                if (n != null)
                     sendAllPartitions(F.asList(n), exchId, top.partitionMap(true));
             }
             catch (GridException e) {
@@ -976,7 +976,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                 ", oldest=" + U.id8(oldestNode.get().id()) + ", oldestOrder=" +
                                 oldestNode.get().order() + ", evtLatch=" + evtLatch.getCount() +
                                 ", locNodeOrder=" + cctx.localNode().order() +
-                                ", locNodeId8=" + U.id8(cctx.localNode().id()) + ']',
+                                ", locNodeId=" + cctx.localNode().id() + ']',
                             "Retrying preload partition exchange due to timeout.");
 
                         recheck();

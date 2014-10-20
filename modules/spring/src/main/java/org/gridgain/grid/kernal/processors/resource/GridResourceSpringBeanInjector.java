@@ -67,9 +67,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
 
         assert ann != null;
 
-        if (mtd.getMethod().getParameterTypes().length != 1) {
+        if (mtd.getMethod().getParameterTypes().length != 1)
             throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());
-        }
 
         String name = ann.resourceName();
 

@@ -60,9 +60,8 @@ public final class GridifySpringEnhancer {
         proxyFac.addAdvice(setToValAsp);
         proxyFac.addAdvice(setToSetAsp);
 
-        while (proxyFac.getAdvisors().length > 0) {
+        while (proxyFac.getAdvisors().length > 0)
             proxyFac.removeAdvisor(0);
-        }
 
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
             new GridifySpringPointcut(GridifySpringPointcutType.DFLT), dfltAsp));

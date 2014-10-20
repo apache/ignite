@@ -35,7 +35,8 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
      */
     @Override protected void beforeTest() throws Exception {
         // Start up a grid node.
-        startGrid("grid-router-examples", "examples/config/example-cache.xml");
+        startGrid(getTestGridName(0), "examples/config/example-cache.xml");
+
         // Start up a router.
         startRouter("config/router/default-router.xml");
     }

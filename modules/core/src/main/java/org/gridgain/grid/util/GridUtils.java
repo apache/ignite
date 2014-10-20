@@ -275,6 +275,12 @@ public abstract class GridUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
+    /** GridGain Logging Directory. */
+    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
+
+    /** GridGain Work Directory. */
+    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
+
     /**
      * Initializes enterprise check.
      */
@@ -1463,7 +1469,7 @@ public abstract class GridUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = X.getSystemOrEnv(GG_LOCAL_HOST);
+        String sysLocHost = GridSystemProperties.getString(GG_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -1567,7 +1573,7 @@ public abstract class GridUtils {
      * @return List of all known local IPs (empty list if no addresses available).
      */
     public static synchronized Collection<String> allLocalIps() {
-        Collection<String> ips = new HashSet<>(4);
+        List<String> ips = new ArrayList<>(4);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1577,10 +1583,14 @@ public abstract class GridUtils {
                     if (!itf.isLoopback()) {
                         Enumeration<InetAddress> addrs = itf.getInetAddresses();
 
-                        if (addrs != null)
-                            for (InetAddress addr : asIterable(addrs))
-                                if (!addr.isLoopbackAddress())
-                                    ips.add(addr.getHostAddress());
+                        if (addrs != null) {
+                            for (InetAddress addr : asIterable(addrs)) {
+                                String hostAddr = addr.getHostAddress();
+
+                                if (!addr.isLoopbackAddress() && !ips.contains(hostAddr))
+                                    ips.add(hostAddr);
+                            }
+                        }
                     }
                 }
             }
@@ -1588,6 +1598,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(ips);
 
         return ips;
     }
@@ -1608,7 +1620,7 @@ public abstract class GridUtils {
      *      if no MACs could be found.
      */
     public static synchronized Collection<String> allLocalMACs() {
-        Collection<String> macs = new HashSet<>(3);
+        List<String> macs = new ArrayList<>(3);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1621,7 +1633,8 @@ public abstract class GridUtils {
                     if (hwAddr != null && hwAddr.length > 0) {
                         String mac = byteArray2HexString(hwAddr);
 
-                        macs.add(mac);
+                        if (!macs.contains(mac))
+                            macs.add(mac);
                     }
                 }
             }
@@ -1629,6 +1642,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(macs);
 
         return macs;
     }
@@ -2185,18 +2200,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets boolean system or environment property.
-     *
-     * @param name Property name.
-     * @return {@code True} if system or environment property is set to {@code true}. Otherwise returns {@code false}.
-     */
-    public static boolean getBoolean(String name) {
-        String v = X.getSystemOrEnv(name);
-
-        return v != null && "true".equalsIgnoreCase(v.trim());
-    }
-
-    /**
      * Resolve project home directory based on source code base.
      *
      * @return Project home directory (or {@code null} if it cannot be resolved).
@@ -2205,7 +2208,7 @@ public abstract class GridUtils {
         assert Thread.holdsLock(GridUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = X.getSystemOrEnv(GG_HOME);
+        String ggHome0 = GridSystemProperties.getString(GG_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -7162,22 +7165,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work synchronously.
-     */
-    public static boolean isFutureNotificationSynchronous(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_SYNC_NOTIFICATION, dflt));
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work concurrently.
-     */
-    public static boolean isFutureNotificationConcurrent(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_CONCURRENT_NOTIFICATION, dflt));
-    }
-
-    /**
      * Adds listener to asynchronously log errors.
      *
      * @param f Future to listen to.
@@ -8379,6 +8366,8 @@ public abstract class GridUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
+                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
+                    workDir = new File(GRIDGAIN_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {
@@ -8616,5 +8605,215 @@ public abstract class GridUtils {
             Collection.class.isAssignableFrom(cls) ||
             Map.class.isAssignableFrom(cls) ||
             Map.Entry.class.isAssignableFrom(cls);
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param uid UUID.
+     * @return Offset.
+     */
+    public static long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
+        UNSAFE.putBoolean(arr, off++, uid != null);
+
+        if (uid != null) {
+            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.localId());
+
+            off += 8;
+        }
+
+        return off;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(byte[] arr, long off) {
+        if (UNSAFE.getBoolean(arr, off++)) {
+            long most = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            long least = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(arr, off);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(long ptr) {
+        if (UNSAFE.getBoolean(null, ptr++)) {
+            long most = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            long least = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(ptr);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param ver Version.
+     * @return Offset.
+     */
+    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
+        boolean verEx = ver instanceof GridCacheVersionEx;
+
+        UNSAFE.putBoolean(arr, off++, verEx);
+
+        if (verEx) {
+            GridCacheVersion drVer = ver.drVersion();
+
+            assert drVer != null;
+
+            UNSAFE.putInt(arr, off, drVer.topologyVersion());
+
+            off += 4;
+
+            UNSAFE.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
+
+            off += 4;
+
+            UNSAFE.putLong(arr, off, drVer.globalTime());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, drVer.order());
+
+            off += 8;
+        }
+
+        UNSAFE.putInt(arr, off, ver.topologyVersion());
+
+        off += 4;
+
+        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+
+        off += 4;
+
+        UNSAFE.putLong(arr, off, ver.globalTime());
+
+        off += 8;
+
+        UNSAFE.putLong(arr, off, ver.order());
+
+        off += 8;
+
+        return off;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
+        GridCacheVersion ver = new GridCacheVersion(UNSAFE.getInt(ptr),
+            UNSAFE.getInt(ptr + 4),
+            UNSAFE.getLong(ptr + 8),
+            UNSAFE.getLong(ptr + 16));
+
+        if (verEx) {
+            ptr += 24;
+
+            ver = new GridCacheVersionEx(UNSAFE.getInt(ptr),
+                UNSAFE.getInt(ptr + 4),
+                UNSAFE.getLong(ptr + 8),
+                UNSAFE.getLong(ptr + 16),
+                ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
+        int topVer = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        int nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        long globalTime = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        long order = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+        if (verEx) {
+            topVer = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            globalTime = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            order = UNSAFE.getLong(arr, off);
+
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param ptr Address.
+     * @param size Size.
+     * @return Bytes.
+     */
+    public static byte[] copyMemory(long ptr, int size) {
+        byte[] res = new byte[size];
+
+        UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
+
+        return res;
     }
 }

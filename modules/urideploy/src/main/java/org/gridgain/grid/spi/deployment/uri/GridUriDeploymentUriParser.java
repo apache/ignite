@@ -64,9 +64,8 @@ class GridUriDeploymentUriParser {
                     // Seek authority.
                     int q = scan(p, n, "", "/?#");
 
-                    if (q > p) {
+                    if (q > p)
                         p = q;
-                    }
                 }
 
                 int q = scan(p, n, "", "?#");
@@ -106,13 +105,11 @@ class GridUriDeploymentUriParser {
         while (p < end) {
             char c = input.charAt(p);
 
-            if (err.indexOf(c) >= 0) {
+            if (err.indexOf(c) >= 0)
                 return -1;
-            }
 
-            if (stop.indexOf(c) >= 0) {
+            if (stop.indexOf(c) >= 0)
                 break;
-            }
 
             p++;
         }

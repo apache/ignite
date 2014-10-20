@@ -831,16 +831,14 @@ public class GridFunc {
                 m = mtd;
             }
 
-        if (cnt == 0) {
+        if (cnt == 0)
             throw new NoSuchMethodException(cls.getName() + '#' + mtdName);
-        }
 
         // If there is only one method with provided name we
         // don't use lookup that requires parameters' types since
         // it is a lot more complex to deal with type inheritance there.
-        if (cnt == 1) {
+        if (cnt == 1)
             return m;
-        }
 
         if (!isEmpty(args)) {
             assert args != null;
@@ -857,9 +855,8 @@ public class GridFunc {
 
             return cls.getDeclaredMethod(mtdName, types);
         }
-        else {
+        else
             return cls.getDeclaredMethod(mtdName);
-        }
     }
 
     /**
@@ -1757,9 +1754,8 @@ public class GridFunc {
         int i = 0;
 
         for (T t : c) {
-            if (i++ == n) {
+            if (i++ == n)
                 return t;
-            }
         }
 
         throw new ConcurrentModificationException();
@@ -2154,37 +2150,32 @@ public class GridFunc {
         if (!cp) {
             res = (Collection<T>)c;
 
-            if (num >= c.size()) {
+            if (num >= c.size())
                 res.clear();
-            }
             else {
                 int i = 0;
 
                 for (Iterator<T> iter = res.iterator(); iter.hasNext();) {
                     iter.next();
 
-                    if (i++ < num) {
+                    if (i++ < num)
                         iter.remove();
-                    }
-                    else {
+                    else
                         break;
-                    }
                 }
             }
         }
         else {
-            if (num >= c.size()) {
+            if (num >= c.size())
                 return Collections.emptyList();
-            }
 
             res = new ArrayList<>(c.size() - num);
 
             int i = 0;
 
             for (T t : c) {
-                if (i++ >= num) {
+                if (i++ >= num)
                     res.add(t);
-                }
             }
         }
 
@@ -2295,17 +2286,15 @@ public class GridFunc {
         if (!cp) {
             res = c;
 
-            if (filter != null) {
+            if (filter != null)
                 res.removeAll(filter);
-            }
         }
         else {
             res = new LinkedList<>();
 
             for (T t : c) {
-                if (filter == null || !filter.contains(t)) {
+                if (filter == null || !filter.contains(t))
                     res.add(t);
-                }
             }
         }
 
@@ -2365,17 +2354,15 @@ public class GridFunc {
         if (!cp) {
             res = c;
 
-            if (filter != null) {
+            if (filter != null)
                 res.removeAll(filter);
-            }
         }
         else {
             res = new LinkedHashSet<>();
 
             for (T t : c) {
-                if (filter == null || !filter.contains(t)) {
+                if (filter == null || !filter.contains(t))
                     res.add(t);
-                }
             }
         }
 
@@ -2461,9 +2448,8 @@ public class GridFunc {
      */
     public static <T extends GridNode> GridPredicate<T> nodeForNodeIds(@Nullable final Collection<UUID>
         nodeIds) {
-        if (isEmpty(nodeIds)) {
+        if (isEmpty(nodeIds))
             return alwaysFalse();
-        }
 
         assert nodeIds != null;
 
@@ -2483,9 +2469,8 @@ public class GridFunc {
      * @see #nodeIds(Collection)
      */
     public static <T extends GridNode> GridPredicate<T> nodeForNodeIds(@Nullable final UUID... nodeIds) {
-        if (isEmpty(nodeIds)) {
+        if (isEmpty(nodeIds))
             return alwaysFalse();
-        }
 
         return new P1<T>() {
             private final UUID[] ids;
@@ -2531,9 +2516,8 @@ public class GridFunc {
      * @see #nodeIds(Collection)
      */
     public static GridPredicate<UUID> idForNodeIds(@Nullable final Collection<UUID> nodeIds) {
-        if (isEmpty(nodeIds)) {
+        if (isEmpty(nodeIds))
             return alwaysFalse();
-        }
 
         assert nodeIds != null;
 
@@ -2553,9 +2537,8 @@ public class GridFunc {
      * @see #nodeIds(Collection)
      */
     public static GridPredicate<UUID> idForNodeIds(@Nullable final UUID... nodeIds) {
-        if (isEmpty(nodeIds)) {
+        if (isEmpty(nodeIds))
             return alwaysFalse();
-        }
 
         return new P1<UUID>() {
             private final UUID[] ids;
@@ -2791,9 +2774,8 @@ public class GridFunc {
                         throw new GridRuntimeException(e);
                     }
                 }
-                else {
+                else
                     return false;
-                }
             }
 
             @Override public boolean isCancelled() {
@@ -3049,9 +3031,8 @@ public class GridFunc {
      * @return Iterable over the elements of the inner collections.
      */
     public static <T> Collection<T> flatCollections(@Nullable final Collection<? extends Collection<T>> c) {
-        if (F.isEmpty(c)) {
+        if (F.isEmpty(c))
             return Collections.emptyList();
-        }
 
         return new GridSerializableCollection<T>() {
             @NotNull
@@ -3340,17 +3321,15 @@ public class GridFunc {
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
     public static <T> int size(@Nullable Iterator<? extends T> it, @Nullable GridPredicate<? super T>... p) {
-        if (it == null) {
+        if (it == null)
             return 0;
-        }
 
         int n = 0;
 
         if (!isAlwaysFalse(p)) {
             while (it.hasNext()) {
-                if (isAll(it.next(), p)) {
+                if (isAll(it.next(), p))
                     n++;
-                }
             }
         }
 
@@ -3492,9 +3471,8 @@ public class GridFunc {
         GridClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return Collections.emptyList();
-        }
 
         return new ArrayList<>(transform(retain(c, true, p), trans));
     }
@@ -3513,9 +3491,8 @@ public class GridFunc {
         GridClosure<? super T1, T2> trans, @Nullable GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return Collections.emptySet();
-        }
 
         return new HashSet<>(transform(retain(c, true, p), trans));
     }
@@ -3588,9 +3565,8 @@ public class GridFunc {
             @Nullable @Override public V put(K key, V val) {
                 V oldVal = get(key);
 
-                if (isAll(key, p)) {
+                if (isAll(key, p))
                     m.put(key, val);
-                }
 
                 return oldVal;
             }
@@ -4281,9 +4257,8 @@ public class GridFunc {
         @Nullable final GridPredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return F.emptyIterator();
-        }
 
         return new GridIteratorAdapter<T2>() {
             /** */
@@ -4675,9 +4650,8 @@ public class GridFunc {
      */
     @SuppressWarnings("unchecked")
     public static <T> GridPredicate<T> and(@Nullable final Collection<? extends GridPredicate<? super T>> ps) {
-        if (isEmpty(ps)) {
+        if (isEmpty(ps))
             return F.alwaysTrue();
-        }
 
         assert ps != null;
 
@@ -4687,12 +4661,10 @@ public class GridFunc {
             for (GridPredicate<? super T> p : ps) {
                 Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
-                if (ids.isEmpty()) {
+                if (ids.isEmpty())
                     ids.addAll(list);
-                }
-                else {
+                else
                     ids.retainAll(list);
-                }
             }
 
             // T must be <T extends GridNode>.
@@ -4702,9 +4674,8 @@ public class GridFunc {
             return new P1<T>() {
                 @Override public boolean apply(T t) {
                     for (GridPredicate<? super T> p : ps) {
-                        if (!p.apply(t)) {
+                        if (!p.apply(t))
                             return false;
-                        }
                     }
 
                     return true;
@@ -4729,35 +4700,30 @@ public class GridFunc {
     @SuppressWarnings({"unchecked"})
     public static <T> GridPredicate<T> and(@Nullable final GridPredicate<? super T>[] p1,
         @Nullable final GridPredicate<? super T>... p2) {
-        if (isAlwaysFalse(p1) || isAlwaysFalse(p2)) {
+        if (isAlwaysFalse(p1) || isAlwaysFalse(p2))
             return F.alwaysFalse();
-        }
 
-        if (isAlwaysTrue(p1) && isAlwaysTrue(p2)) {
+        if (isAlwaysTrue(p1) && isAlwaysTrue(p2))
             return F.alwaysTrue();
-        }
 
         final boolean e1 = isEmpty(p1);
         final boolean e2 = isEmpty(p2);
 
-        if (e1 && e2) {
+        if (e1 && e2)
             return F.alwaysTrue();
-        }
 
         if (e1 && !e2) {
             assert p2 != null;
 
-            if (p2.length == 1) {
+            if (p2.length == 1)
                 return (GridPredicate<T>)p2[0];
-            }
         }
 
         if (!e1 && e2) {
             assert p1 != null;
 
-            if (p1.length == 1) {
+            if (p1.length == 1)
                 return (GridPredicate<T>)p1[0];
-            }
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
@@ -4881,9 +4847,8 @@ public class GridFunc {
      */
     @SuppressWarnings("unchecked")
     public static <T> GridPredicate<T> or(@Nullable final Collection<? extends GridPredicate<? super T>> ps) {
-        if (isEmpty(ps)) {
+        if (isEmpty(ps))
             return F.alwaysFalse();
-        }
         else {
             assert ps != null;
 
@@ -4929,39 +4894,33 @@ public class GridFunc {
     @SuppressWarnings("unchecked")
     public static <T> GridPredicate<T> or(@Nullable final GridPredicate<? super T>[] p1,
         @Nullable final GridPredicate<? super T>... p2) {
-        if (isEmpty(p1) && isEmpty(p2)) {
+        if (isEmpty(p1) && isEmpty(p2))
             return F.alwaysFalse();
-        }
 
-        if (isAlwaysTrue(p1) || isAlwaysTrue(p2)) {
+        if (isAlwaysTrue(p1) || isAlwaysTrue(p2))
             return F.alwaysTrue();
-        }
 
-        if (isAlwaysFalse(p1) && isAlwaysFalse(p2)) {
+        if (isAlwaysFalse(p1) && isAlwaysFalse(p2))
             return F.alwaysFalse();
-        }
 
         final boolean e1 = isEmpty(p1);
         final boolean e2 = isEmpty(p2);
 
-        if (e1 && e2) {
+        if (e1 && e2)
             return F.alwaysFalse();
-        }
 
         if (e1 && !e2) {
             assert p2 != null;
 
-            if (p2.length == 1) {
+            if (p2.length == 1)
                 return (GridPredicate<T>)p2[0];
-            }
         }
 
         if (!e1 && e2) {
             assert p1 != null;
 
-            if (p1.length == 1) {
+            if (p1.length == 1)
                 return (GridPredicate<T>)p1[0];
-            }
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
@@ -5027,13 +4986,11 @@ public class GridFunc {
      */
     @SuppressWarnings("unchecked")
     public static <T> GridPredicate<T> or(@Nullable final GridPredicate<? super T>... ps) {
-        if (isEmpty(ps) || isAlwaysFalse(ps)) {
+        if (isEmpty(ps) || isAlwaysFalse(ps))
             return F.alwaysFalse();
-        }
         else {
-            if (isAlwaysTrue(ps)) {
+            if (isAlwaysTrue(ps))
                 return F.alwaysTrue();
-            }
             else {
                 if (F0.isAllNodePredicates(ps)) {
                     Set<UUID> ids = new GridLeanSet<>();
@@ -5734,9 +5691,8 @@ public class GridFunc {
                 assert meta != null;
 
                 for (Map.Entry<String, ?> t : meta) {
-                    if (!F.eq(e.meta(t.getKey()), t.getValue())) {
+                    if (!F.eq(e.meta(t.getKey()), t.getValue()))
                         return false;
-                    }
                 }
 
                 return true;
@@ -5759,9 +5715,8 @@ public class GridFunc {
      * @see #metaEntry(Collection)
      */
     public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable Map<String, ?> meta) {
-        if (isEmpty(meta)) {
-            return metaEntry(Collections.<Map.Entry<String, ?>>emptySet());
-        }
+        if (isEmpty(meta))
+            return metaEntry(Collections.<Entry<String, ?>>emptySet());
         else {
             assert meta != null;
 
@@ -5856,9 +5811,8 @@ public class GridFunc {
 
         if (!isAlwaysFalse(p)) {
             for (T t : from) {
-                if (isAll(t, p)) {
+                if (isAll(t, p))
                     to.add(t);
-                }
             }
         }
 
@@ -5884,9 +5838,8 @@ public class GridFunc {
 
         if (!isAlwaysFalse(p)) {
             for (X x : from) {
-                if (isAll(x, p)) {
+                if (isAll(x, p))
                     to.add(f.apply(x));
-                }
             }
         }
 
@@ -5914,9 +5867,8 @@ public class GridFunc {
                 for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
                     GridBiTuple<K, V> t = F.t(e.getKey(), e.getValue());
 
-                    if (isAll(t, p)) {
+                    if (isAll(t, p))
                         f.apply(t);
-                    }
                 }
             }
         }
@@ -5959,15 +5911,13 @@ public class GridFunc {
         A.notNull(c, "c", f, "f");
 
         if (c instanceof List) {
-            for (ListIterator<X> iter = ((List<X>)c).listIterator(); iter.hasNext();) {
+            for (ListIterator<X> iter = ((List<X>)c).listIterator(); iter.hasNext();)
                 iter.set(f.apply(iter.next()));
-            }
 
             return (Collection<Y>)c;
         }
-        else {
+        else
             return viewReadOnly(c, f);
-        }
     }
 
     /**
@@ -6080,9 +6030,8 @@ public class GridFunc {
             assert p != null;
 
             for (GridBiPredicate<? super A, ? super B> r : p) {
-                if (r != null && !r.apply(a, b)) {
+                if (r != null && !r.apply(a, b))
                     return false;
-                }
             }
         }
 
@@ -6130,9 +6079,8 @@ public class GridFunc {
             assert p != null;
 
             for (GridPredicate3<? super A, ? super B, ? super C> r : p) {
-                if (r != null && !r.apply(a, b, c)) {
+                if (r != null && !r.apply(a, b, c))
                     return false;
-                }
             }
         }
 
@@ -6218,9 +6166,8 @@ public class GridFunc {
             assert p != null;
 
             for (GridBiPredicate<? super A, ? super B> r : p) {
-                if (r != null && r.apply(a, b)) {
+                if (r != null && r.apply(a, b))
                     return true;
-                }
             }
         }
 
@@ -6268,9 +6215,8 @@ public class GridFunc {
             assert p != null;
 
             for (GridPredicate3<? super A, ? super B, ? super C> r : p) {
-                if (r != null && r.apply(a, b, c)) {
+                if (r != null && r.apply(a, b, c))
                     return true;
-                }
             }
         }
 
@@ -6298,9 +6244,8 @@ public class GridFunc {
 
         if (!isAlwaysFalse(p)) {
             for (X x : c) {
-                if (isAll(x, p)) {
+                if (isAll(x, p))
                     d.add(f.apply(x));
-                }
             }
         }
 
@@ -6351,9 +6296,8 @@ public class GridFunc {
 
         if (!isEmpty(p) && !isAlwaysFalse(p)) {
             for (V v : c) {
-                if (isAny(v, p)) {
+                if (isAny(v, p))
                     return v;
-                }
             }
         }
 
@@ -6393,15 +6337,13 @@ public class GridFunc {
         @Nullable GridPredicate<? super V>... p) {
         A.notNull(c, "c", f, "f");
 
-        if (isAlwaysTrue(p) && c.iterator().hasNext()) {
+        if (isAlwaysTrue(p) && c.iterator().hasNext())
             return f.apply(c.iterator().next());
-        }
 
         if (!isEmpty(p) && !isAlwaysFalse(p)) {
             for (V v : c) {
-                if (isAny(v, p)) {
+                if (isAny(v, p))
                     return f.apply(v);
-                }
             }
         }
 
@@ -6499,36 +6441,29 @@ public class GridFunc {
      */
     public static <T0, T extends T0> GridPair<Collection<T>> split(@Nullable Collection<T> c,
         @Nullable GridPredicate<? super T>... p) {
-        if (c == null) {
+        if (c == null)
             return pair(null, null);
-        }
 
-        if (c.isEmpty()) {
+        if (c.isEmpty())
             return F.<Collection<T>>pair(Collections.<T>emptyList(), Collections.<T>emptyList());
-        }
 
-        if (isEmpty(p)) {
+        if (isEmpty(p))
             return pair(c, Collections.<T>emptyList());
-        }
 
-        if (isAlwaysTrue(p)) {
+        if (isAlwaysTrue(p))
             return pair(c, Collections.<T>emptyList());
-        }
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return pair(Collections.<T>emptyList(), c);
-        }
 
         Collection<T> c1 = new LinkedList<>();
         Collection<T> c2 = new LinkedList<>();
 
         for (T t : c) {
-            if (isAll(t, p)) {
+            if (isAll(t, p))
                 c1.add(t);
-            }
-            else {
+            else
                 c2.add(t);
-            }
         }
 
         return pair(c1, c2);
@@ -6579,12 +6514,10 @@ public class GridFunc {
         Collection<V> c2 = new LinkedList<>();
 
         for (V v : c) {
-            if (p.apply(v)) {
+            if (p.apply(v))
                 c1.add(v);
-            }
-            else {
+            else
                 c2.add(v);
-            }
         }
 
         return t(c1, c2);
@@ -6627,12 +6560,10 @@ public class GridFunc {
         Map<K, V> m2 = new HashMap<>();
 
         for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
-            if (p.apply(e.getKey(), e.getValue())) {
+            if (p.apply(e.getKey(), e.getValue()))
                 m1.put(e.getKey(), e.getValue());
-            }
-            else {
+            else
                 m2.put(e.getKey(), e.getValue());
-            }
         }
 
         return t(m1, m2);
@@ -6695,17 +6626,14 @@ public class GridFunc {
     public static <V> boolean forAll(Iterable<? extends V> c, @Nullable GridPredicate<? super V>... p) {
         A.notNull(c, "c");
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return false;
-        }
-        else if (isAlwaysTrue(p)) {
+        else if (isAlwaysTrue(p))
             return true;
-        }
         else if (!isEmpty(p)) {
             for (V v : c) {
-                if (!isAll(v, p)) {
+                if (!isAll(v, p))
                     return false;
-                }
             }
         }
 
@@ -6851,17 +6779,14 @@ public class GridFunc {
         @Nullable GridPredicate<? super Map.Entry<K, V>>... p) {
         A.notNull(m, "m");
 
-        if (isAlwaysFalse(p)) {
+        if (isAlwaysFalse(p))
             return false;
-        }
-        else if (isAlwaysTrue(p)) {
+        else if (isAlwaysTrue(p))
             return true;
-        }
         else if (!isEmpty(p)) {
             for (Map.Entry<K, V> e : m.entrySet()) {
-                if (isAll(e, p)) {
+                if (isAll(e, p))
                     return true;
-                }
             }
 
             return false;
@@ -7402,6 +7327,21 @@ public class GridFunc {
      * @return {@code True} if array contains given value.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(long[] arr, long val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static boolean contains(Integer[] arr, Integer val) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i].equals(val))
@@ -7593,11 +7533,26 @@ public class GridFunc {
             V v1 = e.getValue();
             V v2 = m2.get(e.getKey());
 
-            if (v2 == null)
+            if (v1 == v2)
+                return true;
+
+            if (v1 == null || v2 == null)
                 return false;
 
-            if (!eq(v1, v2))
-                return false;
+            if (v1 instanceof Collection && v2 instanceof Collection) {
+                if (!eqNotOrdered((Collection)v1, (Collection)v2))
+                    return false;
+            }
+            else {
+                if (v1 instanceof Map && v2 instanceof Map) {
+                    if (!eqNotOrdered((Map)v1, (Map)v2))
+                        return false;
+                }
+                else {
+                    if (!eq(v1, v2))
+                        return false;
+                }
+            }
         }
 
         return true;
@@ -7616,25 +7571,21 @@ public class GridFunc {
      * @return {@code True} if arrays are equal, {@code false} otherwise.
      */
     public static boolean eqArray(Object[] a1, Object[] a2, boolean sorted, boolean dups) {
-        if (a1 == a2) {
+        if (a1 == a2)
             return true;
-        }
 
-        if (a1 == null || a2 == null || a1.length != a2.length) {
+        if (a1 == null || a2 == null || a1.length != a2.length)
             return false;
-        }
 
         // Short circuit.
-        if (a1.length == 1) {
+        if (a1.length == 1)
             return eq(a1[0], a2[0]);
-        }
 
         for (Object o1 : a1) {
             boolean found = false;
 
-            if (sorted) {
+            if (sorted)
                 found = Arrays.binarySearch(a2, o1) >= 0;
-            }
             else {
                 for (Object o2 : a2) {
                     if (eq(o1, o2)) {
@@ -7645,9 +7596,8 @@ public class GridFunc {
                 }
             }
 
-            if (!found) {
+            if (!found)
                 return false;
-            }
         }
 
         // If there are no dups - we can't skip checking seconds array
@@ -7656,9 +7606,8 @@ public class GridFunc {
             for (Object o2 : a2) {
                 boolean found = false;
 
-                if (sorted) {
+                if (sorted)
                     found = Arrays.binarySearch(a1, o2) >= 0;
-                }
                 else {
                     for (Object o1 : a1) {
                         if (eq(o2, o1)) {
@@ -7669,9 +7618,8 @@ public class GridFunc {
                     }
                 }
 
-                if (!found) {
+                if (!found)
                     return false;
-                }
             }
         }
 
@@ -7809,9 +7757,8 @@ public class GridFunc {
 
         Collection<GridOutClosure<R>> ret = new ArrayList<>(cnt);
 
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             ret.add(curry(c, pdc.apply()));
-        }
 
         return ret;
     }
@@ -7851,9 +7798,8 @@ public class GridFunc {
 
         Collection<GridAbsClosure> ret = new ArrayList<>(cnt);
 
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             ret.add(curry(c, pdc.apply()));
-        }
 
         return ret;
     }
@@ -7974,9 +7920,8 @@ public class GridFunc {
      *      is equal to any of provided keys.
      */
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheHasKeys(@Nullable K... keys) {
-        if (isEmpty(keys)) {
+        if (isEmpty(keys))
             return alwaysFalse();
-        }
 
         return cacheHasKeys(asList(keys));
     }
@@ -8153,9 +8098,8 @@ public class GridFunc {
      *      value that is contained among given values.
      */
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable V... vals) {
-        if (isEmpty(vals)) {
+        if (isEmpty(vals))
             return alwaysFalse();
-        }
 
         return cacheContainsGet(asList(vals));
     }
@@ -8203,9 +8147,8 @@ public class GridFunc {
      *      value that is contained among given values.
      */
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsPeek(@Nullable V... vals) {
-        if (isEmpty(vals)) {
+        if (isEmpty(vals))
             return alwaysFalse();
-        }
 
         return cacheContainsPeek(asList(vals));
     }
@@ -8284,9 +8227,8 @@ public class GridFunc {
                         assert entries != null;
 
                         for (Map.Entry<K, V> entry : entries) {
-                            if (k.equals(entry.getKey()) && v!= null && v.equals(entry.getValue())) {
+                            if (k.equals(entry.getKey()) && v!= null && v.equals(entry.getValue()))
                                 return true;
-                            }
                         }
 
                         return false;
@@ -8321,9 +8263,8 @@ public class GridFunc {
                     assert entries != null;
 
                     for (Map.Entry<K, V> entry : entries) {
-                        if (eq(k, entry.getKey()) && eq(v, entry.getValue())) {
+                        if (eq(k, entry.getKey()) && eq(v, entry.getValue()))
                             return true;
-                        }
                     }
 
                     return false;
@@ -8345,9 +8286,8 @@ public class GridFunc {
      */
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
         @Nullable Map.Entry<K, V>... entries) {
-        if (isEmpty(entries)) {
+        if (isEmpty(entries))
             return alwaysFalse();
-        }
 
         return cacheContainsEntriesGet(asList(entries));
     }
@@ -8366,9 +8306,8 @@ public class GridFunc {
      */
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
         @Nullable Map.Entry<K, V>... entries) {
-        if (isEmpty(entries)) {
+        if (isEmpty(entries))
             return alwaysFalse();
-        }
 
         return cacheContainsEntriesPeek(asList(entries));
     }
@@ -8485,9 +8424,8 @@ public class GridFunc {
                 assert types != null;
 
                 for (int t : types) {
-                    if (e.type() == t) {
+                    if (e.type() == t)
                         return true;
-                    }
                 }
 
                 return false;
@@ -8625,9 +8563,8 @@ public class GridFunc {
     public static <E> boolean intersects(Iterable<E> s1, Collection<E>... s2) {
         for (E e1 : s1) {
             for (Collection<E> s : s2) {
-                if (s.contains(e1)) {
+                if (s.contains(e1))
                     return true;
-                }
             }
         }
 
@@ -8641,9 +8578,8 @@ public class GridFunc {
      * @throws GridException If any of the futures failed.
      */
     public static <T> void awaitAll(@Nullable GridFuture<T>... futs) throws GridException {
-        if (!isEmpty(futs)) {
+        if (!isEmpty(futs))
             awaitAll(asList(futs));
-        }
     }
 
     /**

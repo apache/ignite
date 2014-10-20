@@ -11,9 +11,11 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
@@ -506,6 +508,22 @@ public class GridGainEx {
         }
         else
             return start(springCfgPath, gridName, null);
+    }
+
+    /**
+     * Start Grid for interop scenario.
+     *
+     * @param springCfgPath Spring config path.
+     * @param gridName Grid name.
+     * @param envPtr Environment pointer.
+     * @return Started Grid.
+     * @throws GridException If failed.
+     */
+    public static Grid startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
+        throws GridException {
+        GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
+
+        return start(springCfgPath, gridName);
     }
 
     /**
@@ -1347,6 +1365,7 @@ public class GridGainEx {
             myCfg.setMetricsExpireTime(cfg.getMetricsExpireTime());
             myCfg.setMetricsUpdateFrequency(cfg.getMetricsUpdateFrequency());
             myCfg.setLifecycleBeans(cfg.getLifecycleBeans());
+            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
             myCfg.setPeerClassLoadingMissedResourcesCacheSize(cfg.getPeerClassLoadingMissedResourcesCacheSize());
             myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
             myCfg.setDaemon(cfg.isDaemon());
@@ -1359,6 +1378,7 @@ public class GridGainEx {
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
+            myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
 
             GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
@@ -1392,13 +1412,13 @@ public class GridGainEx {
                 clientCfg = new GridClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = GridSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = X.getSystemOrEnv(GG_LOCAL_HOST);
+            String locHost = GridSystemProperties.getString(GG_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1407,7 +1427,7 @@ public class GridGainEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = X.getSystemOrEnv(GG_DEP_MODE_OVERRIDE);
+            String depModeName = GridSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1756,42 +1776,34 @@ public class GridGainEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = X.getSystemOrEnv(GG_SMTP_FROM);
+            String fromEmail = GridSystemProperties.getString(GG_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = X.getSystemOrEnv(GG_SMTP_HOST);
+            String smtpHost = GridSystemProperties.getString(GG_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = X.getSystemOrEnv(GG_SMTP_USERNAME);
+            String smtpUsername = GridSystemProperties.getString(GG_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = X.getSystemOrEnv(GG_SMTP_PWD);
+            String smtpPwd = GridSystemProperties.getString(GG_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            String smtpPort = X.getSystemOrEnv(GG_SMTP_PORT);
+            int smtpPort = GridSystemProperties.getInteger(GG_SMTP_PORT,-1);
 
-            if (smtpPort != null)
-                try {
-                    myCfg.setSmtpPort(Integer.parseInt(smtpPort));
-                }
-                catch (NumberFormatException e) {
-                    U.error(log, "Invalid SMTP port override value (safely ignored): " + smtpPort, e);
-                }
+            if(smtpPort != -1)
+                myCfg.setSmtpPort(smtpPort);
 
-            String smtpSsl = X.getSystemOrEnv(GG_SMTP_SSL);
+            myCfg.setSmtpSsl(GridSystemProperties.getBoolean(GG_SMTP_SSL));
 
-            if (smtpSsl != null)
-                myCfg.setSmtpSsl(Boolean.parseBoolean(smtpSsl));
-
-            String adminEmails = X.getSystemOrEnv(GG_ADMIN_EMAILS);
+            String adminEmails = GridSystemProperties.getString(GG_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1951,7 +1963,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))) {
+            if (GridSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -2060,6 +2072,7 @@ public class GridGainEx {
             cache.setQueryIndexEnabled(false);
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new GridCacheRendezvousAffinityFunction(false, 100));
 
             return cache;
         }

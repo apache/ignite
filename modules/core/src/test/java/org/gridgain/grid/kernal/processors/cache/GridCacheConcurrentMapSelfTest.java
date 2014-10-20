@@ -366,9 +366,8 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 if (local().map.iteratorMapSize() == 0)
                     break;
-                else {
+                else
                     U.sleep(500);
-                }
             }
 
             assertEquals(0, local().map.iteratorMapSize());

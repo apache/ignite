@@ -34,11 +34,6 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean securityEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId,
         @Nullable byte[] tok,
         @Nullable Object params) throws GridException {

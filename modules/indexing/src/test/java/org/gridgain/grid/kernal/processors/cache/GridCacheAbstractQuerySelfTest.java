@@ -41,6 +41,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.junit.Assert.*;
 
@@ -1137,10 +1138,15 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         GridCache<Integer, Object> cache = grid.cache(null);
 
         Object val = new Object() {
+            @GridCacheQuerySqlField
+            private int field1 = 10;
+
             @Override public String toString() {
                 return "Test anonymous object.";
             }
         };
+
+        assertTrue(val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$16"));
 
         assertTrue(cache.putx(1, val));
 
@@ -1151,6 +1157,20 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         Collection<Map.Entry<Integer, Object>> res = q.execute().get();
 
         assertEquals(1, res.size());
+
+        GridCacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
+            "select field1 from GridCacheAbstractQuerySelfTest_16");
+
+        fieldsQry.enableDedup(true);
+
+        Collection<List<?>> fieldsRes = fieldsQry.execute().get();
+
+        assertEquals(1, fieldsRes.size());
+
+        List<?> fields =  F.first(fieldsRes);
+
+        assertEquals(1, fields.size());
+        assertEquals(10, fields.get(0));
     }
 
     /**
@@ -1299,6 +1319,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryReadEvent<Integer, Integer> qe = (GridCacheQueryReadEvent<Integer, Integer>)evt;
 
+                    assertEquals(SQL, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1315,7 +1336,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SQL_QUERY_OBJECT_READ);
+            }, EVT_CACHE_QUERY_OBJECT_READ);
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -1323,6 +1344,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
+                    assertEquals(SQL, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1337,7 +1359,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SQL_QUERY_EXECUTED);
+            }, EVT_CACHE_QUERY_EXECUTED);
         }
 
         GridCache<Integer, Integer> cache = grid.cache(null);
@@ -1391,6 +1413,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryReadEvent<Integer, Integer> qe = (GridCacheQueryReadEvent<Integer, Integer>)evt;
 
+                    assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1407,7 +1430,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SCAN_QUERY_OBJECT_READ);
+            }, EVT_CACHE_QUERY_OBJECT_READ);
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -1415,6 +1438,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
+                    assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1429,7 +1453,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SCAN_QUERY_EXECUTED);
+            }, EVT_CACHE_QUERY_EXECUTED);
         }
 
         GridCache<Integer, Integer> cache = grid.cache(null);
@@ -1487,6 +1511,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryReadEvent<Integer, Person> qe = (GridCacheQueryReadEvent<Integer, Person>)evt;
 
+                    assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1503,7 +1528,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ);
+            }, EVT_CACHE_QUERY_OBJECT_READ);
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -1511,6 +1536,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
+                    assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1525,7 +1551,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_FULL_TEXT_QUERY_EXECUTED);
+            }, EVT_CACHE_QUERY_EXECUTED);
         }
 
         GridCache<Integer, Person> cache = grid.cache(null);
@@ -1579,6 +1605,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryReadEvent qe = (GridCacheQueryReadEvent)evt;
 
+                    assertEquals(SQL_FIELDS, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1597,7 +1624,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ);
+            }, EVT_CACHE_QUERY_OBJECT_READ);
 
             grid(i).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
@@ -1605,6 +1632,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     GridCacheQueryExecutedEvent qe = (GridCacheQueryExecutedEvent)evt;
 
+                    assertEquals(SQL_FIELDS, qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals(customSubjId ? subjId : grid(0).localNode().id(), qe.subjectId());
@@ -1619,7 +1647,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
                     return true;
                 }
-            }, EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED);
+            }, EVT_CACHE_QUERY_EXECUTED);
         }
 
         GridCache<Integer, Person> cache = grid.cache(null);
@@ -1687,6 +1715,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         /** */
         @GridCacheQuerySqlField
         private int salary;
+
+        /** */
+        @GridCacheQuerySqlField(index = true)
+        private int fake$Field;
 
         /**
          * Required by {@link Externalizable}.
@@ -1808,13 +1840,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
 
             ObjectValue other = (ObjectValue)o;
 
@@ -1859,13 +1889,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) {
+            if (this == o)
                 return true;
-            }
 
-            if (o == null || getClass() != o.getClass()) {
+            if (o == null || getClass() != o.getClass())
                 return false;
-            }
 
             ObjectValueOther other = (ObjectValueOther)o;
 

@@ -380,9 +380,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOn(@Nullable GridCacheFlag[] flags) {
-        if (F.isEmpty(flags)) {
+        if (F.isEmpty(flags))
             return this;
-        }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
             EnumSet.copyOf(F.asList(flags)), null, false);
@@ -1561,16 +1560,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                         ctx.evicts().touch(entry, topVer);
 
                                         if (map != null) {
-                                            if (set || wasNew) {
+                                            if (set || wasNew)
                                                 map.put(key, val);
-                                            }
                                             else {
                                                 try {
                                                     GridTuple<V> v = peek0(false, key, GLOBAL, filter);
 
-                                                    if (v != null) {
+                                                    if (v != null)
                                                         map.put(key, val);
-                                                    }
                                                 }
                                                 catch (GridCacheFilterFailedException ex) {
                                                     ex.printStackTrace();
@@ -1826,9 +1823,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         }
 
                         try {
-                            V val = entry.innerGet(null, ctx.isSwapOrOffheapEnabled(),
-                                /*don't read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                /*update-metrics*/true, /*event*/true, subjId, null, taskName, filter);
+                            V val = entry.innerGet(null,
+                                ctx.isSwapOrOffheapEnabled(),
+                                /*don't read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/true,
+                                /*event*/true,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                filter);
 
                             GridCacheVersion ver = entry.version();
 
@@ -3498,8 +3504,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public V promote(K key) throws GridException {
+        return promote(key, true);
+    }
+
+    /**
+     * @param key Key.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Value.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    @Nullable public V promote(K key, boolean deserializePortable) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         A.notNull(key, "key");
@@ -3525,7 +3541,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return null;
         }
 
-        return ctx.cloneOnFlag(unswapped.value());
+        V val = unswapped.value();
+
+        if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
+            return (V)((GridPortableObject)val).deserialize();
+        else
+            return ctx.cloneOnFlag(val);
     }
 
     /** {@inheritDoc} */
@@ -3794,9 +3815,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     ctx.near().dht().context().tm().txContextReset();
             }
         }
-        else {
+        else
             return op.op(tx);
-        }
     }
 
     /**

@@ -224,9 +224,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             taskLdr = getClass().getClassLoader();
 
             for (GridNode node : subgrid) {
-                if (node.id().equals(arg)) {
+                if (node.id().equals(arg))
                     return Collections.singletonMap(new TestJob(arg), node);
-                }
             }
 
             throw new GridException("Failed to find target node: " + arg);

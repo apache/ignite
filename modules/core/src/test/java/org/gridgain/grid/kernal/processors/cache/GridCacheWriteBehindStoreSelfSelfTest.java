@@ -10,8 +10,10 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -95,9 +97,8 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
         initStore(1);
 
         try {
-            for (int i = 0; i < CACHE_SIZE * 2; i++) {
+            for (int i = 0; i < CACHE_SIZE * 2; i++)
                 store.put(null, i, "val" + i);
-            }
 
             U.sleep(200);
 
@@ -230,5 +231,32 @@ public class GridCacheWriteBehindStoreSelfSelfTest extends GridCacheWriteBehindS
 
         for (int i = 0; i < CACHE_SIZE; i++)
             assertEquals("Invalid value stored", "val" + i, delegate.getMap().get(i));
+    }
+
+    /**
+     * Tests that all values will be written to the underlying store
+     * right in the same order as they were put into the store.
+     *
+     * @throws Exception If failed.
+     */
+    public void testBatchApply() throws Exception {
+        initStore(1);
+
+        List<Integer> intList = new ArrayList<>(CACHE_SIZE);
+
+        try {
+            for (int i = 0; i < CACHE_SIZE; i++) {
+                store.put(null, i, "val" + i);
+
+                intList.add(i);
+            }
+        }
+        finally {
+            shutdownStore();
+        }
+
+        Map<Integer, String> underlyingMap = delegate.getMap();
+
+        assertTrue("Store map key set: " + underlyingMap.keySet(), F.eqOrdered(underlyingMap.keySet(), intList));
     }
 }

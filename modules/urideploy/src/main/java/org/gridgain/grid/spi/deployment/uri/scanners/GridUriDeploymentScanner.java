@@ -128,9 +128,8 @@ public abstract class GridUriDeploymentScanner {
 
         scanner.start();
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Grid URI deployment scanner started: " + this);
-        }
     }
 
     /**
@@ -146,9 +145,8 @@ public abstract class GridUriDeploymentScanner {
     public void join() {
         U.join(scanner, log);
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Grid URI deployment scanner stopped: " + this);
-        }
     }
 
     /**
@@ -176,9 +174,8 @@ public abstract class GridUriDeploymentScanner {
 
         int idx = fileName.lastIndexOf('.');
 
-        if (idx == -1) {
+        if (idx == -1)
             idx = fileName.length();
-        }
 
         String prefix = fileName.substring(0, idx);
         if (idx < 3) { // Prefix must be at least 3 characters long. See File.createTempFile(...).
