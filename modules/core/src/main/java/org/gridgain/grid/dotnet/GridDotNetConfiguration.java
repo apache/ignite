@@ -36,8 +36,8 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware {
      * @param cfg configuration to copy.
      */
     public GridDotNetConfiguration(GridDotNetConfiguration cfg) {
-        if (cfg.getPortableCfg() != null)
-            portableCfg = new GridDotNetPortableConfiguration(cfg.getPortableCfg());
+        if (cfg.getPortableConfiguration() != null)
+            portableCfg = new GridDotNetPortableConfiguration(cfg.getPortableConfiguration());
 
         if (cfg.getAssemblies() != null)
             assemblies = new ArrayList<>(cfg.getAssemblies());
@@ -46,14 +46,14 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware {
     /**
      * @return Configuration.
      */
-    public GridDotNetPortableConfiguration getPortableCfg() {
+    public GridDotNetPortableConfiguration getPortableConfiguration() {
         return portableCfg;
     }
 
     /**
      * @param portableCfg Configuration.
      */
-    public void setPortableCfg(GridDotNetPortableConfiguration portableCfg) {
+    public void setPortableConfiguration(GridDotNetPortableConfiguration portableCfg) {
         this.portableCfg = portableCfg;
     }
 
