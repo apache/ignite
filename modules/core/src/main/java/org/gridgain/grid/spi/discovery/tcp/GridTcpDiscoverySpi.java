@@ -2780,6 +2780,24 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         return t.isAlive() ? "alive" : "dead";
     }
 
+    /**
+     * Checks if two given {@link GridSecurityPermissionSet} objects contain the same permissions.
+     * Each permission belongs to one of three groups : cache, task or system.
+     *
+     * @param locPerms The first set of permissions.
+     * @param rmtPerms The second set of permissions.
+     * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
+     */
+    private boolean permissionsEqual(GridSecurityPermissionSet locPerms, GridSecurityPermissionSet rmtPerms) {
+        boolean dfltAllowMatch = !(locPerms.defaultAllowAll() ^ rmtPerms.defaultAllowAll());
+
+        boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
+            F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
+            F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
+
+        return dfltAllowMatch && bothHaveSamePerms;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpDiscoverySpi.class, this);
@@ -3761,8 +3779,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 return;
                             }
 
-                            // Stick in authentication subject to node (use security-safe attributes for copy).
-                            Map<String, Object> attrs = new HashMap<>(node.attributes());
+                            // Stick in authentication subject to node.
+                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
                             attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
 
@@ -4099,6 +4117,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     node.metricsStore(metricsStore);
 
                     node.logger(log);
+                }
+
+                if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
+                    try {
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
+
+                        GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+                        GridSecurityContext coordSubj = gridMarsh.unmarshal(
+                            node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), null);
+
+                        if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                            // TODO kick the node out.
+                            System.out.println("!!!!!!!!!!!!!!!");
+                        }
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+
+                        // TODO kick the node out.
+                    }
                 }
 
                 boolean topChanged = ring.add(node);
