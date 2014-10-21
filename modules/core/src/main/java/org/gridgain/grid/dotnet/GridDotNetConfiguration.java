@@ -28,7 +28,7 @@ public class GridDotNetConfiguration implements GridPortableMarshalAware {
      * Default constructor.
      */
     public GridDotNetConfiguration() {
-
+        // No-op.
     }
 
     /**

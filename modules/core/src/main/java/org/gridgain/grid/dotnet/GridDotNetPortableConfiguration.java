@@ -43,7 +43,7 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
      * Default constructor.
      */
     public GridDotNetPortableConfiguration() {
-
+        // No-op.
     }
 
     /**
