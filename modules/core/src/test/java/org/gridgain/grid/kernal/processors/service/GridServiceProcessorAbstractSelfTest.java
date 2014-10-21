@@ -500,7 +500,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         grid.services().deployClusterSingleton(name, new CounterServiceImpl()).get();
 
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
 
         for (int i = 0; i < 10; i++)
             svc.increment();
@@ -522,6 +522,29 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         for (int i = 0; i < 10; i++)
             svc.increment();
+
+        assertEquals(10, svc.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultiNodeProxy() throws Exception {
+        Grid grid = randomGrid();
+
+        startExtraNodes(10);
+
+        String name = "testMultiNodeProxy";
+
+        grid.services().deployMultiple(name, new CounterServiceImpl(), 10, 3).get();
+
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
+
+        for (int i = 0; i < 10; i++) {
+            svc.increment();
+
+            stopExtraNodes(1);
+        }
 
         assertEquals(10, svc.get());
     }
@@ -634,7 +657,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             /** {@inheritDoc} */
             @Override public boolean equals(Object o) {
-                return this == o || (o instanceof Value && v == ((Value)o).v);
+                return this == o || o instanceof Value && v == ((Value)o).v;
             }
         }
     }
