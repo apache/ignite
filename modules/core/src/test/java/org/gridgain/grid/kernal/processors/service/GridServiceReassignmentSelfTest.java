@@ -12,10 +12,8 @@ package org.gridgain.grid.kernal.processors.service;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -58,6 +56,13 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    private CounterService proxy(Grid g) throws Exception {
+        return g.services().serviceProxy("testService", CounterService.class, false);
+    }
+
+    /**
      * @param total Total number of services.
      * @param maxPerNode Maximum number of services per node.
      * @throws GridException If failed.
@@ -67,7 +72,10 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         DummyService.exeLatch("testService", latch);
 
-        grid(0).services().deployMultiple("testService", new DummyService(), total, maxPerNode).get();
+        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode).get();
+
+        for (int i = 0; i < 10; i++)
+            proxy(randomGrid()).increment();
 
         Collection<Integer> startedGrids = new HashSet<>();
 
@@ -157,6 +165,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         if (total > 0)
             assertTrue("Total number of services limit exceeded [sum=" + sum +
                 ", assigns=" + assignments.assigns() + ']', sum <= total);
+
+        assertEquals(10, proxy(grid).get());
     }
 
     /**

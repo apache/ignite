@@ -314,7 +314,7 @@ public interface GridServices {
      *
      * @param svc Interface for the service.
      * @param sticky Whether or not GridGain should always contact the same remote
-     * service or try to load-balance between services.
+     *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
     public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException;

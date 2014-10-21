@@ -774,6 +774,24 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                     ctxs.add(svcCtx);
 
+                    try {
+                        // Initialize service.
+                        cp.init(svcCtx);
+                    }
+                    catch (Throwable e) {
+                        log.error("Failed to initialize service (service will not be deployed): " + assigns.name(), e);
+
+                        ctxs.remove(svcCtx);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+
+                        if (e instanceof RuntimeException)
+                            throw (RuntimeException)e;
+
+                        return;
+                    }
+
                     if (log.isInfoEnabled())
                         log.info("Starting service instance [name=" + svcCtx.name() + ", execId=" +
                             svcCtx.executionId() + ']');
@@ -1151,7 +1169,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (assigns != null) {
                             svcName.set(assigns.name());
 
-                            redeploy(assigns);
+                            Throwable t = null;
+
+                            try {
+                                redeploy(assigns);
+                            }
+                            catch (Error | RuntimeException th) {
+                                t = th;
+                            }
 
                             GridServiceDeploymentFuture fut = depFuts.get(assigns.name());
 
@@ -1159,7 +1184,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 depFuts.remove(assigns.name(), fut);
 
                                 // Complete deployment futures once the assignments have been stored in cache.
-                                fut.onDone();
+                                fut.onDone(null, t);
                             }
                         }
                         // Handle undeployment.

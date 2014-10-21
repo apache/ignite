@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import junit.framework.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.service.*;
 
@@ -33,9 +34,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        DummyService.exeLatch(name, latch);
+        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployClusterSingleton(name, new DummyService());
+        GridFuture<?> fut = g.services().deployClusterSingleton(name, new org.gridgain.grid.kernal.processors.service.DummyService());
 
         info("Deployed service: " + name);
 
@@ -45,16 +46,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        assertEquals(name, 1, DummyService.started(name));
-        assertEquals(name, 0, DummyService.cancelled(name));
+        TestCase.assertEquals(name, 1, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
+        TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            assertEquals(name, 1, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            TestCase.assertEquals(name, 1, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
+            TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
 
             info(">>> Passed checks.");
 
@@ -76,10 +77,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        CountDownLatch latch = new CountDownLatch(1);
-
         String name = "serviceAffinityUpdateTopology";
-        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(latch, affKey),
+
+        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
         info("Deployed service: " + name);
@@ -87,8 +87,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         fut.get();
 
         info("Finished waiting for service future: " + name);
-
-        latch.await();
 
         checkCount(name, g.services().deployedServices(), 1);
 
@@ -114,9 +112,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
-        DummyService.exeLatch(name, latch);
+        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, new DummyService());
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, new org.gridgain.grid.kernal.processors.service.DummyService());
 
         info("Deployed service: " + name);
 
@@ -126,22 +124,22 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        assertEquals(name, nodeCount(), DummyService.started(name));
-        assertEquals(name, 0, DummyService.cancelled(name));
+        TestCase.assertEquals(name, nodeCount(), org.gridgain.grid.kernal.processors.service.DummyService.started(name));
+        TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
 
         int newNodes = 2;
 
         latch = new CountDownLatch(newNodes);
 
-        DummyService.exeLatch(name, latch);
+        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
 
         startExtraNodes(newNodes);
 
         try {
             latch.await();
 
-            assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            TestCase.assertEquals(name, nodeCount() + newNodes, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
+            TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
 
             checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
         }
@@ -151,76 +149,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     }
 
     /**
-     * @return Instance of {@code GridDummyService} for testing purposes.
-     */
-    private static GridDummyService getDummyService() {
-        return new GridDummyService() {
-            private DummyService ds = new DummyService();
-
-            @Override public int getInt() {
-                return 239;
-            }
-
-            @Override public void cancel(GridServiceContext ctx) {
-                ds.cancel(ctx);
-            }
-
-            @Override public void execute(GridServiceContext ctx) throws Exception {
-                ds.execute(ctx);
-            }
-        };
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClusterSingletonServiceProxy() throws Exception {
-        String name = "remoteService";
-
-        Grid gLoc = startGrid(getTestGridName() + "local");
-
-        Grid gRemote = startGrid(getTestGridName() + "remote");
-
-        GridFuture<?> fut = gRemote.services().deployClusterSingleton(name, getDummyService());
-
-        info("Deployed service: " + name);
-
-        fut.get();
-
-        info("Finished waiting for service future: " + name);
-
-        GridDummyService proxy = gLoc.services().serviceProxy(name, GridDummyService.class, true);
-
-        assertEquals("Proxy service was not executed", 239, proxy.getInt());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeSingletonServiceProxy() throws Exception {
-        Grid g = randomGrid();
-
-        startExtraNodes(2);
-
-        String name = "dummyService";
-
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, getDummyService());
-
-        info("Deployed service: " + name);
-
-        fut.get();
-
-        info("Finished waiting for service future: " + name);
-
-        GridDummyService proxy = g.services().serviceProxy(name, GridDummyService.class, true);
-
-        assertEquals("Proxy service was not executed", 239, proxy.getInt());
-    }
-
-    /**
      * Dummy interface for testing purposes.
      */
-    private interface GridDummyService extends GridService {
+    private interface DummyService extends GridService {
         /**
          * @return Some integer value.
          */

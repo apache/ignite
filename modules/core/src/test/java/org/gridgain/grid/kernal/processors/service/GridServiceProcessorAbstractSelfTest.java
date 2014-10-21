@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -57,6 +58,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setBackups(nodeCount());
 
         c.setCacheConfiguration(cc);
 
@@ -265,9 +267,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(latch, affKey),
+        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
         info("Deployed service: " + name);
@@ -275,8 +275,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         fut.get();
 
         info("Finished waiting for service future: " + name);
-
-        latch.await();
 
         checkCount(name, g.services().deployedServices(), 1);
     }
@@ -458,9 +456,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Latch. */
-        private static CountDownLatch latch;
-
         /** Affinity key. */
         private final Object affKey;
 
@@ -468,12 +463,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         private Grid g;
 
         /**
-         * @param latch Latch.
          * @param affKey Affinity key.
          */
-        public AffinityService(CountDownLatch latch, Object affKey) {
-            AffinityService.latch = latch;
-
+        public AffinityService(Object affKey) {
             this.affKey = affKey;
         }
 
@@ -483,15 +475,167 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) {
-            System.out.println("Executing affinity service for key: " + affKey);
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            System.out.println("Initializing affinity service for key: " + affKey);
 
             GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
 
             assertNotNull(n);
             assertTrue(n.isLocal());
+        }
 
-            latch.countDown();
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) {
+            System.out.println("Executing affinity service for key: " + affKey);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClusterSingletonProxy() throws Exception {
+        String name = "testClusterSingletonProxy";
+
+        Grid grid = randomGrid();
+
+        grid.services().deployClusterSingleton(name, new CounterServiceImpl()).get();
+
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+
+        for (int i = 0; i < 10; i++)
+            svc.increment();
+
+        assertEquals(10, svc.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeSingletonProxy() throws Exception {
+        String name = "testNodeSingletonProxy";
+
+        Grid grid = randomGrid();
+
+        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+
+        for (int i = 0; i < 10; i++)
+            svc.increment();
+
+        assertEquals(10, svc.get());
+    }
+
+    /**
+     * Counter service.
+     */
+    protected interface CounterService {
+        /**
+         * @return Incremented value.
+         */
+        int increment();
+
+        /**
+         * @return Current value.
+         */
+        int get();
+    }
+
+    /**
+     * Counter service implementation.
+     */
+    protected static class CounterServiceImpl implements CounterService, GridService {
+        /** Auto-injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private GridCache<String, Value> cache;
+
+        /** Cache key. */
+        private String key;
+
+        /** {@inheritDoc} */
+        @Override public int increment() {
+            try {
+                while (true) {
+                    Value val = cache.get(key);
+
+                    if (val == null) {
+                        Value old = cache.putIfAbsent(key, val = new Value(0));
+
+                        if (old != null)
+                            val = old;
+                    }
+
+                    Value newVal = new Value(val.get() + 1);
+
+                    if (cache.replace(key, val, newVal))
+                        return newVal.get();
+                }
+
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int get() {
+            try {
+                Value val = cache.get(key);
+
+                return val == null ? 0 : val.get();
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(GridServiceContext ctx) {
+            System.out.println("Stopping counter service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            System.out.println("Initializing counter service: " + ctx.name());
+
+            key = ctx.name();
+
+            cache = grid.cache(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) throws Exception {
+            System.out.println("Executing counter service: " + ctx.name());
+        }
+
+        /**
+         *
+         */
+        private static class Value implements Serializable {
+            /** */
+            private int v;
+
+            /**
+             * @param v Value.
+             */
+            private Value(int v) {
+                this.v = v;
+            }
+
+            /**
+             * @return Value.
+             */
+            int get() {
+                return v;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object o) {
+                return this == o || (o instanceof Value && v == ((Value)o).v);
+            }
         }
     }
 }
