@@ -2,7 +2,7 @@
 ![GridGain Logo](http://www.gridgain.com/images/logo/logo_mid.png "GridGain Logo")
 </center>
 
-<div style="height: 40px"></div>
+<div style="height: 5px"></div>
 
 ## 1. GridGain In-Memory Data Fabric
 
