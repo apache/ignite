@@ -45,7 +45,7 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
      * Default constructor.
      */
     public GridDotNetPortableTypeConfiguration() {
-
+        // No-op.
     }
 
     /**
