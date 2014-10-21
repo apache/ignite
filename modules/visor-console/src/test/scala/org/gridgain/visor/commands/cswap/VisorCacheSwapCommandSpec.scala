@@ -66,7 +66,7 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for default cache" in {
         G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        visor.cache("-swap")
+        visor.cache("-swap -c=<default>")
     }
 
     it should "show correct result for named cache" in {
