@@ -437,10 +437,5 @@ public class GridClientTopology {
         private GridClientNode node() {
             return node;
         }
-
-        /** {@inheritDoc}  */
-        @Override public String toString() {
-            return S.toString(TopologyEvent.class, this);
-        }
     }
 }
