@@ -24,6 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Tests for {@link GridAffinityProcessor}.
@@ -524,12 +525,39 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             svc.increment();
 
         assertEquals(10, svc.get());
+        assertEquals(10, svc.localIncrements());
+
+        // Make sure that remote proxies were not called.
+        for (GridNode n : grid.forRemotes().nodes()) {
+            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMultiNodeProxy() throws Exception {
+    public void testNodeSingletonRemoteNotStickyProxy() throws Exception {
+        String name = "testNodeSingletonRemoteProxy";
+
+        Grid grid = randomGrid();
+
+        // Deploy only on remote nodes.
+        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+
+        // Get local proxy.
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+
+        for (int i = 0; i < 10; i++)
+            svc.increment();
+
+        assertEquals(10, svc.get());
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testMultiNodeProxy() throws Exception {
         Grid grid = randomGrid();
 
         startExtraNodes(10);
@@ -553,6 +581,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * Counter service.
      */
     protected interface CounterService {
+        /**
+         * @return Number of increments happened on the same service instance.
+         */
+        int localIncrements();
+
         /**
          * @return Incremented value.
          */
@@ -578,8 +611,18 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         /** Cache key. */
         private String key;
 
+        /** Invocation count. */
+        private AtomicInteger locInrements = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public int localIncrements() {
+            return locInrements.get();
+        }
+
         /** {@inheritDoc} */
         @Override public int increment() {
+            locInrements.incrementAndGet();
+
             try {
                 while (true) {
                     Value val = cache.get(key);
