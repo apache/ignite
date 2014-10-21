@@ -257,6 +257,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         Map<Integer, String> underlyingMap = delegate.getMap();
 
-        // assertTrue("Store map key set: " + underlyingMap.keySet(), F.eqOrdered(underlyingMap.keySet(), intList));
+        assertTrue("Store map key set: " + underlyingMap.keySet(), F.eqOrdered(underlyingMap.keySet(), intList));
     }
 }
