@@ -132,7 +132,7 @@ public class GridifySetToSetAbstractAspect {
 
         Collection<?> res = subgrid.compute().withTimeout(timeout == 0 ? 0L : (end - now)).execute(
             new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, false),
-            arg).get();
+            arg);
 
         return result(arg.getMethodReturnType(), res);
     }

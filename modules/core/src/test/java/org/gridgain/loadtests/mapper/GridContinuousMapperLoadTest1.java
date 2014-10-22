@@ -37,7 +37,7 @@ public class GridContinuousMapperLoadTest1 {
 
             X.println("Populated replicated cache.");
 
-            g.compute().execute(new GridContinuousMapperTask1(), max).get();
+            g.compute().execute(new GridContinuousMapperTask1(), max);
         }
     }
 }

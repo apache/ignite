@@ -12,6 +12,7 @@ package org.gridgain.testframework.junits.common;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
@@ -20,6 +21,7 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
+import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.util.*;
@@ -414,5 +416,60 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
+    }
+
+    /**
+     * @param comp Compute.
+     * @param task Task.
+     * @param arg Task argument.
+     * @return Task future.
+     */
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, GridComputeTask task, @Nullable Object arg) {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(task, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param comp Compute.
+     * @param taskName Task name.
+     * @param arg Task argument.
+     * @return Task future.
+     */
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, String taskName, @Nullable Object arg) {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(taskName, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param comp Compute.
+     * @param taskCls Task class.
+     * @param arg Task argument.
+     * @return Task future.
+     */
+    @SuppressWarnings("unchecked")
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, Class taskCls, @Nullable Object arg) {
+        comp = comp.enableAsync();
+
+        assertNull(comp.execute(taskCls, arg));
+
+        GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
     }
 }

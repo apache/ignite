@@ -181,7 +181,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        Grid master = startGrid(MASTER);
+        final Grid master = startGrid(MASTER);
 
         List<Grid> workers = new ArrayList<>(workerCnt);
 
@@ -217,6 +217,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
+            GridCompute comp = master.forPredicate(workerNodesFilter).compute().enableAsync();
+
             for (Integer key : testKeys) {
                 dataChunk.add(key);
                 entryCntr++;
@@ -228,10 +230,12 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     log.info("Pushing data chunk [chunkNo=" + chunkCntr + "]");
 
-                    GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
+                    comp.execute(
                         new GridCachePutAllTask(
                             runningWorkers.get(rnd.nextInt(runningWorkers.size())).localNode().id(), CACHE_NAME),
                         dataChunk);
+
+                    GridComputeTaskFuture<Void> fut = comp.future();
 
                     resQueue.put(fut); // Blocks if queue is full.
 
@@ -345,7 +349,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        Grid master = startGrid(MASTER);
+        final Grid master = startGrid(MASTER);
 
         List<Grid> workers = new ArrayList<>(workerCnt);
 
@@ -379,6 +383,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
+            GridCompute comp = master.forPredicate(workerNodesFilter).compute().enableAsync();
+
             for (Integer key : testKeys) {
                 GridNode mappedNode = master.mapKeyToNode(CACHE_NAME, key);
 
@@ -399,9 +405,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     log.info("Pushing data chunk [chunkNo=" + chunkCntr + "]");
 
-                    GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
-                        new GridCachePutAllTask(nodeId, CACHE_NAME),
-                        data);
+                    comp.execute(new GridCachePutAllTask(nodeId, CACHE_NAME), data);
+
+                    GridComputeTaskFuture<Void> fut = comp.future();
 
                     resQueue.put(fut); // Blocks if queue is full.
 
@@ -450,9 +456,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             for (Map.Entry<UUID, Collection<Integer>> entry : dataChunks.entrySet()) {
-                GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
-                    new GridCachePutAllTask(entry.getKey(), CACHE_NAME),
-                    entry.getValue());
+                comp.execute(new GridCachePutAllTask(entry.getKey(), CACHE_NAME), entry.getValue());
+
+                GridComputeTaskFuture<Void> fut = comp.future();
 
                 resQueue.put(fut); // Blocks if queue is full.
 

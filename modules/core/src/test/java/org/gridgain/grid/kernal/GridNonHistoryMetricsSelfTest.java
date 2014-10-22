@@ -55,7 +55,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         final Grid grid = grid();
 
-        grid.compute().execute(new TestTask(), "testArg").get();
+        grid.compute().execute(new TestTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);

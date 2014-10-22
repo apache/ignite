@@ -62,8 +62,13 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         Collection<GridComputeTaskFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++)
-            futs.add(grid.compute().execute(CancelledTask.class, null));
+        GridCompute comp = grid.compute().enableAsync();
+
+        for (int i = 1; i <= 10; i++) {
+            comp.execute(CancelledTask.class, null);
+
+            futs.add(comp.future());
+        }
 
         // Wait to be sure that metrics were updated.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {

@@ -61,7 +61,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -88,7 +88,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -115,7 +115,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /** {@inheritDoc} */

@@ -54,7 +54,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
         try {
             grid.compute().execute(GridTestFailoverTask.class.getName(),
-                new GridComputeExecutionRejectedException("Task should be failed over")).get();
+                new GridComputeExecutionRejectedException("Task should be failed over"));
 
             assert false;
         }
@@ -78,7 +78,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
         try {
             grid.compute().execute(GridTestFailoverTask.class.getName(),
-                new GridException("Task should NOT be failed over")).get();
+                new GridException("Task should NOT be failed over"));
 
             assert false;
         }

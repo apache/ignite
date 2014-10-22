@@ -82,8 +82,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
             node2Id = grid2.localNode().id();
 
-            grid1.compute().execute(SharedResourceTask1.class, null).get();
-            grid1.compute().execute(SharedResourceTask2.class, null).get();
+            grid1.compute().execute(SharedResourceTask1.class, null);
+            grid1.compute().execute(SharedResourceTask2.class, null);
 
             // 2 instances: one instance of resource for task and one instance for
             // job, because job execute on remote node.
@@ -92,8 +92,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
             assertEquals(clsLdr1, clsLdr2);
 
-            grid3.compute().execute(SharedResourceTask1.class, null).get();
-            grid3.compute().execute(SharedResourceTask2.class, null).get();
+            grid3.compute().execute(SharedResourceTask1.class, null);
+            grid3.compute().execute(SharedResourceTask2.class, null);
 
             // 3 instances: one instance for each nodes.
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 3);
@@ -122,8 +122,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
 
             node2Id = grid2.localNode().id();
 
-            grid1.compute().execute(SharedResourceTask1.class, null).get();
-            grid1.compute().execute(SharedResourceTask2.class, null).get();
+            grid1.compute().execute(SharedResourceTask1.class, null);
+            grid1.compute().execute(SharedResourceTask2.class, null);
 
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 2);
             GridP2PAbstractUserResource.checkCreateCount(UserResource2.class, 2);
@@ -137,8 +137,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             GridP2PAbstractUserResource.checkUndeployCount(UserResource1.class, 1);
             GridP2PAbstractUserResource.checkUndeployCount(UserResource2.class, 1);
 
-            grid3.compute().execute(SharedResourceTask1.class, null).get();
-            grid3.compute().execute(SharedResourceTask2.class, null).get();
+            grid3.compute().execute(SharedResourceTask1.class, null);
+            grid3.compute().execute(SharedResourceTask2.class, null);
 
             // 3 instances: one instance for each nodes.
             GridP2PAbstractUserResource.checkCreateCount(UserResource1.class, 3);

@@ -647,13 +647,12 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Grid g1 = G.start(cfg)) {
             GridCompute compute = grid().forNode(g1.localNode()).compute();
 
-            GridFuture<?> fut = compute.run(new Runnable() {
-                @Override public void run() {
+            compute.run(new Runnable() {
+                @Override
+                public void run() {
                     // No-op.
                 }
             });
-
-            fut.get();
 
             GridMarshallerTestBean inBean = newTestBean(compute);
 
@@ -671,7 +670,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.equals(outBean);
 
             GridProjection inPrj = compute.projection();
-            GridProjection outPrj = ((GridComputeImpl)outBean.getObjectField()).projection();
+            GridProjection outPrj = ((GridCompute)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -687,17 +686,17 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Grid g1 = G.start(cfg)) {
-            GridEvents events = grid().forNode(g1.localNode()).events();
+            GridEvents evts = grid().forNode(g1.localNode()).events();
 
-            events.localListen(new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent gridEvent) {
+            evts.localListen(new GridPredicate<GridEvent>() {
+                @Override public boolean apply(GridEvent gridEvt) {
                     return true;
                 }
             }, EVTS_CACHE);
 
             grid().cache(null).put(1, 1);
 
-            GridMarshallerTestBean inBean = newTestBean(events);
+            GridMarshallerTestBean inBean = newTestBean(evts);
 
             byte[] buf = marshal(inBean);
 
@@ -712,8 +711,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
-            GridProjection inPrj = events.projection();
-            GridProjection outPrj = ((GridEventsImpl)outBean.getObjectField()).projection();
+            GridProjection inPrj = evts.projection();
+            GridProjection outPrj = ((GridEvents)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -749,7 +748,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.equals(outBean);
 
             GridProjection inPrj = messaging.projection();
-            GridProjection outPrj = ((GridMessagingImpl)outBean.getObjectField()).projection();
+            GridProjection outPrj = ((GridMessaging)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
@@ -787,7 +786,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.equals(outBean);
 
             GridProjection inPrj = services.projection();
-            GridProjection outPrj = ((GridServicesImpl)outBean.getObjectField()).projection();
+            GridProjection outPrj = ((GridServices)outBean.getObjectField()).projection();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());

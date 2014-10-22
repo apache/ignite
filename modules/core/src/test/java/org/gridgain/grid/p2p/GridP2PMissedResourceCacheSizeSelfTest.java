@@ -80,7 +80,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void executeFail(Grid g1, Grid g2, Class task) {
         try {
-            g1.compute().execute(task, g2.localNode().id()).get();
+            g1.compute().execute(task, g2.localNode().id());
 
             assert false; // Exception must be thrown.
         }
@@ -141,7 +141,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             ldr.setExcludeClassNames();
 
-            grid1.compute().execute(task, grid2.localNode().id()).get();
+            grid1.compute().execute(task, grid2.localNode().id());
         }
         finally {
             stopGrid(1);

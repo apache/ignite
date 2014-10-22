@@ -190,7 +190,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new GridComputeImpl(ctx, this, subjId);
+            compute = new GridComputeImpl(ctx, this, subjId, false);
         }
 
         return compute;

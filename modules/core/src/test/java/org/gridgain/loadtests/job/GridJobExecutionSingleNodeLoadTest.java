@@ -40,6 +40,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      *             1-st: Number of worker threads. Default: 32.
      *             2-nd: Test duration in seconds. 0 means infinite. Default: 0.
      *             3-rd: File to output test results to.
+     * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         GridFileLock fileLock = GridLoadTestUtils.fileLock();
@@ -71,7 +72,7 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
                     @Override public Object call() throws GridException {
-                        g.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                        g.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                         return null;
                     }
@@ -87,7 +88,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                         @Override public Object call() throws Exception {
                             while (!finish.get()) {
                                 try {
-                                    g.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                                    g.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                                     tasksCnt.incrementAndGet();
                                 }

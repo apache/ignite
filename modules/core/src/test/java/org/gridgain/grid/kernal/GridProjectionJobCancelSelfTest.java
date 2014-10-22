@@ -83,7 +83,11 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalCancel() throws Exception {
-        final GridComputeTaskFuture<Integer> fut = grid(0).compute().execute(TestTask.class, grid(0).localNode().id());
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        assertNull(comp.execute(TestTask.class, grid(0).localNode().id()));
+
+        final GridComputeTaskFuture<Integer> fut = comp.future();
 
         grid(0).events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
@@ -108,7 +112,11 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception  If failed.
      */
     public void testRemoteCancel() throws Exception {
-        final GridComputeTaskFuture<Integer> fut = grid(0).compute().execute(TestTask.class, grid(1).localNode().id());
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        assertNull(comp.execute(TestTask.class, grid(1).localNode().id()));
+
+        final GridComputeTaskFuture<Integer> fut = comp.future();
 
         grid(1).events().localListen(new GridPredicate<GridEvent>() {
             @Override public boolean apply(GridEvent evt) {
@@ -133,9 +141,12 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception  If failed.
      */
     public void testMissedCancel() throws Exception {
+        GridCompute comp = grid(0).forLocal().compute().enableAsync();
+
+        comp.execute(TestTask.class, grid(0).localNode().id());
+
         // Run task on single node.
-        final GridComputeTaskFuture<Integer> fut = grid(0).forLocal()
-            .compute().execute(TestTask.class, grid(0).localNode().id());
+        final GridComputeTaskFuture<Integer> fut = comp.future();
 
         GridUuid jobId = jobIdExc.get();
 
@@ -201,43 +212,44 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
         ((GridKernal)grid(1)).context().io().addMessageListener(TOPIC_JOB_CANCEL, msgLsnr2);
         ((GridKernal)grid(2)).context().io().addMessageListener(TOPIC_JOB_CANCEL, msgLsnr3);
 
-        GridComputeTaskFuture<Void> fut = grid(0).forOthers(grid(1).localNode()).compute().execute(
-            new GridComputeTaskAdapter<Object, Void>() {
-                @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) {
-                    assert subgrid.size() == 2;
+        GridCompute comp = grid(0).forOthers(grid(1).localNode()).compute().enableAsync();
 
-                    Map<GridComputeJob, GridNode> ret = new HashMap<>(subgrid.size());
+        comp.execute(new GridComputeTaskAdapter<Object, Void>() {
+            @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) {
+                assert subgrid.size() == 2;
 
-                    for (GridNode node : subgrid) {
-                        final UUID nodeId = node.id();
+                Map<GridComputeJob, GridNode> ret = new HashMap<>(subgrid.size());
 
-                        ret.put(
-                            new GridComputeJobAdapter() {
-                                @Override public Object execute() throws GridException {
-                                    try {
-                                        jobStartedLatch.countDown();
+                for (GridNode node : subgrid) {
+                    final UUID nodeId = node.id();
 
-                                        U.sleep(5000);
+                    ret.put(
+                        new GridComputeJobAdapter() {
+                            @Override public Object execute() throws GridException {
+                                try {
+                                    jobStartedLatch.countDown();
 
-                                        return "Job for " + nodeId;
-                                    }
-                                    finally {
-                                        jobFinishLatch.countDown();
-                                    }
+                                    U.sleep(5000);
+
+                                    return "Job for " + nodeId;
                                 }
-                            },
-                            node);
-                    }
-
-                    return ret;
+                                finally {
+                                    jobFinishLatch.countDown();
+                                }
+                            }
+                        },
+                        node);
                 }
 
-                /** {@inheritDoc} */
-                @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
-                    return null;
-                }
-            },
-            null);
+                return ret;
+            }
+
+            @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+                return null;
+            }
+        }, null);
+
+        GridComputeTaskFuture<Void> fut = comp.future();
 
         assertTrue(jobStartedLatch.await(5, SECONDS));
 

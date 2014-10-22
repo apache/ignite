@@ -615,7 +615,7 @@ class VisorTasksCommand {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask],
-                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null))).get
+                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -823,7 +823,7 @@ class VisorTasksCommand {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(null, taskName, null))).get
+                    VisorEventsCollectArgs.createTasksArg(null, taskName, null)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -1000,7 +1000,7 @@ class VisorTasksCommand {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(null, null, uuid))).get
+                    VisorEventsCollectArgs.createTasksArg(null, null, uuid)))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -1118,7 +1118,7 @@ class VisorTasksCommand {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(f, null, null))).get
+                    VisorEventsCollectArgs.createTasksArg(f, null, null)))
 
                 val eLst = mkData(evts)._2
 
@@ -1230,7 +1230,7 @@ class VisorTasksCommand {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorEventsCollectArgs.createTasksArg(f, null, null))).get
+                    VisorEventsCollectArgs.createTasksArg(f, null, null)))
 
                 val eLst = mkData(evts)._2
 

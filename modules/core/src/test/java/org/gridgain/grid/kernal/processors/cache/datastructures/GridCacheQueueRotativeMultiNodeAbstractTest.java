@@ -96,7 +96,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            grid(i).forLocal().compute().call(new PutJob(queueName, RETRIES)).get();
+            grid(i).forLocal().compute().call(new PutJob(queueName, RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -125,7 +125,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            grid(i).forLocal().compute().call(new PutTakeJob(queueName, RETRIES)).get();
+            grid(i).forLocal().compute().call(new PutTakeJob(queueName, RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -155,7 +155,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         Thread th = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    assert grid(1).compute().call(new TakeJob(queueName)).get();
+                    assert grid(1).compute().call(new TakeJob(queueName));
                 }
                 catch (GridException e) {
                     error(e.getMessage(), e);
@@ -167,7 +167,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         assert lthTake.await(1, TimeUnit.MINUTES) : "Timeout happened.";
 
-        assertTrue(grid(2).compute().call(new RemoveQueueJob(queueName)).get());
+        assertTrue(grid(2).compute().call(new RemoveQueueJob(queueName)));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

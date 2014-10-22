@@ -121,11 +121,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class cls = ldr.loadClass(TEST_TASK_1);
 
-            g0.compute().execute(cls, g1.localNode()).get();
+            g0.compute().execute(cls, g1.localNode());
 
             cls = ldr.loadClass(TEST_TASK_2);
 
-            g0.compute().execute(cls, g2.localNode()).get();
+            g0.compute().execute(cls, g2.localNode());
         }
         finally {
             stopAllGrids();
@@ -156,11 +156,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.localNode(), key));
 
             cls = ldr.loadClass(TEST_TASK_2);
 
-            g0.compute().execute(cls, g2.localNode()).get();
+            g0.compute().execute(cls, g2.localNode());
         }
         finally {
             stopAllGrids();
@@ -191,7 +191,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.localNode(), key));
 
             stopGrid(GRID_NAME);
 
@@ -241,7 +241,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            g0.compute().execute(cls, new T2<>(g1.localNode(), key)).get();
+            g0.compute().execute(cls, new T2<>(g1.localNode(), key));
 
             stopGrid(GRID_NAME);
 
@@ -308,7 +308,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info(">>>>>>> Third put completed.");
 
-            g0.compute().execute(task2Cls, g1.localNode()).get();
+            g0.compute().execute(task2Cls, g1.localNode());
         }
         finally {
             stopAllGrids();
@@ -337,7 +337,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            g1.compute().execute(cls, new T2<>(g2.localNode(), key)).get();
+            g1.compute().execute(cls, new T2<>(g2.localNode(), key));
 
             stopGrid(1);
 
@@ -370,7 +370,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                     break;
             }
 
-            g2.compute().execute(cls, new T2<>(g2.localNode(), key)).get();
+            g2.compute().execute(cls, new T2<>(g2.localNode(), key));
 
             stopGrid(2);
 

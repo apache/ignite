@@ -78,7 +78,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
 
         for (int i = 0; i < GRID_CNT; i++) {
             Set<Long> retVal = grid(i).forLocal().compute().
-                call(new IncrementAndGetJob(seqName, RETRIES)).get();
+                call(new IncrementAndGetJob(seqName, RETRIES));
 
             for (Long l : retVal)
                 assert !res.contains(l) : "Value already was used " + l;
@@ -113,7 +113,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
 
         for (int i = 0; i < GRID_CNT; i++) {
             Set<Long> retVal = grid(i).forLocal().compute().
-                call(new GetAndIncrementJob(seqName, RETRIES)).get();
+                call(new GetAndIncrementJob(seqName, RETRIES));
 
             for (Long l : retVal)
                 assert !res.contains(l) : "Value already was used " + l;

@@ -93,14 +93,17 @@ public class GridDsiClient implements Callable {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
+        GridCompute comp = g.forPredicate(serverNode()).compute().enableAsync();
+
         while (!finish.get()) {
             try {
                 long t0 = System.currentTimeMillis();
 
                 long submitTime1 = t0;
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f1 =
-                    g.forPredicate(serverNode()).compute().execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
+                comp.execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
+
+                GridComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -108,8 +111,9 @@ public class GridDsiClient implements Callable {
 
                 submitTime1 = System.currentTimeMillis();
 
-                GridComputeTaskFuture<T3<Long, Integer, Integer>> f2 =
-                    g.forPredicate(serverNode()).compute().execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
+                comp.execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
+
+                GridComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 

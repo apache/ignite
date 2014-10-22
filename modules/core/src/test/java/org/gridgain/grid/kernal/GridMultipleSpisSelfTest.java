@@ -99,7 +99,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
                 GridTestMultipleSpisTask.class.getClassLoader());
 
             try {
-                grid1.compute().execute(GridTestMultipleSpisTask.class.getName(), grid1.localNode().id()).get();
+                grid1.compute().execute(GridTestMultipleSpisTask.class.getName(), grid1.localNode().id());
             }
             catch (GridException e) {
                 e.printStackTrace();

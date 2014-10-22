@@ -57,7 +57,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
      * @throws GridException If test failed.
      */
     public void testTwoJobs() throws GridException {
-        grid1.compute().execute(JobStealingTask.class, null).get();
+        grid1.compute().execute(JobStealingTask.class, null);
     }
 
     /** {@inheritDoc} */

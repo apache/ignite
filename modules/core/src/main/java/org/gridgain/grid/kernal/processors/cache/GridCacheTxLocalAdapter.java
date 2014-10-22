@@ -985,7 +985,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         store.txEnd(this, false);
                 }
             }
-            catch (Error | GridException | RuntimeException e) {
+            catch (Error | RuntimeException e) {
                 U.addLastCause(e, commitErr.get(), log);
 
                 throw e;

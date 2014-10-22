@@ -29,6 +29,7 @@ import java.util.*;
 /**
  * Job stealing test.
  */
+@SuppressWarnings("unchecked")
 @GridCommonTest(group = "Kernal Self")
 public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /** Task execution timeout in milliseconds. */
@@ -71,7 +72,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws GridException If test failed.
      */
     public void testTwoJobs() throws GridException {
-        grid1.compute().execute(new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
@@ -86,7 +87,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     public void testTwoJobsNullPredicate() throws GridException {
-        grid1.compute().execute(new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
@@ -101,7 +102,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     public void testTwoJobsTaskNameNullPredicate() throws GridException {
-        grid1.compute().execute(JobStealingSingleNodeTask.class.getName(), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.compute(), JobStealingSingleNodeTask.class.getName(), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
@@ -122,8 +123,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-        grid1.forPredicate(topPred).compute().withTimeout(TASK_EXEC_TIMEOUT_MS).
-            execute(new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.forPredicate(topPred).compute().withTimeout(TASK_EXEC_TIMEOUT_MS),
+            new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
         assertEquals(2, jobDistrMap.get(grid2.localNode().id()).size());
@@ -138,12 +139,12 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicate() throws Exception {
         final Grid grid3 = startGrid(3);
 
-        grid1.forPredicate(new P1<GridNode>() {
+        executeAsync(grid1.forPredicate(new P1<GridNode>() {
             @Override public boolean apply(GridNode e) {
                 return grid1.localNode().id().equals(e.id()) ||
                     grid3.localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
-        }).compute().execute(new JobStealingSpreadTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
+        }).compute(), new JobStealingSpreadTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that jobs were run only on grid1 and grid3 (not on grid2)
         assertEquals(2, jobDistrMap.keySet().size());
@@ -161,15 +162,14 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Grid grid3 = startGrid(3);
 
-        P1<GridNode> p = new P1<GridNode>() {
+        GridPredicate<GridNode> p = new P1<GridNode>() {
             @Override public boolean apply(GridNode e) {
                 return grid1.localNode().id().equals(e.id()) ||
                     grid3.localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
         };
 
-        grid1.forPredicate(p).compute().
-            execute(new JobStealingSingleNodeTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.forPredicate(p).compute(), new JobStealingSingleNodeTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that jobs were run only on grid1 and grid3 (not on grid2)
         assertEquals(2, jobDistrMap.keySet().size());
@@ -189,8 +189,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        grid1.forPredicate(p).compute().
-            execute(new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(grid1.forPredicate(p).compute(), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
         assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
@@ -205,7 +204,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testSingleNodeProjection() throws Exception {
         GridProjection prj = grid1.forNodeIds(Collections.singleton(grid1.localNode().id()));
 
-        prj.compute().execute(new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(prj.compute(), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
         assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
@@ -221,7 +220,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testSingleNodeProjectionNullPredicate() throws Exception {
         GridProjection prj = grid1.forNodeIds(Collections.singleton(grid1.localNode().id()));
 
-        prj.compute().withTimeout(TASK_EXEC_TIMEOUT_MS).execute(new JobStealingSpreadTask(2), null).
+        executeAsync(prj.compute().withTimeout(TASK_EXEC_TIMEOUT_MS), new JobStealingSpreadTask(2), null).
             get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
@@ -253,8 +252,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         GridPredicate<GridNode> nodeFilter = (GridPredicate<GridNode>)nodeFilterCls
             .getConstructor(UUID.class).newInstance(grid2.localNode().id());
 
-        Map<UUID, Integer> ret = (Map<UUID, Integer>)grid1.forPredicate(nodeFilter)
-            .compute().execute(taskCls, null).get(TASK_EXEC_TIMEOUT_MS);
+        Map<UUID, Integer> ret = (Map<UUID, Integer>)executeAsync(grid1.forPredicate(nodeFilter)
+            .compute(), taskCls, null).get(TASK_EXEC_TIMEOUT_MS);
 
         assert ret != null;
         assert ret.get(grid1.localNode().id()) != null && ret.get(grid1.localNode().id()) == 2 :

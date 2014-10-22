@@ -133,7 +133,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertTrue(queue.isEmpty());
 
-        grid(0).compute().broadcast(new PutJob(queueName, RETRIES)).get();
+        grid(0).compute().broadcast(new PutJob(queueName, RETRIES));
 
         assertEquals(GRID_CNT * RETRIES, queue.size());
 
@@ -274,7 +274,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             assertTrue(queue.isEmpty());
 
-            grid(0).compute().call(new AddAllJob(queueName, RETRIES)).get();
+            grid(0).compute().call(new AddAllJob(queueName, RETRIES));
 
             assertEquals(GRID_CNT * RETRIES, queue.size());
 
@@ -306,7 +306,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         queue.put(val);
 
-        grid(0).compute().call(new GetJob(queueName, RETRIES, val)).get();
+        grid(0).compute().call(new GetJob(queueName, RETRIES, val));
 
         assertEquals(1, queue.size());
 
@@ -326,7 +326,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertTrue(queue.isEmpty());
 
-        grid(0).compute().broadcast(new PutTakeJob(queueName, RETRIES)).get();
+        grid(0).compute().broadcast(new PutTakeJob(queueName, RETRIES));
 
         assertEquals(0, queue.size());
 
@@ -516,7 +516,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertTrue(queue.isEmpty());
 
-        grid(0).compute().call(new AddAllJob(queueName, RETRIES)).get();
+        grid(0).compute().call(new AddAllJob(queueName, RETRIES));
 
         assertEquals(GRID_CNT * RETRIES, queue.size());
 
@@ -545,7 +545,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                     return values;
                 }
-            }).get();
+            });
 
             assertTrue(F.eqOrdered(queue, queueElements));
         }
@@ -568,7 +568,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             for (int i = 0; i < 10; i++)
                 queue.add(i);
 
-            Collection<Integer> c = grid(0).compute().broadcast(new QueueJob(queue)).get();
+            Collection<Integer> c = grid(0).compute().broadcast(new QueueJob(queue));
 
             assertEquals(GRID_CNT, c.size());
 

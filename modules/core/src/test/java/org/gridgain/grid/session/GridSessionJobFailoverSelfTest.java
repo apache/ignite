@@ -51,7 +51,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
 
             grid1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            Object res = grid1.compute().execute(SessionTestTask.class.getName(), "1").get();
+            Object res = grid1.compute().execute(SessionTestTask.class.getName(), "1");
 
             assert (Integer)res == 1;
         }

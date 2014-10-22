@@ -81,7 +81,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert grid1 != null;
             assert grid2 != null;
 
-            grid1.forPredicate(p).compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1").get();
+            grid1.forPredicate(p).compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
         }
         catch (GridTopologyException ignored) {
             failed.set(true);
@@ -115,7 +115,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert grid3 != null;
 
             Integer res = (Integer)grid1.forPredicate(p).compute().withTimeout(10000).
-                execute(JobFailTask.class.getName(), "1").get();
+                execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;
         }
@@ -158,7 +158,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
             // On failover NODE3 shouldn't be taken into account.
             Integer res = (Integer)nodes.forPredicate(p).compute().withTimeout(10000).
-                execute(JobFailTask.class.getName(), "1").get();
+                execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;
         }

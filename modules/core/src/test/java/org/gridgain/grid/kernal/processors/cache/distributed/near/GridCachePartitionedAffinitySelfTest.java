@@ -394,7 +394,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         info("Registering event listener...");
 
         // Register event listener on remote nodes.
-        mg.forRemotes().compute().run(new ListenerJob(keyCnt, mg.name())).get();
+        mg.forRemotes().compute().run(new ListenerJob(keyCnt, mg.name()));
 
         for (int i = 0; i < keyCnt; i++) {
             if (failFlag.get())

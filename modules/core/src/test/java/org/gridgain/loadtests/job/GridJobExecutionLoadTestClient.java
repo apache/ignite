@@ -47,7 +47,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
 
         while (!finish) {
             try {
-                rmts.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                 txCnt.increment();
             }
@@ -186,7 +186,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
             @Nullable @Override public Object call() {
                 try {
-                    rmts.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                    rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
                 }
                 catch (GridException e) {
                     e.printStackTrace();
@@ -202,7 +202,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
                 @Override public void apply() {
                     System.gc();
                 }
-            }).get();
+            });
         }
         catch (GridException e) {
             throw new IllegalStateException(e);

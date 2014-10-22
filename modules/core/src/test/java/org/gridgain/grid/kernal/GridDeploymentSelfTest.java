@@ -199,7 +199,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             grid.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
             // Check auto-deploy.
-            grid.compute().execute(GridDeploymentTestTask.class.getName(), null).get();
+            grid.compute().execute(GridDeploymentTestTask.class.getName(), null);
 
             assert depSpi.getRegisterCount() == 2;
             assert depSpi.getUnregisterCount() == 1;

@@ -203,7 +203,6 @@ class VisorConfigurationCommand {
                     .compute()
                     .withNoFailover()
                     .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
-                    .get
             catch {
                 case e: GridException =>
                     scold(e.getMessage)

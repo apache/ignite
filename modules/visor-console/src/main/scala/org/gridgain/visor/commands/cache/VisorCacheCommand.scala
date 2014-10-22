@@ -401,7 +401,7 @@ class VisorCacheCommand {
                         println("  Average execution time: " + X.timeSpan2HMSM(qm.avgTime.toLong))
                         println("  Total number of executions: " + qm.execs)
                         println("  Total number of failures:   " + qm.fails)
-                        
+
                         gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
                             nl()
 
@@ -468,7 +468,7 @@ class VisorCacheCommand {
             val nids = prj.nodes().map(_.id())
 
             prj.compute().execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
-                new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).get.toList
+                new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
             case e: GridException => Nil
@@ -484,7 +484,7 @@ class VisorCacheCommand {
     private def config(node: GridNode): VisorGridConfig = {
         try
             grid.forNode(node).compute().withNoFailover()
-                .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id())).get
+                .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: GridException =>
                 scold(e.getMessage)

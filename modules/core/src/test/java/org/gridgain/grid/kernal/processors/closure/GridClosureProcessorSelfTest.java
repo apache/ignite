@@ -184,7 +184,13 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().run(job) : grid(idx).compute().run(job);
+        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.run(job);
+
+        return comp.future();
     }
 
     /**
@@ -204,7 +210,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         if (p != null)
             prj = prj.forPredicate(p);
 
-        return prj.compute().broadcast(job);
+        GridCompute comp = prj.compute().enableAsync();
+
+        comp.broadcast(job);
+
+        return comp.future();
     }
 
     /**
@@ -219,7 +229,13 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().run(jobs) : grid(idx).compute().run(jobs);
+        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.run(jobs);
+
+        return comp.future();
     }
 
     /**
@@ -234,7 +250,13 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().call(job) : grid(idx).compute().call(job);
+        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.call(job);
+
+        return comp.future();
     }
 
     /**
@@ -250,7 +272,13 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().broadcast(job) : grid(idx).compute().broadcast(job);
+        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.broadcast(job);
+
+        return comp.future();
     }
 
     /**
@@ -266,7 +294,13 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        return p != null ? grid(idx).forPredicate(p).compute().call(jobs) : grid(idx).compute().call(jobs);
+        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+
+        comp = comp.enableAsync();
+
+        comp.call(jobs);
+
+        return comp.future();
     }
 
     /**
@@ -353,8 +387,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncErrorNoFailover() throws Exception {
-        GridFuture<Integer> fut = grid(0).forPredicate(F.notEqualTo(grid(0).localNode())).compute().
-            withNoFailover().call(new TestCallableError());
+        GridCompute comp = grid(0).forPredicate(F.notEqualTo(grid(0).localNode())).compute().enableAsync();
+
+        comp.withNoFailover().call(new TestCallableError());
+
+        GridFuture<Integer> fut = comp.future();
 
         try {
             fut.get();
@@ -370,7 +407,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithName() throws Exception {
-        grid(0).compute().withName("TestTaskName").call(new TestCallable()).get();
+        grid(0).compute().withName("TestTaskName").call(new TestCallable());
     }
 
     /**
@@ -383,7 +420,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Ensure that we will get timeout exception.
-            grid(0).compute().withTimeout(JOB_TIMEOUT).call(jobs).get();
+            grid(0).compute().withTimeout(JOB_TIMEOUT).call(jobs);
         }
         catch (GridComputeTaskTimeoutException ignore) {
             timedOut = true;
@@ -395,7 +432,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Previous task invocation cleared the timeout.
-            grid(0).compute().call(jobs).get();
+            grid(0).compute().call(jobs);
         }
         catch (GridComputeTaskTimeoutException ignore) {
             timedOut = true;
@@ -421,54 +458,5 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         for (int i = 1; i <= jobs.size(); i++)
             assert results.contains(i) : "Collection of results does not contain value: " + i;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReduceAsync() throws Exception {
-        Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
-
-        GridFuture<Integer> fut = grid(0).compute().call(jobs, F.sumIntReducer());
-
-        // Sum of arithmetic progression.
-        int exp = (1 + jobs.size()) * jobs.size() / 2;
-
-        assert fut.get() == exp :
-            "Execution result must be equal to " + exp + ", actual: " + fut.get();
-
-        assert execCntr.get() == jobs.size() :
-            "Execution counter must be equal to " + jobs.size() + ", actual: " + execCntr.get();
-
-        execCntr.set(0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReducerError() throws Exception {
-        Grid g = grid(0);
-
-        Collection<Callable<Integer>> jobs = new ArrayList<>();
-
-        for (int i = 0; i < g.nodes().size(); i++) {
-            jobs.add(new GridCallable<Integer>() {
-                @Override public Integer call() throws Exception {
-                    throw new RuntimeException("Test exception.");
-                }
-            });
-        }
-
-        g.compute().call(jobs, new GridReducer<Integer, Object>() {
-                @Override public boolean collect(@Nullable Integer e) {
-                    fail("Expects failed jobs never call 'collect' method.");
-
-                    return true;
-                }
-
-                @Override public Object reduce() {
-                    return null;
-                }
-            });
     }
 }

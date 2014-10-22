@@ -106,7 +106,9 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final GridNode node = grid(1).localNode();
 
-        GridComputeTaskFuture<?> fut = grid(1).compute().execute(new GridComputeTaskAdapter<Void, Void>() {
+        GridCompute comp = grid(1).compute().enableAsync();
+
+        comp.execute(new GridComputeTaskAdapter<Void, Void>() {
             @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
@@ -117,6 +119,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, null);
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         assert startedLatch.await(2, SECONDS);
 

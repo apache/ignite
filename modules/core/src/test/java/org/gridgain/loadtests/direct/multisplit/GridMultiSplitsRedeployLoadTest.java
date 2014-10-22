@@ -76,7 +76,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
         // Warm up.
-        grid.compute().withTimeout(10000).execute(TASK_TYPE_ID, 3).get();
+        grid.compute().withTimeout(10000).execute(TASK_TYPE_ID, 3);
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());

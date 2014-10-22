@@ -63,7 +63,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Grid grid1 = startGrid(1);
             Grid grid2 = startGrid(2);
 
-            grid1.compute().execute(TestTask.class, grid2.localNode().id()).get();
+            grid1.compute().execute(TestTask.class, grid2.localNode().id());
 
             assert jobRsrc != taskRsrc;
 
@@ -73,7 +73,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             ClassLoader saveTaskLdr = taskLdr;
             ClassLoader saveJobLdr = jobLdr;
 
-            grid2.compute().execute(TestTask.class, grid1.localNode().id()).get();
+            grid2.compute().execute(TestTask.class, grid1.localNode().id());
 
             assert saveJobRsrc == taskRsrc;
             assert saveTaskRsrc == jobRsrc;
@@ -108,15 +108,15 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class taskCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            grid1.compute().execute(taskCls, grid1.localNode().id()).get();
+            grid1.compute().execute(taskCls, grid1.localNode().id());
 
             taskCls = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[])grid2.compute().execute(taskCls, grid1.localNode().id()).get();
+            int[] res1 = (int[])grid2.compute().execute(taskCls, grid1.localNode().id());
 
             taskCls = ldr3.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res2 = (int[])grid3.compute().execute(taskCls, grid1.localNode().id()).get();
+            int[] res2 = (int[])grid3.compute().execute(taskCls, grid1.localNode().id());
 
             assert res1[0] != res2[0]; // Resources are not same.
             assert res1[1] != res2[1]; // Class loaders are not same.
@@ -149,9 +149,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Class task1 = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
             Class task2 = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
+            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id());
 
-            int[] res2 = (int[])grid2.compute().execute(task2, grid1.localNode().id()).get();
+            int[] res2 = (int[])grid2.compute().execute(task2, grid1.localNode().id());
 
             assert res1[1] != res2[1]; // Class loaders are not same.
             assert res1[0] != res2[0]; // Resources are not same.

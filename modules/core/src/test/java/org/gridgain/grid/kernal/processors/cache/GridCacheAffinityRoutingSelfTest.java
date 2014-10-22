@@ -125,7 +125,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     public void testAffinityRun() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
-            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, i)).get();
+            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, i));
     }
 
     /**
@@ -137,8 +137,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEY_CNT; i++) {
             AffinityTestKey key = new AffinityTestKey(i);
 
-            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, key)).get();
-            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, key, new CheckRunnable(i, key)).get();
+            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, key));
+            grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, key, new CheckRunnable(i, key));
         }
     }
 
@@ -149,7 +149,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     public void testAffinityCall() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
-            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, i)).get();
+            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, i));
     }
 
     /**
@@ -161,8 +161,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEY_CNT; i++) {
             final AffinityTestKey key = new AffinityTestKey(i);
 
-            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, key)).get();
-            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, key, new CheckCallable(i, key)).get();
+            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, key));
+            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, key, new CheckCallable(i, key));
         }
     }
 
@@ -174,7 +174,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testField() throws Exception {
         // Jobs should be routed correctly in case of using load balancer.
         for (int i = 0; i < KEY_CNT; i++)
-            assert grid(0).compute().call(new FieldAffinityJob(i)).get() :
+            assert grid(0).compute().call(new FieldAffinityJob(i)) :
                 "Job was routed to a wrong node [i=" + i + "]";
     }
 
@@ -186,7 +186,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testMethod() throws Exception {
         // Jobs should be routed correctly in case of using load balancer.
         for (int i = 0; i < KEY_CNT; i++)
-            assert grid(0).compute().call(new MethodAffinityJob(i)).get() :
+            assert grid(0).compute().call(new MethodAffinityJob(i)) :
                 "Job was routed to a wrong node [i=" + i + "]";
     }
 
@@ -198,7 +198,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testFiledCacheName() throws Exception {
         // Jobs should be routed correctly in case of using load balancer.
         for (int i = 0; i < KEY_CNT; i++)
-            assert grid(0).compute().call(new FieldCacheNameAffinityJob(i)).get() :
+            assert grid(0).compute().call(new FieldCacheNameAffinityJob(i)) :
                 "Job was routed to a wrong node [i=" + i + "]";
     }
 
@@ -210,7 +210,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testMethodCacheName() throws Exception {
         // Jobs should be routed correctly in case of using load balancer.
         for (int i = 0; i < KEY_CNT; i++)
-            assert grid(0).compute().call(new MethodCacheNameAffinityJob(i)).get() :
+            assert grid(0).compute().call(new MethodCacheNameAffinityJob(i)) :
                 "Job was routed to a wrong node [i=" + i + "]";
     }
 
@@ -221,7 +221,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     public void testMultipleAnnotationsJob() throws Exception {
         try {
-            grid(0).compute().call(new MultipleAnnotationsJob(0)).get();
+            grid(0).compute().call(new MultipleAnnotationsJob(0));
 
             fail();
         }
@@ -238,7 +238,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testTask() throws Exception {
         // Jobs should be routed correctly.
         for (int i = 0; i < KEY_CNT; i++)
-            assert grid(0).compute().execute(new OneJobTask(i), i).get() :
+            assert grid(0).compute().execute(new OneJobTask(i), i) :
                 "Job was routed to a wrong node [i=" + i + "]";
 
         info("Starting extra node without configured caches...");
@@ -251,7 +251,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT + 1, g.nodes().size());
 
             for (int i = 0; i < KEY_CNT; i++)
-                assert grid(GRID_CNT).compute().execute(new OneJobTask(i), i).get() :
+                assert grid(GRID_CNT).compute().execute(new OneJobTask(i), i) :
                     "Job was routed to a wrong node [i=" + i + "]";
         }
         finally {

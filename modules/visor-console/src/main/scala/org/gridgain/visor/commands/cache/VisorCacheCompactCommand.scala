@@ -118,7 +118,7 @@ class VisorCacheCompactCommand {
                 .withName("visor-ccompact-task")
                 .withNoFailover()
                 .execute(classOf[VisorCachesCompactTask], toTaskArgument(node.id(), cacheSet))
-                .get.get(cacheName)
+                .get(cacheName)
 
             t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())
         })

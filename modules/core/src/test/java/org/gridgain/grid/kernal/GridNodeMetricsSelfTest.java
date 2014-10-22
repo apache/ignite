@@ -59,7 +59,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         Grid grid = grid();
 
-        grid.compute().execute(new GridTestTask(), "testArg").get();
+        grid.compute().execute(new GridTestTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
@@ -115,7 +115,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         Grid grid = grid();
 
         // Visor task is internal and should not affect metrics.
-        grid.compute().withName("visor-test-task").execute(new TestInternalTask(), "testArg").get();
+        grid.compute().withName("visor-test-task").execute(new TestInternalTask(), "testArg");
 
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);

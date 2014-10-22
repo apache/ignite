@@ -60,7 +60,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -80,7 +80,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -97,7 +97,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -106,6 +106,9 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testClosureFieldWithCollectionDescendantType() throws Exception {
         try {
             grid(0).compute().call(new GridCallable<Object>() {
@@ -115,7 +118,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 @Override public Object call() throws Exception {
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -138,7 +141,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -158,7 +161,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -175,7 +178,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 @Override public Object call() throws Exception {
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -198,7 +201,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 @Override public Object call() throws Exception {
                     return null;
                 }
-            }).get();
+            });
 
             fail();
         }
@@ -221,7 +224,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
                 return null;
             }
-        }).get();
+        });
     }
 
     /**
@@ -237,7 +240,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             @Override public Object call() throws Exception {
                 return null;
             }
-        }).get();
+        });
     }
 
     /**

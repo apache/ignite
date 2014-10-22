@@ -94,7 +94,7 @@ class VisorLicenseCommand {
 
                 val lics = try
                     grid.forNodes(nodes).compute().execute(classOf[VisorLicenseCollectTask],
-                        emptyTaskArgument(nodes.map(_.id()))).get
+                        emptyTaskArgument(nodes.map(_.id())))
                         .groupBy(n => Option(n.get2()).fold("Open source")(_.id().toString))
                 catch {
                     case _: GridException =>
@@ -192,7 +192,7 @@ class VisorLicenseCommand {
                 nodes.foreach(n => {
                     grid.forNode(n).compute().withNoFailover().
                         execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
-                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString))).get
+                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString)))
                 })
 
                 println("All licenses have been updated.")

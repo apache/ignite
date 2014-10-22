@@ -73,7 +73,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
             @Override public void apply() {
                 System.out.println("UNICASTING....");
             }
-        }).get();
+        });
 
         Thread.sleep(2000);
     }
@@ -100,7 +100,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
                     }
                 }, null);
             }
-        }).get();
+        });
 
         g.forNode(rmt).message().send(null, "TESTING...");
 

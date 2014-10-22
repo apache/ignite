@@ -9,7 +9,6 @@ import org.gridgain.testframework.junits.common.*;
  * Before running of test you MUST start at least one remote node.
  */
 public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
-
     /**
      * Method executes GridP2PTestTask.
      * @throws GridException If failed.
@@ -21,7 +20,7 @@ public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
             assert !g.forRemotes().nodes().isEmpty() : "Test requires at least 1 remote node.";
 
             /* Execute GridP2PTestTask. */
-            GridComputeTaskFuture<Integer> fut = g.compute().execute(GridP2PTestTask.class, 1);
+            GridComputeTaskFuture<Integer> fut = executeAsync(g.compute(), GridP2PTestTask.class, 1);
 
             /* Wait for task completion. */
             Integer res = fut.get();

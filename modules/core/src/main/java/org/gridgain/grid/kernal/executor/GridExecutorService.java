@@ -69,6 +69,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** Projection. */
     private GridProjection prj;
 
+    /** Compute. */
+    private GridCompute comp;
+
     /** Logger. */
     private GridLogger log;
 
@@ -103,6 +106,8 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         this.prj = prj;
         this.log = log.getLogger(GridExecutorService.class);
+
+        comp = prj.compute().enableAsync();
     }
 
     /** {@inheritDoc} */
@@ -113,7 +118,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection) in.readObject();
+        prj = (GridProjection)in.readObject();
     }
 
     /**
@@ -224,7 +229,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        return addFuture(prj.compute().call(task));
+        comp.call(task);
+
+        return addFuture(comp.<T>future());
     }
 
     /** {@inheritDoc} */
@@ -233,7 +240,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        GridFuture<T> fut = prj.compute().run(task).chain(new CX1<GridFuture<?>, T>() {
+        comp.run(task);
+
+        GridFuture<T> fut = comp.future().chain(new CX1<GridFuture<?>, T>() {
             @Override public T applyx(GridFuture<?> fut) throws GridException {
                 fut.get();
 
@@ -250,7 +259,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        return addFuture(prj.compute().run(task));
+        comp.run(task);
+
+        return addFuture(comp.future());
     }
 
     /**
@@ -305,9 +316,11 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
         for (Callable<T> task : tasks) {
+            comp.call(task);
+
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            GridFuture<T> fut = prj.compute().call(task);
+            GridFuture<T> fut = comp.future();
 
             taskFuts.add(fut);
 
@@ -434,7 +447,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            GridFuture<T> fut = prj.compute().call(cmd);
+            comp.call(cmd);
+
+            GridFuture<T> fut = comp.future();
 
             taskFuts.add(fut);
         }
@@ -504,7 +519,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        addFuture(prj.compute().run(cmd));
+        comp.run(cmd);
+
+        addFuture(comp.future());
     }
 
     /**

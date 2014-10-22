@@ -92,8 +92,8 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
         try {
             // Execute the same task twice.
             // 1 resource created locally
-            grid.compute().execute(SharedResourceTask1.class, null).get();
-            grid.compute().execute(SharedResourceTask1.class, null).get();
+            grid.compute().execute(SharedResourceTask1.class, null);
+            grid.compute().execute(SharedResourceTask1.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 2);
             checkUsageCount(createClss, UserResource2.class, 2);
@@ -122,8 +122,8 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute different tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null).get();
-            grid1.compute().execute(SharedResourceTask2.class, null).get();
+            grid1.compute().execute(SharedResourceTask1.class, null);
+            grid1.compute().execute(SharedResourceTask2.class, null);
 
             // In ISOLATED_TASK mode tasks should have different class
             // loaders and different resources.
@@ -161,7 +161,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             // Execute tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null).get();
+            grid1.compute().execute(SharedResourceTask1.class, null);
             grid1.compute().undeployTask(SharedResourceTask1.class.getName());
 
             // Wait until resources get undeployed remotely
@@ -174,7 +174,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
             checkUsageCount(undeployClss, UserResource1.class, 4);
 
             // Execute the same tasks.
-            grid1.compute().execute(SharedResourceTask1.class, null).get();
+            grid1.compute().execute(SharedResourceTask1.class, null);
 
             // In ISOLATED_TASK mode being undeployed task will
             // loose all resources. After redeploy new one should be created.
@@ -199,7 +199,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
         try {
             // Execute the same task twice.
             // 1 resource created locally
-            grid.compute().execute(SharedResourceTask1.class, null).get();
+            grid.compute().execute(SharedResourceTask1.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 2);
             checkUsageCount(createClss, UserResource2.class, 2);
@@ -217,7 +217,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
                 (Class<? extends GridComputeTask<Object, Object>>)tstClsLdr.loadClass(
                     SharedResourceTask1.class.getName());
 
-            grid.compute().execute(taskCls, null).get();
+            grid.compute().execute(taskCls, null);
 
             // Old resources should be undeployed at this point.
             checkUsageCount(undeployClss, UserResource1.class, 2);
@@ -246,10 +246,10 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
         // Execute different tasks but with the same name and version.
         // 2 resource created locally
-        grid.compute().execute(SharedResourceTask3.class, null).get();
+        grid.compute().execute(SharedResourceTask3.class, null);
 
         try {
-            grid.compute().execute(SharedResourceTask4.class, null).get();
+            grid.compute().execute(SharedResourceTask4.class, null);
 
             assert false : "SharedResourceTask4 should not be allowed to deploy.";
         }

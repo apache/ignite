@@ -9,14 +9,16 @@
 
 package org.gridgain.grid.design;
 
-import org.gridgain.grid.design.queries.*;
+// TODO 9226
+// import org.gridgain.grid.design.queries.*;
 
 /**
- * TODO: Add class description.
+ * TODO 9226: Add class description.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridProjection {
-    public Queries queries(String cache);
+    // TODO 9226
+    // public Queries queries(String cache);
 }

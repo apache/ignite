@@ -48,7 +48,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid(1);
 
-            grid.compute().execute(UserResourceTask.class, null).get();
+            grid.compute().execute(UserResourceTask.class, null);
         }
         finally {
             stopGrid(1);

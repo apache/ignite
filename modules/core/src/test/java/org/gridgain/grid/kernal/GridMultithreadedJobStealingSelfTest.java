@@ -66,7 +66,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             /** */
             @Override public void run() {
                 try {
-                    JobStealingResult res = grid.compute().execute(JobStealingTask.class, null).get();
+                    JobStealingResult res = grid.compute().execute(JobStealingTask.class, null);
 
                     info("Task result: " + res);
 

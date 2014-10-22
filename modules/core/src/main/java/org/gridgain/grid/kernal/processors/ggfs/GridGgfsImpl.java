@@ -381,7 +381,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         if (busyLock.enterBusy()) {
             try {
                 GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
-                    new GgfsGlobalSpaceTask(name()), null).get();
+                    new GgfsGlobalSpaceTask(name()), null);
 
                 return new GridGgfsStatus(space.get1(), space.get2());
             }

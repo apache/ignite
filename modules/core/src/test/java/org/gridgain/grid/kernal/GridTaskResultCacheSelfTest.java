@@ -35,7 +35,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     public void testNoCacheResults() throws Exception {
         Grid grid = G.grid(getTestGridName());
 
-        grid.compute().execute(GridResultNoCacheTestTask.class, "Grid Result No Cache Test Argument").get();
+        grid.compute().execute(GridResultNoCacheTestTask.class, "Grid Result No Cache Test Argument");
     }
 
     /**
@@ -44,7 +44,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     public void testCacheResults() throws Exception {
         Grid grid = G.grid(getTestGridName());
 
-        grid.compute().execute(GridResultCacheTestTask.class, "Grid Result Cache Test Argument").get();
+        grid.compute().execute(GridResultCacheTestTask.class, "Grid Result Cache Test Argument");
     }
 
     /**

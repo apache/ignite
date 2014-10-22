@@ -487,7 +487,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         try {
             grid(0).cache(null).put(CNTR_KEY, 0);
 
-            grid(0).compute().call(new PutOneEntryInTxJob()).get();
+            grid(0).compute().call(new PutOneEntryInTxJob());
         }
         finally {
             stopAllGrids();
@@ -507,7 +507,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
         try {
             grid(0).cache(null).put(CNTR_KEY, 0);
 
-            grid(0).compute().call(new PutTwoEntriesInTxJob()).get();
+            grid(0).compute().call(new PutTwoEntriesInTxJob());
 
             printCounter();
 
@@ -637,7 +637,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             cntrRmvd.set(0);
 
-            grid(0).compute().call(new RemoveInTxJobQueried()).get();
+            grid(0).compute().call(new RemoveInTxJobQueried());
 
             for (int i = 0; i < GRID_CNT * RETRIES; i++)
                 for (int ii = 0; ii < GRID_CNT; ii++)
@@ -678,7 +678,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             cntrRmvd.set(0);
 
-            grid(0).compute().call(new RemoveInTxJobSimple()).get();
+            grid(0).compute().call(new RemoveInTxJobSimple());
 
             // Check using cache.
             for (int i = 0; i < GRID_CNT * RETRIES; i++)

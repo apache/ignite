@@ -418,15 +418,15 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                         commitFut0.onError(new GridException("Failed to commit transaction: " +
                             CU.txString(GridDhtColocatedTxLocal.this)));
                 }
-                catch (Error | RuntimeException e) {
-                    commitErr.compareAndSet(null, e);
-
-                    throw e;
-                }
                 catch (GridException e) {
                     commitErr.compareAndSet(null, e);
 
                     commitFut0.onError(e);
+                }
+                catch (Error | RuntimeException e) {
+                    commitErr.compareAndSet(null, e);
+
+                    throw e;
                 }
             }
         });

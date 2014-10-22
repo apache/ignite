@@ -840,7 +840,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
                 return set.size();
             }
-        }).get();
+        });
 
         assertEquals(gridCount(), c.size());
 

@@ -52,7 +52,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
                         assert cache.isEmpty();
                     }
                 }
-            ).get();
+            );
 
             GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
 

@@ -74,8 +74,8 @@ public class GridResourceUserExternalTest extends GridCommonAbstractTest {
                 GridUserExternalResourceTask2.class.getName());
 
             // Execute the same task twice.
-            grid1.compute().execute(taskCls1, null).get();
-            grid1.compute().execute(taskCls2, null).get();
+            grid1.compute().execute(taskCls1, null);
+            grid1.compute().execute(taskCls2, null);
         }
         finally {
             GridTestUtils.close(grid1, log());

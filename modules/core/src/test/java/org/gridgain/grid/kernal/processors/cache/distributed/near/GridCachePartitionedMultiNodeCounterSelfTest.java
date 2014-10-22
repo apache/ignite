@@ -559,7 +559,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         lockedMultiNode.set(false);
 
         // Execute task on all grid nodes.
-        pri.compute().broadcast(new IncrementItemJob(pri.name())).get();
+        pri.compute().broadcast(new IncrementItemJob(pri.name()));
 
         info("*** ");
 

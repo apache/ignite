@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -201,42 +202,45 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         assert latch1.count() == 2;
 
-        GridFuture<Object> fut = grid(0).compute().call(new GridCallable<Object>() {
-                @GridInstanceResource
-                private Grid grid;
+        GridCompute comp = grid(0).compute().enableAsync();
 
-                @GridLoggerResource
-                private GridLogger log;
+        comp.call(new GridCallable<Object>() {
+            @GridInstanceResource
+            private Grid grid;
 
-                @Nullable @Override public Object call() throws Exception {
-                    // Test latch in multiple threads on each node.
-                    GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
-                        new Callable<Object>() {
-                            @Nullable @Override public Object call() throws Exception {
-                                GridCacheCountDownLatch latch = grid.cache(cacheName).dataStructures()
-                                    .countDownLatch("latch", 2, false, true);
+            @GridLoggerResource
+            private GridLogger log;
 
-                                assert latch != null && latch.count() == 2;
+            @Nullable @Override public Object call() throws Exception {
+                // Test latch in multiple threads on each node.
+                GridFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+                    new Callable<Object>() {
+                        @Nullable @Override public Object call() throws Exception {
+                            GridCacheCountDownLatch latch = grid.cache(cacheName).dataStructures()
+                                .countDownLatch("latch", 2, false, true);
 
-                                log.info("Thread is going to wait on latch: " + Thread.currentThread().getName());
+                            assert latch != null && latch.count() == 2;
 
-                                assert latch.await(1, MINUTES);
+                            log.info("Thread is going to wait on latch: " + Thread.currentThread().getName());
 
-                                log.info("Thread is again runnable: " + Thread.currentThread().getName());
+                            assert latch.await(1, MINUTES);
 
-                                return null;
-                            }
-                        },
-                        5,
-                        "test-thread"
-                    );
+                            log.info("Thread is again runnable: " + Thread.currentThread().getName());
 
-                    fut.get();
+                            return null;
+                        }
+                    },
+                    5,
+                    "test-thread"
+                );
 
-                    return null;
-                }
+                fut.get();
+
+                return null;
             }
-        );
+        });
+
+        GridFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 

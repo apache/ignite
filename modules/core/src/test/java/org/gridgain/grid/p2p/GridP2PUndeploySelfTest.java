@@ -71,11 +71,11 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             grid1.compute().localDeployTask(task1, tstClsLdr);
 
-            grid1.compute().execute(task1.getName(), 1).get();
+            grid1.compute().execute(task1.getName(), 1);
 
             grid2.compute().localDeployTask(task1, tstClsLdr);
 
-            grid2.compute().execute(task1.getName(), 2).get();
+            grid2.compute().execute(task1.getName(), 2);
 
             GridLocalDeploymentSpi spi1 = spis.get(grid1.name());
             GridLocalDeploymentSpi spi2 = spis.get(grid2.name());
@@ -123,7 +123,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             grid1.compute().localDeployTask(task1, ldr);
 
-            grid1.compute().execute(task1.getName(), grid2.localNode().id()).get();
+            grid1.compute().execute(task1.getName(), grid2.localNode().id());
 
             GridLocalDeploymentSpi spi1 = spis.get(grid1.name());
             GridLocalDeploymentSpi spi2 = spis.get(grid2.name());

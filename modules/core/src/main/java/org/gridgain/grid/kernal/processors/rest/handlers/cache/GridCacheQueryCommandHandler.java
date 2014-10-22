@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
@@ -115,7 +116,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 return new GridFinishedFutureEx<>(new GridException("Destination node ID has left the grid (retry " +
                     "the query): " + destId));
 
-            return ctx.grid().forNodeId(destId).compute().withNoFailover().call(c);
+            GridCompute comp = ctx.grid().forNodeId(destId).compute().withNoFailover().enableAsync();
+
+            comp.call(c);
+
+            return comp.future();
         }
     }
 
@@ -125,8 +130,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridFuture<Collection<Object>> fut = ctx.grid().forCache(cacheName).
-            compute().withNoFailover().broadcast(c);
+        GridCompute comp = ctx.grid().forCache(cacheName).compute().withNoFailover().enableAsync();
+
+        comp.broadcast(c);
+
+        GridFuture<Collection<Object>> fut = comp.future();
 
         return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
@@ -143,12 +151,15 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     }
 
     /**
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      * @param wrapper Query future wrapper.
+     * @param locMap Queries map.
+     * @param locNodeId Local node ID.
      * @return Rest response.
+     * @throws GridException If failed.
      */
     private static GridRestResponse fetchQueryResults(
-        long queryId,
+        long qryId,
         QueryFutureWrapper wrapper,
         ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
         UUID locNodeId
@@ -169,11 +180,11 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             qryRes.last(true);
 
-            locMap.remove(new QueryExecutionKey(queryId), wrapper);
+            locMap.remove(new QueryExecutionKey(qryId), wrapper);
         }
 
         qryRes.items(col);
-        qryRes.queryId(queryId);
+        qryRes.queryId(qryId);
         qryRes.nodeId(locNodeId);
 
         res.setResponse(qryRes);

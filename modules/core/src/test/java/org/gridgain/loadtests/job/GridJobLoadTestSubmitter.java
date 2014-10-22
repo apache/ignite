@@ -55,6 +55,8 @@ public class GridJobLoadTestSubmitter implements Runnable {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void run() {
+        GridCompute comp = grid.compute().enableAsync();
+
         while (true) {
             checkCompletion();
 
@@ -67,7 +69,9 @@ public class GridJobLoadTestSubmitter implements Runnable {
                 return;
             }
 
-            futures.add(grid.compute().withTimeout(TIMEOUT).execute(GridJobLoadTestTask.class, params));
+            comp.withTimeout(TIMEOUT).execute(GridJobLoadTestTask.class, params);
+
+            futures.add(comp.<Integer>future());
         }
     }
 

@@ -10,6 +10,9 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.Grid;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
@@ -97,7 +100,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface GridCompute {
+public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Gets grid projection to which this {@code GridCompute} instance belongs.
      *
@@ -112,11 +115,11 @@ public interface GridCompute {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @return Future for this execution.
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
+     * @throws GridException If job failed.
      */
-    public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job);
+    public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws GridException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
@@ -125,11 +128,12 @@ public interface GridCompute {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @return Future with job result.
+     * @return Job result.
+     * @throws GridException If job failed.
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
-    public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job);
+    public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws GridException;
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -139,9 +143,10 @@ public interface GridCompute {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
-     * @return Task future.
+     * @return Task result.
+     * @throws GridException If task failed.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
+    public <T, R> R execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg) throws GridException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
@@ -151,9 +156,10 @@ public interface GridCompute {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
-     * @return Task future.
+     * @return Task result.
+     * @throws GridException If task failed.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
+    public <T, R> R execute(GridComputeTask<T, R> task, @Nullable T arg) throws GridException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
@@ -164,27 +170,29 @@ public interface GridCompute {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
-     * @return Task future.
+     * @return Task result.
+     * @throws GridException If task failed.
      * @see GridComputeTask for information about task execution.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
+    public <T, R> R execute(String taskName, @Nullable T arg) throws GridException;
 
     /**
      * Broadcasts given job to all nodes in grid projection.
      *
      * @param job Job to broadcast to all projection nodes.
-     * @return Future for this execution.
+     * @throws GridException If job failed.
      */
-    public GridFuture<?> broadcast(Runnable job);
+    public void broadcast(Runnable job) throws GridException;
 
     /**
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
      * job result. Collection of all returned job results is returned from the result future.
      *
      * @param job Job to broadcast to all projection nodes.
-     * @return Future with collection of results for this execution.
+     * @return Collection of results for this execution.
+     * @throws GridException If execution failed.
      */
-    public <R> GridFuture<Collection<R>> broadcast(Callable<R> job);
+    public <R> Collection<R> broadcast(Callable<R> job) throws GridException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -193,53 +201,46 @@ public interface GridCompute {
      *
      * @param job Job to broadcast to all projection nodes.
      * @param arg Job closure argument.
-     * @return Future with collection of results for this execution.
+     * @return Collection of results for this execution.
+     * @throws GridException If execution failed.
      */
-    public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
+    public <R, T> Collection<R> broadcast(GridClosure<T, R> job, @Nullable T arg) throws GridException;
 
     /**
      * Executes provided job on a node in this grid projection.
      *
      * @param job Job closure to execute.
-     * @return Future of this execution.
+     * @throws GridException If execution failed.
      */
-    public GridFuture<?> run(Runnable job);
+    public void run(Runnable job) throws GridException;
 
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
      *
      * @param jobs Collection of jobs to execute.
-     * @return Future for this execution.
+     * @throws GridException If execution failed.
      */
-    public GridFuture<?> run(Collection<? extends Runnable> jobs);
+    public void run(Collection<? extends Runnable> jobs) throws GridException;
 
     /**
      * Executes provided job on a node in this grid projection. The result of the
      * job execution is returned from the result closure.
      *
      * @param job Job to execute.
-     * @return Future with job result for this execution.
+     * @return Job result.
+     * @throws GridException If execution failed.
      */
-    public <R> GridFuture<R> call(Callable<R> job);
+    public <R> R call(Callable<R> job) throws GridException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection.
      * Collection of all returned job results is returned from the result future.
      *
      * @param jobs Collection of jobs to execute.
-     * @return Future with collection of job results for this execution.
+     * @return Collection of job results for this execution.
+     * @throws GridException If execution failed.
      */
-    public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
-
-    /**
-     * Executes collection of jobs on nodes within this grid projection. The returned
-     * job results will be reduced into an individual result by provided reducer.
-     *
-     * @param jobs Collection of jobs to execute.
-     * @param rdc Reducer to reduce all job results into one individual return value.
-     * @return Future with reduced job result for this execution.
-     */
-    public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc);
+    public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws GridException;
 
     /**
      * Executes provided closure job on a node in this grid projection. This method is different
@@ -248,9 +249,10 @@ public interface GridCompute {
      *
      * @param job Job to run.
      * @param arg Job argument.
-     * @return Future with job result for this execution.
+     * @return Job result.
+     * @throws GridException If execution failed.
      */
-    public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
+    public <R, T> R apply(GridClosure<T, R> job, @Nullable T arg) throws GridException;
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -259,25 +261,14 @@ public interface GridCompute {
      *
      * @param job Job to run.
      * @param args Job arguments.
-     * @return Future with collection of job results.
+     * @return Collection of job results.
+     * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, Collection<? extends T> args);
+    public <T, R> Collection<R> apply(GridClosure<T, R> job, Collection<? extends T> args) throws GridException;
 
     /**
-     * Executes provided closure job on nodes within this grid projection. A new job is executed for
-     * every argument in the passed in collection. The number of actual job executions will be
-     * equal to size of the job arguments collection. The returned job results will be reduced
-     * into an individual result by provided reducer.
+     * TODO 9341: move to projection.
      *
-     * @param job Job to run.
-     * @param args Job arguments.
-     * @param rdc Reducer to reduce all job results into one individual return value.
-     * @return Future with reduced job result for this execution.
-     */
-    public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, Collection<? extends T> args,
-        GridReducer<R1, R2> rdc);
-
-    /**
      * Creates new {@link ExecutorService} which will execute all submitted
      * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection. This essentially
      * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
@@ -288,6 +279,8 @@ public interface GridCompute {
     public ExecutorService executorService();
 
     /**
+     * TODO 9341: remove.
+     *
      * Gets task future based on execution session ID. If task execution was started on local node and this
      * projection includes local node then the future for this task will be returned.
      *
@@ -299,6 +292,8 @@ public interface GridCompute {
     @Nullable public <R> GridComputeTaskFuture<R> taskFuture(GridUuid sesId);
 
     /**
+     * TODO 9341: remove.
+     *
      * Cancels task with the given execution session ID, if it is currently running inside this projection
      * or on local node. Note that if local node is master for the task, task gets alway cancelled, even
      * if local node is not the part of the projection.
@@ -309,6 +304,8 @@ public interface GridCompute {
     public void cancelTask(GridUuid sesId) throws GridException;
 
     /**
+     * TODO 9341: move to task future.
+     *
      * Cancels job with the given job ID, if it is currently running inside this projection.
      *
      * @param jobId Job ID.
@@ -406,4 +403,7 @@ public interface GridCompute {
      * @throws GridException Thrown if undeploy failed.
      */
     public void undeployTask(String taskName) throws GridException;
+
+    /** {@inheritDoc} */
+    @Override public <R> GridComputeTaskFuture<R> future();
 }

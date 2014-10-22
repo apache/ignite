@@ -174,22 +174,33 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 long timeout = req0.timeout();
 
-                final GridFuture<Object> taskFut =
-                    locExec ?
-                        ctx.grid().forSubjectId(req.clientId()).compute().withTimeout(timeout).execute(
-                            name,
-                            !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null)
-                        :
-                        // Using predicate instead of node intentionally
-                        // in order to provide user well-structured EmptyProjectionException.
-                        ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId())).
-                            compute().withNoFailover().call(new ExeCallable(name, params, timeout, req.clientId()));
+                final UUID clientId = req.clientId();
+
+                final GridComputeTaskFuture<Object> taskFut;
+
+                if (locExec) {
+                    GridCompute comp = ctx.grid().forSubjectId(clientId).compute().withTimeout(timeout).enableAsync();
+
+                    Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
+
+                    comp.execute(name, arg);
+
+                    taskFut = comp.future();
+                }
+                else {
+                    // Using predicate instead of node intentionally
+                    // in order to provide user well-structured EmptyProjectionException.
+                    GridCompute comp = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId())).
+                        compute().withNoFailover().enableAsync();
+
+                    comp.call(new ExeCallable(name, params, timeout, clientId));
+
+                    taskFut = comp.future();
+                }
 
                 if (async) {
                     if (locExec) {
-                        assert taskFut instanceof GridComputeTaskFuture;
-
-                        GridUuid tid = ((GridComputeTaskFuture)taskFut).getTaskSession().getId();
+                        GridUuid tid = taskFut.getTaskSession().getId();
 
                         taskDescs.put(tid, new TaskDescriptor(false, null, null));
 
@@ -580,6 +591,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
          * @param name Name.
          * @param params Params.
          * @param timeout Timeout.
+         * @param clientId Client ID.
          */
         private ExeCallable(String name, List<Object> params, long timeout, UUID clientId) {
             this.name = name;
@@ -592,7 +604,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         @Override public Object call() throws Exception {
             return g.forSubjectId(clientId).compute().execute(
                 name,
-                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null).get();
+                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
         }
 
         /** {@inheritDoc} */

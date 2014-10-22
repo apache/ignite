@@ -47,7 +47,11 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
     public void testLocalCancel() throws Exception {
         finishJobs = new CountDownLatch(1);
 
-        final GridComputeTaskFuture<String> fut = grid(0).compute().execute(TestTask.class, null);
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        comp.execute(TestTask.class, null);
+
+        final GridComputeTaskFuture<String> fut = comp.future();
 
         grid(0).compute().cancelTask(fut.getTaskSession().getId());
 
@@ -68,7 +72,11 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
     public void testRemoteCancel() throws Exception {
         finishJobs = new CountDownLatch(1);
 
-        final GridComputeTaskFuture<String> fut = grid(0).compute().execute(TestTask.class, finishJobs);
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        comp.execute(TestTask.class, finishJobs);
+
+        final GridComputeTaskFuture<String> fut = comp.future();
 
         grid(1).compute().cancelTask(fut.getTaskSession().getId());
 
@@ -89,7 +97,11 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
     public void testLocalCancelThroughtRemoteNode() throws Exception {
         finishJobs = new CountDownLatch(1);
 
-        final GridComputeTaskFuture<String> fut = grid(0).compute().execute(TestTask.class, finishJobs);
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        comp.execute(TestTask.class, finishJobs);
+
+        final GridComputeTaskFuture<String> fut = comp.future();
 
         // Projection without master node.
         GridProjection p = grid(0).forOthers(grid(0).localNode());

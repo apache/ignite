@@ -52,7 +52,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
             assert grid1 != null;
             assert grid2 != null;
 
-            Integer res = (Integer)grid1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1").get();
+            Integer res = grid1.compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
 
             assert res != null;
             assert res == 1;

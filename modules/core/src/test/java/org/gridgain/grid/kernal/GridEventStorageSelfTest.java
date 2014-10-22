@@ -178,10 +178,10 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @param grid Grid.
      * @throws GridException In case of error.
      */
-    private void generateEvents(Grid grid) throws GridException {
+    private void generateEvents(GridProjection grid) throws GridException {
         grid.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
-        grid.compute().execute(GridEventTestTask.class.getName(), null).get();
+        grid.compute().execute(GridEventTestTask.class.getName(), null);
     }
 
     /**
@@ -249,6 +249,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * Test event filter.
      */
     private static class TestEventFilter implements GridPredicate<GridEvent> {
+        /** {@inheritDoc} */
         @Override public boolean apply(GridEvent evt) {
             // Accept only predefined TASK_STARTED events.
             return evt.type() == EVT_TASK_STARTED;

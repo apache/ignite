@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -112,8 +113,10 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Collection<GridFuture<?>> futs = new LinkedList<>();
 
+        GridCompute comp = grid.compute().enableAsync();
+
         for (int i = 0; i < jobCnt; i++) {
-            GridFuture<?> fut = grid.compute().apply(new CX1<Integer, Void>() {
+            comp.apply(new CX1<Integer, Void>() {
                 @GridInstanceResource
                 private Grid grid;
 
@@ -142,7 +145,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 }
             }, i);
 
-            futs.add(fut);
+            futs.add(comp.future());
         }
 
         for (GridFuture<?> fut : futs)

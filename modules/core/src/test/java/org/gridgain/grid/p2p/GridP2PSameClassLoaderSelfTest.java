@@ -78,8 +78,8 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);
 
             // Execute task1 and task2 from node1 on node2 and make sure that they reuse same class loader on node2.
-            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id()).get();
-            int[] res2 = (int[])grid1.compute().execute(task2, grid2.localNode().id()).get();
+            int[] res1 = (int[])grid1.compute().execute(task1, grid2.localNode().id());
+            int[] res2 = (int[])grid1.compute().execute(task2, grid2.localNode().id());
 
             if (isIsolatedDifferentTask) {
                 assert res1[0] != res2[0]; // Resources are not same
@@ -88,8 +88,8 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
             else
                 assert Arrays.equals(res1, res2);
 
-            int[] res3 = (int[])grid3.compute().execute(task1, grid2.localNode().id()).get();
-            int[] res4 = (int[])grid3.compute().execute(task2, grid2.localNode().id()).get();
+            int[] res3 = (int[])grid3.compute().execute(task1, grid2.localNode().id());
+            int[] res4 = (int[])grid3.compute().execute(task2, grid2.localNode().id());
 
             if (isIsolatedDifferentTask) {
                 assert res3[0] != res4[0]; // Resources are not same

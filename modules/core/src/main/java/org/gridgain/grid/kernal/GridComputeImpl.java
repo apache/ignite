@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
@@ -43,6 +45,9 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     /** */
     private UUID subjId;
 
+    /** */
+    private GridAsyncSupportAdapter asyncSup;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -53,11 +58,30 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param subjId Subject ID.
+     * @param async Async support flag.
      */
-    public GridComputeImpl(GridKernalContext ctx, GridProjection prj, UUID subjId) {
+    public GridComputeImpl(GridKernalContext ctx, GridProjection prj, UUID subjId, boolean async) {
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
+
+        asyncSup = new GridAsyncSupportAdapter(async);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridComputeTaskFuture<R> future() {
+        return (GridComputeTaskFuture<R>)asyncSup.future();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCompute enableAsync() {
+        return new GridComputeImpl(ctx, prj, subjId, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return asyncSup.isAsync();
     }
 
     /** {@inheritDoc} */
@@ -66,14 +90,14 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job) {
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws GridException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes());
+            asyncSup.result(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -81,14 +105,15 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) {
+    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job)
+        throws GridException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes());
+            return (R)asyncSup.result(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -96,7 +121,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
+    @Override public <T, R> R execute(String taskName, @Nullable T arg) throws GridException {
         A.notNull(taskName, "taskName");
 
         guard();
@@ -105,7 +130,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskName, arg);
+            return (R)asyncSup.result(ctx.task().execute(taskName, arg));
         }
         finally {
             unguard();
@@ -113,8 +138,8 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls,
-        @Nullable T arg) {
+    @Override public <T, R> R execute(Class<? extends GridComputeTask<T, R>> taskCls,
+        @Nullable T arg) throws GridException {
         A.notNull(taskCls, "taskCls");
 
         guard();
@@ -123,7 +148,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskCls, arg);
+            return (R)asyncSup.result(ctx.task().execute(taskCls, arg));
         }
         finally {
             unguard();
@@ -131,7 +156,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg) {
+    @Override public <T, R> R execute(GridComputeTask<T, R> task, @Nullable T arg) throws GridException {
         A.notNull(task, "task");
 
         guard();
@@ -140,7 +165,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(task, arg);
+            return (R)asyncSup.result(ctx.task().execute(task, arg));
         }
         finally {
             unguard();
@@ -148,13 +173,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> broadcast(Runnable job) {
+    @Override public void broadcast(Runnable job) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().runAsync(BROADCAST, job, prj.nodes());
+            asyncSup.result(ctx.closure().runAsync(BROADCAST, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -162,13 +187,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<Collection<R>> broadcast(Callable<R> job) {
+    @Override public <R> Collection<R> broadcast(Callable<R> job) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes());
+            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
         }
         finally {
             unguard();
@@ -176,13 +201,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg) {
+    @Override public <R, T> Collection<R> broadcast(GridClosure<T, R> job, @Nullable T arg) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().broadcast(job, arg, prj.nodes());
+            return (Collection<R>)(ctx.closure().broadcast(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -190,13 +215,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> run(Runnable job) {
+    @Override public void run(Runnable job) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, job, prj.nodes());
+            asyncSup.result(ctx.closure().runAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -204,13 +229,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> run(Collection<? extends Runnable> jobs) {
+    @Override public void run(Collection<? extends Runnable> jobs) throws GridException {
         A.notEmpty(jobs, "jobs");
 
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes());
+            asyncSup.result(ctx.closure().runAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -218,13 +243,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg) {
+    @Override public <R, T> R apply(GridClosure<T, R> job, @Nullable T arg) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(job, arg, prj.nodes());
+            return (R)asyncSup.result(ctx.closure().callAsync(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -232,13 +257,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> call(Callable<R> job) {
+    @Override public <R> R call(Callable<R> job) throws GridException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, job, prj.nodes());
+            return (R)asyncSup.result(ctx.closure().callAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -246,13 +271,13 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs) {
+    @Override public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws GridException {
         A.notEmpty(jobs, "jobs");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, jobs, prj.nodes());
+            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -272,47 +297,15 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<Collection<R>> apply(final GridClosure<T, R> job,
-        @Nullable Collection<? extends T> args) {
+    @Override public <T, R> Collection<R> apply(final GridClosure<T, R> job,
+        @Nullable Collection<? extends T> args) throws GridException {
         A.notNull(job, "job");
         A.notNull(args, "args");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(job, args, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) {
-        A.notEmpty(jobs, "jobs");
-        A.notNull(rdc, "rdc");
-
-        guard();
-
-        try {
-            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job,
-        Collection<? extends T> args, GridReducer<R1, R2> rdc) {
-        A.notNull(job, "job");
-        A.notNull(rdc, "rdc");
-        A.notNull(args, "args");
-
-        guard();
-
-        try {
-            return ctx.closure().callAsync(job, args, rdc, prj.nodes());
+            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(job, args, prj.nodes()));
         }
         finally {
             unguard();
@@ -502,7 +495,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.compute();
     }
 }

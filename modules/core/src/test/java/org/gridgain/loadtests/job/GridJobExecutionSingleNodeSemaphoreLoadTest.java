@@ -73,8 +73,8 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
 
                 X.println("Warming up...");
 
-                g.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
-                g.compute().execute(GridJobExecutionLoadTestTask.class, null).get();
+                g.compute().execute(GridJobExecutionLoadTestTask.class, null);
+                g.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                 runTest(g, threadCnt, taskCnt, WARM_UP_DURATION, execCnt);
 
@@ -164,7 +164,11 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             @Nullable @Override public Object call() throws Exception {
                 sem.acquire();
 
-                GridComputeTaskFuture<Object> f = g.compute().execute(GridJobExecutionLoadTestTask.class, null);
+                GridCompute comp = g.compute().enableAsync();
+
+                comp.execute(GridJobExecutionLoadTestTask.class, null);
+
+                GridComputeTaskFuture<Object> f = comp.future();
 
                 f.listenAsync(lsnr);
 

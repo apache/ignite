@@ -47,7 +47,11 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTestTask.class,  "testArg");
+        GridCompute comp = grid.compute().enableAsync();
+
+        assertNull(comp.execute(GridTestTask.class,  "testArg"));
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         assert fut != null;
 

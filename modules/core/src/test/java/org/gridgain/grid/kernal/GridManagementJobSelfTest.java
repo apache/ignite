@@ -109,7 +109,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      */
     private void runJob(String taskName, Callable<Object> job) throws Exception {
         // We run a task on remote nodes because on local node jobs will be executed in system pool anyway.
-        grid(0).forRemotes().compute().withName(taskName).call(job).get();
+        grid(0).forRemotes().compute().withName(taskName).call(job);
     }
 
     /**

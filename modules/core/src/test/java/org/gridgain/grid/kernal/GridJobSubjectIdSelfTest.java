@@ -71,7 +71,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
             }
         }, GridEventType.EVT_JOB_STARTED);
 
-        node1.compute().execute(new Task(node2.localNode().id()), null).get();
+        node1.compute().execute(new Task(node2.localNode().id()), null);
 
         assertEquals(taskSubjId, jobSubjId);
         assertEquals(taskSubjId, evtSubjId);
@@ -80,6 +80,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * Task class.
      */
+    @SuppressWarnings("PublicInnerClass")
     public static class Task extends GridComputeTaskAdapter<Object, Object> {
         /** Target node ID. */
         private UUID targetNodeId;
@@ -126,6 +127,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * Job class.
      */
+    @SuppressWarnings("PublicInnerClass")
     public static class Job extends GridComputeJobAdapter {
         /** Session. */
         @GridTaskSessionResource

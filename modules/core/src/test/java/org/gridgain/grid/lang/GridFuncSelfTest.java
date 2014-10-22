@@ -3240,28 +3240,4 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         assert fut.isDone();
     }
-
-    /**
-     * Tests usage of F.cInvoke() in conjunction with reduce() method.
-     * This test is based on book example and sanity checks the internal
-     * peerDeployAware() and peerDeployLike() calls in combination with
-     * cInvoke().
-     *
-     * @throws Exception If test failed.
-     */
-    public void testCInvokeWithReduce() throws Exception {
-        Grid grid = startGrid();
-
-        try {
-            GridClosure<String, Integer> cInvoke = GridFunc.cInvoke("length");
-
-            Integer res = grid.compute().apply(cInvoke, Arrays.asList("Hello", "World", "!"),
-                GridFunc.sumIntReducer()).get();
-
-            assertEquals("Hello".length() + "World".length() + "!".length(), res.intValue());
-        }
-        finally {
-            stopGrid();
-        }
-    }
 }

@@ -306,9 +306,11 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * @param dataChunk Data chunk to put in cache.
      */
     private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk) {
-        GridComputeTaskFuture<Void> fut = master.forPredicate(workerNodesFilter).compute().execute(
-            new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()),
-            dataChunk);
+        GridCompute comp = master.forPredicate(workerNodesFilter).compute().enableAsync();
+
+        comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
+
+        GridComputeTaskFuture<Void> fut = comp.future();
 
         fut.listenAsync(new CI1<GridFuture<Void>>() {
             @Override public void apply(GridFuture<Void> f) {

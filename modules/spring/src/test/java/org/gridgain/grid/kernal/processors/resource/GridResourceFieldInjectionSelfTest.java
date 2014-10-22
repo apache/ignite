@@ -67,7 +67,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             assert grid1.forRemotes().nodes().size() == 1;
             assert grid2.forRemotes().nodes().size() == 1;
 
-            grid1.compute().execute(UserResourceTask.class, null).get();
+            grid1.compute().execute(UserResourceTask.class, null);
 
             checkUsageCount(createClss, UserResource1.class, 4);
             checkUsageCount(createClss, UserResource2.class, 4);
@@ -100,7 +100,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(NonTransientUserResourceTask.class, null).get();
+            grid.compute().execute(NonTransientUserResourceTask.class, null);
 
             assert false : "Did not get exception for non-transient field.";
         }
@@ -119,7 +119,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(NonTransientSpringBeanResourceTask.class, null).get();
+            grid.compute().execute(NonTransientSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for non-transient field.";
         }
@@ -137,7 +137,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(UnknownNameSpringBeanResourceTask.class, null).get();
+            grid.compute().execute(UnknownNameSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for unknown Spring bean name.";
         }
@@ -155,7 +155,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
 
         try {
-            grid.compute().execute(InvalidTypeSpringBeanResourceTask.class, null).get();
+            grid.compute().execute(InvalidTypeSpringBeanResourceTask.class, null);
 
             assert false : "Did not get exception for different Spring bean classes.";
         }
@@ -183,7 +183,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, new Object()).get();
+            }, new Object());
 
             grid.compute().broadcast(new GridClosure<Object, Object>() {
                 /** */
@@ -195,11 +195,11 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, new Object()).get();
+            }, new Object());
 
-            grid.compute().apply(new TestClosure(), new Object()).get();
+            grid.compute().apply(new TestClosure(), new Object());
 
-            grid.compute().broadcast(new TestClosure(), new Object()).get();
+            grid.compute().broadcast(new TestClosure(), new Object());
         }
         finally {
             stopAllGrids();
