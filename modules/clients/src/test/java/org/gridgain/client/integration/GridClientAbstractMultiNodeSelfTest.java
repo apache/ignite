@@ -121,18 +121,20 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
         assert c.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        if (restEnabled) {
+            GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+            clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
-        GridSslContextFactory sslCtxFactory = sslContextFactory();
+            GridSslContextFactory sslCtxFactory = sslContextFactory();
 
-        if (sslCtxFactory != null) {
-            clientCfg.setRestTcpSslEnabled(true);
-            clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+            if (sslCtxFactory != null) {
+                clientCfg.setRestTcpSslEnabled(true);
+                clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+            }
+
+            c.setClientConnectionConfiguration(clientCfg);
         }
-
-        c.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

@@ -17,7 +17,7 @@ import org.gridgain.grid.kernal.processors.*;
  */
 public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter implements GridInteropProcessor {
     /** Managed environment pointer. */
-    public static ThreadLocal<Long> ENV_PTR = new ThreadLocal<>();
+    public static final ThreadLocal<Long> ENV_PTR = new ThreadLocal<>();
 
     /** {@inheritDoc} */
     protected GridInteropProcessorAdapter(GridKernalContext ctx) {

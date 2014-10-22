@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * GridGain properties holder.
  */
-class GridProperties {
+public class GridProperties {
     /** Properties file path. */
     private static final String FILE_PATH = "gridgain.properties";
 
