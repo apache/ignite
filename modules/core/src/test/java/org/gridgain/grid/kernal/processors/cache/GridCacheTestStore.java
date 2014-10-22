@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridCacheTestStore implements GridCacheStore<Integer, String> {
     /** Store. */
-    private final Map<Integer, String> map = new ConcurrentLinkedHashMap<>();
+    private final Map<Integer, String> map;
 
     /** Transactions. */
     private final Collection<GridCacheTx> txs = new GridConcurrentHashSet<>();
@@ -52,6 +52,20 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** Configurable delay to simulate slow storage. */
     private int operationDelay;
+
+    /**
+     * @param map Underlying store map.
+     */
+    public GridCacheTestStore(Map<Integer, String> map) {
+        this.map = map;
+    }
+
+    /**
+     * Default constructor.
+     */
+    public GridCacheTestStore() {
+        map = new ConcurrentHashMap<>();
+    }
 
     /**
      * @return Underlying map.

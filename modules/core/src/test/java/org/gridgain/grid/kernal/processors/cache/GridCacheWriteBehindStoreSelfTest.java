@@ -12,6 +12,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -240,6 +241,8 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      * @throws Exception If failed.
      */
     public void testBatchApply() throws Exception {
+        delegate = new GridCacheTestStore(new ConcurrentLinkedHashMap<Integer, String>());
+
         initStore(1);
 
         List<Integer> intList = new ArrayList<>(CACHE_SIZE);
