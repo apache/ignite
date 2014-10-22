@@ -27,6 +27,102 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    public void testMultiNodeProxy() throws Exception {
+        Grid grid = randomGrid();
+
+        int extras = 3;
+
+        startExtraNodes(extras);
+
+        String name = "testMultiNodeProxy";
+
+        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+
+        for (int i = 0; i < extras; i++) {
+            svc.increment();
+
+            stopGrid(nodeCount() + i);
+        }
+
+        assertEquals(extras, svc.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeSingletonRemoteNotStickyProxy() throws Exception {
+        String name = "testNodeSingletonRemoteNotStickyProxy";
+
+        Grid grid = randomGrid();
+
+        // Deploy only on remote nodes.
+        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+
+        info("Deployed service: " + name);
+
+        // Get local proxy.
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
+
+        for (int i = 0; i < 10; i++)
+            svc.increment();
+
+        assertEquals(10, svc.get());
+
+        int total = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+
+            int cnt = rmtSvc.localIncrements();
+
+            // Since deployment is not stick, count on each node must be less than 10.
+            assertTrue("Invalid local increments: " + cnt, cnt != 10);
+
+            total += cnt;
+        }
+
+        assertEquals(10, total);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeSingletonRemoteStickyProxy() throws Exception {
+        String name = "testNodeSingletonRemoteStickyProxy";
+
+        Grid grid = randomGrid();
+
+        // Deploy only on remote nodes.
+        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
+
+        // Get local proxy.
+        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
+
+        for (int i = 0; i < 10; i++)
+            svc.increment();
+
+        assertEquals(10, svc.get());
+
+        int total = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
+
+            int cnt = rmtSvc.localIncrements();
+
+            assertTrue("Invalid local increments: " + cnt, cnt == 10 || cnt == 0);
+
+            total += rmtSvc.localIncrements();
+        }
+
+        assertEquals(10, total);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSingletonUpdateTopology() throws Exception {
         String name = "serviceSingletonUpdateTopology";
 
