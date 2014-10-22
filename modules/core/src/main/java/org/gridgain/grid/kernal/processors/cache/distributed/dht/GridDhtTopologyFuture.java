@@ -28,7 +28,7 @@ public interface GridDhtTopologyFuture extends GridFuture<Long> {
      * partition exchange completes some nodes from the snapshot may leave the grid. One should use discovery
      * service to check if the node is valid.
      * <p/>
-     * This method will block until the
+     * This method will block until the topology future is ready.
      *
      * @return Topology snapshot for particular topology version.
      * @throws GridException If topology future failed.

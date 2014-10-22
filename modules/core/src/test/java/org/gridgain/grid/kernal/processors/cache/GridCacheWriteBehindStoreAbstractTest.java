@@ -304,7 +304,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         fut.get();
 
-        U.sleep(WRITE_FROM_BEHIND_FLUSH_FREQUENCY + 100);
+        U.sleep(5 * WRITE_FROM_BEHIND_FLUSH_FREQUENCY);
 
         Map<Integer, String> stored = store.getMap();
 

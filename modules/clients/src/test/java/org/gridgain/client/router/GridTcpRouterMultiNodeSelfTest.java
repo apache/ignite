@@ -69,7 +69,7 @@ public class GridTcpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeS
         cfg.setHost(HOST);
         cfg.setPort(ROUTER_TCP_PORT_BASE + i);
         cfg.setPortRange(0);
-        cfg.setServers(Collections.singleton(HOST+":"+REST_TCP_PORT_BASE));
+        cfg.setServers(Collections.singleton(HOST + ":" + REST_TCP_PORT_BASE));
         cfg.setLogger(new GridLog4jLogger(ROUTER_LOG_CFG));
 
         return cfg;

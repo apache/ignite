@@ -72,7 +72,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         grid = startGrid(1);
 
         cache = grid.cache(CACHE_REGULAR);
@@ -80,8 +80,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
         cache = null;
         cacheOffheap = null;

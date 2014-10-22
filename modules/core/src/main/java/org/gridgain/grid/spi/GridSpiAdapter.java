@@ -715,5 +715,11 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
+            @Nullable ClassLoader ldr) throws GridException {
+            return null;
+        }
     }
 }

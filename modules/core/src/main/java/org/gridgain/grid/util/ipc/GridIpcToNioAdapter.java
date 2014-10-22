@@ -119,12 +119,19 @@ public class GridIpcToNioAdapter<T> {
                     break; // And close below.
                 }
             }
-
-            // Assuming remote end closed connection - pushing event from head to tail.
-            chain.onSessionClosed(ses);
         }
         catch (Exception e) {
             chain.onExceptionCaught(ses, new GridException("Failed to read from IPC endpoint.", e));
+        }
+        finally {
+            try {
+                // Assuming remote end closed connection - pushing event from head to tail.
+                chain.onSessionClosed(ses);
+            }
+            catch (GridException e) {
+                chain.onExceptionCaught(ses, new GridException("Failed to process session close event " +
+                    "for IPC endpoint.", e));
+            }
         }
     }
 
