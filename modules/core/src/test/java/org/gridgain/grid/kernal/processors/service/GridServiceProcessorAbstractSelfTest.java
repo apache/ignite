@@ -24,6 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Tests for {@link GridAffinityProcessor}.
@@ -101,6 +102,22 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    protected void startExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            startGrid(nodeCount() + i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void stopExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            stopGrid(nodeCount() + i);
+    }
+
+    /**
      * @return Random grid.
      */
     protected Grid randomGrid() {
@@ -163,13 +180,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         g.services().deployNodeSingleton(name, new DummyService()).get();
 
-        DummyService srvc = g.services().service(name);
+        DummyService svc = g.services().service(name);
 
-        assertNotNull(srvc);
+        assertNotNull(svc);
 
-        Collection<DummyService> srvcs = g.services().services(name);
+        Collection<DummyService> svcs = g.services().services(name);
 
-        assertEquals(1, srvcs.size());
+        assertEquals(1, svcs.size());
     }
 
     /**
@@ -187,10 +204,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> srvcs = grid(i).services().services(name);
+                    Collection<DummyService> svcs = grid(i).services().services(name);
 
-                    if (srvcs != null)
-                        cnt += srvcs.size();
+                    if (svcs != null)
+                        cnt += svcs.size();
                 }
 
                 assertEquals(nodeCount() * 2, cnt);
@@ -408,22 +425,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    protected void startExtraNodes(int cnt) throws Exception {
-        for (int i = 0; i < cnt; i++)
-            startGrid(nodeCount() + i);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    protected void stopExtraNodes(int cnt) throws Exception {
-        for (int i = 0; i < cnt; i++)
-            stopGrid(nodeCount() + i);
-    }
-
-    /**
      * @param svcName Service name.
      * @param descs Descriptors.
      * @param cnt Expected count.
@@ -524,35 +525,26 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             svc.increment();
 
         assertEquals(10, svc.get());
-    }
+        assertEquals(10, svc.localIncrements());
+        assertEquals(10, grid.forLocal().services().serviceProxy(name, CounterService.class, false).localIncrements());
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultiNodeProxy() throws Exception {
-        Grid grid = randomGrid();
+        // Make sure that remote proxies were not called.
+        for (GridNode n : grid.forRemotes().nodes()) {
+            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
 
-        startExtraNodes(10);
-
-        String name = "testMultiNodeProxy";
-
-        grid.services().deployMultiple(name, new CounterServiceImpl(), 10, 3).get();
-
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
-
-        for (int i = 0; i < 10; i++) {
-            svc.increment();
-
-            stopExtraNodes(1);
+            assertEquals(0, rmtSvc.localIncrements());
         }
-
-        assertEquals(10, svc.get());
     }
 
     /**
      * Counter service.
      */
     protected interface CounterService {
+        /**
+         * @return Number of increments happened on the same service instance.
+         */
+        int localIncrements();
+
         /**
          * @return Incremented value.
          */
@@ -578,8 +570,18 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         /** Cache key. */
         private String key;
 
+        /** Invocation count. */
+        private AtomicInteger locInrements = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public int localIncrements() {
+            return locInrements.get();
+        }
+
         /** {@inheritDoc} */
         @Override public int increment() {
+            locInrements.incrementAndGet();
+
             try {
                 while (true) {
                     Value val = cache.get(key);

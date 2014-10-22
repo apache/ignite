@@ -19,7 +19,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridServiceMethodNotFoundException extends GridException {
+public class GridServiceMethodNotFoundException extends GridRuntimeException {
     /**
      * @param svcName Service name.
      */

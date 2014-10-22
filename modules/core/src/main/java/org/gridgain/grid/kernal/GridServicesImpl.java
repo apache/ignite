@@ -183,7 +183,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
         guard();
 
         try {
-            return ctx.service().serviceProxy(name, svc, sticky);
+            return ctx.service().serviceProxy(prj, name, svc, sticky);
         }
         finally {
             unguard();
