@@ -296,7 +296,7 @@ public interface GridPortables {
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public GridMutablePortableObject edit(GridPortableObject portableObj);
+    public GridMutablePortableObject toMutable(GridPortableObject portableObj);
 
     /**
      * Gets metadata for provided class.
