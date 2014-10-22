@@ -10,13 +10,18 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Tests service reassignment.
@@ -146,6 +151,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         Collection<UUID> nodes = F.viewReadOnly(grid.nodes(), F.node2id());
 
+        assertNotNull("Grid assignments object is null", assignments);
+
         int sum = 0;
 
         for (Map.Entry<UUID, Integer> entry : assignments.assigns().entrySet()) {
@@ -185,6 +192,11 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         }
     }
 
+    /**
+     * @param startedGrids Started grids.
+     * @param rnd Random numbers generator.
+     * @return Randomly chosen started grid.
+     */
     private int nextRandomIdx(Iterable<Integer> startedGrids, Random rnd) {
         while (true) {
             for (Integer idx : startedGrids) {
@@ -193,5 +205,4 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
             }
         }
     }
-
 }

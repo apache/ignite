@@ -53,7 +53,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         GridServiceConfiguration[] svcs = services();
 
         if (svcs != null)
-            c.setServiceConfiguration(services());
+            c.setServiceConfiguration(svcs);
 
         GridCacheConfiguration cc = new GridCacheConfiguration();
 
@@ -83,7 +83,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
+    @SuppressWarnings("ConstantConditions")
     @Override protected void beforeTestsStarted() throws Exception {
         assert nodeCount() >= 1;
 
@@ -277,12 +277,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testAffinityDeploy() throws Exception {
         Grid g = randomGrid();
 
-        String name = "serviceAffinity";
-
         final Integer affKey = 1;
 
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
+
+        String name = "serviceAffinity";
 
         GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
@@ -451,92 +451,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
-     * Affinity service.
-     */
-    protected static class AffinityService implements GridService {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Affinity key. */
-        private final Object affKey;
-
-        @GridInstanceResource
-        private Grid g;
-
-        /**
-         * @param affKey Affinity key.
-         */
-        public AffinityService(Object affKey) {
-            this.affKey = affKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void init(GridServiceContext ctx) throws Exception {
-            System.out.println("Initializing affinity service for key: " + affKey);
-
-            GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
-
-            assertNotNull(n);
-            assertTrue(n.isLocal());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) {
-            System.out.println("Executing affinity service for key: " + affKey);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClusterSingletonProxy() throws Exception {
-        String name = "testClusterSingletonProxy";
-
-        Grid grid = randomGrid();
-
-        grid.services().deployClusterSingleton(name, new CounterServiceImpl()).get();
-
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
-
-        for (int i = 0; i < 10; i++)
-            svc.increment();
-
-        assertEquals(10, svc.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeSingletonProxy() throws Exception {
-        String name = "testNodeSingletonProxy";
-
-        Grid grid = randomGrid();
-
-        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
-
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
-
-        for (int i = 0; i < 10; i++)
-            svc.increment();
-
-        assertEquals(10, svc.get());
-        assertEquals(10, svc.localIncrements());
-        assertEquals(10, grid.forLocal().services().serviceProxy(name, CounterService.class, false).localIncrements());
-
-        // Make sure that remote proxies were not called.
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
-
-            assertEquals(0, rmtSvc.localIncrements());
-        }
-    }
-
-    /**
      * Counter service.
      */
     protected interface CounterService {
@@ -557,6 +471,48 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * Affinity service.
+     */
+    protected static class AffinityService implements GridService {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Affinity key. */
+        private final Object affKey;
+
+        /** Grid. */
+        @GridInstanceResource
+        private Grid g;
+
+        /**
+         * @param affKey Affinity key.
+         */
+        public AffinityService(Object affKey) {
+            this.affKey = affKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(GridServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            X.println("Initializing affinity service for key: " + affKey);
+
+            GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
+
+            assertNotNull(n);
+            assertTrue(n.isLocal());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) {
+            X.println("Executing affinity service for key: " + affKey);
+        }
+    }
+
+    /**
      * Counter service implementation.
      */
     protected static class CounterServiceImpl implements CounterService, GridService {
@@ -571,16 +527,16 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         private String key;
 
         /** Invocation count. */
-        private AtomicInteger locInrements = new AtomicInteger();
+        private AtomicInteger locIncrements = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public int localIncrements() {
-            return locInrements.get();
+            return locIncrements.get();
         }
 
         /** {@inheritDoc} */
         @Override public int increment() {
-            locInrements.incrementAndGet();
+            locIncrements.incrementAndGet();
 
             try {
                 while (true) {
@@ -619,12 +575,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public void cancel(GridServiceContext ctx) {
-            System.out.println("Stopping counter service: " + ctx.name());
+            X.println("Stopping counter service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
         @Override public void init(GridServiceContext ctx) throws Exception {
-            System.out.println("Initializing counter service: " + ctx.name());
+            X.println("Initializing counter service: " + ctx.name());
 
             key = ctx.name();
 
@@ -633,15 +589,15 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public void execute(GridServiceContext ctx) throws Exception {
-            System.out.println("Executing counter service: " + ctx.name());
+            X.println("Executing counter service: " + ctx.name());
         }
 
         /**
          *
          */
         private static class Value implements Serializable {
-            /** */
-            private int v;
+            /** Value. */
+            private final int v;
 
             /**
              * @param v Value.
@@ -660,6 +616,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             /** {@inheritDoc} */
             @Override public boolean equals(Object o) {
                 return this == o || o instanceof Value && v == ((Value)o).v;
+            }
+
+            /** {@inheritDoc} */
+            @Override public int hashCode() {
+                return v;
             }
         }
     }

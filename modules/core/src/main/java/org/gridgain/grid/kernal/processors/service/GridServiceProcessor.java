@@ -21,7 +21,6 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -31,18 +30,14 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import static java.util.Map.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.events.GridEventType.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -541,10 +536,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      */
-    public <T> T serviceProxy(GridProjection prj, String name, Class<T> svcItf, boolean sticky) throws GridException {
+    public <T> T serviceProxy(GridProjection prj, String name, Class<T> svcItf,
+        boolean sticky) throws GridRuntimeException {
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
 
-        return new ServiceProxy<>(prj, name, svcItf, sticky).proxy();
+        return new GridServiceProxy<>(prj, name, svcItf, sticky, ctx).proxy();
     }
 
     /**
@@ -1248,297 +1244,5 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * Abstract run method protected by busy lock.
          */
         public abstract void run0();
-    }
-
-    /**
-     * Callable proxy class.
-     */
-    private static class ServiceProxyCallable implements GridCallable<Object>, Externalizable {
-        /** Serial version UID. */
-        private static final long serialVersionUID = 0L;
-
-        /** Method name. */
-        private String mtdName;
-
-        /** Service name. */
-        private String svcName;
-
-        /** Args. */
-        private Object[] args;
-
-        /** Grid instance. */
-        @GridInstanceResource
-        private transient Grid grid;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public ServiceProxyCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param mtdName Service method to invoke.
-         * @param svcName Service name.
-         * @param args Arguments for invocation.
-         */
-        private ServiceProxyCallable(String mtdName, String svcName, Object[] args) {
-            this.mtdName = mtdName;
-            this.svcName = svcName;
-            this.args = args;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            GridServiceContextImpl svcCtx = ((GridKernal)grid).context().service().serviceContext(svcName);
-
-            if (svcCtx == null)
-                throw new GridServiceNotFoundException(svcName);
-
-            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, args);
-
-            Method mtd = svcCtx.method(key);
-
-            if (mtd == null)
-                throw new GridServiceMethodNotFoundException(svcName, mtdName, key.argTypes());
-
-            return mtd.invoke(svcCtx.service(), args);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, svcName);
-            U.writeString(out, mtdName);
-            U.writeArray(out, args);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            svcName = U.readString(in);
-            mtdName = U.readString(in);
-            args = U.readArray(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ServiceProxyCallable.class, this);
-        }
-    }
-
-    /**
-     * Wrapper for making {@link GridService} class proxies.
-     */
-    private class ServiceProxy<T> implements Serializable {
-        /** Proxy object. */
-        private final T proxy;
-
-        /** Grid projection. */
-        private final GridProjection prj;
-
-        /** {@code True} if projection includes local node. */
-        private boolean hasLocNode;
-
-        /** Remote node to use for proxy invocation. */
-        private final AtomicReference<GridNode> rmtNode = new AtomicReference<>();
-
-        /**
-         * @param prj Grid projection.
-         * @param name Service name.
-         * @param svc Service type class.
-         * @param sticky Whether multi-node request should be done.
-         */
-        @SuppressWarnings("unchecked")
-        private ServiceProxy(GridProjection prj, final String name, Class<T> svc, final boolean sticky) {
-            this.prj = prj;
-
-            for (GridNode n : prj.nodes()) {
-                if (n.isLocal()) {
-                    hasLocNode = true;
-
-                    break;
-                }
-            }
-
-            proxy = (T)Proxy.newProxyInstance(svc.getClassLoader(), new Class[] {svc}, new InvocationHandler() {
-                @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) {
-                    while (true) {
-                        GridNode node = null;
-
-                        try {
-                            node = nodeForService(name, sticky);
-
-                            if (node == null)
-                                throw new GridRuntimeException("Failed to find deployed service: " + name);
-
-                            // If service is deployed locally, then execute locally.
-                            if (node.isLocal()) {
-                                Object svc = service(name);
-
-                                if (svc != null)
-                                    return mtd.invoke(svc, args);
-                            }
-                            else {
-                                // Execute service remotely.
-                                return ctx.closure().callAsyncNoFailover(
-                                    BALANCE,
-                                    new ServiceProxyCallable(mtd.getName(), name, args),
-                                    Collections.singleton(node),
-                                    false
-                                ).get();
-                            }
-                        }
-                        catch (GridServiceNotFoundException | GridTopologyException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                        }
-                        catch (RuntimeException | Error e) {
-                            throw e;
-                        }
-                        catch (Exception e) {
-                            throw new GridRuntimeException(e);
-                        }
-
-                        // If we are here, that means that service was not found
-                        // or topology was changed. In this case, we erase the
-                        // previous sticky node and try again.
-                        rmtNode.compareAndSet(node, null);
-
-                        // Add sleep between retries to avoid busy-wait loops.
-                        try {
-                            Thread.sleep(10);
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-
-                            throw new GridRuntimeException(e);
-                        }
-                    }
-                }
-            });
-        }
-
-        /**
-         * @param sticky Whether multi-node request should be done.
-         * @param name Service name.
-         * @return Node with deployed service or {@code null} if there is no such node.
-         */
-        private GridNode nodeForService(String name, boolean sticky) {
-            do { // Repeat if reference to remote node was changed.
-                if (sticky) {
-                    GridNode curNode = rmtNode.get();
-
-                    if (curNode != null)
-                        return curNode;
-
-                    curNode = randomNodeForService(name);
-
-                    if (curNode == null)
-                        return null;
-
-                    if (rmtNode.compareAndSet(null, curNode))
-                        return curNode;
-                }
-                else
-                    return randomNodeForService(name);
-            }
-            while (true);
-        }
-
-        /**
-         * @param name Service name.
-         * @return Local node if it has a given service deployed or randomly chosen remote node,
-         *      otherwise ({@code null} if given service is not deployed on any node.
-         */
-        private GridNode randomNodeForService(String name) {
-            if (hasLocNode) {
-                Object svc = service(name);
-
-                if (svc != null)
-                    return ctx.discovery().localNode();
-            }
-
-            Map<UUID, Integer> snapshot = serviceTopology(name);
-
-            if (snapshot == null || snapshot.isEmpty())
-                return null;
-
-            // Optimization for cluster singletons.
-            if (snapshot.size() == 1) {
-                UUID nodeId = snapshot.keySet().iterator().next();
-
-                return prj.node(nodeId);
-            }
-
-            Collection<GridNode> nodes = prj.nodes();
-
-            // Optimization for 1 node in projection.
-            if (nodes.size() == 1) {
-                GridNode n = nodes.iterator().next();
-
-                return snapshot.containsKey(n.id()) ? n : null;
-            }
-
-            // Optimization if projection is the whole grid.
-            if (prj.predicate() == F.<GridNode>alwaysTrue()) {
-                int idx = ThreadLocalRandom8.current().nextInt(snapshot.size());
-
-                int i = 0;
-
-                // Get random node.
-                for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
-                    if (i++ >= idx) {
-                        if (e.getValue() > 0)
-                            return ctx.discovery().node(e.getKey());
-                    }
-                }
-
-                i = 0;
-
-                // Circle back.
-                for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
-                    if (e.getValue() > 0)
-                        return ctx.discovery().node(e.getKey());
-
-                    if (i++ == idx)
-                        return null;
-                }
-            }
-            else {
-                List<GridNode> nodeList = new ArrayList<>(nodes.size());
-
-                for (GridNode n : nodeList) {
-                    Integer cnt = snapshot.get(n.id());
-
-                    if (cnt != null && cnt > 0)
-                        nodeList.add(n);
-                }
-
-                int idx = ThreadLocalRandom8.current().nextInt(nodeList.size());
-
-                return nodeList.get(idx);
-            }
-
-            return null;
-        }
-
-        /**
-         * @param name Service name.
-         * @return Map of number of service instances per node ID.
-         */
-        private Map<UUID, Integer> serviceTopology(String name) {
-            for (GridServiceDescriptor desc : deployedServices()) {
-                if (desc.name().equals(name))
-                    return desc.topologySnapshot();
-            }
-
-            return null;
-        }
-
-        /**
-         * @return Proxy object for a given instance.
-         */
-        private T proxy() {
-            return proxy;
-        }
     }
 }

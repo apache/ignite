@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.service;
 
 import junit.framework.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.service.*;
 
 import java.util.concurrent.*;
 
@@ -27,102 +26,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
-    public void testMultiNodeProxy() throws Exception {
-        Grid grid = randomGrid();
-
-        int extras = 3;
-
-        startExtraNodes(extras);
-
-        String name = "testMultiNodeProxy";
-
-        grid.services().deployNodeSingleton(name, new CounterServiceImpl()).get();
-
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
-
-        for (int i = 0; i < extras; i++) {
-            svc.increment();
-
-            stopGrid(nodeCount() + i);
-        }
-
-        assertEquals(extras, svc.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeSingletonRemoteNotStickyProxy() throws Exception {
-        String name = "testNodeSingletonRemoteNotStickyProxy";
-
-        Grid grid = randomGrid();
-
-        // Deploy only on remote nodes.
-        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
-
-        info("Deployed service: " + name);
-
-        // Get local proxy.
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, false);
-
-        for (int i = 0; i < 10; i++)
-            svc.increment();
-
-        assertEquals(10, svc.get());
-
-        int total = 0;
-
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
-
-            int cnt = rmtSvc.localIncrements();
-
-            // Since deployment is not stick, count on each node must be less than 10.
-            assertTrue("Invalid local increments: " + cnt, cnt != 10);
-
-            total += cnt;
-        }
-
-        assertEquals(10, total);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeSingletonRemoteStickyProxy() throws Exception {
-        String name = "testNodeSingletonRemoteStickyProxy";
-
-        Grid grid = randomGrid();
-
-        // Deploy only on remote nodes.
-        grid.forRemotes().services().deployNodeSingleton(name, new CounterServiceImpl()).get();
-
-        // Get local proxy.
-        CounterService svc = grid.services().serviceProxy(name, CounterService.class, true);
-
-        for (int i = 0; i < 10; i++)
-            svc.increment();
-
-        assertEquals(10, svc.get());
-
-        int total = 0;
-
-        for (GridNode n : grid.forRemotes().nodes()) {
-            CounterService rmtSvc = grid.forNode(n).services().serviceProxy(name, CounterService.class, false);
-
-            int cnt = rmtSvc.localIncrements();
-
-            assertTrue("Invalid local increments: " + cnt, cnt == 10 || cnt == 0);
-
-            total += rmtSvc.localIncrements();
-        }
-
-        assertEquals(10, total);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testSingletonUpdateTopology() throws Exception {
         String name = "serviceSingletonUpdateTopology";
 
@@ -130,9 +33,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
+        DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployClusterSingleton(name, new org.gridgain.grid.kernal.processors.service.DummyService());
+        GridFuture<?> fut = g.services().deployClusterSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -142,16 +45,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        TestCase.assertEquals(name, 1, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
-        TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
+        TestCase.assertEquals(name, 1, DummyService.started(name));
+        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            TestCase.assertEquals(name, 1, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
-            TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
+            TestCase.assertEquals(name, 1, DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
             info(">>> Passed checks.");
 
@@ -208,9 +111,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
-        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
+        DummyService.exeLatch(name, latch);
 
-        GridFuture<?> fut = g.services().deployNodeSingleton(name, new org.gridgain.grid.kernal.processors.service.DummyService());
+        GridFuture<?> fut = g.services().deployNodeSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -220,37 +123,27 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        TestCase.assertEquals(name, nodeCount(), org.gridgain.grid.kernal.processors.service.DummyService.started(name));
-        TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
+        TestCase.assertEquals(name, nodeCount(), DummyService.started(name));
+        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
         int newNodes = 2;
 
         latch = new CountDownLatch(newNodes);
 
-        org.gridgain.grid.kernal.processors.service.DummyService.exeLatch(name, latch);
+        DummyService.exeLatch(name, latch);
 
         startExtraNodes(newNodes);
 
         try {
             latch.await();
 
-            TestCase.assertEquals(name, nodeCount() + newNodes, org.gridgain.grid.kernal.processors.service.DummyService.started(name));
-            TestCase.assertEquals(name, 0, org.gridgain.grid.kernal.processors.service.DummyService.cancelled(name));
+            TestCase.assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
             checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
         }
         finally {
             stopExtraNodes(newNodes);
         }
-    }
-
-    /**
-     * Dummy interface for testing purposes.
-     */
-    private interface DummyService extends GridService {
-        /**
-         * @return Some integer value.
-         */
-        int getInt();
     }
 }

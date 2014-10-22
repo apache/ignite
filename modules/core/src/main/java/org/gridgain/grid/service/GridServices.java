@@ -120,7 +120,7 @@ public interface GridServices {
      *
      * @return Grid projection to which this {@code GridServices} instance belongs.
      */
-    public GridProjection projection();
+    GridProjection projection();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always
@@ -139,7 +139,7 @@ public interface GridServices {
      * @param svc Service instance.
      * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployClusterSingleton(String name, GridService svc);
+    GridFuture<?> deployClusterSingleton(String name, GridService svc);
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -154,7 +154,7 @@ public interface GridServices {
      * @param svc Service instance.
      * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployNodeSingleton(String name, GridService svc);
+    GridFuture<?> deployNodeSingleton(String name, GridService svc);
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -187,7 +187,7 @@ public interface GridServices {
      * @param affKey Affinity cache key.
      * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
+    GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
         Object affKey);
 
     /**
@@ -220,7 +220,7 @@ public interface GridServices {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
+    GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -258,7 +258,7 @@ public interface GridServices {
      * @param cfg Service configuration.
      * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deploy(GridServiceConfiguration cfg);
+    GridFuture<?> deploy(GridServiceConfiguration cfg);
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -272,7 +272,7 @@ public interface GridServices {
      * @return Future which completes whenever service is cancelled. Note that depending on user logic,
      *      it may still take extra time for the service to finish execution, even after it was cancelled.
      */
-    public GridFuture<?> cancel(String name);
+    GridFuture<?> cancel(String name);
 
     /**
      * Cancels all deployed services.
@@ -280,14 +280,14 @@ public interface GridServices {
      * @return Future which completes whenever all deployed services are cancelled. Note that depending on user logic,
      *      it may still take extra time for a service to finish execution, even after it was cancelled.
      */
-    public GridFuture<?> cancelAll();
+    GridFuture<?> cancelAll();
 
     /**
      * Gets metadata about all deployed services.
      *
      * @return Metadata about all deployed services.
      */
-    public Collection<GridServiceDescriptor> deployedServices();
+    Collection<GridServiceDescriptor> deployedServices();
 
     /**
      * Gets deployed service with specified name.
@@ -296,7 +296,7 @@ public interface GridServices {
      * @param <T> Service type
      * @return Deployed service with specified name.
      */
-    public <T> T service(String name);
+    <T> T service(String name);
 
     /**
      * Gets all deployed services with specified name.
@@ -305,7 +305,7 @@ public interface GridServices {
      * @param <T> Service type.
      * @return all deployed services with specified name.
      */
-    public <T> Collection<T> services(String name);
+    <T> Collection<T> services(String name);
 
     /**
      * Gets a remote handle on the service. If service is available locally,
@@ -317,5 +317,5 @@ public interface GridServices {
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException;
+    <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException;
 }

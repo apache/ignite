@@ -179,7 +179,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridException {
+    @Override public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException {
         guard();
 
         try {
