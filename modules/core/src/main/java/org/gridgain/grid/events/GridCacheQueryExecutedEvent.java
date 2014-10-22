@@ -50,14 +50,13 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see GridEventType#EVTS_CACHE_QUERY_EXECUTED
- * @see GridEventType#EVT_CACHE_SQL_QUERY_EXECUTED
- * @see GridEventType#EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED
- * @see GridEventType#EVT_CACHE_FULL_TEXT_QUERY_EXECUTED
- * @see GridEventType#EVT_CACHE_SCAN_QUERY_EXECUTED
- * @see GridEventType#EVT_CACHE_CONTINUOUS_QUERY_EXECUTED
+ * @see GridEventType#EVT_CACHE_QUERY_EXECUTED
+ * @see GridEventType#EVTS_CACHE_QUERY
  */
 public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
+    /** Query type. */
+    private final GridCacheQueryType qryType;
+
     /** Cache name. */
     private final String cacheName;
 
@@ -89,6 +88,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
      * @param node Node where event was fired.
      * @param msg Event message.
      * @param type Event type.
+     * @param qryType Query type.
      * @param cacheName Cache name.
      * @param clsName Class name.
      * @param clause Clause.
@@ -100,6 +100,7 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
         GridNode node,
         String msg,
         int type,
+        GridCacheQueryType qryType,
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
@@ -110,6 +111,9 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
         @Nullable String taskName) {
         super(node, msg, type);
 
+        assert qryType != null;
+
+        this.qryType = qryType;
         this.cacheName = cacheName;
         this.clsName = clsName;
         this.clause = clause;
@@ -118,6 +122,15 @@ public class GridCacheQueryExecutedEvent<K, V> extends GridEventAdapter {
         this.args = args;
         this.subjId = subjId;
         this.taskName = taskName;
+    }
+
+    /**
+     * Gets query type.
+     *
+     * @return Query type.
+     */
+    public GridCacheQueryType queryType() {
+        return qryType;
     }
 
     /**

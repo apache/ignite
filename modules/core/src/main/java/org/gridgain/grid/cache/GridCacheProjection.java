@@ -2058,7 +2058,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public int globalPrimarySize() throws GridException;
 
     /**
-     * This method promotes cache entry from offheap by given key, if any, from offheap or swap storage
+     * This method promotes cache entry by given key, if any, from offheap or swap storage
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.

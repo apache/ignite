@@ -41,7 +41,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridMessagingExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridMemcacheRestExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridMonteCarloExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridTaskExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridSpringBeanExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsExamplesSelfTest.class));
@@ -59,7 +58,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridEventsExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridTaskExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMemcacheRestExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMonteCarloExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridHibernateL2CacheExampleMultiNodeSelfTest.class));
 

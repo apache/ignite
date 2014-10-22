@@ -36,7 +36,7 @@ import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtP
 public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalPartition> {
     /** Maximum size for delete queue. */
     private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
-        1_000_000);
+        200_000);
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
@@ -100,7 +100,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         map = new ConcurrentHashMap8<>(cctx.config().getStartSize() /
             cctx.affinity().partitions());
 
-        int delQueueSize = Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 100);
+        int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
+            Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
     }

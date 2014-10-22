@@ -11,14 +11,13 @@ package org.gridgain.grid.kernal.processors.interop.os;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.jetbrains.annotations.*;
 
 /**
  * OS interop processor.
  */
-public class GridOsInteropProcessor extends GridProcessorAdapter implements GridInteropProcessor {
+public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     /** Common error message. */
     private static final String ERR_MSG = "Interop feature is not supported in OS edition.";
 
@@ -29,6 +28,11 @@ public class GridOsInteropProcessor extends GridProcessorAdapter implements Grid
      */
     public GridOsInteropProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long environmentPointer() {
+        throw new UnsupportedOperationException(ERR_MSG);
     }
 
     /** {@inheritDoc} */
@@ -48,6 +52,11 @@ public class GridOsInteropProcessor extends GridProcessorAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public GridInteropTarget cache(@Nullable String name) throws GridException {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dotNetConfiguration(long stream, long arr, int cap) throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 }
