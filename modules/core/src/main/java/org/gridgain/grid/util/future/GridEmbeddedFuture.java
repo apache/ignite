@@ -55,7 +55,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                 try {
                     onDone(c.apply(embedded.get(), null));
                 }
-                catch (RuntimeException e) {
+                catch (Exception e) {
                     onDone(c.apply(null, e));
                 }
                 catch (Error e) {
@@ -117,7 +117,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                             catch (GridClosureException e) {
                                 onDone(e.unwrap());
                             }
-                            catch (RuntimeException e) {
+                            catch (Exception e) {
                                 onDone(e);
                             }
                             catch (Error e) {
@@ -133,7 +133,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                     onDone(e.unwrap());
                 }
-                catch (RuntimeException e) {
+                catch (Exception e) {
                     c.apply(null, e);
 
                     onDone(e);
@@ -186,7 +186,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                                 onDone(e.unwrap());
                             }
-                            catch (RuntimeException e) {
+                            catch (Exception e) {
                                 c2.apply(null, e);
 
                                 onDone(e);
@@ -204,7 +204,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                     onDone(e.unwrap());
                 }
-                catch (RuntimeException e) {
+                catch (Exception e) {
                     c1.apply(null, e);
 
                     onDone(e);
@@ -254,6 +254,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** {@inheritDoc} */
         @Override public final void apply(GridFuture<B> f) {
             try {
                 applyx(f);
@@ -271,6 +272,10 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
             }
         }
 
+        /**
+         * @param f Future.
+         * @throws Exception In case of error.
+         */
         protected abstract void applyx(GridFuture<B> f) throws Exception;
     }
 
@@ -281,6 +286,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** {@inheritDoc} */
         @Override public final void apply(GridFuture<A> f) {
             try {
                 applyx(f);
@@ -298,6 +304,10 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
             }
         }
 
+        /**
+         * @param f Future.
+         * @throws Exception In case of error.
+         */
         protected abstract void applyx(GridFuture<A> f) throws Exception;
     }
 }

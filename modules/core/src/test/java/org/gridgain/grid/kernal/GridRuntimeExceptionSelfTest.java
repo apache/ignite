@@ -67,7 +67,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
 
         try {
             fut.get();
@@ -96,7 +97,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.MAP);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
 
         try {
             fut.get();
@@ -125,7 +127,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();
@@ -154,7 +157,8 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+        GridComputeTaskFuture<?> fut =
+            executeAsync(grid.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
 
         try {
             fut.get();

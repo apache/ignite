@@ -86,6 +86,8 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
      */
     public GridDhtColocatedTxLocal(
         boolean implicit,
@@ -418,13 +420,15 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                         commitFut0.onError(new GridException("Failed to commit transaction: " +
                             CU.txString(GridDhtColocatedTxLocal.this)));
                 }
-                catch (GridException e) {
+                catch (Exception e) {
                     commitErr.compareAndSet(null, e);
 
                     commitFut0.onError(e);
                 }
-                catch (Error | RuntimeException e) {
+                catch (Error e) {
                     commitErr.compareAndSet(null, e);
+
+                    commitFut0.onError(e);
 
                     throw e;
                 }

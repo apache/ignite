@@ -53,7 +53,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = startGrid("testGrid");
 
-            grid.compute().execute(CancelledTask.class, null);
+            executeAsync(grid.compute(), CancelledTask.class, null);
 
             cnt.await();
         }

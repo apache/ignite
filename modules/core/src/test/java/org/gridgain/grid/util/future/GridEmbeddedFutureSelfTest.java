@@ -117,12 +117,12 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             catch (GridException e) {
                 info("Failed with unhandled exception (normal behaviour): " + e);
 
-                assertTrue(e.getCause(x.getClass()) == x);
+                assertSame(x, e.getCause(x.getClass()));
             }
             catch (Error e) {
                 info("Failed with unhandled error (normal behaviour): " + e);
 
-                assertTrue(e == x);
+                assertSame(x, e);
             }
         }
     }
