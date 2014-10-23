@@ -37,6 +37,9 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements Grid
     @SuppressWarnings("unchecked")
     @Override public T enableAsync() {
         try {
+            if (isAsync())
+                return (T)this;
+
             GridAsyncSupportAdapter<T> clone = (GridAsyncSupportAdapter<T>)clone();
 
             clone.curFut = new ThreadLocal<>();

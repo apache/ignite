@@ -1522,7 +1522,16 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> format() throws GridException {
+    @Override public void format() throws GridException {
+        formatAsync().get();
+    }
+
+    /**
+     * Formats the file system removing all existing entries from it.
+     *
+     * @return Future.
+     */
+    GridFuture<?> formatAsync() {
         GridUuid id = meta.softDelete(null, null, ROOT_ID);
 
         if (id == null)
@@ -1646,30 +1655,96 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, @Nullable T arg) {
-        return execute(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync(task, rslvr, paths, arg).get();
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) {
+        return executeAsync(taskCls, rslvr, paths, arg).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
+        long maxRangeSize, @Nullable T arg) {
+        return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
+    }
+
+    /**
+     * Executes GGFS task asynchronously.
+     *
+     * @param task Task to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param arg Optional task argument.
+     * @return Execution future.
+     */
+    <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        Collection<GridGgfsPath> paths, @Nullable T arg) {
+        return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+    }
+
+    /**
+     * Executes GGFS task with overridden maximum range length (see
+     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     *
+     * @param task Task to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
+     *     be ignored. Otherwise an exception will be thrown.
+     * @param maxRangeLen Optional maximum range length. If {@code 0}, then by default all consecutive
+     *      GGFS blocks will be included.
+     * @param arg Optional task argument.
+     * @return Execution future.
+     */
+    <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
     }
 
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+    /**
+     * Executes GGFS task asynchronously.
+     *
+     * @param taskCls Task class to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param arg Optional task argument.
+     * @return Execution future.
+     */
+    <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) {
-        return execute(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+    /**
+     * Executes GGFS task asynchronously with overridden maximum range length (see
+     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     *
+     * @param taskCls Task class to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
+     *     be ignored. Otherwise an exception will be thrown.
+     * @param maxRangeLen Maximum range length.
+     * @param arg Optional task argument.
+     * @return Execution future.
+     */
+    <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeSize, @Nullable T arg) {
+        long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,
-            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeSize, arg));
+            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
@@ -1727,6 +1802,21 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         return info;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridGgfs enableAsync() {
+        return new GridGgfsAsyncImpl(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<R> future() {
+        throw new IllegalStateException();
     }
 
     /** Detailed file descriptor. */

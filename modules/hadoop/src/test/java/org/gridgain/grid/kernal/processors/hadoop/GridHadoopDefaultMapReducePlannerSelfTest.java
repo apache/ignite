@@ -861,32 +861,32 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> format() throws GridException {
-            return null;
+        @Override public void format() throws GridException {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
             Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
             Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
             @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
             @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
             long maxRangeLen, @Nullable T arg) throws GridException {
             return null;
@@ -894,6 +894,21 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridUuid nextAffinityKey() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridGgfs enableAsync() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> GridFuture<R> future() {
             return null;
         }
     }

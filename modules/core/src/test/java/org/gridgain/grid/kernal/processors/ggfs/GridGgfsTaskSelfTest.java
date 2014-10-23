@@ -78,7 +78,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs.format().get();
+        ggfs.format();
     }
 
     /**
@@ -146,11 +146,53 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             Long genLen = ggfs.info(FILE).length();
 
             GridBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
-                new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg).get();
+                new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
             assert F.eq(genLen, taskRes.getKey());
             assert F.eq(TOTAL_WORDS, taskRes.getValue());
         }
+    }
+
+    /**
+     * Test task.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTaskAsync() throws Exception {
+        U.sleep(3000);
+
+        assertFalse(ggfs.isAsync());
+
+        GridGgfs ggfsAsync = ggfs.enableAsync();
+
+        assertTrue(ggfsAsync.isAsync());
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+
+            generateFile(TOTAL_WORDS);
+            Long genLen = ggfs.info(FILE).length();
+
+            assertNull(ggfsAsync.execute(
+                new Task(), new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
+
+            GridFuture<GridBiTuple<Long, Integer>> fut = ggfsAsync.future();
+
+            assertNotNull(fut);
+
+            GridBiTuple<Long, Integer> taskRes = fut.get();
+
+            assert F.eq(genLen, taskRes.getKey());
+            assert F.eq(TOTAL_WORDS, taskRes.getValue());
+        }
+
+        ggfsAsync.format();
+
+        GridFuture<?> fut = ggfsAsync.future();
+
+        assertNotNull(fut);
+
+        fut.get();
     }
 
     // TODO: Remove.

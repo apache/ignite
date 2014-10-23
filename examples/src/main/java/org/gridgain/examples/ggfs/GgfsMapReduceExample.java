@@ -64,7 +64,7 @@ public class GgfsMapReduceExample {
                 writeFile(fs, fsPath, file);
 
                 Collection<Line> lines = fs.execute(new GrepTask(), GridGgfsNewLineRecordResolver.NEW_LINE,
-                    Collections.singleton(fsPath), regexStr).get();
+                    Collections.singleton(fsPath), regexStr);
 
                 if (lines.isEmpty()) {
                     System.out.println();

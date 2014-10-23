@@ -93,7 +93,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ggfs.format().get();
+        ggfs.format();
     }
 
     /**

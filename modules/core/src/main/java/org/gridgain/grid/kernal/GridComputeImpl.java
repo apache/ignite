@@ -76,6 +76,9 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public GridCompute enableAsync() {
+        if (asyncSup.isAsync())
+            return this;
+
         return new GridComputeImpl(ctx, prj, subjId, true);
     }
 

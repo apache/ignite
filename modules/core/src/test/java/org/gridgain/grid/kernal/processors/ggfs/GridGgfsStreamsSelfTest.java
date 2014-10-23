@@ -85,7 +85,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         fs = grid(0).ggfs("ggfs");
 
         // Cleanup FS.
-        fs.format().get();
+        fs.format();
     }
 
     /** {@inheritDoc} */

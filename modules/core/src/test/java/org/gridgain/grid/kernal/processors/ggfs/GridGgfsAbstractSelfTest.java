@@ -793,13 +793,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         assert primarySize == primaryKeySetSize;
         assert primarySize == primaryPartSize;
 
-        ggfs.format().get();
+        ggfs.format();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
             checkExist(ggfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
-            ggfsSecondary.format().get();
+            ggfsSecondary.format();
         }
 
         // Ensure entries deletion in the primary file system.
@@ -977,7 +977,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                 try {
                     os = ggfs.create(FILE, true);
 
-                    ggfs.format().get();
+                    ggfs.format();
 
                     os.write(chunk);
 
@@ -1283,7 +1283,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                 try {
                     os = ggfs.append(FILE, false);
 
-                    ggfs.format().get();
+                    ggfs.format();
 
                     os.write(chunk);
 
@@ -2433,6 +2433,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         }
 
         // Clear ggfs.
-        ggfs.format().get();
+        ggfs.format();
     }
 }

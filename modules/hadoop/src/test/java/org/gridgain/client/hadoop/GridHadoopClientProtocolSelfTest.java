@@ -102,7 +102,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format().get();
+        grid(0).ggfs(GridHadoopAbstractSelfTest.ggfsName).format();
 
         setupLockFile.delete();
         mapLockFile.delete();

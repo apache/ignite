@@ -195,7 +195,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     @Override protected void afterTest() throws Exception {
         try {
             // Cleanup.
-            ggfsPrimary.format().get();
+            ggfsPrimary.format();
 
             while (!dataCache.isEmpty())
                 U.sleep(100);

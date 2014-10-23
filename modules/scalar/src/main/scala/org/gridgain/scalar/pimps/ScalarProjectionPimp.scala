@@ -12,7 +12,6 @@
 package org.gridgain.scalar.pimps
 
 import org.gridgain.grid._
-import org.gridgain.grid.compute.GridCompute
 import org.gridgain.grid.lang._
 import org.jetbrains.annotations._
 
@@ -370,7 +369,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         GridFuture[java.util.Collection[R]] = {
-        val comp = forPredicate(p).compute()
+        val comp = forPredicate(p).compute().enableAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
 
