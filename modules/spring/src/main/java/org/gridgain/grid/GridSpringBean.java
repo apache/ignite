@@ -35,6 +35,7 @@ import org.springframework.context.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Grid Spring bean allows to bypass {@link GridGain} methods.
@@ -233,6 +234,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.events();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService executorService() {
+        assert g != null;
+
+        return g.executorService();
     }
 
     /** {@inheritDoc} */

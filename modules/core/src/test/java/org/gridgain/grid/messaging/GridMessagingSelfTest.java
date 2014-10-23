@@ -11,6 +11,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
+import org.junit.*;
 
 import java.io.*;
 import java.net.*;
@@ -594,7 +595,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         GridProjection prj2 = grid1.forRemotes(); // Includes node from grid2.
 
@@ -607,6 +608,86 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertTrue(rcvMsgs.contains(MSG_1));
         assertTrue(rcvMsgs.contains(MSG_2));
         assertTrue(rcvMsgs.contains(MSG_3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAsync() throws Exception {
+        final AtomicInteger msgCnt = new AtomicInteger();
+
+        final GridMessaging msg = grid2.message().enableAsync();
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        final String topic = "topic";
+
+        UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
+            @Override
+            public boolean apply(UUID nodeId, Object msg) {
+                System.out.println(Thread.currentThread().getName() + " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+
+                msgCnt.incrementAndGet();
+
+                return true;
+            }
+        });
+
+        Assert.assertNull(id);
+
+        GridFuture<UUID> fut = msg.future();
+
+        Assert.assertNotNull(fut);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        id = fut.get();
+
+        Assert.assertNotNull(id);
+
+        grid1.forRemotes().message().send(topic, "msg1");
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return msgCnt.get() > 0;
+            }
+        }, 5000);
+
+        assertEquals(1, msgCnt.get());
+
+        msg.stopRemoteListen(id);
+
+        GridFuture<?> stopFut = msg.future();
+
+        Assert.assertNotNull(stopFut);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        stopFut.get();
+
+        grid1.forRemotes().message().send(topic, "msg2");
+
+        U.sleep(1000);
+
+        assertEquals(1, msgCnt.get());
     }
 
     /**
@@ -632,7 +713,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }).get();
+        });
 
         UUID id2 = grid2.message().remoteListen(topic2, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -642,7 +723,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }).get();
+        });
 
         UUID id3 = grid2.message().remoteListen(topic3, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -652,7 +733,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }).get();
+        });
 
         grid1.forRemotes().message().send(topic1, "msg1-1");
         grid1.forRemotes().message().send(topic2, "msg1-2");
@@ -668,7 +749,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(1, msgCnt3.get());
 
-        grid2.message().stopRemoteListen(id2).get();
+        grid2.message().stopRemoteListen(id2);
 
         grid1.forRemotes().message().send(topic1, "msg2-1");
         grid1.forRemotes().message().send(topic2, "msg2-2");
@@ -684,10 +765,10 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         assertEquals(1, msgCnt2.get());
         assertEquals(2, msgCnt3.get());
 
-        grid2.message().stopRemoteListen(id2).get(); // Try remove one more time.
+        grid2.message().stopRemoteListen(id2); // Try remove one more time.
 
-        grid2.message().stopRemoteListen(id1).get();
-        grid2.message().stopRemoteListen(id3).get();
+        grid2.message().stopRemoteListen(id1);
+        grid2.message().stopRemoteListen(id3);
 
         grid1.forRemotes().message().send(topic1, "msg3-1");
         grid1.forRemotes().message().send(topic2, "msg3-2");
@@ -740,7 +821,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         GridProjection prj2 = grid1.forRemotes(); // Includes node from grid2.
 
@@ -803,7 +884,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         grid2.message().remoteListen(I_TOPIC_2, new P2<UUID, Object>() {
             @GridInstanceResource
@@ -840,7 +921,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         grid2.message().remoteListen(null, new P2<UUID, Object>() {
             @GridInstanceResource
@@ -877,7 +958,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         GridProjection prj2 = grid1.forRemotes(); // Includes node from grid2.
 
@@ -930,7 +1011,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         grid1.forRemotes().message().send(S_TOPIC_1, Collections.singleton(rcCls.newInstance()));
 

@@ -167,10 +167,10 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null)
-                throw result.getException();
+            if (res.getException() != null)
+                throw res.getException();
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
@@ -187,7 +187,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (GridComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += result.getData();
+                    sum += (Integer)result.getData();
             }
 
             return sum;
@@ -203,7 +203,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         /** {@inheritDoc} */
         @SuppressWarnings({"NakedNotify"})
-        public void onAttributeSet(Object key, Object val) {
+        @Override public void onAttributeSet(Object key, Object val) {
             assert key != null;
 
             info("Received attribute [name=" + key + ",val=" + val + ']');

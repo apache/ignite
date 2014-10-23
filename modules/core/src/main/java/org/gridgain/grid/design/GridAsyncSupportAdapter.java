@@ -14,17 +14,14 @@ import org.gridgain.grid.*;
 /**
  * TODO: Add class description.
  */
-public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implements GridAsyncSupport<T>, Cloneable {
+public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements GridAsyncSupport<T>, Cloneable {
     /** Future holder. */
-    protected final ThreadLocal<GridFuture<?>> curFut = new ThreadLocal<>();
-
-    /** Async flag. */
-    private boolean async;
+    protected ThreadLocal<GridFuture<?>> curFut;
 
     /**
      * Default constructor.
      */
-    GridAsyncSupportAdapter() {
+    public GridAsyncSupportAdapter() {
         // No-op.
     }
 
@@ -32,7 +29,8 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implemen
      * @param async Async enabled flag.
      */
     public GridAsyncSupportAdapter(boolean async) {
-        this.async = async;
+        if (async)
+            curFut = new ThreadLocal<>();
     }
 
     /** {@inheritDoc} */
@@ -41,7 +39,7 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implemen
         try {
             GridAsyncSupportAdapter<T> clone = (GridAsyncSupportAdapter<T>)clone();
 
-            clone.async = true;
+            clone.curFut = new ThreadLocal<>();
 
             return (T)clone;
         }
@@ -52,7 +50,7 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implemen
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        return async;
+        return curFut != null;
     }
 
     /** {@inheritDoc} */
@@ -73,7 +71,7 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupportAdapter> implemen
      * @throws GridException If asynchronous mode is disabled and execution failed.
      */
     public <R> R result(GridFuture<R> fut) throws GridException {
-        if (async) {
+        if (curFut != null) {
             curFut.set(fut);
 
             return null;

@@ -281,7 +281,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNullTopicWithDeployment() throws Exception {
         Class<?> cls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
 
-        grid(0).message().remoteListen(null, (GridBiPredicate<UUID, Object>)cls.newInstance()).get();
+        grid(0).message().remoteListen(null, (GridBiPredicate<UUID, Object>)cls.newInstance());
 
         send();
 
@@ -305,7 +305,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         Object topic = topicCls.newInstance();
 
-        grid(0).message().remoteListen(topic, (GridBiPredicate<UUID, Object>)lsnrCls.newInstance()).get();
+        grid(0).message().remoteListen(topic, (GridBiPredicate<UUID, Object>)lsnrCls.newInstance());
 
         send(topic);
 
@@ -324,7 +324,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        grid(0).message().remoteListen(null, new Actor(grid(0))).get();
+        grid(0).message().remoteListen(null, new Actor(grid(0)));
 
         try {
             Grid g = startGrid("anotherGrid");
@@ -359,7 +359,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private void listen(final GridProjection prj, @Nullable Object topic, final boolean ret) throws Exception {
         assert prj != null;
 
-        prj.message().remoteListen(topic, new Listener(prj, ret)).get();
+        prj.message().remoteListen(topic, new Listener(prj, ret));
     }
 
     /**

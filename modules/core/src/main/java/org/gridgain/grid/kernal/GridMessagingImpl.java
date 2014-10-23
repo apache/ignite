@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
@@ -23,7 +25,7 @@ import java.util.*;
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl implements GridMessaging, Externalizable {
+public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> implements GridMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -147,7 +149,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -155,7 +157,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
 
-            return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate());
+            return result(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }
         finally {
             unguard();
@@ -163,10 +165,10 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "opId");
 
-        return ctx.continuous().stopRoutine(opId);
+        result(ctx.continuous().stopRoutine(opId));
     }
 
     /**
@@ -199,7 +201,7 @@ public class GridMessagingImpl implements GridMessaging, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.message();
     }
 }

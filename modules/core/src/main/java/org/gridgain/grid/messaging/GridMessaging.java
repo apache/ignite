@@ -10,6 +10,8 @@
 package org.gridgain.grid.messaging;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +45,7 @@ import java.util.*;
  * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
  * actually do arrive, they will be ignored.
  */
-public interface GridMessaging {
+public interface GridMessaging extends GridAsyncSupport<GridMessaging> {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -119,16 +121,16 @@ public interface GridMessaging {
      * @param topic Topic to subscribe to, {@code null} means default topic.
      * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
      *      then it will be unsubscribed from any further notifications.
-     * @return Future that finishes when all listeners are registered. It returns {@code operation ID}
-     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @throws GridException If failed to add listener.
      */
-    public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+    public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) throws GridException;
 
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
      *
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, GridBiPredicate)} method.
-     * @return Future that finishes when all listeners are unregistered.
+     * @throws GridException If failed to unregister listeners.
      */
-    public GridFuture<?> stopRemoteListen(UUID opId);
+    public void stopRemoteListen(UUID opId) throws GridException;
 }

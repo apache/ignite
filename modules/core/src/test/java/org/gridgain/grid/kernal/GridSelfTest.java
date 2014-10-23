@@ -114,7 +114,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
                 stop(rcvMsg);
             }
-        }).get();
+        });
 
         final AtomicInteger cnt = new AtomicInteger();
 

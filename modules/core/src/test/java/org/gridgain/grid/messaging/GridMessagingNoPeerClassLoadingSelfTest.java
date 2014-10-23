@@ -69,7 +69,7 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
                     rcvLatch.countDown();
                 }
             }
-        }).get();
+        });
 
         grid1.forRemotes().message().send(null, Collections.singleton(rcCls.newInstance()));
 
