@@ -118,10 +118,7 @@ public class EventsExample {
         Grid g = GridGain.grid();
 
         // Register event listeners on all nodes to listen for task events.
-        GridFuture<?> fut = g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
-
-        // Wait until event listeners are subscribed on all nodes.
-        fut.get();
+        g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
         for (int i = 0; i < 10; i++) {

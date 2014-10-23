@@ -63,7 +63,7 @@ public class MessagingPingPongListenActorExample {
                     else if ("STOP".equals(rcvMsg))
                         stop();
                 }
-            }).get();
+            });
 
             int MAX_PLAYS = 10;
 

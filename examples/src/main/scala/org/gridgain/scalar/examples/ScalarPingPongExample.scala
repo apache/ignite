@@ -58,7 +58,7 @@ object ScalarPingPongExample extends App {
                         case "STOP" => stop()
                     }
                 }
-            }).get()
+            })
 
             val latch = new CountDownLatch(10)
 
@@ -114,7 +114,7 @@ object ScalarPingPongExample extends App {
                         case "STOP" => stop()
                     }
                 }
-            }).get
+            })
 
             // Configure remote node 'n2' to receive messages from 'n1'.
             n2p.message().remoteListen(null, new GridMessagingListenActor[String] {
@@ -131,7 +131,7 @@ object ScalarPingPongExample extends App {
 
                     latch.countDown()
                 }
-            }).get
+            })
 
             // 1. Sets latch into node local storage so that local actor could use it.
             // 2. Sends first 'PING' to 'n1'.

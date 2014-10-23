@@ -73,11 +73,8 @@ public class CacheEventsExample {
 
             // Subscribe to specified cache events on all nodes that have cache running.
             // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            GridFuture<UUID> fut = g.forCache(CACHE_NAME).events().remoteListen(locLsnr, rmtLsnr,
+            g.forCache(CACHE_NAME).events().remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
-
-            // Wait until event listeners are subscribed on all nodes.
-            fut.get();
 
             // Generate cache events.
             for (int i = 0; i < 20; i++)

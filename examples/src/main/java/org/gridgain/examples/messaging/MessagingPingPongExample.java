@@ -75,7 +75,7 @@ public class MessagingPingPongExample {
                         throw new GridClosureException(e);
                     }
                 }
-            }).get();
+            });
 
             int MAX_PLAYS = 10;
 

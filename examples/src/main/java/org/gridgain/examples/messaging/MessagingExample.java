@@ -110,7 +110,7 @@ public final class MessagingExample {
 
                 return true; // Return true to continue listening.
             }
-        }).get();
+        });
 
         // Add unordered message listener.
         prj.message().remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
@@ -129,7 +129,7 @@ public final class MessagingExample {
 
                 return true; // Return true to continue listening.
             }
-        }).get();
+        });
     }
 
     /**
