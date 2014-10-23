@@ -9,8 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,7 +22,7 @@ import java.util.*;
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl implements GridServices, Externalizable {
+public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> implements GridServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,14 +54,14 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployNodeSingleton(String name, GridService svc) {
+    @Override public void deployNodeSingleton(String name, GridService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployNodeSingleton(prj, name, svc);
+            result(ctx.service().deployNodeSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -68,14 +69,14 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployClusterSingleton(String name, GridService svc) {
+    @Override public void deployClusterSingleton(String name, GridService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployClusterSingleton(prj, name, svc);
+            result(ctx.service().deployClusterSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -83,14 +84,14 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) {
+    @Override public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
         guard();
 
         try {
-            return ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt);
+            result(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
         }
         finally {
             unguard();
@@ -98,7 +99,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
+    @Override public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
         Object affKey) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
@@ -107,7 +108,7 @@ public class GridServicesImpl implements GridServices, Externalizable {
         guard();
 
         try {
-            return ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey);
+            result(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
         }
         finally {
             unguard();
@@ -115,13 +116,13 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> deploy(GridServiceConfiguration cfg) {
+    @Override public void deploy(GridServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         guard();
 
         try {
-            return ctx.service().deploy(cfg);
+            result(ctx.service().deploy(cfg));
         }
         finally {
             unguard();
@@ -129,13 +130,13 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> cancel(String name) {
+    @Override public void cancel(String name) {
         A.notNull(name, "name");
 
         guard();
 
         try {
-            return ctx.service().cancel(name);
+            result(ctx.service().cancel(name));
         }
         finally {
             unguard();
@@ -143,11 +144,11 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> cancelAll() {
+    @Override public void cancelAll() {
         guard();
 
         try {
-            return ctx.service().cancelAll();
+            result(ctx.service().cancelAll());
         }
         finally {
             unguard();

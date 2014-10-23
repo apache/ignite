@@ -82,7 +82,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridCancelTestTask.class, U.detectClassLoader(GridCancelTestTask.class));
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridCancelTestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridCancelTestTask.class.getName(), null);
 
         // Wait until jobs begin execution.
         boolean await = startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS);

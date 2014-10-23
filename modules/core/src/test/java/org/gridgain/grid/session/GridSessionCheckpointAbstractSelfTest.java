@@ -104,7 +104,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         try {
             grid.compute().localDeployTask(GridCheckpointTestTask.class, GridCheckpointTestTask.class.getClassLoader());
 
-            GridComputeTaskFuture<?> fut = grid.compute().execute("GridCheckpointTestTask", null);
+            GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), "GridCheckpointTestTask", null);
 
             fut.getTaskSession().saveCheckpoint("future:session:key", "future:session:testval");
             fut.getTaskSession().saveCheckpoint("future:global:key", "future:global:testval",

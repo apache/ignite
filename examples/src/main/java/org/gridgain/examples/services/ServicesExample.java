@@ -42,13 +42,13 @@ public class ServicesExample {
             GridServices svcs = rmts.services();
 
             // Deploy cluster singleton.
-            svcs.deployClusterSingleton("myClusterSingletonService", new SimpleService()).get();
+            svcs.deployClusterSingleton("myClusterSingletonService", new SimpleService());
 
             // Deploy node singleton.
-            svcs.deployNodeSingleton("myNodeSingletonService", new SimpleService()).get();
+            svcs.deployNodeSingleton("myNodeSingletonService", new SimpleService());
 
             // Deploy 2 instances, regardless of number nodes.
-            svcs.deployMultiple("myMultiService", new SimpleService(), 2 /*total number*/, 0 /*0 for unlimited*/).get();
+            svcs.deployMultiple("myMultiService", new SimpleService(), 2 /*total number*/, 0 /*0 for unlimited*/);
         }
     }
 }

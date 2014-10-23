@@ -80,20 +80,20 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 grid1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
                 grid2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                GridComputeTaskFuture<int[]> fut1 = grid1.compute().execute(TASK_NAME, Arrays.<UUID>asList(
+                GridComputeTaskFuture<int[]> fut1 = executeAsync(grid1.compute(), TASK_NAME, Arrays.<UUID>asList(
                     grid1.localNode().id(),
                     grid2.localNode().id(),
                     grid3.localNode().id()));
 
-                GridComputeTaskFuture<int[]> fut2 = grid2.compute().execute(TASK_NAME, Arrays.<UUID>asList(
+                GridComputeTaskFuture<int[]> fut2 = executeAsync(grid2.compute(), TASK_NAME, Arrays.<UUID>asList(
                     grid1.localNode().id(),
                     grid2.localNode().id(),
                     grid3.localNode().id()));
 
-                int[] result1 = fut1.get();
-                int[] result2 = fut2.get();
+                int[] res1 = fut1.get();
+                int[] res2 = fut2.get();
 
-                if (result1 == null || result2 == null || result1.length != 2 || result2.length != 2)
+                if (res1 == null || res2 == null || res1.length != 2 || res2.length != 2)
                     throw new GridException("Received wrong result.");
             }
         }

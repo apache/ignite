@@ -10,6 +10,8 @@
 package org.gridgain.grid.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -114,7 +116,7 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface GridServices {
+public interface GridServices extends GridAsyncSupport<GridServices> {
     /**
      * Gets grid projection to which this {@code GridServices} instance belongs.
      *
@@ -137,9 +139,8 @@ public interface GridServices {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployClusterSingleton(String name, GridService svc);
+    public void deployClusterSingleton(String name, GridService svc);
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -152,9 +153,8 @@ public interface GridServices {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployNodeSingleton(String name, GridService svc);
+    public void deployNodeSingleton(String name, GridService svc);
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -185,10 +185,8 @@ public interface GridServices {
      * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
      *      default cache.
      * @param affKey Affinity cache key.
-     * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
-        Object affKey);
+    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey);
 
     /**
      * Deploys multiple instances of the service on the grid. GridGain will deploy a
@@ -218,9 +216,8 @@ public interface GridServices {
      * @param svc Service instance.
      * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
-     * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
+    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -256,9 +253,8 @@ public interface GridServices {
      * </pre>
      *
      * @param cfg Service configuration.
-     * @return Future which completes upon completion of service deployment.
      */
-    public GridFuture<?> deploy(GridServiceConfiguration cfg);
+    public void deploy(GridServiceConfiguration cfg);
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -269,18 +265,16 @@ public interface GridServices {
      * make sure that the service code properly reacts to cancellations.
      *
      * @param name Name of service to cancel.
-     * @return Future which completes whenever service is cancelled. Note that depending on user logic,
-     *      it may still take extra time for the service to finish execution, even after it was cancelled.
      */
-    public GridFuture<?> cancel(String name);
+    public void cancel(String name);
 
     /**
      * Cancels all deployed services.
-     *
-     * @return Future which completes whenever all deployed services are cancelled. Note that depending on user logic,
-     *      it may still take extra time for a service to finish execution, even after it was cancelled.
+     * <p>
+     * Note that depending on user logic, it may still take extra time for a service to
+     * finish execution, even after it was cancelled.
      */
-    public GridFuture<?> cancelAll();
+    public void cancelAll();
 
     /**
      * Gets metadata about all deployed services.

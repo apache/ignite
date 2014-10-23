@@ -68,8 +68,8 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().withTimeout(TIMEOUT).
-            execute(GridTaskTimeoutTestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute().withTimeout(TIMEOUT),
+            GridTaskTimeoutTestTask.class.getName(), null);
 
         try {
             fut.get();
@@ -93,8 +93,8 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
         grid.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
-        GridComputeTaskFuture<?> fut = grid.compute().withTimeout(TIMEOUT).
-            execute(GridTaskTimeoutTestTask.class.getName(), null);
+        GridComputeTaskFuture<?> fut = executeAsync(grid.compute().withTimeout(TIMEOUT),
+            GridTaskTimeoutTestTask.class.getName(), null);
 
         // Allow timed out events to be executed.
         Thread.sleep(TIMEOUT + 500);
@@ -133,8 +133,8 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 while (!finish.get()) {
-                    GridComputeTaskFuture<?> fut =
-                        grid.compute().withTimeout(TIMEOUT).execute(GridTaskTimeoutTestTask.class.getName(), null);
+                    GridComputeTaskFuture<?> fut = executeAsync(
+                        grid.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
 
                     try {
                         fut.get();

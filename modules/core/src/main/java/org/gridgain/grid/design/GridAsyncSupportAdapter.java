@@ -55,6 +55,9 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements Grid
 
     /** {@inheritDoc} */
     @Override public <R> GridFuture<R> future() {
+        if (curFut == null)
+            throw new IllegalStateException();
+
         GridFuture<?> fut = curFut.get();
 
         if (fut == null)

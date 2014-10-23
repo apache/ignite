@@ -766,9 +766,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Grid g1 = G.start(cfg)) {
             GridServices services = grid().forNode(g1.localNode()).services();
 
-            GridFuture<?> fut = services.deployNodeSingleton("test", new DummyService());
-
-            fut.get();
+            services.deployNodeSingleton("test", new DummyService());
 
             GridMarshallerTestBean inBean = newTestBean(services);
 

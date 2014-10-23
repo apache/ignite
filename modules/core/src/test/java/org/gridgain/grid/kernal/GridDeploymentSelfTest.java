@@ -150,7 +150,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             grid.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
             // Check auto-deploy.
-            GridComputeTaskFuture<?> fut = grid.compute().execute(GridDeploymentTestTask.class.getName(), null);
+            GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridDeploymentTestTask.class.getName(), null);
 
             fut.get();
 
@@ -160,7 +160,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             assert grid.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
             // Check 2nd execute.
-            fut = grid.compute().execute(GridDeploymentTestTask.class.getName(), null);
+            fut = executeAsync(grid.compute(), GridDeploymentTestTask.class.getName(), null);
 
             fut.get();
 
@@ -178,7 +178,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
 
             // Check 2nd execute.
-            fut = grid.compute().execute(GridDeploymentTestTask.class.getName(), null);
+            fut = executeAsync(grid.compute(), GridDeploymentTestTask.class.getName(), null);
 
             fut.get();
 
@@ -199,7 +199,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             grid.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
             // Check auto-deploy.
-            grid.compute().execute(GridDeploymentTestTask.class.getName(), null);
+            executeAsync(grid.compute(), GridDeploymentTestTask.class.getName(), null);
 
             assert depSpi.getRegisterCount() == 2;
             assert depSpi.getUnregisterCount() == 1;
