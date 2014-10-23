@@ -77,6 +77,6 @@ public class ComputeProjectionExample {
                     System.out.println(">>> Hello Node: " + prj.grid().localNode().id());
                 }
             }
-        ).get();
+        );
     }
 }

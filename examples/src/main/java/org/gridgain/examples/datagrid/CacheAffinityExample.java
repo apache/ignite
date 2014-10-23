@@ -84,7 +84,7 @@ public final class CacheAffinityExample {
                     // as we are co-located with node that has a given key.
                     System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.peek(key) + ']');
                 }
-            }).get();
+            });
         }
     }
 
@@ -123,7 +123,7 @@ public final class CacheAffinityExample {
                             System.out.println("Co-located using mapKeysToNodes [key= " + key +
                                 ", value=" + cache.peek(key) + ']');
                     }
-                }).get();
+                });
             }
         }
     }

@@ -61,7 +61,7 @@ public final class CacheAtomicLongExample {
 
                     return null;
                 }
-            }).get();
+            });
 
             System.out.println();
             System.out.println("Atomic long value after successful CAS: " + atomicLong.get());

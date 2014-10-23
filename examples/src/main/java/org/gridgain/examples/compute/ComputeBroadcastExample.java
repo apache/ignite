@@ -60,7 +60,7 @@ public class ComputeBroadcastExample {
                     System.out.println(">>> Hello Node! :)");
                 }
             }
-        ).get();
+        );
 
         System.out.println();
         System.out.println(">>> Check all nodes for hello message output.");
@@ -91,7 +91,7 @@ public class ComputeBroadcastExample {
                         "JRE: " + System.getProperty("java.runtime.name") + " " +
                         System.getProperty("java.runtime.version");
                 }
-        }).get();
+        });
 
         // Print result.
         System.out.println();

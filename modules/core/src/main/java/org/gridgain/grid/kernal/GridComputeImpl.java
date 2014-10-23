@@ -207,7 +207,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (Collection<R>)(ctx.closure().broadcast(job, arg, prj.nodes()));
+            return (Collection<R>)asyncSup.result(ctx.closure().broadcast(job, arg, prj.nodes()));
         }
         finally {
             unguard();

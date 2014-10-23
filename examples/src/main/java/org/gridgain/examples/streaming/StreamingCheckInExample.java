@@ -140,7 +140,7 @@ public class StreamingCheckInExample {
                         streamer.reset();
                     }
                 }
-            }).get();
+            });
         }
         finally {
             GridGain.stop(true);

@@ -92,7 +92,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     public void testSimpleTask() throws Exception {
         latch = new CountDownLatch(3);
 
-        grid().compute().execute(new SimpleTask(), null).get();
+        grid().compute().execute(new SimpleTask(), null);
 
         assert latch.await(1000, MILLISECONDS);
 
@@ -140,7 +140,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid().compute().execute(new FailedTask(), null).get();
+                    grid().compute().execute(new FailedTask(), null);
 
                     return null;
                 }
@@ -186,7 +186,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid().compute().withTimeout(100).execute(new TimedOutTask(), null).get();
+                    grid().compute().withTimeout(100).execute(new TimedOutTask(), null);
 
                     return null;
                 }

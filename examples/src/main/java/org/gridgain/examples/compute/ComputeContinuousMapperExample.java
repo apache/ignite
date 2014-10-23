@@ -48,11 +48,7 @@ public class ComputeContinuousMapperExample {
         System.out.println(">>> Compute continuous mapper example started.");
 
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            GridComputeTaskFuture<Integer> fut = g.compute().execute(
-                GridContinuousMapperTask.class, "Hello Continuous Mapper");
-
-            // Wait for task completion.
-            int phraseLen = fut.get();
+            int phraseLen = g.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");

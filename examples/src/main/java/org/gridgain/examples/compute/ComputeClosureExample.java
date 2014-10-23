@@ -53,7 +53,7 @@ public class ComputeClosureExample {
 
                 // Job parameters. GridGain will create as many jobs as there are parameters.
                 Arrays.asList("Count characters using closure".split(" "))
-            ).get();
+            );
 
             int sum = 0;
 

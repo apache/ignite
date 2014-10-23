@@ -117,7 +117,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
             changeTopology(g, 1, 4, nodeType);
 
             // Stop node by id = 0
-            g.compute().execute(GridClientStopNodeTask.class, g.localNode().id().toString()).get();
+            g.compute().execute(GridClientStopNodeTask.class, g.localNode().id().toString());
 
             // Wait for node stops.
             //U.sleep(1000);
@@ -143,16 +143,21 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     private static void changeTopology(Grid parent, int add, int rmv, String type) throws GridException {
         Collection<GridComputeTaskFuture<?>> tasks = new ArrayList<>();
 
+        GridCompute comp = parent.compute().enableAsync();
+
         // Start nodes in parallel.
-        while (add-- > 0)
-            tasks.add(parent.compute().execute(GridClientStartNodeTask.class, type));
+        while (add-- > 0) {
+            comp.execute(GridClientStartNodeTask.class, type);
+
+            tasks.add(comp.future());
+        }
 
         for (GridComputeTaskFuture<?> task : tasks)
             task.get();
 
         // Stop nodes in sequence.
         while (rmv-- > 0)
-            parent.compute().execute(GridClientStopNodeTask.class, type).get();
+            parent.compute().execute(GridClientStopNodeTask.class, type);
 
         // Wait for node stops.
         //U.sleep(1000);

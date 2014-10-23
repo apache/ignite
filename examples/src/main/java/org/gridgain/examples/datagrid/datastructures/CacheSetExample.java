@@ -88,7 +88,7 @@ public class CacheSetExample {
         final String setName = set.name();
 
         // Write set items on each node.
-        g.compute().broadcast(new SetClosure(CACHE_NAME, setName)).get();
+        g.compute().broadcast(new SetClosure(CACHE_NAME, setName));
 
         System.out.println("Set size after writing [expected=" + (10 + g.nodes().size() * 5) +
             ", actual=" + set.size() + ']');

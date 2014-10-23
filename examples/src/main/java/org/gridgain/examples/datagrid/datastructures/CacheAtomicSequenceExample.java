@@ -55,7 +55,7 @@ public final class CacheAtomicSequenceExample {
             System.out.println("Sequence initial value: " + firstVal);
 
             // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
-            g.compute().run(new SequenceClosure(CACHE_NAME, seqName)).get();
+            g.compute().run(new SequenceClosure(CACHE_NAME, seqName));
 
             System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
                 seq.get() + ']');

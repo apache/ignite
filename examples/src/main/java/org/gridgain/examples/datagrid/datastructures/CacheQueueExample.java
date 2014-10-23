@@ -94,7 +94,7 @@ public class CacheQueueExample {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false));
 
         System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
@@ -109,7 +109,7 @@ public class CacheQueueExample {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true));
 
         System.out.println("Queue size after writing [expected=" + g.nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');

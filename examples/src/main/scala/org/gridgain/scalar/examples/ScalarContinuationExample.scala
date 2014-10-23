@@ -47,7 +47,7 @@ object ScalarContinuationExample {
             // Projection that excludes this node if others exists.
             val prj = if (grid$.nodes().size() > 1) grid$.forOthers(thisNode) else grid$.forNode(thisNode)
 
-            val fib = prj.compute().apply(new FibonacciClosure(thisNode.id()), N).get()
+            val fib = prj.compute().apply(new FibonacciClosure(thisNode.id()), N)
 
             val duration = System.currentTimeMillis - start
 
@@ -107,14 +107,22 @@ class FibonacciClosure (
             // Projection that excludes node with id passed in constructor if others exists.
             val prj = if (grid$.nodes().size() > 1) grid$.forOthers(excludeNode) else grid$.forNode(excludeNode)
 
-            // If future is not cached in node-local store, cache it.
-            // Note recursive grid execution!
-            if (fut1 == null)
-                fut1 = store.addIfAbsent(n - 1, prj.compute().apply(new FibonacciClosure(excludeNodeId), n - 1))
+            val comp = prj.compute().enableAsync()
 
             // If future is not cached in node-local store, cache it.
-            if (fut2 == null)
-                fut2 = store.addIfAbsent(n - 2, prj.compute().apply(new FibonacciClosure(excludeNodeId), n - 2))
+            // Note recursive grid execution!
+            if (fut1 == null) {
+                comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
+
+                fut1 = store.addIfAbsent(n - 1, comp.future[BigInteger]())
+            }
+
+            // If future is not cached in node-local store, cache it.
+            if (fut2 == null) {
+                comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
+
+                fut2 = store.addIfAbsent(n - 2, comp.future[BigInteger]())
+            }
 
             // If futures are not done, then wait asynchronously for the result
             if (!fut1.isDone || !fut2.isDone) {

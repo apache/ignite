@@ -58,7 +58,7 @@ public final class ComputeFibonacciContinuationExample {
 
             long start = System.currentTimeMillis();
 
-            BigInteger fib = g.forPredicate(nodeFilter).compute().apply(new FibonacciClosure(nodeFilter), N).get();
+            BigInteger fib = g.forPredicate(nodeFilter).compute().apply(new FibonacciClosure(nodeFilter), N);
 
             long duration = System.currentTimeMillis() - start;
 
@@ -121,13 +121,21 @@ public final class ComputeFibonacciContinuationExample {
 
                 GridProjection p = g.forPredicate(nodeFilter);
 
-                // If future is not cached in node-local-map, cache it.
-                if (fut1 == null)
-                    fut1 = locMap.addIfAbsent(n - 1, p.compute().apply(new FibonacciClosure(nodeFilter), n - 1));
+                GridCompute compute = p.compute().enableAsync();
 
                 // If future is not cached in node-local-map, cache it.
-                if (fut2 == null)
-                    fut2 = locMap.addIfAbsent(n - 2, p.compute().apply(new FibonacciClosure(nodeFilter), n - 2));
+                if (fut1 == null) {
+                    compute.apply(new FibonacciClosure(nodeFilter), n - 1);
+
+                    fut1 = locMap.addIfAbsent(n - 1, compute.<BigInteger>future());
+                }
+
+                // If future is not cached in node-local-map, cache it.
+                if (fut2 == null) {
+                    compute.apply(new FibonacciClosure(nodeFilter), n - 2);
+
+                    fut2 = locMap.addIfAbsent(n - 2, compute.<BigInteger>future());
+                }
 
                 // If futures are not done, then wait asynchronously for the result
                 if (!fut1.isDone() || !fut2.isDone()) {

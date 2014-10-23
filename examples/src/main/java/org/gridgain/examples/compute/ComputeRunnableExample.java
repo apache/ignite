@@ -11,6 +11,7 @@ package org.gridgain.examples.compute;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 
 import java.util.*;
@@ -38,15 +39,19 @@ public class ComputeRunnableExample {
 
             Collection<GridFuture> futs = new ArrayList<>();
 
+            GridCompute compute = g.compute().enableAsync();
+
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                futs.add(g.compute().run(new GridRunnable() {
+                compute.run(new GridRunnable() {
                     @Override public void run() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");
                     }
-                }));
+                });
+
+                futs.add(compute.future());
             }
 
             // Wait for all futures to complete.

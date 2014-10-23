@@ -80,7 +80,7 @@ public class EventsExample {
             @Override public void run() {
                 System.out.println("Executing sample job.");
             }
-        }).get();
+        });
 
         // Unsubscribe local task event listener.
         g.events().stopLocalListen(lsnr);
@@ -133,7 +133,7 @@ public class EventsExample {
                 @Override public void run() {
                     System.out.println("Executing sample job for task: " + ses.getTaskName());
                 }
-            }).get();
+            });
         }
     }
 }

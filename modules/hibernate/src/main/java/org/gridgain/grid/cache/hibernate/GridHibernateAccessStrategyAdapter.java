@@ -277,7 +277,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
      */
     static void evict(GridProjection grid, GridCacheProjection<Object,Object> cache, Object key) throws CacheException {
         try {
-            grid.forCache(cache.name()).compute().call(new ClearKeyCallable(key, cache.name())).get();
+            grid.forCache(cache.name()).compute().call(new ClearKeyCallable(key, cache.name()));
         }
         catch (GridException e) {
             throw new CacheException(e);

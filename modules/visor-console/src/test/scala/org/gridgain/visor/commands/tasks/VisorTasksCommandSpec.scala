@@ -37,13 +37,27 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
         visor.open(config("grid-visor"), "n/a")
 
         try {
-            val compute = visor.grid.compute()
+            val compute = visor.grid.compute().enableAsync
 
-            val fut1 = compute.withName("TestTask1").execute(new TestTask1(), null)
-            val fut2 = compute.withName("TestTask1").execute(new TestTask1(), null)
-            val fut3 = compute.withName("TestTask1").execute(new TestTask1(), null)
-            val fut4 = compute.withName("TestTask2").execute(new TestTask2(), null)
-            val fut5 = compute.withName("Test3").execute(new Test3(), null)
+            compute.withName("TestTask1").execute(new TestTask1(), null)
+
+            val fut1 = compute.future()
+
+            compute.withName("TestTask1").execute(new TestTask1(), null)
+
+            val fut2 = compute.future()
+
+            compute.withName("TestTask1").execute(new TestTask1(), null)
+
+            val fut3 = compute.future()
+
+            compute.withName("TestTask2").execute(new TestTask2(), null)
+
+            val fut4 = compute.future()
+
+            compute.withName("Test3").execute(new Test3(), null)
+
+            val fut5 = compute.future()
 
             fut1.get
             fut2.get

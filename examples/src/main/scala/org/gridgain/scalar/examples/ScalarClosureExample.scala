@@ -27,7 +27,6 @@ object ScalarClosureExample extends App {
         helloWorld()
         helloWorld2()
         broadcast()
-        println("Count of non-whitespace is: " + count("Scalar is cool!"))
         greetRemotes()
         greetRemotesAgain()
     }
@@ -62,23 +61,6 @@ object ScalarClosureExample extends App {
     def broadcast() {
         grid$.bcastRun(() => println("Broadcasting!!!"), null)
     }
-
-    /**
-     * Count non-whitespace characters by spreading workload to the cloud and reducing
-     * on the local node.
-     */
-    // Same as 'count2' but with for-expression.
-    def count(msg: String): Int =
-        grid$.reduce$[Int, Int](for (w <- msg.split(" ")) yield () => w.length, _.sum, null)
-
-    /**
-     * Count non-whitespace characters by spreading workload to the cloud and reducing
-     * on the local node.
-     */
-    // Same as 'count' but without for-expression.
-    // Note that map's parameter type inference doesn't work in 2.9.0.
-    def count2(msg: String): Int =
-        grid$.reduce$[Int, Int](msg.split(" ") map (s => () => s.length), _.sum, null)
 
     /**
      *  Greats all remote nodes only.

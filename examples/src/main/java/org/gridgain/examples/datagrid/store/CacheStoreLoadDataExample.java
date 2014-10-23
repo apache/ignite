@@ -58,7 +58,7 @@ public class CacheStoreLoadDataExample {
 
                     return null;
                 }
-            }).get();
+            });
 
             long end = System.currentTimeMillis();
 

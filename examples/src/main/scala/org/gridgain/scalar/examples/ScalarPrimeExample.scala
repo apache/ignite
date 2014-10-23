@@ -52,6 +52,8 @@ object ScalarPrimeExample {
 
             val g = grid$
 
+            /*
+            TODO 9341 example
             checkVals.foreach(checkVal => {
                 val divisor = g.reduce$[Option[Long], Option[Option[Long]]](
                     closures(g.nodes().size(), checkVal), _.find(_.isDefined), null)
@@ -61,6 +63,7 @@ object ScalarPrimeExample {
                 else
                     println(">>> Value '" + checkVal + "' is divisible by '" + divisor.get.get + '\'')
             })
+            */
 
             val totalTime = System.currentTimeMillis - start
 

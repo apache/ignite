@@ -130,12 +130,4 @@ class ScalarProjectionSpec extends FlatSpec with ShouldMatchers with BeforeAndAf
 
         (grid$("node-scalar").get *? (Seq(runAsync1, runAsync2), null)).get
     }
-
-    it should "correctly reduce" in scalar(gridConfig("node-scalar", true)) {
-        val call1: () => Int = () => 15
-        val call2: () => Int = () => 82
-
-        assert(grid$("node-scalar").get @< (Seq(call1, call2), (n: Seq[Int]) => n.sum, null) == 97)
-        assert(grid$("node-scalar").get.reduceAsync$(Seq(call1, call2), (n: Seq[Int]) => n.sum, null).get == 97)
-    }
 }

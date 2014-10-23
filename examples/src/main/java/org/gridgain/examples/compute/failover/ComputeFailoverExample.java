@@ -42,10 +42,8 @@ public class ComputeFailoverExample {
             System.out.println();
             System.out.println("Compute failover example started.");
 
-            GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
-
             // Number of letters.
-            int charCnt = f.get();
+            int charCnt = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
             System.out.println();
             System.out.println(">>> Finished executing fail-over example with checkpoints.");

@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * TODO: Add interface description.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridAsyncSupport<T extends GridAsyncSupport> {
     public T enableAsync();
