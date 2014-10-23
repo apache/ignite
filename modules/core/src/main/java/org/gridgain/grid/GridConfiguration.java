@@ -297,7 +297,7 @@ public class GridConfiguration {
     private String jettyPath;
 
     /** {@code REST} flag. */
-    private boolean restEnabled;
+    private boolean restEnabled = true;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
