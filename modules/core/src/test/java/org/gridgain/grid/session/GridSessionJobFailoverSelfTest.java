@@ -90,7 +90,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                     boolean fail;
 
                     try {
-                        fail = (Boolean)ses.waitForAttribute("fail");
+                        fail = ses.waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
                         throw new GridException("Got interrupted while waiting for attribute to be set.", e);

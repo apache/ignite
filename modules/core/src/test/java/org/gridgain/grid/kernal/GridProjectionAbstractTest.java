@@ -495,7 +495,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void executorService(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        ExecutorService execSrvc = prj.compute().executorService();
+        ExecutorService execSrvc = prj.executorService();
 
         Future<String> fut = execSrvc.submit(new TestCallable<String>() {
             @Override public String call() throws Exception {

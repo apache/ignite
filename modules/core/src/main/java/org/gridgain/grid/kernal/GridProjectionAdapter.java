@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.service.*;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
@@ -227,6 +229,13 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
 
         return svcs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService executorService() {
+        assert ctx != null;
+
+        return new GridExecutorService(this, ctx.log());
     }
 
     /** {@inheritDoc} */

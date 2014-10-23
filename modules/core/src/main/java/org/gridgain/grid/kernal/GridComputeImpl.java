@@ -285,18 +285,6 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService() {
-        guard();
-
-        try {
-            return new GridExecutorService(prj, ctx.log());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <T, R> Collection<R> apply(final GridClosure<T, R> job,
         @Nullable Collection<? extends T> args) throws GridException {
         A.notNull(job, "job");
@@ -306,20 +294,6 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
         try {
             return (Collection<R>)asyncSup.result(ctx.closure().callAsync(job, args, prj.nodes()));
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <R> GridComputeTaskFuture<R> taskFuture(GridUuid sesId) {
-        A.notNull(sesId, "sesId");
-
-        guard();
-
-        try {
-            return ctx.task().taskFuture(sesId);
         }
         finally {
             unguard();

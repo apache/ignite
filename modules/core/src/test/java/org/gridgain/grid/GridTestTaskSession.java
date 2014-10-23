@@ -68,40 +68,14 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> V  waitForAttribute(K  key) {
-        assert false : "Not implemented";
-
-        return null;
-    }
-
-    @Override public <K, V> boolean waitForAttribute(K key, @Nullable V val) throws InterruptedException {
-        assert false : "Not implemented";
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> V waitForAttribute(K key, long timeout) {
         assert false : "Not implemented";
 
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> boolean waitForAttribute(K key, @Nullable V val, long timeout) throws InterruptedException {
-        assert false : "Not implemented";
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<?, ?> waitForAttributes(Collection<?> keys) {
-        assert false : "Not implemented";
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttributes(Map<?, ?> attrs) throws InterruptedException {
         assert false : "Not implemented";
 
         return false;
@@ -192,11 +166,13 @@ public class GridTestTaskSession implements GridComputeTaskSession {
         assert false : "Not implemented";
     }
 
+    /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout)
         throws GridException {
         assert false : "Not implemented";
     }
 
+    /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, GridComputeTaskSessionScope scope, long timeout,
         boolean overwrite) throws GridException {
         assert false : "Not implemented";

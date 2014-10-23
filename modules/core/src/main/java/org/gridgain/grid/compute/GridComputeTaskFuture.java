@@ -58,39 +58,16 @@ public interface GridComputeTaskFuture<R> extends GridFuture<R> {
     public boolean isMapped();
 
     /**
-     * Waits until {@link GridComputeTask#map(List, Object)} method completes. This may be useful
-     * when it is desired to know the list of all job siblings for the task, as list
-     * of job siblings gets finalized only after the map step completes.
-     * <p>
-     * Note that this method will also return if the task fails.
-     *
-     * @return {@code true} if map step has completed, {@code false} otherwise.
-     * @throws GridException If got interrupted while waiting or any other failure.
-     */
-    public boolean waitForMap() throws GridException;
-
-    /**
      * Waits for a specified timeout in milliseconds for {@link GridComputeTask#map(List, Object)}
      * method to complete. This may be useful when it is desired to know the list of all
      * job siblings for the task, as list of job siblings gets finalized only after the map
      * step completes.
+     * <p>
+     * Note that this method will also return if the task fails.
      *
-     * @param timeout Maximum time to wait.
+     * @param timeout Maximum time to wait, {@code 0} to wait forever.
      * @return {@code true} if map step has completed, {@code false} otherwise.
      * @throws GridException If got interrupted while waiting or any other failure.
      */
     public boolean waitForMap(long timeout) throws GridException;
-
-    /**
-     * Waits for a specified timeout in milliseconds for {@link GridComputeTask#map(List, Object)}
-     * method to complete. This may be useful when it is desired to know the list of all
-     * job siblings for the task, as list of job siblings gets finalized only after the map
-     * step completes.
-     *
-     * @param timeout Maximum time to wait.
-     * @param unit Time unit for {@code time}  parameter.
-     * @return {@code true} if map step has completed, {@code false} otherwise.
-     * @throws GridException If got interrupted while waiting or any other failure.
-     */
-    public boolean waitForMap(long timeout, TimeUnit unit) throws GridException;
 }

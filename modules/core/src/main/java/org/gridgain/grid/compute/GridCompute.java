@@ -267,35 +267,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     public <T, R> Collection<R> apply(GridClosure<T, R> job, Collection<? extends T> args) throws GridException;
 
     /**
-     * TODO 9341: move to projection.
-     *
-     * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection. This essentially
-     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
-     * replacement for local thread pools.
-     *
-     * @return Grid-enabled {@code ExecutorService}.
-     */
-    public ExecutorService executorService();
-
-    /**
-     * TODO 9341: remove.
-     *
-     * Gets task future based on execution session ID. If task execution was started on local node and this
-     * projection includes local node then the future for this task will be returned.
-     *
-     * @param sesId Session ID for task execution.
-     * @param <R> Task result type.
-     * @return Task future if task was started on this node and this node belongs to this projection,
-     *      or {@code null} otherwise.
-     */
-    @Nullable public <R> GridComputeTaskFuture<R> taskFuture(GridUuid sesId);
-
-    /**
-     * TODO 9341: remove.
-     *
      * Cancels task with the given execution session ID, if it is currently running inside this projection
-     * or on local node. Note that if local node is master for the task, task gets alway cancelled, even
+     * or on local node. Note that if local node is master for the task, task gets always cancelled, even
      * if local node is not the part of the projection.
      *
      * @param sesId Execution session ID.
@@ -304,8 +277,6 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     public void cancelTask(GridUuid sesId) throws GridException;
 
     /**
-     * TODO 9341: move to task future.
-     *
      * Cancels job with the given job ID, if it is currently running inside this projection.
      *
      * @param jobId Job ID.

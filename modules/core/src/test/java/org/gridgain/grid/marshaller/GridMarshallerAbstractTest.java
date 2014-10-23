@@ -557,7 +557,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If test failed.
      */
     public void testExecutorServiceMarshalling() throws Exception {
-        ExecutorService inSrvc = grid().compute().executorService();
+        ExecutorService inSrvc = grid().executorService();
 
         GridMarshallerTestBean inBean = newTestBean(inSrvc);
 

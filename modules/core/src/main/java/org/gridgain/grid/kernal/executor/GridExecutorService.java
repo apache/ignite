@@ -128,7 +128,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        return prj.compute().executorService();
+        return prj.executorService();
     }
 
     /** {@inheritDoc} */

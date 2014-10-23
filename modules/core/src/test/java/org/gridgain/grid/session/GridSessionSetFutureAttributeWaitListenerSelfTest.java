@@ -80,7 +80,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         for (int i = 0; i < 1; i++) {
             refreshInitialData();
 
-            GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), null);
+            GridComputeTaskFuture<?> fut = executeAsync(grid.compute(), GridTaskSessionTestTask.class.getName(), null);
 
             assert fut != null;
 
@@ -88,7 +88,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                 // Wait until jobs begin execution.
                 boolean await = startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS);
 
-                assert await == true : "Jobs did not start.";
+                assert await : "Jobs did not start.";
 
                 fut.getTaskSession().addAttributeListener(lsnr, true);
 
@@ -187,7 +187,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (GridComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += (Integer)result.getData();
+                    sum += result.getData();
             }
 
             return sum;

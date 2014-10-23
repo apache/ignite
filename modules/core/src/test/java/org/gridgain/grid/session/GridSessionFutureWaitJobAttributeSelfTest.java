@@ -103,7 +103,11 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
     private void checkTask(int num) throws InterruptedException, GridException {
         Grid grid = G.grid(getTestGridName());
 
-        GridComputeTaskFuture<?> fut = grid.compute().execute(GridTaskSessionTestTask.class.getName(), num);
+        GridCompute comp = grid.compute().enableAsync();
+
+        comp.execute(GridTaskSessionTestTask.class.getName(), num);
+
+        GridComputeTaskFuture<?> fut = comp.future();
 
         assert fut != null;
 
@@ -113,7 +117,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
             assert await : "Jobs did not executed.";
 
-            String val = (String) fut.getTaskSession().waitForAttribute("testName", 100000);
+            String val = fut.getTaskSession().waitForAttribute("testName", 100000);
 
             info("Received attribute 'testName': " + val);
 
@@ -211,10 +215,10 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null)
-                throw result.getException();
+            if (res.getException() != null)
+                throw res.getException();
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
@@ -231,7 +235,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
             for (GridComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += (Integer)result.getData();
+                    sum += result.getData();
             }
 
             return sum;

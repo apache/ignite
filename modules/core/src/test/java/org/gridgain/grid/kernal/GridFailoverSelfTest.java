@@ -88,7 +88,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
                     boolean fail;
 
                     try {
-                        fail = ses.<String, Boolean>waitForAttribute("fail");
+                        fail = ses.<String, Boolean>waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
                         throw new GridException("Got interrupted while waiting for attribute to be set.", e);

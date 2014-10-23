@@ -17,6 +17,7 @@ import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Defines grid projection which represents a common functionality over a group of nodes.
@@ -94,6 +95,17 @@ public interface GridProjection {
      * @return Services instance over this grid projection.
      */
     public GridServices services();
+
+    /**
+     * Creates new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection.
+     * This essentially
+     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
+     * replacement for local thread pools.
+     *
+     * @return Grid-enabled {@code ExecutorService}.
+     */
+    public ExecutorService executorService();
 
     /**
      * Creates a grid projection over a given set of nodes.

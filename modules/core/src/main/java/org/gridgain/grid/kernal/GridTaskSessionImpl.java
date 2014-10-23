@@ -239,17 +239,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> V waitForAttribute(K key) throws InterruptedException {
-        return waitForAttribute(key, 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttribute(Object key, Object val) throws InterruptedException {
-        return waitForAttribute(key, val, 0);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V waitForAttribute(K key, long timeout) throws InterruptedException {
         A.notNull(key, "key");
 
@@ -313,19 +302,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
             return isFound;
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     * @param keys Attribute keys.
-     */
-    @Override public Map<?, ?> waitForAttributes(Collection<?> keys) throws InterruptedException {
-        return waitForAttributes(keys, 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForAttributes(Map<?, ?> attrs) throws InterruptedException {
-        return waitForAttributes(attrs, 0);
     }
 
     /** {@inheritDoc} */

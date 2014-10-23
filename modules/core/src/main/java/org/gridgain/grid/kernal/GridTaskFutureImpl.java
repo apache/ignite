@@ -157,22 +157,13 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public boolean waitForMap() throws GridException {
-        if (!mapped && !isDone())
-            U.await(mappedLatch);
-
-        return mapped;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean waitForMap(long timeout) throws GridException {
-        return waitForMap(timeout, MILLISECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForMap(long timeout, TimeUnit unit) throws GridException {
-        if (!mapped && !isDone())
-            U.await(mappedLatch, timeout, unit);
+        if (!mapped && !isDone()) {
+            if (timeout == 0)
+                U.await(mappedLatch);
+            else
+                U.await(mappedLatch, timeout, MILLISECONDS);
+        }
 
         return mapped;
     }

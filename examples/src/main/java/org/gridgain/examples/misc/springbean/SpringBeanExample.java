@@ -53,7 +53,7 @@ public final class SpringBeanExample {
             GridProjection g = (GridProjection)ctx.getBean("mySpringBean");
 
             // Execute any method on the retrieved grid instance.
-            ExecutorService exec = g.compute().executorService();
+            ExecutorService exec = g.executorService();
 
             Future<String> res = exec.submit(new Callable<String>() {
                 @Override public String call() throws Exception {
