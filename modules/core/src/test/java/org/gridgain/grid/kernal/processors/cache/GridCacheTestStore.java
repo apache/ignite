@@ -33,7 +33,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     private final Collection<GridCacheTx> txs = new GridConcurrentHashSet<>();
 
     /** Last method called. */
-    private String lastMtd;;
+    private String lastMtd;
 
     /** */
     private long ts = System.currentTimeMillis();
