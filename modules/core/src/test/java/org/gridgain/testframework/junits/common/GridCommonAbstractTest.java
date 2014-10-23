@@ -13,11 +13,13 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
@@ -467,6 +469,27 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertNull(comp.execute(taskCls, arg));
 
         GridComputeTaskFuture<R> fut = comp.future();
+
+        assertNotNull(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param evts Events.
+     * @param filter Filter.
+     * @param types Events types.
+     * @return Future.
+     */
+    protected <T extends GridEvent> GridFuture<T> waitForLocalEvent(GridEvents evts,
+        @Nullable GridPredicate<T> filter, @Nullable int... types) {
+        evts = evts.enableAsync();
+
+        assertTrue(evts.isAsync());
+
+        assertNull(evts.waitForLocal(filter, types));
+
+        GridFuture<T> fut = evts.future();
 
         assertNotNull(fut);
 

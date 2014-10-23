@@ -613,86 +613,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAsync() throws Exception {
-        final AtomicInteger msgCnt = new AtomicInteger();
-
-        final GridMessaging msg = grid2.message().enableAsync();
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                msg.future();
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        final String topic = "topic";
-
-        UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
-            @Override
-            public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
-
-                msgCnt.incrementAndGet();
-
-                return true;
-            }
-        });
-
-        Assert.assertNull(id);
-
-        GridFuture<UUID> fut = msg.future();
-
-        Assert.assertNotNull(fut);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                msg.future();
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        id = fut.get();
-
-        Assert.assertNotNull(id);
-
-        grid1.forRemotes().message().send(topic, "msg1");
-
-        GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return msgCnt.get() > 0;
-            }
-        }, 5000);
-
-        assertEquals(1, msgCnt.get());
-
-        msg.stopRemoteListen(id);
-
-        GridFuture<?> stopFut = msg.future();
-
-        Assert.assertNotNull(stopFut);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                msg.future();
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        stopFut.get();
-
-        grid1.forRemotes().message().send(topic, "msg2");
-
-        U.sleep(1000);
-
-        assertEquals(1, msgCnt.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @SuppressWarnings("TooBroadScope")
     public void testStopRemoteListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();
@@ -1058,5 +978,91 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, NullPointerException.class, "Ouch! Argument cannot be null: msg");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAsync() throws Exception {
+        final AtomicInteger msgCnt = new AtomicInteger();
+
+        assertFalse(grid2.message().isAsync());
+
+        final GridMessaging msg = grid2.message().enableAsync();
+
+        assertTrue(msg.isAsync());
+
+        assertFalse(grid2.message().isAsync());
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        final String topic = "topic";
+
+        UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
+            @Override
+            public boolean apply(UUID nodeId, Object msg) {
+                System.out.println(Thread.currentThread().getName() + " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+
+                msgCnt.incrementAndGet();
+
+                return true;
+            }
+        });
+
+        Assert.assertNull(id);
+
+        GridFuture<UUID> fut = msg.future();
+
+        Assert.assertNotNull(fut);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        id = fut.get();
+
+        Assert.assertNotNull(id);
+
+        grid1.forRemotes().message().send(topic, "msg1");
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return msgCnt.get() > 0;
+            }
+        }, 5000);
+
+        assertEquals(1, msgCnt.get());
+
+        msg.stopRemoteListen(id);
+
+        GridFuture<?> stopFut = msg.future();
+
+        Assert.assertNotNull(stopFut);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                msg.future();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        stopFut.get();
+
+        grid1.forRemotes().message().send(topic, "msg2");
+
+        U.sleep(1000);
+
+        assertEquals(1, msgCnt.get());
     }
 }

@@ -126,7 +126,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         Grid g = startGrid(0);
 
-        g.compute().execute(new TestTask(1), null);
+        g.compute().enableAsync().execute(new TestTask(1), null);
 
         jobLatch.await();
 
@@ -163,7 +163,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().
+        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().enableAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -188,7 +188,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().
+        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().enableAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
@@ -217,7 +217,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().
+        grid(lastGridIdx).forPredicate(excludeLastPredicate()).compute().enableAsync().
             execute(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();

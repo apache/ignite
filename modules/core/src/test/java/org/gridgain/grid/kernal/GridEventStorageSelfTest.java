@@ -129,7 +129,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         // Check for events from empty remote nodes collection.
         try {
-            grid1.forPredicate(F.<GridNode>alwaysFalse()).events().remoteQuery(filter, 0).get();
+            grid1.forPredicate(F.<GridNode>alwaysFalse()).events().remoteQuery(filter, 0);
         }
         catch (GridEmptyProjectionException ignored) {
             // No-op
@@ -145,7 +145,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
         generateEvents(grid2);
 
         Collection<GridEvent> evts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0).get();
+            events().remoteQuery(filter, 0);
 
         assert evts != null;
         assert evts.size() == 1;
@@ -159,10 +159,10 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(grid1);
 
-        Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0).get();
+        Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0);
         Collection<GridEvent> locEvts = grid1.events().localQuery(filter);
         Collection<GridEvent> remEvts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0).get();
+            events().remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;

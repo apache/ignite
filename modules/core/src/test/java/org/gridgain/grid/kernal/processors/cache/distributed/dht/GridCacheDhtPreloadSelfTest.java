@@ -266,7 +266,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 it.remove();
 
-                futs.add(last.events().waitForLocal(new P1<GridEvent>() {
+                futs.add(waitForLocalEvent(last.events(), new P1<GridEvent>() {
                     @Override public boolean apply(GridEvent e) {
                         GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
@@ -529,7 +529,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 Collection<GridFuture<?>> futs = new LinkedList<>();
 
                 for (Grid gg : grids)
-                    futs.add(gg.events().waitForLocal(new P1<GridEvent>() {
+                    futs.add(waitForLocalEvent(gg.events(), new P1<GridEvent>() {
                             @Override public boolean apply(GridEvent e) {
                                 GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 

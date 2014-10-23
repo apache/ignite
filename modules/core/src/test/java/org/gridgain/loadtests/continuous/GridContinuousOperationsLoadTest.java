@@ -142,7 +142,7 @@ public class GridContinuousOperationsLoadTest {
                             }
                         },
                         EVT_CACHE_OBJECT_PUT
-                    ).get();
+                    );
                 }
             }
 

@@ -104,12 +104,12 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
             ldr.setTimeout(100);
 
-            grid.events().remoteQuery((GridPredicate<GridEvent>) filter1.newInstance(), 0).get();
+            grid.events().remoteQuery((GridPredicate<GridEvent>) filter1.newInstance(), 0);
 
             ldr.setTimeout(2000);
 
             try {
-                grid.events().remoteQuery((GridPredicate<GridEvent>) filter2.newInstance(), 0).get();
+                grid.events().remoteQuery((GridPredicate<GridEvent>) filter2.newInstance(), 0);
 
                 assert false; // Timeout exception must be thrown.
             }

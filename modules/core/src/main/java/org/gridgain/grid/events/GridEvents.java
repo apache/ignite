@@ -9,7 +9,8 @@
 
 package org.gridgain.grid.events;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -42,7 +43,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridEvents {
+public interface GridEvents extends GridAsyncSupport<GridEvents> {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -51,7 +52,7 @@ public interface GridEvents {
     public GridProjection projection();
 
     /**
-     * Asynchronously queries nodes in this projection for events using passed in predicate filter for event
+     * Queries nodes in this projection for events using passed in predicate filter for event
      * selection.
      *
      * @param p Predicate filter used to query events on remote nodes.
@@ -59,8 +60,7 @@ public interface GridEvents {
      * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
      */
-    public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
-        @Nullable int... types);
+    public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout, @Nullable int... types);
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -81,10 +81,9 @@ public interface GridEvents {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
-     * @return Future that finishes when all listeners are registered. It returns {@code operation ID}
-     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      */
-    public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+    public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types);
 
     /**
@@ -116,11 +115,10 @@ public interface GridEvents {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
-     * @return Future that finishes when all listeners are registered. It returns {@code operation ID}
-     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @see #stopRemoteListen(UUID)
      */
-    public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
+    public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
         @Nullable int... types);
 
@@ -130,10 +128,9 @@ public interface GridEvents {
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(GridBiPredicate, GridPredicate, int...)} method.
-     * @return Future that finishes when all listeners are unregistered.
      * @see #remoteListen(GridBiPredicate, GridPredicate, int...)
      */
-    public GridFuture<?> stopRemoteListen(UUID opId);
+    public void stopRemoteListen(UUID opId);
 
     /**
      * Gets event future that allows for asynchronous waiting for the specified events.
@@ -145,7 +142,7 @@ public interface GridEvents {
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
      * @return Grid event future.
      */
-    public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> filter, @Nullable int... types);
+    public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter, @Nullable int... types);
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.

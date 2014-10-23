@@ -9,7 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,7 +23,7 @@ import java.util.*;
 /**
  * {@link GridEvents} implementation.
  */
-public class GridEventsImpl implements GridEvents, Externalizable {
+public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implements GridEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,14 +55,14 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
+    @Override public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout,
         @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            return ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout);
+            return result(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
         }
         finally {
             unguard();
@@ -69,13 +70,13 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+    @Override public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
+    @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
         @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
@@ -84,8 +85,9 @@ public class GridEventsImpl implements GridEvents, Externalizable {
         guard();
 
         try {
-            return ctx.continuous().startRoutine(new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>) locLsnr,
-                (GridPredicate<GridEvent>) rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate());
+            return result(ctx.continuous().startRoutine(
+                new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>)locLsnr,
+               (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {
             unguard();
@@ -93,13 +95,13 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "consumeId");
 
         guard();
 
         try {
-            return ctx.continuous().stopRoutine(opId);
+            result(ctx.continuous().stopRoutine(opId));
         }
         finally {
             unguard();
@@ -107,12 +109,12 @@ public class GridEventsImpl implements GridEvents, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> filter,
+    @Override public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter,
         @Nullable int... types) {
         guard();
 
         try {
-            return ctx.event().waitForEvent(filter, types);
+            return result(ctx.event().waitForEvent(filter, types));
         }
         finally {
             unguard();
@@ -272,7 +274,7 @@ public class GridEventsImpl implements GridEvents, Externalizable {
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.events();
     }
 }

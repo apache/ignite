@@ -99,7 +99,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      */
     private void executeFail(GridProjection g, GridPredicate<GridEvent> filter) {
         try {
-            g.events().remoteQuery(filter, 0).get();
+            g.events().remoteQuery(filter, 0);
 
             assert false; // Exception must be thrown.
         }
