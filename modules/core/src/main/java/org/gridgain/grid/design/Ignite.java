@@ -17,4 +17,10 @@ package org.gridgain.grid.design;
  */
 public interface Ignite {
     public IgniteCompute compute();
+
+    public <K, V> IgniteCache cache(String name);
+
+    public IgniteExecutorService executorService();
+
+    public <T> IgniteQueue<T> queue(String name);
 }
