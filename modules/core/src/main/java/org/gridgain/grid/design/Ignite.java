@@ -16,6 +16,8 @@ package org.gridgain.grid.design;
  * @version @java.version
  */
 public interface Ignite {
+    public IgniteCluster cluster();
+
     public IgniteCompute compute();
 
     public <K, V> IgniteCache<K, V> cache(String name);
