@@ -13,33 +13,33 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 
 /**
- * A bean that reacts to grid lifecycle events defined in {@link GridLifecycleEventType}.
+ * A bean that reacts to grid lifecycle events defined in {@link LifecycleEventType}.
  * Use this bean whenever you need to plug some custom logic before or after
  * grid startup and stopping routines.
  * <p>
  * There are four events you can react to:
  * <ul>
  * <li>
- *   {@link GridLifecycleEventType#BEFORE_GRID_START} invoked before grid startup
+ *   {@link LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
  *   therefore if you injected a grid instance via {@link GridInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#AFTER_GRID_START} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_GRID_START} invoked right after grid
  *   has started. At this point, if you injected a grid instance via
  *   {@link GridInstanceResource} annotation, you can start using it. Note that
  *   you should not be using {@link GridGain} to get grid instance from
  *   lifecycle bean.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
+ *   {@link LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
  *   if you injected a grid instance via  {@link GridInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
- *   {@link GridLifecycleEventType#AFTER_GRID_STOP} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_GRID_STOP} invoked right after grid
  *   has stopped. Note that grid is not available during this event.
  * </li>
  * </ul>
@@ -94,12 +94,12 @@ import org.gridgain.grid.resources.*;
  * &lt;/bean&gt;
  * </pre>
  */
-public interface GridLifecycleBean {
+public interface LifecycleBean {
     /**
      * This method is called when lifecycle event occurs.
      *
      * @param evt Lifecycle event.
      * @throws GridException Thrown in case of any errors.
      */
-    public void onLifecycleEvent(GridLifecycleEventType evt) throws GridException;
+    public void onLifecycleEvent(LifecycleEventType evt) throws GridException;
 }
