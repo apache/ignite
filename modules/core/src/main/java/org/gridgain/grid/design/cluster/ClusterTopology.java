@@ -21,14 +21,14 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface ClusterTopology<T extends ClusterTopology> {
+public interface ClusterTopology {
     /**
      * Creates a grid projection over a given set of nodes.
      *
      * @param nodes Collection of nodes to create a projection from.
      * @return Projection over provided grid nodes.
      */
-    public T forNodes(Collection<? extends ClusterNode> nodes);
+    public ClusterTopology forNodes(Collection<? extends ClusterNode> nodes);
 
     /**
      * Creates a grid projection for the given node.
@@ -37,7 +37,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param nodes Optional additional nodes to include into projection.
      * @return Grid projection for the given node.
      */
-    public T forNode(ClusterNode node, ClusterNode... nodes);
+    public ClusterTopology forNode(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes other than given nodes.
@@ -47,15 +47,15 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @return Projection that will contain all nodes that original projection contained excluding
      *      given nodes.
      */
-    public T forOthers(ClusterNode node, ClusterNode... nodes);
+    public ClusterTopology forOthers(ClusterNode node, ClusterNode... nodes);
 
     /**
      * Creates a grid projection for nodes not included into given projection.
      *
-     * @param prj Projection to exclude from new grid projection.
+     * @param top Projection to exclude from new grid projection.
      * @return Projection for nodes not included into given projection.
      */
-    public T forOthers(T prj);
+    public ClusterTopology forOthers(ClusterTopology top);
 
     /**
      * Creates a grid projection over nodes with specified node IDs.
@@ -63,7 +63,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param ids Collection of node IDs.
      * @return Projection over nodes with specified node IDs.
      */
-    public T forNodeIds(Collection<UUID> ids);
+    public ClusterTopology forNodeIds(Collection<UUID> ids);
 
     /**
      * Creates a grid projection for a node with specified ID.
@@ -72,7 +72,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param ids Optional additional node IDs to include into projection.
      * @return Projection over node with specified node ID.
      */
-    public T forNodeId(UUID id, UUID... ids);
+    public ClusterTopology forNodeId(UUID id, UUID... ids);
 
     /**
      * Creates a grid projection which includes all nodes that pass the given predicate filter.
@@ -80,7 +80,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param p Predicate filter for nodes to include into this projection.
      * @return Grid projection for nodes that passed the predicate filter.
      */
-    public T forPredicate(IgnitePredicate<ClusterNode> p);
+    public ClusterTopology forPredicate(IgnitePredicate<ClusterNode> p);
 
     /**
      * Creates projection for nodes containing given name and value
@@ -94,7 +94,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param val Optional attribute value to match.
      * @return Grid projection for nodes containing specified attribute.
      */
-    public T forAttribute(String name, @Nullable String val);
+    public ClusterTopology forAttribute(String name, @Nullable String val);
 
     /**
      * Creates projection for all nodes that have cache with specified name running.
@@ -103,7 +103,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param cacheNames Optional additional cache names to include into projection.
      * @return Projection over nodes that have specified cache running.
      */
-    public T forCache(String cacheName, @Nullable String... cacheNames);
+    public ClusterTopology forCache(String cacheName, @Nullable String... cacheNames);
 
     /**
      * Creates projection for all nodes that have streamer with specified name running.
@@ -112,14 +112,14 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param streamerNames Optional additional streamer names to include into projection.
      * @return Projection over nodes that have specified streamer running.
      */
-    public T forStreamer(String streamerName, @Nullable String... streamerNames);
+    public ClusterTopology forStreamer(String streamerName, @Nullable String... streamerNames);
 
     /**
      * Gets grid projection consisting from the nodes in this projection excluding the local node.
      *
      * @return Grid projection consisting from the nodes in this projection excluding the local node, if any.
      */
-    public T forRemotes();
+    public ClusterTopology forRemotes();
 
     /**
      * Gets grid projection consisting from the nodes in this projection residing on the
@@ -128,7 +128,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      * @param node Node residing on the host for which projection is created.
      * @return Projection for nodes residing on the same host as passed in node.
      */
-    public T forHost(ClusterNode node);
+    public ClusterTopology forHost(ClusterNode node);
 
     /**
      * Gets projection consisting from the daemon nodes in this projection.
@@ -144,14 +144,14 @@ public interface ClusterTopology<T extends ClusterTopology> {
      *
      * @return Grid projection consisting from the daemon nodes in this projection.
      */
-    public T forDaemons();
+    public ClusterTopology forDaemons();
 
     /**
      * Creates grid projection with one random node from current projection.
      *
      * @return Grid projection with one random node from current projection.
      */
-    public T forRandom();
+    public ClusterTopology forRandom();
 
     /**
      * Creates grid projection with one oldest node in the current projection.
@@ -161,7 +161,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      *
      * @return Grid projection with one oldest node from the current projection.
      */
-    public T forOldest();
+    public ClusterTopology forOldest();
 
     /**
      * Creates grid projection with one youngest node in the current projection.
@@ -171,7 +171,7 @@ public interface ClusterTopology<T extends ClusterTopology> {
      *
      * @return Grid projection with one youngest node from the current projection.
      */
-    public T forYoungest();
+    public ClusterTopology forYoungest();
 
     /**
      * Gets read-only collections of nodes in this projection.
