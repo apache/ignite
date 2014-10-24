@@ -3743,8 +3743,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             // Get local value.
             int globalSize = primaryOnly ? primarySize() : size();
 
-            System.out.println("LOC_JAVA_KEYS [primaryOnly=" + primaryOnly + ", node=" + ctx.grid().name() + ", id=" + ctx.grid().localNode().id() + ", primaryKeySet=" + primaryKeySet() + ", keySet=" + keySet() + ']');
-
             if (fut != null) {
                 for (Integer i : fut.get())
                     globalSize += i;
@@ -5052,8 +5050,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
             GridCache<Object, Object> cache = ((GridEx)grid).cachex(cacheName);
-
-            System.out.println("RMT_JAVA_KEYS [primaryOnly=" + primaryOnly + ", node=" + grid.name() + ", id=" + grid.localNode().id() + ", primaryKeySet=" + cache.primaryKeySet() + ", keySet=" + cache.keySet() + ']');
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }
