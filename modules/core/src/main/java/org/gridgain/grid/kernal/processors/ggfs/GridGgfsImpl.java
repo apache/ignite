@@ -1817,7 +1817,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public <R> GridFuture<R> future() {
-        throw new IllegalStateException();
+        throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 
     /** Detailed file descriptor. */

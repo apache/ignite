@@ -385,7 +385,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            GridCompute comp = ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().enableAsync();
+            GridCompute comp =
+                ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().enableAsync();
 
             comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
 

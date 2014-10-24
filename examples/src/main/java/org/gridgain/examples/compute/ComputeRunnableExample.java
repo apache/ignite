@@ -39,6 +39,7 @@ public class ComputeRunnableExample {
 
             Collection<GridFuture> futs = new ArrayList<>();
 
+            // Enable asynchronous mode.
             GridCompute compute = g.compute().enableAsync();
 
             // Iterate through all words in the sentence and create callable jobs.

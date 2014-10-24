@@ -1584,7 +1584,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                     continue;
                 }
             }
-            catch (RuntimeException | Error e) {
+            catch (GridException | RuntimeException | Error e) {
                 if (log.isDebugEnabled())
                     log.debug(
                         "Caught exception (will close client) [err=" + e.getMessage() + ", client=" + client + ']');
