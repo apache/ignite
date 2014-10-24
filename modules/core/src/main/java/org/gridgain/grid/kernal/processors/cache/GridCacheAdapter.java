@@ -5051,6 +5051,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Override public Integer apply(Object o) {
             GridCache<Object, Object> cache = ((GridEx)grid).cachex(cacheName);
 
+            if (primaryOnly)
+                System.out.println("PRIMARY_KEYS [node=" + grid.name() + ", id=" + grid.localNode().id() + ", size=" + cache.primaryKeySet() + ']');
+
             return primaryOnly ? cache.primarySize() : cache.size();
         }
 
