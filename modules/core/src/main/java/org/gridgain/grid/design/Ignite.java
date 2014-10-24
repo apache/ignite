@@ -30,11 +30,23 @@ public interface Ignite {
 
     public ExecutorService executorService(ClusterGroup grp);
 
-    public IgniteManaged userServices();
+    public IgniteManaged managed();
 
-    public IgniteManaged userServices(ClusterGroup grp);
+    public IgniteManaged managed(ClusterGroup grp);
 
     public <K, V> IgniteCache<K, V> cache(String name);
 
     public <T> IgniteQueue<T> queue(String name);
+
+    public <T> IgniteSet<? extends T> set(String name);
+
+    public IgniteAtomicLong atomicLong(String name);
+
+    public IgniteAtomicSequence atomicSequence(String name);
+
+    public <T> IgniteAtomicReference<T> atomicReference(String name);
+
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name);
+
+    public IgniteCountDownLatch countDownLatch(String name);
 }

@@ -43,7 +43,7 @@ import java.util.concurrent.locks.*;
  * <li>
  *     Method {@link #dataStructures()} provides {@link GridCacheDataStructures} service for
  *     creating and working with distributed concurrent data structures, such as
- *     {@link GridCacheAtomicLong}, {@link GridCacheAtomicReference}, {@link GridCacheQueue}, etc.
+ *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link GridCacheQueue}, etc.
  * </li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
