@@ -20,6 +20,8 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -128,6 +130,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** */
     private final DelayQueue<GridDataLoaderImpl<K, V>> flushQ;
 
+    /** */
+    private final boolean isRequireSerializable;
+
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
@@ -210,6 +215,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             log.debug("Added response listener within topic: " + topic);
 
         fut = new GridDataLoaderFuture(ctx, this);
+
+        GridMarshaller marsh = ctx.config().getMarshaller();
+
+        isRequireSerializable = !(marsh instanceof GridOptimizedMarshaller) ||
+            ((GridOptimizedMarshaller)marsh).isRequireSerializable();
     }
 
     /**
@@ -338,8 +348,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
-            // Transform to serializable if needed.
-            if (entries.size() > 0 && !(entries.iterator().next() instanceof Serializable))
+            // Transform to Serializable if needed.
+            if (isRequireSerializable && !entries.isEmpty() && !(entries.iterator().next() instanceof Serializable))
                 entries = F.transform(entries, new C1<Map.Entry<K, V>, Map.Entry<K, V>>() {
                     @Override public Map.Entry<K, V> apply(Map.Entry<K, V> o) {
                         return new Entry0<>(o.getKey(), o.getValue());

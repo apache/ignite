@@ -84,9 +84,7 @@ public class CacheDataLoaderExample {
 
                 ldr.close(false);
 
-                long end = System.currentTimeMillis();
-
-                System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
+                System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (System.currentTimeMillis() - start) + "ms.");
 
                 checkCache(g);
 
@@ -140,8 +138,14 @@ public class CacheDataLoaderExample {
         }
     }
 
+    /**
+     * Check random keys in cache.
+     *
+     * @param g Grid instance.
+     * @throws GridException
+     */
     private static void checkCache(Grid g) throws GridException {
-        System.out.println(">>> Check that data was loaded (read 10 random keys)...");
+        System.out.println(">>> Check that keys were loaded (read 10 random keys)...");
 
         GridCache<Integer, String> c = g.cache(CACHE_NAME);
 
