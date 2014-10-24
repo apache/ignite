@@ -11,7 +11,7 @@ package org.gridgain.grid.design;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.design.compute.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
@@ -99,7 +99,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface IgniteCompute extends ComputeTopology {
+public interface IgniteCompute extends AsyncSupport {
     /** {@inheritDoc} */
     @Override IgniteCompute enableAsync();
 
@@ -130,6 +130,162 @@ public interface IgniteCompute extends ComputeTopology {
     public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job);
 
     /**
+     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
+     *
+     * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return Task future.
+     */
+    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
+
+    /**
+     * Executes given task on this grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
+     *
+     * @param task Instance of task to execute. If task class has {@link GridComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return Task future.
+     */
+    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
+
+    /**
+     * Executes given task on this grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
+     * <p>
+     * If task for given name has not been deployed yet, then {@code taskName} will be
+     * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
+     *
+     * @param taskName Name of the task to execute.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return Task future.
+     * @see GridComputeTask for information about task execution.
+     */
+    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
+
+    /**
+     * Broadcasts given job to all nodes in grid projection.
+     *
+     * @param job Job to broadcast to all projection nodes.
+     * @return Future for this execution.
+     */
+    public GridFuture<?> broadcast(Runnable job);
+
+    /**
+     * Broadcasts given job to all nodes in grid projection. Every participating node will return a
+     * job result. Collection of all returned job results is returned from the result future.
+     *
+     * @param job Job to broadcast to all projection nodes.
+     * @return Future with collection of results for this execution.
+     */
+    public <R> GridFuture<Collection<R>> broadcast(Callable<R> job);
+
+    /**
+     * Broadcasts given closure job with passed in argument to all nodes in grid projection.
+     * Every participating node will return a job result. Collection of all returned job results
+     * is returned from the result future.
+     *
+     * @param job Job to broadcast to all projection nodes.
+     * @param arg Job closure argument.
+     * @return Future with collection of results for this execution.
+     */
+    public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
+
+    /**
+     * Executes provided job on a node in this grid projection.
+     *
+     * @param job Job closure to execute.
+     * @return Future of this execution.
+     */
+    public GridFuture<?> run(Runnable job);
+
+    /**
+     * Executes collection of jobs on grid nodes within this grid projection.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @return Future for this execution.
+     */
+    public GridFuture<?> run(Collection<? extends Runnable> jobs);
+
+    /**
+     * Executes provided job on a node in this grid projection. The result of the
+     * job execution is returned from the result closure.
+     *
+     * @param job Job to execute.
+     * @return Future with job result for this execution.
+     */
+    public <R> GridFuture<R> call(Callable<R> job);
+
+    /**
+     * Executes collection of jobs on nodes within this grid projection.
+     * Collection of all returned job results is returned from the result future.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @return Future with collection of job results for this execution.
+     */
+    public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
+
+    /**
+     * Executes collection of jobs on nodes within this grid projection. The returned
+     * job results will be reduced into an individual result by provided reducer.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return Future with reduced job result for this execution.
+     */
+    public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc);
+
+    /**
+     * Executes provided closure job on a node in this grid projection. This method is different
+     * from {@code run(...)} and {@code call(...)} methods in a way that it receives job argument
+     * which is then passed into the closure at execution time.
+     *
+     * @param job Job to run.
+     * @param arg Job argument.
+     * @return Future with job result for this execution.
+     */
+    public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
+
+    /**
+     * Executes provided closure job on nodes within this grid projection. A new job is executed for
+     * every argument in the passed in collection. The number of actual job executions will be
+     * equal to size of the job arguments collection.
+     *
+     * @param job Job to run.
+     * @param args Job arguments.
+     * @return Future with collection of job results.
+     */
+    public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, Collection<? extends T> args);
+
+    /**
+     * Executes provided closure job on nodes within this grid projection. A new job is executed for
+     * every argument in the passed in collection. The number of actual job executions will be
+     * equal to size of the job arguments collection. The returned job results will be reduced
+     * into an individual result by provided reducer.
+     *
+     * @param job Job to run.
+     * @param args Job arguments.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return Future with reduced job result for this execution.
+     */
+    public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, Collection<? extends T> args,
+        GridReducer<R1, R2> rdc);
+
+    /**
+     * Creates new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection. This essentially
+     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
+     * replacement for local thread pools.
+     *
+     * @return Grid-enabled {@code ExecutorService}.
+     */
+    public ExecutorService executorService();
+
+    /**
      * Gets task future based on execution session ID. If task execution was started on local node and this
      * projection includes local node then the future for this task will be returned.
      *
@@ -157,6 +313,53 @@ public interface IgniteCompute extends ComputeTopology {
      * @throws GridException If task cancellation failed.
      */
     public void cancelJob(GridUuid jobId) throws GridException;
+
+    /**
+     * Sets task name for the next executed task on this projection in the <b>current thread</b>.
+     * When task starts execution, the name is reset, so one name is used only once. You may use
+     * this method to set task name when executing jobs directly, without explicitly
+     * defining {@link GridComputeTask}.
+     * <p>
+     * Here is an example.
+     * <pre name="code" class="java">
+     * GridGain.grid().withName("MyTask").run(new MyRunnable() {...});
+     * </pre>
+     *
+     * @param taskName Task name.
+     * @return This {@code GridCompute} instance for chaining calls.
+     */
+    public GridCompute withName(String taskName);
+
+    /**
+     * Sets task timeout for the next executed task on this projection in the <b>current thread</b>.
+     * When task starts execution, the timeout is reset, so one timeout is used only once. You may use
+     * this method to set task name when executing jobs directly, without explicitly
+     * defining {@link GridComputeTask}.
+     * <p>
+     * Here is an example.
+     * <pre name="code" class="java">
+     * GridGain.grid().withTimeout(10000).run(new MyRunnable() {...});
+     * </pre>
+     *
+     * @param timeout Computation timeout in milliseconds.
+     * @return This {@code GridCompute} instance for chaining calls.
+     */
+    public GridCompute withTimeout(long timeout);
+
+    /**
+     * Sets no-failover flag for the next executed task on this projection in the <b>current thread</b>.
+     * If flag is set, job will be never failed over even if remote node crashes or rejects execution.
+     * When task starts execution, the no-failover flag is reset, so all other task will use default
+     * failover policy, unless this flag is set again.
+     * <p>
+     * Here is an example.
+     * <pre name="code" class="java">
+     * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
+     * </pre>
+     *
+     * @return This {@code GridCompute} instance for chaining calls.
+     */
+    public GridCompute withNoFailover();
 
     /**
      * Explicitly deploys a task with given class loader on the local node. Upon completion of this method,

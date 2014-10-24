@@ -10,7 +10,7 @@
 package org.gridgain.grid.design;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.userservices.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 
@@ -115,9 +115,122 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface IgniteUserServices extends UserServicesTopology {
+public interface IgniteUserServices extends AsyncSupport {
     /** {@inheritDoc} */
     @Override IgniteUserServices enableAsync();
+
+    /**
+     * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always
+     * one instance of the service in the cluster. In case if grid node on which the service
+     * was deployed crashes or stops, GridGain will automatically redeploy it on another node.
+     * However, if the node on which the service is deployed remains in topology, then the
+     * service will always be deployed on that node only, regardless of topology changes.
+     * <p>
+     * Note that in case of topology changes, due to network delays, there may be a temporary situation
+     * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
+     * <p>
+     * This method is analogous to calling
+     * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     */
+    public void deployClusterSingleton(String name, GridService svc);
+
+    /**
+     * Deploys a per-node singleton service. GridGain will guarantee that there is always
+     * one instance of the service running on each node. Whenever new nodes are started
+     * within this grid projection, GridGain will automatically deploy one instance of
+     * the service on every new node.
+     * <p>
+     * This method is analogous to calling
+     * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 0, 1)} method.
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     */
+    public void deployNodeSingleton(String name, GridService svc);
+
+    /**
+     * Deploys multiple instances of the service on the grid. GridGain will deploy a
+     * maximum amount of services equal to {@code 'totalCnt'} parameter making sure that
+     * there are no more than {@code 'maxPerNodeCnt'} service instances running
+     * on each node. Whenever topology changes, GridGain will automatically rebalance
+     * the deployed services within cluster to make sure that each node will end up with
+     * about equal number of deployed instances whenever possible.
+     * <p>
+     * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
+     * value greater than {@code 0}.
+     * <p>
+     * This method is analogous to the invocation of {@link #deploy(GridServiceConfiguration)} method
+     * as follows:
+     * <pre name="code" class="java">
+     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setTotalCount(totalCnt);
+     *     cfg.setMaxPerNodeCount(maxPerNodeCnt);
+     *
+     *     grid.services().deploy(cfg);
+     * </pre>
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
+     * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
+     */
+    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
+
+    /**
+     * Deploys multiple instances of the service on the grid according to provided
+     * configuration. GridGain will deploy a maximum amount of services equal to
+     * {@link GridServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
+     * making sure that there are no more than {@link GridServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * service instances running on each node. Whenever topology changes, GridGain will automatically rebalance
+     * the deployed services within cluster to make sure that each node will end up with
+     * about equal number of deployed instances whenever possible.
+     * <p>
+     * If {@link GridServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
+     * will deploy the service on the primary node for given affinity key. The affinity will be calculated
+     * on the cache with {@link GridServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * <p>
+     * If {@link GridServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
+     * GridGain will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
+     * The node filter will be checked in addition to the underlying grid projection filter, or the
+     * whole grid, if the underlying grid projection includes all grid nodes.
+     * <p>
+     * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
+     * value greater than {@code 0}.
+     * <p>
+     * Here is an example of creating service deployment configuration:
+     * <pre name="code" class="java">
+     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setTotalCount(0); // Unlimited.
+     *     cfg.setMaxPerNodeCount(2); // Deploy 2 instances of service on each node.
+     *
+     *     grid.services().deploy(cfg);
+     * </pre>
+     *
+     * @param cfg Service configuration.
+     */
+    public void deploy(GridServiceConfiguration cfg);
+
+    /**
+     * Gets a remote handle on the service. If service is available locally,
+     * then local instance is returned, otherwise, a remote proxy is dynamically
+     * created and provided for the specified service.
+     *
+     * @param name Service name.
+     * @param svc Interface for the service.
+     * @param sticky Whether or not GridGain should always contact the same remote
+     *      service or try to load-balance between services.
+     * @return Either proxy over remote service or local service if it is deployed locally.
+     */
+    public <T> T serviceProxy(String name, Class<T> svc, boolean sticky);
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,

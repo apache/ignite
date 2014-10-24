@@ -9,6 +9,10 @@
 
 package org.gridgain.grid.design;
 
+import org.gridgain.grid.design.cluster.*;
+
+import java.util.concurrent.*;
+
 /**
  * TODO: Add interface description.
  *
@@ -20,9 +24,17 @@ public interface Ignite {
 
     public IgniteCompute compute();
 
-    public <K, V> IgniteCache<K, V> cache(String name);
+    public IgniteCompute compute(ClusterTopology top);
 
-    public IgniteExecutorService executorService();
+    public ExecutorService executorService();
+
+    public ExecutorService executorService(ClusterTopology top);
+
+    public IgniteUserServices userServices();
+
+    public IgniteUserServices userServices(ClusterTopology top);
+
+    public <K, V> IgniteCache<K, V> cache(String name);
 
     public <T> IgniteQueue<T> queue(String name);
 }
