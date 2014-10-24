@@ -758,7 +758,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             Set<Integer> missed = new HashSet<>();
 
             // Get the same collection that will be sent in the message.
-            Collection<Integer> remaining = d.partitions();
+            Collection<Integer> remaining = new HashSet<>(d.partitions());
 
             // Drain queue before processing a new node.
             drainQueue();
@@ -781,7 +781,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     retry = false;
 
                     // Create copy.
-                    d = new GridDhtPartitionDemandMessage<>(d);
+                    d = new GridDhtPartitionDemandMessage<>(d, remaining);
 
                     long timeout = GridDhtPartitionDemandPool.this.timeout.get();
 
@@ -811,7 +811,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 cctx.io().removeOrderedHandler(d.topic());
 
                                 // Must create copy to be able to work with IO manager thread local caches.
-                                d = new GridDhtPartitionDemandMessage<>(d);
+                                d = new GridDhtPartitionDemandMessage<>(d, remaining);
 
                                 // Create new topic.
                                 d.topic(topic(++cntr));
