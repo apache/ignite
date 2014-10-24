@@ -338,6 +338,14 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
+            // Transform to serializable if needed.
+            if (entries.size() > 0 && !(entries.iterator().next() instanceof Serializable))
+                entries = F.transform(entries, new C1<Map.Entry<K, V>, Map.Entry<K, V>>() {
+                    @Override public Map.Entry<K, V> apply(Map.Entry<K, V> o) {
+                        return new Entry0<>(o.getKey(), o.getValue());
+                    }
+                });
+
             for (Map.Entry<K, V> entry : entries) {
                 keys.add(entry.getKey());
 

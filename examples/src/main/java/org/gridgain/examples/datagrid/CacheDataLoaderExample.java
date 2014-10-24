@@ -49,6 +49,7 @@ public class CacheDataLoaderExample {
      */
     public static void main(String[] args) throws Exception {
         loaderDirectExample();
+
         loaderMapExample();
     }
 
