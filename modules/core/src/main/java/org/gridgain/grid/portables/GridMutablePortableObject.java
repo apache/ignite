@@ -12,7 +12,7 @@ package org.gridgain.grid.portables;
 import org.jetbrains.annotations.*;
 
 /**
- *
+ * TODO GG-9352 Fix java doc.
  */
 public interface GridMutablePortableObject extends GridPortableWriter {
     /**
