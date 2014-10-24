@@ -115,9 +115,9 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface IgniteUserServices extends AsyncSupport {
+public interface IgniteManaged extends AsyncSupport {
     /** {@inheritDoc} */
-    @Override IgniteUserServices enableAsync();
+    @Override IgniteManaged enableAsync();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always

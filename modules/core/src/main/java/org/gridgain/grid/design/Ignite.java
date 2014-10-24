@@ -30,9 +30,9 @@ public interface Ignite {
 
     public ExecutorService executorService(ClusterGroup grp);
 
-    public IgniteUserServices userServices();
+    public IgniteManaged userServices();
 
-    public IgniteUserServices userServices(ClusterGroup grp);
+    public IgniteManaged userServices(ClusterGroup grp);
 
     public <K, V> IgniteCache<K, V> cache(String name);
 

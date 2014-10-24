@@ -62,7 +62,7 @@ public class AsyncSupportAdapter implements AsyncSupport {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         return null; // TODO: CODE: implement.
     }
 

@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.design.async;
 
-import org.gridgain.grid.*;
-
 /**
  * TODO: Add interface description.
  *
@@ -22,5 +20,5 @@ public interface AsyncSupport {
 
     public boolean isAsync();
 
-    public <R> GridFuture<R> future();
+    public <R> IgniteFuture<R> future();
 }
