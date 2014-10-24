@@ -29,6 +29,22 @@ import java.util.*;
  */
 public interface IgniteCluster {
     /**
+     * Gets read-only collections of nodes in this projection.
+     *
+     * @return All nodes in this projection.
+     */
+    public Collection<ClusterNode> nodes();
+
+    /**
+     * Gets a node for given ID from this grid projection.
+     *
+     * @param nid Node ID.
+     * @return Node with given ID from this projection or {@code null} if such node does not exist in this
+     *      projection.
+     */
+    @Nullable public ClusterNode node(UUID nid);
+
+    /**
      * Creates a grid projection over a given set of nodes.
      *
      * @param nodes Collection of nodes to create a projection from.
