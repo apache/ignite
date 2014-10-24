@@ -19,6 +19,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Multinode update test.
@@ -35,6 +36,11 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /** {@inheritDoc} */
     @Nullable @Override protected GridCacheStore<?, ?> cacheStore() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheMode cacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
