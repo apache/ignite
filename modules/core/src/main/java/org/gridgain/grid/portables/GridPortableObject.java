@@ -153,8 +153,17 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
      * @throws GridPortableException In case of error.
+     * @deprecated Use GridMutablePortableObject instead.
      */
+    @Deprecated
     public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
+
+    /**
+     * Gets mutable portable object to edit existing portable object.
+     *
+     * @return Mutable portable object.
+     */
+    public GridMutablePortableObject toMutable();
 
     /**
      * Copies this portable object.
