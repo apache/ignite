@@ -36,33 +36,33 @@ public class GridGgfsAsyncImpl extends GridAsyncSupportAdapter<GridGgfs> impleme
 
     /** {@inheritDoc} */
     @Override public void format() throws GridException {
-        result(ggfs.formatAsync());
+        saveOrGet(ggfs.formatAsync());
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
-        return result(ggfs.executeAsync(task, rslvr, paths, arg));
+        return saveOrGet(ggfs.executeAsync(task, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException {
-        return result(ggfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+        return saveOrGet(ggfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
-        return result(ggfs.executeAsync(taskCls, rslvr, paths, arg));
+        return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException {
-        return result(ggfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+        return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */

@@ -12,10 +12,10 @@ package org.gridgain.grid.design;
 import org.gridgain.grid.*;
 
 /**
- * TODO: Add class description.
+ * Adapter for {@link GridAsyncSupport}.
  */
 public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements GridAsyncSupport<T>, Cloneable {
-    /** Future holder. */
+    /** Future for previous asynchronous operation. */
     protected ThreadLocal<GridFuture<?>> curFut;
 
     /**
@@ -59,12 +59,12 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements Grid
     /** {@inheritDoc} */
     @Override public <R> GridFuture<R> future() {
         if (curFut == null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Asynchronous mode is disabled.");
 
         GridFuture<?> fut = curFut.get();
 
         if (fut == null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Asynchronous operation not started.");
 
         curFut.set(null);
 
@@ -73,10 +73,11 @@ public class GridAsyncSupportAdapter<T extends GridAsyncSupport> implements Grid
 
     /**
      * @param fut Future.
-     * @return If async mode is enabled returns {@code null}, otherwise returns future result.
-     * @throws GridException If asynchronous mode is disabled and execution failed.
+     * @return If async mode is enabled saves future and returns {@code null},
+     *         otherwise waits for future and returns result.
+     * @throws GridException If asynchronous mode is disabled and future failed.
      */
-    public <R> R result(GridFuture<R> fut) throws GridException {
+    public <R> R saveOrGet(GridFuture<R> fut) throws GridException {
         if (curFut != null) {
             curFut.set(fut);
 

@@ -62,7 +62,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
         guard();
 
         try {
-            return result(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
+            return saveOrGet(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
         }
         finally {
             unguard();
@@ -85,9 +85,9 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
         guard();
 
         try {
-            return result(ctx.continuous().startRoutine(
+            return saveOrGet(ctx.continuous().startRoutine(
                 new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>)locLsnr,
-               (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                    (GridPredicate<GridEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         finally {
             unguard();
@@ -101,7 +101,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
         guard();
 
         try {
-            result(ctx.continuous().stopRoutine(opId));
+            saveOrGet(ctx.continuous().stopRoutine(opId));
         }
         finally {
             unguard();
@@ -114,7 +114,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
         guard();
 
         try {
-            return result(ctx.event().waitForEvent(filter, types));
+            return saveOrGet(ctx.event().waitForEvent(filter, types));
         }
         finally {
             unguard();

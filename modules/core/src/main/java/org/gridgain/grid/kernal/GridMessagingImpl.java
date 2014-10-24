@@ -157,7 +157,7 @@ public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> im
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
 
-            return result(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
+            return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }
         finally {
             unguard();
@@ -168,7 +168,7 @@ public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> im
     @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "opId");
 
-        result(ctx.continuous().stopRoutine(opId));
+        saveOrGet(ctx.continuous().stopRoutine(opId));
     }
 
     /**

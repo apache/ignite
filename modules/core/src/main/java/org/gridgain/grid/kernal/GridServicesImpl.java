@@ -61,7 +61,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().deployNodeSingleton(prj, name, svc));
+            saveOrGet(ctx.service().deployNodeSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -76,7 +76,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().deployClusterSingleton(prj, name, svc));
+            saveOrGet(ctx.service().deployClusterSingleton(prj, name, svc));
         }
         finally {
             unguard();
@@ -91,7 +91,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
+            saveOrGet(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
         }
         finally {
             unguard();
@@ -108,7 +108,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
+            saveOrGet(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
         }
         finally {
             unguard();
@@ -122,7 +122,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().deploy(cfg));
+            saveOrGet(ctx.service().deploy(cfg));
         }
         finally {
             unguard();
@@ -136,7 +136,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().cancel(name));
+            saveOrGet(ctx.service().cancel(name));
         }
         finally {
             unguard();
@@ -148,7 +148,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
         guard();
 
         try {
-            result(ctx.service().cancelAll());
+            saveOrGet(ctx.service().cancelAll());
         }
         finally {
             unguard();

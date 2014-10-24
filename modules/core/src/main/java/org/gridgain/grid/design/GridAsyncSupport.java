@@ -15,9 +15,22 @@ import org.gridgain.grid.*;
  * TODO: Add interface description.
  */
 public interface GridAsyncSupport<T extends GridAsyncSupport> {
+    /**
+     * Gets component with asynchronous mode enabled.
+     *
+     * @return Component with asynchronous mode enabled.
+     */
     public T enableAsync();
 
+    /**
+     * @return {@code True} if asynchronous mode is enabled.
+     */
     public boolean isAsync();
 
+    /**
+     * Gets and resets future for previous asynchronous operation.
+     *
+     * @return Future for previous asynchronous operation.
+     */
     public <R> GridFuture<R> future();
 }

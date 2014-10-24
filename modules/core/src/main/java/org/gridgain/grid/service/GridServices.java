@@ -136,6 +136,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * <p>
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -150,6 +152,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * <p>
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 0, 1)} method.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -179,6 +183,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      *
      *     grid.services().deploy(cfg);
      * </pre>
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -211,6 +217,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      *
      *     grid.services().deploy(cfg);
      * </pre>
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -240,6 +248,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">
      *     GridServiceConfiguration cfg = new GridServiceConfiguration();
@@ -263,6 +273,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * Note that GridGain cannot guarantee that the service exits from {@link GridService#execute(GridServiceContext)}
      * method whenever {@link GridService#cancel(GridServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param name Name of service to cancel.
      */
@@ -273,6 +285,8 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * <p>
      * Note that depending on user logic, it may still take extra time for a service to
      * finish execution, even after it was cancelled.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      */
     public void cancelAll();
 

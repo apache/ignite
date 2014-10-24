@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.GridProjection;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.design.*;
-import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -100,7 +99,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.result(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
+            asyncSup.saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -116,7 +115,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (R)asyncSup.result(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
+            return (R)asyncSup.saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -133,7 +132,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return (R)asyncSup.result(ctx.task().execute(taskName, arg));
+            return (R)asyncSup.saveOrGet(ctx.task().execute(taskName, arg));
         }
         finally {
             unguard();
@@ -151,7 +150,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return (R)asyncSup.result(ctx.task().execute(taskCls, arg));
+            return (R)asyncSup.saveOrGet(ctx.task().execute(taskCls, arg));
         }
         finally {
             unguard();
@@ -168,7 +167,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return (R)asyncSup.result(ctx.task().execute(task, arg));
+            return (R)asyncSup.saveOrGet(ctx.task().execute(task, arg));
         }
         finally {
             unguard();
@@ -182,7 +181,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.result(ctx.closure().runAsync(BROADCAST, job, prj.nodes()));
+            asyncSup.saveOrGet(ctx.closure().runAsync(BROADCAST, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -196,7 +195,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
+            return (Collection<R>)asyncSup.saveOrGet(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
         }
         finally {
             unguard();
@@ -210,7 +209,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (Collection<R>)asyncSup.result(ctx.closure().broadcast(job, arg, prj.nodes()));
+            return (Collection<R>)asyncSup.saveOrGet(ctx.closure().broadcast(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -224,7 +223,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.result(ctx.closure().runAsync(BALANCE, job, prj.nodes()));
+            asyncSup.saveOrGet(ctx.closure().runAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -238,7 +237,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.result(ctx.closure().runAsync(BALANCE, jobs, prj.nodes()));
+            asyncSup.saveOrGet(ctx.closure().runAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -252,7 +251,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (R)asyncSup.result(ctx.closure().callAsync(job, arg, prj.nodes()));
+            return (R)asyncSup.saveOrGet(ctx.closure().callAsync(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -266,7 +265,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (R)asyncSup.result(ctx.closure().callAsync(BALANCE, job, prj.nodes()));
+            return (R)asyncSup.saveOrGet(ctx.closure().callAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -280,7 +279,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
+            return (Collection<R>)asyncSup.saveOrGet(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -296,7 +295,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         guard();
 
         try {
-            return (Collection<R>)asyncSup.result(ctx.closure().callAsync(job, args, prj.nodes()));
+            return (Collection<R>)asyncSup.saveOrGet(ctx.closure().callAsync(job, args, prj.nodes()));
         }
         finally {
             unguard();

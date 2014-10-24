@@ -111,6 +111,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -124,6 +126,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -138,6 +142,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
@@ -151,6 +157,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param task Instance of task to execute. If task class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
@@ -167,6 +175,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
      * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -178,6 +188,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
 
     /**
      * Broadcasts given job to all nodes in grid projection.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @throws GridException If job failed.
@@ -187,6 +199,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
      * job result. Collection of all returned job results is returned from the result future.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @return Collection of results for this execution.
@@ -198,6 +212,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
      * Broadcasts given closure job with passed in argument to all nodes in grid projection.
      * Every participating node will return a job result. Collection of all returned job results
      * is returned from the result future.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @param arg Job closure argument.
@@ -208,14 +224,18 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
 
     /**
      * Executes provided job on a node in this grid projection.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job closure to execute.
      * @throws GridException If execution failed.
      */
-    public void run(Runnable job) throws GridException;
+    public void run(Runnable job);
 
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param jobs Collection of jobs to execute.
      * @throws GridException If execution failed.
@@ -225,6 +245,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes provided job on a node in this grid projection. The result of the
      * job execution is returned from the result closure.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to execute.
      * @return Job result.
@@ -235,6 +257,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
     /**
      * Executes collection of jobs on nodes within this grid projection.
      * Collection of all returned job results is returned from the result future.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param jobs Collection of jobs to execute.
      * @return Collection of job results for this execution.
@@ -246,6 +270,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
      * Executes provided closure job on a node in this grid projection. This method is different
      * from {@code run(...)} and {@code call(...)} methods in a way that it receives job argument
      * which is then passed into the closure at execution time.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to run.
      * @param arg Job argument.
@@ -258,6 +284,8 @@ public interface GridCompute extends GridAsyncSupport<GridCompute> {
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection.
+     * <p>
+     * Supports asynchronous execution (see {@link GridAsyncSupport}).
      *
      * @param job Job to run.
      * @param args Job arguments.
