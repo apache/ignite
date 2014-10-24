@@ -34,13 +34,16 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     private String dfltSerializer;
 
     /** */
-    private boolean dfltMetadataEnabled;
+    private boolean dfltMetadataEnabled = true;
+
+    /** Whether to cache deserialized value in IGridPortableObject */
+    private boolean keepDeserialized = true;
 
     /**
      * Default constructor.
      */
     public GridDotNetPortableConfiguration() {
-
+        // No-op.
     }
 
     /**
@@ -62,6 +65,7 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         dfltIdMapper = cfg.getDefaultIdMapper();
         dfltSerializer = cfg.getDefaultSerializer();
         dfltMetadataEnabled = cfg.getDefaultMetadataEnabled();
+        keepDeserialized = cfg.getKeepDeserialized();
     }
 
     /**
@@ -148,6 +152,20 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         this.dfltMetadataEnabled = dfltMetadataEnabled;
     }
 
+    /**
+     * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
+     */
+    public boolean getKeepDeserialized() {
+        return keepDeserialized;
+    }
+
+    /**
+     * @param keepDeserialized Keep deserialized flag.
+     */
+    public void setKeepDeserialized(boolean keepDeserialized) {
+        this.keepDeserialized = keepDeserialized;
+    }
+
     /** {@inheritDoc} */
     @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
@@ -163,6 +181,8 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         rawWriter.writeString(dfltSerializer);
 
         rawWriter.writeBoolean(dfltMetadataEnabled);
+
+        rawWriter.writeBoolean(keepDeserialized);
     }
 
     /** {@inheritDoc} */
@@ -180,6 +200,8 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
         dfltSerializer = rawReader.readString();
 
         dfltMetadataEnabled = rawReader.readBoolean();
+
+        keepDeserialized = rawReader.readBoolean();
     }
 
     /** {@inheritDoc} */

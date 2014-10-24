@@ -71,6 +71,18 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
+    @Override public GridMutablePortableObject toMutable(GridPortableObject portableObj) {
+        guard();
+
+        try {
+            return proc.toMutable(portableObj);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
         guard();
 

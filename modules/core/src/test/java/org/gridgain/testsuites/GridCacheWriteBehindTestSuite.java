@@ -23,7 +23,7 @@ public class GridCacheWriteBehindTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Gridgain Write-Behind Store Test Suite");
 
         // Write-behind tests.
-        suite.addTest(new TestSuite(GridCacheWriteBehindStoreSelfSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheWriteBehindStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreMultithreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreLocalTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreReplicatedTest.class));
