@@ -21,7 +21,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface PluginProvider {
+public interface PluginProvider<C extends PluginConfiguration> {
     /**
      * @return Plugin name.
      */
@@ -42,7 +42,7 @@ public interface PluginProvider {
      *
      * @throws IgniteException Throws in case of any errors.
      */
-    public void start(PluginContext ctx) throws IgniteException;
+    public void start(PluginContext ctx, C cfg) throws IgniteException;
 
     /**
      * Stops grid component.

@@ -15,9 +15,9 @@ package org.gridgain.grid.design.plugin;
  * @author @java.author
  * @version @java.version
  */
-public abstract class PluginConfiguration {
+public interface PluginConfiguration {
     /**
-     * @return Plugin implementation.
+     * @return Plugin provider class.
      */
-    public abstract Class<? extends PluginProvider> pluginClass();
+    public Class<? extends PluginProvider> providerClass();
 }
