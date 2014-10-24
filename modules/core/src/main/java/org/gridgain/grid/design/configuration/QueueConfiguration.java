@@ -15,6 +15,6 @@ package org.gridgain.grid.design.configuration;
  * @author @java.author
  * @version @java.version
  */
-public class GridQueueConfiguration {
+public class QueueConfiguration {
 
 }

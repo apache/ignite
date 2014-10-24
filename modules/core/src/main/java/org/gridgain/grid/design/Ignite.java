@@ -24,15 +24,15 @@ public interface Ignite {
 
     public IgniteCompute compute();
 
-    public IgniteCompute compute(ClusterTopology top);
+    public IgniteCompute compute(ClusterGroup grp);
 
     public ExecutorService executorService();
 
-    public ExecutorService executorService(ClusterTopology top);
+    public ExecutorService executorService(ClusterGroup grp);
 
     public IgniteUserServices userServices();
 
-    public IgniteUserServices userServices(ClusterTopology top);
+    public IgniteUserServices userServices(ClusterGroup grp);
 
     public <K, V> IgniteCache<K, V> cache(String name);
 

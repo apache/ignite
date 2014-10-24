@@ -24,5 +24,5 @@ public interface IgniteQueue<T> extends BlockingQueue<T> {
      *
      * @return Queue configuration.
      */
-    public GridQueueConfiguration configuration();
+    public QueueConfiguration configuration();
 }
