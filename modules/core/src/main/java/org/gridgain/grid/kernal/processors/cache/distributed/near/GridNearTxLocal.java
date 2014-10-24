@@ -625,17 +625,15 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                         fut0.onError(new GridException("Failed to commit transaction: " +
                             CU.txString(GridNearTxLocal.this)));
                 }
-                catch (Exception e) {
+                catch (Error | RuntimeException e) {
                     commitErr.compareAndSet(null, e);
-
-                    fut0.onError(e);
-                }
-                catch (Error e) {
-                    commitErr.compareAndSet(null, e);
-
-                    fut0.onError(e);
 
                     throw e;
+                }
+                catch (GridException e) {
+                    commitErr.compareAndSet(null, e);
+
+                    fut0.onError(e);
                 }
             }
         });

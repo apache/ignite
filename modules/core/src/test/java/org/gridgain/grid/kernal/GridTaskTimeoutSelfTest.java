@@ -133,10 +133,10 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 while (!finish.get()) {
-                    GridComputeTaskFuture<?> fut = executeAsync(
-                        grid.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
-
                     try {
+                        GridComputeTaskFuture<?> fut = executeAsync(
+                            grid.compute().withTimeout(TIMEOUT), GridTaskTimeoutTestTask.class.getName(), null);
+
                         fut.get();
 
                         assert false : "Task has not been timed out. Future: " + fut;

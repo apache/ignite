@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.GridProjection;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> implements GridServices, Externalizable {
+public class GridServicesImpl extends AsyncSupportAdapter implements GridServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,7 +54,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void deployNodeSingleton(String name, GridService svc) {
+    @Override public void deployNodeSingleton(String name, GridService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -69,7 +69,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void deployClusterSingleton(String name, GridService svc) {
+    @Override public void deployClusterSingleton(String name, GridService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -84,7 +84,8 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) {
+    @Override public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt)
+        throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -100,7 +101,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
 
     /** {@inheritDoc} */
     @Override public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
-        Object affKey) {
+        Object affKey) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
         A.notNull(affKey, "affKey");
@@ -116,7 +117,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void deploy(GridServiceConfiguration cfg) {
+    @Override public void deploy(GridServiceConfiguration cfg) throws GridException {
         A.notNull(cfg, "cfg");
 
         guard();
@@ -130,7 +131,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String name) {
+    @Override public void cancel(String name) throws GridException {
         A.notNull(name, "name");
 
         guard();
@@ -144,7 +145,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelAll() {
+    @Override public void cancelAll() throws GridException {
         guard();
 
         try {
@@ -206,6 +207,11 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
     }
 
     /** {@inheritDoc} */
+    @Override public GridServices enableAsync() {
+        return (GridServices)super.enableAsync();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
     }
@@ -221,7 +227,7 @@ public class GridServicesImpl extends GridAsyncSupportAdapter<GridServices> impl
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    private Object readResolve() throws ObjectStreamException {
+    protected Object readResolve() throws ObjectStreamException {
         return prj.services();
     }
 }

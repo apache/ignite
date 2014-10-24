@@ -425,8 +425,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param task Task.
      * @param arg Task argument.
      * @return Task future.
+     * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, GridComputeTask task, @Nullable Object arg) {
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, GridComputeTask task, @Nullable Object arg)
+        throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(task, arg));
@@ -443,8 +445,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param taskName Task name.
      * @param arg Task argument.
      * @return Task future.
+     * @throws GridException If failed.
      */
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, String taskName, @Nullable Object arg) {
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, String taskName, @Nullable Object arg)
+        throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskName, arg));
@@ -461,9 +465,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param taskCls Task class.
      * @param arg Task argument.
      * @return Task future.
+     * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, Class taskCls, @Nullable Object arg) {
+    protected <R> GridComputeTaskFuture<R> executeAsync(GridCompute comp, Class taskCls, @Nullable Object arg)
+        throws GridException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskCls, arg));
@@ -480,9 +486,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param filter Filter.
      * @param types Events types.
      * @return Future.
+     * @throws GridException If failed.
      */
     protected <T extends GridEvent> GridFuture<T> waitForLocalEvent(GridEvents evts,
-        @Nullable GridPredicate<T> filter, @Nullable int... types) {
+        @Nullable GridPredicate<T> filter, @Nullable int... types) throws GridException {
         evts = evts.enableAsync();
 
         assertTrue(evts.isAsync());

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.events;
 
-import org.gridgain.grid.GridProjection;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +43,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridEvents extends GridAsyncSupport<GridEvents> {
+public interface GridEvents extends AsyncSupport {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -55,14 +55,16 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      * Queries nodes in this projection for events using passed in predicate filter for event
      * selection.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
+     * @throws GridException If query failed.
      */
-    public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout, @Nullable int... types);
+    public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout, @Nullable int... types)
+        throws GridException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -73,7 +75,7 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
      * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
      *      on remote nodes by passed in {@code rmtFilter}.
@@ -86,9 +88,10 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @throws GridException If failed to add listener.
      */
     public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
-        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types);
+        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -96,7 +99,7 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      * any node within this grid projection that pass remove filter will be sent to local node for
      * local listener notification.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param bufSize Remote events buffer size. Events from remote nodes won't be sent until buffer
      *      is full or time interval is exceeded.
@@ -123,34 +126,38 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @see #stopRemoteListen(UUID)
+     * @throws GridException If failed to add listener.
      */
     public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
-        @Nullable int... types);
+        @Nullable int... types) throws GridException;
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
      * operation ID on all nodes defined by {@link #projection()}.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(GridBiPredicate, GridPredicate, int...)} method.
      * @see #remoteListen(GridBiPredicate, GridPredicate, int...)
+     * @throws GridException If failed to stop listeners.
      */
-    public void stopRemoteListen(UUID opId);
+    public void stopRemoteListen(UUID opId) throws GridException;
 
     /**
      * Waits for the specified events.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
      * @return Grid event.
+     * @throws GridException If wait was interrupted.
      */
-    public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter, @Nullable int... types);
+    public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter, @Nullable int... types)
+        throws GridException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.
@@ -229,4 +236,7 @@ public interface GridEvents extends GridAsyncSupport<GridEvents> {
      * @return {@code True} if event of passed in type is enabled.
      */
     public boolean isEnabled(int type);
+
+    /** {@inheritDoc} */
+    @Override GridEvents enableAsync();
 }

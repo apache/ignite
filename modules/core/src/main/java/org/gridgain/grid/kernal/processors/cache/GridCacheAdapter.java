@@ -3800,7 +3800,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     e = new GridCacheTxRollbackException("Transaction has been rolled back: " +
                         tx.xid(), e);
                 }
-                catch (Throwable e1) {
+                catch (GridException | AssertionError | RuntimeException e1) {
                     U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
 
                     U.addLastCause(e, e1, log);

@@ -10,8 +10,7 @@
 package org.gridgain.grid.service;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.GridProjection;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -116,7 +115,7 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface GridServices extends GridAsyncSupport<GridServices> {
+public interface GridServices extends AsyncSupport {
     /**
      * Gets grid projection to which this {@code GridServices} instance belongs.
      *
@@ -137,12 +136,13 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
+     * @throws GridException If failed to deploy service.
      */
-    public void deployClusterSingleton(String name, GridService svc);
+    public void deployClusterSingleton(String name, GridService svc) throws GridException;
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -153,12 +153,13 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 0, 1)} method.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
+     * @throws GridException If failed to deploy service.
      */
-    public void deployNodeSingleton(String name, GridService svc);
+    public void deployNodeSingleton(String name, GridService svc) throws GridException;
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -184,15 +185,17 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      *     grid.services().deploy(cfg);
      * </pre>
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
      * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
      *      default cache.
      * @param affKey Affinity cache key.
+     * @throws GridException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey);
+    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
+        throws GridException;
 
     /**
      * Deploys multiple instances of the service on the grid. GridGain will deploy a
@@ -218,14 +221,15 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      *     grid.services().deploy(cfg);
      * </pre>
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
      * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
+     * @throws GridException If failed to deploy service.
      */
-    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt);
+    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) throws GridException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -248,7 +252,7 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">
@@ -263,8 +267,9 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * </pre>
      *
      * @param cfg Service configuration.
+     * @throws GridException If failed to deploy service.
      */
-    public void deploy(GridServiceConfiguration cfg);
+    public void deploy(GridServiceConfiguration cfg) throws GridException;
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -274,11 +279,12 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * method whenever {@link GridService#cancel(GridServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param name Name of service to cancel.
+     * @throws GridException If failed to cancel service.
      */
-    public void cancel(String name);
+    public void cancel(String name) throws GridException;
 
     /**
      * Cancels all deployed services.
@@ -286,9 +292,11 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * Note that depending on user logic, it may still take extra time for a service to
      * finish execution, even after it was cancelled.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
+     *
+     * @throws GridException If failed to cancel services.
      */
-    public void cancelAll();
+    public void cancelAll() throws GridException;
 
     /**
      * Gets metadata about all deployed services.
@@ -314,4 +322,7 @@ public interface GridServices extends GridAsyncSupport<GridServices> {
      * @return all deployed services with specified name.
      */
     public <T> Collection<T> services(String name);
+
+    /** {@inheritDoc} */
+    @Override public GridServices enableAsync();
 }

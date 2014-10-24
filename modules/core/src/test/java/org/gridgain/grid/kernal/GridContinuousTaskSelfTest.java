@@ -66,17 +66,17 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    GridCompute comp = grid.compute().enableAsync();
-
-                    comp.execute(TestJobsChainTask.class, true);
-
-                    GridComputeTaskFuture<Integer> fut1 = comp.future();
-
-                    comp.execute(TestJobsChainTask.class, false);
-
-                    GridComputeTaskFuture<Integer> fut2 = comp.future();
-
                     try {
+                        GridCompute comp = grid.compute().enableAsync();
+
+                        comp.execute(TestJobsChainTask.class, true);
+
+                        GridComputeTaskFuture<Integer> fut1 = comp.future();
+
+                        comp.execute(TestJobsChainTask.class, false);
+
+                        GridComputeTaskFuture<Integer> fut2 = comp.future();
+
                         assert fut1.get() == 55;
                         assert fut2.get() == 55;
                     }

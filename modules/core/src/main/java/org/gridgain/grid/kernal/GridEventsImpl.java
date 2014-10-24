@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.GridProjection;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * {@link GridEvents} implementation.
  */
-public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implements GridEvents, Externalizable {
+public class GridEventsImpl extends AsyncSupportAdapter implements GridEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> List<T> remoteQuery(GridPredicate<T> p, long timeout,
-        @Nullable int... types) {
+        @Nullable int... types) throws GridException {
         A.notNull(p, "p");
 
         guard();
@@ -71,14 +71,14 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> UUID remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
-        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
+        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) throws GridException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
-        @Nullable int... types) {
+        @Nullable int... types) throws GridException {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
 
@@ -95,7 +95,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) throws GridException {
         A.notNull(opId, "consumeId");
 
         guard();
@@ -110,7 +110,7 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> T waitForLocal(@Nullable GridPredicate<T> filter,
-        @Nullable int... types) {
+        @Nullable int... types) throws GridException {
         guard();
 
         try {
@@ -256,6 +256,11 @@ public class GridEventsImpl extends GridAsyncSupportAdapter<GridEvents> implemen
                     return false;
                 }
             };
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridEvents enableAsync() {
+        return (GridEvents)super.enableAsync();
     }
 
     /** {@inheritDoc} */

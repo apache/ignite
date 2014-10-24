@@ -6051,7 +6051,7 @@ public abstract class GridUtils {
 
             return c.call();
         }
-        catch (RuntimeException e) {
+        catch (GridException | RuntimeException e) {
             throw e;
         }
         catch (Exception e) {

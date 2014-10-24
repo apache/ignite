@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 /**
  * Adapter for {@link AsyncSupport}.
  */
-public class AsyncSupportAdapter<T extends AsyncSupport> implements AsyncSupport<T>, Cloneable {
+public class AsyncSupportAdapter implements AsyncSupport, Cloneable {
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<GridFuture<?>> curFut;
 
@@ -35,16 +35,16 @@ public class AsyncSupportAdapter<T extends AsyncSupport> implements AsyncSupport
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public T enableAsync() {
+    @Override public AsyncSupport enableAsync() {
         try {
             if (isAsync())
-                return (T)this;
+                return this;
 
-            AsyncSupportAdapter<T> clone = (AsyncSupportAdapter<T>)clone();
+            AsyncSupportAdapter clone = clone();
 
             clone.curFut = new ThreadLocal<>();
 
-            return (T)clone;
+            return clone;
         }
         catch (CloneNotSupportedException e) {
             throw new GridRuntimeException(e);

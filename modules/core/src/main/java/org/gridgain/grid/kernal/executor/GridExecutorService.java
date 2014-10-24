@@ -11,8 +11,10 @@ package org.gridgain.grid.kernal.executor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -24,7 +26,7 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
  * through {@link Grid} instance, normally configured using
- * {@link GridCompute#executorService()} method.
+ * {@link GridProjection#executorService()} method.
  * {@code GridExecutorService} delegates commands execution to already
  * started {@link Grid} instance. Every submitted task will be serialized and
  * transferred to any node in grid.
@@ -229,9 +231,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        comp.call(task);
+        assert comp.isAsync();
 
-        return addFuture(comp.<T>future());
+        try {
+            comp.call(task);
+
+            return addFuture(comp.<T>future());
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            return addFuture(new GridFinishedFutureEx<T>(e));
+        }
     }
 
     /** {@inheritDoc} */
@@ -240,17 +250,25 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        comp.run(task);
+        assert comp.isAsync();
 
-        GridFuture<T> fut = comp.future().chain(new CX1<GridFuture<?>, T>() {
-            @Override public T applyx(GridFuture<?> fut) throws GridException {
-                fut.get();
+        try {
+            comp.run(task);
 
-                return res;
-            }
-        });
+            GridFuture<T> fut = comp.future().chain(new CX1<GridFuture<?>, T>() {
+                @Override public T applyx(GridFuture<?> fut) throws GridException {
+                    fut.get();
 
-        return addFuture(fut);
+                    return res;
+                }
+            });
+
+            return addFuture(fut);
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            return addFuture(new GridFinishedFutureEx<T>(e));
+        }
     }
 
     /** {@inheritDoc} */
@@ -259,9 +277,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        comp.run(task);
+        assert comp.isAsync();
 
-        return addFuture(comp.future());
+        try {
+            comp.run(task);
+
+            return addFuture(comp.future());
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            return addFuture(new GridFinishedFutureEx<>(e));
+        }
     }
 
     /**
@@ -315,12 +341,22 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
-        for (Callable<T> task : tasks) {
-            comp.call(task);
+        assert comp.isAsync();
 
+        for (Callable<T> task : tasks) {
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            GridFuture<T> fut = comp.future();
+            GridFuture<T> fut;
+
+            try {
+                comp.call(task);
+
+                fut = comp.future();
+            }
+            catch (GridException e) {
+                // Should not be thrown since uses asynchronous execution.
+                fut = new GridFinishedFutureEx<>(e);
+            }
 
             taskFuts.add(fut);
 
@@ -445,11 +481,22 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
+        assert comp.isAsync();
+
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            comp.call(cmd);
+            GridFuture<T> fut;
 
-            GridFuture<T> fut = comp.future();
+            try
+            {
+                comp.call(cmd);
+
+                fut = comp.future();
+            }
+            catch (GridException e) {
+                // Should not be thrown since uses asynchronous execution.
+                fut = new GridFinishedFutureEx<>(e);
+            }
 
             taskFuts.add(fut);
         }
@@ -519,9 +566,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        comp.run(cmd);
+        assert comp.isAsync();
 
-        addFuture(comp.future());
+        try {
+            comp.run(cmd);
+
+            addFuture(comp.future());
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            addFuture(new GridFinishedFutureEx(e));
+        }
     }
 
     /**

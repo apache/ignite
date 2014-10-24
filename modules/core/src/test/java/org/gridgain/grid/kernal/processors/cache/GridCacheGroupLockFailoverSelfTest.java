@@ -304,8 +304,10 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * @param master Master node to submit from.
      * @param preferredNodeId Node id to execute job on.
      * @param dataChunk Data chunk to put in cache.
+     * @throws GridException If failed.
      */
-    private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk) {
+    private void submitDataChunk(final Grid master, UUID preferredNodeId, final Collection<Integer> dataChunk)
+        throws GridException {
         GridCompute comp = master.forPredicate(workerNodesFilter).compute().enableAsync();
 
         comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);

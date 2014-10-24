@@ -245,8 +245,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApply1() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection grid) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection grid) throws GridException {
                 GridCompute comp = grid.compute().enableAsync();
 
                 comp.apply(new TestClosure(), "arg");
@@ -260,8 +260,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApply2() throws Exception {
-        testMasterLeaveAwareCallback(2, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection grid) {
+        testMasterLeaveAwareCallback(2, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection grid) throws GridException {
                 GridCompute comp = grid.compute().enableAsync();
 
                 comp.apply(new TestClosure(), Arrays.asList("arg1", "arg2"));
@@ -275,8 +275,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRun1() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.run(new TestRunnable());
@@ -290,8 +290,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRun2() throws Exception {
-        testMasterLeaveAwareCallback(2, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(2, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.run(Arrays.asList(new TestRunnable(), new TestRunnable()));
@@ -305,8 +305,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCall1() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.call(new TestCallable());
@@ -320,8 +320,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCall2() throws Exception {
-        testMasterLeaveAwareCallback(2, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(2, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.call(Arrays.asList(new TestCallable(), new TestCallable()));
@@ -335,8 +335,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast1() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.broadcast(new TestRunnable());
@@ -350,8 +350,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast2() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.broadcast(new TestCallable());
@@ -365,8 +365,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast3() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.broadcast(new TestClosure(), "arg");
@@ -380,8 +380,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityRun() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();
@@ -399,8 +399,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCall() throws Exception {
-        testMasterLeaveAwareCallback(1, new C1<GridProjection, GridFuture<?>>() {
-            @Override public GridFuture<?> apply(GridProjection prj) {
+        testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
                 GridCompute comp = prj.compute().enableAsync();
 
                 GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();

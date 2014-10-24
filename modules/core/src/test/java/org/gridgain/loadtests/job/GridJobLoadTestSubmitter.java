@@ -11,6 +11,7 @@ package org.gridgain.loadtests.job;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.util.future.*;
 
 import java.util.*;
 
@@ -69,9 +70,15 @@ public class GridJobLoadTestSubmitter implements Runnable {
                 return;
             }
 
-            comp.withTimeout(TIMEOUT).execute(GridJobLoadTestTask.class, params);
+            try {
+                comp.withTimeout(TIMEOUT).execute(GridJobLoadTestTask.class, params);
 
-            futures.add(comp.<Integer>future());
+                futures.add(comp.<Integer>future());
+            }
+            catch (GridException e) {
+                // Should not be thrown since uses asynchronous execution.
+                throw new GridRuntimeException(e);
+            }
         }
     }
 

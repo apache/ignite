@@ -1531,7 +1531,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @return Future.
      */
-    GridFuture<?> formatAsync() {
+    GridFuture<?> formatAsync() throws GridException {
         GridUuid id = meta.softDelete(null, null, ROOT_ID);
 
         if (id == null)
@@ -1656,26 +1656,27 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, @Nullable T arg) {
+        Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
         return executeAsync(task, rslvr, paths, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
+        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
+        throws GridException {
         return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) {
+        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
         return executeAsync(taskCls, rslvr, paths, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeSize, @Nullable T arg) {
+        long maxRangeSize, @Nullable T arg) throws GridException {
         return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
     }
 

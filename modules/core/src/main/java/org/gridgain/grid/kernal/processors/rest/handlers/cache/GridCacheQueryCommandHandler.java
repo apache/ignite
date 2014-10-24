@@ -116,11 +116,17 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 return new GridFinishedFutureEx<>(new GridException("Destination node ID has left the grid (retry " +
                     "the query): " + destId));
 
-            GridCompute comp = ctx.grid().forNodeId(destId).compute().withNoFailover().enableAsync();
+            try {
+                GridCompute comp = ctx.grid().forNodeId(destId).compute().withNoFailover().enableAsync();
 
-            comp.call(c);
+                comp.call(c);
 
-            return comp.future();
+                return comp.future();
+            }
+            catch (GridException e) {
+                // Should not be thrown since uses asynchronous execution.
+                return new GridFinishedFutureEx<>(e);
+            }
         }
     }
 
@@ -132,22 +138,28 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
         GridCompute comp = ctx.grid().forCache(cacheName).compute().withNoFailover().enableAsync();
 
-        comp.broadcast(c);
+        try {
+            comp.broadcast(c);
 
-        GridFuture<Collection<Object>> fut = comp.future();
+            GridFuture<Collection<Object>> fut = comp.future();
 
-        return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
-            @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
-                try {
-                    fut.get();
+            return fut.chain(new C1<GridFuture<Collection<Object>>, GridRestResponse>() {
+                @Override public GridRestResponse apply(GridFuture<Collection<Object>> fut) {
+                    try {
+                        fut.get();
 
-                    return new GridRestResponse();
+                        return new GridRestResponse();
+                    }
+                    catch (GridException e) {
+                        throw new GridClosureException(e);
+                    }
                 }
-                catch (GridException e) {
-                    throw new GridClosureException(e);
-                }
-            }
-        });
+            });
+        }
+        catch (GridException e) {
+            // Should not be thrown since uses asynchronous execution.
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 
     /**

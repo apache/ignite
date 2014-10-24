@@ -274,7 +274,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
                 if (chainedFut != null)
                     chainedFut.onDone(res);
             }
-            catch (Exception e) {
+            catch (GridException | RuntimeException e) {
                 if (chainedFut != null)
                     chainedFut.onDone(e);
             }

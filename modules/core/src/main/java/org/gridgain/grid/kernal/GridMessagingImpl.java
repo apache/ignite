@@ -10,8 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.GridProjection;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
@@ -25,7 +24,7 @@ import java.util.*;
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> implements GridMessaging, Externalizable {
+public class GridMessagingImpl extends AsyncSupportAdapter implements GridMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -149,7 +148,7 @@ public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> im
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public UUID remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) throws GridException {
         A.notNull(p, "p");
 
         guard();
@@ -165,7 +164,7 @@ public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> im
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) {
+    @Override public void stopRemoteListen(UUID opId) throws GridException {
         A.notNull(opId, "opId");
 
         saveOrGet(ctx.continuous().stopRoutine(opId));
@@ -183,6 +182,11 @@ public class GridMessagingImpl extends GridAsyncSupportAdapter<GridMessaging> im
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridMessaging enableAsync() {
+        return (GridMessaging)super.enableAsync();
     }
 
     /** {@inheritDoc} */

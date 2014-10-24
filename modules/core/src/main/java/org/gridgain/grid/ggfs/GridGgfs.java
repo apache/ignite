@@ -10,7 +10,7 @@
 package org.gridgain.grid.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +47,7 @@ import java.util.*;
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
-public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs> {
+public interface GridGgfs extends GridGgfsFileSystem, AsyncSupport {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
@@ -250,7 +250,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
     /**
      * Formats the file system removing all existing entries from it.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @throws GridException In case format has failed.
      */
@@ -259,7 +259,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
     /**
      * Executes GGFS task.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -275,7 +275,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
      * Executes GGFS task with overridden maximum range length (see
      * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -295,7 +295,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
     /**
      * Executes GGFS task.
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -311,7 +311,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
      * Executes GGFS task with overridden maximum range length (see
      * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
-     * Supports asynchronous execution (see {@link GridAsyncSupport}).
+     * Supports asynchronous execution (see {@link AsyncSupport}).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -326,4 +326,7 @@ public interface GridGgfs extends GridGgfsFileSystem, GridAsyncSupport<GridGgfs>
     public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
+
+    /** {@inheritDoc} */
+    @Override public GridGgfs enableAsync();
 }
