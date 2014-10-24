@@ -13,7 +13,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.design.async.*;
 import org.gridgain.grid.design.cache.*;
 import org.gridgain.grid.design.cache.query.*;
 import org.gridgain.grid.design.lang.*;
@@ -56,7 +55,7 @@ import java.util.concurrent.locks.*;
  * @param <K> Cache key type.
  * @param <V> Cache value type.
  */
-public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, AsyncSupport {
+public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Override IgniteCache<K, V> enableAsync();
 

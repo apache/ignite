@@ -10,6 +10,7 @@
 package org.gridgain.grid.design;
 
 import org.gridgain.grid.design.cluster.*;
+import org.gridgain.grid.design.plugin.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -202,4 +203,14 @@ public interface Ignite {
      * @return Instance of the {@link IgniteScheduler} API.
      */
     public IgniteScheduler scheduler();
+
+    /**
+     * Gets an instance of deployed Ignite plugin.
+     *
+     * @param name Plugin name.
+     * @param <T> Plugin type.
+     * @return Plugin instance.
+     * @throws PluginNotFoundException If plugin for the given name was not found.
+     */
+    public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 }

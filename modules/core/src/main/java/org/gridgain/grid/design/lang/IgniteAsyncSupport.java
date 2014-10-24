@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 /**
  * TODO: Add interface description.
@@ -15,8 +15,8 @@ package org.gridgain.grid.design.async;
  * @author @java.author
  * @version @java.version
  */
-public interface AsyncSupport {
-    public AsyncSupport enableAsync();
+public interface IgniteAsyncSupport {
+    public IgniteAsyncSupport enableAsync();
 
     public boolean isAsync();
 

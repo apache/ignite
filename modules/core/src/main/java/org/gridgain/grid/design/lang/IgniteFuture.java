@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;

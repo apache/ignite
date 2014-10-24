@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
@@ -19,7 +19,7 @@ import org.gridgain.grid.resources.*;
  * @author @java.author
  * @version @java.version
  */
-public class AsyncSupportAdapter implements AsyncSupport {
+public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
     /** Marshaller. */
     @GridMarshallerResource
     private GridMarshaller m;
@@ -29,12 +29,12 @@ public class AsyncSupportAdapter implements AsyncSupport {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public AsyncSupport enableAsync() {
+    @Override public IgniteAsyncSupport enableAsync() {
         try {
-            AsyncSupportAdapter clone;
+            IgniteAsyncSupportAdapter clone;
 
             if (this instanceof Cloneable) {
-                clone = (AsyncSupportAdapter)clone();
+                clone = (IgniteAsyncSupportAdapter)clone();
             }
             else {
                 try {

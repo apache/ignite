@@ -11,7 +11,7 @@ package org.gridgain.grid.design;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
@@ -99,7 +99,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface IgniteCompute extends AsyncSupport {
+public interface IgniteCompute extends IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Override IgniteCompute enableAsync();
 

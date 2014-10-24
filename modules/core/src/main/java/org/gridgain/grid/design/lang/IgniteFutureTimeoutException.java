@@ -7,15 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Future computation cannot be retrieved because it was cancelled.
+ * Future computation completion is timed out.
  */
-public class IgniteFutureCancelledException extends GridException {
+public class IgniteFutureTimeoutException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class IgniteFutureCancelledException extends GridException {
      *
      * @param msg Error message.
      */
-    public IgniteFutureCancelledException(String msg) {
+    public IgniteFutureTimeoutException(String msg) {
         super(msg);
     }
 
@@ -34,7 +34,7 @@ public class IgniteFutureCancelledException extends GridException {
      *
      * @param cause Non-null throwable cause.
      */
-    public IgniteFutureCancelledException(Throwable cause) {
+    public IgniteFutureTimeoutException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -44,7 +44,7 @@ public class IgniteFutureCancelledException extends GridException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteFutureCancelledException(String msg, @Nullable Throwable cause) {
+    public IgniteFutureTimeoutException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
