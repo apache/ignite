@@ -12,7 +12,22 @@ package org.gridgain.grid.portables;
 import org.jetbrains.annotations.*;
 
 /**
- * TODO GG-9352 Fix java doc.
+ * A wrapper for {@code GridPortableObject} that allow to create copy of the portable object with some modifications.
+ *
+ * <p>
+ * Usage:
+ * <pre name=code class=java>
+ * GridMutablePortableObject mutableObj = portableObj.toMutable();
+ *
+ * String firstName = mutableObj.fieldValue("firstName");
+ * String lastName = mutableObj.fieldValue("firstName");
+ * mutableObj.fieldValue("fullName", firstName + " " + lastName)
+ *
+ * portableObj = mutableObj.toPortableObject();
+ * </pre>
+ *
+ * <p>
+ * This class is not thread-safe.
  */
 public interface GridMutablePortableObject extends GridPortableWriter {
     /**
