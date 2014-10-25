@@ -69,7 +69,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public void onIgniteStop(boolean cancel);
 
     /**
-     * Gets discovery data object that will be sent to new node
+     * Gets plugin discovery data object that will be sent to the new node
      * during discovery process.
      *
      * @param nodeId ID of new node that joins topology.
@@ -79,8 +79,9 @@ public interface PluginProvider<C extends PluginConfiguration> {
     @Nullable public Object provideDiscoveryData(UUID nodeId);
 
     /**
-     * Receives discovery data object from remote nodes (called
-     * on new node during discovery process).
+     * Receives plugin discovery data object from remote nodes (called
+     * on new node during discovery process). This data is provided by
+     * {@link #provideDiscoveryData(UUID)} method on the other nodes.
      *
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
