@@ -76,7 +76,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Object collectDiscoveryData(UUID nodeId);
+    @Nullable public Object provideDiscoveryData(UUID nodeId);
 
     /**
      * Receives discovery data object from remote nodes (called
@@ -85,14 +85,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
      */
-    public void onDiscoveryDataReceived(Object data);
-
-    /**
-     * Prints memory statistics (sizes of internal structures, etc.).
-     *
-     * NOTE: this method is for testing and profiling purposes only.
-     */
-    public void printMemoryStats();
+    public void receiveDiscoveryData(Object data);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator
@@ -101,5 +94,5 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param node Joining node.
      * @throws PluginValidationException If cluster-wide plugin validation failed.
      */
-    public void validateNode(GridNode node) throws PluginValidationException;
+    public void validateNewNode(GridNode node) throws PluginValidationException;
 }
