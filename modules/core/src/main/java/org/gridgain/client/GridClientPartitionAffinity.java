@@ -10,6 +10,7 @@
 package org.gridgain.client;
 
 import org.gridgain.client.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -202,7 +203,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         if (nodes.size() == 1) // Minor optimization.
             return GridClientUtils.first(nodes);
 
-        final Map<NodeInfo, GridClientNode> lookup = new HashMap<>(nodes.size());
+        final Map<NodeInfo, GridClientNode> lookup = U.newHashMap(nodes.size());
 
         // Store nodes in map for fast lookup.
         for (GridClientNode node : nodes)

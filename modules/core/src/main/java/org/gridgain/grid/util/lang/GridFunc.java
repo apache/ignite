@@ -2212,7 +2212,7 @@ public class GridFunc {
                         iter.remove();
         }
         else {
-            res = new HashMap<>(m.size());
+            res = U.newHashMap(m.size());
 
             if (!isEmpty(p) && !isAlwaysTrue(p))
                 for (Map.Entry<K, V> e : m.entrySet())

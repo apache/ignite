@@ -2852,7 +2852,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             assert fileInfo.isDirectory();
 
             Map<String, GridGgfsListingEntry> listing =
-                new HashMap<>(fileInfo.listing().size() + (rmv ? 0 : 1));
+                U.newHashMap(fileInfo.listing().size() + (rmv ? 0 : 1));
 
             listing.putAll(fileInfo.listing());
 

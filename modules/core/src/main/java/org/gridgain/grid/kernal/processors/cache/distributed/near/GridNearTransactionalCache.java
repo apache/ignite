@@ -749,7 +749,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                                map = new HashMap<>(affNodes.size());
+                                map = U.newHashMap(affNodes.size());
                             }
 
                             topVer = cand.topologyVersion();
@@ -867,7 +867,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                     keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                                    map = new HashMap<>(affNodes.size());
+                                    map = U.newHashMap(affNodes.size());
                                 }
 
                                 GridNode primary = ctx.affinity().primary(key, cand.topologyVersion());

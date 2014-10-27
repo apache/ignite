@@ -435,7 +435,7 @@ public class GridToStringBuilder {
                     if (val instanceof Collection && ((Collection)val).size() > MAX_COL_SIZE)
                         val = F.retain((Collection)val, true, MAX_COL_SIZE);
                     else if (val instanceof Map && ((Map)val).size() > MAX_COL_SIZE) {
-                        Map tmp = new HashMap(MAX_COL_SIZE);
+                        Map tmp = U.newHashMap(MAX_COL_SIZE);
                         int cntr = 0;
 
                         for (Object o : ((Map)val).entrySet()) {

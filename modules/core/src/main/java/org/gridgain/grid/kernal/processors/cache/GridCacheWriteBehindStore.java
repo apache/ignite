@@ -593,7 +593,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
         StoreOperation operation = null;
 
         // Construct a map for underlying store
-        Map<K, V> batch = new LinkedHashMap<>(valMap.size());
+        Map<K, V> batch = U.newLinkedHashMap(valMap.size());
 
         for (Map.Entry<K, StatefulValue<V>> e : valMap.entrySet()) {
             if (operation == null)
@@ -760,7 +760,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
             StoreOperation operation = null;
 
             Map<K, StatefulValue<V>> batch = null;
-            Map<K, StatefulValue<V>> pending  = new LinkedHashMap<>(batchSize);
+            Map<K, StatefulValue<V>> pending  = U.newLinkedHashMap(batchSize);
 
             while (it.hasNext()) {
                 Map.Entry<K, StatefulValue<V>> e = it.next();
@@ -790,7 +790,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
                     if (operation != val.operation()) {
                         // Operation is changed, so we need to perform a batch.
                         batch = pending;
-                        pending = new LinkedHashMap<>(batchSize);
+                        pending = U.newLinkedHashMap(batchSize);
 
                         operation = val.operation();
 
@@ -801,7 +801,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
 
                     if (pending.size() == batchSize) {
                         batch = pending;
-                        pending = new LinkedHashMap<>(batchSize);
+                        pending = U.newLinkedHashMap(batchSize);
 
                         operation = null;
                     }

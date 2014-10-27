@@ -206,7 +206,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         for (T obj : c) {
             if (add) {
                 if (addKeys == null)
-                    addKeys = new HashMap<>(BATCH_SIZE);
+                    addKeys = U.newHashMap(BATCH_SIZE);
 
                 addKeys.put(itemKey(obj), true);
 
@@ -237,7 +237,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         for (Object obj : c) {
             if (rmv) {
                 if (rmvKeys == null)
-                    rmvKeys = new HashSet<>(BATCH_SIZE);
+                    rmvKeys = U.newHashSet(BATCH_SIZE);
 
                 rmvKeys.add(itemKey(obj));
 
@@ -272,7 +272,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                         rmv = true;
 
                         if (rmvKeys == null)
-                            rmvKeys = new HashSet<>(BATCH_SIZE);
+                            rmvKeys = U.newHashSet(BATCH_SIZE);
 
                         rmvKeys.add(itemKey(val));
 
