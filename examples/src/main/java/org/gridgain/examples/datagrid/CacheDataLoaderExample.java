@@ -103,7 +103,7 @@ public class CacheDataLoaderExample {
 
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache data loader example started.");
+            System.out.println(">>> Cache data loader with Map example started.");
 
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
@@ -133,7 +133,7 @@ public class CacheDataLoaderExample {
 
                 checkCache(g);
 
-                System.out.println(">>> Cache data loader example with map finished.");
+                System.out.println(">>> Cache data loader example with Map finished.");
             }
         }
     }
