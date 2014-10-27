@@ -895,6 +895,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             incrementActiveTasks();
 
             GridFuture<Object> fut;
+
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
                     new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, updater), false);
