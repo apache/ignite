@@ -104,6 +104,9 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
 
     /**
+     * Data loader should correctly load entries from HashMap in case of grids with more than one node
+     *  and with GridOptimizedMarshaller that requires serializable.
+     *
      * @throws Exception If failed.
      */
     public void testAddDataFromMap() throws Exception {

@@ -36,14 +36,12 @@ import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 
-import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.util.typedef.internal.U.*;
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -513,26 +511,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         return grid;
     }
-
-    /**
-     * Start a grid with the given configuration file in a separate JVM. Internally this method starts a process with
-     * ggstart.[bat/sh] command passed. Process's error stream is redirected to standard input stream.
-     *
-     * @param cfgPath Path to configuration file relative to GG_HOME.
-     * @return Instance of created OS process.
-     */
-    protected final Process startGridExt(String cfgPath) throws IOException {
-        String cmd = U.getGridGainHome() + "/os/bin/ggstart." + (U.isWindows() ? "bat" : "sh");
-
-        ProcessBuilder pb = new ProcessBuilder();
-
-        pb.command(cmd, cfgPath);
-
-        pb.redirectErrorStream(true);
-
-        return pb.start();
-    }
-
 
     /**
      * @param cnt Grid count.
