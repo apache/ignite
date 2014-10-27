@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * {@link GridMessaging} implementation.
  */
-public class GridMessagingImpl extends AsyncSupportAdapter implements GridMessaging, Externalizable {
+public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements GridMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

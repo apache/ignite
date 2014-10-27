@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * {@link GridCompute} implementation.
  */
-public class GridServicesImpl extends AsyncSupportAdapter implements GridServices, Externalizable {
+public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

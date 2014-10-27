@@ -10,7 +10,7 @@
 package org.gridgain.grid.service;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -115,7 +115,7 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface GridServices extends AsyncSupport {
+public interface GridServices extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridServices} instance belongs.
      *
@@ -136,7 +136,7 @@ public interface GridServices extends AsyncSupport {
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -153,7 +153,7 @@ public interface GridServices extends AsyncSupport {
      * This method is analogous to calling
      * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 0, 1)} method.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -185,7 +185,7 @@ public interface GridServices extends AsyncSupport {
      *     grid.services().deploy(cfg);
      * </pre>
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -221,7 +221,7 @@ public interface GridServices extends AsyncSupport {
      *     grid.services().deploy(cfg);
      * </pre>
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -252,7 +252,7 @@ public interface GridServices extends AsyncSupport {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">
@@ -279,7 +279,7 @@ public interface GridServices extends AsyncSupport {
      * method whenever {@link GridService#cancel(GridServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Name of service to cancel.
      * @throws GridException If failed to cancel service.
@@ -292,7 +292,7 @@ public interface GridServices extends AsyncSupport {
      * Note that depending on user logic, it may still take extra time for a service to
      * finish execution, even after it was cancelled.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @throws GridException If failed to cancel services.
      */

@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * {@link GridEvents} implementation.
  */
-public class GridEventsImpl extends AsyncSupportAdapter implements GridEvents, Externalizable {
+public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

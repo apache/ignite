@@ -70,14 +70,15 @@ public final class CreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            /*
-            TODO 9341 example
             double crdRisk = g.compute().call(jobs(g.nodes().size(), portfolio, horizon, iter, percentile),
                 new GridReducer<Double, Double>() {
+                    /** Collected values sum. */
                     private double sum;
 
+                    /** Collected values count. */
                     private int cnt;
 
+                    /** {@inheritDoc} */
                     @Override public synchronized boolean collect(Double e) {
                         sum += e;
                         cnt++;
@@ -85,15 +86,15 @@ public final class CreditRiskExample {
                         return true;
                     }
 
+                    /** {@inheritDoc} */
                     @Override public synchronized Double reduce() {
                         return sum / cnt;
                     }
-                }).get();
+                });
 
             System.out.println();
             System.out.println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
                 (System.currentTimeMillis() - start) + "ms]");
-            */
         }
         // We specifically don't do any error handling here to
         // simplify the example. Real application may want to

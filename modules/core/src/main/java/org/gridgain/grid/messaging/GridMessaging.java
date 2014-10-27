@@ -10,7 +10,7 @@
 package org.gridgain.grid.messaging;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +44,7 @@ import java.util.*;
  * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
  * actually do arrive, they will be ignored.
  */
-public interface GridMessaging extends AsyncSupport {
+public interface GridMessaging extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -117,7 +117,7 @@ public interface GridMessaging extends AsyncSupport {
      * projection can send a message for a given topic and all nodes within projection will receive
      * listener notification.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param topic Topic to subscribe to, {@code null} means default topic.
      * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
@@ -130,7 +130,7 @@ public interface GridMessaging extends AsyncSupport {
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, GridBiPredicate)} method.
      * @throws GridException If failed to unregister listeners.

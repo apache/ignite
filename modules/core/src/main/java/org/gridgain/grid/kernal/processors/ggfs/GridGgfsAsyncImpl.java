@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.jetbrains.annotations.*;
@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Ggfs supporting asynchronous operations.
  */
-public class GridGgfsAsyncImpl extends AsyncSupportAdapter implements GridGgfsEx {
+public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements GridGgfsEx {
     /** */
     private final GridGgfsImpl ggfs;
 

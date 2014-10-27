@@ -10,7 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +43,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  */
-public interface GridEvents extends AsyncSupport {
+public interface GridEvents extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridMessaging} instance belongs.
      *
@@ -55,7 +55,7 @@ public interface GridEvents extends AsyncSupport {
      * Queries nodes in this projection for events using passed in predicate filter for event
      * selection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
@@ -75,7 +75,7 @@ public interface GridEvents extends AsyncSupport {
      * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
      * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
      *      on remote nodes by passed in {@code rmtFilter}.
@@ -99,7 +99,7 @@ public interface GridEvents extends AsyncSupport {
      * any node within this grid projection that pass remove filter will be sent to local node for
      * local listener notification.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param bufSize Remote events buffer size. Events from remote nodes won't be sent until buffer
      *      is full or time interval is exceeded.
@@ -136,7 +136,7 @@ public interface GridEvents extends AsyncSupport {
      * Stops listening to remote events. This will unregister all listeners identified with provided
      * operation ID on all nodes defined by {@link #projection()}.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(GridBiPredicate, GridPredicate, int...)} method.
@@ -148,7 +148,7 @@ public interface GridEvents extends AsyncSupport {
     /**
      * Waits for the specified events.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
      *      end the wait.

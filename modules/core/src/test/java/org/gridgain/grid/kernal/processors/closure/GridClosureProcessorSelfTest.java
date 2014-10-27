@@ -19,6 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -468,5 +469,64 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         for (int i = 1; i <= jobs.size(); i++)
             assert results.contains(i) : "Collection of results does not contain value: " + i;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReduceAsync() throws Exception {
+        Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
+
+        GridCompute comp = grid(0).compute().enableAsync();
+
+        comp.call(jobs, F.sumIntReducer());
+
+        GridFuture<Integer> fut = comp.future();
+
+        // Sum of arithmetic progression.
+        int exp = (1 + jobs.size()) * jobs.size() / 2;
+
+        assert fut.get() == exp :
+            "Execution result must be equal to " + exp + ", actual: " + fut.get();
+
+        assert execCntr.get() == jobs.size() :
+            "Execution counter must be equal to " + jobs.size() + ", actual: " + execCntr.get();
+
+        execCntr.set(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReducerError() throws Exception {
+        final Grid g = grid(0);
+
+        final Collection<Callable<Integer>> jobs = new ArrayList<>();
+
+        for (int i = 0; i < g.nodes().size(); i++) {
+            jobs.add(new GridCallable<Integer>() {
+                @Override public Integer call() throws Exception {
+                    throw new RuntimeException("Test exception.");
+                }
+            });
+        }
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                g.compute().call(jobs, new GridReducer<Integer, Object>() {
+                    @Override public boolean collect(@Nullable Integer e) {
+                        fail("Expects failed jobs never call 'collect' method.");
+
+                        return true;
+                    }
+
+                    @Override public Object reduce() {
+                        return null;
+                    }
+                });
+
+                return null;
+            }
+        }, GridException.class, null);
     }
 }

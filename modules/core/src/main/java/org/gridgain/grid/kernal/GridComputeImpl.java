@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -44,7 +44,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     private UUID subjId;
 
     /** */
-    private AsyncSupportAdapter asyncSup;
+    private IgniteAsyncSupportAdapter asyncSup;
 
     /**
      * Required by {@link Externalizable}.
@@ -64,7 +64,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
         this.prj = prj;
         this.subjId = subjId;
 
-        asyncSup = new AsyncSupportAdapter(async);
+        asyncSup = new IgniteAsyncSupportAdapter(async);
     }
 
     /** {@inheritDoc} */
@@ -295,6 +295,39 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
         try {
             return asyncSup.saveOrGet(ctx.closure().callAsync(job, args, prj.nodes()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc)
+        throws GridException {
+        A.notEmpty(jobs, "jobs");
+        A.notNull(rdc, "rdc");
+
+        guard();
+
+        try {
+            return asyncSup.saveOrGet(ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R1, R2, T> R2 apply(GridClosure<T, R1> job, Collection<? extends T> args,
+        GridReducer<R1, R2> rdc) throws GridException {
+        A.notNull(job, "job");
+        A.notNull(rdc, "rdc");
+        A.notNull(args, "args");
+
+        guard();
+
+        try {
+            return asyncSup.saveOrGet(ctx.closure().callAsync(job, args, rdc, prj.nodes()));
         }
         finally {
             unguard();

@@ -31,8 +31,7 @@ object ScalarPiCalculationExample {
         scalar("examples/config/example-compute.xml") {
             val jobs = for (i <- 0 until grid$.nodes().size()) yield () => calcPi(i * N)
 
-            // TODO 9341 example
-            // println("Pi estimate: " + grid$.reduce$[Double, Double](jobs, _.sum, null))
+            println("Pi estimate: " + grid$.reduce$[Double, Double](jobs, _.sum, null))
         }
     }
 

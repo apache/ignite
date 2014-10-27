@@ -40,8 +40,6 @@ public class ComputeReducerExample {
             System.out.println();
             System.out.println("Compute reducer example started.");
 
-            /*
-            TODO 9341 example
             Integer sum = g.compute().apply(
                 new GridClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
@@ -73,12 +71,11 @@ public class ComputeReducerExample {
                         return sum.get();
                     }
                 }
-            ).get();
+            );
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
             System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
-            */
         }
     }
 }

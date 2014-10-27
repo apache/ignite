@@ -474,6 +474,95 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     }
 
     /**
+     * Asynchronous closures execution on this projection with reduction. This call will
+     * return immediately with the future that can be used to wait asynchronously for the results.
+     *
+     * @param s Optional sequence of closures to call. If empty or `null` - this method
+     *      is no-op and will return finished future over `null`.
+     * @param r Optional reduction function. If `null` - this method
+     *      is no-op and will return finished future over `null`.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Future over the reduced result or `null` (see above).
+     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     */
+    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+        assert(s != null && r != null)
+
+        val comp = forPredicate(p).compute().enableAsync()
+
+        comp.call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
+
+        comp.future()
+    }
+
+    /**
+     * <b>Alias</b> for the same function `reduceAsync$`.
+     *
+     * @param s Optional sequence of closures to call. If empty or `null` - this method
+     *      is no-op and will return finished future over `null`.
+     * @param r Optional reduction function. If `null` - this method
+     *      is no-op and will return finished future over `null`.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Future over the reduced result or `null` (see above).
+     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     */
+    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+        reduceAsync$(s, r, p)
+    }
+
+    /**
+     * Synchronous closures execution on this projection with reduction.
+     * This call will block until all results are reduced.
+     *
+     * @param s Optional sequence of closures to call. If empty or `null` - this method
+     *      is no-op and will return `null`.
+     * @param r Optional reduction function. If `null` - this method
+     *      is no-op and will return `null`.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Reduced result or `null` (see above).
+     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     */
+    def reduce$[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
+        reduceAsync$(s, r, p).get
+
+    /**
+     * Synchronous closures execution on this projection with reduction.
+     * This call will block until all results are reduced. If this projection
+     * is empty than `dflt` closure will be executed and its result returned.
+     *
+     * @param s Optional sequence of closures to call. If empty or `null` - this method
+     *      is no-op and will return `null`.
+     * @param r Optional reduction function. If `null` - this method
+     *      is no-op and will return `null`.
+     * @param dflt Closure to execute if projection is empty.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Reduced result or `null` (see above).
+     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     */
+    def reduceSafe[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2,
+        dflt: () => R2, @Nullable p: NF): R2 = {
+        assert(dflt != null)
+
+        try
+            reduceAsync$(s, r, p).get
+        catch {
+            case _: GridEmptyProjectionException => dflt()
+        }
+    }
+
+    /**
+     * <b>Alias</b> for the same function `reduce$`.
+     *
+     * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and will return `null`.
+     * @param r Optional reduction function. If `null` - this method is no-op and will return `null`.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Reduced result or `null` (see above).
+     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     */
+    def @<[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
+        reduceAsync$(s, r, p).get
+
+    /**
      * Executes given closure on the nodes where data for provided affinity key is located. This
      * is known as affinity co-location between compute grid (a closure) and in-memory data grid
      * (value with affinity key). Note that implementation of multiple executions of the same closure will

@@ -274,6 +274,31 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testApply3() throws Exception {
+        testMasterLeaveAwareCallback(2, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection grid) throws GridException {
+                GridCompute comp = grid.compute().enableAsync();
+
+                comp.apply(new TestClosure(),
+                    Arrays.asList("arg1", "arg2"),
+                    new GridReducer<Void, Object>() {
+                        @Override public boolean collect(@Nullable Void aVoid) {
+                            return true;
+                        }
+
+                        @Override public Object reduce() {
+                            return null;
+                        }
+                    });
+
+                return comp.future();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRun1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<GridProjection, GridFuture<?>>() {
             @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
@@ -325,6 +350,31 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 GridCompute comp = prj.compute().enableAsync();
 
                 comp.call(Arrays.asList(new TestCallable(), new TestCallable()));
+
+                return comp.future();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCall3() throws Exception {
+        testMasterLeaveAwareCallback(2, new CX1<GridProjection, GridFuture<?>>() {
+            @Override public GridFuture<?> applyx(GridProjection prj) throws GridException {
+                GridCompute comp = prj.compute().enableAsync();
+
+                comp.call(
+                    Arrays.asList(new TestCallable(), new TestCallable()),
+                    new GridReducer<Void, Object>() {
+                        @Override public boolean collect(@Nullable Void aVoid) {
+                            return true;
+                        }
+
+                        @Override public Object reduce() {
+                            return null;
+                        }
+                    });
 
                 return comp.future();
             }

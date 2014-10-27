@@ -32,5 +32,5 @@ public interface IgniteAsyncSupport {
      *
      * @return Future for previous asynchronous operation.
      */
-    public <R> IgniteFuture<R> future();
+    public <R> GridFuture<R> future();
 }

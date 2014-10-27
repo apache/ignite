@@ -52,9 +52,6 @@ object ScalarCreditRiskExample {
             // Mark the stopwatch.
             val start = System.currentTimeMillis
 
-            /*
-            TODO 9341 example
-
             // Calculate credit risk and print it out.
             // As you can see the grid enabling is completely hidden from the caller
             // and it is fully transparent to him. In fact, the caller is never directly
@@ -66,7 +63,6 @@ object ScalarCreditRiskExample {
 
             println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
                 (System.currentTimeMillis - start) + "ms]")
-                */
         }
     }
 

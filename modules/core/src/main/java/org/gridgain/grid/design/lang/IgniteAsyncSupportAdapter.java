@@ -57,7 +57,7 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable 
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> GridFuture<R> future() {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
@@ -68,7 +68,7 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable 
 
         curFut.set(null);
 
-        return (IgniteFuture<R>)fut;
+        return (GridFuture<R>)fut;
     }
 
     /**

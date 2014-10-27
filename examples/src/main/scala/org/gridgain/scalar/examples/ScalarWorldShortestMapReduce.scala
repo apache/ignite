@@ -26,11 +26,8 @@ object ScalarWorldShortestMapReduce extends App {
     scalar("examples/config/example-compute.xml") {
         val input = "World shortest mapreduce application"
 
-        /*
-        TODO 9341 example
         println("Non-space characters count: " +
             grid$.reduce$[Int, Int](for (w <- input.split(" ")) yield () => w.length, _.sum, null)
         )
-        */
     }
 }

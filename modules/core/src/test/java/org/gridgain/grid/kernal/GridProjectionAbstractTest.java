@@ -58,6 +58,21 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         }
     };
 
+    /** Reducer. */
+    private GridReducer<String, Object> rdc = new GridReducer<String, Object>() {
+        @Override public boolean collect(String e) {
+            return true;
+        }
+
+        @Nullable @Override public Object reduce() {
+            return null;
+        }
+
+        @Override public String toString() {
+            return "rdc";
+        }
+    };
+
     /** */
     protected GridProjectionAbstractTest() {
         // No-op.
@@ -276,6 +291,9 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             call4(cnt);
             call5(cnt);
 
+            forkjoin1(cnt);
+            forkjoin2(cnt);
+
             exec1(cnt);
             exec2(cnt);
 
@@ -438,6 +456,50 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         for (String resStr : res)
             assertEquals("arg", resStr);
+    }
+
+    /**
+     * @param cnt Counter.
+     * @throws Exception If failed.
+     */
+    private void forkjoin1(AtomicInteger cnt) throws Exception {
+        Collection<String> args = F.asList("a", "b", "c");
+
+        GridCompute comp = prj.compute().enableAsync();
+
+        comp.apply(clrJob, args, rdc);
+
+        GridFuture fut = comp.future();
+
+        waitForExecution(fut);
+
+        cnt.set(0);
+
+        prj.compute().apply(clrJob, args, rdc);
+
+        waitForValue(cnt, args.size());
+    }
+
+    /**
+     * @param cnt Counter.
+     * @throws Exception If failed.
+     */
+    private void forkjoin2(AtomicInteger cnt) throws Exception {
+        Collection<Callable<String>> jobs = F.asList(calJob);
+
+        GridCompute comp = prj.compute().enableAsync();
+
+        comp.call(jobs, rdc);
+
+        GridFuture fut = comp.future();
+
+        waitForExecution(fut);
+
+        cnt.set(0);
+
+        prj.compute().call(jobs, rdc);
+
+        waitForValue(cnt, jobs.size());
     }
 
     /**

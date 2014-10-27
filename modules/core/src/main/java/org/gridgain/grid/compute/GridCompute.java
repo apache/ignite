@@ -10,7 +10,7 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
@@ -98,7 +98,7 @@ import java.util.concurrent.*;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  */
-public interface GridCompute extends AsyncSupport {
+public interface GridCompute extends IgniteAsyncSupport {
     /**
      * Gets grid projection to which this {@code GridCompute} instance belongs.
      *
@@ -110,7 +110,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -125,7 +125,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -141,7 +141,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
@@ -156,7 +156,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param task Instance of task to execute. If task class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
@@ -174,7 +174,7 @@ public interface GridCompute extends AsyncSupport {
      * If task for given name has not been deployed yet, then {@code taskName} will be
      * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -187,7 +187,7 @@ public interface GridCompute extends AsyncSupport {
     /**
      * Broadcasts given job to all nodes in grid projection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @throws GridException If job failed.
@@ -198,7 +198,7 @@ public interface GridCompute extends AsyncSupport {
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
      * job result. Collection of all returned job results is returned from the result future.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @return Collection of results for this execution.
@@ -211,7 +211,7 @@ public interface GridCompute extends AsyncSupport {
      * Every participating node will return a job result. Collection of all returned job results
      * is returned from the result future.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
      * @param arg Job closure argument.
@@ -223,7 +223,7 @@ public interface GridCompute extends AsyncSupport {
     /**
      * Executes provided job on a node in this grid projection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job closure to execute.
      * @throws GridException If execution failed.
@@ -233,7 +233,7 @@ public interface GridCompute extends AsyncSupport {
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param jobs Collection of jobs to execute.
      * @throws GridException If execution failed.
@@ -244,7 +244,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes provided job on a node in this grid projection. The result of the
      * job execution is returned from the result closure.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to execute.
      * @return Job result.
@@ -256,7 +256,7 @@ public interface GridCompute extends AsyncSupport {
      * Executes collection of jobs on nodes within this grid projection.
      * Collection of all returned job results is returned from the result future.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param jobs Collection of jobs to execute.
      * @return Collection of job results for this execution.
@@ -265,11 +265,24 @@ public interface GridCompute extends AsyncSupport {
     public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws GridException;
 
     /**
+     * Executes collection of jobs on nodes within this grid projection. The returned
+     * job results will be reduced into an individual result by provided reducer.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
+     *
+     * @param jobs Collection of jobs to execute.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return Future with reduced job result for this execution.
+     * @throws GridException If execution failed.
+     */
+    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) throws GridException;
+
+    /**
      * Executes provided closure job on a node in this grid projection. This method is different
      * from {@code run(...)} and {@code call(...)} methods in a way that it receives job argument
      * which is then passed into the closure at execution time.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to run.
      * @param arg Job argument.
@@ -283,7 +296,7 @@ public interface GridCompute extends AsyncSupport {
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection.
      * <p>
-     * Supports asynchronous execution (see {@link AsyncSupport}).
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to run.
      * @param args Job arguments.
@@ -291,6 +304,23 @@ public interface GridCompute extends AsyncSupport {
      * @throws GridException If execution failed.
      */
     public <T, R> Collection<R> apply(GridClosure<T, R> job, Collection<? extends T> args) throws GridException;
+
+    /**
+     * Executes provided closure job on nodes within this grid projection. A new job is executed for
+     * every argument in the passed in collection. The number of actual job executions will be
+     * equal to size of the job arguments collection. The returned job results will be reduced
+     * into an individual result by provided reducer.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
+     *
+     * @param job Job to run.
+     * @param args Job arguments.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return Future with reduced job result for this execution.
+     * @throws GridException If execution failed.
+     */
+    public <R1, R2, T> R2 apply(GridClosure<T, R1> job, Collection<? extends T> args,
+        GridReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Cancels task with the given execution session ID, if it is currently running inside this projection
