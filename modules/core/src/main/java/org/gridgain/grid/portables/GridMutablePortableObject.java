@@ -31,10 +31,14 @@ import org.jetbrains.annotations.*;
  */
 public interface GridMutablePortableObject extends GridPortableWriter {
     /**
+     * Returns the value of the specified field.
+     * If the value is another portable object instance of {@code GridMutablePortableObject} will be returned.
+     * Arrays and collections returned from this method are modifiable.
+     *
      * @param fldName Field name.
      * @return Value of the field.
      */
-    <F> F fieldValue(String fldName);
+    public <F> F fieldValue(String fldName);
 
     /**
      * Sets field value.
@@ -42,21 +46,25 @@ public interface GridMutablePortableObject extends GridPortableWriter {
      * @param fldName Field name.
      * @param val Field value.
      */
-    void fieldValue(String fldName, @Nullable Object val);
+    public void fieldValue(String fldName, @Nullable Object val);
 
     /**
      * @param hashCode Hash code to set.
      * @return this.
      */
-    GridMutablePortableObject setHashCode(int hashCode);
+    public GridMutablePortableObject setHashCode(int hashCode);
 
     /**
+     * Returns hashcode of portable object.
+     *
      * @return Hashcode.
      */
-    int getHashCode();
+    public int getHashCode();
 
     /**
-     * @return Serialized portable object.
+     * Returns new portable object with content from this {@code GridMutablePortableObject}.
+     *
+     * @return New portable object.
      */
-    GridPortableObject toPortableObject();
+    public GridPortableObject toPortableObject();
 }
