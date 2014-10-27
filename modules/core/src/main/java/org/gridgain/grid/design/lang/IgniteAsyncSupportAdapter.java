@@ -7,40 +7,40 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 import org.gridgain.grid.*;
 
 /**
- * Adapter for {@link AsyncSupport}.
+ * Adapter for {@link IgniteAsyncSupport}.
  */
-public class AsyncSupportAdapter implements AsyncSupport, Cloneable {
+public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable {
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<GridFuture<?>> curFut;
 
     /**
      * Default constructor.
      */
-    public AsyncSupportAdapter() {
+    public IgniteAsyncSupportAdapter() {
         // No-op.
     }
 
     /**
      * @param async Async enabled flag.
      */
-    public AsyncSupportAdapter(boolean async) {
+    public IgniteAsyncSupportAdapter(boolean async) {
         if (async)
             curFut = new ThreadLocal<>();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public AsyncSupport enableAsync() {
+    @Override public IgniteAsyncSupport enableAsync() {
         try {
             if (isAsync())
                 return this;
 
-            AsyncSupportAdapter clone = clone();
+            IgniteAsyncSupportAdapter clone = clone();
 
             clone.curFut = new ThreadLocal<>();
 
@@ -57,7 +57,7 @@ public class AsyncSupportAdapter implements AsyncSupport, Cloneable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
@@ -68,7 +68,7 @@ public class AsyncSupportAdapter implements AsyncSupport, Cloneable {
 
         curFut.set(null);
 
-        return (GridFuture<R>)fut;
+        return (IgniteFuture<R>)fut;
     }
 
     /**
@@ -88,7 +88,7 @@ public class AsyncSupportAdapter implements AsyncSupport, Cloneable {
     }
 
     /** {@inheritDoc} */
-    @Override public AsyncSupportAdapter clone() throws CloneNotSupportedException {
-        return (AsyncSupportAdapter)super.clone();
+    @Override public IgniteAsyncSupportAdapter clone() throws CloneNotSupportedException {
+        return (IgniteAsyncSupportAdapter)super.clone();
     }
 }

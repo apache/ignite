@@ -7,20 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.async;
+package org.gridgain.grid.design.lang;
 
 import org.gridgain.grid.*;
 
 /**
  * TODO: Add interface description.
  */
-public interface AsyncSupport {
+public interface IgniteAsyncSupport {
     /**
      * Gets component with asynchronous mode enabled.
      *
      * @return Component with asynchronous mode enabled.
      */
-    public AsyncSupport enableAsync();
+    public IgniteAsyncSupport enableAsync();
 
     /**
      * @return {@code True} if asynchronous mode is enabled.
@@ -32,5 +32,5 @@ public interface AsyncSupport {
      *
      * @return Future for previous asynchronous operation.
      */
-    public <R> GridFuture<R> future();
+    public <R> IgniteFuture<R> future();
 }

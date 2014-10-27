@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.design.configuration;
+package org.gridgain.grid.design.plugin;
 
 /**
  * TODO: Add class description.
@@ -15,6 +15,9 @@ package org.gridgain.grid.design.configuration;
  * @author @java.author
  * @version @java.version
  */
-public class GridQueueConfiguration {
-
+public interface PluginConfiguration {
+    /**
+     * @return Plugin provider class.
+     */
+    public Class<? extends PluginProvider> providerClass();
 }

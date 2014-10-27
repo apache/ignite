@@ -10,7 +10,7 @@
 package org.gridgain.grid.design;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.async.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 
@@ -115,9 +115,9 @@ import java.util.*;
  * fut.get();
  * </pre>
  */
-public interface IgniteUserServices extends AsyncSupport {
+public interface IgniteManaged extends IgniteAsyncSupport {
     /** {@inheritDoc} */
-    @Override IgniteUserServices enableAsync();
+    @Override IgniteManaged enableAsync();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always
