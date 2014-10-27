@@ -11,8 +11,9 @@ package org.gridgain.grid.kernal.processors.dataload;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -20,6 +21,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -94,6 +96,41 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
                 // This is ok to ignore this exception as test is racy by it's nature -
                 // grid is stopping in different thread.
             }
+        }
+        finally {
+            G.stopAll(true);
+        }
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddDataFromMap() throws Exception {
+        try {
+            startGrids(2);
+
+            Grid g0 = grid(0);
+
+            GridMarshaller marsh = g0.configuration().getMarshaller();
+
+            if (marsh instanceof GridOptimizedMarshaller)
+                assertTrue(((GridOptimizedMarshaller)marsh).isRequireSerializable());
+            else
+                fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
+
+            GridDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
+
+            int cnt = 500_000;
+
+            Map<Integer, String> map = new HashMap<>(cnt);
+
+            for (int i = 0; i < cnt; i ++)
+                map.put(i, String.valueOf(i));
+
+            dataLdr.addData(map);
+
+            dataLdr.close(true);
         }
         finally {
             G.stopAll(true);
