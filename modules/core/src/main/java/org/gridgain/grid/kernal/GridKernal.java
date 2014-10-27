@@ -1342,7 +1342,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
-            boolean securityEnabled = U.securityEnabled(cfg);
+            boolean securityEnabled = cfg.getAuthenticationSpi() != null &&
+                U.hasAnnotation(cfg.getAuthenticationSpi().getClass(), GridSpiNoop.class);
 
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 
@@ -2309,7 +2310,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
     }
 
