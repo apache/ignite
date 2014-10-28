@@ -2359,7 +2359,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private class OffheapIteratorClosure
         extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
         /** */
-        private static final long serialVersionUID = 7410163202728985912L;
+        private static final long serialVersionUID = 0L;
 
         /** */
         private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
@@ -2416,7 +2416,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private static class CompoundIterator<T> extends GridIteratorAdapter<T> {
         /** */
-        private static final long serialVersionUID = 4585888051556166304L;
+        private static final long serialVersionUID = 0L;
 
         /** */
         private final List<GridIterator<T>> iters;
@@ -2477,7 +2477,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private class GridCacheScanSwapEntry implements GridCacheEntry<K, V> {
         /** */
-        private static final long serialVersionUID = 1262515168518736214L;
+        private static final long serialVersionUID = 0L;
 
         /** */
         private final AbstractLazySwapEntry e;

@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  */
 public class GridBasicWarmupClosure implements GridInClosure<GridConfiguration> {
     /** */
-    private static final long serialVersionUID = 9175346848249957458L;
+    private static final long serialVersionUID = 0L;
 
     /** Default grid count to warm up. */
     public static final int DFLT_GRID_CNT = 2;
