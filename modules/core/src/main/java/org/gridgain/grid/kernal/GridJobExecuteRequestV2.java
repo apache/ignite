@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = -1470089047880101067L;
 
     /** Subject ID. */
     private UUID subjId;

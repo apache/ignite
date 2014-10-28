@@ -1576,7 +1576,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     private static class StatId implements Externalizable {
         /** */
-        private static final long serialVersionUID = 0L;
+        private static final long serialVersionUID = 3564457418556193461L;
 
         /** */
         private GridHadoopJobId jobId;

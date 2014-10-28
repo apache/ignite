@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizable {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 5489900236464999951L;
 
     /** {@code true} If job has combiner. */
     private boolean hasCombiner;

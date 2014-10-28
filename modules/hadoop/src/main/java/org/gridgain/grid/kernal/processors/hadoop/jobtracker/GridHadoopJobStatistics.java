@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridHadoopJobStatistics implements Externalizable {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 2100820892667831789L;
 
     /** */
     private static final int IDX_SUBMIT_START = 0;
