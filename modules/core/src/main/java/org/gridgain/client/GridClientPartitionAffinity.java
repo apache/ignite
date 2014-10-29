@@ -16,19 +16,19 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
-* Affinity function for partitioned cache. This function supports the following
-* configuration:
-* <ul>
-* <li>
-*      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
-*      nodes that pass this filter will be selected as backup nodes and only nodes that
-*      don't pass this filter will be selected as primary nodes. If not provided, then
-*      primary and backup nodes will be selected out of all nodes available for this cache.
-*      <p>
-*      NOTE: In situations where there are no primary nodes at all, i.e. no nodes for which backup
-*      filter returns {@code false}, first backup node for the key will be considered primary.
-* </li>
-* </ul>
+ * Affinity function for partitioned cache. This function supports the following
+ * configuration:
+ * <ul>
+ * <li>
+ *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
+ *      nodes that pass this filter will be selected as backup nodes and only nodes that
+ *      don't pass this filter will be selected as primary nodes. If not provided, then
+ *      primary and backup nodes will be selected out of all nodes available for this cache.
+ *      <p>
+ *      NOTE: In situations where there are no primary nodes at all, i.e. no nodes for which backup
+ *      filter returns {@code false}, first backup node for the key will be considered primary.
+ * </li>
+ * </ul>
 */
 @SuppressWarnings("NullableProblems")
 public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {
