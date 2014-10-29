@@ -189,7 +189,7 @@ public class GridGain {
     }
 
     /**
-     * Stops <b>all</b> started grids in same JVM. If {@code cancel} flag is set to {@code true} then
+     * Stops <b>all</b> started grids in current JVM. If {@code cancel} flag is set to {@code true} then
      * all jobs currently executing on local node will be interrupted.
      * If wait parameter is set to {@code true} then grid will wait for all
      * tasks to be finished.
