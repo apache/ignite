@@ -54,9 +54,4 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     @Override public GridInteropTarget cache(@Nullable String name) throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
-
-    /** {@inheritDoc} */
-    @Override public void dotNetConfiguration(long stream, long arr, int cap) throws GridException {
-        throw new UnsupportedOperationException(ERR_MSG);
-    }
 }
