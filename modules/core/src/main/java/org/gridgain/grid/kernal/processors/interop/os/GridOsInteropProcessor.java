@@ -31,6 +31,16 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void releaseStart() {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitStart() throws GridException {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
     @Override public long environmentPointer() {
         throw new UnsupportedOperationException(ERR_MSG);
     }

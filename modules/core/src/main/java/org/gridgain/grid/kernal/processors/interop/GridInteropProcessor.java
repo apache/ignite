@@ -18,6 +18,18 @@ import org.jetbrains.annotations.*;
  */
 public interface GridInteropProcessor extends GridProcessor {
     /**
+     * Release start latch.
+     */
+    public void releaseStart();
+
+    /**
+     * Await start on native side.
+     *
+     * @throws GridException If failed.
+     */
+    public void awaitStart() throws GridException;
+
+    /**
      * @return Environment pointer.
      */
     public long environmentPointer();
