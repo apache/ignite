@@ -60,13 +60,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public static final GridProductVersion QUERY_EVENTS_SINCE = GridProductVersion.fromString("6.2.1");
 
     /** */
-    private static final Collection<String> IGNORED_FIELDS = F.asList(
-        "_GG_VAL_STR__",
-        "_GG_VER__",
-        "_GG_EXPIRES__"
-    );
-
-    /** */
     protected GridIndexingManager idxMgr;
 
     /** Indexing SPI name. */
@@ -909,26 +902,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                     res.metaData();
 
-                BitSet ignored = new BitSet();
-
-                // Filter internal fields.
-                if (meta != null) {
-                    Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
-
-                    int i = 0;
-
-                    while (metaIt.hasNext()) {
-                        if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
-                            ignored.set(i);
-
-                            if (qryInfo.includeMetaData())
-                                metaIt.remove();
-                        }
-
-                        i++;
-                    }
-                }
-
                 if (!qryInfo.includeMetaData())
                     meta = null;
 
@@ -958,18 +931,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         onPageReady(qryInfo.local(), qryInfo, null, true, null);
 
                         break;
-                    }
-
-                    // Filter internal fields.
-                    Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
-
-                    int i = 0;
-
-                    while (rowIt.hasNext()) {
-                        rowIt.next();
-
-                        if (ignored.get(i++))
-                            rowIt.remove();
                     }
 
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
@@ -1065,7 +1026,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qryInfo Query info.
      */
     @SuppressWarnings("unchecked")
-    protected <R> void runQuery(GridCacheQueryInfo qryInfo) {
+    protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
         if (!enterBusy()) {
