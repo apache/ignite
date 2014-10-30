@@ -690,23 +690,16 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         if (includeBackups)
             return null;
 
-        final UUID nodeId = ctx.localNodeId();
-
         return new GridIndexingQueryFilter() {
-            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) throws GridException {
-                GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
                 if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
                     return null;
 
                 return new GridBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        try {
-                            return nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, k).id());
-                        }
-                        catch (GridException e) {
-                            throw F.wrap(e);
-                        }
+                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, -1);
                     }
                 };
             }

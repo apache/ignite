@@ -4565,6 +4565,19 @@ public class GridFunc {
     }
 
     /**
+     * Gets first element from given list or returns {@code null} if list is empty.
+     *
+     * @param list List.
+     * @return List' first element or {@code null} in case if list is empty.
+     */
+    public static <T> T first(List<? extends T> list) {
+        if (list.isEmpty())
+            return null;
+
+        return list.get(0);
+    }
+
+    /**
      * Gets last element from given collection or returns {@code null} if the collection is empty.
      *
      * @param c A collection.
