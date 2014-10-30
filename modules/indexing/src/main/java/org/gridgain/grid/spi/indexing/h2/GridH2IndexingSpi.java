@@ -164,9 +164,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     public static final String VAL_FIELD_NAME = "_val";
 
     /** */
-    private static final GridIndexingQueryFilter[] EMPTY_FILTER = new GridIndexingQueryFilter[0];
-
-    /** */
     private static final Object[][] EMPTY_DATA = new Object[0][];
 
     /** */
@@ -680,7 +677,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
         @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
-        GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws GridSpiException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null && tbl.luceneIdx != null)
@@ -771,13 +768,13 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final GridIndexingQueryFilter<K, V>... filters)
+        @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
         throws GridSpiException {
         QueryResult qryRes = executeQueryWithCache(new T2<>(qry, params), new COX<QueryResult>() {
             @Override public QueryResult applyx() throws GridSpiException {
                 localSpi.set(GridH2IndexingSpi.this);
 
-                setFilters(filters != null ? filters : EMPTY_FILTER);
+                setFilters(filters);
 
                 try {
                     Connection conn = connectionForThread(schema(spaceName));
@@ -982,7 +979,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, GridIndexingTypeDescriptor type,
-        final GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
+        final GridIndexingQueryFilter filters) throws GridSpiException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -991,7 +988,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         return new KeyValIterator(executeQueryWithCache(new T3<>(tbl.fullTableName(), qry, params),
             new COX<QueryResult>() {
             @Override public QueryResult applyx() throws GridSpiException {
-                setFilters(filters != null ? filters : EMPTY_FILTER);
+                setFilters(filters);
 
                 localSpi.set(GridH2IndexingSpi.this);
 
@@ -1021,7 +1018,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      *
      * @param filters Filters.
      */
-    private void setFilters(@Nullable GridIndexingQueryFilter<?, ?>[] filters) {
+    private void setFilters(@Nullable GridIndexingQueryFilter filters) {
         GridH2IndexBase.setFiltersForThread(filters);
     }
 
@@ -1342,7 +1339,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             return -1;
 
         GridSpiCloseableIterator<List<GridIndexingEntity<?>>> iter = queryFields(spaceName,
-            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null).iterator();
+            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null).iterator();
 
         if (!iter.hasNext())
             throw new IllegalStateException();
