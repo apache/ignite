@@ -59,8 +59,9 @@ public class GridAffinityAssignmentCache {
     private final GridCacheContext ctx;
 
     /** Ready futures. */
-    private ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
+    /** Log. */
     private GridLogger log;
 
     /**
@@ -264,7 +265,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(int part, long topVer) {
+    public List<GridNode> nodes(int part, long topVer) {
         // Resolve cached affinity nodes.
         return cachedAffinity(topVer).get(part);
     }
@@ -317,7 +318,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        assert cache != null && cache.topologyVersion() == topVer : "Invalid cached affinity: " + cache;
+        assert cache.topologyVersion() == topVer : "Invalid cached affinity: " + cache;
 
         return cache;
     }
@@ -385,7 +386,9 @@ public class GridAffinityAssignmentCache {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+        @Override public boolean onDone(Long res, @Nullable Throwable err) {
+            assert res != null;
+
             boolean done = super.onDone(res, err);
 
             if (done)
@@ -394,5 +397,4 @@ public class GridAffinityAssignmentCache {
             return done;
         }
     }
-
 }

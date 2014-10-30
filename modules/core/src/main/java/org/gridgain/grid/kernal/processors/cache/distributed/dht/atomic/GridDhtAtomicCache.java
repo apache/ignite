@@ -923,14 +923,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (storeEnabled() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null) {
                             // This method can only be used when there are no replicated entries in the batch.
-                            UpdateBatchResult<K, V> updRes = updateWithBatch(nodeId, hasNear, req, res, locked, ver,
+                            UpdateBatchResult<K, V> updRes = updateWithBatch(node, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate, taskName);
 
                             deleted = updRes.deleted();
                             dhtFut = updRes.dhtFuture();
                         }
                         else {
-                            UpdateSingleResult<K, V> updRes = updateSingle(nodeId, hasNear, req, res, locked, ver,
+                            UpdateSingleResult<K, V> updRes = updateSingle(node, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate, taskName);
 
                             retVal = updRes.returnValue();
@@ -998,7 +998,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Updates locked entries using batched write-through.
      *
-     * @param nodeId Sender node ID.
+     * @param node Sender node.
      * @param hasNear {@code True} if originating node has near cache.
      * @param req Update request.
      * @param res Update response.
@@ -1012,7 +1012,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private UpdateBatchResult<K, V> updateWithBatch(
-        UUID nodeId,
+        GridNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
@@ -1099,7 +1099,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 firstEntryIdx,
                                 filtered,
                                 ver,
-                                nodeId,
+                                node,
                                 putMap,
                                 null,
                                 transformMap,
@@ -1140,7 +1140,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 firstEntryIdx,
                                 filtered,
                                 ver,
-                                nodeId,
+                                node,
                                 null,
                                 rmvKeys,
                                 transformMap,
@@ -1247,7 +1247,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 firstEntryIdx,
                 filtered,
                 ver,
-                nodeId,
+                node,
                 putMap,
                 rmvKeys,
                 transformMap,
@@ -1270,7 +1270,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Updates locked entries one-by-one.
      *
-     * @param nodeId Originating node ID.
+     * @param node Originating node.
      * @param hasNear {@code True} if originating node has near cache.
      * @param req Update request.
      * @param res Update response.
@@ -1284,7 +1284,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
     private UpdateSingleResult<K, V> updateSingle(
-        UUID nodeId,
+        GridNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
@@ -1343,12 +1343,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (checkReaders) {
                     readers = entry.readers();
-                    filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
+                    filteredReaders = F.view(entry.readers(), F.notEqualTo(node.id()));
                 }
 
                 GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                     ver,
-                    nodeId,
+                    node.id(),
                     locNodeId,
                     op,
                     writeVal,
@@ -1412,7 +1412,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
-                        if (!U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
+                        if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
                             GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
 
                             res.nearTtl(updRes.newTtl());
@@ -1425,13 +1425,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res.addNearValue(i, updRes.newValue(), newValBytes);
 
                             if (updRes.newValue() != null || newValBytes != null) {
-                                GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId(), topVer);
+                                GridFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
 
                                 assert f == null : f;
                             }
                         }
-                        else if (F.contains(readers, nodeId)) // Reader became primary or backup.
-                            entry.removeReader(nodeId, req.messageId());
+                        else if (F.contains(readers, node.id())) // Reader became primary or backup.
+                            entry.removeReader(node.id(), req.messageId());
                         else
                             res.addSkippedIndex(i);
                     }
@@ -1472,7 +1472,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param firstEntryIdx Index of the first entry in the request keys collection.
      * @param entries Entries to update.
      * @param ver Version to set.
-     * @param nodeId Originating node ID.
+     * @param node Originating node.
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
      * @param transformMap Transform closures.
@@ -1490,7 +1490,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int firstEntryIdx,
         List<GridDhtCacheEntry<K, V>> entries,
         final GridCacheVersion ver,
-        UUID nodeId,
+        GridNode node,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
         @Nullable Map<K, GridClosure<V, V>> transformMap,
@@ -1574,12 +1574,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (checkReaders) {
                         readers = entry.readers();
-                        filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
+                        filteredReaders = F.view(entry.readers(), F.notEqualTo(node.id()));
                     }
 
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
-                        nodeId,
+                        node.id(),
                         locNodeId,
                         op,
                         writeVal,
@@ -1638,7 +1638,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (hasNear) {
                         if (primary) {
-                            if (!U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
+                            if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
                                 if (req.operation() == TRANSFORM) {
                                     int idx = firstEntryIdx + i;
 
@@ -1652,12 +1652,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res.nearTtl(req.ttl());
 
                                 if (writeVal != null || !entry.valueBytes().isNull()) {
-                                    GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId(), topVer);
+                                    GridFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
 
                                     assert f == null : f;
                                 }
-                            } else if (readers.contains(nodeId)) // Reader became primary or backup.
-                                entry.removeReader(nodeId, req.messageId());
+                            } else if (readers.contains(node.id())) // Reader became primary or backup.
+                                entry.removeReader(node.id(), req.messageId());
                             else
                                 res.addSkippedIndex(firstEntryIdx + i);
                         }
