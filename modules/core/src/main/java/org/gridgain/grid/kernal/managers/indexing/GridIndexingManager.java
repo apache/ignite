@@ -1191,6 +1191,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** */
         private String name;
 
+        /** */
+        private boolean field;
+
         /**
          * Constructor.
          *
@@ -1201,6 +1204,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
                 member.getName().substring(3) : member.getName();
+
+            ((AccessibleObject) member).setAccessible(true);
+
+            field = member instanceof Field;
         }
 
         /** {@inheritDoc} */
@@ -1212,17 +1219,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 return null;
 
             try {
-                if (member instanceof Field) {
+                if (field) {
                     Field field = (Field)member;
-
-                    field.setAccessible(true);
 
                     return field.get(x);
                 }
                 else {
                     Method mtd = (Method)member;
-
-                    mtd.setAccessible(true);
 
                     return mtd.invoke(x);
                 }
@@ -1531,6 +1534,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          *
          * @param key If given property relates to key.
          * @param prop Property.
+         * @param failOnDuplicate Fail on duplicate flag.
          * @throws GridException In case of error.
          */
         public void addProperty(boolean key, Property prop, boolean failOnDuplicate) throws GridException {
