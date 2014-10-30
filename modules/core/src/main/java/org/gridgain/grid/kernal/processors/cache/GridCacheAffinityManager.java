@@ -201,7 +201,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(int part, long topVer) {
+    public List<GridNode> nodes(int part, long topVer) {
         if (cctx.isLocal())
             topVer = 1;
 
@@ -223,12 +223,12 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Primary node for given key.
      */
     @Nullable public GridNode primary(int part, long topVer) {
-        Collection<GridNode> nodes = nodes(part, topVer);
+        List<GridNode> nodes = nodes(part, topVer);
 
         if (nodes.isEmpty())
             return null;
 
-        return nodes.iterator().next();
+        return nodes.get(0);
     }
 
     /**
@@ -266,14 +266,14 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Backup nodes.
      */
     public Collection<GridNode> backups(int part, long topVer) {
-        Collection<GridNode> nodes = nodes(part, topVer);
+        List<GridNode> nodes = nodes(part, topVer);
 
         assert !F.isEmpty(nodes);
 
         if (nodes.size() <= 1)
             return Collections.emptyList();
 
-        return F.view(nodes, F.notEqualTo(nodes.iterator().next()));
+        return F.view(nodes, F.notEqualTo(nodes.get(0)));
     }
 
     /**

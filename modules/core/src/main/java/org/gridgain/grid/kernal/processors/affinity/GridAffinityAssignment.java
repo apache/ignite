@@ -74,7 +74,7 @@ class GridAffinityAssignment implements Serializable {
      * @param part Partition.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> get(int part) {
+    public List<GridNode> get(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
