@@ -44,6 +44,10 @@ class GridAffinityAssignment implements Serializable {
         backup = new HashMap<>();
     }
 
+    /**
+     * @param topVer Topology version.
+     * @param assignment Assignment.
+     */
     GridAffinityAssignment(long topVer, List<List<GridNode>> assignment) {
         this.topVer = topVer;
         this.assignment = assignment;

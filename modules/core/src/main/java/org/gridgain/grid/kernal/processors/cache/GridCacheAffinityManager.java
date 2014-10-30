@@ -192,7 +192,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(K key, long topVer) {
+    public List<GridNode> nodes(K key, long topVer) {
         return nodes(partition(key), topVer);
     }
 
@@ -321,6 +321,18 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
         assert part >= 0 : "Invalid partition: " + part;
 
         return nodes(part, topVer).contains(node);
+    }
+
+    /**
+     * @param node Node.
+     * @param key Key to check.
+     * @param topVer Topology version.
+     * @return {@code true} if given key belongs to specified node.
+     */
+    public boolean belongs(GridNode node, K key, long topVer) {
+        assert node != null;
+
+        return belongs(node, partition(key), topVer);
     }
 
     /**

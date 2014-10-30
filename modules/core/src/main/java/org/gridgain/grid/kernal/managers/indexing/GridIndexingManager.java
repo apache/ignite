@@ -691,7 +691,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             return null;
 
         return new GridIndexingQueryFilter() {
-            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) throws GridException {
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
                 if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
