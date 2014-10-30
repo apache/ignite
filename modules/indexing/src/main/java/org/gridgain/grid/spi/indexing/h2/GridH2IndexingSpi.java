@@ -11,17 +11,13 @@ package org.gridgain.grid.spi.indexing.h2;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.opt.*;
-import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
