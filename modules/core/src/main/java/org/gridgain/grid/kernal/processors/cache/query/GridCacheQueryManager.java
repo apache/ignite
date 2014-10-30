@@ -1688,24 +1688,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    private GridIndexingQueryFilter<K, V> projectionFilter(GridCacheQueryAdapter<?> qry) {
+    @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
         final GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
 
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String s, K k, V v) {
-                if (prjFilter == null || F.isAlwaysTrue(prjFilter) || !F.eq(space, s))
-                    return true;
+        if (prjFilter == null || F.isAlwaysTrue(prjFilter))
+            return null;
 
-                try {
-                    GridCacheEntry<K, V> entry = context().cache().entry(k);
+        return new GridIndexingQueryFilter() {
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+                if (!F.eq(space, spaceName))
+                    return null;
 
-                    return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
-                }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    return false;
-                }
+                return new GridBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        try {
+                            GridCacheEntry<K, V> entry = context().cache().entry(k);
+
+                            return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
+                        }
+                        catch (GridDhtInvalidPartitionException ignore) {
+                            return false;
+                        }
+                    }
+                };
             }
         };
     }

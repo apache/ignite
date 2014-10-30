@@ -9,17 +9,19 @@
 
 package org.gridgain.grid.spi.indexing;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
+import org.jetbrains.annotations.*;
+
 /**
  * Space name and key filter.
  */
-public interface GridIndexingQueryFilter<K, V> {
+public interface GridIndexingQueryFilter {
     /**
-     * Applies filter.
+     * Creates optional predicate for space.
      *
      * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @return {@code True} if given parameter pass filter, {@code false} otherwise.
+     * @return Predicate or {@code null} if no filtering is needed.
      */
-    public boolean apply(String spaceName, K key, V val);
+    @Nullable public <K, V> GridBiPredicate<K, V> forSpace(String spaceName) throws GridException;
 }

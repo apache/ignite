@@ -948,7 +948,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public GridPredicate<GridCacheEntry<K, V>> predicate() {
-        return withNullEntryFilter;
+        return withNullEntryFilter.hasFilter() ? withNullEntryFilter : null;
     }
 
     /** {@inheritDoc} */
@@ -1330,6 +1330,13 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         private FullFilter(KeyValueFilter<K, V> kvFilter, GridPredicate<? super GridCacheEntry<K, V>> entryFilter) {
             this.kvFilter = kvFilter;
             this.entryFilter = entryFilter;
+        }
+
+        /**
+         * @return {@code True} if has non-null key value or entry filter.
+         */
+        boolean hasFilter() {
+            return (kvFilter != null && kvFilter.filter() != null) || entryFilter != null;
         }
 
         /**
