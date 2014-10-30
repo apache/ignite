@@ -12,8 +12,11 @@ package org.gridgain.grid.kernal.visor.gui.dto;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.cache.sender.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -96,49 +99,93 @@ public class VisorCache implements Serializable {
         assert g != null;
         assert c != null;
 
-        GridCacheMode mode = c.configuration().getCacheMode();
-        GridCacheDistributionMode distributionMode = c.configuration().getDistributionMode();
-        boolean partitioned = (mode == GridCacheMode.PARTITIONED || mode == GridCacheMode.REPLICATED)
-            && distributionMode != GridCacheDistributionMode.CLIENT_ONLY;
+        String cacheName = c.name();
+
+        GridCacheAdapter ca = ((GridKernal)g).internalCache(cacheName);
 
         long swapSize;
         long swapKeys;
 
         try {
-            swapSize = c.swapSize();
-            swapKeys = c.swapKeys();
+            swapSize = ca.swapSize();
+            swapKeys = ca.swapKeys();
         }
         catch (GridException ignored) {
             swapSize = -1;
             swapKeys = -1;
         }
 
-        GridNode node = g.localNode();
+        Collection<GridPair<Integer>> pps = Collections.emptyList();
+        Collection<GridPair<Integer>> bps = Collections.emptyList();
+        GridDhtPartitionMap partsMap = null;
 
-        Collection<GridPair<Integer>> pps = new ArrayList<>();
+        GridCacheConfiguration cfg = ca.configuration();
+
+        GridCacheMode mode = cfg.getCacheMode();
+
+        boolean partitioned = (mode == GridCacheMode.PARTITIONED || mode == GridCacheMode.REPLICATED)
+            && cfg.getDistributionMode() != GridCacheDistributionMode.CLIENT_ONLY;
 
         if (partitioned) {
-            for (int p : c.affinity().primaryPartitions(node)) {
-                Set set = c.entrySet(p);
+            GridDhtCacheAdapter dca = null;
 
-                pps.add(new GridPair<>(p, set != null ? set.size() : 0));
+            if (ca instanceof GridNearCacheAdapter)
+                dca = ((GridNearCacheAdapter)ca).dht();
+            else if (ca instanceof GridDhtCacheAdapter)
+                dca = (GridDhtCacheAdapter)ca;
+
+            if (dca != null) {
+                GridDhtPartitionTopology top = dca.topology();
+
+                if (cfg.getCacheMode() != GridCacheMode.LOCAL && cfg.getBackups() > 0)
+                    partsMap = top.localPartitionMap();
+
+                List<GridDhtLocalPartition> parts = top.localPartitions();
+
+                pps = new ArrayList<>(parts.size());
+                bps = new ArrayList<>(parts.size());
+
+                for (GridDhtLocalPartition part : parts) {
+                    int p = part.id();
+
+                    int sz = part.size();
+
+                    if (part.primary(-1)) // Pass -1 as topology version in order not to wait for topology version.
+                        pps.add(new GridPair<>(p, sz));
+                    else
+                        bps.add(new GridPair<>(p, sz));
+                }
+            }
+            else {
+                // Old way of collecting partitions info.
+                GridNode node = g.localNode();
+
+                int[] pp = ca.affinity().primaryPartitions(node);
+
+                pps = new ArrayList<>(pp.length);
+
+                for (int p : pp) {
+                    Set set = ca.entrySet(p);
+
+                    pps.add(new GridPair<>(p, set != null ? set.size() : 0));
+                }
+
+                int[] bp = ca.affinity().backupPartitions(node);
+
+                bps = new ArrayList<>(bp.length);
+
+                for (int p : bp) {
+                    Set set = ca.entrySet(p);
+
+                    bps.add(new GridPair<>(p, set != null ? set.size() : 0));
+                }
             }
         }
 
-        Collection<GridPair<Integer>> bps = new ArrayList<>();
+        int size = ca.size();
+        int near = ca.nearSize();
 
-        if (partitioned) {
-            for (int p : c.affinity().backupPartitions(node)) {
-                Set set = c.entrySet(p);
-
-                bps.add(new GridPair<>(p, set != null ? set.size() : 0));
-            }
-        }
-
-        int size = c.size();
-        int near = c.nearSize();
-
-        Set<GridCacheEntry> set = c.entrySet();
+        Set<GridCacheEntry> set = ca.entrySet();
 
         long memSz = 0;
 
@@ -157,30 +204,25 @@ public class VisorCache implements Serializable {
         if (cnt > 0)
             memSz = (long)((double)memSz / cnt * size);
 
-        GridCacheConfiguration cfg = c.configuration();
-
-        GridDhtPartitionMap partsMap = (cfg.getCacheMode() != GridCacheMode.LOCAL && cfg.getBackups() > 0)
-            ? ((GridCacheAdapter)c.cache()).context().topology().localPartitionMap() : null;
-
         VisorCache cache = new VisorCache();
 
-        cache.name(c.name());
+        cache.name(cacheName);
         cache.mode(mode);
         cache.memorySize(memSz);
         cache.size(size);
         cache.nearSize(near);
         cache.dhtSize(size - near);
-        cache.primarySize(c.primarySize());
-        cache.offHeapAllocatedSize(c.offHeapAllocatedSize());
-        cache.offHeapEntriesCount(c.offHeapEntriesCount());
+        cache.primarySize(ca.primarySize());
+        cache.offHeapAllocatedSize(ca.offHeapAllocatedSize());
+        cache.offHeapEntriesCount(ca.offHeapEntriesCount());
         cache.swapSize(swapSize);
         cache.swapKeys(swapKeys);
-        cache.partitions(c.affinity().partitions());
+        cache.partitions(ca.affinity().partitions());
         cache.primaryPartitions(pps);
         cache.backupPartitions(bps);
-        cache.metrics(VisorCacheMetrics.from(c.metrics()));
-        cache.drSendMetrics(VisorDrSenderCacheMetrics.from(c));
-        cache.drReceiveMetrics(VisorDrReceiverCacheMetrics.from(c));
+        cache.metrics(VisorCacheMetrics.from(ca.metrics()));
+        cache.drSendMetrics(VisorDrSenderCacheMetrics.from(ca));
+        cache.drReceiveMetrics(VisorDrReceiverCacheMetrics.from(ca));
         cache.partitionMap(partsMap);
 
         return cache;
