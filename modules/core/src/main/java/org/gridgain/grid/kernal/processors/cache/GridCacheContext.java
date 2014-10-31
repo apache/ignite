@@ -491,7 +491,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Grid instance.
      */
-    public Grid grid() {
+    public GridEx grid() {
         return ctx.grid();
     }
 

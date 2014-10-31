@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
@@ -224,7 +225,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
                 GridCacheConfiguration cfg = c.configuration();
 
-                if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.nodes().size() > 1) {
+                if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
                     GridCacheAffinityFunction aff = cfg.getAffinity();
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
@@ -248,7 +249,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
                                     ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
                                     ", affNodes=" + affNodes + ", owners=" + owners +
-                                    ", locNode=" + g.localNode().id() + ']');
+                                    ", locNode=" + g.cluster().localNode().id() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
@@ -302,7 +303,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -352,7 +353,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -402,7 +403,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        GridNode locNode = cache.gridProjection().grid().localNode();
+        GridNode locNode = cache.gridProjection().grid().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -501,5 +502,37 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertNotNull(fut);
 
         return fut;
+    }
+
+    /**
+     * @param grid Grid.
+     * @return {@link GridCompute} for given grid's local node.
+     */
+    protected GridCompute forLocal(Grid grid) {
+        return grid.compute(grid.cluster().forLocal());
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridCompute} for given projection.
+     */
+    protected GridCompute compute(GridProjection prj) {
+        return prj.grid().compute(prj);
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridMessaging} for given projection.
+     */
+    protected GridMessaging message(GridProjection prj) {
+        return prj.grid().message(prj);
+    }
+
+    /**
+     * @param prj Projection.
+     * @return {@link GridMessaging} for given projection.
+     */
+    protected GridEvents events(GridProjection prj) {
+        return prj.grid().events(prj);
     }
 }

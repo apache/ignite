@@ -35,15 +35,14 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = grid(0);
 
-            assert grid.nodes().size() == GRID_CNT;
+            assert grid.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.nodes().size());
+            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
 
-            Long res = grid.forLocal().compute().call(closures, new R1<Long, Long>() {
+            Long res = compute(grid.cluster().forLocal()).call(closures, new R1<Long, Long>() {
                 private long sum;
 
-                @Override
-                public boolean collect(Long e) {
+                @Override public boolean collect(Long e) {
                     info("Got result from closure: " + e);
 
                     sum += e;
@@ -52,8 +51,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                     return e != 1;
                 }
 
-                @Override
-                public Long reduce() {
+                @Override public Long reduce() {
                     return sum;
                 }
             });
@@ -79,11 +77,11 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
         try {
             Grid grid = grid(0);
 
-            assert grid.nodes().size() == GRID_CNT;
+            assert grid.cluster().nodes().size() == GRID_CNT;
 
-            List<ReducerTestClosure> closures = closures(grid.nodes().size());
+            List<ReducerTestClosure> closures = closures(grid.cluster().nodes().size());
 
-            GridCompute comp = grid.forLocal().compute().enableAsync();
+            GridCompute comp = compute(grid.cluster().forLocal()).enableAsync();
 
             comp.call(closures, new R1<Long, Long>() {
                 private long sum;

@@ -104,7 +104,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
-                if (nodeCache.affinity().isPrimaryOrBackup(g.localNode(), key)) {
+                if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     Collection<String> cp = new LinkedList<>(vals);
 
                     for (GridCacheEntry<String, Integer> e : partEntrySet) {
@@ -145,7 +145,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                     continue;
 
                 // First node with this partition will remove first key from partition.
-                if (nodeCache.affinity().isPrimaryOrBackup(g.localNode(), key)) {
+                if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                     Iterator<GridCacheEntry<String, Integer>> it = partEntrySet.iterator();
@@ -214,7 +214,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
-                if (nodeCache.affinity().isPrimaryOrBackup(g.localNode(), key)) {
+                if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     assertTrue(partEntrySet.contains(nodeCache.entry(key)));
 
                     deleted.add(key);

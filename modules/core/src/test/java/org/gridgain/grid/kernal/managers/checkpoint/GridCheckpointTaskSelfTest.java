@@ -131,9 +131,9 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
             @Nullable Void arg) throws GridException {
-            assert grid.nodes().size() == 2;
+            assert grid.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(grid.forRemotes().nodes());
+            GridNode rmt = F.first(grid.cluster().forRemotes().nodes());
 
             ses.saveCheckpoint(CP_KEY, true);
 
@@ -187,9 +187,9 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
             @Nullable Void arg) throws GridException {
-            assert grid.nodes().size() == 2;
+            assert grid.cluster().nodes().size() == 2;
 
-            GridNode rmt = F.first(grid.forRemotes().nodes());
+            GridNode rmt = F.first(grid.cluster().forRemotes().nodes());
 
             return F.asMap(
                 new GridComputeJobAdapter() {

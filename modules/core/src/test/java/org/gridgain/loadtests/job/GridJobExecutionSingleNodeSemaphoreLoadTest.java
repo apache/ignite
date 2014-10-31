@@ -150,7 +150,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      * @param dur Test duration.
      * @param iterCntr Iteration counter.
      */
-    private static void runTest(final GridProjection g, int threadCnt, int taskCnt, long dur,
+    private static void runTest(final Grid g, int threadCnt, int taskCnt, long dur,
         final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 

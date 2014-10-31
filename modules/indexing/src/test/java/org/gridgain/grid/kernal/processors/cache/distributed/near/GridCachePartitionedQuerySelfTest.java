@@ -97,14 +97,14 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         // Fields query
         GridCacheQuery<List<?>> qry = cache0.queries().createSqlFieldsQuery("select name from Person where salary > ?").
-            projection(grid0);
+            projection(grid0.cluster());
 
         Collection<List<?>> res = qry.execute(1600).get();
 
         assertEquals(3, res.size());
 
         // Fields query count(*)
-        qry = cache0.queries().createSqlFieldsQuery("select count(*) from Person").projection(grid0);
+        qry = cache0.queries().createSqlFieldsQuery("select count(*) from Person").projection(grid0.cluster());
 
         res = qry.execute().get();
 

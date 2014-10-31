@@ -154,7 +154,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
                 /** {@inheritDoc} */
                 @Override public Object execute() {
-                    log.info("Executing job on node: " + g.localNode().id());
+                    log.info("Executing job on node: " + g.cluster().localNode().id());
 
                     try {
                         Thread.sleep(5000);

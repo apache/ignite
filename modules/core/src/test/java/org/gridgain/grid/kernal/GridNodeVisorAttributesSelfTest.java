@@ -57,7 +57,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
     private void startGridAndCheck() throws Exception {
         Grid g = startGrid();
 
-        Map<String, Object> attrs = g.localNode().attributes();
+        Map<String, Object> attrs = g.cluster().localNode().attributes();
 
         for (String prop : SYSTEM_PROPS) {
             assert attrs.containsKey(prop);

@@ -62,7 +62,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
             Class<? extends GridComputeTask<Object, int[]>> taskCls =
                 (Class<? extends GridComputeTask<Object, int[]>>)ldr.loadClass(TASK_NAME);
 
-            int[] res1 = grid1.compute().execute(taskCls, Collections.singletonList(grid2.localNode().id()));
+            int[] res1 = grid1.compute().execute(taskCls, Collections.singletonList(grid2.cluster().localNode().id()));
 
             info("Result1: " + Arrays.toString(res1));
 
@@ -71,7 +71,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
             grid1.compute().localDeployTask(taskCls, taskCls.getClassLoader());
 
             int[] res2 = (int[])grid1.compute().execute(taskCls.getName(),
-                Collections.singletonList(grid2.localNode().id()));
+                Collections.singletonList(grid2.cluster().localNode().id()));
 
             info("Result2: " + Arrays.toString(res2));
 
@@ -125,13 +125,13 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
 
             grid2.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
 
-            int[] res1 = grid1.compute().execute(taskCls1, Collections.singletonList(grid2.localNode().id()));
+            int[] res1 = grid1.compute().execute(taskCls1, Collections.singletonList(grid2.cluster().localNode().id()));
 
             assert res1 != null;
 
             info("Result1: " + Arrays.toString(res1));
 
-            int[] res2 = grid1.compute().execute(taskCls2, Collections.singletonList(grid2.localNode().id()));
+            int[] res2 = grid1.compute().execute(taskCls2, Collections.singletonList(grid2.cluster().localNode().id()));
 
             assert res2 != null;
 

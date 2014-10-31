@@ -96,7 +96,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            grid(i).forLocal().compute().call(new PutJob(queueName, RETRIES));
+            forLocal(grid(i)).call(new PutJob(queueName, RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -125,7 +125,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            grid(i).forLocal().compute().call(new PutTakeJob(queueName, RETRIES));
+            forLocal(grid(i)).call(new PutTakeJob(queueName, RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -210,7 +210,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
@@ -262,7 +262,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheQueue<String> queue = grid.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
@@ -314,7 +314,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         @Override public Integer call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + ']');
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + ']');
 
             GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
@@ -362,7 +362,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         @Override public Boolean call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + ']');
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + ']');
 
             GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
@@ -410,7 +410,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         @Override public Boolean call() throws GridException {
             assertNotNull(grid);
 
-            grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, false);

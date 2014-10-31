@@ -277,7 +277,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         Collection<Integer> keys = new ArrayList<>(keyCnt);
 
         for (int key = 0; keys.size() < keyCnt; key++)
-            if (F.eqNodes(primaryGrid.localNode(), F.first(keyNodes(key))))
+            if (F.eqNodes(primaryGrid.cluster().localNode(), F.first(keyNodes(key))))
                 keys.add(key++);
 
         info("Test keys: " + keys);
@@ -300,7 +300,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         GridFuture<GridEvent> futBackup = waitForLocalEvent(backupGrid.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(backupGrid.localNode().id()) && cntBackup.incrementAndGet() == keyCnt;
+                return e.node().id().equals(backupGrid.cluster().localNode().id()) &&
+                    cntBackup.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 
@@ -308,7 +309,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         GridFuture<GridEvent> futPrimary = waitForLocalEvent(primaryGrid.events(), new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.node().id().equals(primaryGrid.localNode().id()) && cntPrimary.incrementAndGet() == keyCnt;
+                return e.node().id().equals(primaryGrid.cluster().localNode().id()) &&
+                    cntPrimary.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 

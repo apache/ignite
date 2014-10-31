@@ -89,7 +89,7 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link Grid#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link GridCluster#mapKeysToNodes(String, Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
      *
@@ -104,7 +104,7 @@ public final class CacheAffinityExample {
             keys.add(i);
 
         // Map all keys to nodes.
-        Map<GridNode, Collection<Integer>> mappings = g.mapKeysToNodes(CACHE_NAME, keys);
+        Map<GridNode, Collection<Integer>> mappings = g.cluster().mapKeysToNodes(CACHE_NAME, keys);
 
         for (Map.Entry<GridNode, Collection<Integer>> mapping : mappings.entrySet()) {
             GridNode node = mapping.getKey();
@@ -113,7 +113,7 @@ public final class CacheAffinityExample {
 
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
-                g.forNode(node).compute().run(new GridRunnable() {
+                g.compute(g.cluster().forNode(node)).run(new GridRunnable() {
                     @Override public void run() {
                         GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 

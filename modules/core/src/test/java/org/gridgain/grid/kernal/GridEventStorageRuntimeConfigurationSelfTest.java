@@ -307,7 +307,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @param g Grid.
      * @return Enabled events.
      */
-    private int[] getEnabledEvents(GridProjection g) {
+    private int[] getEnabledEvents(Grid g) {
         return g.events().enabledEvents();
     }
 
@@ -317,7 +317,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
      * @param customTypes Array of event types.
      * @return Enabled events counted with loop (1..limit) and checks of custom types.
      */
-    private int[] getEnabledEvents(int limit, GridProjection g, int... customTypes) {
+    private int[] getEnabledEvents(int limit, Grid g, int... customTypes) {
         Collection<Integer> res = new HashSet<>();
 
         GridEvents evts = g.events();

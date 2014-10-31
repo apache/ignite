@@ -37,16 +37,16 @@ public class MessagingPingPongListenActorExample {
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(g, 2))
+            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println(">>> Messaging ping-pong listen actor example started.");
 
             // Pick first remote node as a partner.
-            Collection<GridNode> rmtNodes = g.forRemotes().nodes();
+            Collection<GridNode> rmtNodes = g.cluster().forRemotes().nodes();
 
-            GridProjection nodeB = g.forNode(rmtNodes.iterator().next());
+            GridProjection nodeB = g.cluster().forNode(rmtNodes.iterator().next());
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -54,7 +54,7 @@ public class MessagingPingPongListenActorExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            nodeB.message().remoteListen(null, new GridMessagingListenActor<String>() {
+            g.message(nodeB).remoteListen(null, new GridMessagingListenActor<String>() {
                 @Override public void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println(rcvMsg);
 
@@ -84,7 +84,7 @@ public class MessagingPingPongListenActorExample {
             });
 
             // Serve!
-            nodeB.message().send(null, "PING");
+            g.message(nodeB).send(null, "PING");
 
             // Wait til the game is over.
             try {

@@ -96,10 +96,10 @@ public class GridContinuousMapperTask1 extends GridComputeTaskAdapter<Integer, I
         // Start worker thread.
         t.start();
 
-        if (g.nodes().size() == 1)
-            sendJob(g.localNode());
+        if (g.cluster().nodes().size() == 1)
+            sendJob(g.cluster().localNode());
         else
-            for (GridNode n : g.forRemotes().nodes())
+            for (GridNode n : g.cluster().forRemotes().nodes())
                 sendJob(n);
 
         return null;

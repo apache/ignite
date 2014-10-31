@@ -129,7 +129,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         // Check for events from empty remote nodes collection.
         try {
-            grid1.forPredicate(F.<GridNode>alwaysFalse()).events().remoteQuery(filter, 0);
+            events(grid1.cluster().forPredicate(F.<GridNode>alwaysFalse())).remoteQuery(filter, 0);
         }
         catch (GridEmptyProjectionException ignored) {
             // No-op
@@ -144,8 +144,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(grid2);
 
-        Collection<GridEvent> evts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0);
+        GridProjection prj = grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()));
+
+        Collection<GridEvent> evts = events(prj).remoteQuery(filter, 0);
 
         assert evts != null;
         assert evts.size() == 1;
@@ -161,8 +162,8 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         Collection<GridEvent> evts = grid1.events().remoteQuery(filter, 0);
         Collection<GridEvent> locEvts = grid1.events().localQuery(filter);
-        Collection<GridEvent> remEvts = grid1.forPredicate(F.remoteNodes(grid1.localNode().id())).
-            events().remoteQuery(filter, 0);
+        Collection<GridEvent> remEvts =
+            events(grid1.cluster().forPredicate(F.remoteNodes(grid1.cluster().localNode().id()))).remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;
@@ -178,7 +179,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * @param grid Grid.
      * @throws GridException In case of error.
      */
-    private void generateEvents(GridProjection grid) throws GridException {
+    private void generateEvents(Grid grid) throws GridException {
         grid.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
         grid.compute().execute(GridEventTestTask.class.getName(), null);

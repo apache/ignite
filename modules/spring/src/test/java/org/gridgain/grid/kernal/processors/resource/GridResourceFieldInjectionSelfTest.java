@@ -64,8 +64,8 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
             grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
-            assert grid1.forRemotes().nodes().size() == 1;
-            assert grid2.forRemotes().nodes().size() == 1;
+            assert grid1.cluster().forRemotes().nodes().size() == 1;
+            assert grid2.cluster().forRemotes().nodes().size() == 1;
 
             grid1.compute().execute(UserResourceTask.class, null);
 

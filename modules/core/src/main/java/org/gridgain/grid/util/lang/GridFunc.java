@@ -8526,7 +8526,7 @@ public class GridFunc {
                     assert e != null;
 
                     try {
-                        GridNode node = G.grid(gridName).node(e.node().id());
+                        GridNode node = G.grid(gridName).cluster().node(e.node().id());
 
                         return isAll(node, p);
                     }

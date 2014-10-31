@@ -106,7 +106,7 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
         // Projection without master node.
         GridProjection p = grid(0).forOthers(grid(0).localNode());
 
-        p.compute().cancelTask(fut.getTaskSession().getId());
+        compute(p).cancelTask(fut.getTaskSession().getId());
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {

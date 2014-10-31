@@ -212,11 +212,11 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 GridDiscoverySpi spi = e.getValue();
 
                 for (Grid g : G.allGrids()) {
-                    boolean res = spi.pingNode(g.localNode().id());
+                    boolean res = spi.pingNode(g.cluster().localNode().id());
 
-                    assert res : e.getKey() + " failed to ping " + g.localNode().id() + " of " + g.name();
+                    assert res : e.getKey() + " failed to ping " + g.cluster().localNode().id() + " of " + g.name();
 
-                    info(e.getKey() + " pinged " + g.localNode().id() + " of " + g.name());
+                    info(e.getKey() + " pinged " + g.cluster().localNode().id() + " of " + g.name());
                 }
             }
 
@@ -298,9 +298,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         GridTcpDiscoverySpi spi = discoMap.get(pingingNode.name());
 
-        boolean res = spi.pingNode(failedNode.localNode().id());
+        boolean res = spi.pingNode(failedNode.cluster().localNode().id());
 
-        assertFalse("Ping is ok for node " + failedNode.localNode().id() + ", but had to fail.", res);
+        assertFalse("Ping is ok for node " + failedNode.cluster().localNode().id() + ", but had to fail.", res);
 
         // Heartbeat interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
@@ -534,9 +534,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
-                        if (id.equals(g1.localNode().id()))
+                        if (id.equals(g1.cluster().localNode().id()))
                             latch2_1.countDown();
-                        else if (id.equals(g2.localNode().id()))
+                        else if (id.equals(g2.cluster().localNode().id()))
                             latch2_2.countDown();
                         else
                             assert false : "Event fired for unknown node.";
@@ -556,9 +556,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
-                    if (id.equals(g1.localNode().id()))
+                    if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();
-                    else if (id.equals(g2.localNode().id()))
+                    else if (id.equals(g2.cluster().localNode().id()))
                         latch1_2.countDown();
                     else
                         assert false : "Event fired for unknown node.";
@@ -617,9 +617,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
-                    if (id.equals(g1.localNode().id()))
+                    if (id.equals(g1.cluster().localNode().id()))
                         latch2_1.countDown();
-                    else if (id.equals(g2.localNode().id()))
+                    else if (id.equals(g2.cluster().localNode().id()))
                         latch2_2.countDown();
                     else
                         assert false : "Event fired for unknown node.";
@@ -634,9 +634,9 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
-                    if (id.equals(g1.localNode().id()))
+                    if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();
-                    else if (id.equals(g2.localNode().id()))
+                    else if (id.equals(g2.cluster().localNode().id()))
                         latch1_2.countDown();
                     else
                         assert false : "Event fired for unknown node.";
@@ -852,7 +852,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             // This node should wait until any node "from ipFinder" appears, see log messages.
             Grid g = startGrid("NonSharedIpFinder-1");
 
-            assert g.localNode().order() == 2;
+            assert g.cluster().localNode().order() == 2;
         }
         finally {
             stopAllGrids();
@@ -867,7 +867,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 5; i++) {
                 Grid g = startGrid("MulticastIpFinder-" + i);
 
-                assertEquals(i + 1, g.nodes().size());
+                assertEquals(i + 1, g.cluster().nodes().size());
 
                 GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
 

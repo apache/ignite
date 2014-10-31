@@ -50,7 +50,7 @@ public final class SpringBeanExample {
 
         try {
             // Get grid from Spring (note that local grid node is already started).
-            GridProjection g = (GridProjection)ctx.getBean("mySpringBean");
+            Grid g = (Grid)ctx.getBean("mySpringBean");
 
             // Execute any method on the retrieved grid instance.
             ExecutorService exec = g.executorService();

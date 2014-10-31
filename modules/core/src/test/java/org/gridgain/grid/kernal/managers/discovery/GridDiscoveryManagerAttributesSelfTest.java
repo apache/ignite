@@ -81,7 +81,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < 2; i++) {
                 Grid g = startGrid(i);
 
-                assert "true".equals(g.localNode().attribute(PREFER_IPV4));
+                assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }
 
             System.setProperty(PREFER_IPV4, "false");
@@ -182,7 +182,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < 2; i++) {
                 Grid g = startGrid(i);
 
-                assert val.equals(g.localNode().attribute(PREFER_IPV4));
+                assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
             }
         }
         finally {

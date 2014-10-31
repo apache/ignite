@@ -196,7 +196,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
             assertFalse(e.getValue().isEmpty());
 
             for (GridNode node : e.getValue()) {
-                G.grid(node.id()).forNode(node).compute().call(new Callable<Void>() {
+                compute(G.grid(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
                     private Grid grid;
@@ -216,7 +216,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Grid g : G.allGrids()) {
-                UUID locNodeId = g.localNode().id();
+                UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
                     g.cache(null).get(e.getKey()));

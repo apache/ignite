@@ -228,7 +228,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             for (GridNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                G.grid(checkNodeId).forNode(node).compute().call(new Callable<Void>() {
+                compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
                     private Grid grid;
@@ -359,7 +359,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             for (GridNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                G.grid(checkNodeId).forNode(node).compute().call(new Callable<Void>() {
+                compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @GridInstanceResource
                     private Grid grid;

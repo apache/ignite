@@ -348,8 +348,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((GridCacheProjection<Object, Object>)prj, key));
         }
         else {
-            GridCompute comp = ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().
-                withNoFailover().enableAsync();
+            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+
+            GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 
             comp.call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable));
 
@@ -385,8 +386,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            GridCompute comp =
-                ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().enableAsync();
+            GridProjection prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+
+            GridCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
 
             comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
 

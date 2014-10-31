@@ -126,7 +126,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < GRID_CNT; i++) {
                             Grid g = grid(i);
 
-                            GridNodeLocalMap<String, Integer> nodeLoc = g.nodeLocalMap();
+                            GridNodeLocalMap<String, Integer> nodeLoc = g.cluster().nodeLocalMap();
 
                             Integer depCnt = nodeLoc.get(DEPLOY_CNT_KEY);
                             Integer undepCnt = nodeLoc.get(UNDEPLOY_CNT_KEY);
@@ -164,7 +164,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
         // won't load the reducer and user resource from each other.
         Class<?> redCls = extClsLdr.loadClass("org.gridgain.grid.tests.p2p.GridExternalCacheQueryReducerClosure");
 
-        q.projection(g.forRemotes()).execute((GridReducer<Map.Entry<Integer, Integer>, Integer>)redCls.newInstance()).
-            get();
+        q.projection(g.cluster().forRemotes()).
+            execute((GridReducer<Map.Entry<Integer, Integer>, Integer>)redCls.newInstance()).get();
     }
 }

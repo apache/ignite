@@ -216,7 +216,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
             GridCacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
 
             if (e.primary()) {
-                info("Primary node: " + g.localNode().id());
+                info("Primary node: " + g.cluster().localNode().id());
 
                 // Put value.
                 g.cache(null).put(KEY, VAL);

@@ -71,7 +71,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
             }
         }, GridEventType.EVT_JOB_STARTED);
 
-        node1.compute().execute(new Task(node2.localNode().id()), null);
+        node1.compute().execute(new Task(node2.cluster().localNode().id()), null);
 
         assertEquals(taskSubjId, jobSubjId);
         assertEquals(taskSubjId, evtSubjId);

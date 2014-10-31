@@ -80,7 +80,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            node2Id = grid2.localNode().id();
+            node2Id = grid2.cluster().localNode().id();
 
             grid1.compute().execute(SharedResourceTask1.class, null);
             grid1.compute().execute(SharedResourceTask2.class, null);
@@ -120,7 +120,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             Grid grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
             Grid grid3 = startGrid(3, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-            node2Id = grid2.localNode().id();
+            node2Id = grid2.cluster().localNode().id();
 
             grid1.compute().execute(SharedResourceTask1.class, null);
             grid1.compute().execute(SharedResourceTask2.class, null);
@@ -195,7 +195,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             assert rsrc1 != null;
             assert rsrc2 != null;
 
-            return Collections.<GridComputeJob, GridNode>singletonMap(new GridSharedJob1(), grid.node(node2Id));
+            return Collections.<GridComputeJob, GridNode>singletonMap(
+                new GridSharedJob1(), grid.cluster().node(node2Id));
         }
 
         /** {@inheritDoc} */
@@ -266,7 +267,8 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
             assert rsrc1 != null;
             assert rsrc2 != null;
 
-            return Collections.<GridComputeJob, GridNode>singletonMap(new GridSharedJob2(), grid.node(node2Id));
+            return Collections.<GridComputeJob, GridNode>singletonMap(
+                new GridSharedJob2(), grid.cluster().node(node2Id));
         }
 
         /** {@inheritDoc} */

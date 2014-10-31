@@ -242,8 +242,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         Grid grid2 = startGrid(getTestGridName() + '2');
 
         try {
-            assert !grid1.forRemotes().nodes().isEmpty() : grid1.forRemotes();
-            assert !grid2.forRemotes().nodes().isEmpty() : grid2.forRemotes();
+            assert !grid1.cluster().forRemotes().nodes().isEmpty() : grid1.cluster().forRemotes();
+            assert !grid2.cluster().forRemotes().nodes().isEmpty() : grid2.cluster().forRemotes();
 
             grid1.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
             grid2.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());

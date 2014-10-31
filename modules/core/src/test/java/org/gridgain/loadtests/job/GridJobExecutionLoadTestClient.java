@@ -10,6 +10,7 @@
 package org.gridgain.loadtests.job;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;
@@ -43,11 +44,11 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        GridProjection rmts = g.forRemotes();
+        GridCompute rmts = g.compute(g.cluster().forRemotes());
 
         while (!finish) {
             try {
-                rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
+                rmts.execute(GridJobExecutionLoadTestTask.class, null);
 
                 txCnt.increment();
             }
@@ -181,12 +182,12 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static void warmUp(int noThreads) {
         X.println("Warming up...");
 
-        final GridProjection rmts = g.forRemotes();
+        final GridCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
             @Nullable @Override public Object call() {
                 try {
-                    rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
+                    rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
                 catch (GridException e) {
                     e.printStackTrace();

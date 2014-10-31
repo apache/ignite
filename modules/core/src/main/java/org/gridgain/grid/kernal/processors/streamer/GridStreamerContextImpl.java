@@ -119,7 +119,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
 
             long startTime = U.currentTimeMillis();
 
-            Collection<R> res =  prj.compute().execute(new GridStreamerQueryTask<>(clo, streamer.name()), null);
+            Collection<R> res = ctx.grid().compute(prj).execute(new GridStreamerQueryTask<>(clo, streamer.name()), null);
 
             streamer.onQueryCompleted(U.currentTimeMillis() - startTime, prj.nodes().size());
 
@@ -146,7 +146,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
             if (!F.isEmpty(nodes))
                 prj = prj.forNodes(nodes);
 
-            prj.compute().execute(new GridStreamerBroadcastTask(clo, streamer.name()), null);
+            ctx.grid().compute(prj).execute(new GridStreamerBroadcastTask(clo, streamer.name()), null);
         }
         finally {
             ctx.gateway().readUnlock();
@@ -170,7 +170,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
             if (!F.isEmpty(nodes))
                 prj = prj.forNodes(nodes);
 
-            return prj.compute().execute(new GridStreamerReduceTask<>(clo, rdc, streamer.name()), null);
+            return ctx.grid().compute(prj).execute(new GridStreamerReduceTask<>(clo, rdc, streamer.name()), null);
         }
         finally {
             ctx.gateway().readUnlock();

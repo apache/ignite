@@ -54,7 +54,7 @@ public final class CacheAtomicLongExample {
 
             // Try increment atomic long from all grid nodes.
             // Note that this node is also part of the grid.
-            g.forCache(CACHE_NAME).compute().call(new GridCallable<Object>() {
+            g.compute(g.cluster().forCache(CACHE_NAME)).call(new GridCallable<Object>() {
                 @Override public Object call() throws  Exception {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());

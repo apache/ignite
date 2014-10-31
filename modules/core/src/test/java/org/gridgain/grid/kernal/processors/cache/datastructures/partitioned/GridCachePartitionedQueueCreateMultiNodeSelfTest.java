@@ -81,7 +81,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                 @Override public Object call() throws Exception {
                     Grid grid = startGrid(idx.getAndIncrement());
 
-                    UUID locNodeId = grid.localNode().id();
+                    UUID locNodeId = grid.cluster().localNode().id();
 
                     info("Started grid: " + locNodeId);
 

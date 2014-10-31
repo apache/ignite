@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Grid, GridProjectionEx {
+public interface GridEx extends Grid, GridProjectionEx, GridCluster {
     /**
      * Gets utility cache.
      *

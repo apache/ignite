@@ -81,7 +81,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             grid1.compute().localDeployTask(JobFailTask.class, JobFailTask.class.getClassLoader());
 
             try {
-                grid1.forRemotes().compute().execute(JobFailTask.class, null);
+                compute(grid1.cluster().forRemotes()).execute(JobFailTask.class, null);
             }
             catch (GridException e) {
                 info("Got expected grid exception: " + e);

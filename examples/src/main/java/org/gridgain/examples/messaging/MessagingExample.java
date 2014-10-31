@@ -12,6 +12,7 @@ package org.gridgain.examples.messaging;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.resources.*;
 
 import java.util.*;
@@ -45,14 +46,14 @@ public final class MessagingExample {
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(g, 2))
+            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            GridProjection rmtPrj = g.forRemotes();
+            GridProjection rmtPrj = g.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -60,20 +61,20 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(g.forLocal(), orderedLatch, unorderedLatch);
+            localListen(g.message(g.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all grid nodes.
-            startListening(rmtPrj);
+            startListening(g.message(rmtPrj));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().send(TOPIC.UNORDERED, Integer.toString(i));
+                g.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                g.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -89,12 +90,12 @@ public final class MessagingExample {
     /**
      * Start listening to messages on all grid nodes within passed in projection.
      *
-     * @param prj Grid projection.
+     * @param msg Grid messaging.
      * @throws GridException If failed.
      */
-    private static void startListening(GridProjection prj) throws GridException {
+    private static void startListening(GridMessaging msg) throws GridException {
         // Add ordered message listener.
-        prj.message().remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
+        msg.remoteListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
             @GridInstanceResource
             private Grid g;
 
@@ -102,7 +103,7 @@ public final class MessagingExample {
                 System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    g.forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
+                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
                 }
                 catch (GridException e) {
                     e.printStackTrace();
@@ -113,7 +114,7 @@ public final class MessagingExample {
         });
 
         // Add unordered message listener.
-        prj.message().remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
+        msg.remoteListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
             @GridInstanceResource
             private Grid g;
 
@@ -121,7 +122,7 @@ public final class MessagingExample {
                 System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    g.forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
+                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
                 }
                 catch (GridException e) {
                     e.printStackTrace();
@@ -135,16 +136,16 @@ public final class MessagingExample {
     /**
      * Listen for messages from remote nodes.
      *
-     * @param prj Grid projection.
+     * @param msg Grid messaging.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        GridProjection prj,
+        GridMessaging msg,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        prj.message().localListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
+        msg.localListen(TOPIC.ORDERED, new GridBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 orderedLatch.countDown();
 
@@ -153,7 +154,7 @@ public final class MessagingExample {
             }
         });
 
-        prj.message().localListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
+        msg.localListen(TOPIC.UNORDERED, new GridBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 unorderedLatch.countDown();
 

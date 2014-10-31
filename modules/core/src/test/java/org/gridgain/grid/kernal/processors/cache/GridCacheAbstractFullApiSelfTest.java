@@ -3303,9 +3303,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLocked("key");
             assert cache().isLockedByThread("key");
 
-            assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                @Override
-                public Boolean call() throws GridException {
+            assert !forLocal(dfltGrid).call(new Callable<Boolean>() {
+                @Override public Boolean call() throws GridException {
                     return cache().lock("key", 100);
                 }
             });
@@ -3332,7 +3331,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert e.isLocked();
 
-            assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
+            assert !forLocal(dfltGrid).call(new Callable<Boolean>() {
                 @Override public Boolean call() throws GridException {
                     return e.lock(100);
                 }
@@ -3359,7 +3358,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            GridCompute comp = dfltGrid.forLocal().compute().enableAsync();
+            GridCompute comp = forLocal(dfltGrid).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override
@@ -3437,7 +3436,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            GridCompute comp = dfltGrid.forLocal().compute().enableAsync();
+            GridCompute comp = forLocal(dfltGrid).enableAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {

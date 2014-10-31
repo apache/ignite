@@ -97,7 +97,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** @{inheritDoc} */
         @Override public void run() {
-            log.info("Runnable job executed on node: " + grid.localNode().id());
+            log.info("Runnable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 
@@ -124,7 +124,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     private static class TestCallable extends AbstractTestCallable {
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.localNode().id());
+            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 
@@ -145,7 +145,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.localNode().id());
+            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
 
             return null;
         }
@@ -187,7 +187,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
         comp = comp.enableAsync();
 
@@ -215,7 +215,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         if (p != null)
             prj = prj.forPredicate(p);
 
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(job);
 
@@ -236,7 +236,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
         comp = comp.enableAsync();
 
@@ -259,7 +259,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
         comp = comp.enableAsync();
 
@@ -282,7 +282,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
         comp = comp.enableAsync();
 
@@ -305,7 +305,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         execCntr.set(0);
 
-        GridCompute comp = p != null ? grid(idx).forPredicate(p).compute() : grid(idx).compute();
+        GridCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
         comp = comp.enableAsync();
 
@@ -398,7 +398,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncErrorNoFailover() throws Exception {
-        GridCompute comp = grid(0).forPredicate(F.notEqualTo(grid(0).localNode())).compute().enableAsync();
+        GridCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).enableAsync();
 
         comp.withNoFailover().call(new TestCallableError());
 
@@ -503,7 +503,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         final Collection<Callable<Integer>> jobs = new ArrayList<>();
 
-        for (int i = 0; i < g.nodes().size(); i++) {
+        for (int i = 0; i < g.cluster().nodes().size(); i++) {
             jobs.add(new GridCallable<Integer>() {
                 @Override public Integer call() throws Exception {
                     throw new RuntimeException("Test exception.");

@@ -20,10 +20,12 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1003,6 +1005,195 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridInteropProcessor interop() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridNode localNode() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forLocal() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> GridNodeLocalMap<K, V> nodeLocalMap() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean pingNode(UUID nodeId) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long topologyVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<GridNode> topology(long topVer) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K> Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
+            @Nullable Collection<? extends K> keys) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <K> GridNode mapKeyToNode(@Nullable String cacheName, K key) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(File file,
+            boolean restart, int timeout, int maxConn) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(
+            Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
+            int maxConn) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stopNodes() throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stopNodes(Collection<UUID> ids) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void restartNodes() throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void restartNodes(Collection<UUID> ids) throws GridException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetMetrics() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Grid grid() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forOthers(GridNode node, GridNode... nodes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forOthers(GridProjection prj) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forNodeIds(Collection<UUID> ids) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forNodeId(UUID id, UUID... ids) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forAttribute(String name, @Nullable String val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forCache(String cacheName, @Nullable String... cacheNames) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forRemotes() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forHost(GridNode node) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forDaemons() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forRandom() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forOldest() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjection forYoungest() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridNode> nodes() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridNode node(UUID nid) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridNode node() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridPredicate<GridNode> predicate() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProjectionMetrics metrics() throws GridException {
             return null;
         }
     }

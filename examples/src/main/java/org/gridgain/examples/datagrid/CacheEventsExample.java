@@ -67,13 +67,13 @@ public class CacheEventsExample {
 
                     int key = evt.key();
 
-                    return key >= 10 && cache.affinity().isPrimary(g.localNode(), key);
+                    return key >= 10 && cache.affinity().isPrimary(g.cluster().localNode(), key);
                 }
             };
 
             // Subscribe to specified cache events on all nodes that have cache running.
             // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            g.forCache(CACHE_NAME).events().remoteListen(locLsnr, rmtLsnr,
+            g.events(g.cluster().forCache(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
             // Generate cache events.

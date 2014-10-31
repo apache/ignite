@@ -32,7 +32,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -45,7 +45,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridMessagingImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridMessagingImpl(GridKernalContext ctx, GridProjectionAdapter prj) {
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -196,7 +196,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**

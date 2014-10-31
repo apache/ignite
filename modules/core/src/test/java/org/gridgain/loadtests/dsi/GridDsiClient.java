@@ -93,7 +93,7 @@ public class GridDsiClient implements Callable {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
-        GridCompute comp = g.forPredicate(serverNode()).compute().enableAsync();
+        GridCompute comp = g.compute(g.cluster().forPredicate(serverNode())).enableAsync();
 
         while (!finish.get()) {
             try {
@@ -203,7 +203,7 @@ public class GridDsiClient implements Callable {
 
                 X.println("Thread count: " + noThreads);
 
-                Collection<GridNode> srvNodes = g.forPredicate(serverNode()).nodes();
+                Collection<GridNode> srvNodes = g.cluster().forPredicate(serverNode()).nodes();
 
                 if (srvNodes.isEmpty()) {
                     X.println("No server nodes available");
@@ -251,7 +251,7 @@ public class GridDsiClient implements Callable {
                             String terminalId = String.valueOf(++tid);
 
                             // Server partition cache.
-                            if (!srvrId.equals(g.mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
+                            if (!srvrId.equals(g.cluster().mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
                                 continue;
 
                             if (terminalsPerSrv < srvMaxNoTerminals) {

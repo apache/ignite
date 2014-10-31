@@ -40,7 +40,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
 
         GridTuple3 key = F.t(keyNum, keyStr, keyDate);
 
-        GridNodeLocalMap<Object, Object> nl = g.nodeLocalMap();
+        GridNodeLocalMap<Object, Object> nl = g.cluster().nodeLocalMap();
 
         nl.put(keyStr, "Hello world!");
         nl.put(key, 12);

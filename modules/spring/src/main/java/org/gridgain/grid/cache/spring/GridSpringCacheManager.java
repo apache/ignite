@@ -323,7 +323,9 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         /** {@inheritDoc} */
         @Override public void clear() {
             try {
-                cache.gridProjection().compute().broadcast(new ClearClosure(cache.name()));
+                Grid grid = cache.gridProjection().grid();
+
+                grid.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
             }
             catch (GridException e) {
                 throw new GridRuntimeException("Failed to clear cache [cacheName=" + cache.name() + ']', e);

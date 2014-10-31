@@ -94,7 +94,7 @@ public class CacheCountDownLatchExample {
 
                 int newCnt = latch.countDown();
 
-                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().localNode().id() + ']');
+                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().cluster().localNode().id() + ']');
             }
             catch (GridException e) {
                 throw new RuntimeException(e);

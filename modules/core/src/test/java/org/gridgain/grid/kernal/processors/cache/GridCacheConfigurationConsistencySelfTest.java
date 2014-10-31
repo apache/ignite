@@ -122,7 +122,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testCacheUtilsCheckAttributeMismatch() throws Exception {
         Grid grid = startGrid(1);
 
-        final GridNode node = grid.localNode();
+        final GridNode node = grid.cluster().localNode();
 
         final GridStringLogger strLog = new GridStringLogger(false, log);
 

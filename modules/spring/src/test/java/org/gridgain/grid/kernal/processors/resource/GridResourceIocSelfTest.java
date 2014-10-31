@@ -193,7 +193,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
                 try {
                     Grid grid = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
-                    int[] res = grid.compute().execute(TEST_EXT_TASK, grid.localNode().id());
+                    int[] res = grid.compute().execute(TEST_EXT_TASK, grid.cluster().localNode().id());
 
                     assert res.length == 2;
 
@@ -214,7 +214,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
                     try {
                         grid.compute().execute(TEST_EXT_TASK,
-                            grid.localNode().id());
+                            grid.cluster().localNode().id());
 
                         assert false : "Task must be undeployed";
                     }

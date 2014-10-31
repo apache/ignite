@@ -188,7 +188,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         try {
             Grid g = startGrid(name);
 
-            UUID excludedId = g.localNode().id();
+            UUID excludedId = g.cluster().localNode().id();
 
             assertEquals(size, prj.forRemotes().nodes().size());
 
@@ -224,7 +224,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         try {
             Grid g = startGrid(name);
 
-            UUID excludedId = g.localNode().id();
+            UUID excludedId = g.cluster().localNode().id();
 
             assert !F.nodeIds(remotePrj.nodes()).contains(excludedId);
         }
@@ -312,7 +312,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void run1(AtomicInteger cnt) throws Exception {
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(runJob);
 
@@ -322,7 +322,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().broadcast(runJob);
+        compute(prj).broadcast(runJob);
 
         waitForValue(cnt, projectionSize());
     }
@@ -334,7 +334,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void run2(AtomicInteger cnt) throws Exception {
         Collection<Runnable> jobs = F.asList(runJob);
 
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.run(jobs);
 
@@ -344,7 +344,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().run(jobs);
+        compute(prj).run(jobs);
 
         waitForValue(cnt, jobs.size());
     }
@@ -354,7 +354,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call1(AtomicInteger cnt) throws Exception {
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(calJob);
 
@@ -364,7 +364,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().broadcast(calJob);
+        compute(prj).broadcast(calJob);
 
         waitForValue(cnt, projectionSize());
     }
@@ -374,7 +374,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call2(AtomicInteger cnt) throws Exception {
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         Collection<Callable<String>> jobs = F.asList(calJob);
 
@@ -386,7 +386,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().call(jobs);
+        compute(prj).call(jobs);
 
         waitForValue(cnt, jobs.size());
     }
@@ -396,7 +396,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, (String) null);
 
@@ -406,7 +406,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, (String) null);
+        compute(prj).apply(clrJob, (String) null);
 
         waitForValue(cnt, 1);
     }
@@ -418,7 +418,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void call4(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, args);
 
@@ -428,7 +428,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, args);
+        compute(prj).apply(clrJob, args);
 
         waitForValue(cnt, args.size());
     }
@@ -438,7 +438,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void call5(AtomicInteger cnt) throws Exception {
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.broadcast(new TestClosure(), "arg");
 
@@ -448,7 +448,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        Collection<String> res = prj.compute().broadcast(new TestClosure(), "arg");
+        Collection<String> res = compute(prj).broadcast(new TestClosure(), "arg");
 
         assertEquals(projectionSize(), res.size());
 
@@ -465,7 +465,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin1(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.apply(clrJob, args, rdc);
 
@@ -475,7 +475,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().apply(clrJob, args, rdc);
+        compute(prj).apply(clrJob, args, rdc);
 
         waitForValue(cnt, args.size());
     }
@@ -487,7 +487,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void forkjoin2(AtomicInteger cnt) throws Exception {
         Collection<Callable<String>> jobs = F.asList(calJob);
 
-        GridCompute comp = prj.compute().enableAsync();
+        GridCompute comp = compute(prj).enableAsync();
 
         comp.call(jobs, rdc);
 
@@ -497,7 +497,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         cnt.set(0);
 
-        prj.compute().call(jobs, rdc);
+        compute(prj).call(jobs, rdc);
 
         waitForValue(cnt, jobs.size());
     }
@@ -509,19 +509,19 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void exec1(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        prj.compute().execute(TestTask.class.getName(), null);
+        compute(prj).execute(TestTask.class.getName(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().execute(new TestTask(), null);
+        compute(prj).execute(new TestTask(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().execute(TestTask.class, null);
+        compute(prj).execute(TestTask.class, null);
 
         waitForValue(cnt, projectionSize());
     }
@@ -533,19 +533,19 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void exec2(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(TestTask.class.getName(), null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(TestTask.class.getName(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(new TestTask(), null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(new TestTask(), null);
 
         waitForValue(cnt, projectionSize());
 
         cnt.set(0);
 
-        prj.compute().withTimeout(WAIT_TIMEOUT).execute(TestTask.class, null);
+        compute(prj).withTimeout(WAIT_TIMEOUT).execute(TestTask.class, null);
 
         waitForValue(cnt, projectionSize());
     }
@@ -557,7 +557,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void executorService(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        ExecutorService execSrvc = prj.executorService();
+        ExecutorService execSrvc = prj.grid().executorService(prj);
 
         Future<String> fut = execSrvc.submit(new TestCallable<String>() {
             @Override public String call() throws Exception {

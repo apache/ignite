@@ -76,8 +76,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
-        assertEquals(1, jobDistrMap.get(grid1.localNode().id()).size());
-        assertEquals(1, jobDistrMap.get(grid2.localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid1.cluster().localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid2.cluster().localNode().id()).size());
     }
 
     /**
@@ -91,8 +91,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
-        assertEquals(1, jobDistrMap.get(grid1.localNode().id()).size());
-        assertEquals(1, jobDistrMap.get(grid2.localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid1.cluster().localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid2.cluster().localNode().id()).size());
     }
 
     /**
@@ -106,8 +106,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         // Verify that 1 job was stolen by second node.
         assertEquals(2, jobDistrMap.keySet().size());
-        assertEquals(1, jobDistrMap.get(grid1.localNode().id()).size());
-        assertEquals(1, jobDistrMap.get(grid2.localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid1.cluster().localNode().id()).size());
+        assertEquals(1, jobDistrMap.get(grid2.cluster().localNode().id()).size());
     }
 
     /**
@@ -119,16 +119,16 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testTwoJobsPartiallyNullPredicate() throws GridException {
         GridPredicate<GridNode> topPred =  new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode e) {
-                    return grid2.localNode().id().equals(e.id()); // Limit projection with only grid2.
+                    return grid2.cluster().localNode().id().equals(e.id()); // Limit projection with only grid2.
                 }
             };
 
-        executeAsync(grid1.forPredicate(topPred).compute().withTimeout(TASK_EXEC_TIMEOUT_MS),
+        executeAsync(compute(grid1.cluster().forPredicate(topPred)).withTimeout(TASK_EXEC_TIMEOUT_MS),
             new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
-        assertEquals(2, jobDistrMap.get(grid2.localNode().id()).size());
-        assertFalse(jobDistrMap.containsKey(grid1.localNode().id()));
+        assertEquals(2, jobDistrMap.get(grid2.cluster().localNode().id()).size());
+        assertFalse(jobDistrMap.containsKey(grid1.cluster().localNode().id()));
     }
 
     /**
@@ -139,18 +139,18 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicate() throws Exception {
         final Grid grid3 = startGrid(3);
 
-        executeAsync(grid1.forPredicate(new P1<GridNode>() {
+        executeAsync(compute(grid1.cluster().forPredicate(new P1<GridNode>() {
             @Override public boolean apply(GridNode e) {
-                return grid1.localNode().id().equals(e.id()) ||
-                    grid3.localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
+                return grid1.cluster().localNode().id().equals(e.id()) ||
+                    grid3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
-        }).compute(), new JobStealingSpreadTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
+        })), new JobStealingSpreadTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that jobs were run only on grid1 and grid3 (not on grid2)
         assertEquals(2, jobDistrMap.keySet().size());
-        assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
-        assertEquals(2, jobDistrMap.get(grid3.localNode().id()).size());
-        assertFalse(jobDistrMap.containsKey(grid2.localNode().id()));
+        assertEquals(2, jobDistrMap.get(grid1.cluster().localNode().id()).size());
+        assertEquals(2, jobDistrMap.get(grid3.cluster().localNode().id()).size());
+        assertFalse(jobDistrMap.containsKey(grid2.cluster().localNode().id()));
     }
 
     /**
@@ -164,16 +164,16 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         GridPredicate<GridNode> p = new P1<GridNode>() {
             @Override public boolean apply(GridNode e) {
-                return grid1.localNode().id().equals(e.id()) ||
-                    grid3.localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
+                return grid1.cluster().localNode().id().equals(e.id()) ||
+                    grid3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
         };
 
-        executeAsync(grid1.forPredicate(p).compute(), new JobStealingSingleNodeTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(compute(grid1.cluster().forPredicate(p)), new JobStealingSingleNodeTask(4), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that jobs were run only on grid1 and grid3 (not on grid2)
         assertEquals(2, jobDistrMap.keySet().size());
-        assertFalse(jobDistrMap.containsKey(grid2.localNode().id()));
+        assertFalse(jobDistrMap.containsKey(grid2.cluster().localNode().id()));
     }
 
     /**
@@ -185,14 +185,15 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testSingleNodeTopology() throws Exception {
         GridPredicate<GridNode> p = new GridPredicate<GridNode>() {
             @Override public boolean apply(GridNode e) {
-                return grid1.localNode().id().equals(e.id()); // Limit projection with only grid1 node.
+                return grid1.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 node.
             }
         };
 
-        executeAsync(grid1.forPredicate(p).compute(), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(compute(grid1.cluster().forPredicate(p)), new JobStealingSpreadTask(2), null).
+            get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
-        assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
+        assertEquals(2, jobDistrMap.get(grid1.cluster().localNode().id()).size());
     }
 
     /**
@@ -202,12 +203,12 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleNodeProjection() throws Exception {
-        GridProjection prj = grid1.forNodeIds(Collections.singleton(grid1.localNode().id()));
+        GridProjection prj = grid1.cluster().forNodeIds(Collections.singleton(grid1.cluster().localNode().id()));
 
-        executeAsync(prj.compute(), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
+        executeAsync(compute(prj), new JobStealingSpreadTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
-        assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
+        assertEquals(2, jobDistrMap.get(grid1.cluster().localNode().id()).size());
     }
 
     /**
@@ -218,13 +219,13 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     public void testSingleNodeProjectionNullPredicate() throws Exception {
-        GridProjection prj = grid1.forNodeIds(Collections.singleton(grid1.localNode().id()));
+        GridProjection prj = grid1.cluster().forNodeIds(Collections.singleton(grid1.cluster().localNode().id()));
 
-        executeAsync(prj.compute().withTimeout(TASK_EXEC_TIMEOUT_MS), new JobStealingSpreadTask(2), null).
+        executeAsync(compute(prj).withTimeout(TASK_EXEC_TIMEOUT_MS), new JobStealingSpreadTask(2), null).
             get(TASK_EXEC_TIMEOUT_MS);
 
         assertEquals(1, jobDistrMap.keySet().size());
-        assertEquals(2, jobDistrMap.get(grid1.localNode().id()).size());
+        assertEquals(2, jobDistrMap.get(grid1.cluster().localNode().id()).size());
     }
 
     /**
@@ -250,16 +251,16 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         Class nodeFilterCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridExcludeNodeFilter");
 
         GridPredicate<GridNode> nodeFilter = (GridPredicate<GridNode>)nodeFilterCls
-            .getConstructor(UUID.class).newInstance(grid2.localNode().id());
+            .getConstructor(UUID.class).newInstance(grid2.cluster().localNode().id());
 
-        Map<UUID, Integer> ret = (Map<UUID, Integer>)executeAsync(grid1.forPredicate(nodeFilter)
-            .compute(), taskCls, null).get(TASK_EXEC_TIMEOUT_MS);
+        Map<UUID, Integer> ret = (Map<UUID, Integer>)executeAsync(compute(grid1.cluster().forPredicate(nodeFilter)),
+            taskCls, null).get(TASK_EXEC_TIMEOUT_MS);
 
         assert ret != null;
-        assert ret.get(grid1.localNode().id()) != null && ret.get(grid1.localNode().id()) == 2 :
-            ret.get(grid1.localNode().id());
-        assert ret.get(grid3.localNode().id()) != null && ret.get(grid3.localNode().id()) == 2 :
-            ret.get(grid3.localNode().id());
+        assert ret.get(grid1.cluster().localNode().id()) != null && ret.get(grid1.cluster().localNode().id()) == 2 :
+            ret.get(grid1.cluster().localNode().id());
+        assert ret.get(grid3.cluster().localNode().id()) != null && ret.get(grid3.cluster().localNode().id()) == 2 :
+            ret.get(grid3.cluster().localNode().id());
     }
 
     /** {@inheritDoc} */
@@ -396,16 +397,16 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Serializable execute() throws GridException {
-            log.info("Started job on node: " + grid.localNode().id());
+            log.info("Started job on node: " + grid.cluster().localNode().id());
 
-            if (!jobDistrMap.containsKey(grid.localNode().id())) {
+            if (!jobDistrMap.containsKey(grid.cluster().localNode().id())) {
                 Collection<GridComputeJob> jobs = new ArrayList<>();
                 jobs.add(this);
 
-                jobDistrMap.put(grid.localNode().id(), jobs);
+                jobDistrMap.put(grid.cluster().localNode().id(), jobs);
             }
             else
-                jobDistrMap.get(grid.localNode().id()).add(this);
+                jobDistrMap.get(grid.cluster().localNode().id()).add(this);
 
             try {
                 Long sleep = argument(0);
@@ -415,15 +416,15 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                log.info("Job got interrupted on node: " + grid.localNode().id());
+                log.info("Job got interrupted on node: " + grid.cluster().localNode().id());
 
                 throw new GridException("Job got interrupted.", e);
             }
             finally {
-                log.info("Job finished on node: " + grid.localNode().id());
+                log.info("Job finished on node: " + grid.cluster().localNode().id());
             }
 
-            return grid.localNode().id();
+            return grid.cluster().localNode().id();
         }
     }
 }

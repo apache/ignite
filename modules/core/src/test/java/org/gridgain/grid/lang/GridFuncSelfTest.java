@@ -2966,12 +2966,12 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Grid g3 = startGrid(3);
 
         try {
-            GridEvent evt1 = new TestEvent(g1.localNode());
-            GridEvent evt2 = new TestEvent(g3.localNode());
-            GridEvent evt3 = new TestEvent(g1.localNode());
-            GridEvent evt4 = new TestEvent(g2.localNode());
+            GridEvent evt1 = new TestEvent(g1.cluster().localNode());
+            GridEvent evt2 = new TestEvent(g3.cluster().localNode());
+            GridEvent evt3 = new TestEvent(g1.cluster().localNode());
+            GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
-            Collection<GridNode> nodes = Arrays.asList(g1.localNode(), g3.localNode());
+            Collection<GridNode> nodes = Arrays.asList(g1.cluster().localNode(), g3.cluster().localNode());
 
             p = F.eventNode(nodes);
 
@@ -2997,10 +2997,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         final Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
 
-        GridEvent evt1 = new TestEvent(g1.localNode());
-        GridEvent evt2 = new TestEvent(g1.localNode());
-        GridEvent evt3 = new TestEvent(g1.localNode());
-        GridEvent evt4 = new TestEvent(g2.localNode());
+        GridEvent evt1 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt2 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt3 = new TestEvent(g1.cluster().localNode());
+        GridEvent evt4 = new TestEvent(g2.cluster().localNode());
 
         try {
             GridPredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
@@ -3014,7 +3014,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
             p = F.eventNode(getTestGridName(1), new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
-                    return n != null && n.id().equals(g1.localNode().id());
+                    return n != null && n.id().equals(g1.cluster().localNode().id());
                 }
             });
 

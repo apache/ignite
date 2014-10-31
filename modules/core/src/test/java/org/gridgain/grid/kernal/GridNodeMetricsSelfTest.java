@@ -77,7 +77,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = grid.localNode().metrics();
+        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -133,7 +133,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        GridNodeMetrics metrics = grid.localNode().metrics();
+        GridNodeMetrics metrics = grid.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -192,11 +192,11 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         });
 
         for (int i = 0; i < MSG_CNT; i++)
-            grid0.forRemotes().message().send(null, msg);
+            message(grid0.cluster().forRemotes()).send(null, msg);
 
         latch.await();
 
-        GridNodeMetrics metrics = grid0.localNode().metrics();
+        GridNodeMetrics metrics = grid0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 
@@ -206,7 +206,7 @@ public class GridNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getReceivedMessagesCount() >= MSG_CNT;
         assert metrics.getReceivedBytesCount() > size * MSG_CNT;
 
-        metrics = grid1.localNode().metrics();
+        metrics = grid1.cluster().localNode().metrics();
 
         info("Node 1 metrics: " + metrics);
 

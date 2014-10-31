@@ -46,19 +46,19 @@ public final class ComputeFibonacciContinuationExample {
 
             long N = 100;
 
-            final UUID exampleNodeId = g.localNode().id();
+            final UUID exampleNodeId = g.cluster().localNode().id();
 
             // Filter to exclude this node from execution.
             final GridPredicate<GridNode> nodeFilter = new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
                     // Give preference to remote nodes.
-                    return g.forRemotes().nodes().isEmpty() || !n.id().equals(exampleNodeId);
+                    return g.cluster().forRemotes().nodes().isEmpty() || !n.id().equals(exampleNodeId);
                 }
             };
 
             long start = System.currentTimeMillis();
 
-            BigInteger fib = g.forPredicate(nodeFilter).compute().apply(new FibonacciClosure(nodeFilter), N);
+            BigInteger fib = g.compute(g.cluster().forPredicate(nodeFilter)).apply(new FibonacciClosure(nodeFilter), N);
 
             long duration = System.currentTimeMillis() - start;
 
@@ -114,15 +114,15 @@ public final class ComputeFibonacciContinuationExample {
                         return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                     // Node-local storage.
-                    GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.nodeLocalMap();
+                    GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
 
                     // Check if value is cached in node-local-map first.
                     fut1 = locMap.get(n - 1);
                     fut2 = locMap.get(n - 2);
 
-                    GridProjection p = g.forPredicate(nodeFilter);
+                    GridProjection p = g.cluster().forPredicate(nodeFilter);
 
-                    GridCompute compute = p.compute().enableAsync();
+                    GridCompute compute = g.compute(p).enableAsync();
 
                     // If future is not cached in node-local-map, cache it.
                     if (fut1 == null) {

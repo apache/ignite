@@ -124,7 +124,7 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
         @Override public int[] execute() throws GridException {
             assert locNodeId.equals(argument(0));
 
-            log.info("Running job on node: " + g.localNode().id());
+            log.info("Running job on node: " + g.cluster().localNode().id());
 
             if (sleep) {
                 try {

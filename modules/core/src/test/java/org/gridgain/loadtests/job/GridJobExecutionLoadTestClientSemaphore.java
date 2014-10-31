@@ -54,9 +54,9 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             }
         };
 
-        GridProjection rmts = g.forRemotes();
+        GridProjection rmts = g.cluster().forRemotes();
 
-        GridCompute comp = rmts.compute().enableAsync();
+        GridCompute comp = g.compute(rmts).enableAsync();
 
         while (!finish) {
             tasksSem.acquire();
@@ -200,12 +200,12 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static void warmUp(int noThreads) {
         X.println("Warming up...");
 
-        final GridProjection rmts = g.forRemotes();
+        final GridCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
             @Nullable @Override public Object call() {
                 try {
-                    rmts.compute().execute(GridJobExecutionLoadTestTask.class, null);
+                    rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
                 catch (GridException e) {
                     e.printStackTrace();

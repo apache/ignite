@@ -64,7 +64,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             q.pageSize(50);
 
-            GridProjection prj = g.forNodes(Arrays.asList(g.localNode(), grid(0).localNode()));
+            GridProjection prj = g.cluster().forNodes(Arrays.asList(g.cluster().localNode(), grid(0).localNode()));
 
             q = q.projection(prj);
 
@@ -80,11 +80,11 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
                 }
             }, getTestTimeout()));
 
-            Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> futs = map.get(g.localNode().id());
+            Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> futs = map.get(g.cluster().localNode().id());
 
             assertEquals(1, futs.size());
 
-            final UUID nodeId = g.localNode().id();
+            final UUID nodeId = g.cluster().localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
 
             grid(0).events().localListen(new GridPredicate<GridEvent>() {

@@ -11,6 +11,7 @@ package org.gridgain.grid.cache.hibernate;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -275,9 +276,9 @@ public abstract class GridHibernateAccessStrategyAdapter {
      * @param key Key.
      * @throws CacheException If failed.
      */
-    static void evict(GridProjection grid, GridCacheProjection<Object,Object> cache, Object key) throws CacheException {
+    static void evict(Grid grid, GridCacheProjection<Object,Object> cache, Object key) throws CacheException {
         try {
-            grid.forCache(cache.name()).compute().call(new ClearKeyCallable(key, cache.name()));
+            grid.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (GridException e) {
             throw new CacheException(e);

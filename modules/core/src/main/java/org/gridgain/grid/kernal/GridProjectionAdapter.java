@@ -187,8 +187,10 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridCompute compute() {
+    /**
+     * @return {@link GridCompute} for this projection.
+     */
+    public final GridCompute compute() {
         if (compute == null) {
             assert ctx != null;
 
@@ -198,8 +200,10 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         return compute;
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridMessaging message() {
+    /**
+     * @return {@link GridMessaging} for this projection.
+     */
+    public final GridMessaging message() {
         if (messaging == null) {
             assert ctx != null;
 
@@ -209,8 +213,10 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         return messaging;
     }
 
-    /** {@inheritDoc} */
-    @Override public final GridEvents events() {
+    /**
+     * @return {@link GridEvents} for this projection.
+     */
+    public final GridEvents events() {
         if (evts == null) {
             assert ctx != null;
 
@@ -220,8 +226,10 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         return evts;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridServices services() {
+    /**
+     * @return {@link GridServices} for this projection.
+     */
+    public GridServices services() {
         if (svcs == null) {
             assert ctx != null;
 
@@ -231,8 +239,10 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         return svcs;
     }
 
-    /** {@inheritDoc} */
-    @Override public ExecutorService executorService() {
+    /**
+     * @return {@link ExecutorService} for this projection.
+     */
+    public ExecutorService executorService() {
         assert ctx != null;
 
         return new GridExecutorService(this, ctx.log());

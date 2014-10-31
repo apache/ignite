@@ -75,7 +75,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
             "_val like 'value%' and _key != 2 and _val != 'value3' order by _val");
 
         Iterator<String> iter2 = rdcQry.
-            projection(grid.forLocal()).
+            projection(grid.cluster().forLocal()).
             execute(new GridReducer<Map.Entry<Integer, String>, String>() {
                 /** */
                 private String res = "";

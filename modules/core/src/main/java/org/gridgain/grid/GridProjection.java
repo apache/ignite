@@ -61,53 +61,6 @@ public interface GridProjection {
     public Grid grid();
 
     /**
-     * Gets {@code compute} functionality over this grid projection. All operations
-     * on the returned {@link GridCompute} instance will only include nodes from
-     * this projection.
-     *
-     * @return Compute instance over this grid projection.
-     */
-    public GridCompute compute();
-
-    /**
-     * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
-     * this projection.
-     *
-     * @return Messaging instance over this grid projection.
-     */
-    public GridMessaging message();
-
-    /**
-     * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link GridEvents} instance will only include nodes from
-     * this projection.
-     *
-     * @return Events instance over this grid projection.
-     */
-    public GridEvents events();
-
-    /**
-     * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link GridMessaging} instance will only include nodes from
-     * this projection.
-     *
-     * @return Services instance over this grid projection.
-     */
-    public GridServices services();
-
-    /**
-     * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection.
-     * This essentially
-     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
-     * replacement for local thread pools.
-     *
-     * @return Grid-enabled {@code ExecutorService}.
-     */
-    public ExecutorService executorService();
-
-    /**
      * Creates a grid projection over a given set of nodes.
      *
      * @param nodes Collection of nodes to create a projection from.

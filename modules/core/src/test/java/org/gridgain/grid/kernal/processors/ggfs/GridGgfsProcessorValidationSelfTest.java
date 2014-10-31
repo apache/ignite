@@ -207,7 +207,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
         g1GgfsCfg1.setName(null);
 
-        assertFalse(G.start(g1Cfg).nodes().isEmpty());
+        assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
     }
 
     /**

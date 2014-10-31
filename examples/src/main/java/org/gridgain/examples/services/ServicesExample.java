@@ -28,7 +28,7 @@ import org.gridgain.grid.service.*;
 public class ServicesExample {
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            GridProjection rmts = grid.forRemotes();
+            GridProjection rmts = grid.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {
                 System.err.println(">>>");
@@ -39,7 +39,7 @@ public class ServicesExample {
                 return;
             }
 
-            GridServices svcs = rmts.services();
+            GridServices svcs = grid.services(rmts);
 
             // Deploy cluster singleton.
             svcs.deployClusterSingleton("myClusterSingletonService", new SimpleService());

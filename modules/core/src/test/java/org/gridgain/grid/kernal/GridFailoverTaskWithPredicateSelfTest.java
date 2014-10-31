@@ -81,7 +81,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert grid1 != null;
             assert grid2 != null;
 
-            grid1.forPredicate(p).compute().withTimeout(10000).execute(JobFailTask.class.getName(), "1");
+            compute(grid1.cluster().forPredicate(p)).withTimeout(10000).execute(JobFailTask.class.getName(), "1");
         }
         catch (GridTopologyException ignored) {
             failed.set(true);
@@ -114,7 +114,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert grid2 != null;
             assert grid3 != null;
 
-            Integer res = (Integer)grid1.forPredicate(p).compute().withTimeout(10000).
+            Integer res = (Integer)compute(grid1.cluster().forPredicate(p)).withTimeout(10000).
                 execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;
@@ -152,12 +152,12 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert grid3 != null;
 
             // Get projection only for first 2 nodes.
-            GridProjection nodes = grid1.forNodeIds(Arrays.asList(
-                grid1.localNode().id(),
-                grid2.localNode().id()));
+            GridProjection nodes = grid1.cluster().forNodeIds(Arrays.asList(
+                grid1.cluster().localNode().id(),
+                grid2.cluster().localNode().id()));
 
             // On failover NODE3 shouldn't be taken into account.
-            Integer res = (Integer)nodes.forPredicate(p).compute().withTimeout(10000).
+            Integer res = (Integer)compute(nodes.forPredicate(p)).withTimeout(10000).
                 execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;

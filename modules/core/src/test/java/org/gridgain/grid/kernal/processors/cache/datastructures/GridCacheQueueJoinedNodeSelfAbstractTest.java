@@ -77,7 +77,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         PutJob putJob = new PutJob(queueName);
 
-        GridCompute comp = grid(0).forLocal().compute().enableAsync();
+        GridCompute comp = compute(grid(0).forLocal()).enableAsync();
 
         comp.run(putJob);
 
@@ -96,7 +96,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
             jobs.add(job);
 
-            comp = grid(i).forLocal().compute().enableAsync();
+            comp = compute(grid(i).forLocal()).enableAsync();
 
             comp.call(job);
 
@@ -120,7 +120,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         jobs.add(joinedJob);
 
-        Integer polled = joined.forLocal().compute().call(joinedJob);
+        Integer polled = forLocal(joined).call(joinedJob);
 
         assertNotNull("Joined node should poll item", polled);
 
@@ -163,7 +163,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         @Override public void run() {
             assertNotNull(grid);
 
-            log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
+            log.info("Running job [node=" + grid.cluster().localNode().id() +
+                ", job=" + getClass().getSimpleName() + "]");
 
             try {
                 GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, 0, true, false);
@@ -254,7 +255,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         @Nullable @Override public Integer call() {
             assertNotNull(grid);
 
-            log.info("Running job [node=" + grid.localNode().id() + ", job=" + getClass().getSimpleName() + "]");
+            log.info("Running job [node=" + grid.cluster().localNode().id() +
+                ", job=" + getClass().getSimpleName() + "]");
 
             Integer lastPolled = null;
 

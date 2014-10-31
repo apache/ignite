@@ -62,12 +62,12 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
             ldr.setTimeout(100);
 
-            g1.compute().execute(task1, g2.localNode().id());
+            g1.compute().execute(task1, g2.cluster().localNode().id());
 
             ldr.setTimeout(2000);
 
             try {
-                g1.compute().execute(task2, g2.localNode().id());
+                g1.compute().execute(task2, g2.cluster().localNode().id());
 
                 assert false; // Timeout exception must be thrown.
             }

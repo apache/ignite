@@ -16,8 +16,7 @@ import javax.swing.*;
 import java.util.*;
 
 /**
- * Test for replicated cache {@link GridReplicatedPreloader preloader}
- * and concurrent undeploys.
+ * Test for replicated cache preloader and concurrent undeploys.
  */
 public class GridCacheReplicatedPreloadUndeploysTest {
     /**
@@ -26,7 +25,7 @@ public class GridCacheReplicatedPreloadUndeploysTest {
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = G.start("examples/config/example-cache.xml")) {
-            if (g.forRemotes().nodes().isEmpty()) {
+            if (g.cluster().forRemotes().nodes().isEmpty()) {
                 X.print(">>> This test needs 1 remote node at start " +
                     "and addition of 1 more node at the end.");
 

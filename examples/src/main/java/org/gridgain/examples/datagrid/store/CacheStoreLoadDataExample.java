@@ -51,7 +51,7 @@ public class CacheStoreLoadDataExample {
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            g.forCache(null).compute().broadcast(new GridCallable<Object>() {
+            g.compute(g.cluster().forCache(null)).broadcast(new GridCallable<Object>() {
                 @Override public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);

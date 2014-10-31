@@ -45,7 +45,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
             GridCompute comp = grid1.compute().enableAsync();
 
             for (int i = 0; i < TESTS_COUNT; i++) {
-                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), grid2.localNode().id());
+                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), grid2.cluster().localNode().id());
 
                 GridComputeTaskFuture<?> fut = comp.future();
 

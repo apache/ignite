@@ -207,7 +207,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             GridCacheAffinity<Integer> aff = affinity(c1);
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
                     GridDhtPartitionTopology<Integer, String> top = dht.topology();
 
                     for (GridDhtLocalPartition<Integer, String> p : top.localPartitions())
@@ -243,7 +243,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         Grid grid = c.gridProjection().grid();
 
         for (int i = 0; i < cnt; i++) {
-            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(grid.localNode())) {
+            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(grid.cluster().localNode())) {
                 String val = sync ? c.peek(i) : c.get(i);
 
                 assertEquals("Key check failed [grid=" + grid.name() + ", cache=" + c.name() + ", key=" + i + ']',

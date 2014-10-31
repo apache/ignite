@@ -117,7 +117,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     "the query): " + destId));
 
             try {
-                GridCompute comp = ctx.grid().forNodeId(destId).compute().withNoFailover().enableAsync();
+                GridCompute comp = ctx.grid().compute(ctx.grid().forNodeId(destId)).withNoFailover().enableAsync();
 
                 comp.call(c);
 
@@ -136,7 +136,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private GridFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        GridCompute comp = ctx.grid().forCache(cacheName).compute().withNoFailover().enableAsync();
+        GridCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().enableAsync();
 
         try {
             comp.broadcast(c);
@@ -334,7 +334,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.nodeLocalMap();
+                g.cluster().nodeLocalMap();
 
             QueryFutureWrapper wrapper = new QueryFutureWrapper(fut);
 
@@ -342,7 +342,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             assert old == null;
 
-            return fetchQueryResults(qryId, wrapper, locMap, g.localNode().id());
+            return fetchQueryResults(qryId, wrapper, locMap, g.cluster().localNode().id());
         }
     }
 
@@ -370,10 +370,10 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             GridNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.nodeLocalMap();
+                g.cluster().nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),
-                locMap, g.localNode().id());
+                locMap, g.cluster().localNode().id());
         }
     }
 

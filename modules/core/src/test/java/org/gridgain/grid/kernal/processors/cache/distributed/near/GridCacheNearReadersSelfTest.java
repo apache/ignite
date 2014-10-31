@@ -210,11 +210,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         GridCache<Integer, String> cache1 = g1.cache(null);
         GridCache<Integer, String> cache2 = g2.cache(null);
 
-        assertEquals(cache1.affinity().mapKeyToNode(1), g1.localNode());
-        assertFalse(cache1.affinity().mapKeyToNode(2).equals(g1.localNode()));
+        assertEquals(cache1.affinity().mapKeyToNode(1), g1.cluster().localNode());
+        assertFalse(cache1.affinity().mapKeyToNode(2).equals(g1.cluster().localNode()));
 
-        assertEquals(cache2.affinity().mapKeyToNode(2), g2.localNode());
-        assertFalse(cache2.affinity().mapKeyToNode(1).equals(g2.localNode()));
+        assertEquals(cache2.affinity().mapKeyToNode(2), g2.cluster().localNode());
+        assertFalse(cache2.affinity().mapKeyToNode(1).equals(g2.cluster().localNode()));
 
         // Store first value in cache.
         assertNull(cache1.put(1, "v1"));

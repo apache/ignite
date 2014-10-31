@@ -11,10 +11,13 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -57,10 +60,12 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
@@ -100,7 +105,7 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+public class GridKernal extends GridProjectionAdapter implements GridCluster, GridEx, GridKernalMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -250,6 +255,36 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             compatibleVers[i] = compatibleVers[i].trim();
 
         this.compatibleVers = Collections.unmodifiableList(Arrays.asList(compatibleVers));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCluster cluster() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridCompute compute(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridMessaging message(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).message();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridEvents events(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).events();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServices services(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).services();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService executorService(GridProjection prj) {
+        return ((GridProjectionAdapter)prj).executorService();
     }
 
     /** {@inheritDoc} */
@@ -2655,7 +2690,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            forNodes(neighbors).compute().execute(GridKillTask.class, false);
+                            compute(forNodes(neighbors)).execute(GridKillTask.class, false);
                         }
                         catch (GridEmptyProjectionException ignored) {
                             // No-op, nothing to restart.
@@ -2787,7 +2822,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, false);
+            compute(forNodeIds(ids)).execute(GridKillTask.class, false);
         }
         finally {
             unguard();
@@ -2811,7 +2846,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, true);
+            compute(forNodeIds(ids)).execute(GridKillTask.class, true);
         }
         finally {
             unguard();

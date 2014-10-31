@@ -101,7 +101,7 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
         try {
             Grid grid = G.grid(gridName);
 
-            return execute(grid, joinPnt.getSignature().getDeclaringType(), arg, nodeFilter,
+            return execute(grid.compute(), joinPnt.getSignature().getDeclaringType(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
         catch (Throwable e) {

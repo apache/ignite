@@ -248,7 +248,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         Grid g = startGrid(GRID_CNT);
 
         try {
-            assertEquals(GRID_CNT + 1, g.nodes().size());
+            assertEquals(GRID_CNT + 1, g.cluster().nodes().size());
 
             for (int i = 0; i < KEY_CNT; i++)
                 assert grid(GRID_CNT).compute().execute(new OneJobTask(i), i) :
@@ -262,7 +262,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with field annotation.
      */
-    private class FieldAffinityJob implements GridCallable<Boolean> {
+    private static class FieldAffinityJob implements GridCallable<Boolean> {
         /** Affinity key. */
         @GridCacheAffinityKeyMapped
         @GridToStringInclude
@@ -295,11 +295,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assert jobCtx.cacheName() == null;
 
             if (log.isDebugEnabled())
-                log.debug("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                log.debug("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheAffinity<Object> aff = grid.cache(null).affinity();
 
-            return F.eqNodes(grid.localNode(), aff.mapKeyToNode(affKey));
+            return F.eqNodes(grid.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
 
         /** {@inheritDoc} */
@@ -311,7 +311,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method annotation.
      */
-    private class MethodAffinityJob implements GridCallable<Boolean> {
+    private static class MethodAffinityJob implements GridCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -351,11 +351,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assert jobCtx.cacheName() == null;
 
             if (log.isDebugEnabled())
-                log.debug("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                log.debug("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheAffinity<Object> aff = grid.cache(null).affinity();
 
-            return F.eqNodes(grid.localNode(), aff.mapKeyToNode(affKey));
+            return F.eqNodes(grid.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
 
         /** {@inheritDoc} */
@@ -367,7 +367,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with field cache name annotation.
      */
-    private class FieldCacheNameAffinityJob implements GridCallable<Boolean> {
+    private static class FieldCacheNameAffinityJob implements GridCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -411,11 +411,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assert jobCtx.cacheName().equals(cacheName);
 
             if (log.isDebugEnabled())
-                log.debug("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                log.debug("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheAffinity<Object> aff = grid.cache(cacheName).affinity();
 
-            return F.eqNodes(grid.localNode(), aff.mapKeyToNode(affKey));
+            return F.eqNodes(grid.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
 
         /** {@inheritDoc} */
@@ -427,7 +427,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method cache name annotation.
      */
-    private class MethodCacheNameAffinityJob implements GridCallable<Boolean> {
+    private static class MethodCacheNameAffinityJob implements GridCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         private Object affKey;
@@ -475,11 +475,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assert jobCtx.cacheName().equals(cacheName());
 
             if (log.isDebugEnabled())
-                log.debug("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                log.debug("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheAffinity<Object> aff = grid.cache(cacheName()).affinity();
 
-            return F.eqNodes(grid.localNode(), aff.mapKeyToNode(affKey));
+            return F.eqNodes(grid.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
 
         /** {@inheritDoc} */
@@ -491,7 +491,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * Test job with method cache name annotation.
      */
-    private class MultipleAnnotationsJob implements GridCallable<Boolean> {
+    private static class MultipleAnnotationsJob implements GridCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
         @GridCacheAffinityKeyMapped
@@ -523,11 +523,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             assert grid != null;
 
             if (log.isDebugEnabled())
-                log.debug("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+                log.debug("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
             GridCacheAffinity<Object> aff = grid.cache(null).affinity();
 
-            return F.eqNodes(grid.localNode(), aff.mapKeyToNode(affKey));
+            return F.eqNodes(grid.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
 
         /** {@inheritDoc} */
@@ -571,7 +571,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
                     if (log.isInfoEnabled())
                         log.info("Primary node for the job key [affKey=" + affKey + ", primary=" + primary.id() + "]");
 
-                    return F.eqNodes(grid.localNode(), primary);
+                    return F.eqNodes(grid.cluster().localNode(), primary);
                 }
             });
         }
@@ -634,8 +634,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws GridException {
-            assert grid.localNode().id().equals(grid.mapKeyToNode(null, affKey).id());
-            assert grid.localNode().id().equals(grid.mapKeyToNode(null, key).id());
+            assert grid.cluster().localNode().id().equals(grid.cluster().mapKeyToNode(null, affKey).id());
+            assert grid.cluster().localNode().id().equals(grid.cluster().mapKeyToNode(null, key).id());
             assert jobCtx.affinityKey().equals(affKey);
             assert jobCtx.cacheName().equals(NON_DFLT_CACHE_NAME);
         }
@@ -670,8 +670,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws GridException {
-            assert grid.localNode().id().equals(grid.mapKeyToNode(null, affKey).id());
-            assert grid.localNode().id().equals(grid.mapKeyToNode(null, key).id());
+            assert grid.cluster().localNode().id().equals(grid.cluster().mapKeyToNode(null, affKey).id());
+            assert grid.cluster().localNode().id().equals(grid.cluster().mapKeyToNode(null, key).id());
             assert jobCtx.affinityKey().equals(affKey);
             assert jobCtx.cacheName().equals(NON_DFLT_CACHE_NAME);
 

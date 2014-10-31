@@ -290,7 +290,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     try {
                         Grid g3 = startGrid(3);
 
-                        info(">>> Started grid g3: " + g3.localNode().id());
+                        info(">>> Started grid g3: " + g3.cluster().localNode().id());
                     }
                     catch (Exception e) {
                         info(">>> Failed to start 4th node: " + e);
@@ -551,7 +551,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         GridCacheAffinity<Object> aff = node.cache(null).affinity();
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
-            GridNode locNode = node.localNode();
+            GridNode locNode = node.cluster().localNode();
 
             switch (partType) {
                 // Near, partition should not belong to node.

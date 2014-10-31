@@ -580,7 +580,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                 for (int i = 0; i < dataNodes(); i++) {
                     GridCacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
 
-                    UUID nodeId = G.grid(nodeName(i)).localNode().id();
+                    UUID nodeId = G.grid(nodeName(i)).cluster().localNode().id();
 
                     if (!F.eq(cacheEntry.get(), expVals.get(key)))
                         log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + cacheEntry.get() +

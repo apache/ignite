@@ -158,7 +158,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             grids[i] = grid(i);
 
-            ids[i] = grids[i].localNode().id();
+            ids[i] = grids[i].cluster().localNode().id();
 
             caches[i] = grids[i].cache(CACHE_NAME);
 

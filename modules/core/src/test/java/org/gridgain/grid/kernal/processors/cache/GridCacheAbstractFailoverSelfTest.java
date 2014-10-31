@@ -379,7 +379,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         int size;
 
         if (cacheMode() == PARTITIONED) {
-            Collection<Integer> res = cache.gridProjection().compute().broadcast(new GridCallable<Integer>() {
+            Collection<Integer> res = compute(cache.gridProjection()).broadcast(new GridCallable<Integer>() {
                 @GridInstanceResource
                 private Grid g;
 

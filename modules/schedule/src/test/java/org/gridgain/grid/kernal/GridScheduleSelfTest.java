@@ -363,7 +363,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         /** @{inheritDoc} */
         @Override public void run() {
-            log.info("Runnable job executed on node: " + grid.localNode().id());
+            log.info("Runnable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 
@@ -384,7 +384,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer call() {
-            log.info("Callable job executed on node: " + grid.localNode().id());
+            log.info("Callable job executed on node: " + grid.cluster().localNode().id());
 
             assert grid != null;
 

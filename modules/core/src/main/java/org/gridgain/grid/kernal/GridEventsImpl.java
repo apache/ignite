@@ -31,7 +31,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /**
      * Required by {@link Externalizable}.
@@ -44,7 +44,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public GridEventsImpl(GridKernalContext ctx, GridProjection prj) {
+    public GridEventsImpl(GridKernalContext ctx, GridProjectionAdapter prj) {
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -270,7 +270,7 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**

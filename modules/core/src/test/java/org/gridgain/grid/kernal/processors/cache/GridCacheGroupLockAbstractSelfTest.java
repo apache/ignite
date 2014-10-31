@@ -166,10 +166,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
     }
@@ -213,10 +213,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
 
@@ -246,10 +246,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertNull("For index: " + i, gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertNull("For index: " + i, gCache.peek(key2));
         }
     }
@@ -293,10 +293,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
 
@@ -351,7 +351,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
         }
 
@@ -436,7 +436,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
         }
 
@@ -454,7 +454,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
                 GridCache<Object, Object> gCache = g.cache(null);
 
-                if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+                if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                     assertEquals("For index: " + i, "val01", gCache.peek(key1));
             }
         }
@@ -537,10 +537,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
     }
@@ -626,10 +626,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
 
@@ -705,10 +705,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val01", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val02", gCache.peek(key2));
         }
     }
@@ -766,10 +766,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
 
@@ -846,10 +846,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
         }
 
@@ -1126,16 +1126,16 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridCache<Object, Object> gCache = g.cache(null);
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key1))
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key2))
                 assertEquals("For index: " + i, "val2", gCache.peek(key2));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key3))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key3))
                 assertEquals("For index: " + i, "val3", gCache.peek(key3));
 
-            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key4))
+            if (gCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key4))
                 assertEquals("For index: " + i, "val4", gCache.peek(key4));
         }
 
@@ -1164,7 +1164,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         int cnt = 0;
 
-        UUID primaryId = primary.localNode().id();
+        UUID primaryId = primary.cluster().localNode().id();
 
         do {
             res = UUID.randomUUID();
@@ -1174,7 +1174,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             if (cnt > 10000)
                 throw new IllegalStateException("Cannot find key for primary node: " + primaryId);
         }
-        while (!primary.mapKeyToNode(null, res).id().equals(primaryId));
+        while (!primary.cluster().mapKeyToNode(null, res).id().equals(primaryId));
 
         return res;
     }
@@ -1197,7 +1197,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             if (iters > 10000)
                 throw new IllegalStateException("Cannot find keys for primary node [nodeId=" +
-                    primary.localNode().id() + ", cnt=" + cnt + ']');
+                    primary.cluster().localNode().id() + ", cnt=" + cnt + ']');
         }
         while (keys.size() < cnt);
 

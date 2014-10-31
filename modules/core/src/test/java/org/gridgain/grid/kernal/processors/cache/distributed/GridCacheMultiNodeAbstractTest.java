@@ -104,7 +104,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @param grid Grid to remove listeners from.
      */
-    private void removeListeners(GridProjection grid) {
+    private void removeListeners(Grid grid) {
         if (grid != null)
             for (CacheEventListener lsnr : lsnrs) {
                 assert lsnr.latch.getCount() == 0;
@@ -119,7 +119,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      * @param lsnr Listener.
      * @param type Event types.
      */
-    private void addListener(GridProjection grid, CacheEventListener lsnr, int... type) {
+    private void addListener(Grid grid, CacheEventListener lsnr, int... type) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
@@ -462,7 +462,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))
-                if (grid == null || evt.node().id().equals(grid.localNode().id())) {
+                if (grid == null || evt.node().id().equals(grid.cluster().localNode().id())) {
                     if (latch.getCount() > 0)
                         latch.countDown();
                     else

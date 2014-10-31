@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.executor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
@@ -25,7 +26,7 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
  * through {@link Grid} instance, normally configured using
- * {@link GridProjection#executorService()} method.
+ * {@link Grid#executorService()} method.
  * {@code GridExecutorService} delegates commands execution to already
  * started {@link Grid} instance. Every submitted task will be serialized and
  * transferred to any node in grid.
@@ -68,7 +69,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private static final long serialVersionUID = 0L;
 
     /** Projection. */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /** Compute. */
     private GridCompute comp;
@@ -101,7 +102,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @param prj Projection.
      * @param log Grid logger.
      */
-    public GridExecutorService(GridProjection prj, GridLogger log) {
+    public GridExecutorService(GridProjectionAdapter prj, GridLogger log) {
         assert prj != null;
         assert log != null;
 
@@ -119,7 +120,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**

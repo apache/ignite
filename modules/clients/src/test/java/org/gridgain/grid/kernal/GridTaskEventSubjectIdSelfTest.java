@@ -65,7 +65,7 @@ public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
             }
         }, EVTS_TASK_EXECUTION);
 
-        nodeId = g.localNode().id();
+        nodeId = g.cluster().localNode().id();
 
         GridClientConfiguration cfg = new GridClientConfiguration();
 

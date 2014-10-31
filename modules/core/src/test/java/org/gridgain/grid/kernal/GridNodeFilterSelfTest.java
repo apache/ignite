@@ -52,16 +52,16 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        UUID nodeId = grid.localNode().id();
+        UUID nodeId = grid.cluster().localNode().id();
 
-        UUID rmtNodeId = rmtGrid.localNode().id();
+        UUID rmtNodeId = rmtGrid.cluster().localNode().id();
 
-        Collection<GridNode> locNodes = grid.forNodeId(nodeId).nodes();
+        Collection<GridNode> locNodes = grid.cluster().forNodeId(nodeId).nodes();
 
         assert locNodes.size() == 1;
         assert locNodes.iterator().next().id().equals(nodeId);
 
-        Collection<GridNode> rmtNodes = grid.forNodeId(rmtNodeId).nodes();
+        Collection<GridNode> rmtNodes = grid.cluster().forNodeId(rmtNodeId).nodes();
 
         assert rmtNodes.size() == 1;
         assert rmtNodes.iterator().next().id().equals(rmtNodeId);

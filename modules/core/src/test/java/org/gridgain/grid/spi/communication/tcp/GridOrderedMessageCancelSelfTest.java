@@ -99,7 +99,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTask() throws Exception {
-        GridComputeTaskFuture<?> fut = executeAsync(grid(0).forRemotes().compute(), Task.class, null);
+        GridComputeTaskFuture<?> fut = executeAsync(compute(grid(0).forRemotes()), Task.class, null);
 
         testMessageSet(fut);
     }
@@ -108,7 +108,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTaskException() throws Exception {
-        GridComputeTaskFuture<?> fut = executeAsync(grid(0).forRemotes().compute(), FailTask.class, null);
+        GridComputeTaskFuture<?> fut = executeAsync(compute(grid(0).forRemotes()), FailTask.class, null);
 
         testMessageSet(fut);
     }

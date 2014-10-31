@@ -64,7 +64,9 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
             assert grid1 != null;
             assert grid2 != null;
 
-            fut = executeAsync(grid1.compute().withTimeout(10000), GridWaitTask.class.getName(), grid1.localNode().id());
+            fut = executeAsync(grid1.compute().withTimeout(10000),
+                GridWaitTask.class.getName(),
+                grid1.cluster().localNode().id());
 
             jobStarted.await();
         }

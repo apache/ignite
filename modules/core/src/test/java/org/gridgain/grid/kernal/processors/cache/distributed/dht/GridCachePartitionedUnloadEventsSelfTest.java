@@ -75,7 +75,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Grid g2 = startGrid("g2");
 
         Map<GridNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(allKeys);
-        Collection<Object> g2Keys = keysMap.get(g2.localNode());
+        Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
@@ -106,8 +106,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
-            assertEquals(g.localNode().id(), cacheEvt.node().id());
-            assertEquals(g.localNode().id(), cacheEvt.eventNode().id());
+            assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
+            assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
         }
     }
@@ -135,7 +135,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                 }));
 
             assertEquals(g.cache(null).name(), unloadEvt.cacheName());
-            assertEquals(g.localNode().id(), unloadEvt.node().id());
+            assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());
         }
     }
 }

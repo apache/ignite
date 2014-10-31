@@ -109,7 +109,7 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
             // Wait until local node will have updated metrics.
             metricsUpdLock.await();
 
-            GridProjectionMetrics m = g.metrics();
+            GridProjectionMetrics m = g.cluster().metrics();
 
             checkMetrics(m);
         }

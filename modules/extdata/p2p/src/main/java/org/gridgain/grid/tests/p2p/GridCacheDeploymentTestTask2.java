@@ -31,7 +31,7 @@ public class GridCacheDeploymentTestTask2 extends GridComputeTaskAdapter<GridNod
 
                 @Override public Object execute() {
                     X.println("Executing GridCacheDeploymentTestTask2 job on node " +
-                        grid.localNode().id());
+                        grid.cluster().localNode().id());
 
                     return null;
                 }

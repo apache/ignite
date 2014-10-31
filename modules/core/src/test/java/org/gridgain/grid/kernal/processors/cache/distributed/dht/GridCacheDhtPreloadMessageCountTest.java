@@ -122,7 +122,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);
 
-            if (c.affinity().isPrimaryOrBackup(g.localNode(), key))
+            if (c.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(Integer.valueOf(i), c.peek(key));
         }
     }

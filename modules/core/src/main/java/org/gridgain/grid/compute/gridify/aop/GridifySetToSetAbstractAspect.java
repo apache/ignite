@@ -106,7 +106,7 @@ public class GridifySetToSetAbstractAspect {
     /**
      * Execute method on grid.
      *
-     * @param subgrid Subgrid.
+     * @param compute {@link GridCompute} instance.
      * @param cls Joint point signature class.
      * @param arg GridifyArgument with all method signature parameters.
      * @param nodeFilter Node filter.
@@ -117,7 +117,7 @@ public class GridifySetToSetAbstractAspect {
      * @return Result.
      * @throws GridException If execution failed.
      */
-    protected Object execute(GridProjection subgrid, Class<?> cls, GridifyRangeArgument arg,
+    protected Object execute(GridCompute compute, Class<?> cls, GridifyRangeArgument arg,
         GridifyNodeFilter nodeFilter, int threshold, int splitSize, long timeout) throws GridException {
         long now = U.currentTimeMillis();
 
@@ -130,7 +130,7 @@ public class GridifySetToSetAbstractAspect {
         if (now > end)
             throw new GridComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
 
-        Collection<?> res = subgrid.compute().withTimeout(timeout == 0 ? 0L : (end - now)).execute(
+        Collection<?> res = compute.withTimeout(timeout == 0 ? 0L : (end - now)).execute(
             new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, false),
             arg);
 

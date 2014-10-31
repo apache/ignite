@@ -63,7 +63,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         try {
             Grid g = startGrid(name);
 
-            UUID joinedId = g.localNode().id();
+            UUID joinedId = g.cluster().localNode().id();
 
             assert projection().forRemotes().nodes().size() == size + 1;
 
@@ -85,7 +85,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
         try {
             Grid g = startGrid(name);
 
-            UUID joinedId = g.localNode().id();
+            UUID joinedId = g.cluster().localNode().id();
 
             assert remotePrj.nodes().size() == size + 1;
 
@@ -105,7 +105,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         Grid g = (Grid)projection();
 
-        final UUID locNodeId = g.localNode().id();
+        final UUID locNodeId = g.cluster().localNode().id();
 
         g.message().remoteListen(null, new GridMessagingListenActor<String>() {
             @Override protected void receive(UUID nodeId, String rcvMsg) throws Throwable {
@@ -132,7 +132,7 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         Thread.sleep(1000);
 
-        assert cnt.get() == g.forRemotes().nodes().size();
+        assert cnt.get() == g.cluster().forRemotes().nodes().size();
     }
 
     /**

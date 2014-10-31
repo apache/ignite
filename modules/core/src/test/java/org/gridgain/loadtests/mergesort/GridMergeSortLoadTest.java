@@ -60,7 +60,7 @@ public class GridMergeSortLoadTest {
 
                 int arrWarmupSize = args.length > 2 ? Integer.parseInt(args[2]) : ARR_SIZE;
 
-                X.println("Test is being executed on the gird of size " + g.nodes().size() + ".");
+                X.println("Test is being executed on the gird of size " + g.cluster().nodes().size() + ".");
 
                 X.println("Performing warm up sorting of int[" + arrWarmupSize + "]...");
 
@@ -100,7 +100,7 @@ public class GridMergeSortLoadTest {
      * @return Sort execution time in milliseconds.
      * @throws GridException If failed.
      */
-    private static long sort(GridProjection g, int size) throws GridException {
+    private static long sort(Grid g, int size) throws GridException {
         int[] bigArr = generateRandomArray(size);
 
         X.println("Array is generated.");

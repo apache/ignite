@@ -77,7 +77,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         String seqName = UUID.randomUUID().toString();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Set<Long> retVal = grid(i).forLocal().compute().
+            Set<Long> retVal = compute(grid(i).forLocal()).
                 call(new IncrementAndGetJob(seqName, RETRIES));
 
             for (Long l : retVal)
@@ -112,7 +112,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         String seqName = UUID.randomUUID().toString();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Set<Long> retVal = grid(i).forLocal().compute().
+            Set<Long> retVal = compute(grid(i).forLocal()).
                 call(new GetAndIncrementJob(seqName, RETRIES));
 
             for (Long l : retVal)
@@ -198,7 +198,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             assert grid != null;
 
             if (log.isInfoEnabled())
-                log.info("Running IncrementAndGetJob on node: " + grid.localNode().id());
+                log.info("Running IncrementAndGetJob on node: " + grid.cluster().localNode().id());
 
             GridCacheAtomicSequence seq = grid.cache(null).dataStructures().atomicSequence(seqName, 0, true);
 
@@ -223,7 +223,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     /**
      * Test job with method cache name annotation.
      */
-    private class GetAndIncrementJob implements GridCallable<Set<Long>> {
+    private static class GetAndIncrementJob implements GridCallable<Set<Long>> {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -232,10 +232,10 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         @GridLoggerResource
         private GridLogger log;
 
-        /* Sequence name. */
+        /** Sequence name. */
         private final String seqName;
 
-        /* */
+        /** */
         private final int retries;
 
         /**
@@ -252,7 +252,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             assert grid != null;
 
             if (log.isInfoEnabled())
-                log.info("Running GetAndIncrementJob on node: " + grid.localNode().id());
+                log.info("Running GetAndIncrementJob on node: " + grid.cluster().localNode().id());
 
             GridCacheAtomicSequence seq = grid.cache(null).dataStructures().atomicSequence(seqName, 0, true);
 

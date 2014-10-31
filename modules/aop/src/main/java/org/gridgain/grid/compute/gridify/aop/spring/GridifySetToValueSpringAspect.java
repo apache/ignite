@@ -96,7 +96,7 @@ public class GridifySetToValueSpringAspect extends GridifySetToValueAbstractAspe
         try {
             Grid grid = G.grid(gridName);
 
-            return execute(mtd, grid, invoc.getMethod().getDeclaringClass(), arg, nodeFilter,
+            return execute(mtd, grid.compute(), invoc.getMethod().getDeclaringClass(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
         catch (Throwable e) {

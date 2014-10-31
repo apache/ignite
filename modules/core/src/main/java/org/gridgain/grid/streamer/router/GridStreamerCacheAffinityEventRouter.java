@@ -56,6 +56,6 @@ public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRoute
             return c.affinity().mapKeyToNode(e.affinityKey());
         }
 
-        return grid.localNode();
+        return grid.cluster().localNode();
     }
 }

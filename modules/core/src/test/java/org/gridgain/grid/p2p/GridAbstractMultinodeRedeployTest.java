@@ -81,14 +81,14 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 grid2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
                 GridComputeTaskFuture<int[]> fut1 = executeAsync(grid1.compute(), TASK_NAME, Arrays.<UUID>asList(
-                    grid1.localNode().id(),
-                    grid2.localNode().id(),
-                    grid3.localNode().id()));
+                    grid1.cluster().localNode().id(),
+                    grid2.cluster().localNode().id(),
+                    grid3.cluster().localNode().id()));
 
                 GridComputeTaskFuture<int[]> fut2 = executeAsync(grid2.compute(), TASK_NAME, Arrays.<UUID>asList(
-                    grid1.localNode().id(),
-                    grid2.localNode().id(),
-                    grid3.localNode().id()));
+                    grid1.cluster().localNode().id(),
+                    grid2.cluster().localNode().id(),
+                    grid3.cluster().localNode().id()));
 
                 int[] res1 = fut1.get();
                 int[] res2 = fut2.get();

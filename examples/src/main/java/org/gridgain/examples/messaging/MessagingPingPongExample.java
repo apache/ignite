@@ -39,14 +39,14 @@ public class MessagingPingPongExample {
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(g, 2))
+            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println(">>> Messaging ping-pong example started.");
 
             // Pick random remote node as a partner.
-            GridProjection nodeB = g.forRemotes().forRandom();
+            GridProjection nodeB = g.cluster().forRemotes().forRandom();
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -54,7 +54,7 @@ public class MessagingPingPongExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            nodeB.message().remoteListen(null, new GridBiPredicate<UUID, String>() {
+            g.message(nodeB).remoteListen(null, new GridBiPredicate<UUID, String>() {
                 /** This will be injected on node listener comes to. */
                 @GridInstanceResource
                 private Grid grid;
@@ -64,7 +64,7 @@ public class MessagingPingPongExample {
 
                     try {
                         if ("PING".equals(rcvMsg)) {
-                            grid.forNodeId(nodeId).message().send(null, "PONG");
+                            grid.message(grid.cluster().forNodeId(nodeId)).send(null, "PONG");
 
                             return true; // Continue listening.
                         }
@@ -88,14 +88,14 @@ public class MessagingPingPongExample {
 
                     try {
                         if (cnt.getCount() == 1) {
-                            g.forNodeId(nodeId).message().send(null, "STOP");
+                            g.message(g.cluster().forNodeId(nodeId)).send(null, "STOP");
 
                             cnt.countDown();
 
                             return false; // Stop listening.
                         }
                         else if ("PONG".equals(rcvMsg))
-                            g.forNodeId(nodeId).message().send(null, "PING");
+                            g.message(g.cluster().forNodeId(nodeId)).send(null, "PING");
                         else
                             throw new RuntimeException("Received unexpected message: " + rcvMsg);
 
@@ -110,7 +110,7 @@ public class MessagingPingPongExample {
             });
 
             // Serve!
-            nodeB.message().send(null, "PING");
+            g.message(nodeB).send(null, "PING");
 
             // Wait til the game is over.
             try {

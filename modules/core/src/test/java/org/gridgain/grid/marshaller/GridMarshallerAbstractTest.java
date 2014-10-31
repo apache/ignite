@@ -239,7 +239,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         GridMarshallerTestBean inBean = newTestBean(new GridClosure() {
             /** */
-            private Iterable<GridNode> nodes = g.nodes();
+            private Iterable<GridNode> nodes = g.cluster().nodes();
 
             /** {@inheritDoc} */
             @Override public Object apply(Object o) {
@@ -468,9 +468,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testSubgridMarshalling() throws Exception {
         final Grid grid = grid();
 
-        GridMarshallerTestBean inBean = newTestBean(grid.forPredicate(new GridPredicate<GridNode>() {
+        GridMarshallerTestBean inBean = newTestBean(grid.cluster().forPredicate(new GridPredicate<GridNode>() {
             @Override public boolean apply(GridNode n) {
-                return n.id().equals(grid.localNode().id());
+                return n.id().equals(grid.cluster().localNode().id());
             }
         }));
 
@@ -645,7 +645,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Grid g1 = G.start(cfg)) {
-            GridCompute compute = grid().forNode(g1.localNode()).compute();
+            GridCompute compute = compute(grid().forNode(g1.cluster().localNode()));
 
             compute.run(new Runnable() {
                 @Override
@@ -686,7 +686,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Grid g1 = G.start(cfg)) {
-            GridEvents evts = grid().forNode(g1.localNode()).events();
+            GridEvents evts = events(grid().forNode(g1.cluster().localNode()));
 
             evts.localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent gridEvt) {
@@ -728,7 +728,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Grid g1 = G.start(cfg)) {
-            GridMessaging messaging = grid().forNode(g1.localNode()).message();
+            GridMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
 
             messaging.send(null, "test");
 
@@ -764,7 +764,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Grid g1 = G.start(cfg)) {
-            GridServices services = grid().forNode(g1.localNode()).services();
+            GridServices services = grid().services(grid().forNode(g1.cluster().localNode()));
 
             services.deployNodeSingleton("test", new DummyService());
 

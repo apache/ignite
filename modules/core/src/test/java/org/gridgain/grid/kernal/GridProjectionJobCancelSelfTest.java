@@ -141,7 +141,7 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception  If failed.
      */
     public void testMissedCancel() throws Exception {
-        GridCompute comp = grid(0).forLocal().compute().enableAsync();
+        GridCompute comp = compute(grid(0).forLocal()).enableAsync();
 
         comp.execute(TestTask.class, grid(0).localNode().id());
 
@@ -153,7 +153,7 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
         assert jobId != null;
 
         // Cancel task on all other nodes.
-        grid(0).forOthers(grid(0).localNode()).compute().cancelJob(jobId);
+        compute(grid(0).forOthers(grid(0).localNode())).cancelJob(jobId);
 
         Thread.sleep(100);
 
@@ -212,7 +212,7 @@ public class GridProjectionJobCancelSelfTest extends GridCommonAbstractTest {
         ((GridKernal)grid(1)).context().io().addMessageListener(TOPIC_JOB_CANCEL, msgLsnr2);
         ((GridKernal)grid(2)).context().io().addMessageListener(TOPIC_JOB_CANCEL, msgLsnr3);
 
-        GridCompute comp = grid(0).forOthers(grid(1).localNode()).compute().enableAsync();
+        GridCompute comp = compute(grid(0).forOthers(grid(1).localNode())).enableAsync();
 
         comp.execute(new GridComputeTaskAdapter<Object, Void>() {
             @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Object arg) {

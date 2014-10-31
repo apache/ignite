@@ -38,7 +38,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridProjection prj;
+    private GridProjectionAdapter prj;
 
     /** */
     private UUID subjId;
@@ -59,7 +59,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
      * @param subjId Subject ID.
      * @param async Async support flag.
      */
-    public GridComputeImpl(GridKernalContext ctx, GridProjection prj, UUID subjId, boolean async) {
+    public GridComputeImpl(GridKernalContext ctx, GridProjectionAdapter prj, UUID subjId, boolean async) {
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
@@ -494,7 +494,7 @@ public class GridComputeImpl implements GridCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridProjection)in.readObject();
+        prj = (GridProjectionAdapter)in.readObject();
     }
 
     /**

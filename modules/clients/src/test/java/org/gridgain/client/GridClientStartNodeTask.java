@@ -69,7 +69,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
         // Start new node in current VM.
         Grid g =  G.start(cfg);
 
-        log.info(">>> Grid started [nodeId=" + g.localNode().id() + ", name='" + g.name() + "']");
+        log.info(">>> Grid started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
 
         return true;
     }
@@ -117,7 +117,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
             changeTopology(g, 1, 4, nodeType);
 
             // Stop node by id = 0
-            g.compute().execute(GridClientStopNodeTask.class, g.localNode().id().toString());
+            g.compute().execute(GridClientStopNodeTask.class, g.cluster().localNode().id().toString());
 
             // Wait for node stops.
             //U.sleep(1000);
