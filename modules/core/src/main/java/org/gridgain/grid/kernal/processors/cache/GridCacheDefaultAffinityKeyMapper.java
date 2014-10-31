@@ -92,7 +92,7 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
                 }
             }
             catch (GridPortableException e) {
-                U.error(log, "Failed ", e);
+                U.error(log, "Failed to get affinity field from portable object: " + key, e);
             }
         }
         else {

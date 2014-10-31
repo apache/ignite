@@ -124,7 +124,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(failed, key))
                 continue;
 
-            if (ctx.affinity().nodes(key, req.topologyVersion()).contains(ctx.localNode())) { // Reader became backup.
+            if (ctx.affinity().belongs(ctx.localNode(), key, req.topologyVersion())) { // Reader became backup.
                 GridCacheEntryEx<K, V> entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))

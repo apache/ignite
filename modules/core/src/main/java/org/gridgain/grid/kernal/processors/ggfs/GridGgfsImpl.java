@@ -259,7 +259,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         assert path != null;
         assert out != null;
 
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 GridGgfsFileWorkerBatch batch = new GridGgfsFileWorkerBatch(path, out);
 
@@ -300,6 +300,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
         else
             throw new GridException("Cannot create new output stream to the secondary file system because GGFS is " +
                 "stopping: " + path);
+    }
+
+    /**
+     * @return {@code True} if entered busy section.
+     * @throws GridRuntimeException If failed to await caches start.
+     */
+    private boolean enterBusy() {
+        meta.awaitInit();
+        data.awaitInit();
+
+        return busyLock.enterBusy();
     }
 
     /**
@@ -378,7 +389,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public GridGgfsStatus globalSpace() throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
                     new GgfsGlobalSpaceTask(name()), null);
@@ -395,7 +406,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void globalSampling(@Nullable Boolean val) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 if (meta.sampling(val)) {
                     if (val == null)
@@ -419,7 +430,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public Boolean globalSampling() {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 try {
                     return meta.sampling();
@@ -486,7 +497,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -515,7 +526,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -543,7 +554,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
                 A.notNull(props, "props");
@@ -599,7 +610,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(src, "src");
                 A.notNull(dest, "dest");
@@ -708,7 +719,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -809,7 +820,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -896,7 +907,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsPath> listPaths(final GridGgfsPath path) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -948,7 +959,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsFile> listFiles(final GridGgfsPath path) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -1036,7 +1047,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
                 A.ensure(bufSize >= 0, "bufSize >= 0");
@@ -1134,7 +1145,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable Map<String, String> props,
         final boolean simpleCreate
     ) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
                 A.ensure(bufSize >= 0, "bufSize >= 0");
@@ -1243,7 +1254,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsOutputStream append(final GridGgfsPath path, final int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
                 A.ensure(bufSize >= 0, "bufSize >= 0");
@@ -1322,7 +1333,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public void setTimes(GridGgfsPath path, long accessTime, long modificationTime)
         throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -1375,7 +1386,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
         throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
                 A.ensure(start >= 0, "start >= 0");
@@ -1420,7 +1431,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsMetrics metrics() throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 GridGgfsPathSummary sum = new GridGgfsPathSummary();
 
@@ -1471,7 +1482,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public long size(GridGgfsPath path) throws GridException {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 A.notNull(path, "path");
 
@@ -2111,7 +2122,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public GridUuid nextAffinityKey() {
-        if (busyLock.enterBusy()) {
+        if (enterBusy()) {
             try {
                 return data.nextAffinityKey(null);
             }
