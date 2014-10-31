@@ -118,6 +118,16 @@ public interface Ignite {
     public <K, V> IgniteCache<K, V> cache(String name);
 
     /**
+     * Gets a new instance of data loader associated with given cache name. Data loader
+     * is responsible for loading external data into in-memory data grid. For more information
+     * refer to {@link IgniteDataLoader} documentation.
+     *
+     * @param cacheName Cache name ({@code null} for default cache).
+     * @return Data loader.
+     */
+    public <K, V> IgniteDataLoader<K, V> dataLoader(String cacheName);
+
+    /**
      * Gets an instance of {@link IgniteQueue} API. {@code IgniteQueue} is a grid-enabled
      * implementation of the standard Java {@link BlockingDeque} API.
      *
