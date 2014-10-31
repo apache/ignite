@@ -505,7 +505,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     private GridDistributedTxMapping<K, V> map(GridCacheTxEntry<K, V> entry, long topVer,
         GridDistributedTxMapping<K, V> cur) throws GridException {
-        Collection<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
+        List<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
 
         txMapping.addMapping(nodes);
 

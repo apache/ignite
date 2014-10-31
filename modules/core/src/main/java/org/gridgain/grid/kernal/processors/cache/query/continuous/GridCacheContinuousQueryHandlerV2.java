@@ -21,6 +21,9 @@ import java.util.*;
  * Continuous query handler extension.
  */
 public class GridCacheContinuousQueryHandlerV2<K, V> extends GridCacheContinuousQueryHandler<K, V> {
+    /** */
+    private static final long serialVersionUID = 2180994610452685320L;
+
     /** Task hash. */
     private int taskHash;
 

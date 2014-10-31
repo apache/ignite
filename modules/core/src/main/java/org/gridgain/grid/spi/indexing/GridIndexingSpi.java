@@ -59,7 +59,7 @@ public interface GridIndexingSpi extends GridSpi {
      * @throws GridSpiException If failed.
      */
     public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter<K, V>... filters) throws GridSpiException;
+        Collection<Object> params, GridIndexingQueryFilter filters) throws GridSpiException;
 
     /**
      * Executes regular query.
@@ -73,7 +73,7 @@ public interface GridIndexingSpi extends GridSpi {
      * @throws GridSpiException If failed.
      */
     public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingTypeDescriptor type, GridIndexingQueryFilter<K, V>... filters)
+        Collection<Object> params, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
         throws GridSpiException;
 
     /**
@@ -87,7 +87,7 @@ public interface GridIndexingSpi extends GridSpi {
      * @throws GridSpiException If failed.
      */
     public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridIndexingTypeDescriptor type, GridIndexingQueryFilter<K, V>... filters) throws GridSpiException;
+        GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters) throws GridSpiException;
 
     /**
      * Gets size of index for given type or -1 if it is a unknown type.

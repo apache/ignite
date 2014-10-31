@@ -902,7 +902,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             if (state.active()) {
                 int p = part.id();
 
-                Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
+                List<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
 
                 if (!affNodes.contains(cctx.localNode())) {
                     Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));
