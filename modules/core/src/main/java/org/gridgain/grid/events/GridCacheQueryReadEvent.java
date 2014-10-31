@@ -54,6 +54,9 @@ import java.util.*;
  * @see GridEventType#EVTS_CACHE_QUERY
  */
 public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
+    /** */
+    private static final long serialVersionUID = -1984731272984397445L;
+
     /** Query type. */
     private final GridCacheQueryType qryType;
 
