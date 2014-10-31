@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -338,12 +339,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
-            for (Map.Entry<K, V> entry : entries) {
+            for (Map.Entry<K, V> entry : entries)
                 keys.add(entry.getKey());
-
-                if (portableEnabled)
-                    entry.setValue((V)ctx.portable().marshalToPortable(entry.getValue()));
-            }
 
             load0(entries, resFut, keys, 0);
 
@@ -868,7 +865,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @param curFut Current future.
          * @throws GridInterruptedException If interrupted.
          */
-        private void submit(final List<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
+        private void submit(final Collection<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
             throws GridInterruptedException {
             assert entries != null;
             assert !entries.isEmpty();
@@ -903,7 +900,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 byte[] entriesBytes;
 
                 try {
-                    entriesBytes = ctx.config().getMarshaller().marshal(new EntriesList<>(entries));
+                    entriesBytes = ctx.config().getMarshaller()
+                        .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
 
                     if (updaterBytes == null) {
                         assert updater != null;
@@ -1223,18 +1221,26 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class EntriesList<K, V> implements List<Map.Entry<K, V>>, Externalizable {
+    private static class Entries0<K, V> implements Collection<Map.Entry<K, V>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        private final List<Map.Entry<K, V>> delegate;
+        /**  Wrapped delegate. */
+        private final Collection<Map.Entry<K, V>> delegate;
 
-        private EntriesList(List<Map.Entry<K, V>> delegate) {
+        /** Optional portable processor for converting values. */
+        private final GridPortableProcessor portable;
+
+        private Entries0(Collection<Map.Entry<K, V>> delegate, GridPortableProcessor portable) {
             this.delegate = delegate;
+            this.portable = portable;
         }
 
-        public EntriesList() {
-            this(new ArrayList<Map.Entry<K, V>>());
+        /**
+         * For {@link Externalizable}.
+         */
+        public Entries0() {
+            this(new ArrayList<Map.Entry<K, V>>(), null);
         }
 
         /** {@inheritDoc} */
@@ -1243,6 +1249,10 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             for (Map.Entry<K, V> entry : delegate) {
                 out.writeObject(entry.getKey());
+
+                if (portable != null)
+                    out.writeObject(portable.marshalToPortable(entry.getValue()));
+
                 out.writeObject(entry.getValue());
             }
         }
@@ -1250,6 +1260,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             int sz = in.readInt();
+
+            if (sz > 0 && delegate instanceof ArrayList)
+                ((ArrayList)delegate).ensureCapacity(sz);
 
             for (int i = 0; i < sz; i++)
                 add(new Entry0<>((K)in.readObject(), (V)in.readObject()));
@@ -1271,17 +1284,17 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Map.Entry<K, V>> iterator() {
+        @Override public Iterator<Map.Entry<K, V>> iterator() {
             return delegate.iterator();
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Object[] toArray() {
+        @Override public Object[] toArray() {
             return delegate.toArray();
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public <T> T[] toArray(T[] a) {
+        @Override public <T> T[] toArray(T[] a) {
             return delegate.toArray(a);
         }
 
@@ -1303,11 +1316,6 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /** {@inheritDoc} */
         @Override public boolean addAll(Collection<? extends Map.Entry<K, V>> c) {
             return delegate.addAll(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean addAll(int index, Collection<? extends Map.Entry<K, V>> c) {
-            return delegate.addAll(index, c);
         }
 
         /** {@inheritDoc} */
@@ -1333,51 +1341,6 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return delegate.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map.Entry<K, V> get(int index) {
-            return delegate.get(index);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map.Entry<K, V> set(int index, Map.Entry<K, V> element) {
-            return delegate.set(index, element);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(int index, Map.Entry<K, V> element) {
-            delegate.add(index, element);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map.Entry<K, V> remove(int index) {
-            return delegate.remove(index);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int indexOf(Object o) {
-            return delegate.indexOf(o);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int lastIndexOf(Object o) {
-            return delegate.lastIndexOf(o);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ListIterator<Map.Entry<K, V>> listIterator() {
-            return delegate.listIterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ListIterator<Map.Entry<K, V>> listIterator(int index) {
-            return delegate.listIterator(index);
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<Map.Entry<K, V>> subList(int fromIndex, int toIndex) {
-            return delegate.subList(fromIndex, toIndex);
         }
     }
 }
