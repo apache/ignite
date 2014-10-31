@@ -6,7 +6,8 @@
 
 ## Building the Shmem Library
 
-Built the C++ shmem library and copy it in `GRIDGAIN_HOME/modules/core/src/main/java/META-INF/native/<os.name>`, you can build the shmem by going into the `GRIDGAIN_HOME/shmem` directory and executing the following commands:
+Built the C++ shmem library and copy it into `GRIDGAIN_HOME/modules/core/src/main/java/META-INF/native/<os.name>`.
+To build the shmem library you need to execute in `GRIDGAIN_HOME/shmem` folder the following commands:
 
     ./configure --libdir=GRIDGAIN_HOME/modules/core/src/main/java/META-INF/native/<os.name>
     make install
