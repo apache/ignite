@@ -13,6 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.sql.*;
+import java.util.*;
+
 
 /**
  * Iterator over result set.
@@ -22,36 +25,74 @@ abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T>
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Object[][] data;
+    private final ResultSet data;
 
     /** */
-    private int idx;
+    protected final Object[] row;
+
+    /** */
+    private boolean hasRow;
 
     /**
      * @param data Data array.
+     * @throws GridSpiException If failed.
      */
-    protected GridH2ResultSetIterator(Object[][] data) {
-        assert data != null;
-
+    protected GridH2ResultSetIterator(ResultSet data) throws GridSpiException {
         this.data = data;
+
+        if (data != null) {
+            try {
+                row = new Object[data.getMetaData().getColumnCount()];
+            }
+            catch (SQLException e) {
+                throw new GridSpiException(e);
+            }
+        }
+        else
+            row = null;
+    }
+
+    /**
+     * @return {@code true} If next row was fetched successfully.
+     */
+    private boolean fetchNext() {
+        if (data == null)
+            return false;
+
+        try {
+            if (!data.next())
+                return false;
+
+            for (int c = 0; c < row.length; c++)
+                row[c] = data.getObject(c + 1);
+
+            return true;
+        }
+        catch (SQLException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        return idx < data.length && data[idx] != null;
+        return hasRow || (hasRow = fetchNext());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
     @Override public T next() {
-        return createRow(data[idx++]);
+        if (!hasNext())
+            throw new NoSuchElementException();
+
+        hasRow = false;
+
+        return createRow();
     }
 
     /**
-     * @param row Row source.
      * @return Row.
      */
-    protected abstract T createRow(Object[] row);
+    protected abstract T createRow();
 
     /** {@inheritDoc} */
     @Override public void remove() {
@@ -60,7 +101,14 @@ abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T>
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-        data = null;
+        try {
+            U.closeQuiet(data.getStatement());
+        }
+        catch (SQLException e) {
+            throw new GridException(e);
+        }
+
+        U.closeQuiet(data);
     }
 
     /** {@inheritDoc} */
