@@ -46,14 +46,14 @@ object ScalarCacheAffinityExample2 {
             populateCache(grid$, keys)
 
             // Map all keys to nodes.
-            val mappings = grid$.mapKeysToNodes(NAME, keys)
+            val mappings = grid$.cluster().mapKeysToNodes(NAME, keys)
 
             mappings.foreach(mapping => {
                 val node = mapping._1
                 val mappedKeys = mapping._2
 
                 if (node != null) {
-                    grid$.forNode(node) *< (() => {
+                    grid$.cluster().forNode(node) *< (() => {
                         breakable {
                             println(">>> Executing affinity job for keys: " + mappedKeys)
 
@@ -63,7 +63,7 @@ object ScalarCacheAffinityExample2 {
                             // If cache is not defined at this point then it means that
                             // job was not routed by affinity.
                             if (!cache.isDefined)
-                                println(">>> Cache not found [nodeId=" + grid$.localNode().id() +
+                                println(">>> Cache not found [nodeId=" + grid$.cluster().localNode().id() +
                                     ", cacheName=" + NAME + ']').^^
 
                             // Check cache without loading the value.
@@ -84,11 +84,11 @@ object ScalarCacheAffinityExample2 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Grid, keys: Seq[String]) {
-        var prj = g.forCache(NAME)
+        var prj = g.cluster().forCache(NAME)
 
         // Give preference to local node.
-        if (prj.nodes().contains(g.localNode))
-            prj = g.forLocal()
+        if (prj.nodes().contains(g.cluster().localNode))
+            prj = g.cluster().forLocal()
 
         // Populate cache on some node (possibly this node)
         // which has cache with given name started.

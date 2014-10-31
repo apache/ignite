@@ -150,8 +150,7 @@ class VisorCacheScanCommand {
 
         val fullRes =
             try
-                qryPrj
-                    .compute()
+                grid.compute(qryPrj)
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorQueryTask],
@@ -198,7 +197,7 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = qryPrj.compute()
+                        res = grid.compute(qryPrj)
                             .withName("visor-cscan-fetch-task")
                             .withNoFailover()
                             .execute(classOf[VisorQueryNextPageTask],

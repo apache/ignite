@@ -93,7 +93,7 @@ class VisorLicenseCommand {
                 val nodes = grid.nodes()
 
                 val lics = try
-                    grid.forNodes(nodes).compute().execute(classOf[VisorLicenseCollectTask],
+                    grid.compute(grid.forNodes(nodes)).execute(classOf[VisorLicenseCollectTask],
                         emptyTaskArgument(nodes.map(_.id())))
                         .groupBy(n => Option(n.get2()).fold("Open source")(_.id().toString))
                 catch {
@@ -190,7 +190,7 @@ class VisorLicenseCommand {
                 val nodes = grid.nodes()
 
                 nodes.foreach(n => {
-                    grid.forNode(n).compute().withNoFailover().
+                    grid.compute(grid.forNode(n)).withNoFailover().
                         execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
                         new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString)))
                 })

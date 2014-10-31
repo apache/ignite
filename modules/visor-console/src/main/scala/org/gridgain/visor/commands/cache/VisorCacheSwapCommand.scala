@@ -112,8 +112,7 @@ class VisorCacheSwapCommand {
         val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
-            val r = grid.forNode(node)
-                .compute()
+            val r = grid.compute(grid.forNode(node))
                 .withName("visor-cswap-task")
                 .withNoFailover()
                 .execute(classOf[VisorCachesSwapBackupsTask], toTaskArgument(node.id(), cacheSet))

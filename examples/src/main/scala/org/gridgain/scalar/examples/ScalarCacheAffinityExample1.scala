@@ -68,7 +68,7 @@ object ScalarCacheAffinityExample1 {
                             val cache = cache$[String, String](NAME)
 
                             if (!cache.isDefined) {
-                                println(">>> Cache not found [nodeId=" + grid$.localNode.id +
+                                println(">>> Cache not found [nodeId=" + grid$.cluster().localNode.id +
                                     ", cacheName=" + NAME + ']')
 
                                 "Error"
@@ -96,11 +96,11 @@ object ScalarCacheAffinityExample1 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Grid, keys: Seq[String]) {
-        var prj = g.forCache(NAME)
+        var prj = g.cluster().forCache(NAME)
 
         // Give preference to local node.
-        if (prj.nodes().contains(g.localNode))
-            prj = g.forLocal()
+        if (prj.nodes().contains(g.cluster().localNode))
+            prj = g.cluster().forLocal()
 
         // Populate cache on some node (possibly this node) which has cache with given name started.
         prj.run$(() => {

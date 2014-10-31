@@ -66,10 +66,10 @@ object ScalarClosureExample extends App {
      *  Greats all remote nodes only.
      */
     def greetRemotes() {
-        val me = grid$.localNode.id
+        val me = grid$.cluster().localNode.id
 
         // Note that usage Java-based closure.
-        grid$.forRemotes() match {
+        grid$.cluster().forRemotes() match {
             case p if p.isEmpty => println("No remote nodes!")
             case p => p.bcastRun(() => println("Greetings from: " + me), null)
         }
@@ -79,11 +79,11 @@ object ScalarClosureExample extends App {
      * Same as previous greetings for all remote nodes but remote projection is created manually.
      */
     def greetRemotesAgain() {
-        val me = grid$.localNode.id
+        val me = grid$.cluster().localNode.id
 
         // Just show that we can create any projections we like...
         // Note that usage of Java-based closure via 'F' typedef.
-        grid$.forPredicate((n: GridNode) => n.id != me) match {
+        grid$.cluster().forPredicate((n: GridNode) => n.id != me) match {
             case p if p.isEmpty => println("No remote nodes!")
             case p => p.bcastRun(() => println("Greetings again from: " + me), null)
         }

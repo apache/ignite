@@ -134,7 +134,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def !<(@Nullable obj: AnyRef, @Nullable p: NF) {
-        forPredicate(p).message().send(null, obj)
+        value.grid().message(forPredicate(p)).send(null, obj)
     }
 
     /**
@@ -147,7 +147,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def !<(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
-        forPredicate(p).message().send(null, seq)
+        value.grid().message(forPredicate(p)).send(null, seq)
     }
 
     /**
@@ -159,7 +159,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def send$(@Nullable obj: AnyRef, @Nullable p: NF) {
-        forPredicate(p).message().send(null, obj)
+        value.grid().message(forPredicate(p)).send(null, obj)
     }
 
     /**
@@ -171,7 +171,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def send$(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
-        forPredicate(p).message().send(null, seq)
+        value.grid().message(forPredicate(p)).send(null, seq)
     }
 
     /**
@@ -280,7 +280,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @param p Optional node filter predicate. If `null` provided- all nodes in projection will be used.
      */
     def bcastRun(@Nullable r: Run, @Nullable p: NF) {
-        forPredicate(p).compute().broadcast(toRunnable(r))
+        value.grid().compute(forPredicate(p)).broadcast(toRunnable(r))
     }
 
     /**
@@ -369,7 +369,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         GridFuture[java.util.Collection[R]] = {
-        val comp = forPredicate(p).compute().enableAsync()
+        val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
 
@@ -429,7 +429,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
     def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
-        val comp = forPredicate(p).compute().enableAsync()
+        val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
 
@@ -488,7 +488,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
         assert(s != null && r != null)
 
-        val comp = forPredicate(p).compute().enableAsync()
+        val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
 
@@ -642,7 +642,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): GridFuture[_] = {
-        val comp = forPredicate(p).compute().enableAsync()
+        val comp = value.grid().compute(forPredicate(p)).enableAsync()
 
         comp.affinityRun(cacheName, affKey, toRunnable(r))
 

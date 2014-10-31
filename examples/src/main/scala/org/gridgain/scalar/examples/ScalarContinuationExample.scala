@@ -40,14 +40,14 @@ object ScalarContinuationExample {
             // Calculate fibonacci for N.
             val N: Long = 100
 
-            val thisNode = grid$.localNode
+            val thisNode = grid$.cluster().localNode
 
             val start = System.currentTimeMillis
 
             // Projection that excludes this node if others exists.
-            val prj = if (grid$.nodes().size() > 1) grid$.forOthers(thisNode) else grid$.forNode(thisNode)
+            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(thisNode) else grid$.cluster().forNode(thisNode)
 
-            val fib = prj.compute().apply(new FibonacciClosure(thisNode.id()), N)
+            val fib = grid$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
 
             val duration = System.currentTimeMillis - start
 
@@ -96,18 +96,18 @@ class FibonacciClosure (
                     BigInteger.ONE
 
             // Get properly typed node-local storage.
-            val store = g.nodeLocalMap[Long, GridFuture[BigInteger]]()
+            val store = g.cluster().nodeLocalMap[Long, GridFuture[BigInteger]]()
 
             // Check if value is cached in node-local store first.
             fut1 = store.get(n - 1)
             fut2 = store.get(n - 2)
 
-            val excludeNode = grid$.node(excludeNodeId)
+            val excludeNode = grid$.cluster().node(excludeNodeId)
 
             // Projection that excludes node with id passed in constructor if others exists.
-            val prj = if (grid$.nodes().size() > 1) grid$.forOthers(excludeNode) else grid$.forNode(excludeNode)
+            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(excludeNode) else grid$.cluster().forNode(excludeNode)
 
-            val comp = prj.compute().enableAsync()
+            val comp = grid$.compute(prj).enableAsync()
 
             // If future is not cached in node-local store, cache it.
             // Note recursive grid execution!

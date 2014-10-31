@@ -42,7 +42,7 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
      * Start node and put data to cache.
      */
     override def beforeAll() {
-        n = start("modules/scalar/src/test/resources/spring-cache.xml").localNode
+        n = start("modules/scalar/src/test/resources/spring-cache.xml").cluster().localNode
 
         c = cache$[Int, ObjectValue].get
 

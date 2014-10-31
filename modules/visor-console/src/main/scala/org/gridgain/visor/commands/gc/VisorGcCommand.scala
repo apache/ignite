@@ -138,7 +138,7 @@ class VisorGcCommand {
 
                 val nids = prj.nodes().map(_.id())
 
-                prj.compute().withNoFailover().execute(classOf[VisorGcTask],
+                grid.compute(prj).withNoFailover().execute(classOf[VisorGcTask],
                     toTaskArgument(nids, new JavaBoolean(dgc))).foreach { case (nid, stat) =>
                     val roundHb = stat.get1() / (1024L * 1024L)
                     val roundHa = stat.get2() / (1024L * 1024L)

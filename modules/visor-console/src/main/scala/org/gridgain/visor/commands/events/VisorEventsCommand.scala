@@ -285,7 +285,7 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                grid.forNode(node).compute().execute(classOf[VisorEventsCollectTask],
+                grid.compute(grid.forNode(node)).execute(classOf[VisorEventsCollectTask],
                     toTaskArgument(nid, VisorEventsCollectArgs.createEventsArg(tpFilter, tmFilter)))
             catch {
                 case e: GridException =>

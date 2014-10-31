@@ -53,7 +53,7 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val prj = grid$.forCache(CACHE_NAME)
+        val prj = grid$.cluster().forCache(CACHE_NAME)
 
         if (prj.nodes().isEmpty)
             println("Grid does not have cache configured: " + CACHE_NAME);
@@ -70,7 +70,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                grid$.forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
+                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

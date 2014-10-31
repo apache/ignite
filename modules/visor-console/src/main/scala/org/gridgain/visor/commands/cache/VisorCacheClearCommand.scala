@@ -112,8 +112,7 @@ class VisorCacheClearCommand {
         val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
-            val res = grid.forNode(node)
-                .compute()
+            val res = grid.compute(grid.forNode(node))
                 .withName("visor-cclear-task")
                 .withNoFailover()
                 .execute(classOf[VisorCachesClearTask], toTaskArgument(node.id(), cacheSet))

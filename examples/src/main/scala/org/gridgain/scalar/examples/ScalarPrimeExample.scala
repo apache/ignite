@@ -54,7 +54,7 @@ object ScalarPrimeExample {
 
             checkVals.foreach(checkVal => {
                 val divisor = g.reduce$[Option[Long], Option[Option[Long]]](
-                    closures(g.nodes().size(), checkVal), _.find(_.isDefined), null)
+                    closures(g.cluster().nodes().size(), checkVal), _.find(_.isDefined), null)
 
                 if (!divisor.isDefined)
                     println(">>> Value '" + checkVal + "' is a prime number")

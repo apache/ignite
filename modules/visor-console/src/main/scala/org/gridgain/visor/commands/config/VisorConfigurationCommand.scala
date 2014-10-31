@@ -199,8 +199,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                grid.forNode(node)
-                    .compute()
+                grid.compute(grid.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
             catch {

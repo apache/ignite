@@ -467,7 +467,7 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            prj.compute().execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
+            grid.compute(prj).execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
                 new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
@@ -483,7 +483,7 @@ class VisorCacheCommand {
      */
     private def config(node: GridNode): VisorGridConfig = {
         try
-            grid.forNode(node).compute().withNoFailover()
+            grid.compute(grid.forNode(node)).withNoFailover()
                 .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: GridException =>

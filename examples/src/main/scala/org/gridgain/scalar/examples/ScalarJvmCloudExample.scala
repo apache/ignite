@@ -63,7 +63,7 @@ object ScalarJvmCloudExample {
                 null,
                 Array[JComponent](
                     new JLabel("GridGain JVM cloud started."),
-                    new JLabel("Number of nodes in the grid: " + scalar.grid$(NODES(1)).get.nodes().size()),
+                    new JLabel("Number of nodes in the grid: " + scalar.grid$(NODES(1)).get.cluster().nodes().size()),
                     new JLabel("Click OK to stop.")
                 ),
                 "GridGain",

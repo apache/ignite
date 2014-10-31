@@ -113,8 +113,7 @@ class VisorCacheCompactCommand {
         val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
-            val r = grid.forNode(node)
-                .compute()
+            val r = grid.compute(grid.forNode(node))
                 .withName("visor-ccompact-task")
                 .withNoFailover()
                 .execute(classOf[VisorCachesCompactTask], toTaskArgument(node.id(), cacheSet))
