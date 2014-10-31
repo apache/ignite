@@ -32,7 +32,7 @@ public interface GridInteropProcessor extends GridProcessor {
     /**
      * @return Environment pointer.
      */
-    public long environmentPointer();
+    public long environmentPointer() throws GridException;
 
     /**
      * @return Grid name.
