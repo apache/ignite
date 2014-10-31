@@ -304,7 +304,7 @@ public class GridAffinityAssignmentCache {
         else
             awaitTopologyVersion(topVer);
 
-        assert topVer >= 0;
+        assert topVer >= 0 : topVer;
 
         GridAffinityAssignment cache = head.get();
 
