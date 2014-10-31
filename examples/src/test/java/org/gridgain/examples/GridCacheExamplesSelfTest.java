@@ -88,11 +88,7 @@ public class GridCacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testGridCacheQueryExample() throws Exception {
-        try (Grid g = GridGainEx.start("examples/config/example-cache.xml", "grid1")) {
-            CacheQueryExample.main(EMPTY_ARGS);
-            CacheQueryExample.main(EMPTY_ARGS);
-            CacheQueryExample.main(EMPTY_ARGS);
-        }
+        CacheQueryExample.main(EMPTY_ARGS);
     }
 
     /**
