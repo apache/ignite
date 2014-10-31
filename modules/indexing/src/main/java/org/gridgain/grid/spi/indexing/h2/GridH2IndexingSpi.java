@@ -139,8 +139,11 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /** Default query execution time interpreted as long query (3 seconds). */
     public static final long DFLT_LONG_QRY_EXEC_TIMEOUT = 3000;
 
-    /** Default Index write lock wait time in milliseconds. */
+    /** Default index write lock wait time in milliseconds. */
     private static final long DFLT_IDX_WRITE_LOCK_WAIT_TIME = 100;
+
+    /** Default value for {@link #setUseOptimizedSerializer(boolean)} flag. */
+    public static final boolean DFLT_USE_OPTIMIZED_SERIALIZER = true;
 
     /** Default DB name. */
     private static final String DFLT_DB_NAME = "gridgain_indexes";
@@ -214,6 +217,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** */
     private boolean dfltEscapeAll;
+
+    /** */
+    private boolean useOptimizedSerializer = DFLT_USE_OPTIMIZED_SERIALIZER;
 
     /** Cache for deserialized offheap rows. */
     private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS<>(32 * 1024, 1, 128, 256);
@@ -550,8 +556,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         if (schema == null)
             return;
 
-        schema.swapSpaceName = swapSpaceName;
-
         localSpi.set(this);
 
         try {
@@ -673,7 +677,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
         throws GridSpiException {
-        localSpi.set(GridH2IndexingSpi.this);
+        localSpi.set(this);
 
         setFilters(filters);
 
@@ -875,7 +879,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         setFilters(filters);
 
-        localSpi.set(GridH2IndexingSpi.this);
+        localSpi.set(this);
 
         try {
             ResultSet rs = executeQuery(qry, params, tbl);
@@ -1243,6 +1247,9 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             SysProperties.serializeJavaObject = false;
         }
 
+        if (useOptimizedSerializer)
+            Utils.serializer = h2Serializer();
+
         if (maxOffHeapMemory != -1) {
             assert maxOffHeapMemory >= 0 : maxOffHeapMemory;
 
@@ -1264,8 +1271,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             throw new GridSpiException("Failed to find org.h2.Driver class", e);
         }
 
-        setH2Serializer();
-
         for (String schema : schemaNames)
             createSchemaIfAbsent(schema);
 
@@ -1273,7 +1278,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             createSqlFunctions();
             runInitScript();
 
-            if (GridSystemProperties.getString(GG_H2_DEBUG_CONSOLE) != null) {
+            if (getString(GG_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();
@@ -1300,6 +1305,13 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /**
+     * @return Serializer.
+     */
+    protected JavaObjectSerializer h2Serializer() {
+        return new H2Serializer();
+    }
+
+    /**
      * Runs initial script.
      *
      * @throws GridSpiException If failed.
@@ -1314,13 +1326,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             p.execute();
         }
-    }
-
-    /**
-     * @throws GridSpiException If failed.
-     */
-    private void setH2Serializer() throws GridSpiException {
-        executeStatement("SET JAVA_OBJECT_SERIALIZER '" + H2Serializer.class.getName() + "'");
     }
 
     /**
@@ -1429,6 +1434,23 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /** {@inheritDoc} */
     @Override public String getSpaceNames() {
         return StringUtils.arrayCombine(spaceCfgs.keySet().toArray(new String[spaceCfgs.size()]), ',');
+    }
+
+    /**
+     * The flag indicating that {@link JavaObjectSerializer} for H2 database will be set to optimized version.
+     * This setting usually makes sense for offheap indexing only.
+     * <p>
+     * Default is {@link #DFLT_USE_OPTIMIZED_SERIALIZER}.
+     *
+     * @param useOptimizedSerializer Flag value.
+     */
+    public void setUseOptimizedSerializer(boolean useOptimizedSerializer) {
+        this.useOptimizedSerializer = useOptimizedSerializer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean getUseOptimizedSerializer() {
+        return useOptimizedSerializer;
     }
 
     /** {@inheritDoc} */
@@ -2185,9 +2207,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         /** */
         private final String spaceName;
-
-        /** */
-        private volatile String swapSpaceName;
 
         /**
          * @param spaceName Space name.

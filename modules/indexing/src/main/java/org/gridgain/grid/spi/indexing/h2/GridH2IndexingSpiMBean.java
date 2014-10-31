@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.indexing.h2;
 
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.mbean.*;
+import org.h2.api.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -117,6 +118,13 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      * @return Array of space names.
      */
     @Nullable public String[] getSearchPath();
+
+    /**
+     * The flag indicating that {@link JavaObjectSerializer} for H2 database will be set to optimized version.
+     *
+     * @return Flag value.
+     */
+    public boolean getUseOptimizedSerializer();
 
     /**
      * Gets script path to be ran against H2 database after opening.
