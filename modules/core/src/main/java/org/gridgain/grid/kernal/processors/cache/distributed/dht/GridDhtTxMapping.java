@@ -36,7 +36,7 @@ public class GridDhtTxMapping<K, V> {
      * @param nodes Nodes.
      */
     @SuppressWarnings("ConstantConditions")
-    public void addMapping(Collection<GridNode> nodes) {
+    public void addMapping(List<GridNode> nodes) {
         GridNode primary = F.first(nodes);
 
         Collection<GridNode> backups = F.view(nodes, F.notEqualTo(primary));
