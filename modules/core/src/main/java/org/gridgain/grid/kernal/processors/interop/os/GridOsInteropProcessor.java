@@ -31,7 +31,17 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public long environmentPointer() {
+    @Override public void releaseStart() {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitStart() throws GridException {
+        throw new UnsupportedOperationException(ERR_MSG);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long environmentPointer() throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 
@@ -52,11 +62,6 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public GridInteropTarget cache(@Nullable String name) throws GridException {
-        throw new UnsupportedOperationException(ERR_MSG);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dotNetConfiguration(long stream, long arr, int cap) throws GridException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 }

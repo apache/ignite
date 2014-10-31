@@ -1240,7 +1240,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         int part = cached != null ? cached.partition() : cctx.affinity().partition(e.key());
 
-        Collection<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
+        List<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 

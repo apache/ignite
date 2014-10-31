@@ -310,6 +310,14 @@ public class GridDataGridTestSuite extends TestSuite {
         // Cache interceptor tests.
         suite.addTest(GridCacheInterceptorSelfTestSuite.suite());
 
+        // Multi node update.
+        suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
+        // TODO: GG-5353.
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
+
         return suite;
     }
 }
