@@ -312,13 +312,13 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         // Use node's connection, if node is available over rest.
         Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
-        List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
+        List<InetSocketAddress> resolvedEndpoints = new ArrayList<>(endpoints.size());
 
         for (InetSocketAddress endpoint : endpoints)
             if (!endpoint.isUnresolved())
-                srvs.add(endpoint);
+                resolvedEndpoints.add(endpoint);
 
-        if (srvs.isEmpty()) {
+        if (resolvedEndpoints.isEmpty()) {
             throw new GridServerUnreachableException("No available endpoints to connect " +
                 "(is rest enabled for this node?): " + node);
         }
@@ -326,20 +326,20 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         boolean sameHost = node.attributes().isEmpty() ||
             F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
-        Collection<InetSocketAddress> connSrvs = new LinkedHashSet<>();
+        Collection<InetSocketAddress> srvs = new LinkedHashSet<>();
 
         if (sameHost) {
-            Collections.sort(srvs, U.inetAddressesComparator(true));
+            Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
 
-            connSrvs.addAll(srvs);
+            srvs.addAll(resolvedEndpoints);
         }
         else {
-            for (InetSocketAddress srv : srvs)
-                if (!srv.getAddress().isLoopbackAddress())
-                    connSrvs.add(srv);
+            for (InetSocketAddress endpoint : resolvedEndpoints)
+                if (!endpoint.getAddress().isLoopbackAddress())
+                    srvs.add(endpoint);
         }
 
-        return connection(node.nodeId(), connSrvs);
+        return connection(node.nodeId(), srvs);
     }
 
     /**

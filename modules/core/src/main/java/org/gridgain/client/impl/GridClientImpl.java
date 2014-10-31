@@ -429,25 +429,24 @@ public class GridClientImpl implements GridClient {
                 for (GridClientNodeImpl node : top.nodes()) {
                     Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
-                    List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
+                    List<InetSocketAddress> resolvedEndpoints = new ArrayList<>(endpoints.size());
 
                     for (InetSocketAddress endpoint : endpoints)
                         if (!endpoint.isUnresolved())
-                            srvs.add(endpoint);
+                            resolvedEndpoints.add(endpoint);
 
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
                     if (sameHost) {
-                        Collections.sort(srvs, U.inetAddressesComparator(true));
+                        Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
 
-                        connSrvs.addAll(srvs);
+                        connSrvs.addAll(resolvedEndpoints);
                     }
                     else {
-                        for (InetSocketAddress srv : srvs) {
-                            if (!srv.getAddress().isLoopbackAddress())
-                                connSrvs.add(srv);
-                        }
+                        for (InetSocketAddress endpoint : resolvedEndpoints)
+                            if (!endpoint.getAddress().isLoopbackAddress())
+                                connSrvs.add(endpoint);
                     }
                 }
             }
