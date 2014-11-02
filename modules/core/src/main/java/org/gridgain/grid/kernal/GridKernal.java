@@ -67,7 +67,6 @@ import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
 import org.gridgain.grid.util.tostring.*;
@@ -1675,7 +1674,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private void ackAsciiLogo() {
         assert log != null;
 
-        String fileName = GridFilenameUtils.separatorsToSystem(log.fileName());
+        String fileName = log.fileName();
 
         if (System.getProperty(GG_NO_ASCII) == null) {
             String ver = "ver. " + ACK_VER;
