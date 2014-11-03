@@ -37,4 +37,9 @@ public interface GridPortableStream {
      * @return Offheap pointer if stream is offheap based, otherwise {@code 0}.
      */
     public long offheapPointer();
+
+    /**
+     * @return {@code True} is stream is array based.
+     */
+    public boolean hasArray();
 }

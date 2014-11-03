@@ -44,6 +44,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /** Metadata cache. */
     private GridCache<Object, Object> metaCache;
 
+    /** */
+    private GridFuture<?> metaCacheStartFut;
+
     /** File ID to file info projection. */
     private GridCacheProjectionEx<GridUuid, GridGgfsFileInfo> id2InfoPrj;
 
@@ -65,11 +68,28 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /**
+     *
+     */
+    void awaitInit() {
+        if (!metaCacheStartFut.isDone()) {
+            try {
+                metaCacheStartFut.get();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         cfg = ggfsCtx.configuration();
 
         metaCache = ggfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
+
+        metaCacheStartFut = ggfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader()
+            .startFuture();
 
         if (metaCache.configuration().getAtomicityMode() != TRANSACTIONAL)
             throw new GridException("Meta cache should be transactional: " + cfg.getMetaCacheName());
