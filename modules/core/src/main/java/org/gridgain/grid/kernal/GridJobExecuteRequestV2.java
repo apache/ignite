@@ -22,6 +22,9 @@ import java.util.*;
  * Updated job execute request with subject ID.
  */
 public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
+    /** */
+    private static final long serialVersionUID = -1470089047880101067L;
+
     /** Subject ID. */
     private UUID subjId;
 

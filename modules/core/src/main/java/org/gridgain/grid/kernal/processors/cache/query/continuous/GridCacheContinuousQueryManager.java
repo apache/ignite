@@ -100,12 +100,14 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         if (F.isEmpty(lsnrCol))
             return;
 
+        oldVal = cctx.unwrapTemporary(oldVal);
+
         GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
             cctx, e.wrap(false), key, newVal, newBytes, oldVal, oldBytes);
 
         e0.initValue(cctx.marshaller(), cctx.deploy().globalLoader());
 
-        boolean recordEvt = !e.isInternal() && cctx.gridEvents().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ);
+        boolean recordEvt = !e.isInternal() && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (ListenerInfo<K, V> lsnr : lsnrCol.values())
             lsnr.onEntryUpdate(e0, recordEvt);
@@ -170,7 +172,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         for (GridCacheEntry<K, V> e : internal ? cctx.cache().primaryEntrySetx() : cctx.cache().primaryEntrySet()) {
             info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null),
-                !internal && cctx.gridEvents().isRecordable(EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ));
+                !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
         }
 
         info.flushPending();

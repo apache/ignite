@@ -252,6 +252,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                         c.updateAlives(node);
 
                 // Put topology snapshot into discovery history.
+                // There is no race possible between history maintenance and concurrent discovery
+                // event notifications, since SPI notifies manager about all events from this listener.
                 if (type != EVT_NODE_METRICS_UPDATED) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 

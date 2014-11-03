@@ -61,6 +61,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
     /** Data cache. */
     private GridCache<Object, Object> dataCache;
 
+    /** */
+    private GridFuture<?> dataCacheStartFut;
+
     /** Local GGFS metrics. */
     private GridGgfsLocalMetrics metrics;
 
@@ -119,12 +122,29 @@ public class GridGgfsDataManager extends GridGgfsManager {
     /** Condition for pending puts. */
     private final Condition pendingPutsCond = pendingPutsLock.newCondition();
 
+    /**
+     *
+     */
+    void awaitInit() {
+        if (!dataCacheStartFut.isDone()) {
+            try {
+                dataCacheStartFut.get();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         ggfs = ggfsCtx.ggfs();
 
         dataCachePrj = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName());
         dataCache = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName());
+
+        dataCacheStartFut = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName())
+            .preloader().startFuture();
 
         if (dataCache.configuration().getAtomicityMode() != TRANSACTIONAL)
             throw new GridException("Data cache should be transactional: " +
@@ -656,9 +676,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                            try {
+                            try (GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -675,9 +693,6 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                             "[fileInfo=" + fileInfo + ", range=" + range + ", startIdx=" + startIdx +
                                             ", endIdx=" + endIdx + ", idx=" + idx + ']');
                                 }
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                         else

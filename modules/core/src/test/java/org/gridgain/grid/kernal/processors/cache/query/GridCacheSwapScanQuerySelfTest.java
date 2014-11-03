@@ -7,16 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples;
+package org.gridgain.grid.kernal.processors.cache.query;
 
 /**
- * GridRouterExample multi-node self test.
+ *
  */
-public class GridRouterExamplesMultiNodeSelfTest extends GridRouterExamplesSelfTest {
+public class GridCacheSwapScanQuerySelfTest extends GridCacheSwapScanQueryAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startRouter("config/router/default-router.xml");
-
-        startRemoteNodes();
+    @Override protected boolean portableEnabled() {
+        return false;
     }
 }
