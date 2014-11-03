@@ -758,6 +758,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             Set<Integer> missed = new HashSet<>();
 
             // Get the same collection that will be sent in the message.
+            // TODO use U.newHashSet() when GG-9173 is merged.
             Collection<Integer> remaining = new HashSet<>(d.partitions());
 
             // Drain queue before processing a new node.
