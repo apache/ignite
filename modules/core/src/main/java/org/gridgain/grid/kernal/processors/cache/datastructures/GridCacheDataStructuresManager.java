@@ -932,7 +932,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             for (GridCacheTxEntry<K, V> entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
                 if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
-                    GridCacheInternal key = (GridCacheInternal)entry.key();
+                    GridCacheInternal key = (GridCacheInternal)entry.key().key();
 
                     if (entry.value() instanceof GridCacheCountDownLatchValue) {
                         // Notify latch on changes.

@@ -35,8 +35,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 /**
  *
  */
-public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
+public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepareFuture<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +43,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -77,7 +76,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearTxPrepareFuture(GridCacheContext<K, V> cctx, final GridNearTxLocal<K, V> tx) {
+    public GridNearTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridNearTxLocal<K, V> tx) {
         super(cctx.kernalContext(), new GridReducer<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>>() {
             @Override public boolean collect(GridCacheTxEx<K, V> e) {
                 return true;
@@ -130,7 +129,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (owner != null && tx.hasWriteKey(entry.key())) {
+        if (owner != null && tx.hasWriteKey(entry.txKey())) {
             // This will check for locks.
             onDone();
 
@@ -182,7 +181,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
                 }
             }
         }
@@ -244,7 +243,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
+    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTxEx<K, V>> fut : pending()) {
                 if (isMini(fut)) {

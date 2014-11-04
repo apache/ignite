@@ -87,7 +87,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
      * @param txNodes Transaction nodes mapping.
      */
-    GridDhtTxLocal(
+    public GridDhtTxLocal(
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         GridUuid nearFutId,
@@ -95,7 +95,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -191,20 +191,20 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isBatchUpdate() {
+    @Override protected boolean isBatchUpdate(GridCacheContext<K, V> cacheCtx) {
         // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return (cctx.writeToStoreFromDht() || onePhaseCommit()) && super.isBatchUpdate();
+        return (cacheCtx.writeToStoreFromDht() || onePhaseCommit()) && super.isBatchUpdate(cacheCtx);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isSingleUpdate() {
+    @Override protected boolean isSingleUpdate(GridCacheContext<K, V> cacheCtx) {
         // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return (cctx.writeToStoreFromDht() || onePhaseCommit()) && super.isSingleUpdate();
+        return (cacheCtx.writeToStoreFromDht() || onePhaseCommit()) && super.isSingleUpdate(cacheCtx);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(K key, long topVer) {
-        return cctx.isDht() && isNearEnabled(cctx) && !cctx.localNodeId().equals(nearNodeId());
+    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+        return cacheCtx.isDht() && isNearEnabled(cacheCtx) && !cctx.localNodeId().equals(nearNodeId());
     }
 
     /**
@@ -244,7 +244,9 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     @Override @Nullable protected GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
         GridCacheTxEntry<K, V> entry, long topVer) {
         // Don't add local node as reader.
-        if (!cctx.nodeId().equals(nearNodeId)) {
+        if (!cctx.localNodeId().equals(nearNodeId)) {
+            GridCacheContext<K, V> cacheCtx = cached.context();
+
             while (true) {
                 try {
                     return cached.addReader(nearNodeId, msgId, topVer);
@@ -253,7 +255,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry when adding to DHT local transaction: " + cached);
 
-                    cached = cctx.dht().entryExx(entry.key(), topVer);
+                    cached = cacheCtx.dht().entryExx(entry.key().key(), topVer);
                 }
             }
         }

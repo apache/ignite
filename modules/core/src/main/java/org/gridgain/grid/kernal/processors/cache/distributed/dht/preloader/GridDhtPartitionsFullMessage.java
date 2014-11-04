@@ -31,7 +31,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private GridDhtPartitionFullMap parts;
+    private Map<Integer, GridDhtPartitionFullMap> parts = new HashMap<>();
 
     /** */
     private byte[] partsBytes;
@@ -54,25 +54,31 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /**
      * @param id Exchange ID.
-     * @param parts Partitions.
      * @param lastVer Last version.
      */
-    GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, GridDhtPartitionFullMap parts,
-        @Nullable GridCacheVersion lastVer, long topVer) {
+    public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, @Nullable GridCacheVersion lastVer,
+        long topVer) {
         super(id, lastVer);
 
         assert parts != null;
         assert id == null || topVer == id.topologyVersion();
 
-        this.parts = parts;
         this.topVer = topVer;
     }
 
     /**
      * @return Local partitions.
      */
-    public GridDhtPartitionFullMap partitions() {
+    public Map<Integer, GridDhtPartitionFullMap> partitions() {
         return parts;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param fullMap Full partitions map.
+     */
+    public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
+        parts.put(cacheId, fullMap);
     }
 
     /** {@inheritDoc} */

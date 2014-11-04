@@ -98,7 +98,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Evicted readers.
      */
-    public Collection<K> nearEvicted() {
+    public Collection<GridCacheTxKey<K>> nearEvicted() {
         return nearEvicted;
     }
 

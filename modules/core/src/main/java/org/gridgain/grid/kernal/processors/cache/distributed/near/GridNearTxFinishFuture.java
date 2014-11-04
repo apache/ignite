@@ -41,7 +41,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -77,7 +77,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridNearTxFinishFuture(GridCacheContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
+    public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
 
         assert cctx != null;
@@ -208,9 +208,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 long topVer = this.tx.topologyVersion();
 
                 for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {
+                    GridCacheContext<K, V> cacheCtx = e.context();
+
                     try {
-                        if (e.op() != NOOP && !cctx.affinity().localNode(e.key(), topVer)) {
-                            GridCacheEntryEx<K, V> cacheEntry = cctx.cache().peekEx(e.key());
+                        if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key().key(), topVer)) {
+                            GridCacheEntryEx<K, V> cacheEntry = cacheCtx.cache().peekEx(e.key().key());
 
                             if (cacheEntry != null)
                                 cacheEntry.invalidate(null, this.tx.xidVersion());

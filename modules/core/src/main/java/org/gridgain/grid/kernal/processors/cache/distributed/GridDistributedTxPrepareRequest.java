@@ -239,7 +239,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Group lock key if preparing group-lock transaction.
      */
-    @Nullable public Object groupLockKey() {
+    @Nullable public GridCacheTxKey groupLockKey() {
         return grpLockKey;
     }
 

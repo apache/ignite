@@ -92,7 +92,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -133,7 +133,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -260,10 +260,12 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             Map<GridNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
 
             for (GridCacheTxEntry<K, V> e : allEntries()) {
+                GridCacheContext<K, V> cacheCtx = e.context();
+
                 assert e.cached() != null;
 
                 if (e.cached() == null || e.cached().obsolete()) {
-                    GridCacheEntryEx<K, V> cached = cctx.cache().entryEx(e.key());
+                    GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key().key());
 
                     e.cached(cached, cached.keyBytes());
                 }
@@ -281,14 +283,14 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                             if (nearEntryMap == null)
                                 nearEntryMap = new GridLeanMap<>();
 
-                            cctx.dhtMap(nearNodeId(), topologyVersion(),
+                            cacheCtx.dhtMap(nearNodeId(), topologyVersion(),
                                 (GridDhtCacheEntry<K, V>)e.cached(), log, dhtEntryMap, nearEntryMap);
                         }
 
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        GridCacheEntryEx<K, V> cached = cctx.cache().entryEx(e.key());
+                        GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key().key());
 
                         e.cached(cached, cached.keyBytes());
                     }

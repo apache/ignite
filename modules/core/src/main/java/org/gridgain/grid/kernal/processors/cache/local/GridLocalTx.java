@@ -52,7 +52,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param storeEnabled Whether to use read/write through.
      */
     GridLocalTx(
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,
@@ -190,16 +190,6 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         catch (GridException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addLocalCandidates(K key, Collection<GridCacheMvccCandidate<K>> cands) {
-        /* No-op. */
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, Collection<GridCacheMvccCandidate<K>>> localCandidates() {
-        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

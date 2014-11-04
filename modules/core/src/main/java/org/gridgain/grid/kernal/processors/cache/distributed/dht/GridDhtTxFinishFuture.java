@@ -39,7 +39,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -79,7 +79,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridDhtTxFinishFuture(GridCacheContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
+    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
 
         assert cctx != null;

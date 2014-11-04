@@ -14,6 +14,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,7 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheMessage.*;
 /**
  * Cache communication manager.
  */
-public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -52,7 +53,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private GridBiInClosure[] idxClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
 
     /** Handler registry. */
-    private ConcurrentMap<Class<? extends GridCacheMessage>, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
+    private ConcurrentMap<ListenerKey, GridBiInClosure<UUID, GridCacheMessage<K, V>>>
         clsHandlers = new ConcurrentHashMap8<>();
 
     /** Ordered handler registry. */
@@ -80,7 +81,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
-                    ", locId=" + cctx.nodeId() + ", msg=" + msg + ']');
+                    ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
 
             final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
 
@@ -92,7 +93,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 c = idxClsHandlers[msgIdx];
 
             if (c == null)
-                c = clsHandlers.get(cacheMsg.getClass());
+                c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
             if (c == null) {
                 if (log.isDebugEnabled())
@@ -217,7 +218,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                            ", locId=" + cctx.nodeId() + ", msg=" + cacheMsg + ']');
+                            ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
                     startFut.listenAsync(new CI1<GridFuture<?>>() {
@@ -237,7 +238,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                                 if (log.isDebugEnabled())
                                     log.debug("Start future completed for message [nodeId=" + nodeId +
-                                        ", locId=" + cctx.nodeId() + ", msg=" + cacheMsg + ']');
+                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                                 processMessage(nodeId, cacheMsg, c);
                             }
@@ -281,7 +282,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         GridBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         try {
             // Start clean.
-            if (cctx.transactional())
+            if (msg.transactional())
                 CU.resetTxContext(cctx);
 
             // We will not end up with storing a bunch of new UUIDs
@@ -798,6 +799,45 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
 
             onMessage0(nodeId, cacheMsg, c);
+        }
+    }
+
+    private static class ListenerKey {
+        /** Cache ID. */
+        private int cacheId;
+
+        /** Message class. */
+        private Class<? extends GridCacheMessage> msgCls;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param msgCls Message class.
+         */
+        private ListenerKey(int cacheId, Class<? extends GridCacheMessage> msgCls) {
+            this.cacheId = cacheId;
+            this.msgCls = msgCls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ListenerKey))
+                return false;
+
+            ListenerKey that = (ListenerKey)o;
+
+            return cacheId == that.cacheId && msgCls.equals(that.msgCls);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = cacheId;
+
+            result = 31 * result + msgCls.hashCode();
+
+            return result;
         }
     }
 }

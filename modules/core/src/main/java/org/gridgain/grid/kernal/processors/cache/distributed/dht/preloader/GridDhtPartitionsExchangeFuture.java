@@ -48,9 +48,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /** Dummy reassign flag. */
     private final boolean reassign;
 
-    /** */
-    private final GridDhtPartitionTopology<K, V> top;
-
     /** Discovery event. */
     private volatile GridDiscoveryEvent discoEvt;
 
@@ -89,7 +86,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private volatile GridTimeoutObject timeoutObj;
 
     /** Cache context. */
-    private final GridCacheContext<K, V> cctx;
+    private final GridCacheSharedContext<K, V> cctx;
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private ReadWriteLock busyLock;
@@ -140,13 +137,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheContext<K, V> cctx, boolean reassign, GridDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, GridDiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = true;
         forcePreload = false;
-
-        top = null;
 
         this.exchId = exchId;
         this.reassign = reassign;
@@ -166,13 +161,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheContext<K, V> cctx, GridDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, GridDiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = false;
         forcePreload = true;
-
-        top = null;
 
         this.exchId = exchId;
         this.discoEvt = discoEvt;
@@ -190,7 +183,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param busyLock Busy lock.
      * @param exchId Exchange ID.
      */
-    GridDhtPartitionsExchangeFuture(GridCacheContext<K, V> cctx, ReadWriteLock busyLock,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
 
@@ -209,8 +202,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         log = cctx.logger(getClass());
 
-        top = cctx.dht().topology();
-
         // Grab all nodes with order of equal or less than last joined node.
         oldestNode.set(CU.oldest(cctx, exchId.topologyVersion()));
 
@@ -219,7 +210,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         initFut = new GridFutureAdapter<>(ctx, true);
 
         if (log.isDebugEnabled())
-            log.debug("Creating exchange future [cacheName=" + cctx.namex() + ", localNode=" + cctx.nodeId() +
+            log.debug("Creating exchange future [localNode=" + cctx.localNodeId() +
                 ", fut=" + this + ']');
     }
 
@@ -233,7 +224,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         forcePreload = false;
         reassign = false;
 
-        top = null;
         exchId = null;
         cctx = null;
     }
@@ -252,48 +242,40 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Dummy flag.
      */
-    boolean dummy() {
+    public boolean dummy() {
         return dummy;
     }
 
     /**
      * @return Force preload flag.
      */
-    boolean forcePreload() {
+    public boolean forcePreload() {
         return forcePreload;
     }
 
     /**
      * @return Dummy reassign flag.
      */
-    boolean reassign() {
+    public boolean reassign() {
         return reassign;
+    }
+
+    /**
+     * @return {@code True} if dummy reassign.
+     */
+    public boolean dummyReassign() {
+        return (dummy() || forcePreload()) && reassign();
     }
 
     /**
      * Rechecks topology.
      */
-    private void initTopology() throws GridException {
-        // Grab all alive remote nodes with order of equal or less than last joined node.
-        rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteNodes(cctx, exchId.topologyVersion()));
-
-        rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
-
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet()) {
-            // If received any messages, process them.
-            onReceive(m.getKey(), m.getValue());
-        }
-
-        for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet()) {
-            // If received any messages, process them.
-            onReceive(m.getKey(), m.getValue());
-        }
-
-        if (canCalculateAffinity()) {
+    private void initTopology(GridCacheContext<K, V> cacheCtx) throws GridException {
+        if (canCalculateAffinity(cacheCtx)) {
             if (log.isDebugEnabled())
                 log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
 
-            cctx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
+            cacheCtx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
         }
         else {
             if (log.isDebugEnabled())
@@ -302,7 +284,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             // Fetch affinity assignment from remote node.
             GridDhtAssignmentFetchFuture<K, V> fetchFut =
-                new GridDhtAssignmentFetchFuture<>(cctx, exchId.topologyVersion(), CU.affinityNodes(cctx));
+                new GridDhtAssignmentFetchFuture<>(cacheCtx, exchId.topologyVersion(), CU.affinityNodes(cacheCtx));
 
             fetchFut.init();
 
@@ -312,22 +294,22 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 log.debug("Fetched affinity from remote node, initializing affinity assignment [locNodeId=" +
                     cctx.localNodeId() + ", topVer=" + exchId.topologyVersion() + ']');
 
-            cctx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
+            cacheCtx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
         }
     }
 
     /**
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
-    private boolean canCalculateAffinity() {
-        GridCacheAffinityFunction affFunc = cctx.config().getAffinity();
+    private boolean canCalculateAffinity(GridCacheContext<K, V> cacheCtx) {
+        GridCacheAffinityFunction affFunc = cacheCtx.config().getAffinity();
 
         // Do not request affinity from remote nodes if affinity function is not centralized.
         if (!U.hasAnnotation(affFunc, GridCacheCentralizedAffinityFunction.class))
             return true;
 
         // If local node did not initiate exchange or local node is the only cache node in grid.
-        Collection<GridNode> affNodes = CU.affinityNodes(cctx, exchId.topologyVersion());
+        Collection<GridNode> affNodes = CU.affinityNodes(cacheCtx, exchId.topologyVersion());
 
         return !exchId.nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
@@ -336,7 +318,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return {@code True}
      */
-    boolean onAdded() {
+    public boolean onAdded() {
         return added.compareAndSet(false, true);
     }
 
@@ -346,7 +328,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      */
-    void onEvent(GridDhtPartitionExchangeId exchId, GridDiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, GridDiscoveryEvent discoEvt) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
@@ -357,7 +339,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Discovery event.
      */
-    GridDiscoveryEvent discoveryEvent() {
+    public GridDiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 
@@ -378,7 +360,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Exchange ID.
      */
-    GridDhtPartitionExchangeId exchangeId() {
+    public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
 
@@ -414,7 +396,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      *
      * @throws GridInterruptedException If interrupted.
      */
-    void init() throws GridInterruptedException {
+    public void init() throws GridInterruptedException {
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
@@ -430,27 +412,39 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
-                // Update before waiting for locks.
-                top.updateTopologyVersion(exchId, this);
+                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+                    // Update before waiting for locks.
+                    cacheCtx.topology().updateTopologyVersion(exchId, this);
 
-                // Must initialize topology after we get discovery event.
-                initTopology();
+                // Grab all alive remote nodes with order of equal or less than last joined node.
+                rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx, exchId.topologyVersion()));
 
-                long topVer = exchId.topologyVersion();
+                rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
-                assert topVer == top.topologyVersion() :
-                    "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
+                for (Map.Entry<UUID, GridDhtPartitionsSingleMessage<K, V>> m : singleMsgs.entrySet()) {
+                    // If received any messages, process them.
+                    onReceive(m.getKey(), m.getValue());
+                }
 
-                // Do not wait for partition release future only if local node has just joined the grid.
-                if (canCalculateAffinity()) {
-                    // Get partitions of event source node: join => new topology, left => previous topology.
-                    long moveTopVer = topVer + (exchId.isLeft() ? -1 : 0);
+                for (Map.Entry<UUID, GridDhtPartitionsFullMessage<K, V>> m : fullMsgs.entrySet()) {
+                    // If received any messages, process them.
+                    onReceive(m.getKey(), m.getValue());
+                }
 
-                    Collection<Integer> parts = F.concat(false,
-                        cctx.affinity().primaryPartitions(exchId.nodeId(), moveTopVer),
-                        cctx.affinity().backupPartitions(exchId.nodeId(), moveTopVer));
+                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                    // Must initialize topology after we get discovery event.
+                    initTopology(cacheCtx);
 
-                    GridFuture<?> partReleaseFut = cctx.partitionReleaseFuture(parts, topVer);
+                    cacheCtx.preloader().updateLastExchangeFuture(this);
+
+                    long topVer = exchId.topologyVersion();
+
+                    GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
+
+                    assert topVer == top.topologyVersion() :
+                        "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
+
+                    GridFuture<?> partReleaseFut = cctx.partitionReleaseFuture(topVer);
 
                     // Assign to class variable so it will be included into toString() method.
                     this.partReleaseFut = partReleaseFut;
@@ -462,19 +456,19 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                     if (log.isDebugEnabled())
                         log.debug("After waiting for partition release future: " + this);
+
+                    // Notify replication manager.
+                    if (cacheCtx.isDrEnabled())
+                        cacheCtx.dr().beforeExchange(topVer, exchId.isLeft());
+
+                    // Partition release future is done so we can flush the write-behind store.
+                    cacheCtx.store().forceFlush();
+
+                    // Process queued undeploys prior to sending/spreading map.
+                    cacheCtx.preloader().unwindUndeploys();
+
+                    top.beforeExchange(exchId);
                 }
-
-                // Notify replication manager.
-                if (cctx.isDrEnabled())
-                    cctx.dr().beforeExchange(topVer, exchId.isLeft());
-
-                // Partition release future is done so we can flush the write-behind store.
-                cctx.store().forceFlush();
-
-                // Process queued undeploys prior to sending/spreading map.
-                cctx.preloader().unwindUndeploys();
-
-                top.beforeExchange(exchId);
             }
             catch (GridInterruptedException e) {
                 onDone(e);
@@ -502,20 +496,17 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             if (log.isDebugEnabled())
                 log.debug("Initialized future: " + this);
 
-            if (!U.hasCache(discoEvt.node(), cctx.name())) {
-                assert canCalculateAffinity();
-
+            if (!U.hasCaches(discoEvt.node()))
                 onDone(exchId.topologyVersion());
-            }
             else {
                 // If this node is not oldest.
-                if (!oldestNode.get().id().equals(cctx.nodeId()))
+                if (!oldestNode.get().id().equals(cctx.localNodeId()))
                     sendPartitions();
                 else {
                     boolean allReceived = allReceived();
 
                     if (allReceived && replied.compareAndSet(false, true)) {
-                        if (spreadPartitions(top.partitionMap(true)))
+                        if (spreadPartitions())
                             onDone(exchId.topologyVersion());
                     }
                 }
@@ -533,8 +524,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @throws GridException If failed.
      */
     private void sendLocalPartitions(GridNode node, @Nullable GridDhtPartitionExchangeId id) throws GridException {
-        GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, top.localPartitionMap(),
-            cctx.versions().last());
+        GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
+
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -545,13 +538,15 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @param nodes Nodes.
      * @param id ID.
-     * @param partMap Partition map.
      * @throws GridException If failed.
      */
-    private void sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionExchangeId id,
-        GridDhtPartitionFullMap partMap) throws GridException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, partMap, lastVer.get(),
+    private void sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionExchangeId id)
+        throws GridException {
+        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, lastVer.get(),
             id.topologyVersion());
+
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
 
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
@@ -583,12 +578,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     }
 
     /**
-     * @param partMap Partition map.
      * @return {@code True} if succeeded.
      */
-    private boolean spreadPartitions(GridDhtPartitionFullMap partMap) {
+    private boolean spreadPartitions() {
         try {
-            sendAllPartitions(rmtNodes, exchId, partMap);
+            sendAllPartitions(rmtNodes, exchId);
 
             return true;
         }
@@ -604,15 +598,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Long res, Throwable err) {
-        if (err == null)
-            cctx.affinity().cleanUpCache(res - 10);
+        if (err == null) {
+            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+                cacheCtx.affinity().cleanUpCache(res - 10);
+        }
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
-            if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
-                cctx.config().getAffinity().removeNode(exchId.nodeId());
-
             if (log.isDebugEnabled())
-                log.debug("Completed partition exchange [localNode=" + cctx.nodeId() + ", exchange= " + this + ']');
+                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this + ']');
 
             initFut.onDone(err == null);
 
@@ -620,9 +613,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             // Deschedule timeout object.
             if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
+                cctx.kernalContext().timeout().removeTimeoutObject(timeoutObj);
 
-            ((GridDhtPreloader<K, V>)cctx.preloader()).onExchangeDone(this);
+            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
+                    cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
+            }
+
+            cctx.exchange().onExchangeDone(this);
 
             return true;
         }
@@ -660,7 +658,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param nodeId Sender node id.
      * @param msg Single partition info.
      */
-    void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage<K, V> msg) {
+    public void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage<K, V> msg) {
         assert msg != null;
 
         assert msg.exchangeId().equals(exchId);
@@ -686,7 +684,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 GridNode n = cctx.node(nodeId);
 
                 if (n != null)
-                    sendAllPartitions(F.asList(n), exchId, top.partitionMap(true));
+                    sendAllPartitions(F.asList(n), exchId);
             }
             catch (GridException e) {
                 scheduleRecheck();
@@ -724,14 +722,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             synchronized (rcvdIds) {
                                 if (rcvdIds.add(nodeId))
-                                    top.update(exchId, msg.partitions());
+                                    updatePartitionSingleMap(msg);
 
                                 allReceived = allReceived();
                             }
 
                             // If got all replies, and initialization finished, and reply has not been sent yet.
                             if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
-                                spreadPartitions(top.partitionMap(true));
+                                spreadPartitions();
 
                                 onDone(exchId.topologyVersion());
                             }
@@ -753,7 +751,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param nodeId Sender node ID.
      * @param msg Full partition info.
      */
-    void onReceive(final UUID nodeId, final GridDhtPartitionsFullMessage<K, V> msg) {
+    public void onReceive(final UUID nodeId, final GridDhtPartitionsFullMessage<K, V> msg) {
         assert msg != null;
 
         if (isDone()) {
@@ -800,11 +798,31 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 cctx.versions().onReceived(nodeId, msg.lastVersion());
 
-                top.update(exchId, msg.partitions());
+                updatePartitionFullMap(msg);
 
                 onDone(exchId.topologyVersion());
             }
         });
+    }
+
+    /**
+     * Updates partition map in all caches.
+     *
+     * @param msg Partitions full messages.
+     */
+    private void updatePartitionFullMap(GridDhtPartitionsFullMessage<K, V> msg) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            cacheCtx.topology().update(exchId, msg.partitions().get(cacheCtx.cacheId()));
+    }
+
+    /**
+     * Updates partition map in all caches.
+     *
+     * @param msg Partitions single message.
+     */
+    private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage<K, V> msg) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            cacheCtx.topology().update(exchId, msg.partitions().get(cacheCtx.cacheId()));
     }
 
     /**
@@ -840,21 +858,22 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                         if (oldest.id().equals(nodeId)) {
                             if (log.isDebugEnabled())
                                 log.debug("Oldest node left or failed on partition exchange " +
-                                    "(will restart exchange process)) [cacheName=" + cctx.namex() +
-                                    ", oldestNodeId=" + oldest.id() + ", exchangeId=" + exchId + ']');
+                                    "(will restart exchange process)) [oldestNodeId=" + oldest.id() +
+                                    ", exchangeId=" + exchId + ']');
 
                             boolean set = false;
 
                             GridNode newOldest = CU.oldest(cctx, exchId.topologyVersion());
 
                             // If local node is now oldest.
-                            if (newOldest.id().equals(cctx.nodeId())) {
+                            if (newOldest.id().equals(cctx.localNodeId())) {
                                 synchronized (mux) {
                                     if (oldestNode.compareAndSet(oldest, newOldest)) {
                                         // If local node is just joining.
-                                        if (exchId.nodeId().equals(cctx.nodeId())) {
+                                        if (exchId.nodeId().equals(cctx.localNodeId())) {
                                             try {
-                                                top.beforeExchange(exchId);
+                                                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+                                                    cacheCtx.topology().beforeExchange(exchId);
                                             }
                                             catch (GridException e) {
                                                 onDone(e);
@@ -901,7 +920,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                     it.remove();
 
                             if (allReceived() && ready.get() && replied.compareAndSet(false, true))
-                                if (spreadPartitions(top.partitionMap(true)))
+                                if (spreadPartitions())
                                     onDone(exchId.topologyVersion());
                         }
                     }
@@ -921,7 +940,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     private void recheck() {
         // If this is the oldest node.
-        if (oldestNode.get().id().equals(cctx.nodeId())) {
+        if (oldestNode.get().id().equals(cctx.localNodeId())) {
             Collection<UUID> remaining = remaining();
 
             if (!remaining.isEmpty()) {
@@ -936,7 +955,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             }
             // Resend full partition map because last attempt failed.
             else {
-                if (spreadPartitions(top.partitionMap(true)))
+                if (spreadPartitions())
                     onDone(exchId.topologyVersion());
             }
         }
@@ -955,7 +974,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             GridTimeoutObject old = timeoutObj;
 
             if (old != null)
-                cctx.time().removeTimeoutObject(old);
+                cctx.kernalContext().timeout().removeTimeoutObject(old);
 
             GridTimeoutObject timeoutObj = new GridTimeoutObjectAdapter(
                 cctx.gridConfig().getNetworkTimeout() * cctx.gridConfig().getCacheConfiguration().length) {
@@ -989,7 +1008,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             this.timeoutObj = timeoutObj;
 
-            cctx.time().addTimeoutObject(timeoutObj);
+            cctx.kernalContext().timeout().addTimeoutObject(timeoutObj);
         }
     }
 

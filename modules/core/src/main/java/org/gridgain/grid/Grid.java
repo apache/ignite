@@ -26,6 +26,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -182,6 +183,13 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return All configured caches.
      */
     public Collection<GridCache<?, ?>> caches();
+
+    /**
+     * Gets grid transactions facade.
+     *
+     * @return Grid transactions facade.
+     */
+    public GridTransactions transactions();
 
     /**
      * Gets a new instance of data loader associated with given cache name. Data loader

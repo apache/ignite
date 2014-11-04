@@ -26,7 +26,7 @@ import java.util.concurrent.*;
  */
 public class GridCacheTxFinishSync<K, V> {
     /** Cache context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Logger. */
     private GridLogger log;
@@ -37,7 +37,7 @@ public class GridCacheTxFinishSync<K, V> {
     /**
      * @param cctx Cache context.
      */
-    public GridCacheTxFinishSync(GridCacheContext<K, V> cctx) {
+    public GridCacheTxFinishSync(GridCacheSharedContext<K, V> cctx) {
         this.cctx = cctx;
 
         log = cctx.logger(GridCacheTxFinishSync.class);

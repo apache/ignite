@@ -20,7 +20,6 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -51,7 +50,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final Collection<SupplyWorker> workers = new LinkedList<>();
 
     /** */
-    private final LinkedBlockingDeque<DemandMessage<K, V>> queue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<DemandMessage<K, V>> queue = new LinkedBlockingDeque<>();
 
     /** */
     private final boolean depEnabled;
@@ -171,7 +170,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      * @return Polled item.
      * @throws InterruptedException If interrupted.
      */
-    @Nullable private <T> T poll(LinkedBlockingDeque<T> deque, GridWorker w) throws InterruptedException {
+    @Nullable private <T> T poll(BlockingQueue<T> deque, GridWorker w) throws InterruptedException {
         assert w != null;
 
         // There is currently a case where {@code interrupted}
@@ -244,7 +243,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 // Partition map exchange is finished which means that all near transactions with given
                 // topology version are committed. We can wait for local locks here as it will not take
                 // much time.
-                cctx.mvcc().finishLocks(d.partitions(), d.topologyVersion()).get();
+                cctx.mvcc().finishLocks(d.topologyVersion()).get();
 
                 for (Integer part : d.partitions()) {
                     GridDhtLocalPartition<K, V> loc = top.localPartition(part, d.topologyVersion(), false);

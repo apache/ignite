@@ -44,7 +44,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** Cache key. */
     @GridToStringInclude
-    private K key;
+    private GridCacheTxKey<K> key;
 
     /** Key bytes. */
     private byte[] keyBytes;
@@ -156,7 +156,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         this.drExpireTime = drExpireTime;
         this.drVer = drVer;
 
-        key = entry.key();
+        key = entry.txKey();
         keyBytes = entry.keyBytes();
 
         depEnabled = ctx.gridDeploy().enabled();
@@ -194,10 +194,17 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         if (transformClos != null)
             addTransformClosure(transformClos);
 
-        key = entry.key();
+        key = entry.txKey();
         keyBytes = entry.keyBytes();
 
         depEnabled = ctx.gridDeploy().enabled();
+    }
+
+    /**
+     * @return Cache context for this tx entry.
+     */
+    public GridCacheContext<K, V> context() {
+        return ctx;
     }
 
     /**
@@ -360,7 +367,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @return Entry key.
      */
-    public K key() {
+    public GridCacheTxKey<K> key() {
         return key;
     }
 
@@ -423,7 +430,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry = ctx.cache().entryEx(key);
+                    entry = ctx.cache().entryEx(key.key());
                 }
             }
         }
@@ -757,7 +764,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             filterBytes = U.readByteArray(in);
         }
         else {
-            key = (K)in.readObject();
+            key = (GridCacheTxKey<K>)in.readObject();
             transformClosCol = U.readCollection(in);
             filters = U.readEntryFilterArray(in);
         }

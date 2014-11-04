@@ -358,7 +358,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.versions().nextForLoad(topology().topologyVersion());
+        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 

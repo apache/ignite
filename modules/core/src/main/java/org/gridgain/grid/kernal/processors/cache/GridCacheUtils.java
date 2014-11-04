@@ -285,33 +285,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Writes {@link GridCacheMetrics} to output stream. This method is meant
-     * to be used by implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param metrics Metrics to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeMetrics(DataOutput out, GridCacheMetrics metrics) throws IOException {
-        // Write null flag.
-        out.writeBoolean(metrics == null);
-
-        if (metrics != null) {
-            out.writeLong(metrics.createTime());
-            out.writeLong(metrics.readTime());
-            out.writeLong(metrics.writeTime());
-            out.writeLong(metrics.commitTime());
-            out.writeLong(metrics.rollbackTime());
-            out.writeInt(metrics.reads());
-            out.writeInt(metrics.writes());
-            out.writeInt(metrics.hits());
-            out.writeInt(metrics.misses());
-            out.writeInt(metrics.txCommits());
-            out.writeInt(metrics.txRollbacks());
-        }
-    }
-
-    /**
      * @param ctx Cache context.
      * @param meta Meta name.
      * @param <K> Key type.
@@ -472,6 +445,18 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets all nodes with at least one cache configured.
+     *
+     * @param ctx Shared cache context.
+     * @param topOrder Maximum allowed node order.
+     * @return All nodes on which cache with the same name is started (including nodes
+     *      that may have already left).
+     */
+    public static Collection<GridNode> allNodes(GridCacheSharedContext ctx, long topOrder) {
+        return ctx.discovery().cacheNodes(topOrder);
+    }
+
+    /**
      * Gets alive nodes.
      *
      * @param ctx Cache context.
@@ -489,6 +474,16 @@ public class GridCacheUtils {
      * @return Remote nodes on which cache with the same name is started.
      */
     public static Collection<GridNode> remoteNodes(final GridCacheContext ctx) {
+        return remoteNodes(ctx, -1);
+    }
+
+    /**
+     * Gets remote node with at least one cache configured.
+     *
+     * @param ctx Shared cache context.
+     * @return Collection of nodes with at least one cache configured.
+     */
+    public static Collection<GridNode> remoteNodes(GridCacheSharedContext ctx) {
         return remoteNodes(ctx, -1);
     }
 
@@ -512,6 +507,39 @@ public class GridCacheUtils {
      */
     public static Collection<GridNode> aliveRemoteNodes(final GridCacheContext ctx, long topOrder) {
         return ctx.discovery().aliveRemoteCacheNodes(ctx.namex(), topOrder);
+    }
+
+    /**
+     * Gets remote nodes with at least one cache configured.
+     *
+     * @param ctx Cache shared context.
+     * @param topVer Topology version.
+     * @return Collection of remote nodes with at least one cache configured.
+     */
+    public static Collection<GridNode> remoteNodes(final GridCacheSharedContext ctx, long topVer) {
+        return ctx.discovery().remoteCacheNodes(topVer);
+    }
+
+    /**
+     * Gets alive nodes with at least one cache configured.
+     *
+     * @param ctx Cache context.
+     * @param topOrder Maximum allowed node order.
+     * @return Affinity nodes.
+     */
+    public static Collection<GridNode> aliveCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+        return ctx.discovery().aliveNodesWithCaches(topOrder);
+    }
+
+    /**
+     * Gets alive remote nodes with at least one cache configured.
+     *
+     * @param ctx Cache context.
+     * @param topOrder Maximum allowed node order.
+     * @return Affinity nodes.
+     */
+    public static Collection<GridNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+        return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
     }
 
     /**
@@ -657,10 +685,20 @@ public class GridCacheUtils {
      * Gets oldest alive node for specified topology version.
      *
      * @param cctx Cache context.
-     * @return Oldest node for the given topology version.
+     * @return Oldest node for the current topology version.
      */
     public static GridNode oldest(GridCacheContext cctx) {
         return oldest(cctx, -1);
+    }
+
+    /**
+     * Gets oldest alive node across nodes with at least one cache configured.
+     *
+     * @param ctx Cache context.
+     * @return Oldest node.
+     */
+    public static GridNode oldest(GridCacheSharedContext ctx) {
+        return oldest(ctx, -1);
     }
 
     /**
@@ -678,6 +716,27 @@ public class GridCacheUtils {
                 oldest = n;
 
         assert oldest != null;
+        assert oldest.order() <= topOrder;
+
+        return oldest;
+    }
+
+    /**
+     * Gets oldest alive node with at least one cache configured for specified topology version.
+     *
+     * @param cctx Shared cache context.
+     * @param topOrder Maximum allowed node order.
+     * @return Oldest node for the given topology version.
+     */
+    public static GridNode oldest(GridCacheSharedContext cctx, long topOrder) {
+        GridNode oldest = null;
+
+        for (GridNode n : aliveCacheNodes(cctx, topOrder))
+            if (oldest == null || n.order() < oldest.order())
+                oldest = n;
+
+        assert oldest != null;
+        assert oldest.order() <= topOrder;
 
         return oldest;
     }
@@ -1170,13 +1229,10 @@ public class GridCacheUtils {
     /**
      * @param ctx Cache context.
      */
-    public static void resetTxContext(GridCacheContext ctx) {
+    public static void resetTxContext(GridCacheSharedContext ctx) {
         assert ctx != null;
 
         ctx.tm().txContextReset();
-
-        if (ctx.isNear())
-            ctx.near().dht().context().tm().txContextReset();
     }
 
     /**
@@ -1586,7 +1642,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 

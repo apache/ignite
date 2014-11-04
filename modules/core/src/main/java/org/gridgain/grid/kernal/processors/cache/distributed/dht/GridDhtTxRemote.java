@@ -81,7 +81,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
         @Nullable Object grpLockKey,
         GridCacheVersion nearXidVer,
@@ -139,7 +139,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         int txSize,
         @Nullable Object grpLockKey,
         @Nullable UUID subjId,
@@ -245,7 +245,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws GridException If failed.
      */
-    void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
+    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
         entry.unmarshal(cctx, ldr);
 
         try {
@@ -274,16 +274,17 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param drVer Data center replication version.
      * @param clos Transform closures.
      */
-    void addWrite(GridCacheOperation op, K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        @Nullable Collection<GridClosure<V, V>> clos, @Nullable GridCacheVersion drVer) {
+    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, GridCacheTxKey<K> key, byte[] keyBytes,
+        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<GridClosure<V, V>> clos,
+        @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
         if (isSystemInvalidate())
             return;
 
-        GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topologyVersion());
+        GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, op, val, 0L, -1L, cached, drVer);
+        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);

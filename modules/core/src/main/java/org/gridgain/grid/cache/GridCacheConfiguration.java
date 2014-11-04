@@ -73,20 +73,11 @@ public class GridCacheConfiguration {
     /** Default value for cache distribution mode. */
     public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
-    /** Default transaction timeout. */
-    public static final long DFLT_TRANSACTION_TIMEOUT = 0;
-
     /** Default query timeout. */
     public static final long DFLT_QUERY_TIMEOUT = 0;
 
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
-
-    /** Default concurrency mode. */
-    public static final GridCacheTxConcurrency DFLT_TX_CONCURRENCY = GridCacheTxConcurrency.PESSIMISTIC;
-
-    /** Default transaction isolation level. */
-    public static final GridCacheTxIsolation DFLT_TX_ISOLATION = GridCacheTxIsolation.REPEATABLE_READ;
 
     /** Initial default cache size. */
     public static final int DFLT_START_SIZE = 1500000;
@@ -97,20 +88,11 @@ public class GridCacheConfiguration {
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
 
-    /** Default value for 'txSerializableEnabled' flag. */
-    public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
-
-    /** Default value for 'txBatchUpdate' flag. */
-    public static final boolean DFLT_TX_BATCH_UPDATE = true;
-
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
     /** Default value for 'storeValueBytes' flag indicating if value bytes should be stored. */
     public static final boolean DFLT_STORE_VALUE_BYTES = true;
-
-    /** Default size of pessimistic transactions log. */
-    public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
 
     /** Default preload mode for distributed cache. */
     public static final GridCachePreloadMode DFLT_PRELOAD_MODE = GridCachePreloadMode.ASYNC;
@@ -239,18 +221,6 @@ public class GridCacheConfiguration {
     /** Eager ttl flag. */
     private boolean eagerTtl = DFLT_EAGER_TTL;
 
-    /** Transaction isolation. */
-    private GridCacheTxIsolation dfltIsolation = DFLT_TX_ISOLATION;
-
-    /** Cache concurrency. */
-    private GridCacheTxConcurrency dfltConcurrency = DFLT_TX_CONCURRENCY;
-
-    /** Default transaction serializable flag. */
-    private boolean txSerEnabled = DFLT_TX_SERIALIZABLE_ENABLED;
-
-    /** Default transaction timeout. */
-    private long dfltTxTimeout = DFLT_TRANSACTION_TIMEOUT;
-
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
 
@@ -287,9 +257,6 @@ public class GridCacheConfiguration {
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
 
-    /** Flag to enable transactional batch update. */
-    private boolean txBatchUpdate = DFLT_TX_BATCH_UPDATE;
-
     /** Flag indicating whether this is invalidation-based cache. */
     private boolean invalidate = DFLT_INVALIDATE;
 
@@ -298,12 +265,6 @@ public class GridCacheConfiguration {
 
     /** Refresh-ahead ratio. */
     private double refreshAheadRatio;
-
-    /** Pessimistic tx log size. */
-    private int pessimisticTxLogSize;
-
-    /** Pessimistic tx log linger. */
-    private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
 
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
@@ -411,11 +372,8 @@ public class GridCacheConfiguration {
         backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
-        dfltConcurrency = cc.getDefaultTxConcurrency();
-        dfltIsolation = cc.getDefaultTxIsolation();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
-        dfltTxTimeout = cc.getDefaultTxTimeout();
         dgcFreq = cc.getDgcFrequency();
         dgcRmvLocks = cc.isDgcRemoveLocks();
         dgcSuspectLockTimeout = cc.getDgcSuspectLockTimeout();
@@ -443,8 +401,6 @@ public class GridCacheConfiguration {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
-        pessimisticTxLogSize = cc.getPessimisticTxLogSize();
         portableEnabled = cc.isPortableEnabled();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
@@ -463,8 +419,6 @@ public class GridCacheConfiguration {
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
-        txBatchUpdate = cc.isBatchUpdateOnCommit();
-        txSerEnabled = cc.isTxSerializableEnabled();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
@@ -810,66 +764,6 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Default cache transaction concurrency to use when one is not explicitly
-     * specified. Default value is defined by {@link #DFLT_TX_CONCURRENCY}.
-     *
-     * @return Default cache transaction concurrency.
-     * @see GridCacheTx
-     */
-    public GridCacheTxConcurrency getDefaultTxConcurrency() {
-        return dfltConcurrency;
-    }
-
-    /**
-     * Sets default transaction concurrency.
-     *
-     * @param dfltConcurrency Default cache transaction concurrency.
-     */
-    public void setDefaultTxConcurrency(GridCacheTxConcurrency dfltConcurrency) {
-        this.dfltConcurrency = dfltConcurrency;
-    }
-
-    /**
-     * Gets flag to enable/disable {@link GridCacheTxIsolation#SERIALIZABLE} isolation
-     * level for cache transactions. Serializable level does carry certain overhead and
-     * if not used, should be disabled. Default value is {@code false}.
-     *
-     * @return {@code True} if serializable transactions are enabled, {@code false} otherwise.
-     */
-    public boolean isTxSerializableEnabled() {
-        return txSerEnabled;
-    }
-
-    /**
-     * Enables/disables serializable cache transactions. See {@link #isTxSerializableEnabled()} for more information.
-     *
-     * @param txSerEnabled Flag to enable/disable serializable cache transactions.
-     */
-    public void setTxSerializableEnabled(boolean txSerEnabled) {
-        this.txSerEnabled = txSerEnabled;
-    }
-
-    /**
-     * Default cache transaction isolation to use when one is not explicitly
-     * specified. Default value is defined by {@link #DFLT_TX_ISOLATION}.
-     *
-     * @return Default cache transaction isolation.
-     * @see GridCacheTx
-     */
-    public GridCacheTxIsolation getDefaultTxIsolation() {
-        return dfltIsolation;
-    }
-
-    /**
-     * Sets default transaction isolation.
-     *
-     * @param dfltIsolation Default cache transaction isolation.
-     */
-    public void setDefaultTxIsolation(GridCacheTxIsolation dfltIsolation) {
-        this.dfltIsolation = dfltIsolation;
-    }
-
-    /**
      * Gets initial cache size which will be used to pre-create internal
      * hash table after start. Default value is defined by {@link #DFLT_START_SIZE}.
      *
@@ -1028,50 +922,6 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * If {@code true}, then all transactional values will be written to persistent
-     * storage at {@link GridCacheTx#commit()} phase. If {@code false}, then values
-     * will be persisted after every operation. Default value is {@code true}.
-     *
-     * @return Flag indicating whether to persist once on commit, or after every
-     *      operation.
-     */
-    public boolean isBatchUpdateOnCommit() {
-        return txBatchUpdate;
-    }
-
-    /**
-     * Sets flag indicating if persistent store should be updated after every cache operation or once at commit time.
-     * Default is {@code true}.
-     *
-     * @param txBatchUpdate {@code True} if updates should be batched at the end of transaction, {@code false} if
-     * updates should be propagated to persistent store individually as they occur (without waiting to the end of
-     * transaction).
-     */
-    public void setBatchUpdateOnCommit(boolean txBatchUpdate) {
-        this.txBatchUpdate = txBatchUpdate;
-    }
-
-    /**
-     * Gets default transaction timeout. Default value is defined by {@link #DFLT_TRANSACTION_TIMEOUT}
-     * which is {@code 0} and means that transactions will never time out.
-     *
-     * @return Default transaction timeout.
-     */
-    public long getDefaultTxTimeout() {
-        return dfltTxTimeout;
-    }
-
-    /**
-     * Sets default transaction timeout in milliseconds. By default this value is defined by {@link
-     * #DFLT_TRANSACTION_TIMEOUT}.
-     *
-     * @param dfltTxTimeout Default transaction timeout.
-     */
-    public void setDefaultTxTimeout(long dfltTxTimeout) {
-        this.dfltTxTimeout = dfltTxTimeout;
-    }
-
-    /**
      * Gets default lock acquisition timeout. Default value is defined by {@link #DFLT_LOCK_TIMEOUT}
      * which is {@code 0} and means that lock acquisition will never timeout.
      *
@@ -1173,49 +1023,6 @@ public class GridCacheConfiguration {
      */
     public void setRefreshAheadRatio(double refreshAheadRatio) {
         this.refreshAheadRatio = refreshAheadRatio;
-    }
-
-    /**
-     * Gets size of pessimistic transactions log stored on node in order to recover transaction commit if originating
-     * node has left grid before it has sent all messages to transaction nodes.
-     * <p>
-     * If not set, default value is {@code 0} which means unlimited log size.
-     *
-     * @return Pessimistic transaction log size.
-     */
-    public int getPessimisticTxLogSize() {
-        return pessimisticTxLogSize;
-    }
-
-    /**
-     * Sets pessimistic transactions log size.
-     *
-     * @param pessimisticTxLogSize Pessimistic transactions log size.
-     * @see #getPessimisticTxLogSize()
-     */
-    public void setPessimisticTxLogSize(int pessimisticTxLogSize) {
-        this.pessimisticTxLogSize = pessimisticTxLogSize;
-    }
-
-    /**
-     * Gets delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node.
-     * <p>
-     * If not set, default value is {@link #DFLT_PESSIMISTIC_TX_LOG_LINGER}.
-     *
-     * @return Pessimistic log cleanup delay in milliseconds.
-     */
-    public int getPessimisticTxLogLinger() {
-        return pessimisticTxLogLinger;
-    }
-
-    /**
-     * Sets cleanup delay for pessimistic transaction recovery log for failed node, in milliseconds.
-     *
-     * @param pessimisticTxLogLinger Pessimistic log cleanup delay.
-     * @see #getPessimisticTxLogLinger()
-     */
-    public void setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
-        this.pessimisticTxLogLinger = pessimisticTxLogLinger;
     }
 
     /**

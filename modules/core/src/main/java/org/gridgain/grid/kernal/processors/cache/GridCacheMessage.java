@@ -58,6 +58,9 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     @GridDirectTransient
     private boolean skipPrepare;
 
+    /** Cache ID. */
+    private int cacheId;
+
     /**
      * Gets next ID for indexed message ID.
      *

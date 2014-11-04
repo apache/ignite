@@ -34,16 +34,4 @@ public interface GridCacheTxRemoteEx<K, V> extends GridCacheTxEx<K, V> {
      * @return {@code True} if entry was found.
      */
     public boolean setWriteValue(GridCacheTxEntry<K, V> e);
-
-    /**
-     * Adds remote candidates and completed versions to all involved entries.
-     *
-     * @param cands Candidates.
-     * @param committedVers Committed versions.
-     * @param rolledbackVers Rolled back versions.
-     */
-    public void addRemoteCandidates(
-        Map<K, Collection<GridCacheMvccCandidate<K>>> cands,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers);
 }

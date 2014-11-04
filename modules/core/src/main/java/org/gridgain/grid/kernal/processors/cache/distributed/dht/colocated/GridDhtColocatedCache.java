@@ -821,24 +821,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processPrepareResponse(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
-        GridDhtColocatedTxPrepareFuture<K, V> fut = (GridDhtColocatedTxPrepareFuture<K, V>)ctx.mvcc().
-            <GridCacheTxEx<K, V>>future(res.version(), res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find future for prepare response [sender=" + nodeId + ", res=" + res + ']');
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
     private void processFinishResponse(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 

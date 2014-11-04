@@ -41,20 +41,6 @@ public interface GridCacheMetrics extends Serializable {
     public long readTime();
 
     /**
-     * Gets last time transaction was committed.
-     *
-     * @return Last commit time.
-     */
-    public long commitTime();
-
-    /**
-     * Gets last time transaction was rollback.
-     *
-     * @return Last rollback time.
-     */
-    public long rollbackTime();
-
-    /**
      * Gets total number of reads of the owning entity (either cache or entry).
      *
      * @return Total number of reads.
@@ -81,20 +67,6 @@ public interface GridCacheMetrics extends Serializable {
      * @return Number of misses.
      */
     public int misses();
-
-    /**
-     * Gets total number of transaction commits.
-     *
-     * @return Number of transaction commits.
-     */
-    public int txCommits();
-
-    /**
-     * Gets total number of transaction rollbacks.
-     *
-     * @return Number of transaction rollbacks.
-     */
-    public int txRollbacks();
 
     /**
      * Gets metrics for data sent during data center replication, if data center replication

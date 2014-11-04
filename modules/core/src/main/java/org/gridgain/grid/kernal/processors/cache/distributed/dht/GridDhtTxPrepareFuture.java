@@ -42,7 +42,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -108,7 +108,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param last {@code True} if this is last prepare operation for node.
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
-    public GridDhtTxPrepareFuture(GridCacheContext<K, V> cctx, final GridDhtTxLocalAdapter<K, V> tx,
+    public GridDhtTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridDhtTxLocalAdapter<K, V> tx,
         GridUuid nearMiniId, Map<K, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
         super(cctx.kernalContext(), new GridReducer<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>>() {
             @Override public boolean collect(GridCacheTxEx<K, V> e) {
@@ -179,9 +179,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        K key = entry.key();
-
-        boolean ret = tx.hasWriteKey(key);
+        boolean ret = tx.hasWriteKey(entry.txKey());
 
         return ret && mapIfLocked();
     }
@@ -228,7 +226,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
                 }
             }
         }
@@ -271,7 +269,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 //            }
 //
             // If not local node.
-            if (!tx.nearNodeId().equals(cctx.nodeId())) {
+            if (!tx.nearNodeId().equals(cctx.localNodeId())) {
                 // Send reply back to near node.
                 GridCacheMessage<K, V> res = new GridNearTxPrepareResponse<>(tx.nearXidVersion(), tx.nearFutureId(),
                     nearMiniId, tx.xidVersion(), Collections.<Integer>emptySet(), t);
@@ -340,7 +338,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
                 }
             }
         }
@@ -374,7 +372,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 if (tx.optimistic())
                     tx.clearPrepareFuture(this);
 
-                if (!tx.nearNodeId().equals(cctx.nodeId())) {
+                if (!tx.nearNodeId().equals(cctx.localNodeId())) {
                     // Send reply back to originating near node.
                     GridNearTxPrepareResponse<K, V> res = new GridNearTxPrepareResponse<>(tx.nearXidVersion(),
                         tx.nearFutureId(), nearMiniId, tx.xidVersion(), tx.invalidPartitions(), this.err.get());
@@ -758,9 +756,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         boolean ret;
 
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
         while (true) {
             try {
-                Collection<GridNode> dhtNodes = cctx.dht().topology().nodes(cached.partition(), tx.topologyVersion());
+                Collection<GridNode> dhtNodes = cacheCtx.dht().topology().nodes(cached.partition(), tx.topologyVersion());
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -781,7 +781,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     log.debug("Entry has no near readers: " + entry);
 
                 // Exclude local node.
-                ret = map(entry, F.view(dhtNodes, F.remoteNodes(cctx.nodeId())), dhtMap, futDhtMap);
+                ret = map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap, futDhtMap);
 
                 // Exclude DHT nodes.
                 ret |= map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap, futNearMap);
@@ -789,7 +789,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 break;
             }
             catch (GridCacheEntryRemovedException ignore) {
-                cached = cctx.dht().entryExx(entry.key());
+                cached = cacheCtx.dht().entryExx(entry.key().key());
 
                 entry.cached(cached, cached.keyBytes());
             }
@@ -968,7 +968,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                     break;
                                 }
                                 catch (GridCacheEntryRemovedException ignore) {
-                                    GridCacheEntryEx<K, V> e = cctx.cache().peekEx(entry.key());
+                                    GridCacheEntryEx<K, V> e = entry.context().cache().peekEx(entry.key().key());
 
                                     if (e == null)
                                         break;
@@ -1003,15 +1003,17 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     }
                 }
 
-                long topVer = cctx.topology().topologyVersion();
-
-                GridDrType drType = cctx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
+                long topVer = tx.topologyVersion();
 
                 boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
                 for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
+                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(info.cacheId());
+
                     while (true) {
-                        GridCacheEntryEx<K, V> entry = cctx.cache().entryEx(info.key());
+                        GridCacheEntryEx<K, V> entry = cacheCtx.cache().entryEx(info.key());
+
+                        GridDrType drType = cacheCtx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
 
                         try {
                             if (entry.initialValue(info.value(), info.valueBytes(), info.version(),

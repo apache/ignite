@@ -316,9 +316,13 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
-        boolean deserializePortable, final GridBiInClosure<K, V> c) {
-        return cctx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty(), deserializePortable).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
+    @Override public GridFuture<Boolean> loadMissing(
+        GridCacheContext<K, V> cacheCtx,
+        boolean async, final Collection<? extends K> keys,
+        boolean deserializePortable,
+        final GridBiInClosure<K, V> c
+    ) {
+        return cacheCtx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty(), deserializePortable).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                 try {
                     Map<K, V> map = f.get();
@@ -709,16 +713,6 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
         catch (GridException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addLocalCandidates(K key, Collection<GridCacheMvccCandidate<K>> cands) {
-        /* No-op. */
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, Collection<GridCacheMvccCandidate<K>>> localCandidates() {
-        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

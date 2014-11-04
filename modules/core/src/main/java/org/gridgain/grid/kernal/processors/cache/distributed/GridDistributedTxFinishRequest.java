@@ -72,7 +72,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** Group lock key. */
     @GridDirectTransient
-    private Object grpLockKey;
+    private GridCacheTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -115,7 +115,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         Collection<GridCacheTxEntry<K, V>> recoveryWrites,
         boolean reply,
-        @Nullable Object grpLockKey
+        @Nullable GridCacheTxKey grpLockKey
     ) {
         super(xidVer, writeEntries == null ? 0 : writeEntries.size());
         assert xidVer != null;
@@ -217,7 +217,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /**
      * @return Group lock key.
      */
-    @Nullable public Object groupLockKey() {
+    @Nullable public GridCacheTxKey groupLockKey() {
         return grpLockKey;
     }
 

@@ -38,8 +38,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * never gets to real work as prepare step for pessimistic transactions is no-op
  * (locks are acquired on write or read).
  */
-public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
-    implements GridCacheFuture<GridCacheTxEx<K, V>> {
+public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepareFuture<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -111,6 +110,11 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return tx.xidVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+        return false;
     }
 
     /**
@@ -189,7 +193,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
+    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTxEx<K, V>> fut : pending()) {
                 if (isMini(fut)) {

@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -42,6 +44,39 @@ public interface GridCachePreloader<K, V> {
      * Kernal stop callback.
      */
     public void onKernalStop();
+
+    /**
+     * Callback by exchange manager when initial partition exchange is complete.
+     *
+     * @param err Error, if any happened on initial exchange.
+     */
+    public void onInitialExchangeComplete(@Nullable Throwable err);
+
+    /**
+     * Callback by exchange manager when new exchange future is added to worker.
+     */
+    public void onExchangeFutureAdded();
+
+    /**
+     * Updates last exchange future.
+     *
+     * @param lastFut Last future.
+     */
+    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut);
+
+    /**
+     * @param exchFut Exchange future to assign.
+     * @return Assignments.
+     */
+    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut);
+
+    /**
+     * Adds assignments to preloader.
+     *
+     * @param assignments Assignments to add.
+     * @param forcePreload Force preload flag.
+     */
+    public void addAssignments(GridDhtPreloaderAssignments<K, V> assignments, boolean forcePreload);
 
     /**
      * @param p Preload predicate.

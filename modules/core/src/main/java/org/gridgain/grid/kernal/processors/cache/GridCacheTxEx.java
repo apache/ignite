@@ -43,6 +43,11 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public int size();
 
     /**
+     * @return {@code True} if transaction involves caches with cache store configured.
+     */
+    public boolean storeUsed();
+
+    /**
      * @return Last recorded topology version.
      */
     public long topologyVersion();
@@ -75,7 +80,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * @return Group lock key if {@link #groupLock()} is {@code true}.
      */
-    @Nullable public Object groupLockKey();
+    @Nullable public GridCacheTxKey groupLockKey();
 
     /**
      * @return {@code True} if preparing flag was set with this call.
@@ -226,23 +231,17 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @param key Key to check.
      * @return {@code True} if key is present.
      */
-    public boolean hasReadKey(K key);
-
-    /**
-     * @param key Key to check.
-     * @return {@code True} if key is present.
-     */
-    public boolean hasWriteKey(K key);
+    public boolean hasWriteKey(GridCacheTxKey<K> key);
 
     /**
      * @return Read set.
      */
-    public Set<K> readSet();
+    public Set<GridCacheTxKey<K>> readSet();
 
     /**
      * @return Write set.
      */
-    public Set<K> writeSet();
+    public Set<GridCacheTxKey<K>> writeSet();
 
     /**
      * @return All transaction entries.
@@ -262,12 +261,12 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * @return Transaction write map.
      */
-    public Map<K, GridCacheTxEntry<K, V>> writeMap();
+    public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> writeMap();
 
     /**
      * @return Transaction read map.
      */
-    public Map<K, GridCacheTxEntry<K, V>> readMap();
+    public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> readMap();
 
     /**
      * Gets pessimistic recovery writes, i.e. values that have never been sent to remote nodes with lock requests.
@@ -293,7 +292,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @param key Key for the entry.
      * @return Entry for the key (either from write set or read set).
      */
-    @Nullable public GridCacheTxEntry<K, V> entry(K key);
+    @Nullable public GridCacheTxEntry<K, V> entry(GridCacheTxKey<K> key);
 
     /**
      * @param failFast Fail-fast flag.
@@ -302,8 +301,11 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<V> peek(boolean failFast, K key,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+     @Nullable public GridTuple<V> peek(
+         GridCacheContext<K, V> ctx,
+         boolean failFast,
+         K key,
+         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.
@@ -400,17 +402,6 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public GridFuture<GridCacheTx> rollbackAsync();
 
     /**
-     * @param key Cache key.
-     * @param cands Collection of lock candidates for that key.
-     */
-    public void addLocalCandidates(K key, Collection<GridCacheMvccCandidate<K>> cands);
-
-    /**
-     * @return All lock candidates.
-     */
-    public Map<K, Collection<GridCacheMvccCandidate<K>>> localCandidates();
-
-    /**
      * Callback invoked whenever there is a lock that has been acquired
      * by this transaction for any of the participating entries.
      *
@@ -461,7 +452,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @param key Key to check.
      * @return {@code True} if key has been removed.
      */
-    public boolean removed(K key);
+    public boolean removed(GridCacheTxKey<K> key);
 
     /**
      * Gets allowed remaining time for this transaction.

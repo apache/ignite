@@ -295,7 +295,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.key());
+            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -850,7 +850,9 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(key) : null;
+                                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+
+                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
                                         tx.addKeyMapping(key, mapping.node());
@@ -861,7 +863,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
                                         writeEntry,
-                                        inTx() ? tx.entry(key).drVersion() : null,
+                                        inTx() ? tx.entry(txKey).drVersion() : null,
                                         cctx);
 
                                     // Clear transfer required flag since we are sending message.
@@ -1031,14 +1033,24 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
 
-                                            tx.entry(k).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
+                                            tx.entry(cctx.txKey(k)).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
                                         }
 
                                         if (record) {
                                             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                                                cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
-                                                    EVT_CACHE_OBJECT_READ, newVal, newVal != null, oldVal, hasBytes,
-                                                    CU.subjectId(tx, cctx), null, inTx() ? tx.resolveTaskName() : null);
+                                                cctx.events().addEvent(
+                                                    entry.partition(),
+                                                    entry.key(),
+                                                    tx,
+                                                    null,
+                                                    EVT_CACHE_OBJECT_READ,
+                                                    newVal,
+                                                    newVal != null,
+                                                    oldVal,
+                                                    hasBytes,
+                                                    CU.subjectId(tx, cctx.shared()),
+                                                    null,
+                                                    inTx() ? tx.resolveTaskName() : null);
 
                                             cctx.cache().metrics0().onRead(oldVal != null);
                                         }
@@ -1379,7 +1391,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);
 
-                                tx.entry(k).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
+                                tx.entry(cctx.txKey(k)).filters(pass ? CU.<K, V>empty() : CU.<K, V>alwaysFalse());
                             }
 
                             entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(),
@@ -1387,9 +1399,18 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             if (retval) {
                                 if (readRecordable)
-                                    cctx.events().addEvent(entry.partition(), entry.key(), tx, null,
-                                        EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                                        oldVal, hasOldVal, CU.subjectId(tx, cctx), null,
+                                    cctx.events().addEvent(
+                                        entry.partition(),
+                                        entry.key(),
+                                        tx,
+                                        null,
+                                        EVT_CACHE_OBJECT_READ,
+                                        newVal,
+                                        newVal != null || newBytes != null,
+                                        oldVal,
+                                        hasOldVal,
+                                        CU.subjectId(tx, cctx.shared()),
+                                        null,
                                         inTx() ? tx.resolveTaskName() : null);
 
                                 cctx.cache().metrics0().onRead(false);

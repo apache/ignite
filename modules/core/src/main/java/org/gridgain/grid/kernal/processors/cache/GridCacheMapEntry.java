@@ -1384,7 +1384,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         // If entry was not marked obsolete, then removed lock
                         // will be registered whenever removeLock is called.
-                        cctx.mvcc().addRemoved(obsoleteVer);
+                        cctx.mvcc().addRemoved(cctx, obsoleteVer);
 
                         if (log.isDebugEnabled())
                             log.debug("Entry was marked obsolete: " + this);
@@ -2490,6 +2490,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheTxKey<K> txKey() {
+        return cctx.txKey(key);
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion version() throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -2691,7 +2696,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private void groupLockSanityCheck(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException, GridException {
         assert tx.groupLock();
 
-        GridCacheTxEntry<K, V> txEntry = tx.entry(key);
+        GridCacheTxEntry<K, V> txEntry = tx.entry(txKey());
 
         if (txEntry.groupLockEntry()) {
             if (lockedByAny())
@@ -2732,7 +2737,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Nullable private GridTuple<V> peekTx(boolean failFast,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException {
-        return tx == null ? null : tx.peek(failFast, key, filter);
+        return tx == null ? null : tx.peek(cctx, failFast, key, filter);
     }
 
     /**
@@ -3236,7 +3241,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             tx = cctx.tm().localTx();
 
         if (tx != null) {
-            long time = tx.entryExpireTime(key);
+            long time = tx.entryExpireTime(txKey());
 
             if (time > 0)
                 return time;
@@ -3322,7 +3327,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             tx = cctx.tm().localTx();
 
         if (tx != null) {
-            long entryTtl = tx.entryTtl(key);
+            long entryTtl = tx.entryTtl(txKey());
 
             if (entryTtl > 0)
                 return entryTtl;
@@ -3689,7 +3694,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheTxEx<K, V> tx = cctx.tm().localTxx();
 
-        return tx == null || !tx.removed(key);
+        return tx == null || !tx.removed(txKey());
     }
 
     /**

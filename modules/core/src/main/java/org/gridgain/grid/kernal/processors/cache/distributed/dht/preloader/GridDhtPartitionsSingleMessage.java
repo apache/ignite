@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Information about partitions of a single node.
@@ -30,7 +31,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private GridDhtPartitionMap parts;
+    private Map<Integer, GridDhtPartitionMap> parts = new HashMap<>();
 
     /** Serialized partitions. */
     private byte[] partsBytes;
@@ -44,20 +45,26 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
     /**
      * @param exchId Exchange ID.
-     * @param parts Local partitions.
      * @param lastVer Last version.
      */
-    public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId, GridDhtPartitionMap parts,
-        @Nullable GridCacheVersion lastVer) {
+    public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         super(exchId, lastVer);
+    }
 
-        this.parts = parts;
+    /**
+     * Adds partition map to this message.
+     *
+     * @param cacheId Cache ID to add local partition for.
+     * @param locMap Local partition map.
+     */
+    public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap locMap) {
+        parts.put(cacheId, locMap);
     }
 
     /**
      * @return Local partitions.
      */
-    public GridDhtPartitionMap partitions() {
+    public Map<Integer, GridDhtPartitionMap> partitions() {
         return parts;
     }
 
