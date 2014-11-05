@@ -312,8 +312,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         err.addSuppressed(e);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (err != null)
@@ -332,7 +333,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)

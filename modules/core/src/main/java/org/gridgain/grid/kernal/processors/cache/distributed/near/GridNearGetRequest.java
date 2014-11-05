@@ -172,7 +172,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param ctx Cache context.
      * @throws GridException If failed.
      */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         assert ctx != null;
@@ -190,7 +190,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param ldr Loader.
      * @throws GridException If failed.
      */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

@@ -72,73 +72,49 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         preldr.start();
 
-        ctx.io().addHandler(GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearGetRequest<K, V> req) {
                 processNearGetRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridDhtTxPrepareRequest.class, new CI2<UUID, GridDhtTxPrepareRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtTxPrepareRequest<K, V> req) {
-                processDhtTxPrepareRequest(nodeId, req);
-            }
-        });
-
-        ctx.io().addHandler(GridDhtTxPrepareResponse.class, new CI2<UUID, GridDhtTxPrepareResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtTxPrepareResponse.class, new CI2<UUID, GridDhtTxPrepareResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
                 processDhtTxPrepareResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(GridNearTxPrepareRequest.class, new CI2<UUID, GridNearTxPrepareRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearTxPrepareRequest<K, V> req) {
-                processNearTxPrepareRequest(nodeId, req);
-            }
-        });
-
-        ctx.io().addHandler(GridNearTxFinishRequest.class, new CI2<UUID, GridNearTxFinishRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
-                processNearTxFinishRequest(nodeId, req);
-            }
-        });
-
-        ctx.io().addHandler(GridDhtTxFinishRequest.class, new CI2<UUID, GridDhtTxFinishRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtTxFinishRequest<K, V> req) {
-                processDhtTxFinishRequest(nodeId, req);
-            }
-        });
-
-        ctx.io().addHandler(GridDhtTxFinishResponse.class, new CI2<UUID, GridDhtTxFinishResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtTxFinishResponse.class, new CI2<UUID, GridDhtTxFinishResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtTxFinishResponse<K, V> req) {
                 processDhtTxFinishResponse(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearLockRequest<K, V> req) {
                 processNearLockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtLockRequest<K, V> req) {
                 processDhtLockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtLockResponse<K, V> req) {
                 processDhtLockResponse(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearUnlockRequest<K, V> req) {
                 processNearUnlockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtUnlockRequest<K, V> req) {
                 processDhtUnlockRequest(nodeId, req);
             }
@@ -147,16 +123,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /** {@inheritDoc} */
     @Override public abstract GridNearTransactionalCache<K, V> near();
-
-    /** {@inheritDoc} */
-    @Override public void dgc() {
-        ctx.dgc().dgc();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
-    }
 
     /**
      * @param nodeId Node ID.
@@ -205,6 +171,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             if (key == null)
                 continue;
+
+            GridCacheTxKey<K> txKey = ctx.txKey(key);
 
             GridCacheTxEntry<K, V> writeEntry = writes == null ? null : writes.get(i);
 
@@ -258,7 +226,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.isolation(),
                                     req.isInvalidate(),
                                     req.timeout(),
-                                    ctx,
+                                    ctx.shared(),
                                     req.txSize(),
                                     req.groupLockKey(),
                                     req.subjectId(),
@@ -272,8 +240,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             }
 
                             tx.addWrite(
+                                ctx,
                                 writeEntry == null ? NOOP : writeEntry.op(),
-                                key,
+                                txKey,
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
                                 writeEntry == null ? null : writeEntry.value(),
                                 writeEntry == null ? null : writeEntry.valueBytes(),
@@ -281,7 +250,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 drVer);
 
                             if (req.groupLock())
-                                tx.groupLockKey(key);
+                                tx.groupLockKey(txKey);
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -318,7 +287,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             entry.removeLock(req.version());
 
                             if (tx != null) {
-                                tx.clearEntry(entry.key());
+                                tx.clearEntry(txKey);
 
                                 // If there is a concurrent salvage, there could be a case when tx is moved to
                                 // COMMITTING state, but this lock is never acquired.
@@ -349,7 +318,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         obsoleteNearEntry(key, req.version());
 
                     if (tx != null) {
-                        tx.clearEntry(key);
+                        tx.clearEntry(txKey);
 
                         if (log.isDebugEnabled())
                             log.debug("Cleared invalid entry from remote transaction (will skip) [entry=" +
@@ -366,7 +335,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         log.debug("Received entry removed exception (will retry on renewed entry): " + entry);
 
                     if (tx != null) {
-                        tx.clearEntry(entry.key());
+                        tx.clearEntry(txKey);
 
                         if (log.isDebugEnabled())
                             log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +
@@ -852,7 +821,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.threadId(),
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
-                                    ctx,
+                                    ctx.shared(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.timeout(),
@@ -1056,7 +1025,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             /*update-metrics*/true,
                                             /*event notification*/req.returnValue(i),
                                             /*temporary*/false,
-                                            CU.subjectId(tx, ctx),
+                                            CU.subjectId(tx, ctx.shared()),
                                             null,
                                             tx != null ? tx.resolveTaskName() : null,
                                             CU.<K, V>empty());
@@ -1072,7 +1041,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     boolean filterPassed = false;
 
                                     if (tx != null && tx.onePhaseCommit()) {
-                                        GridCacheTxEntry<K, V> writeEntry = tx.entry(e.key());
+                                        GridCacheTxEntry<K, V> writeEntry = tx.entry(ctx.txKey(e.key()));
 
                                         assert writeEntry != null :
                                             "Missing tx entry for locked cache entry: " + e;
@@ -1471,7 +1440,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 if (keyBytes != null)
                     for (T2<K, byte[]> key : keyBytes)
-                        req.addNearKey(key.get1(), key.get2(), ctx);
+                        req.addNearKey(key.get1(), key.get2(), ctx.shared());
 
                 req.completedVersions(committed, rolledback);
 
@@ -1499,7 +1468,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 try {
                     for (T2<K, byte[]> key : keyBytes)
-                        req.addNearKey(key.get1(), key.get2(), ctx);
+                        req.addNearKey(key.get1(), key.get2(), ctx.shared());
 
                     req.completedVersions(committed, rolledback);
 

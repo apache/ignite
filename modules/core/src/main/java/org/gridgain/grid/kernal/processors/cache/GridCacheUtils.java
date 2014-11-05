@@ -1150,7 +1150,7 @@ public class GridCacheUtils {
      * @throws GridException If marshalling failed.
      */
     @SuppressWarnings("unchecked")
-    public static byte[] marshal(GridCacheContext ctx, Object obj)
+    public static byte[] marshal(GridCacheSharedContext ctx, Object obj)
         throws GridException {
         assert ctx != null;
 
@@ -1245,6 +1245,20 @@ public class GridCacheUtils {
 
         if (ctx.isNear())
             ctx.near().dht().context().evicts().unwind();
+    }
+
+    /**
+     * @param ctx Shared cache context.
+     */
+    public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
+        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
+            assert ctx != null;
+
+            cacheCtx.evicts().unwind();
+
+            if (cacheCtx.isNear())
+                cacheCtx.near().dht().context().evicts().unwind();
+        }
     }
 
     /**

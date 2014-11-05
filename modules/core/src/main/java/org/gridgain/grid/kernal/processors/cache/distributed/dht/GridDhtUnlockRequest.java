@@ -71,7 +71,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheContext<K, V> ctx) throws GridException {
+    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws GridException {
         if (ctx.deploymentEnabled())
             prepareObject(key, ctx);
 
@@ -82,7 +82,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearKeyBytes != null)

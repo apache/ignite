@@ -67,8 +67,9 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
         this.topVer = topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (entries != null) {
@@ -80,7 +81,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (entriesBytes != null)

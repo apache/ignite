@@ -10,11 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -42,12 +40,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
     /** Number of retries using to send messages. */
     private int retryCnt;
-
-    /** Grid topic. */
-    private GridTopic gridTopic;
-
-    /** Topic. */
-    private Object topic;
 
     /** Indexed class handlers. */
     private GridBiInClosure[] idxClsHandlers = new GridBiInClosure[MAX_CACHE_MSG_LOOKUP_INDEX];
@@ -141,18 +133,13 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         depEnabled = cctx.gridDeploy().enabled();
 
-        if (F.isEmpty(cacheName))
-            gridTopic = TOPIC_CACHE;
-        else
-            topic = TOPIC_CACHE.topic(cacheName);
-
-        cctx.gridIO().addMessageListener(gridTopic != null ? gridTopic : topic, lsnr);
+        cctx.gridIO().addMessageListener(TOPIC_CACHE, lsnr);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override protected void onKernalStop0(boolean cancel) {
-        cctx.gridIO().removeMessageListener(gridTopic != null ? gridTopic : topic);
+        cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
         for (Object ordTopic : orderedHandlers.keySet())
             cctx.gridIO().removeMessageListener(ordTopic);
@@ -211,7 +198,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
-                GridFuture<?> startFut = cctx.preloader().startFuture();
+                GridFuture<?> startFut = startFuture(cacheMsg);
 
                 if (startFut.isDone())
                     processMessage(nodeId, cacheMsg, c);
@@ -271,6 +258,16 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             rw.readUnlock();
         }
+    }
+
+    /**
+     * @param cacheMsg Cache message to get start future.
+     * @return Preloader start future.
+     */
+    private GridFuture<Void> startFuture(GridCacheMessage<K, V> cacheMsg) {
+        int cacheId = cacheMsg.cacheId();
+
+        return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();
     }
 
     /**
@@ -368,13 +365,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 else
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
-                if (gridTopic != null)
-                    cctx.gridIO().send(node, gridTopic, msg0, plc);
-                else {
-                    assert topic != null;
-
-                    cctx.gridIO().send(node, topic, msg0, plc);
-                }
+                cctx.gridIO().send(node, TOPIC_CACHE, msg0, plc);
 
                 return;
             }
@@ -446,13 +437,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 else
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
-                if (gridTopic != null)
-                    cctx.gridIO().send(nodesView, gridTopic, msg0, plc);
-                else {
-                    assert topic != null;
-
-                    cctx.gridIO().send(nodesView, topic, msg0, plc);
-                }
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, plc);
 
                 boolean added = false;
 
@@ -609,6 +594,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     @SuppressWarnings({"unchecked"})
     public void addHandler(
+        int cacheId,
         Class<? extends GridCacheMessage> type,
         GridBiInClosure<UUID, ? extends GridCacheMessage<K, V>> c) {
         int msgIdx = messageIndex(type);
@@ -622,13 +608,16 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             return;
         }
         else {
-            if (clsHandlers.putIfAbsent(type, (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
-                assert false : "Handler for class already registered [cls=" + type + ", old=" + clsHandlers.get(type) +
-                    ", new=" + c + ']';
+            ListenerKey key = new ListenerKey(cacheId, type);
+
+            if (clsHandlers.putIfAbsent(key,
+                (GridBiInClosure<UUID, GridCacheMessage<K, V>>)c) != null)
+                assert false : "Handler for class already registered [cacheId=" + cacheId + ", cls=" + type +
+                    ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
 
         if (log != null && log.isDebugEnabled())
-            log.debug("Registered cache communication handler [cacheName=" + cctx.name() + ", type=" + type +
+            log.debug("Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
                 ", msgIdx=" + msgIdx + ", handler=" + c + ']');
     }
 
@@ -672,11 +661,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (log != null && log.isDebugEnabled()) {
             if (res) {
                 log.debug("Removed cache communication handler " +
-                    "[cacheName=" + cctx.name() + ", type=" + type + ", handler=" + c + ']');
+                    "[type=" + type + ", handler=" + c + ']');
             }
             else {
                 log.debug("Cache communication handler is not registered " +
-                    "[cacheName=" + cctx.name() + ", type=" + type + ", handler=" + c + ']');
+                    "[type=" + type + ", handler=" + c + ']');
             }
         }
     }
@@ -771,7 +760,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ']');
         X.println(">>>   clsHandlersSize: " + clsHandlers.size());
         X.println(">>>   orderedHandlersSize: " + orderedHandlers.size());
     }

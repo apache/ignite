@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
@@ -23,10 +22,10 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.READ_COMMITTED;
-import static org.gridgain.grid.cache.GridCacheTxState.PREPARED;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.USER_FINISH;
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -60,7 +59,7 @@ public class GridCacheTxHandler<K, V> {
 
         try {
             for (GridCacheTxEntry<K, V> e : F.concat(false, req.reads(), req.writes()))
-                e.unmarshal(ctx.cacheContext(e.key().cacheId()), ctx.deploy().globalLoader());
+                e.unmarshal(ctx, ctx.deploy().globalLoader());
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx.kernalContext(), e);

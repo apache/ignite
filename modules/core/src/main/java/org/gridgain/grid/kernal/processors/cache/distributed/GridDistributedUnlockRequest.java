@@ -73,7 +73,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         boolean depEnabled = ctx.deploymentEnabled();
 
         if (depEnabled)
-            prepareObject(key, ctx);
+            prepareObject(key, ctx.shared());
 
         if (keys == null)
             keys = new ArrayList<>(keysCount());
@@ -86,8 +86,9 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         keyBytes.add(bytes);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
@@ -95,7 +96,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null && !F.isEmpty(keyBytes))

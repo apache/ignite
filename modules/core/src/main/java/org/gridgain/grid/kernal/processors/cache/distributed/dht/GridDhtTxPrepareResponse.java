@@ -31,7 +31,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> nearEvicted;
+    private Collection<GridCacheTxKey<K>> nearEvicted;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -105,7 +105,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<K> nearEvicted) {
+    public void nearEvicted(Collection<GridCacheTxKey<K>> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -165,8 +165,9 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         preloadEntries.add(info);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null)
@@ -177,7 +178,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         // Unmarshal even if deployment is disabled, since we could get bytes initially.

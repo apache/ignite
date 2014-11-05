@@ -86,8 +86,9 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
         return nearThreadId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (err != null)
@@ -95,7 +96,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)

@@ -61,6 +61,9 @@ public class GridCacheSharedContext<K, V> {
     /** Tx metrics. */
     private GridCacheTxMetricsAdapter txMetrics;
 
+    /** Preloaders start future. */
+    private GridFuture<Void> preloadersStartFut;
+
     /**
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
@@ -89,7 +92,7 @@ public class GridCacheSharedContext<K, V> {
      * Gets cache context by cache ID.
      *
      * @param cacheId Cache ID.
-     * @return
+     * @return Cache context.
      */
     public GridCacheContext<K, V> cacheContext(int cacheId) {
         return ctxMap.get(cacheId);
@@ -122,6 +125,43 @@ public class GridCacheSharedContext<K, V> {
         long timeout = Math.max(t1, t2);
 
         return timeout < 0 ? Long.MAX_VALUE : timeout;
+    }
+
+    /**
+     * @return Deployment enabled flag.
+     */
+    public boolean deploymentEnabled() {
+        return gridConfig().isPeerClassLoadingEnabled();
+    }
+
+    /**
+     * @return Compound preloaders start future.
+     */
+    public GridFuture<Void> preloadersStartFuture() {
+        if (preloadersStartFut == null) {
+            GridCompoundFuture<Void, Void> compound = null;
+
+            for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
+                GridFuture<Void> startFut = cacheCtx.preloader().startFuture();
+
+                if (!startFut.isDone()) {
+                    if (compound == null)
+                        compound = new GridCompoundFuture<>();
+
+                    compound.add(startFut);
+                }
+            }
+
+            if (compound != null) {
+                compound.markInitialized();
+
+                return preloadersStartFut = compound;
+            }
+            else
+                return preloadersStartFut = new GridFinishedFuture<>();
+        }
+        else
+            return preloadersStartFut;
     }
 
     /**

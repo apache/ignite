@@ -33,7 +33,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private static final long serialVersionUID = 0L;
 
     /** Evicted keys. */
-    private Collection<K> evicted = new LinkedList<>();
+    private Collection<GridCacheTxKey<K>> evicted = new LinkedList<>();
 
     /** Near node ID. */
     private UUID nearNodeId;
@@ -90,7 +90,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         Collection<GridCacheTxEntry<K, V>> writeEntries,
         GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) throws GridException {
@@ -155,7 +155,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         @Nullable GridCacheVersion drVer,
         GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) throws GridException {
@@ -243,7 +243,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     /**
      * @return Evicted keys.
      */
-    public Collection<K> evicted() {
+    public Collection<GridCacheTxKey<K>> evicted() {
         return evicted;
     }
 
@@ -354,13 +354,15 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
      */
-    void addWrite(K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
+    void addWrite(GridCacheTxKey<K> key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
         @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
-        GridNearCacheEntry<K, V> cached = cctx.near().entryExx(key, topologyVersion());
+        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(key.cacheId());// TODO GG-9141 pass context from outside?
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached, drVer);
+        GridNearCacheEntry<K, V> cached = cacheCtx.near().entryExx(key.key(), topologyVersion());
+
+        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, NOOP, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);

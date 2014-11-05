@@ -153,8 +153,9 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (entries != null) {
@@ -168,13 +169,13 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (entriesBytes != null) {
             entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
 
-            unmarshalInfos(entries, ctx, ldr);
+            unmarshalInfos(entries, ctx.cacheContext(cacheId()), ldr);
         }
 
         if (errBytes != null)

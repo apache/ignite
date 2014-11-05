@@ -275,7 +275,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         GridCacheContext<K, V> ctx
     ) throws GridException {
         if (ctx.deploymentEnabled())
-            prepareObject(key, ctx);
+            prepareObject(key, ctx.shared());
 
         if (keyBytes != null) {
             if (this.keyBytes == null)
@@ -325,7 +325,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Group lock key.
      */
-    @Nullable public Object groupLockKey() {
+    @Nullable public GridCacheTxKey groupLockKey() {
         return grpLockKey;
     }
 
@@ -376,8 +376,9 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         return drVersByIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (grpLockKey != null && grpLockKeyBytes == null) {
@@ -395,7 +396,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

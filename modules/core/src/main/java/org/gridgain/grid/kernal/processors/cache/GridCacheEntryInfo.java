@@ -200,7 +200,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @param ctx Cache context.
      * @throws GridException In case of error.
      */
-    public void marshal(GridCacheContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         boolean depEnabled = ctx.gridDeploy().enabled();
 
         boolean valIsByteArr = val != null && val instanceof byte[];

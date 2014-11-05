@@ -98,8 +98,9 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         _clone.affAssignmentBytes = affAssignmentBytes;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (affAssignment != null)
@@ -107,7 +108,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (affAssignmentBytes != null)

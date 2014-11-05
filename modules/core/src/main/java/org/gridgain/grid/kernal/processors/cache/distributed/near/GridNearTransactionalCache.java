@@ -24,7 +24,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 
@@ -56,39 +55,23 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     @Override public void start() throws GridException {
         super.start();
 
-        ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
                 processGetResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(GridNearTxPrepareResponse.class, new CI2<UUID, GridNearTxPrepareResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
-                processPrepareResponse(nodeId, res);
-            }
-        });
-
-        ctx.io().addHandler(GridNearTxFinishResponse.class, new CI2<UUID, GridNearTxFinishResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearTxFinishResponse.class, new CI2<UUID, GridNearTxFinishResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
                 processFinishResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearLockResponse<K, V> res) {
                 processLockResponse(nodeId, res);
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc() {
-        ctx.dgc().dgc();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        ctx.dgc().dgc(suspectLockTimeout, global, rmvLocks);
     }
 
     /**
@@ -125,7 +108,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public GridFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(keys, entry, deserializePortable, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
         }
@@ -146,7 +129,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx), tx.resolveTaskName(), deserializePortable);
+            CU.subjectId(tx, ctx.shared()), tx.resolveTaskName(), deserializePortable);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -244,6 +227,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 if (key == null)
                     continue;
 
+                GridCacheTxKey<K> txKey = ctx.txKey(key);
+
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
                 Collection<GridCacheMvccCandidate<K>> cands = req.candidatesByIndex(i);
@@ -266,7 +251,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 tx = ctx.tm().tx(req.version());
 
                                 if (tx != null)
-                                    tx.addWrite(key, bytes, null/*Value.*/, null/*Value bytes.*/, drVer);
+                                    tx.addWrite(txKey, bytes, null/*Value.*/, null/*Value bytes.*/, drVer);
                                 else {
                                     tx = new GridNearTxRemote<>(
                                         nodeId,
@@ -279,12 +264,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.isolation(),
                                         req.isInvalidate(),
                                         req.timeout(),
-                                        key,
+                                        txKey,
                                         bytes,
                                         null, // Value.
                                         null, // Value bytes.
                                         drVer,
-                                        ctx,
+                                        ctx.shared(),
                                         req.txSize(),
                                         req.groupLockKey(),
                                         req.subjectId(),
@@ -292,7 +277,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     );
 
                                     if (req.groupLock())
-                                        tx.groupLockKey(key);
+                                        tx.groupLockKey(txKey);
 
                                     if (tx.empty()) {
                                         if (evicted == null)
@@ -360,7 +345,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             log.debug("Received entry removed exception (will retry on renewed entry): " + entry);
 
                         if (tx != null) {
-                            tx.clearEntry(entry.key());
+                            tx.clearEntry(txKey);
 
                             if (log.isDebugEnabled())
                                 log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +

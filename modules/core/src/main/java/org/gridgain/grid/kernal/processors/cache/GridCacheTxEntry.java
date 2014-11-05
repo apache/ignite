@@ -680,7 +680,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void marshal(GridCacheContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (keyBytes == null)
@@ -695,7 +695,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                 filterBytes = CU.marshal(ctx, filters);
         }
 
-        val.marshal(ctx, depEnabled);
+        val.marshal(ctx, context(), depEnabled);
     }
 
     /**
@@ -705,8 +705,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param clsLdr Class loader.
      * @throws GridException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
-        this.ctx = ctx;
+    public void unmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
+        this.ctx = ctx.cacheContext(key.cacheId());
 
         if (depEnabled) {
             // Don't unmarshal more than once by checking key for null.
@@ -725,7 +725,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             }
         }
 
-        val.unmarshal(ctx, clsLdr, depEnabled);
+        val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
 
     /** {@inheritDoc} */
@@ -937,13 +937,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
          * @param depEnabled Deployment enabled flag.
          * @throws GridException If marshaling failed.
          */
-        public void marshal(GridCacheContext<K, V> ctx, boolean depEnabled) throws GridException {
+        public void marshal(GridCacheSharedContext<K, V> sharedCtx, GridCacheContext<K, V> ctx, boolean depEnabled)
+            throws GridException {
             boolean valIsByteArr = val != null && val instanceof byte[];
 
             // Do not send write values to remote nodes.
             if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
                 (depEnabled || !ctx.isUnmarshalValues()))
-                valBytes = CU.marshal(ctx, val);
+                valBytes = CU.marshal(sharedCtx, val);
 
             valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
         }

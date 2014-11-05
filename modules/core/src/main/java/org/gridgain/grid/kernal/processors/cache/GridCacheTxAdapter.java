@@ -189,6 +189,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Task name. */
     protected String taskName;
 
+    /** Store used flag. */
+    protected boolean storeUsed;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -404,6 +407,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      */
     @Override public Collection<GridCacheTxEntry<K, V>> recoveryWrites() {
         return recoveryWrites;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean storeUsed() {
+        return storeUsed;
     }
 
     /**
@@ -1129,7 +1137,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
-                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+                boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
 
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this,

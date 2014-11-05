@@ -65,15 +65,16 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         rejectedKeyBytes = marshalCollection(rejectedKeys, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         rejectedKeys = unmarshalCollection(rejectedKeyBytes, ctx, ldr);

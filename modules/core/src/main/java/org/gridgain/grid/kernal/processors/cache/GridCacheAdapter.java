@@ -600,28 +600,28 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public void start() throws GridException {
         if (!ctx.isNear()) {
-            ctx.io().addHandler(GridCacheOptimisticCheckPreparedTxRequest.class,
+            ctx.io().addHandler(ctx.cacheId(), GridCacheOptimisticCheckPreparedTxRequest.class,
                 new CI2<UUID, GridCacheOptimisticCheckPreparedTxRequest<K, V>>() {
                     @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest<K, V> req) {
                         processCheckPreparedTxRequest(nodeId, req);
                     }
                 });
 
-            ctx.io().addHandler(GridCacheOptimisticCheckPreparedTxResponse.class,
+            ctx.io().addHandler(ctx.cacheId(), GridCacheOptimisticCheckPreparedTxResponse.class,
                 new CI2<UUID, GridCacheOptimisticCheckPreparedTxResponse<K, V>>() {
                     @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse<K, V> res) {
                         processCheckPreparedTxResponse(nodeId, res);
                     }
                 });
 
-            ctx.io().addHandler(GridCachePessimisticCheckCommittedTxRequest.class,
+            ctx.io().addHandler(ctx.cacheId(), GridCachePessimisticCheckCommittedTxRequest.class,
                 new CI2<UUID, GridCachePessimisticCheckCommittedTxRequest<K, V>>() {
                     @Override public void apply(UUID nodeId, GridCachePessimisticCheckCommittedTxRequest<K, V> req) {
                         processCheckCommittedTxRequest(nodeId, req);
                     }
                 });
 
-            ctx.io().addHandler(GridCachePessimisticCheckCommittedTxResponse.class,
+            ctx.io().addHandler(ctx.cacheId(), GridCachePessimisticCheckCommittedTxResponse.class,
                 new CI2<UUID, GridCachePessimisticCheckCommittedTxResponse<K, V>>() {
                     @Override public void apply(UUID nodeId, GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
                         processCheckCommittedTxResponse(nodeId, res);
@@ -4003,16 +4003,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
 
         metrics = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

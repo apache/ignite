@@ -84,7 +84,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Group lock key, if any. */
     @GridToStringInclude
     @GridDirectTransient
-    private Object grpLockKey;
+    private GridCacheTxKey grpLockKey;
 
     /** Group lock key bytes. */
     @GridToStringExclude
@@ -122,7 +122,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         GridCacheTxEx<K, V> tx,
         @Nullable Collection<GridCacheTxEntry<K, V>> reads,
         Collection<GridCacheTxEntry<K, V>> writes,
-        Object grpLockKey,
+        GridCacheTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes
     ) {
@@ -257,8 +257,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         return txSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (writes != null) {
@@ -290,7 +291,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (writesBytes != null) {

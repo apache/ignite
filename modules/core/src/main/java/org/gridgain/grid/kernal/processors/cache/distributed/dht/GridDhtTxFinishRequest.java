@@ -126,7 +126,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheTxEntry<K, V>> recoverWrites,
         boolean reply,
         boolean onePhaseCommit,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -241,8 +241,9 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearWrites != null) {
@@ -256,7 +257,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearWritesBytes != null) {

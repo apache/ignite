@@ -92,7 +92,7 @@ public interface GridCachePreloader<K, V> {
     /**
      * @return Future which will complete when preloader is safe to use.
      */
-    public GridFuture<?> startFuture();
+    public GridFuture<Void> startFuture();
 
     /**
      * @return Future which will complete when preloading is finished.

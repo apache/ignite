@@ -181,7 +181,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws GridException If failed.
      */
-    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheContext<K, V> ctx) throws GridException {
+    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws GridException {
         assert info != null;
 
         marshalInfo(info, ctx);
@@ -207,7 +207,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws GridException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheContext<K, V> ctx) throws GridException {
+    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws GridException {
         assert info != null;
         assert info.keyBytes() != null;
         assert info.valueBytes() != null || info.value() instanceof byte[] :
@@ -231,23 +231,26 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
         serInfo.add(bytes);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         infoBytes = ctx.marshaller().marshal(infoBytesMap);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         infoBytesMap = ctx.marshaller().unmarshal(infoBytes, ldr);
 
         for (Map.Entry<Integer, Collection<byte[]>> e : infoBytesMap.entrySet()) {
+            int cacheId = e.getKey();
+
             Collection<GridCacheEntryInfo<K, V>> entries = unmarshalCollection(e.getValue(), ctx, ldr);
 
-            unmarshalInfos(entries, ctx, ldr);
+            unmarshalInfos(entries, ctx.cacheContext(cacheId), ldr);
 
             infos.put(e.getKey(), entries);
         }

@@ -182,7 +182,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheContext<K, V> ctx) throws GridException {
+    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws GridException {
         if (ctx.deploymentEnabled())
             prepareObject(key, ctx);
 
@@ -279,8 +279,9 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         return miniId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         assert F.isEmpty(nearKeys) || !F.isEmpty(nearKeyBytes);
@@ -290,7 +291,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearKeys == null && nearKeyBytes != null)

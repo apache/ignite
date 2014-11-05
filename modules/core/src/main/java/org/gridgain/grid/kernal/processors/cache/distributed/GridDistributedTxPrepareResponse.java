@@ -96,8 +96,9 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
         this.cands = cands;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (candsBytes == null && cands != null) {
@@ -114,7 +115,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (candsBytes != null && cands == null)

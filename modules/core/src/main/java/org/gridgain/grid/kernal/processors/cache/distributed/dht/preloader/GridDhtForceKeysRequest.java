@@ -120,8 +120,9 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (keyBytes == null)
@@ -129,7 +130,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

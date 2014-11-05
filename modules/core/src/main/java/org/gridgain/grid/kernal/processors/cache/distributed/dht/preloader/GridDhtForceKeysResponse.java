@@ -124,8 +124,9 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
         infos.add(info);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (missedKeys != null && missedKeyBytes == null)
@@ -139,7 +140,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (missedKeys == null && missedKeyBytes != null)
@@ -148,7 +149,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
         if (infosBytes != null) {
             infos = ctx.marshaller().unmarshal(infosBytes, ldr);
 
-            unmarshalInfos(infos, ctx, ldr);
+            unmarshalInfos(infos, ctx.cacheContext(cacheId()), ldr);
         }
     }
 

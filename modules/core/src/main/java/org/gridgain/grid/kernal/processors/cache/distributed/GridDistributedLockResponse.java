@@ -180,7 +180,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      */
     public void addValueBytes(V val, @Nullable byte[] valBytes, GridCacheContext<K, V> ctx) throws GridException {
         if (ctx.deploymentEnabled())
-            prepareObject(val, ctx);
+            prepareObject(val, ctx.shared());
 
         GridCacheValueBytes vb = null;
 
@@ -227,8 +227,9 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(valBytes) && !F.isEmpty(vals))
@@ -239,7 +240,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (F.isEmpty(vals) && !F.isEmpty(valBytes))

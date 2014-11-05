@@ -153,8 +153,9 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null && nearEvicted != null)
@@ -165,7 +166,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         super.finishUnmarshal(ctx, ldr);
 
         if (nearEvicted == null && nearEvictedBytes != null)
