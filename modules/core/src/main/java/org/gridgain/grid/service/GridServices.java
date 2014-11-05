@@ -312,10 +312,10 @@ public interface GridServices {
      * then local instance is returned, otherwise, a remote proxy is dynamically
      * created and provided for the specified service.
      *
-     * @param svc Interface for the service.
+     * @param svcItf Interface for the service.
      * @param sticky Whether or not GridGain should always contact the same remote
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException;
+    <T> T serviceProxy(String name, Class<T> svcItf, boolean sticky) throws GridRuntimeException;
 }
