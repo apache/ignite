@@ -166,7 +166,6 @@ class GridServiceProxy<T> implements Serializable {
                     throw new GridRuntimeException(e);
                 }
             }
-
         }
 
         /**

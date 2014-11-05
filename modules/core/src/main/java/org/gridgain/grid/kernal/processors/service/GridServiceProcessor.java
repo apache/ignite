@@ -543,11 +543,32 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      */
+    @SuppressWarnings("unchecked")
     public <T> T serviceProxy(GridProjection prj, String name, Class<T> svcItf,
         boolean sticky) throws GridRuntimeException {
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
 
+        if (hasLocalNode(prj)) {
+            GridServiceContextImpl ctx = serviceContext(name);
+
+            if (ctx != null)
+                return (T)ctx.service();
+        }
+
         return new GridServiceProxy<>(prj, name, svcItf, sticky, ctx).proxy();
+    }
+
+    /**
+     * @param prj Grid nodes projection.
+     * @return Whether given projection contains any local node.
+     */
+    private boolean hasLocalNode(GridProjection prj) {
+        for (GridNode n : prj.nodes()) {
+            if (n.isLocal())
+                return true;
+        }
+
+        return false;
     }
 
     /**
