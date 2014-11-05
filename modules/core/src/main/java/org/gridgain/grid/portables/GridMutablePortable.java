@@ -11,6 +11,10 @@ package org.gridgain.grid.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
+import java.util.*;
+import java.util.Date;
+
 /**
  * A wrapper for {@code GridPortableObject} that allow to create copy of the portable object with some modifications.
  *
@@ -19,9 +23,9 @@ import org.jetbrains.annotations.*;
  * <pre name=code class=java>
  * GridMutablePortableObject mutableObj = portableObj.toMutable();
  *
- * String firstName = mutableObj.fieldValue("firstName");
- * String lastName = mutableObj.fieldValue("firstName");
- * mutableObj.fieldValue("fullName", firstName + " " + lastName)
+ * String firstName = mutableObj.field("firstName");
+ * String lastName = mutableObj.field("firstName");
+ * mutableObj.field("fullName", firstName + " " + lastName)
  *
  * portableObj = mutableObj.toPortableObject();
  * </pre>
@@ -29,7 +33,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * This class is not thread-safe.
  */
-public interface GridMutablePortable extends GridPortableWriter {
+public interface GridMutablePortable {
     /**
      * Returns the value of the specified field.
      * If the value is another portable object instance of {@code GridMutablePortableObject} will be returned.
@@ -38,7 +42,7 @@ public interface GridMutablePortable extends GridPortableWriter {
      * @param fldName Field name.
      * @return Value of the field.
      */
-    public <F> F fieldValue(String fldName);
+    public <F> F field(String fldName);
 
     /**
      * Sets field value.
@@ -46,7 +50,7 @@ public interface GridMutablePortable extends GridPortableWriter {
      * @param fldName Field name.
      * @param val Field value.
      */
-    public void fieldValue(String fldName, @Nullable Object val);
+    public void field(String fldName, @Nullable Object val);
 
     /**
      * @param hashCode Hash code to set.
@@ -67,4 +71,207 @@ public interface GridMutablePortable extends GridPortableWriter {
      * @return New portable object.
      */
     public GridPortableObject toPortableObject();
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldByte(String fieldName, byte val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldShort(String fieldName, short val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldInt(String fieldName, int val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldLong(String fieldName, long val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldFloat(String fieldName, float val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldDouble(String fieldName, double val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldChar(String fieldName, char val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldBoolean(String fieldName, boolean val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldString(String fieldName, @Nullable String val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val UUID to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldUuid(String fieldName, @Nullable UUID val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Date to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldDate(String fieldName, @Nullable Date val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Timestamp to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldTimestamp(String fieldName, @Nullable Timestamp val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param obj Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldObject(String fieldName, @Nullable Object obj) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldByteArray(String fieldName, @Nullable byte[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldShortArray(String fieldName, @Nullable short[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldIntArray(String fieldName, @Nullable int[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldLongArray(String fieldName, @Nullable long[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldFloatArray(String fieldName, @Nullable float[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldDoubleArray(String fieldName, @Nullable double[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldCharArray(String fieldName, @Nullable char[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldBooleanArray(String fieldName, @Nullable boolean[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldStringArray(String fieldName, @Nullable String[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldUuidArray(String fieldName, @Nullable UUID[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldDateArray(String fieldName, @Nullable Date[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public void fieldObjectArray(String fieldName, @Nullable Object[] val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param col Collection to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T> void fieldCollection(String fieldName, @Nullable Collection<T> col) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param map Map to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <K, V> void fieldMap(String fieldName, @Nullable Map<K, V> map) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void fieldEnum(String fieldName, T val) throws GridPortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws GridPortableException In case of error.
+     */
+    public <T extends Enum<?>> void fieldEnumArray(String fieldName, T[] val) throws GridPortableException;
 }
