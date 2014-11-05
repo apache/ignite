@@ -36,8 +36,13 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
+    /** Number of keys to load via data loader. */
+    private static final int KEYS_COUNT = 1000;
+
     /** Started grid counter. */
     private static int cnt;
+
+    private static boolean portables;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -48,13 +53,14 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridPortableConfiguration portableCfg = new GridPortableConfiguration();
+        if (portables) {
+            GridPortableConfiguration portableCfg = new GridPortableConfiguration();
 
-        portableCfg.setTypeConfigurations(Arrays.asList(
-            new GridPortableTypeConfiguration(TestObject.class.getName())));
+            portableCfg.setTypeConfigurations(Arrays.asList(
+                new GridPortableTypeConfiguration(TestObject.class.getName())));
 
-        cfg.setPortableConfiguration(portableCfg);
-
+            cfg.setPortableConfiguration(portableCfg);
+        }
 
         // Forth node goes without cache.
         if (cnt < 4)
@@ -121,6 +127,8 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddDataFromMap() throws Exception {
         try {
+            portables = false;
+
             startGrids(2);
 
             Grid g0 = grid(0);
@@ -134,23 +142,92 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             GridDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
 
-            int cnt = 500_000;
+            Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 
-            Map<Integer, String> map = new HashMap<>(cnt);
-
-            for (int i = 0; i < cnt; i ++)
+            for (int i = 0; i < KEYS_COUNT; i ++)
                 map.put(i, String.valueOf(i));
 
             dataLdr.addData(map);
 
-            Map<Integer, TestObject> mapPort = new HashMap<>(cnt);
+            dataLdr.close(false);
 
-            dataLdr.close(true);
+            Random rnd = new Random();
+
+            GridCache<Integer, String> c = g0.cache(null);
+
+            for (int i = 0; i < KEYS_COUNT; i ++) {
+                Integer k = rnd.nextInt(KEYS_COUNT);
+
+                String v = c.get(k);
+
+                assertEquals(k.toString(), v);
+            }
         }
         finally {
             G.stopAll(true);
         }
     }
+
+    /**
+     * Data loader should correctly load portable entries from HashMap in case of grids with more than one node
+     *  and with GridOptimizedMarshaller that requires serializable.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAddPortableDataFromMap() throws Exception {
+        try {
+            portables = true;
+
+            startGrids(2);
+
+            Grid g0 = grid(0);
+
+            GridMarshaller marsh = g0.configuration().getMarshaller();
+
+            if (marsh instanceof GridOptimizedMarshaller)
+                assertTrue(((GridOptimizedMarshaller)marsh).isRequireSerializable());
+            else
+                fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
+
+            GridDataLoader<Integer, TestObject> dataLdr = g0.dataLoader(null);
+
+            Map<Integer, TestObject> map = U.newHashMap(KEYS_COUNT);
+
+            for (int i = 0; i < KEYS_COUNT; i ++)
+                map.put(i, new TestObject(i));
+
+            dataLdr.addData(map);
+
+            dataLdr.close(false);
+
+            Random rnd = new Random();
+
+            GridCache<Integer, TestObject> c = g0.cache(null);
+
+            for (int i = 0; i < 100; i ++) {
+                Integer k = rnd.nextInt(KEYS_COUNT);
+
+                TestObject v = c.get(k);
+
+                assertEquals(k, v.val());
+            }
+
+            GridCacheProjection<Integer, TestObject> c2 = c.keepPortable();
+
+            for (int i = 0; i < 100; i ++) {
+                Integer k = rnd.nextInt(KEYS_COUNT);
+
+                TestObject v = c2.get(k);
+
+                assertEquals(k, v.val());
+            }
+
+        }
+        finally {
+            G.stopAll(true);
+        }
+    }
+
 
     /**
      * Gets cache configuration.
@@ -163,7 +240,9 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPortableEnabled(true);
+
+        if (portables)
+            cacheCfg.setPortableEnabled(true);
 
         return cacheCfg;
     }
@@ -185,6 +264,10 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
          */
         private TestObject(int val) {
             this.val = val;
+        }
+
+        public Integer val() {
+            return val;
         }
 
         /** {@inheritDoc} */

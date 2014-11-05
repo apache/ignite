@@ -1252,8 +1252,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 if (portable != null)
                     out.writeObject(portable.marshalToPortable(entry.getValue()));
-
-                out.writeObject(entry.getValue());
+                else
+                    out.writeObject(entry.getValue());
             }
         }
 
@@ -1264,8 +1264,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             if (sz > 0 && delegate instanceof ArrayList)
                 ((ArrayList)delegate).ensureCapacity(sz);
 
-            for (int i = 0; i < sz; i++)
-                add(new Entry0<>((K)in.readObject(), (V)in.readObject()));
+            for (int i = 0; i < sz; i++) {
+                Object k = in.readObject();
+                Object v = in.readObject();
+
+                add(new Entry0<>((K)k, (V)v));
+            }
         }
 
         /** {@inheritDoc} */
