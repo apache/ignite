@@ -165,12 +165,22 @@ public class GridCacheTxHandler<K, V> {
         fut.onResult(nodeId, res);
     }
 
+
     /**
      * @param nodeId Node ID.
      * @param req Request.
      * @return Future.
      */
     @Nullable public GridFuture<GridCacheTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
+        return finish(nodeId, req);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     * @return Future.
+     */
+    @Nullable public GridFuture<GridCacheTx> finish(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
         assert nodeId != null;
         assert req != null;
 

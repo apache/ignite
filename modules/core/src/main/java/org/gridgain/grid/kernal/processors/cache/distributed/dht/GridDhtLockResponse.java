@@ -32,7 +32,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<K> nearEvicted;
+    private Collection<GridCacheTxKey<K>> nearEvicted;
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
@@ -93,14 +93,14 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Evicted readers.
      */
-    public Collection<K> nearEvicted() {
+    public Collection<GridCacheTxKey<K>> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<K> nearEvicted) {
+    public void nearEvicted(Collection<GridCacheTxKey<K>> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 

@@ -125,28 +125,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     @Override public abstract GridNearTransactionalCache<K, V> near();
 
     /**
-     * @param nodeId Node ID.
-     * @param req Request.
-     * @return Future.
-     */
-    public GridFuture<GridCacheTx> commitTx(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
-        GridFuture<GridCacheTx> f = finish(nodeId, req);
-
-        return f == null ? new GridFinishedFuture<GridCacheTx>(ctx.kernalContext()) : f;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param req Request.
-     * @return Future.
-     */
-    public GridFuture<GridCacheTx> rollbackTx(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
-        GridFuture<GridCacheTx> f = finish(nodeId, req);
-
-        return f == null ? new GridFinishedFuture<GridCacheTx>(ctx.kernalContext()) : f;
-    }
-
-    /**
      * @param nodeId Primary node ID.
      * @param req Request.
      * @param res Response.

@@ -339,8 +339,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             req.miniId(GridUuid.randomUuid());
 
             if (CU.DHT_ENABLED) {
-                GridFuture<GridCacheTx> fut = commit ?
-                    dht().commitTx(n.id(), req) : dht().rollbackTx(n.id(), req);
+                GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), req);
 
                 // Add new future.
                 add(fut);
@@ -377,13 +376,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 fut.onResult(e);
             }
         }
-    }
-
-    /**
-     * @return DHT cache.
-     */
-    private GridDhtTransactionalCacheAdapter<K, V> dht() {
-        return cctx.nearTx().dht();
     }
 
     /** {@inheritDoc} */

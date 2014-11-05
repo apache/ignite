@@ -107,7 +107,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() {
-        cctx.events().addListener(
+        cctx.gridEvents().addLocalEventListener(
             new GridLocalEventListener() {
                 @Override public void onEvent(GridEvent evt) {
                     assert evt instanceof GridDiscoveryEvent;
@@ -138,6 +138,10 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         pessimisticRecoveryBuf = new GridCachePerThreadTxCommitBuffer<>(cctx);
 
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
+    }
+
+    public GridCacheTxHandler<K, V> txHandler() {
+        return null;
     }
 
     /**
