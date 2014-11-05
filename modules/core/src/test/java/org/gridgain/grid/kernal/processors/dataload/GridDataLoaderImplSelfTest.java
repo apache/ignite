@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -21,6 +22,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -45,6 +47,14 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        GridPortableConfiguration portableCfg = new GridPortableConfiguration();
+
+        portableCfg.setTypeConfigurations(Arrays.asList(
+            new GridPortableTypeConfiguration(TestObject.class.getName())));
+
+        cfg.setPortableConfiguration(portableCfg);
+
 
         // Forth node goes without cache.
         if (cnt < 4)
@@ -133,6 +143,8 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             dataLdr.addData(map);
 
+            Map<Integer, TestObject> mapPort = new HashMap<>(cnt);
+
             dataLdr.close(true);
         }
         finally {
@@ -151,7 +163,48 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setPortableEnabled(true);
 
         return cacheCfg;
+    }
+
+    /**
+     */
+    private static class TestObject implements GridPortableMarshalAware, Serializable {
+        /** */
+        private int val;
+
+        /**
+         */
+        private TestObject() {
+            // No-op.
+        }
+
+        /**
+         * @param val Value.
+         */
+        private TestObject(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj instanceof TestObject && ((TestObject)obj).val == val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+            writer.writeInt("val", val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+            val = reader.readInt("val");
+        }
     }
 }
