@@ -21,6 +21,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -44,6 +45,9 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  * Data loader implementation.
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
+    /** */
+    public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.5");
+
     /** Cache updater. */
     private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
@@ -900,8 +904,20 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 byte[] entriesBytes;
 
                 try {
-                    entriesBytes = ctx.config().getMarshaller()
-                        .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
+                    if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
+                        Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
+
+                        GridPortableProcessor portable = ctx.portable();
+
+                        for (Map.Entry<K, V> entry : entries)
+                            entries0.add(new Entry0<>(entry.getKey(),
+                                portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
+
+                        entriesBytes = ctx.config().getMarshaller().marshal(entries0);
+                    }
+                    else
+                        entriesBytes = ctx.config().getMarshaller()
+                            .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
 
                     if (updaterBytes == null) {
                         assert updater != null;
@@ -1226,7 +1242,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         private static final long serialVersionUID = 0L;
 
         /**  Wrapped delegate. */
-        private final Collection<Map.Entry<K, V>> delegate;
+        private Collection<Map.Entry<K, V>> delegate;
 
         /** Optional portable processor for converting values. */
         private final GridPortableProcessor portable;
@@ -1261,8 +1277,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             int sz = in.readInt();
 
-            if (sz > 0 && delegate instanceof ArrayList)
-                ((ArrayList)delegate).ensureCapacity(sz);
+            delegate = new ArrayList<>(sz);
 
             for (int i = 0; i < sz; i++) {
                 Object k = in.readObject();
