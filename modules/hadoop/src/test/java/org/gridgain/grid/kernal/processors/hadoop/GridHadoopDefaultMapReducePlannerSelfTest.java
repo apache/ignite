@@ -932,6 +932,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
             Class<V> valCls) {
             return null;

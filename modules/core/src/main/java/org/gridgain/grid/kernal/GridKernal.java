@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
@@ -758,6 +759,11 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
+            if (!F.isEmpty(cfg.getPluginConfigurations())) {
+                for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
+                    startPlugin(ctx, pluginCfg);
+            }
+
             // Put version converters to attributes after
             // all components are started.
             verProc.addConvertersToAttributes(attrs);
@@ -1151,6 +1157,11 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         if (hasHubCfg)
             A.ensure(cfg.getDataCenterId() != 0, "cfg.getDataCenterId() must have non-zero value if grid has " +
                 "send or receiver hub configuration.");
+
+        if (!F.isEmpty(cfg.getPluginConfigurations())) {
+            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
+                A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
+        }
     }
 
     /**
@@ -1598,6 +1609,32 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         }
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
+        }
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param cfg Plugin configuration.
+     * @throws GridException Thrown in case of any error.
+     */
+    @SuppressWarnings("unchecked")
+    private void startPlugin(GridKernalContextImpl ctx, PluginConfiguration cfg) throws GridException {
+        assert cfg.providerClass() != null;
+
+        try {
+            PluginProvider provider = cfg.providerClass().newInstance();
+
+            if (F.isEmpty(provider.name()))
+                throw new GridException("Plugin name can not be empty.");
+
+            GridPluginComponent comp = new GridPluginComponent(provider);
+
+            ctx.add(comp);
+
+            provider.start(new GridPluginContext(ctx), cfg);
+        }
+        catch (InstantiationException | IllegalAccessException e) {
+            throw new GridException("Failed to create plugin instance.", e);
         }
     }
 
@@ -3029,6 +3066,18 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
         try {
             return ctx.hadoop().hadoop();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
+        guard();
+
+        try {
+            return (T)ctx.plugin(name);
         }
         finally {
             unguard();

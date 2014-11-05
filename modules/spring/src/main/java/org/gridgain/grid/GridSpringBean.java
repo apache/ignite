@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
@@ -304,6 +305,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.streamer(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
+        assert g != null;
+
+        return g.plugin(name);
     }
 
     /** {@inheritDoc} */

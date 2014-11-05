@@ -40,6 +40,8 @@ public interface PluginProvider<C extends PluginConfiguration> {
     /**
      * Starts grid component.
      *
+     * @param ctx Plugin context.
+     * @param cfg Plugin configuration.
      * @throws IgniteException Throws in case of any errors.
      */
     public void start(PluginContext ctx, C cfg) throws IgniteException;

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -478,4 +479,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *      was explicitly specified.
      */
     public String userVersion(ClassLoader ldr);
+
+    /**
+     * @param name Plugin name.
+     * @return Plugin instance.
+     * @throws PluginNotFoundException If plugin for the given name was not found.
+     */
+    public IgnitePlugin plugin(String name) throws PluginNotFoundException;
 }
