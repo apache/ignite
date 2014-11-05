@@ -262,7 +262,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
                 Collection<UUID> failedNodes = ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
 
                 if (failedNodes == null)
-                    failedNodes = new HashSet<>(1);
+                    failedNodes = U.newHashSet(1);
 
                 if (isNodeFailed)
                     failedNodes.add(ctx.getJobResult().getNode().id());
