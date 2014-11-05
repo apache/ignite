@@ -107,7 +107,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
             case Value.TIME:
                 return ValueTime.get((Time)obj);
             case Value.TIMESTAMP:
-                if (obj instanceof java.util.Date)
+                if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                     obj = new Timestamp(((java.util.Date) obj).getTime());
 
                 return ValueTimestamp.get((Timestamp)obj);
