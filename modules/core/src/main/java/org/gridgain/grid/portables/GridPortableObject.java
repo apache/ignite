@@ -163,7 +163,7 @@ public interface GridPortableObject extends Serializable, Cloneable {
      *
      * @return Mutable portable object.
      */
-    public GridMutablePortableObject toMutable();
+    public GridMutablePortable toMutable();
 
     /**
      * Copies this portable object.

@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * This class is not thread-safe.
  */
-public interface GridMutablePortableObject extends GridPortableWriter {
+public interface GridMutablePortable extends GridPortableWriter {
     /**
      * Returns the value of the specified field.
      * If the value is another portable object instance of {@code GridMutablePortableObject} will be returned.
@@ -52,7 +52,7 @@ public interface GridMutablePortableObject extends GridPortableWriter {
      * @param hashCode Hash code to set.
      * @return this.
      */
-    public GridMutablePortableObject setHashCode(int hashCode);
+    public GridMutablePortable setHashCode(int hashCode);
 
     /**
      * Returns hashcode of portable object.

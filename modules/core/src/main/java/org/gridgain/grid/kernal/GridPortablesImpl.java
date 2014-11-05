@@ -71,7 +71,7 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public GridMutablePortableObject toMutable(GridPortableObject portableObj) {
+    @Override public GridMutablePortable toMutable(GridPortableObject portableObj) {
         guard();
 
         try {

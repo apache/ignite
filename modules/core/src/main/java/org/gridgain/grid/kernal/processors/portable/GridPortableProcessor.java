@@ -100,7 +100,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public GridMutablePortableObject toMutable(GridPortableObject portableObj);
+    public GridMutablePortable toMutable(GridPortableObject portableObj);
 
     /**
      * @param typeId Type ID.

@@ -81,7 +81,7 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridMutablePortableObject toMutable(GridPortableObject portableObj) {
+    @Override public GridMutablePortable toMutable(GridPortableObject portableObj) {
         return null;
     }
 
