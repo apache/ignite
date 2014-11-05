@@ -150,7 +150,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         nodeList.add(nodeId);
 
-        Map<UUID, GridUuid> map = new HashMap<>(1);
+        Map<UUID, GridUuid> map = U.newHashMap(1);
 
         map.put(nodeId, clsLdrId);
 

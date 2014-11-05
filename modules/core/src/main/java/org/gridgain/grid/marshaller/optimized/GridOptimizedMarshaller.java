@@ -14,6 +14,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -164,7 +165,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
 
             Arrays.sort(clsNamesArr);
 
-            Map<String, Integer> name2id = new HashMap<>(clsNamesArr.length);
+            Map<String, Integer> name2id = U.newHashMap(clsNamesArr.length);
             T3<String, Class<?>, GridOptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
 
             int i = 0;
