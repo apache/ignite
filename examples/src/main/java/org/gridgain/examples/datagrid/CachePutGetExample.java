@@ -87,7 +87,7 @@ public class CachePutGetExample {
         final int keyCnt = 20;
 
         // Create batch.
-        Map<Integer, String> batch = new HashMap<>(keyCnt);
+        Map<Integer, String> batch = new HashMap<>();
 
         for (int i = 0; i < keyCnt; i++)
             batch.put(i, "bulk-" + Integer.toString(i));

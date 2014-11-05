@@ -168,7 +168,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
         Collection<UUID> failedNodes = ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
 
         if (failedNodes == null)
-            failedNodes = new HashSet<>(1);
+            failedNodes = U.newHashSet(1);
 
         Integer failoverCnt = failedNodes.size();
 

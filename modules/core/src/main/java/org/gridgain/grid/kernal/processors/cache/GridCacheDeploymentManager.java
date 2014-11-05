@@ -474,7 +474,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
                     allParticipants.put(nodeId, ldrVer);
 
                     if (added == null)
-                        added = new HashMap<>(participants.size());
+                        added = GridUtils.newHashMap(participants.size());
 
                     added.put(nodeId, ldrVer);
                 }
@@ -489,7 +489,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
                 allParticipants.put(sndNodeId, sndLdrId);
 
                 if (added == null)
-                    added = new HashMap<>(1);
+                    added = U.newHashMap(1);
 
                 added.put(sndNodeId, sndLdrId);
             }

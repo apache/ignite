@@ -73,7 +73,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
 
         this.ctx = ctx;
         this.jobId = jobId;
-        attrs = new HashMap<>(1);
+        attrs = U.newHashMap(1);
     }
 
     /**
