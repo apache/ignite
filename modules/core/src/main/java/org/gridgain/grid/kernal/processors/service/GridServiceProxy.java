@@ -81,6 +81,7 @@ class GridServiceProxy<T> implements Serializable {
             if (n.isLocal())
                 return true;
         }
+
         return false;
     }
 
@@ -89,81 +90,6 @@ class GridServiceProxy<T> implements Serializable {
      */
     T proxy() {
         return proxy;
-    }
-
-    /**
-     * Callable proxy class.
-     */
-    private static class ServiceProxyCallable implements GridCallable<Object>, Externalizable {
-        /** Serial version UID. */
-        private static final long serialVersionUID = 0L;
-
-        /** Method name. */
-        private String mtdName;
-
-        /** Service name. */
-        private String svcName;
-
-        /** Args. */
-        private Object[] args;
-
-        /** Grid instance. */
-        @GridInstanceResource
-        private transient Grid grid;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public ServiceProxyCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param mtdName Service method to invoke.
-         * @param svcName Service name.
-         * @param args Arguments for invocation.
-         */
-        private ServiceProxyCallable(String mtdName, String svcName, Object[] args) {
-            this.mtdName = mtdName;
-            this.svcName = svcName;
-            this.args = args;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            GridServiceContextImpl svcCtx = ((GridKernal)grid).context().service().serviceContext(svcName);
-
-            if (svcCtx == null)
-                throw new GridServiceNotFoundException(svcName);
-
-            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, args);
-
-            Method mtd = svcCtx.method(key);
-
-            if (mtd == null)
-                throw new GridServiceMethodNotFoundException(svcName, mtdName, key.argTypes());
-
-            return mtd.invoke(svcCtx.service(), args);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, svcName);
-            U.writeString(out, mtdName);
-            U.writeArray(out, args);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            svcName = U.readString(in);
-            mtdName = U.readString(in);
-            args = U.readArray(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ServiceProxyCallable.class, this);
-        }
     }
 
     /**
@@ -199,10 +125,10 @@ class GridServiceProxy<T> implements Serializable {
 
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
-                        Object svc = ctx.service().service(name);
+                        GridServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
-                        if (svc != null)
-                            return mtd.invoke(svc, args);
+                        if (svcCtx != null)
+                            return mtd.invoke(svcCtx.service(), args);
                     }
                     else {
                         // Execute service remotely.
@@ -354,6 +280,81 @@ class GridServiceProxy<T> implements Serializable {
             }
 
             return null;
+        }
+    }
+
+    /**
+     * Callable proxy class.
+     */
+    private static class ServiceProxyCallable implements GridCallable<Object>, Externalizable {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Method name. */
+        private String mtdName;
+
+        /** Service name. */
+        private String svcName;
+
+        /** Args. */
+        private Object[] args;
+
+        /** Grid instance. */
+        @GridInstanceResource
+        private transient Grid grid;
+
+        /**
+         * Empty constructor required for {@link Externalizable}.
+         */
+        public ServiceProxyCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param mtdName Service method to invoke.
+         * @param svcName Service name.
+         * @param args Arguments for invocation.
+         */
+        private ServiceProxyCallable(String mtdName, String svcName, Object[] args) {
+            this.mtdName = mtdName;
+            this.svcName = svcName;
+            this.args = args;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            GridServiceContextImpl svcCtx = ((GridKernal)grid).context().service().serviceContext(svcName);
+
+            if (svcCtx == null)
+                throw new GridServiceNotFoundException(svcName);
+
+            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, args);
+
+            Method mtd = svcCtx.method(key);
+
+            if (mtd == null)
+                throw new GridServiceMethodNotFoundException(svcName, mtdName, key.argTypes());
+
+            return mtd.invoke(svcCtx.service(), args);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, svcName);
+            U.writeString(out, mtdName);
+            U.writeArray(out, args);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            svcName = U.readString(in);
+            mtdName = U.readString(in);
+            args = U.readArray(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ServiceProxyCallable.class, this);
         }
     }
 }
