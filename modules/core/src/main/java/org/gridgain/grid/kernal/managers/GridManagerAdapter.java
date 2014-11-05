@@ -186,9 +186,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
      * @throws GridException If wrapped SPI could not be started.
      */
     protected final void startSpi() throws GridException {
-        assert spis != null;
-
-        Collection<String> names = new HashSet<>(spis.length);
+        Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
             // Print-out all SPI parameters only in DEBUG mode.

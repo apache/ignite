@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -108,7 +109,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @return Map.
      */
     private static Map<String, Collection<UUID>> hosts(Collection<GridNode> top) {
-        Map<String, Collection<UUID>> grouped = new HashMap<>(top.size());
+        Map<String, Collection<UUID>> grouped = U.newHashMap(top.size());
 
         for (GridNode node : top) {
             for (String host : node.hostNames()) {

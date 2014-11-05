@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.5.1</gridgain.version>
+        <gridgain.version>6.5.5</gridgain.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -330,7 +330,7 @@
                             </groups>
                             <header>
                                 <![CDATA[
-                                    GridGain - In-Memory Computing
+                                    GridGain - In-Memory Data Fabric
                                 ]]>
                             </header>
                             <bottom>
@@ -544,7 +544,7 @@
                             </groups>
                             <header>
                                 <![CDATA[
-                                    GridGain - In-Memory Computing
+                                    GridGain - In-Memory Data Fabric
                                 ]]>
                             </header>
                             <bottom>

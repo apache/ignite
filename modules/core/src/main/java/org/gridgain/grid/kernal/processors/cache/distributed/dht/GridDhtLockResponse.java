@@ -326,7 +326,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 if (commState.readSize >= 0) {
                     if (invalidParts == null)
-                        invalidParts = new HashSet<>(commState.readSize);
+                        invalidParts = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)

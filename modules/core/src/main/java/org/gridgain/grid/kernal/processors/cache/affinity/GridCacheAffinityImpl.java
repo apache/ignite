@@ -69,21 +69,16 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().nodes(key, topologyVersion()).contains(n);
+        return cctx.affinity().belongs(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public int[] primaryPartitions(GridNode n) {
         A.notNull(n, "n");
 
-        Collection<Integer> parts = new HashSet<>();
-
         long topVer = cctx.discovery().topologyVersion();
 
-        for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            if (n.id().equals(F.first(cctx.affinity().nodes(part, topVer)).id()))
-                parts.add(part);
-        }
+        Set<Integer> parts = cctx.affinity().primaryPartitions(n.id(), topVer);
 
         return U.toIntArray(parts);
     }
@@ -92,21 +87,9 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public int[] backupPartitions(GridNode n) {
         A.notNull(n, "n");
 
-        Collection<Integer> parts = new HashSet<>();
-
         long topVer = cctx.discovery().topologyVersion();
 
-        for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            Collection<GridNode> backups = cctx.affinity().backups(part, topVer);
-
-            for (GridNode backup : backups) {
-                if (n.id().equals(backup.id())) {
-                    parts.add(part);
-
-                    break;
-                }
-            }
-        }
+        Set<Integer> parts = cctx.affinity().backupPartitions(n.id(), topVer);
 
         return U.toIntArray(parts);
     }

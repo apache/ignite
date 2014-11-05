@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,7 +31,7 @@ public class VisorMimeTypes {
     private static final int PREVIEW_SIZE = 11;
 
     /** Common mimetypes. */
-    private static final Map<String, String> mimeTypes = new HashMap<>(810);
+    private static final Map<String, String> mimeTypes = U.newHashMap(810);
 
     static {
         mimeTypes.put("mseed", "application/vnd.fdsn.mseed");
