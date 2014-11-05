@@ -259,7 +259,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
         int valsSize = raw.readInt();
 
         if (valsSize >= 0) {
-            vals = new HashMap<>(valsSize);
+            vals = U.newHashMap(valsSize);
 
             for (int i = 0; i < valsSize; i++)
                 vals.put(raw.readObjectDetached(), raw.readObjectDetached());

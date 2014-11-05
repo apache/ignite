@@ -15,6 +15,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -152,7 +153,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
      * @return Map.
      */
     private Map<UUID, GridNode> mapSubgrid(Collection<GridNode> subgrid) {
-        Map<UUID, GridNode> res = new HashMap<>(subgrid.size());
+        Map<UUID, GridNode> res = U.newHashMap(subgrid.size());
 
         for (GridNode node : subgrid)
             res.put(node.id(), node);
