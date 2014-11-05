@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -129,7 +130,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         int size = 10;
 
-        Map<String, Integer> map = new LinkedHashMap<>(size);
+        Map<String, Integer> map = U.newLinkedHashMap(size);
 
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);

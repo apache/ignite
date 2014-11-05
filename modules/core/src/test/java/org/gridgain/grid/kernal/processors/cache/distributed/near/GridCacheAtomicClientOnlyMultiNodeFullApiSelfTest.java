@@ -13,6 +13,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -63,7 +64,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         int size = 10;
 
-        Map<String, Integer> map = new LinkedHashMap<>(size);
+        Map<String, Integer> map = U.newLinkedHashMap(size);
 
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);

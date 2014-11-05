@@ -12,6 +12,8 @@ package org.gridgain.grid.compute;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -97,7 +99,7 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
         if (F.isEmpty(jobs))
             throw new GridException("Split returned no jobs.");
 
-        Map<GridComputeJob, GridNode> map = new HashMap<>(jobs.size());
+        Map<GridComputeJob, GridNode> map = U.newHashMap(jobs.size());
 
         for (GridComputeJob job : jobs) {
             GridNode old = map.put(job, balancer.getBalancedNode(job, null));
