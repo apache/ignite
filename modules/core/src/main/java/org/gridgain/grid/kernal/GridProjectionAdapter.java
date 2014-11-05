@@ -207,7 +207,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (messaging == null) {
             assert ctx != null;
 
-            messaging = new GridMessagingImpl(ctx, this);
+            messaging = new GridMessagingImpl(ctx, this, false);
         }
 
         return messaging;
@@ -220,7 +220,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (evts == null) {
             assert ctx != null;
 
-            evts = new GridEventsImpl(ctx, this);
+            evts = new GridEventsImpl(ctx, this, false);
         }
 
         return evts;
@@ -233,7 +233,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         if (svcs == null) {
             assert ctx != null;
 
-            svcs = new GridServicesImpl(ctx, this);
+            svcs = new GridServicesImpl(ctx, this, false);
         }
 
         return svcs;

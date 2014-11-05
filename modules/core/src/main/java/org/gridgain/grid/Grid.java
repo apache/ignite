@@ -107,6 +107,10 @@ public interface Grid extends AutoCloseable {
      */
     public GridCompute compute();
 
+    /**
+     * @param prj Projection.
+     * @return Compute instance over given projection.
+     */
     public GridCompute compute(GridProjection prj);
 
     /**
@@ -118,6 +122,10 @@ public interface Grid extends AutoCloseable {
      */
     public GridMessaging message();
 
+    /**
+     * @param prj Projection.
+     * @return Messaging instance over given projection.
+     */
     public GridMessaging message(GridProjection prj);
 
     /**
@@ -129,6 +137,10 @@ public interface Grid extends AutoCloseable {
      */
     public GridEvents events();
 
+    /**
+     * @param prj Projection.
+     * @return Events instance over given projection.
+     */
     public GridEvents events(GridProjection prj);
 
     /**
@@ -140,10 +152,14 @@ public interface Grid extends AutoCloseable {
      */
     public GridServices services();
 
+    /**
+     * @param prj Projection.
+     * @return {@code Services} functionality over given projection.
+     */
     public GridServices services(GridProjection prj);
 
     /**
-     * Creates new {@link java.util.concurrent.ExecutorService} which will execute all submitted
+     * Creates new {@link ExecutorService} which will execute all submitted
      * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
      * This essentially
      * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
@@ -153,6 +169,10 @@ public interface Grid extends AutoCloseable {
      */
     public ExecutorService executorService();
 
+    /**
+     * @param prj Projection.
+     * @return {@link ExecutorService} which will execute jobs on nodes in given projection.
+     */
     public ExecutorService executorService(GridProjection prj);
 
     /**

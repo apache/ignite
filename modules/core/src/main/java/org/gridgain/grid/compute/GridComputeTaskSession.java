@@ -425,4 +425,12 @@ public interface GridComputeTaskSession {
      * @return Collection of grid nodes IDs for the task's split.
      */
     public Collection<UUID> getTopology();
+
+    /**
+     * Gets future that will be completed when task "<tt>map</tt>" step has completed
+     * (which means that {@link GridComputeTask#map(List, Object)} method has finished).
+     *
+     * @return Future that will be completed when task "<tt>map</tt>" step has completed.
+     */
+    public GridFuture<?> mapFuture();
 }

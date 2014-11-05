@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -86,6 +87,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final UUID subjId;
 
+    /** */
+    private final GridFutureAdapter mapFut;
+
     /**
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
@@ -142,6 +146,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         this.fullSup = fullSup;
         this.subjId = subjId;
+
+        mapFut = new GridFutureAdapter(ctx);
     }
 
     /** {@inheritDoc} */
@@ -796,6 +802,25 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public GridDeployment deployment() {
         return dep;
+    }
+
+    /**
+     * Task map callback.
+     */
+    public void onMapped() {
+        mapFut.onDone();
+    }
+
+    /**
+     * Finish task callback.
+     */
+    public void onDone() {
+        mapFut.onDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        return mapFut;
     }
 
     /** {@inheritDoc} */

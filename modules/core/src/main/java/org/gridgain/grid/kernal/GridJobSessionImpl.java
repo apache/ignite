@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -264,6 +265,11 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public UUID subjectId() {
         return ses.subjectId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        return new GridFinishedFuture<>(ctx);
     }
 
     /** {@inheritDoc} */

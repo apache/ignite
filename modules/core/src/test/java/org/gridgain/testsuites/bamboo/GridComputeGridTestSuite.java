@@ -34,8 +34,6 @@ public class GridComputeGridTestSuite {
         suite.addTest(GridContinuousTaskSelfTestSuite.suite());
 
         suite.addTestSuite(GridTaskCancelSingleNodeSelfTest.class);
-        suite.addTestSuite(GridProjectionTaskCancelSelfTest.class);
-        suite.addTestSuite(GridProjectionJobCancelSelfTest.class);
         suite.addTestSuite(GridTaskFailoverSelfTest.class);
         suite.addTestSuite(GridJobCollisionCancelSelfTest.class);
         suite.addTestSuite(GridTaskTimeoutSelfTest.class);

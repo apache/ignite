@@ -187,6 +187,13 @@ public class GridTestCollisionTaskSession implements GridComputeTaskSession {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        assert false : "Not implemented";
+
+        return null;
+    }
+
     /**
      * @return Priority.
      */

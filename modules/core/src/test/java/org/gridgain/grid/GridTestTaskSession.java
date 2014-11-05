@@ -203,6 +203,13 @@ public class GridTestTaskSession implements GridComputeTaskSession {
     }
 
     /** {@inheritDoc} */
+    @Override public GridFuture<?> mapFuture() {
+        assert false : "Not implemented";
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         StringBuilder buf = new StringBuilder();
 

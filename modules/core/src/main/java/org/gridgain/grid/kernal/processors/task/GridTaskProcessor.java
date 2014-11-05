@@ -614,6 +614,22 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Active task futures.
+     */
+    @SuppressWarnings("unchecked")
+    public <R> Map<GridUuid, GridComputeTaskFuture<R>> taskFutures() {
+        Map<GridUuid, GridComputeTaskFuture<R>> res = new HashMap<>();
+
+        for (GridTaskWorker taskWorker : tasks.values()) {
+            GridComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
+
+            res.put(fut.getTaskSession().getId(), fut);
+        }
+
+        return res;
+    }
+
+    /**
      * Gets task name for a task class. It firstly checks
      * {@link @GridComputeTaskName} annotation, then thread context
      * map. If both are empty, class name is returned.

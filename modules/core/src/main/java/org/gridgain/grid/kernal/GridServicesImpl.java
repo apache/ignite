@@ -42,8 +42,11 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridServicesImpl(GridKernalContext ctx, GridProjectionAdapter prj) {
+    public GridServicesImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -208,7 +211,10 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public GridServices enableAsync() {
-        return (GridServices)super.enableAsync();
+        if (isAsync())
+            return this;
+
+        return new GridServicesImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

@@ -43,8 +43,11 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridEventsImpl(GridKernalContext ctx, GridProjectionAdapter prj) {
+    public GridEventsImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -260,7 +263,10 @@ public class GridEventsImpl extends IgniteAsyncSupportAdapter implements GridEve
 
     /** {@inheritDoc} */
     @Override public GridEvents enableAsync() {
-        return (GridEvents)super.enableAsync();
+        if (isAsync())
+            return this;
+
+        return new GridEventsImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

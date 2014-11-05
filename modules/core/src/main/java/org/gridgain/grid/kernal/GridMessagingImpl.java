@@ -44,8 +44,11 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
+     * @param async Async support flag.
      */
-    public GridMessagingImpl(GridKernalContext ctx, GridProjectionAdapter prj) {
+    public GridMessagingImpl(GridKernalContext ctx, GridProjectionAdapter prj, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -186,7 +189,7 @@ public class GridMessagingImpl extends IgniteAsyncSupportAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public GridMessaging enableAsync() {
-        return (GridMessaging)super.enableAsync();
+        return new GridMessagingImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

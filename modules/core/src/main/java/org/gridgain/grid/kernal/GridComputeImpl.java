@@ -335,49 +335,11 @@ public class GridComputeImpl implements GridCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelTask(GridUuid sesId) throws GridException {
-        A.notNull(sesId, "sesId");
-
+    @Override public <R> Map<GridUuid, GridComputeTaskFuture<R>> activeTaskFutures() {
         guard();
 
         try {
-            GridComputeTaskFuture<Object> task = ctx.task().taskFuture(sesId);
-
-            if (task != null)
-                // Cancel local task.
-                task.cancel();
-            else if (prj.node(sesId.globalId()) != null)
-                // Cancel remote task only if its master is in projection.
-                ctx.io().send(
-                    sesId.globalId(),
-                    TOPIC_TASK_CANCEL,
-                    new GridTaskCancelRequest(sesId),
-                    SYSTEM_POOL
-                );
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelJob(GridUuid jobId) throws GridException {
-        A.notNull(jobId, "jobId");
-
-        guard();
-
-        try {
-            boolean loc = F.nodeIds(prj.nodes()).contains(ctx.localNodeId());
-
-            if (loc)
-                ctx.job().cancelJob(null, jobId, false);
-
-            ctx.io().send(
-                prj.forRemotes().nodes(),
-                TOPIC_JOB_CANCEL,
-                new GridJobCancelRequest(null, jobId, false),
-                SYSTEM_POOL
-            );
+            return ctx.task().taskFutures();
         }
         finally {
             unguard();

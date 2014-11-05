@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 /**
  * Adapter for {@link IgniteAsyncSupport}.
  */
-public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable {
+public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<GridFuture<?>> curFut;
 
@@ -34,21 +34,8 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteAsyncSupport enableAsync() {
-        try {
-            if (isAsync())
-                return this;
-
-            IgniteAsyncSupportAdapter clone = clone();
-
-            clone.curFut = new ThreadLocal<>();
-
-            return clone;
-        }
-        catch (CloneNotSupportedException e) {
-            throw new GridRuntimeException(e);
-        }
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -85,10 +72,5 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport, Cloneable 
         }
         else
             return fut.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupportAdapter clone() throws CloneNotSupportedException {
-        return (IgniteAsyncSupportAdapter)super.clone();
     }
 }

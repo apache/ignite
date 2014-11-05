@@ -323,22 +323,11 @@ public interface GridCompute extends IgniteAsyncSupport {
         GridReducer<R1, R2> rdc) throws GridException;
 
     /**
-     * Cancels task with the given execution session ID, if it is currently running inside this projection
-     * or on local node. Note that if local node is master for the task, task gets always cancelled, even
-     * if local node is not the part of the projection.
+     * Gets tasks future for active tasks started on local node.
      *
-     * @param sesId Execution session ID.
-     * @throws GridException If task cancellation failed.
+     * @return Map of active tasks keyed by their task task session ID.
      */
-    public void cancelTask(GridUuid sesId) throws GridException;
-
-    /**
-     * Cancels job with the given job ID, if it is currently running inside this projection.
-     *
-     * @param jobId Job ID.
-     * @throws GridException If task cancellation failed.
-     */
-    public void cancelJob(GridUuid jobId) throws GridException;
+    public <R> Map<GridUuid, GridComputeTaskFuture<R>> activeTaskFutures();
 
     /**
      * Sets task name for the next executed task on this projection in the <b>current thread</b>.

@@ -298,6 +298,8 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             exec2(cnt);
 
             executorService(cnt);
+
+            checkActiveFutures();
         }
         finally {
             for (GridBiTuple<Grid, GridPredicate<GridEvent>> t : lsnrs)
@@ -629,6 +631,46 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If test failed.
+     */
+    private void checkActiveFutures() throws Exception {
+        GridCompute comp = compute(prj).enableAsync();
+
+        assertEquals(0, comp.activeTaskFutures().size());
+
+        cnt.set(0);
+
+        Collection<GridComputeTaskFuture<Object>> futsList = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            comp.call(new TestWaitCallable<Object>());
+
+            GridComputeTaskFuture<Object> fut = comp.future();
+
+            assertFalse(fut.isDone());
+
+            Map<GridUuid, GridComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
+
+            assertEquals(i + 1, futs.size());
+
+            assertTrue(futs.containsKey(fut.getTaskSession().getId()));
+
+            futsList.add(fut);
+        }
+
+        synchronized (mux) {
+            cnt.incrementAndGet();
+
+            mux.notifyAll();
+        }
+
+        for (GridComputeTaskFuture<Object> fut : futsList)
+            fut.get();
+
+        assertEquals(0, comp.activeTaskFutures().size());
+    }
+
+    /**
      *  Test closure.
      */
     private static class TestClosure implements GridClosure<String, String> {
@@ -654,6 +696,21 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private static class TestCallable<T> implements Callable<T>, Serializable {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
+            return null;
+        }
+    }
+
+    /**
+     * Test callable.
+     */
+    private static class TestWaitCallable<T> implements Callable<T>, Serializable {
+        /** {@inheritDoc} */
+        @Nullable @Override public T call() throws Exception {
+            synchronized (mux) {
+                while (cnt.get() == 0)
+                    mux.wait();
+            }
+
             return null;
         }
     }
