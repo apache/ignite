@@ -1744,16 +1744,61 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        if (!config().isPortableEnabled())
+        if (keepPortable || !config().isPortableEnabled())
             return col;
 
-        Collection<Object> unwrapped = new ArrayList<>(col.size());
+        if (col instanceof ArrayList)
+            return unwrapPortables((ArrayList<Object>)col);
 
-        for (Object o : col) {
-            unwrapped.add(unwrapPortableIfNeeded(o, keepPortable));
+        int idx = 0;
+
+        for (Object obj : col) {
+            Object unwrapped = unwrapPortable(obj);
+
+            if (obj != unwrapped) {
+                Collection<Object> unwrappedCol = new ArrayList<>(col.size());
+
+                int idx0 = 0;
+
+                for (Object obj0 : col) {
+                    if (idx0 < idx)
+                        unwrappedCol.add(obj0);
+                    else if (idx == idx0)
+                        unwrappedCol.add(unwrapped);
+                    else
+                        unwrappedCol.add(unwrapPortable(obj0));
+
+                    idx0++;
+                }
+
+                return unwrappedCol;
+            }
+
+            idx++;
         }
 
-        return unwrapped;
+        return col;
+    }
+
+    /**
+     * Unwraps array list.
+     *
+     * @param col List to unwrap.
+     * @return Unwrapped list.
+     */
+    private ArrayList<Object> unwrapPortables(ArrayList<Object> col) {
+        int size = col.size();
+
+        for (int i = 0; i < size; i++) {
+            Object o = col.get(i);
+
+            Object unwrapped = unwrapPortable(o);
+
+            if (o != unwrapped)
+                col.set(i, unwrapped);
+        }
+
+        return col;
     }
 
     /**
@@ -1765,34 +1810,48 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        if (!config().isPortableEnabled())
+        if (keepPortable || !config().isPortableEnabled())
             return o;
 
+        return unwrapPortable(o);
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapPortable(Object o) {
         if (o instanceof Map.Entry) {
             Map.Entry entry = (Map.Entry)o;
 
             Object key = entry.getKey();
 
-            if (key instanceof GridPortableObject && !keepPortable)
+            boolean unwrapped = false;
+
+            if (key instanceof GridPortableObject) {
                 key = ((GridPortableObject)key).deserialize();
+
+                unwrapped = true;
+            }
 
             Object val = entry.getValue();
 
-            if (val instanceof GridPortableObject && !keepPortable)
+            if (val instanceof GridPortableObject) {
                 val = ((GridPortableObject)val).deserialize();
 
-            return F.t(key, val);
+                unwrapped = true;
+            }
+
+            return unwrapped ? F.t(key, val) : o;
         }
-        else if (!keepPortable) {
+        else {
             if (o instanceof Collection)
-                return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable);
+                return unwrapPortablesIfNeeded((Collection<Object>)o, false);
             else if (o instanceof GridPortableObject)
                 return ((GridPortableObject)o).deserialize();
-            else
-                return o;
         }
-        else
-            return o;
+
+        return o;
     }
 
     /**

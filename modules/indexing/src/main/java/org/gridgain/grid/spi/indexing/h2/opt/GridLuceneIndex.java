@@ -17,12 +17,12 @@ import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -218,7 +218,7 @@ public class GridLuceneIndex implements Closeable {
      * @throws GridSpiException If failed.
      */
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String qry,
-        GridIndexingQueryFilter<K, V>[] filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws GridSpiException {
         IndexReader reader;
 
         try {
@@ -254,7 +254,18 @@ public class GridLuceneIndex implements Closeable {
             throw new GridSpiException(e);
         }
 
-        return new It<>(reader, searcher, docs.scoreDocs, filters);
+        GridBiPredicate<K, V> fltr = null;
+
+        if (filters != null) {
+            try {
+                fltr = filters.forSpace(spaceName);
+            }
+            catch (GridException e) {
+                throw new GridSpiException(e);
+            }
+        }
+
+        return new It<>(reader, searcher, docs.scoreDocs, fltr);
     }
 
     /** {@inheritDoc} */
@@ -280,7 +291,7 @@ public class GridLuceneIndex implements Closeable {
         private final ScoreDoc[] docs;
 
         /** */
-        private final GridIndexingQueryFilter<K, V>[] filters;
+        private final GridBiPredicate<K, V> filters;
 
         /** */
         private int idx;
@@ -297,7 +308,7 @@ public class GridLuceneIndex implements Closeable {
          * @param filters Filters over result.
          * @throws GridSpiException if failed.
          */
-        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, GridIndexingQueryFilter<K, V>[] filters)
+        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, GridBiPredicate<K, V> filters)
             throws GridSpiException {
             this.reader = reader;
             this.searcher = searcher;
@@ -315,14 +326,7 @@ public class GridLuceneIndex implements Closeable {
          * @return {@code True} if key passes filter.
          */
         private boolean filter(K key, V val) {
-            if (!F.isEmpty(filters)) {
-                for (GridIndexingQueryFilter<K, V> f : filters) {
-                    if (!f.apply(spaceName, key, val))
-                        return false;
-                }
-            }
-
-            return true;
+            return filters == null || filters.apply(key, val) ;
         }
 
         /**
