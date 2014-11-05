@@ -42,6 +42,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /** Started grid counter. */
     private static int cnt;
 
+    /** Flag indicating should be cache configured with portables or not.  */
     private static boolean portables;
 
     /** {@inheritDoc} */
