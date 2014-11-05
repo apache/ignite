@@ -103,7 +103,7 @@ public class GridUriDeploymentFtpScanner extends GridUriDeploymentScanner {
 
     /** {@inheritDoc} */
     @Override protected void process() {
-        Collection<GridUriDeploymentFtpFile> foundFiles = new HashSet<>(cache.size());
+        Collection<GridUriDeploymentFtpFile> foundFiles = U.newHashSet(cache.size());
 
         long start = U.currentTimeMillis();
 

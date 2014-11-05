@@ -10,6 +10,7 @@
 package org.gridgain.client.util;
 
 import org.gridgain.client.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -364,7 +365,7 @@ public class GridClientConsistentHash<N> {
                         return n;
 
                     if (failed == null)
-                        failed = new HashSet<>(size);
+                        failed = U.newHashSet(size);
 
                     failed.add(n);
 

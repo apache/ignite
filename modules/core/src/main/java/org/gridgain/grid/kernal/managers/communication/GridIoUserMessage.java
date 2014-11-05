@@ -367,7 +367,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
                 if (commState.readSize >= 0) {
                     if (ldrParties == null)
-                        ldrParties = new HashMap<>(commState.readSize);
+                        ldrParties = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
