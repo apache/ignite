@@ -72,7 +72,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        cctx.io().addHandler(GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest<K, V>>() {
+        cctx.io().addHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest<K, V> req) {
                 processQueryRequest(nodeId, req);
             }

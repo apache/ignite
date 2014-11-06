@@ -38,12 +38,17 @@ public class GridCacheTxHandler<K, V> {
     /** Shared cache context. */
     private GridCacheSharedContext<K, V> ctx;
 
+    public GridFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+        final GridNearTxPrepareRequest<K, V> req) {
+        prepareTx(nearNodeId, req);
+    }
+
     /**
      * @param nearNodeId Near node ID that initiated transaction.
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public GridFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+    public GridFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         assert nearNodeId != null;
         assert req != null;
@@ -650,7 +655,7 @@ public class GridCacheTxHandler<K, V> {
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
-                        tx.addInvalidPartition(e.partition());
+                        tx.addInvalidPartition(cacheCtx, e.partition());
 
                         tx.clearEntry(entry.key());
                     }

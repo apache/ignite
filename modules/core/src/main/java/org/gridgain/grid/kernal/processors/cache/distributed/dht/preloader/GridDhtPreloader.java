@@ -53,7 +53,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private GridDhtPartitionDemandPool<K, V> demandPool;
 
     /** Start future. */
-    private final GridFutureAdapter<?> startFut;
+    private final GridFutureAdapter<Object> startFut;
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -116,28 +116,28 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Starting DHT preloader...");
 
-        cctx.io().addHandler(GridDhtForceKeysRequest.class,
+        cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtForceKeysRequest<K, V> msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
-        cctx.io().addHandler(GridDhtForceKeysResponse.class,
+        cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysResponse.class,
             new MessageHandler<GridDhtForceKeysResponse<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtForceKeysResponse<K, V> msg) {
                     processForceKeyResponse(node, msg);
                 }
             });
 
-        cctx.io().addHandler(GridDhtAffinityAssignmentRequest.class,
+        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
             new MessageHandler<GridDhtAffinityAssignmentRequest<K, V>>() {
                 @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentRequest<K, V> msg) {
                     processAffinityAssignmentRequest(node, msg);
                 }
             });
 
-        cctx.io().addHandler(GridDhtAffinityAssignmentResponse.class,
+        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentResponse.class,
             new MessageHandler<GridDhtAffinityAssignmentResponse<K, V>>() {
                 @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentResponse<K, V> msg) {
                     processAffinityAssignmentResponse(node, msg);
@@ -251,7 +251,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      * @return Start future.
      */
-    @Override public GridFuture<?> startFuture() {
+    @Override public GridFuture<Object> startFuture() {
         return startFut;
     }
 

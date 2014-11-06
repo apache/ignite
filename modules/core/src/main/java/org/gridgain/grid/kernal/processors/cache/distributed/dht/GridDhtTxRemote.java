@@ -83,7 +83,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long timeout,
         GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
@@ -141,7 +141,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long timeout,
         GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -211,20 +211,20 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(K key, long topVer) {
-        if (!cctx.isDht() || !isNearEnabled(cctx) || cctx.localNodeId().equals(nearNodeId))
+    @Override protected boolean updateNearCache(GridCacheContext<K, V> cacheCtx, K key, long topVer) {
+        if (!cacheCtx.isDht() || !isNearEnabled(cacheCtx) || cctx.localNodeId().equals(nearNodeId))
             return false;
 
-        if (cctx.config().getBackups() == 0)
+        if (cacheCtx.config().getBackups() == 0)
             return true;
 
         // Check if we are on the backup node.
-        return !cctx.affinity().backups(key, topVer).contains(cctx.localNode());
+        return !cacheCtx.affinity().backups(key, topVer).contains(cctx.localNode());
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(int part) {
-        super.addInvalidPartition(part);
+    @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
+        super.addInvalidPartition(cacheCtx, part);
 
         for (Iterator<GridCacheTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
             GridCacheTxEntry<K, V> e = it.next();
@@ -235,7 +235,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
                 if (cached.partition() == part)
                     it.remove();
             }
-            else if (cctx.affinity().partition(e.key()) == part)
+            else if (cacheCtx.affinity().partition(e.key()) == part)
                 it.remove();
         }
     }
@@ -248,8 +248,10 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
         entry.unmarshal(cctx, ldr);
 
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
         try {
-            GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(entry.key(), topologyVersion());
+            GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(entry.key().key(), topologyVersion());
 
             checkInternal(entry.key());
 
@@ -261,7 +263,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
             addExplicit(entry);
         }
         catch (GridDhtInvalidPartitionException e) {
-            addInvalidPartition(e.partition());
+            addInvalidPartition(cacheCtx, e.partition());
         }
     }
 

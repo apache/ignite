@@ -233,7 +233,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     boolean valIsByteArr = val != null && val instanceof byte[];
 
                     if (valBytes == null && !valIsByteArr)
-                        valBytes = CU.marshal(cctx, val);
+                        valBytes = CU.marshal(cctx.shared(), val);
 
                     valPtr = mem.putOffHeap(valPtr, valIsByteArr ? (byte[])val : valBytes, valIsByteArr);
                 }
@@ -307,11 +307,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         if (kb == null || (vb.isNull() && v != null)) {
             if (kb == null)
-                kb = CU.marshal(cctx, key);
+                kb = CU.marshal(cctx.shared(), key);
 
             if (vb.isNull())
                 vb = (v != null && v instanceof byte[]) ? GridCacheValueBytes.plain(v) :
-                    GridCacheValueBytes.marshaled(CU.marshal(cctx, v));
+                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), v));
 
             synchronized (this) {
                 if (keyBytes == null)
@@ -3360,7 +3360,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (bytes != null)
             return bytes;
 
-        bytes = CU.marshal(cctx, key);
+        bytes = CU.marshal(cctx.shared(), key);
 
         synchronized (this) {
             keyBytes = bytes;
@@ -3400,7 +3400,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (valBytes.isNull()) {
             if (val != null)
                 valBytes = (val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-                    GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
 
             if (ver != null && !isOffHeapValuesOnly()) {
                 synchronized (this) {
@@ -3659,7 +3659,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes res = valueBytesUnlocked();
 
             if (res.isNull())
-                res = GridCacheValueBytes.marshaled(CU.marshal(cctx, val));
+                res = GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), val));
 
             assert res.get() != null;
 
@@ -4134,7 +4134,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         assert cctx.portableEnabled();
 
-        return GridCacheValueBytes.marshaled(CU.marshal(cctx, cctx.portable().unmarshal(valPtr, true)));
+        return GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), cctx.portable().unmarshal(valPtr, true)));
     }
 
     /**

@@ -1841,30 +1841,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void dgc() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.dgc();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dgc(long suspectLockTimeout, boolean global, boolean rmvLocks) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.dgc(suspectLockTimeout, global, rmvLocks);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public GridFuture<?> forceRepartition() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

@@ -552,7 +552,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock);
 
     /**
@@ -3266,7 +3266,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException {
-        return txStartGroupLock(affinityKey, concurrency, isolation, false, timeout, txSize);
+        return txStartGroupLock(ctx.txKey((K)affinityKey), concurrency, isolation, false, timeout, txSize);
     }
 
     /** {@inheritDoc} */
@@ -3274,7 +3274,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException {
         Object grpLockKey = ctx.affinity().partitionAffinityKey(partId);
 
-        return txStartGroupLock(grpLockKey, concurrency, isolation, true, timeout, txSize);
+        return txStartGroupLock(ctx.txKey((K)grpLockKey), concurrency, isolation, true, timeout, txSize);
     }
 
     /**
@@ -3292,7 +3292,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @throws GridException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private GridCacheTx txStartGroupLock(Object grpLockKey, GridCacheTxConcurrency concurrency,
+    private GridCacheTx txStartGroupLock(GridCacheTxKey grpLockKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize)
         throws IllegalStateException, GridException {
         GridCacheTx tx = ctx.tm().userTx();

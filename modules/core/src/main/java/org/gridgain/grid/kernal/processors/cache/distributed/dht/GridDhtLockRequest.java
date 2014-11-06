@@ -113,7 +113,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int dhtCnt,
         int nearCnt,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash

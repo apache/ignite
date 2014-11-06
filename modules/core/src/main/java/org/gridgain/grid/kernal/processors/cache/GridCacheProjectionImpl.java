@@ -100,7 +100,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         assert cctx != null;
 
         // Check if projection flags are conflicting with an ongoing transaction, if any.
-        cctx.checkTxFlags(flags);
+        cctx.shared().checkTxFlags(flags);
 
         this.cctx = cctx;
 

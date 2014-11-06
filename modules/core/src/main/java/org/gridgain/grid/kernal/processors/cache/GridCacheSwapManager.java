@@ -623,7 +623,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return read(key, CU.marshal(cctx, key), false);
+        return read(key, CU.marshal(cctx.shared(), key), false);
     }
 
     /**
@@ -663,7 +663,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 int part = cctx.affinity().partition(key);
 
-                byte[] keyBytes = CU.marshal(cctx, key);
+                byte[] keyBytes = CU.marshal(cctx.shared(), key);
 
                 byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
 
@@ -711,7 +711,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         Collection<GridSwapKey> converted = new ArrayList<>(F.viewReadOnly(keysList, new C1<K, GridSwapKey>() {
             @Override public GridSwapKey apply(K key) {
                 try {
-                    return new GridSwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx, key));
+                    return new GridSwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key));
                 }
                 catch (GridException e) {
                     throw new GridRuntimeException(e);
@@ -782,7 +782,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return readAndRemove(key, CU.marshal(cctx, key));
+        return readAndRemove(key, CU.marshal(cctx.shared(), key));
     }
 
     /**

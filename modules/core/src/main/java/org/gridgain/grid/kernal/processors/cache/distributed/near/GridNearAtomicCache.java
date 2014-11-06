@@ -68,7 +68,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
-        ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
                 processGetResponse(nodeId, res);
             }
@@ -616,7 +616,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
         return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
             syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);

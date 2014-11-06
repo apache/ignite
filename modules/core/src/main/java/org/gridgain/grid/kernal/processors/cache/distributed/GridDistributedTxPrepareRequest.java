@@ -75,7 +75,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** DHT versions to verify. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, GridCacheVersion> dhtVers;
+    private Map<GridCacheTxKey<K>, GridCacheVersion> dhtVers;
 
     /** Serialized map. */
     @GridToStringExclude
@@ -156,7 +156,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param key Key for which version is verified.
      * @param dhtVer DHT version to check.
      */
-    public void addDhtVersion(K key, @Nullable GridCacheVersion dhtVer) {
+    public void addDhtVersion(GridCacheTxKey<K> key, @Nullable GridCacheVersion dhtVer) {
         if (dhtVers == null)
             dhtVers = new HashMap<>();
 
@@ -166,8 +166,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Map of versions to be verified.
      */
-    public Map<K, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<K, GridCacheVersion>emptyMap() : dhtVers;
+    public Map<GridCacheTxKey<K>, GridCacheVersion> dhtVersions() {
+        return dhtVers == null ? Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap() : dhtVers;
     }
 
     /**

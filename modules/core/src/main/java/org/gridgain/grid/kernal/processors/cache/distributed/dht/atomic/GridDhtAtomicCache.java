@@ -154,37 +154,37 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         preldr.start();
 
-        ctx.io().addHandler(GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearGetRequest<K, V> req) {
                 processNearGetRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest<K, V> req) {
                 processNearAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse<K, V> res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest<K, V> req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse<K, V>>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse<K, V> res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(GridDhtAtomicDeferredUpdateResponse.class,
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicDeferredUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicDeferredUpdateResponse<K, V>>() {
                 @Override public void apply(UUID nodeId, GridDhtAtomicDeferredUpdateResponse<K, V> res) {
                     processDhtAtomicDeferredUpdateResponse(nodeId, res);
@@ -192,7 +192,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
 
         if (near == null) {
-            ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
+            ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
                 @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
                     processNearGetResponse(nodeId, res);
                 }
@@ -268,7 +268,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock
     ) {
         throw new UnsupportedOperationException("Transactions are not supported for " +

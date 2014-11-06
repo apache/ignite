@@ -193,7 +193,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Nullable private Collection<byte[]> marshalFieldsCollection(@Nullable Collection<Object> col,
-        GridCacheContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws GridException {
         assert ctx != null;
 
         if (col == null)
@@ -225,7 +225,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Nullable private Collection<Object> unmarshalFieldsCollection(@Nullable Collection<byte[]> byteCol,
-        GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
         assert ctx != null;
         assert ldr != null;
 

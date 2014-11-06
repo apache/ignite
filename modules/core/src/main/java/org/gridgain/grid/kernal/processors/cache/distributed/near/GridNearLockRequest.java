@@ -119,7 +119,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         boolean syncRollback,
         int keyCnt,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash

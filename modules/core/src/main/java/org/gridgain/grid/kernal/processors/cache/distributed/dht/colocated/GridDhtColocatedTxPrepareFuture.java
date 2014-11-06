@@ -46,7 +46,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -79,7 +79,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridDhtColocatedTxPrepareFuture(GridCacheContext<K, V> cctx, final GridDhtColocatedTxLocal<K, V> tx) {
+    public GridDhtColocatedTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridDhtColocatedTxLocal<K, V> tx) {
         super(cctx.kernalContext(), new GridReducer<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>>() {
             @Override public boolean collect(GridCacheTxEx<K, V> e) {
                 return true;
@@ -288,11 +288,12 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
 
         assert topVer > 0;
 
-        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new GridTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
-
-            return;
-        }
+        // TODO gg-9141
+//        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
+//            onDone(new GridTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+//
+//            return;
+//        }
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -363,10 +364,12 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
+            GridCacheContext<K, V> cacheCtx = null; // TODO GG-9141 move prepareTxLocally to tx handler.
+
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            GridFuture<GridCacheTxEx<K, V>> fut = cctx.colocated().prepareTxLocally(tx, reads, writes,
+            GridFuture<GridCacheTxEx<K, V>> fut = cacheCtx.colocated().prepareTxLocally(tx, reads, writes,
                 txMapping.transactionNodes(), m.last(), m.lastBackups());
 
             // Add new future.
@@ -444,7 +447,9 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
      */
     private GridDistributedTxMapping<K, V> map(GridCacheTxEntry<K, V> entry, long topVer,
         GridDistributedTxMapping<K, V> cur) throws GridException {
-        List<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        List<GridNode> nodes = cacheCtx.affinity().nodes(entry.key().key(), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -454,7 +459,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
 
         if (log.isDebugEnabled())
             log.debug("Mapped key to primary node [key=" + entry.key() +
-                ", part=" + cctx.affinity().partition(entry.key()) +
+                ", part=" + cacheCtx.affinity().partition(entry.key()) +
                 ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
 
         if (tx.groupLock() && !primary.isLocal())
@@ -462,7 +467,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
                 " key) [key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
-        entry.cached(cctx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
+        entry.cached(cacheCtx.colocated().entryExx(entry.key().key(), topVer, true), entry.keyBytes());
 
         if (cur == null || !cur.node().id().equals(primary.id()))
             cur = new GridDistributedTxMapping<>(primary);
@@ -590,7 +595,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridAbstractNearPrepa
                     assert F.isEmpty(res.invalidPartitions());
 
                     try {
-                        for (Map.Entry<K, GridTuple3<GridCacheVersion, V, byte[]>> entry : res.ownedValues().entrySet()) {
+                        for (Map.Entry<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : res.ownedValues().entrySet()) {
                             GridCacheTxEntry<K, V> txEntry = tx.entry(entry.getKey());
 
                             assert txEntry != null;

@@ -1439,6 +1439,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (!txEntry1.markPrepared())
                 continue;
 
+            GridCacheContext<K, V> cacheCtx = txEntry1.context();
+
             while (true) {
                 try {
                     GridCacheEntryEx<K, V> entry1 = txEntry1.cached();
@@ -1468,14 +1470,14 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                     try {
                         // Renew cache entry.
-                        txEntry1.cached(txEntry1.context().cache().entryEx(txEntry1.key().key()), txEntry1.keyBytes());
+                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key().key()), txEntry1.keyBytes());
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert tx.dht() : "Received invalid partition for non DHT transaction [tx=" +
                             tx + ", invalidPart=" + e.partition() + ']';
 
                         // If partition is invalid, we ignore this entry.
-                        tx.addInvalidPartition(e.partition());
+                        tx.addInvalidPartition(cacheCtx, e.partition());
 
                         break;
                     }

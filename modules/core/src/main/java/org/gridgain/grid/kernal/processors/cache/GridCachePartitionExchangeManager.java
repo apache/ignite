@@ -146,23 +146,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void start0() throws GridException {
         super.start0();
 
-        cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        cctx.io().addHandler(GridDhtPartitionsSingleMessage.class,
+        cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtPartitionsSingleMessage<K, V> msg) {
                     processSinglePartitionUpdate(node, msg);
                 }
             });
 
-        cctx.io().addHandler(GridDhtPartitionsFullMessage.class,
+        cctx.io().addHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtPartitionsFullMessage<K, V> msg) {
                     processFullPartitionUpdate(node, msg);
                 }
             });
 
-        cctx.io().addHandler(GridDhtPartitionsSingleRequest.class,
+        cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtPartitionsSingleRequest<K, V> msg) {
                     processSinglePartitionRequest(node, msg);
@@ -735,11 +735,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
                                         GridDiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                                        cctx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
+                                        cctx.gridEvents().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                                     }
                                 }

@@ -84,7 +84,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** Group lock key if this is a group-lock transaction. */
     @GridDirectTransient
-    private Object grpLockKey;
+    private GridCacheTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -133,7 +133,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock
     ) {
         super(lockVer, keyCnt);

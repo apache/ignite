@@ -219,7 +219,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ClassLoader ldr = ctx.deploy().globalLoader();
 
         if (ldr != null) {
-            Collection<T2<K, byte[]>> evicted = null;
+            Collection<T2<GridCacheTxKey<K>, byte[]>> evicted = null;
 
             for (int i = 0; i < nearKeys.size(); i++) {
                 K key = nearKeys.get(i);
@@ -283,7 +283,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         if (evicted == null)
                                             evicted = new LinkedList<>();
 
-                                        evicted.add(new T2<>(key, bytes));
+                                        evicted.add(new T2<>(txKey, bytes));
 
                                         tx = null;
 
@@ -320,7 +320,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             if (evicted == null)
                                 evicted = new LinkedList<>();
 
-                            evicted.add(new T2<>(key, bytes));
+                            evicted.add(new T2<>(txKey, bytes));
                         }
 
                         // Double-check in case if sender node left the grid.
@@ -358,7 +358,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (tx != null && evicted != null) {
                 assert !evicted.isEmpty();
 
-                for (T2<K, byte[]> evict : evicted)
+                for (T2<GridCacheTxKey<K>, byte[]> evict : evicted)
                     tx.addEvicted(evict.get1(), evict.get2());
             }
         }
@@ -412,7 +412,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
         boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
-        @Nullable Object grpLockKey, boolean partLock) {
+        @Nullable GridCacheTxKey grpLockKey, boolean partLock) {
         // Use null as subject ID for transactions if subject per call is not set.
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -420,7 +420,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
-        return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
+        return new GridNearTxLocal<>(ctx.shared(), implicit, implicitSingle, concurrency, isolation, timeout,
             invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
             subjId, taskNameHash);
     }

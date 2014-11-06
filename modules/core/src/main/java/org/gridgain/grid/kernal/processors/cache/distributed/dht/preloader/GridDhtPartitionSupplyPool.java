@@ -78,7 +78,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         for (int i = 0; i < poolSize; i++)
             workers.add(new SupplyWorker());
 
-        cctx.io().addHandler(GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage<K, V>>() {
+        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage<K, V>>() {
             @Override public void apply(UUID id, GridDhtPartitionDemandMessage<K, V> m) {
                 processDemandMessage(id, m);
             }
@@ -306,7 +306,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                             if (info != null && !(info.key() instanceof GridPartitionLockKey) && !info.isNew()) {
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx);
+                                    s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);
@@ -376,7 +376,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                             info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))
-                                            s.addEntry0(part, info, cctx);
+                                            s.addEntry0(part, info, cctx.shared());
                                         else {
                                             if (log.isDebugEnabled())
                                                 log.debug("Preload predicate evaluated to false (will not send " +
@@ -451,7 +451,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 }
 
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx);
+                                    s.addEntry(part, info, cctx.shared());
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);

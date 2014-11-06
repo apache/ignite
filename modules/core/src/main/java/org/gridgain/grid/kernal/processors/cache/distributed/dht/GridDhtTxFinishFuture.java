@@ -350,7 +350,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 add(fut); // Append new future.
 
                 // Take in count syncPrimary() here.
-                boolean syncReq = sync || nearMapping.node().isLocal() && cctx.syncPrimary();
+                boolean syncReq = sync || nearMapping.node().isLocal(); // TODO GG-9141 && cctx.syncPrimary();
 
                 GridDhtTxFinishRequest<K, V> req = new GridDhtTxFinishRequest<>(
                     tx.nearNodeId(),

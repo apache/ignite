@@ -80,7 +80,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock
     ) {
         if (grpLockKey != null)
@@ -94,7 +94,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         return new GridLocalTx<>(
-            ctx,
+            ctx.shared(),
             implicit,
             implicitSingle,
             concurrency,

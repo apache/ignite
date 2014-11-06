@@ -36,6 +36,7 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -115,12 +116,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void initialize(GridCacheConfiguration cfg) {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
-
-        if (cfg.getDefaultTxConcurrency() == null)
-            cfg.setDefaultTxConcurrency(DFLT_TX_CONCURRENCY);
-
-        if (cfg.getDefaultTxIsolation() == null)
-            cfg.setDefaultTxIsolation(DFLT_TX_ISOLATION);
 
         if (cfg.getMemoryMode() == null)
             cfg.setMemoryMode(DFLT_MEMORY_MODE);
@@ -248,9 +243,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.isWriteBehindEnabled());
 
         perf.add("Disable query index (set 'queryIndexEnabled' to false)", !cfg.isQueryIndexEnabled());
-
-        perf.add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
-            !cfg.isTxSerializableEnabled());
     }
 
     /**
@@ -313,7 +305,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
-        if (!cc.isTxSerializableEnabled() && cc.getDefaultTxIsolation() == SERIALIZABLE)
+        if (!c.getTransactionsConfiguration().isTxSerializableEnabled() &&
+            c.getTransactionsConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
             U.warn(log,
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
@@ -464,8 +457,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return DHT managers.
      */
     private List<GridCacheManager> dhtManagers(GridCacheContext ctx) {
-        return F.asList(ctx.store(), ctx.mvcc(), ctx.events(), ctx.tm(), ctx.swap(), ctx.dgc(), ctx.evicts(),
-            ctx.queries(), ctx.continuousQueries(), ctx.dr());
+        return F.asList(ctx.store(), ctx.events(), ctx.swap(), ctx.evicts(), ctx.queries(), ctx.continuousQueries(),
+            ctx.dr());
     }
 
     /**
@@ -477,7 +470,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList((GridCacheManager)ctx.dgc(), ctx.queries(), ctx.continuousQueries());
+            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries());
     }
 
     /**
@@ -723,6 +716,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
+        ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
+            !ctx.config().getTransactionsConfiguration().isTxSerializableEnabled());
+
         for (int i = 0; i < cfgs.length; i++) {
             GridCacheConfiguration cfg = new GridCacheConfiguration(cfgs[i]);
 
@@ -751,7 +747,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheVersionManager verMgr = new GridCacheVersionManager();
             GridCacheEventManager evtMgr = new GridCacheEventManager();
             GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !isNearEnabled(cfg));
-            GridCacheDgcManager dgcMgr = new GridCacheDgcManager();
             GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
@@ -777,12 +772,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evtMgr,
                 swapMgr,
                 storeMgr,
-                depMgr,
                 evictMgr,
-                ioMgr,
                 qryMgr,
                 contQryMgr,
-                dgcMgr,
                 affMgr,
                 tm,
                 dataStructuresMgr,
@@ -927,12 +919,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     evtMgr,
                     swapMgr,
                     storeMgr,
-                    depMgr,
                     evictMgr,
-                    ioMgr,
                     qryMgr,
                     contQryMgr,
-                    dgcMgr,
                     affMgr,
                     tm,
                     dataStructuresMgr,
@@ -1712,7 +1701,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
+                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
 
                     qryMgr.remove(key, keyBytes);
                 }
@@ -1904,6 +1893,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
                 cache.onUndeploy(leftNodeId, ldr);
+    }
+
+    /**
+     * @return Shared context.
+     */
+    public <K, V> GridCacheSharedContext<K, V> context() {
+        return null; // TODO GG-9141 initialize context.
+    }
+
+    /**
+     * @return Transactions interface implementation.
+     */
+    public GridTransactions transactions() {
+        return null; // TODO GG-9141 return transactions impl.
     }
 
     /**

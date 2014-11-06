@@ -227,7 +227,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param keys Keys to evict readers for.
      * @param entries Entries to check.
      */
-    private void evictReaders(Collection<K> keys, @Nullable Collection<GridCacheTxEntry<K, V>> entries) {
+    private void evictReaders(Collection<GridCacheTxKey<K>> keys, @Nullable Collection<GridCacheTxEntry<K, V>> entries) {
         if (entries == null || entries.isEmpty())
             return;
 

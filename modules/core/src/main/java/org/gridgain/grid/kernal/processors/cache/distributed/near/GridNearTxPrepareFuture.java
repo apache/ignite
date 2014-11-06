@@ -337,12 +337,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
 
         assert topVer > 0;
 
-        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new GridTopologyException("Failed to map keys for near-only cache (all " +
-                "partition nodes left the grid)."));
-
-            return;
-        }
+        // TODO GG-9141 check all involved caches.
+//        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
+//            onDone(new GridTopologyException("Failed to map keys for near-only cache (all " +
+//                "partition nodes left the grid)."));
+//
+//            return;
+//        }
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -437,7 +438,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            GridFuture<GridCacheTxEx<K, V>> fut = cctx.nearTx().dht().prepareTx(n, req);
+            GridFuture<GridCacheTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
@@ -464,7 +465,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
 
                             GridCacheVersion min = dhtTx.minVersion();
 
-                            GridCacheTxManager<K, V> tm = cctx.near().dht().context().tm();
+                            GridCacheTxManager<K, V> tm = cctx.tm();
 
                             tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
                                 tm.committedVersions(min), tm.rolledbackVersions(min));
@@ -504,7 +505,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
      */
     private GridDistributedTxMapping<K, V> map(GridCacheTxEntry<K, V> entry, long topVer,
         GridDistributedTxMapping<K, V> cur) throws GridException {
-        List<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
+        GridCacheContext<K, V> cacheCtx = entry.context();
+
+        List<GridNode> nodes = cacheCtx.affinity().nodes(entry.key().key(), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -514,7 +517,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
 
         if (log.isDebugEnabled()) {
             log.debug("Mapped key to primary node [key=" + entry.key() +
-                ", part=" + cctx.affinity().partition(entry.key()) +
+                ", part=" + cacheCtx.affinity().partition(entry.key()) +
                 ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
         }
 
@@ -538,7 +541,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
                 break;
             }
             catch (GridCacheEntryRemovedException ignore) {
-                entry.cached(cctx.near().entryEx(entry.key()), entry.keyBytes());
+                entry.cached(cacheCtx.near().entryEx(entry.key().key()), entry.keyBytes());
             }
         }
 
@@ -660,7 +663,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
                 else {
                     assert F.isEmpty(res.invalidPartitions());
 
-                    for (Map.Entry<K, GridTuple3<GridCacheVersion, V, byte[]>> entry : res.ownedValues().entrySet()) {
+                    for (Map.Entry<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : res.ownedValues().entrySet()) {
                         GridCacheTxEntry<K, V> txEntry = tx.entry(entry.getKey());
 
                         assert txEntry != null;

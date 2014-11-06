@@ -62,7 +62,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheTxMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
-    private GridFuture<Void> preloadersStartFut;
+    private GridFuture<Object> preloadersStartFut;
 
     /**
      * @param txMgr Transaction manager.
@@ -137,12 +137,12 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Compound preloaders start future.
      */
-    public GridFuture<Void> preloadersStartFuture() {
+    public GridFuture<Object> preloadersStartFuture() {
         if (preloadersStartFut == null) {
-            GridCompoundFuture<Void, Void> compound = null;
+            GridCompoundFuture<Object, Object> compound = null;
 
             for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
-                GridFuture<Void> startFut = cacheCtx.preloader().startFuture();
+                GridFuture<Object> startFut = cacheCtx.preloader().startFuture();
 
                 if (!startFut.isDone()) {
                     if (compound == null)
@@ -328,7 +328,15 @@ public class GridCacheSharedContext<K, V> {
         return f;
     }
 
-
+    /**
+     * @param activeCacheIds Active cache IDs.
+     * @param cacheCtx Cache context.
+     * @return {@code True} if cross-cache transaction can include this new cache.
+     */
+    public boolean txCompatible(Set<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
+        // TODO GG-9141 implement.
+        return false;
+    }
 
     /**
      * @param flags Flags to turn on.

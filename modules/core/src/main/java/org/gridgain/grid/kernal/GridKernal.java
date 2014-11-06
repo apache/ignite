@@ -65,6 +65,7 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -2838,6 +2839,24 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         try {
             return ctx.event().isAllUserRecordable(types);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTransactions transactions() {
+        guard();
+
+        try {
+            if (!dbUsageRegistered) {
+                GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
+
+                dbUsageRegistered = true;
+            }
+
+            return ctx.cache().transactions();
         }
         finally {
             unguard();

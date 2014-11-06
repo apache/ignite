@@ -614,7 +614,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(int part) {
+    @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         invalidParts.add(part);
 
         if (log.isDebugEnabled())

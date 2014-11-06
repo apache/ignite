@@ -87,7 +87,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
      */
     GridNearTxLocal(
-        GridCacheContext<K, V> ctx,
+        GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,
@@ -99,13 +99,14 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
         boolean swapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled && !ctx.writeToStoreFromDht(), txSize, grpLockKey, partLock, subjId,
+            swapEnabled, storeEnabled, // TODO GG-9141 storeEnabled && !ctx.writeToStoreFromDht(),
+            txSize, grpLockKey, partLock, subjId,
             taskNameHash);
 
         assert ctx != null;
@@ -168,7 +169,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<K> keys) {
+    @Override protected void addGroupTxMapping(Collection<GridCacheTxKey<K>> keys) {
         addKeyMapping(cctx.localNode(), keys);
     }
 
@@ -178,7 +179,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param key Key to add.
      * @param node Node this key mapped to.
      */
-    void addKeyMapping(K key, GridNode node) {
+    void addKeyMapping(GridCacheTxKey<K> key, GridNode node) {
         GridDistributedTxMapping<K, V> m = mappings.get(node.id());
 
         if (m == null)
@@ -193,7 +194,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
         m.add(txEntry);
 
         if (log.isDebugEnabled())
-            log.debug("Added mappings to transaction [locId=" + cctx.nodeId() + ", key=" + key + ", node=" + node +
+            log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", key=" + key + ", node=" + node +
                 ", tx=" + this + ']');
     }
 
@@ -217,7 +218,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Added mappings to transaction [locId=" + cctx.nodeId() + ", mappings=" + maps +
+                log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", mappings=" + maps +
                     ", tx=" + this + ']');
         }
     }
@@ -228,13 +229,13 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param n Mapped node.
      * @param mappedKeys Mapped keys.
      */
-    void addKeyMapping(GridNode n, Iterable<K> mappedKeys) {
+    void addKeyMapping(GridNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
         GridDistributedTxMapping<K, V> m = mappings.get(n.id());
 
         if (m == null)
             mappings.put(n.id(), m = new GridDistributedTxMapping<>(n));
 
-        for (K key : mappedKeys) {
+        for (GridCacheTxKey<K> key : mappedKeys) {
             GridCacheTxEntry<K, V> txEntry = txMap.get(key);
 
             assert txEntry != null;
@@ -375,7 +376,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                             ", tx=" + this + ']');
 
                     // Replace the entry.
-                    txEntry.cached(cctx.cache().entryEx(txEntry.key()), entry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), entry.keyBytes());
                 }
             }
         }
@@ -526,10 +527,12 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * Waits for topology exchange future to be ready and then prepares user transaction.
      */
     private void prepareOnTopology() {
-        cctx.topology().readLock();
+        GridCacheContext<K, V> cacheCtx = null; // TODO GG-9141 introduce common read lock.
+
+        cacheCtx.topology().readLock();
 
         try {
-            GridDhtTopologyFuture topFut = cctx.topology().topologyVersionFuture();
+            GridDhtTopologyFuture topFut = cacheCtx.topology().topologyVersionFuture();
 
             if (topFut.isDone()) {
                 GridNearTxPrepareFuture<K, V> fut = prepFut.get();
@@ -596,7 +599,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
             }
         }
         finally {
-            cctx.topology().readUnlock();
+            cacheCtx.topology().readUnlock();
         }
     }
 

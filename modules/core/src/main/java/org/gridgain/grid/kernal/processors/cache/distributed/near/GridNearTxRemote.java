@@ -45,7 +45,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private Collection<byte[]> evictedBytes = new LinkedList<>();
 
     /** Owned versions. */
-    private Map<K, GridCacheVersion> owned;
+    private Map<GridCacheTxKey<K>, GridCacheVersion> owned;
 
     /** Group lock flag. */
     private boolean grpLock;
@@ -218,7 +218,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      *
      * @param vers Map of owned versions.
      */
-    public void ownedVersions(Map<K, GridCacheVersion> vers) {
+    public void ownedVersions(Map<GridCacheTxKey<K>, GridCacheVersion> vers) {
         if (F.isEmpty(vers))
             return;
 
@@ -260,7 +260,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param key Evicted key.
      * @param bytes Bytes of evicted key.
      */
-    public void addEvicted(K key, byte[] bytes) {
+    public void addEvicted(GridCacheTxKey<K> key, byte[] bytes) {
         evicted.add(key);
 
         if (bytes != null)
@@ -300,7 +300,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     private boolean addEntry(GridCacheTxEntry<K, V> entry) throws GridException {
         checkInternal(entry.key());
 
-        GridNearCacheEntry<K, V> cached = cctx.near().peekExx(entry.key());
+        GridNearCacheEntry<K, V> cached = entry.context().near().peekExx(entry.key().key());
 
         if (cached == null) {
             evicted.add(entry.key());
@@ -379,11 +379,17 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws GridException If failed.
      * @return {@code True} if entry has been enlisted.
      */
-    private boolean addEntry(K key, byte[] keyBytes, V val, byte[] valBytes, @Nullable GridCacheVersion drVer)
-        throws GridException {
+    private boolean addEntry(
+        GridCacheContext<K, V> cacheCtx,
+        GridCacheTxKey<K> key,
+        byte[] keyBytes,
+        V val,
+        byte[] valBytes,
+        @Nullable GridCacheVersion drVer
+    ) throws GridException {
         checkInternal(key);
 
-        GridNearCacheEntry<K, V> cached = cctx.near().peekExx(key);
+        GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(key.key());
 
         try {
             if (cached == null) {
@@ -398,7 +404,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                 cached.unswap();
 
                 if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
-                    cached.context().cache().removeIfObsolete(key);
+                    cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);
 
@@ -408,7 +414,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     return false;
                 }
                 else {
-                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached,
+                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, NOOP, val, 0L, -1L, cached,
                         drVer);
 
                     txEntry.keyBytes(keyBytes);

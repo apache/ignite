@@ -81,7 +81,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, Object grpLockKey,
+        Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, GridCacheTxKey grpLockKey,
         boolean partLock, boolean syncCommit, boolean syncRollback,
         Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId,
         int taskNameHash) {
@@ -172,7 +172,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /**
      * @param ctx Cache context.
      */
-    void cloneEntries(GridCacheContext<K, V> ctx) {
+    void cloneEntries(GridCacheSharedContext<K, V> ctx) {
         reads(cloneEntries(ctx, reads()));
         writes(cloneEntries(ctx, writes()));
     }
@@ -182,7 +182,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<GridCacheTxEntry<K, V>> cloneEntries(GridCacheContext<K, V> ctx,
+    private Collection<GridCacheTxEntry<K, V>> cloneEntries(GridCacheSharedContext<K, V> ctx,
         Collection<GridCacheTxEntry<K, V>> c) {
         if (F.isEmpty(c))
             return c;
@@ -190,7 +190,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
         for (GridCacheTxEntry<K, V> e : c)
-            cp.add(e.cleanCopy(ctx));
+            cp.add(e.cleanCopy(ctx.cacheContext(e.key().cacheId())));
 
         return cp;
     }

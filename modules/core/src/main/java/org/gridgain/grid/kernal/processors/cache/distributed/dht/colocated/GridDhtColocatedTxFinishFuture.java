@@ -41,7 +41,7 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
-    private GridCacheContext<K, V> cctx;
+    private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private GridUuid futId;
@@ -73,7 +73,7 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridDhtColocatedTxFinishFuture(GridCacheContext<K, V> cctx, GridDhtColocatedTxLocal<K, V> tx) {
+    public GridDhtColocatedTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtColocatedTxLocal<K, V> tx) {
         super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
 
         assert cctx != null;
@@ -240,12 +240,14 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * @param commit {@code True} if commit.
      */
     void finish(boolean commit) {
+        GridCacheContext<K, V> cacheCtx = null; // TODO move finishLocal to tx handler. GG-9141
+
         if (tx.onePhaseCommit()) {
             // No need to send messages as transaction was already committed on remote node.
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {
                 if (m.node().isLocal()) {
-                    GridFuture<GridCacheTx> fut = cctx.colocated().finishLocal(commit, m.explicitLock(), tx);
+                    GridFuture<GridCacheTx> fut = cacheCtx.colocated().finishLocal(commit, m.explicitLock(), tx);
 
                     // Add new future.
                     if (fut != null)
@@ -259,7 +261,7 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
         }
 
         if (mappings != null) {
-            finish(mappings.values(), commit);
+            finish(cacheCtx, mappings.values(), commit);
 
             markInitialized();
 
@@ -293,24 +295,24 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * @param mappings Mappings.
      * @param commit {@code True} to commit.
      */
-    private void finish(Iterable<GridDistributedTxMapping<K, V>> mappings, boolean commit) {
+    private void finish(GridCacheContext<K, V> cacheCtx, Iterable<GridDistributedTxMapping<K, V>> mappings, boolean commit) {
         // Create mini futures.
         for (GridDistributedTxMapping<K, V> m : mappings)
-            finish(m, commit);
+            finish(cacheCtx, m, commit);
     }
 
     /**
      * @param m Mapping.
      * @param commit {@code True} to commit.
      */
-    private void finish(GridDistributedTxMapping<K, V> m, boolean commit) {
+    private void finish(GridCacheContext<K, V> cacheCtx, GridDistributedTxMapping<K, V> m, boolean commit) {
         GridNode n = m.node();
 
         assert !m.empty();
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            GridFuture<GridCacheTx> fut = cctx.colocated().finishLocal(commit, m.explicitLock(), tx);
+            GridFuture<GridCacheTx> fut = cacheCtx.colocated().finishLocal(commit, m.explicitLock(), tx);
 
             // Add new future.
             if (fut != null)

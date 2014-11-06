@@ -96,7 +96,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * @param part Invalid partition.
      */
-    public void addInvalidPartition(int part);
+    public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part);
 
     /**
      * @return Invalid partitions.

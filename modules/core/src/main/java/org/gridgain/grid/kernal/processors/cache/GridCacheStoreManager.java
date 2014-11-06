@@ -139,6 +139,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @return Whether DHT transaction can write to store from DHT.
+     */
+    public boolean writeToStoreFromDht() {
+        // TODO GG-9141
+        return false;
+    }
+
+    /**
      * Loads data from persistent store.
      *
      * @param tx Cache transaction.

@@ -182,13 +182,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             maxActiveFuts = cfg.getEvictSynchronizedConcurrencyLevel();
 
-            cctx.io().addHandler(GridCacheEvictionRequest.class, new CI2<UUID, GridCacheEvictionRequest<K, V>>() {
+            cctx.io().addHandler(cctx.cacheId(), GridCacheEvictionRequest.class, new CI2<UUID, GridCacheEvictionRequest<K, V>>() {
                 @Override public void apply(UUID nodeId, GridCacheEvictionRequest<K, V> msg) {
                     processEvictionRequest(nodeId, msg);
                 }
             });
 
-            cctx.io().addHandler(GridCacheEvictionResponse.class, new CI2<UUID, GridCacheEvictionResponse<K, V>>() {
+            cctx.io().addHandler(cctx.cacheId(), GridCacheEvictionResponse.class, new CI2<UUID, GridCacheEvictionResponse<K, V>>() {
                 @Override public void apply(UUID nodeId, GridCacheEvictionResponse<K, V> msg) {
                     processEvictionResponse(nodeId, msg);
                 }

@@ -85,7 +85,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private GridUuid nearMiniId;
 
     /** DHT versions map. */
-    private Map<K, GridCacheVersion> dhtVerMap;
+    private Map<GridCacheTxKey<K>, GridCacheVersion> dhtVerMap;
 
     /** {@code True} if this is last prepare operation for node. */
     private boolean last;
@@ -109,7 +109,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridDhtTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridDhtTxLocalAdapter<K, V> tx,
-        GridUuid nearMiniId, Map<K, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
+        GridUuid nearMiniId, Map<GridCacheTxKey<K>, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
         super(cctx.kernalContext(), new GridReducer<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>>() {
             @Override public boolean collect(GridCacheTxEx<K, V> e) {
                 return true;
@@ -421,7 +421,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     private void addDhtValues(GridNearTxPrepareResponse<K, V> res) {
         // Interceptor on near node needs old values to execute callbacks.
-        if (cctx.config().getInterceptor() != null && !F.isEmpty(writes)) {
+        if (!F.isEmpty(writes)) {
             for (GridCacheTxEntry<K, V> e : writes) {
                 GridCacheTxEntry<K, V> txEntry = tx.entry(e.key());
 
@@ -456,7 +456,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             }
         }
 
-        for (Map.Entry<K, GridCacheVersion> ver : dhtVerMap.entrySet()) {
+        for (Map.Entry<GridCacheTxKey<K>, GridCacheVersion> ver : dhtVerMap.entrySet()) {
             GridCacheTxEntry<K, V> txEntry = tx.entry(ver.getKey());
 
             if (res.hasOwnedValue(ver.getKey()))
@@ -1005,7 +1005,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 long topVer = tx.topologyVersion();
 
-                boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+                boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
                 for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(info.cacheId());
@@ -1019,7 +1019,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             if (entry.initialValue(info.value(), info.valueBytes(), info.version(),
                                 info.ttl(), info.expireTime(), true, topVer, drType)) {
                                 if (rec && !entry.isInternal())
-                                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                    cctx.gridEvents().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                         (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null);
                             }

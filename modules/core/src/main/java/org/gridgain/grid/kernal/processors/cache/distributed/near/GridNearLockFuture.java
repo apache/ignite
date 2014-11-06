@@ -764,6 +764,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 boolean explicit = false;
 
                 for (K key : mappedKeys) {
+                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+
                     while (true) {
                         GridNearCacheEntry<K, V> entry = null;
 
@@ -850,12 +852,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxKey<K> txKey = cctx.txKey(key);
-
                                     GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
-                                        tx.addKeyMapping(key, mapping.node());
+                                        tx.addKeyMapping(txKey, mapping.node());
 
                                     req.addKeyBytes(
                                         key,
@@ -879,7 +879,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 explicit = tx != null && !entry.hasLockCandidate(tx.xidVersion());
 
                             if (explicit)
-                                tx.addKeyMapping(key, mapping.node());
+                                tx.addKeyMapping(txKey, mapping.node());
 
                             break;
                         }
@@ -948,7 +948,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             GridFuture<GridNearLockResponse<K, V>> fut;
 
             if (CU.DHT_ENABLED)
-                fut = dht().lockAllAsync(cctx.localNode(), req, filter);
+                fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
             else {
                 // Create dummy values for testing.
                 GridNearLockResponse<K, V> res = new GridNearLockResponse<>(lockVer, futId, null, false, 1, null);

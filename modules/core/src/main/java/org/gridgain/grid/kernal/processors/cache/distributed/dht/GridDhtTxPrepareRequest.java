@@ -57,7 +57,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, GridCacheVersion> owned;
+    private Map<GridCacheTxKey<K>, GridCacheVersion> owned;
 
     /** Owned versions bytes. */
     private byte[] ownedBytes;
@@ -107,7 +107,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         GridDhtTxLocalAdapter<K, V> tx,
         Collection<GridCacheTxEntry<K, V>> dhtWrites,
         Collection<GridCacheTxEntry<K, V>> nearWrites,
-        Object grpLockKey,
+        GridCacheTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
@@ -243,7 +243,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(K key, GridCacheVersion ownerMapped) {
+    public void owned(GridCacheTxKey<K> key, GridCacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -253,7 +253,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Owned versions map.
      */
-    public Map<K, GridCacheVersion> owned() {
+    public Map<GridCacheTxKey<K>, GridCacheVersion> owned() {
         return owned;
     }
 
@@ -266,7 +266,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             ownedBytes = CU.marshal(ctx, owned);
 
             if (ctx.deploymentEnabled()) {
-                for (K k : owned.keySet())
+                for (GridCacheTxKey<K> k : owned.keySet())
                     prepareObject(k, ctx);
             }
         }

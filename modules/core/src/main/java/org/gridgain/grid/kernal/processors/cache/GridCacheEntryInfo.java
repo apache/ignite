@@ -29,6 +29,9 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     @GridDirectTransient
     private K key;
 
+    /** Cache ID. */
+    private int cacheId;
+
     /** Key bytes. */
     private byte[] keyBytes;
 

@@ -264,7 +264,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Cache message to get start future.
      * @return Preloader start future.
      */
-    private GridFuture<Void> startFuture(GridCacheMessage<K, V> cacheMsg) {
+    private GridFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
         int cacheId = cacheMsg.cacheId();
 
         return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();

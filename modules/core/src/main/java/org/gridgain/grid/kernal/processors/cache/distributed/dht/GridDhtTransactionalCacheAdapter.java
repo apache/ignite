@@ -27,10 +27,8 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -392,8 +390,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
             else if (!F.isEmpty(req.nearKeyBytes()))
                 res.nearEvictedBytes(req.nearKeyBytes());
-            else if (!F.isEmpty(req.nearKeys()))
-                res.nearEvicted(req.nearKeys());
+//            else if (!F.isEmpty(req.nearKeys())) TODO GG-9141 revisit lock logic: startRemoteTx will return null in case of evicted keys.
+//                res.nearEvicted(req.nearKeys());
         }
         catch (GridCacheTxRollbackException e) {
             String err = "Failed processing DHT lock request (transaction has been completed): " + req;
@@ -532,7 +530,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         // Group lock can be only started from local node, so we never start group lock transaction on remote node.
-        GridFuture<?> f = lockAllAsync(nearNode, req, null);
+        GridFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
@@ -663,7 +661,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
             catch (GridDhtInvalidPartitionException e) {
-                fut.addInvalidPartition(e.partition());
+                fut.addInvalidPartition(ctx, e.partition());
 
                 if (log.isDebugEnabled())
                     log.debug("Added invalid partition to DHT lock future [part=" + e.partition() + ", fut=" +
@@ -684,7 +682,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param filter0 Filter.
      * @return Future.
      */
-    public GridFuture<GridNearLockResponse<K, V>> lockAllAsync(final GridNode nearNode,
+    public GridFuture<GridNearLockResponse<K, V>> lockAllAsync(
+        final GridCacheContext<K, V> cacheCtx,
+        final GridNode nearNode,
         final GridNearLockRequest<K, V> req,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
@@ -839,6 +839,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             assert req.writeEntries() == null || req.writeEntries().size() == entries.size();
 
                             GridFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
+                                cacheCtx,
                                 entries,
                                 req.writeEntries(),
                                 req.onePhaseCommit(),

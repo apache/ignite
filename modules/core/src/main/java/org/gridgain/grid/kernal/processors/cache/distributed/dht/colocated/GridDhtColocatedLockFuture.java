@@ -250,7 +250,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         GridCacheMvccCandidate<K> cand = cctx.mvcc().explicitLock(threadId, entry.key());
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.key());
+            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
 
@@ -264,7 +264,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             else {
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
                 cand = new GridCacheMvccCandidate<>(entry, cctx.localNodeId(),
-                    null, null, threadId, lockVer, timeout, true, tx.entry(entry.key()).locked(), inTx(),
+                    null, null, threadId, lockVer, timeout, true, tx.entry(entry.txKey()).locked(), inTx(),
                     inTx() && tx.implicitSingle(), false, false);
 
                 cand.topologyVersion(topSnapshot.get().topologyVersion());
@@ -648,6 +648,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 for (K key : mappedKeys) {
                     boolean explicit;
 
+                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+
                     while (true) {
                         GridDistributedCacheEntry<K, V> entry = null;
 
@@ -714,14 +716,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     req.onePhaseCommit(true);
                                 }
 
-                                GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(key) : null;
+                                GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                 if (writeEntry != null)
                                     // We are sending entry to remote node, clear transfer flag.
                                     writeEntry.transferRequired(false);
 
                                 if (tx != null)
-                                    tx.addKeyMapping(key, mapping.node());
+                                    tx.addKeyMapping(txKey, mapping.node());
 
                                 req.addKeyBytes(
                                     key,
@@ -729,14 +731,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
                                     writeEntry,
-                                    inTx() ? tx.entry(key).drVersion() : null,
+                                    inTx() ? tx.entry(txKey).drVersion() : null,
                                     cctx);
                             }
 
                             explicit = inTx() && cand == null;
 
                             if (explicit)
-                                tx.addKeyMapping(key, mapping.node());
+                                tx.addKeyMapping(txKey, mapping.node());
 
                             break;
                         }
@@ -869,7 +871,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
 
-        GridFuture<Exception> fut = cctx.colocated().lockAllAsync(tx, threadId, lockVer,
+        GridFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx, tx, threadId, lockVer,
             topVer, keys, read, timeout, filter);
 
         // Add new future.
@@ -900,7 +902,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                     if (inTx()) {
                         for (K key : keys)
-                            tx.entry(key).markLocked();
+                            tx.entry(cctx.txKey(key)).markLocked();
                     }
                     else {
                         for (K key : keys)
@@ -1210,7 +1212,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     }
 
                     if (inTx()) {
-                        GridCacheTxEntry<K, V> txEntry = tx.entry(k);
+                        GridCacheTxEntry<K, V> txEntry = tx.entry(cctx.txKey(k));
 
                         // In colocated cache we must receive responses only for detached entries.
                         assert txEntry.cached().detached();
@@ -1245,7 +1247,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                         cctx.events().addEvent(cctx.affinity().partition(k), k, tx, null,
                             EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                            null, false, CU.subjectId(tx, cctx), null, tx == null ? null : tx.resolveTaskName());
+                            null, false, CU.subjectId(tx, cctx.shared()), null, tx == null ? null : tx.resolveTaskName());
 
                     i++;
                 }

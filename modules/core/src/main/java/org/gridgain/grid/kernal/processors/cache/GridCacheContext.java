@@ -107,12 +107,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Swap manager. */
     private GridCacheSwapManager<K, V> swapMgr;
 
-    /** Garbage collector manager.*/
-    private GridCacheDgcManager<K, V> dgcMgr;
-
-    /** Deployment manager. */
-    private GridCacheDeploymentManager<K, V> depMgr;
-
     /** Evictions manager. */
     private GridCacheEvictionManager<K, V> evictMgr;
 
@@ -197,11 +191,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
-     * @param depMgr Cache deployment manager.
      * @param evictMgr Cache eviction manager.
      * @param qryMgr Cache query manager.
      * @param contQryMgr Continuous query manager.
-     * @param dgcMgr Distributed garbage collector manager.
      * @param affMgr Affinity manager.
      * @param txMgr Cache transaction manager.
      * @param dataStructuresMgr Cache dataStructures manager.
@@ -224,11 +216,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEventManager<K, V> evtMgr,
         GridCacheSwapManager<K, V> swapMgr,
         GridCacheStoreManager<K, V> storeMgr,
-        GridCacheDeploymentManager<K, V> depMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
-        GridCacheDgcManager<K, V> dgcMgr,
         GridCacheAffinityManager<K, V> affMgr,
         GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
@@ -243,11 +233,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert evtMgr != null;
         assert swapMgr != null;
         assert storeMgr != null;
-        assert depMgr != null;
         assert evictMgr != null;
         assert qryMgr != null;
         assert contQryMgr != null;
-        assert dgcMgr != null;
         assert affMgr != null;
         assert txMgr != null;
         assert dataStructuresMgr != null;
@@ -263,11 +251,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.evtMgr = add(evtMgr);
         this.swapMgr = add(swapMgr);
         this.storeMgr = add(storeMgr);
-        this.depMgr = add(depMgr);
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
         this.contQryMgr = add(contQryMgr);
-        this.dgcMgr = add(dgcMgr);
         this.affMgr = add(affMgr);
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
@@ -830,17 +816,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Swap manager.
-     */
-    public GridCacheDgcManager<K, V> dgc() {
-        return dgcMgr;
-    }
-
-    /**
      * @return Cache deployment manager.
      */
     public GridCacheDeploymentManager<K, V> deploy() {
-        return depMgr;
+        return sharedCtx.deploy();
     }
 
     /**
@@ -1795,7 +1774,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         cacheCfg = null;
         evictMgr = null;
         qryMgr = null;
-        dgcMgr = null;
         dataStructuresMgr = null;
 
         mgrs.clear();

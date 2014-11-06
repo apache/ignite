@@ -90,7 +90,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     public GridDhtColocatedTxLocal(
         boolean implicit,
         boolean implicitSingle,
-        GridCacheContext<K, V> cctx,
+        GridCacheSharedContext<K, V> cctx,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -100,7 +100,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean swapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey,
+        @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
@@ -326,10 +326,12 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * Waits for topology exchange future to be ready and then prepares user transaction.
      */
     private void prepareOnTopology() {
-        cctx.topology().readLock();
+        GridCacheContext<K, V> cacheCtx = null; // TODO gg-9141 introduce shared read lock for topology.
+
+        cacheCtx.topology().readLock();
 
         try {
-            GridDhtTopologyFuture topFut = cctx.topology().topologyVersionFuture();
+            GridDhtTopologyFuture topFut = cacheCtx.topology().topologyVersionFuture();
 
             if (topFut.isDone()) {
                 GridDhtColocatedTxPrepareFuture<K, V> fut = (GridDhtColocatedTxPrepareFuture<K, V>)prepFut.get();
@@ -386,7 +388,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         finally {
-            cctx.topology().readUnlock();
+            cacheCtx.topology().readUnlock();
         }
     }
 
@@ -531,7 +533,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         init();
 
         GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(cctx, this, GridUuid.randomUuid(),
-            Collections.<K, GridCacheVersion>emptyMap(), last, lastBackups);
+            Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), last, lastBackups);
 
         try {
             // At this point all the entries passed in must be enlisted in transaction because this is an
@@ -693,11 +695,12 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    GridFuture<GridCacheReturn<V>> lockAllAsync(final Collection<? extends K> keys, boolean implicit, boolean read) {
+    GridFuture<GridCacheReturn<V>> lockAllAsync(GridCacheContext<K, V> cacheCtx, final Collection<? extends K> keys,
+        boolean implicit, boolean read) {
         assert pessimistic();
 
         try {
-            checkValid(CU.<K, V>empty());
+            checkValid();
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -713,7 +716,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys: " + keys);
 
-        GridFuture<Boolean> fut = cctx.colocated().lockAllAsyncInternal(keys,
+        GridFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
             lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(
@@ -730,7 +733,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<K> keys) {
+    @Override protected void addGroupTxMapping(Collection<GridCacheTxKey<K>> keys) {
         super.addGroupTxMapping(keys);
 
         GridDistributedTxMapping<K, V> m = mappings.get(cctx.localNodeId());
@@ -747,7 +750,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param key Key to add.
      * @param node Node this key mapped to.
      */
-    void addKeyMapping(K key, GridNode node) {
+    void addKeyMapping(GridCacheTxKey<K> key, GridNode node) {
         GridDistributedTxMapping<K, V> m = mappings.get(node.id());
 
         if (m == null)
@@ -762,7 +765,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         m.add(txEntry);
 
         if (log.isDebugEnabled())
-            log.debug("Added mappings to transaction [locId=" + cctx.nodeId() + ", key=" + key + ", node=" + node +
+            log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", key=" + key + ", node=" + node +
                 ", tx=" + this + ']');
     }
 
@@ -837,7 +840,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Added mappings to transaction [locId=" + cctx.nodeId() + ", mappings=" + maps +
+                log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", mappings=" + maps +
                     ", tx=" + this + ']');
         }
     }
@@ -859,11 +862,11 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(K key) {
+    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key) {
         GridCacheTxEntry<K, V> txEntry = entry(key);
 
         if (txEntry == null)
-            return cctx.colocated().entryExx(key, topologyVersion(), true);
+            return cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
 
         GridCacheEntryEx<K, V> cached = txEntry.cached();
 
@@ -873,7 +876,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             return cached;
 
         if (cached.obsoleteVersion() != null) {
-            cached = cctx.colocated().entryExx(key, topologyVersion(), true);
+            cached = cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
 
             txEntry.cached(cached, txEntry.keyBytes());
         }
@@ -882,11 +885,11 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(K key, long topVer) {
+    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, long topVer) {
         GridCacheTxEntry<K, V> txEntry = entry(key);
 
         if (txEntry == null)
-            return cctx.colocated().entryExx(key, topVer, true);
+            return cacheCtx.colocated().entryExx(key.key(), topVer, true);
 
         GridCacheEntryEx<K, V> cached = txEntry.cached();
 
@@ -896,7 +899,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             return cached;
 
         if (cached.obsoleteVersion() != null) {
-            cached = cctx.colocated().entryExx(key, topVer, true);
+            cached = cacheCtx.colocated().entryExx(key.key(), topVer, true);
 
             txEntry.cached(cached, txEntry.keyBytes());
         }
