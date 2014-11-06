@@ -128,7 +128,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         sockTimeoutWorker = new SocketTimeoutWorker();
         sockTimeoutWorker.start();
 
-        joinTopology();
+        joinTopology(false);
 
         disconnectHnd = new DisconnectHandler();
         disconnectHnd.start();
@@ -227,15 +227,17 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     }
 
     /**
+     * @param recon Reconnect flag.
      * @throws GridSpiException In case of error.
      */
-    private void joinTopology() throws GridSpiException {
+    private void joinTopology(boolean recon) throws GridSpiException {
         stats.onJoinStarted();
 
         GridTcpDiscoveryJoinRequestMessage req = new GridTcpDiscoveryJoinRequestMessage(locNode,
             exchange.collect(locNodeId));
 
         req.client(true);
+        req.clientReconnect(recon);
 
         Collection<InetSocketAddress> addrs = null;
         List<InetSocketAddress> shuffledAddrs = null;
@@ -429,7 +431,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                         locNode.order(0);
 
-                        joinTopology();
+                        joinTopology(true);
                     }
                 }
                 catch (GridInterruptedException ignored) {

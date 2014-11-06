@@ -32,6 +32,9 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
     /** Responded flag. */
     private boolean responded;
 
+    /** Client reconnection flag. */
+    private boolean clientRecon;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -82,6 +85,20 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         this.responded = responded;
     }
 
+    /**
+     * @return Client reconnection flag.
+     */
+    public boolean clientReconnect() {
+        return clientRecon;
+    }
+
+    /**
+     * @param clientRecon Client reconnection flag.
+     */
+    public void clientReconnect(boolean clientRecon) {
+        this.clientRecon = clientRecon;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
@@ -89,6 +106,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         out.writeObject(node);
         out.writeObject(discoData);
         out.writeBoolean(responded);
+        out.writeBoolean(clientRecon);
     }
 
     /** {@inheritDoc} */
@@ -98,6 +116,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
         node = (GridTcpDiscoveryNode)in.readObject();
         discoData = (List<Object>)in.readObject();
         responded = in.readBoolean();
+        clientRecon = in.readBoolean();
     }
 
     /** {@inheritDoc} */

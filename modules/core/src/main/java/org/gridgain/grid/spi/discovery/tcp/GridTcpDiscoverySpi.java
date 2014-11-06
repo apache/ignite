@@ -2935,59 +2935,95 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 GridTcpDiscoveryNode existingNode = ring.node(node.id());
 
                 if (existingNode != null) {
-                    if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
-                        if (!pingNode(existingNode)) {
-                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, existingNode.id(),
-                                existingNode.internalOrder()));
+                    if (msg.clientReconnect()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Sending node failed message for reconnecting client node: " + existingNode);
 
-                            // Ignore this join request since existing node is about to fail
-                            // and new node can continue.
+                        processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                            existingNode.id(), existingNode.internalOrder()));
+                    }
+                    else {
+                        if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
+                            if (!pingNode(existingNode)) {
+                                addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                                    existingNode.id(), existingNode.internalOrder()));
+
+                                // Ignore this join request since existing node is about to fail
+                                // and new node can continue.
+                                return;
+                            }
+
+                            try {
+                                trySendMessageDirectly(node, new GridTcpDiscoveryDuplicateIdMessage(locNodeId,
+                                    existingNode));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send duplicate ID message to node " +
+                                        "[node=" + node + ", existingNode=" + existingNode +
+                                        ", err=" + e.getMessage() + ']');
+                            }
+
+                            // Output warning.
+                            LT.warn(log, null, "Ignoring join request from node (duplicate ID) [node=" + node +
+                                ", existingNode=" + existingNode + ']');
+
+                            // Ignore join request.
                             return;
                         }
 
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring join request message since node is already in topology: " + msg);
+
+                        return;
+                    }
+                }
+
+                // Authenticate node first.
+                try {
+                    GridSecurityCredentials cred = unmarshalCredentials(node);
+
+                    GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+                    if (subj == null) {
+                        // Node has not pass authentication.
+                        LT.warn(log, null,
+                            "Authentication failed [nodeId=" + node.id() +
+                                ", addrs=" + U.addressesAsString(node) + ']',
+                            "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                U.addressesAsString(node) + ']');
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                U.addressesAsString(node));
+
                         try {
-                            trySendMessageDirectly(node,
-                                new GridTcpDiscoveryDuplicateIdMessage(locNodeId, existingNode));
+                            trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                         }
                         catch (GridSpiException e) {
                             if (log.isDebugEnabled())
-                                log.debug("Failed to send duplicate ID message to node " +
-                                    "[node=" + node + ", existingNode=" + existingNode +
-                                    ", err=" + e.getMessage() + ']');
+                                log.debug("Failed to send unauthenticated message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']');
                         }
-
-                        // Output warning.
-                        LT.warn(log, null, "Ignoring join request from node (duplicate ID) [node=" + node +
-                            ", existingNode=" + existingNode + ']');
 
                         // Ignore join request.
                         return;
                     }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Ignoring join request message since node is already in topology: " + msg);
-
-                    return;
-                }
-                else {
-                    // Authenticate node first.
-                    try {
-                        GridSecurityCredentials cred = unmarshalCredentials(node);
-
-                        GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
-
-                        if (subj == null) {
+                    else {
+                        if (!(subj instanceof Serializable)) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
-                                "Authentication failed [nodeId=" + node.id() +
+                                "Authentication subject is not Serializable [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']',
-                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                                    ", addrs=" +
                                     U.addressesAsString(node) + ']');
 
                             // Always output in debug.
                             if (log.isDebugEnabled())
-                                log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                                    U.addressesAsString(node));
+                                log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                    ", addrs=" + U.addressesAsString(node));
 
                             try {
                                 trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
@@ -3001,245 +3037,78 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             // Ignore join request.
                             return;
                         }
-                        else {
-                            if (!(subj instanceof Serializable)) {
-                                // Node has not pass authentication.
-                                LT.warn(log, null,
-                                    "Authentication subject is not Serializable [nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node) + ']',
-                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                                        ", addrs=" +
-                                        U.addressesAsString(node) + ']');
 
-                                // Always output in debug.
-                                if (log.isDebugEnabled())
-                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node));
+                        // Stick in authentication subject to node (use security-safe attributes for copy).
+                        Map<String, Object> attrs = new HashMap<>(node.attributes());
 
-                                try {
-                                    trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
-                                }
-                                catch (GridSpiException e) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to send unauthenticated message to node " +
-                                            "[node=" + node + ", err=" + e.getMessage() + ']');
-                                }
+                        attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
 
-                                // Ignore join request.
-                                return;
-                            }
-
-                            // Stick in authentication subject to node (use security-safe attributes for copy).
-                            Map<String, Object> attrs = new HashMap<>(node.attributes());
-
-                            attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT, gridMarsh.marshal(subj));
-
-                            node.setAttributes(attrs);
-                        }
+                        node.setAttributes(attrs);
                     }
-                    catch (GridException e) {
-                        LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                            U.addressesAsString(node) + ']');
+                }
+                catch (GridException e) {
+                    LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                        U.addressesAsString(node) + ']');
 
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
+                            ", err=" + e + ']');
+
+                    // Ignore join request.
+                    return;
+                }
+
+                GridNodeValidationResult err = getSpiContext().validateNode(node);
+
+                if (err != null) {
+                    if (!pingNode(err.nodeId())) {
                         if (log.isDebugEnabled())
-                            log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
-                                ", err=" + e + ']');
+                            log.debug("Conflicting node has already left, need to wait for event. " +
+                                "Will ignore join request for now since it will be recent [req=" + msg +
+                                ", err=" + err.message() + ']');
 
                         // Ignore join request.
                         return;
                     }
 
-                    GridNodeValidationResult err = getSpiContext().validateNode(node);
+                    LT.warn(log, null, err.message());
 
-                    if (err != null) {
-                        if (!pingNode(err.nodeId())) {
-                            if (log.isDebugEnabled())
-                                log.debug("Conflicting node has already left, need to wait for event. " +
-                                    "Will ignore join request for now since it will be recent [req=" + msg +
-                                    ", err=" + err.message() + ']');
+                    // Always output in debug.
+                    if (log.isDebugEnabled())
+                        log.debug(err.message());
 
-                            // Ignore join request.
-                            return;
-                        }
-
-                        LT.warn(log, null, err.message());
-
-                        // Always output in debug.
+                    try {
+                        trySendMessageDirectly(node,
+                            new GridTcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                    }
+                    catch (GridSpiException e) {
                         if (log.isDebugEnabled())
-                            log.debug(err.message());
-
-                        try {
-                            trySendMessageDirectly(node,
-                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
-                        }
-                        catch (GridSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send hash ID resolver validation failed message to node " +
-                                    "[node=" + node + ", err=" + e.getMessage() + ']');
-                        }
-
-                        // Ignore join request.
-                        return;
+                            log.debug("Failed to send hash ID resolver validation failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
                     }
 
-                    // Check version.
-                    String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
-                    String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
+                    // Ignore join request.
+                    return;
+                }
 
-                    if (!F.eq(rmtBuildVer, locBuildVer)) {
-                        final String osFlag = "-os";
-                        final String entFlag = "-ent";
+                // Check version.
+                String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
+                String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-                        assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
-                        assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
+                if (!F.eq(rmtBuildVer, locBuildVer)) {
+                    final String osFlag = "-os";
+                    final String entFlag = "-ent";
 
-                        // OS and ENT nodes cannot join one topology.
-                        if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
-                            locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
-                            String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
-                                "versions (node will not join, all nodes in topology should be of either " +
-                                "enterprise or open source version) " +
-                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    assert locBuildVer.contains(osFlag) || locBuildVer.contains(entFlag);
+                    assert rmtBuildVer.contains(osFlag) || rmtBuildVer.contains(entFlag);
 
-                            LT.warn(log, null, errMsg);
-
-                            // Always output in debug.
-                            if (log.isDebugEnabled())
-                                log.debug(errMsg);
-
-                            try {
-                                String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
-                                    "versions (node will not join, all nodes in topology should be of either " +
-                                    "enterprise or open source version) " +
-                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
-
-                                trySendMessageDirectly(node,
-                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send version check failed message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']');
-                            }
-
-                            // Ignore join request.
-                            return;
-                        }
-
-                        // OS nodes don't support rolling updates.
-                        if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
-                            !locBuildVer.equals(rmtBuildVer)) {
-                            String errMsg = "Local node and remote node have different version numbers " +
-                                "(node will not join, open source version does not support rolling updates, " +
-                                "so versions must be exactly the same) " +
-                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                            LT.warn(log, null, errMsg);
-
-                            // Always output in debug.
-                            if (log.isDebugEnabled())
-                                log.debug(errMsg);
-
-                            try {
-                                String sndMsg = "Local node and remote node have different version numbers " +
-                                    "(node will not join, open source version does not support rolling updates, " +
-                                    "so versions must be exactly the same) " +
-                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
-
-                                trySendMessageDirectly(node,
-                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send version check failed message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']');
-                            }
-
-                            // Ignore join request.
-                            return;
-                        }
-
-                        Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
-                        Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
-
-                        if (F.contains(rmtCompatibleVers, locBuildVer) || F.contains(locCompatibleVers, rmtBuildVer)) {
-                            String errMsg = "Local node's build version differs from remote node's, " +
-                                "but they are compatible (will continue join process) " +
-                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                            LT.warn(log, null, errMsg);
-
-                            // Always output in debug.
-                            if (log.isDebugEnabled())
-                                log.debug(errMsg);
-                        }
-                        else {
-                            String errMsg = "Local node's and remote node's build versions are not compatible " +
-                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                    "(topologies built with different GridGain versions " +
-                                        "are supported in Enterprise version only) " :
-                                    "(node will not join, all nodes in topology should have " +
-                                        "compatible build versions) ") +
-                                "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                            LT.warn(log, null, errMsg);
-
-                            // Always output in debug.
-                            if (log.isDebugEnabled())
-                                log.debug(errMsg);
-
-                            try {
-                                String sndMsg = "Local node's and remote node's build versions are not compatible " +
-                                    (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                        "(topologies built with different GridGain versions " +
-                                            "are supported in Enterprise version only) " :
-                                        "(node will not join, all nodes in topology should have " +
-                                            "compatible build versions) ") +
-                                    "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
-
-                                trySendMessageDirectly(node,
-                                    new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                            }
-                            catch (GridSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send version check failed message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']');
-                            }
-
-                            // Ignore join request.
-                            return;
-                        }
-                    }
-
-                    String locMarsh = locNode.attribute(ATTR_MARSHALLER);
-                    String rmtMarsh = node.attribute(ATTR_MARSHALLER);
-
-                    if (!F.eq(locMarsh, rmtMarsh)) {
-                        String errMsg = "Local node's marshaller differs from remote node's marshaller " +
-                            "(to make sure all nodes in topology have identical marshaller, " +
-                            "configure marshaller explicitly in configuration) " +
-                            "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
+                    // OS and ENT nodes cannot join one topology.
+                    if (locBuildVer.contains(entFlag) && rmtBuildVer.contains(osFlag) ||
+                        locBuildVer.contains(osFlag) && rmtBuildVer.contains(entFlag)) {
+                        String errMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                            "versions (node will not join, all nodes in topology should be of either " +
+                            "enterprise or open source version) " +
+                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
                             ", locNodeAddrs=" + U.addressesAsString(locNode) +
                             ", rmtNodeAddrs=" + U.addressesAsString(node) +
                             ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
@@ -3251,10 +3120,10 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             log.debug(errMsg);
 
                         try {
-                            String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
-                                "(to make sure all nodes in topology have identical marshaller, " +
-                                "configure marshaller explicitly in configuration) " +
-                                "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
+                            String sndMsg = "Topology cannot contain nodes of both enterprise and open source " +
+                                "versions (node will not join, all nodes in topology should be of either " +
+                                "enterprise or open source version) " +
+                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
                                 ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                                 ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                 ", rmtNodeId=" + locNode.id() + ']';
@@ -3264,7 +3133,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         }
                         catch (GridSpiException e) {
                             if (log.isDebugEnabled())
-                                log.debug("Failed to send marshaller check failed message to node " +
+                                log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
                         }
 
@@ -3272,12 +3141,151 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         return;
                     }
 
-                    // Handle join.
-                    node.internalOrder(ring.nextNodeOrder());
+                    // OS nodes don't support rolling updates.
+                    if (locBuildVer.contains(osFlag) && rmtBuildVer.contains(osFlag) &&
+                        !locBuildVer.equals(rmtBuildVer)) {
+                        String errMsg = "Local node and remote node have different version numbers " +
+                            "(node will not join, open source version does not support rolling updates, " +
+                            "so versions must be exactly the same) " +
+                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                            ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                            ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                            ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    if (log.isDebugEnabled())
-                        log.debug("Internal order has been assigned to node: " + node);
+                        LT.warn(log, null, errMsg);
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug(errMsg);
+
+                        try {
+                            String sndMsg = "Local node and remote node have different version numbers " +
+                                "(node will not join, open source version does not support rolling updates, " +
+                                "so versions must be exactly the same) " +
+                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                ", rmtNodeId=" + locNode.id() + ']';
+
+                            trySendMessageDirectly(node,
+                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                        }
+                        catch (GridSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send version check failed message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']');
+                        }
+
+                        // Ignore join request.
+                        return;
+                    }
+
+                    Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
+                    Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
+
+                    if (F.contains(rmtCompatibleVers, locBuildVer) || F.contains(locCompatibleVers, rmtBuildVer)) {
+                        String errMsg = "Local node's build version differs from remote node's, " +
+                            "but they are compatible (will continue join process) " +
+                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                            ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                            ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                            ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                        LT.warn(log, null, errMsg);
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug(errMsg);
+                    }
+                    else {
+                        String errMsg = "Local node's and remote node's build versions are not compatible " +
+                            (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                "(topologies built with different GridGain versions " +
+                                    "are supported in Enterprise version only) " :
+                                "(node will not join, all nodes in topology should have " +
+                                    "compatible build versions) ") +
+                            "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
+                            ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                            ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                            ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                        LT.warn(log, null, errMsg);
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug(errMsg);
+
+                        try {
+                            String sndMsg = "Local node's and remote node's build versions are not compatible " +
+                                (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
+                                    "(topologies built with different GridGain versions " +
+                                        "are supported in Enterprise version only) " :
+                                    "(node will not join, all nodes in topology should have " +
+                                        "compatible build versions) ") +
+                                "[locBuildVer=" + rmtBuildVer + ", rmtBuildVer=" + locBuildVer +
+                                ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                ", rmtNodeId=" + locNode.id() + ']';
+
+                            trySendMessageDirectly(node,
+                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                        }
+                        catch (GridSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send version check failed message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']');
+                        }
+
+                        // Ignore join request.
+                        return;
+                    }
                 }
+
+                String locMarsh = locNode.attribute(ATTR_MARSHALLER);
+                String rmtMarsh = node.attribute(ATTR_MARSHALLER);
+
+                if (!F.eq(locMarsh, rmtMarsh)) {
+                    String errMsg = "Local node's marshaller differs from remote node's marshaller " +
+                        "(to make sure all nodes in topology have identical marshaller, " +
+                        "configure marshaller explicitly in configuration) " +
+                        "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    LT.warn(log, null, errMsg);
+
+                    // Always output in debug.
+                    if (log.isDebugEnabled())
+                        log.debug(errMsg);
+
+                    try {
+                        String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
+                            "(to make sure all nodes in topology have identical marshaller, " +
+                            "configure marshaller explicitly in configuration) " +
+                            "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
+                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                            ", rmtNodeId=" + locNode.id() + ']';
+
+                        trySendMessageDirectly(node,
+                            new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                    }
+                    catch (GridSpiException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send marshaller check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                    }
+
+                    // Ignore join request.
+                    return;
+                }
+
+                // Handle join.
+                node.internalOrder(ring.nextNodeOrder());
+
+                if (log.isDebugEnabled())
+                    log.debug("Internal order has been assigned to node: " + node);
 
                 GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = new GridTcpDiscoveryNodeAddedMessage(locNodeId,
                     node, msg.discoveryData(), gridStartTime);
