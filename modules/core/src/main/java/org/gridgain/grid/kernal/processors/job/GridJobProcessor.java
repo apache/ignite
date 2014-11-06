@@ -911,7 +911,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 return;
             }
 
-            long endTime = U.currentTimeMillis() + req.getTimeout();
+            long endTime = req.getCreateTime() + req.getTimeout();
 
             // Account for overflow.
             if (endTime < 0)
