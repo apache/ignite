@@ -473,18 +473,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (res != null && res.addRecipient(recipient))
                 return res;
 
-            res = new QueryResult<>(qry.type());
-
-            res.addRecipient(recipient);
+            res = new QueryResult<>(qry.type(), recipient);
 
             if (qryResCache.putIfAbsent(resKey, res) != null)
                 resKey = null;
         }
-        else {
-            res = new QueryResult<>(qry.type());
-
-            res.addRecipient(recipient);
-        }
+        else
+            res = new QueryResult<>(qry.type(), recipient);
 
         GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
 
@@ -572,9 +567,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         catch (Exception e) {
             res.onDone(e);
         }
-
-        if (resKey != null)
-            qryResCache.remove(resKey, res);
+        finally {
+            if (resKey != null)
+                qryResCache.remove(resKey, res);
+        }
 
         return res;
     }
@@ -628,9 +624,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (res != null && res.addRecipient(recipient))
             return res;
 
-        res = new FieldsResult();
-
-        res.addRecipient(recipient);
+        res = new FieldsResult(recipient);
 
         boolean cached = qryResCache.putIfAbsent(resKey, res) == null;
 
@@ -645,9 +639,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         catch (Exception e) {
             res.onDone(e);
         }
-
-        if (cached)
-            qryResCache.remove(resKey, res);
+        finally {
+            if (cached)
+                qryResCache.remove(resKey, res);
+        }
 
         return res;
     }
@@ -2158,8 +2153,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @param type Query type.
+         * @param recipient ID of the recipient.
          */
-        private QueryResult(GridCacheQueryType type) {
+        private QueryResult(GridCacheQueryType type, Object recipient) {
+            super(recipient);
+
             this.type = type;
         }
 
@@ -2179,9 +2177,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private List<GridIndexingFieldMetadata> meta;
 
         /**
+         * @param recipient ID of the recipient.
+         */
+        FieldsResult(Object recipient) {
+            super(recipient);
+        }
+
+        /**
          * @return Metadata.
          */
-        public List<GridIndexingFieldMetadata> metaData() {
+        public List<GridIndexingFieldMetadata> metaData() throws GridException {
+            get(); // Ensure that result is ready.
+
             return meta;
         }
 
@@ -2921,8 +2928,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final Map<Object, Integer> recipients = new GridLeanMap<>(1);
 
         /**
-         * Close if this result is not shared between recipients.
+         * @param recipient ID of the recipient.
+         */
+        protected CachedResult(Object recipient) {
+            boolean res = addRecipient(recipient);
+
+            assert res;
+        }
+
+
+        /**
+         * Close if this result does not have any other recipients.
          *
+         * @param recipient ID of the recipient.
          * @throws GridException If failed.
          */
         public void closeIfNotShared(Object recipient) throws GridException {
@@ -2948,9 +2966,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (isDone())
                     return false;
 
-                Integer old = recipients.put(recipient, 0);
+                assert !recipients.containsKey(recipient) : recipient + " -> " + recipients;
 
-                assert old == null;
+                recipients.put(recipient, 0);
             }
 
             return true;
@@ -2958,12 +2976,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable GridSpiCloseableIterator<R> res, @Nullable Throwable err) {
-            if (!super.onDone(res, err))
-                return false;
-
             synchronized (recipients) {
+                if (!super.onDone(res, err))
+                    return false;
+
                 if (recipients.size() > 1)
-                    queue = new CircularQueue<>();
+                    queue = new CircularQueue<>(128);
             }
 
             return true;
@@ -2973,8 +2991,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * Fetches next page into target collection from queue.
          *
          * @param recipient ID of the recipient.
+         * @param it Iterator.
          */
-        private GridSpiCloseableIterator<R> nextPageFromQueue(final Object recipient) {
+        private GridSpiCloseableIterator<R> nextPageFromQueue(final Object recipient,
+            final GridSpiCloseableIterator<R> it) {
             return new GridSpiCloseableIterator<R>() {
                 /** */
                 private R next;
@@ -2984,7 +3004,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 @Override public boolean hasNext() {
-                    return next != null || (next = nextFromQueue(recipient)) != null;
+                    return next != null || (next = nextFromQueue(recipient, it)) != null;
                 }
 
                 @Override public R next() {
@@ -3006,40 +3026,32 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @param recipient ID of the recipient.
+         * @param it Iterator.
          * @return Next element for the given recipient.
          */
-        @Nullable private R nextFromQueue(Object recipient) {
+        @Nullable private R nextFromQueue(Object recipient, GridSpiCloseableIterator<R> it) {
             synchronized (recipients) {
                 int pos = recipients.get(recipient);
+
+                R res = null;
 
                 try {
                     int off = pos - pruned; // Offset is relative to queue begin.
 
                     if (off < queue.size)
-                        return queue.get(off);
-
-                    GridSpiCloseableIterator<R> it;
-
-                    try {
-                        it = get();
-                    }
-                    catch (GridException e) {
-                        throw new GridRuntimeException(e);
-                    }
-
-                    if (it.hasNext()) {
-                        R res = it.next();
+                        res = queue.get(off);
+                    else if (it.hasNext()) {
+                        res = it.next();
 
                         queue.add(res);
-
-                        return res;
                     }
-
-                    return null;
                 }
                 finally {
-                    pruneQueue(recipient, pos + 1);
+                    if (res != null)
+                        pruneQueue(recipient, pos + 1);
                 }
+
+                return res;
             }
         }
 
@@ -3067,11 +3079,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         public GridSpiCloseableIterator<R> nextPageIterator(Object recipient)
             throws GridException {
-            assert isDone();
             assert recipient != null;
 
+            GridSpiCloseableIterator<R> it = get();
+
+            assert it != null;
+
             synchronized (recipients) {
-                return queue == null ? get() : nextPageFromQueue(recipient);
+                return queue == null ? it : nextPageFromQueue(recipient, it);
             }
         }
     }
@@ -3088,7 +3103,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private int size;
 
         /** */
-        private R[] arr = (R[])new Object[128]; // Must be power of 2.
+        private R[] arr;
+
+        /**
+         * @param cap Initial capacity.
+         */
+        CircularQueue(int cap) {
+            assert U.isPow2(cap);
+
+            arr = (R[])new Object[cap];
+        }
 
         /**
          * @param o Object to add.
