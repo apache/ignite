@@ -37,12 +37,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCacheSet<T> {
     /** */
-    private static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
-    private static final long RETRY_DELAY = 1;
-
-    /** */
     private static final int BATCH_SIZE = 100;
 
     /** Cache context. */
@@ -212,7 +206,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         for (T obj : c) {
             if (add) {
                 if (addKeys == null)
-                    addKeys = new HashMap<>(BATCH_SIZE);
+                    addKeys = U.newHashMap(BATCH_SIZE);
 
                 addKeys.put(itemKey(obj), true);
 
@@ -243,7 +237,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         for (Object obj : c) {
             if (rmv) {
                 if (rmvKeys == null)
-                    rmvKeys = new HashSet<>(BATCH_SIZE);
+                    rmvKeys = U.newHashSet(BATCH_SIZE);
 
                 rmvKeys.add(itemKey(obj));
 
@@ -278,7 +272,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                         rmv = true;
 
                         if (rmvKeys == null)
-                            rmvKeys = new HashSet<>(BATCH_SIZE);
+                            rmvKeys = U.newHashSet(BATCH_SIZE);
 
                         rmvKeys.add(itemKey(val));
 
@@ -366,37 +360,15 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             throw new GridRuntimeException(e);
         }
     }
-
     /**
      * @param call Callable.
      * @return Callable result.
      */
     private <R> R retry(Callable<R> call) {
         try {
-            int cnt = 0;
-
-            while (true) {
-                try {
-                    return call.call();
-                }
-                catch (GridEmptyProjectionException e) {
-                    throw new GridRuntimeException(e);
-                }
-                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            return (R)ctx.dataStructures().retry(call);
         }
-        catch (GridRuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
+        catch (GridException e) {
             throw new GridRuntimeException(e);
         }
     }
@@ -440,10 +412,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         Collection<GridNode> nodes;
 
         if (collocated) {
-            nodes = ctx.affinity().nodes(hdrPart, topVer);
+            List<GridNode> nodes0 = ctx.affinity().nodes(hdrPart, topVer);
 
-            if (!nodes.isEmpty())
-                nodes = Collections.singleton(nodes.contains(ctx.localNode()) ? ctx.localNode() : F.first(nodes));
+            nodes = !nodes0.isEmpty() ?
+                Collections.singleton(nodes0.contains(ctx.localNode()) ? ctx.localNode() : F.first(nodes0)) : nodes0;
         }
         else
             nodes = CU.affinityNodes(ctx, topVer);

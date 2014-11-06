@@ -203,7 +203,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache() {
+    @Override protected boolean updateNearCache(K key, long topVer) {
         return cctx.isDht() && isNearEnabled(cctx) && !cctx.localNodeId().equals(nearNodeId());
     }
 

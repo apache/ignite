@@ -78,11 +78,19 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
         cacheCfg.setQueryIndexEnabled(memoryMode != GridCacheMemoryMode.OFFHEAP_VALUES);
+        cacheCfg.setPortableEnabled(portableEnabled());
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
         return cfg;
+    }
+
+    /**
+     * @return Portable enabled flag.
+     */
+    protected boolean portableEnabled() {
+        return false;
     }
 
     /**

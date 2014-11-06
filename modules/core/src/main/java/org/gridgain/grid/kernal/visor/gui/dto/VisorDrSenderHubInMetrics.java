@@ -74,9 +74,8 @@ public class VisorDrSenderHubInMetrics implements Serializable {
             for (String cacheName : cfg.getCacheNames()) {
                 GridDrSenderHubInMetrics m = dr.senderHubInMetrics(cacheName);
 
-                if (m != null) {
+                if (m != null)
                     map.put(cacheName, from(m));
-                }
             }
         }
 

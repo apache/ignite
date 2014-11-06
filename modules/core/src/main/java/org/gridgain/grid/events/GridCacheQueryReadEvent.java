@@ -50,14 +50,16 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see GridEventType#EVTS_CACHE_QUERY_OBJECT_READ
- * @see GridEventType#EVT_CACHE_SQL_QUERY_OBJECT_READ
- * @see GridEventType#EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ
- * @see GridEventType#EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ
- * @see GridEventType#EVT_CACHE_SCAN_QUERY_OBJECT_READ
- * @see GridEventType#EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ
+ * @see GridEventType#EVT_CACHE_QUERY_OBJECT_READ
+ * @see GridEventType#EVTS_CACHE_QUERY
  */
 public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
+    /** */
+    private static final long serialVersionUID = -1984731272984397445L;
+
+    /** Query type. */
+    private final GridCacheQueryType qryType;
+
     /** Cache name. */
     private final String cacheName;
 
@@ -119,6 +121,7 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         GridNode node,
         String msg,
         int type,
+        GridCacheQueryType qryType,
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
@@ -133,6 +136,9 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         @Nullable List<?> row) {
         super(node, msg, type);
 
+        assert qryType != null;
+
+        this.qryType = qryType;
         this.cacheName = cacheName;
         this.clsName = clsName;
         this.clause = clause;
@@ -145,6 +151,15 @@ public class GridCacheQueryReadEvent<K, V> extends GridEventAdapter {
         this.val = val;
         this.oldVal = oldVal;
         this.row = row;
+    }
+
+    /**
+     * Gets query type.
+     *
+     * @return Query type.
+     */
+    public GridCacheQueryType queryType() {
+        return qryType;
     }
 
     /**

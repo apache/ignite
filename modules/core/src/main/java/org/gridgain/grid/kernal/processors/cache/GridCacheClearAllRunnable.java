@@ -75,11 +75,9 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
                     for (Iterator<Map.Entry<K, V>> it = ctx.swap().lazyOffHeapIterator(); it.hasNext();) {
                         Map.Entry<K, V> e = it.next();
 
-                        if (owns(e.getKey())) {
+                        if (owns(e.getKey()))
                             clearEntry(cache.entryEx(e.getKey()));
 
-                            it.remove();
-                        }
                     }
                 }
                 else if (id == 0)
@@ -102,11 +100,8 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
                             while (it.hasNext()) {
                                 Map.Entry<K, V> e = it.next();
 
-                                if (owns(e.getKey())) {
+                                if (owns(e.getKey()))
                                     clearEntry(cache.entryEx(e.getKey()));
-
-                                    it.remove();
-                                }
                             }
                         }
                     }

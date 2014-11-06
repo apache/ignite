@@ -10,6 +10,7 @@
 package org.gridgain.grid.logger.java;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,9 +22,6 @@ import java.util.logging.*;
  * File logging handler which skips all the messages until node ID is set.
  */
 public final class GridJavaLoggerFileHandler extends StreamHandler {
-    /* GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv("GRIDGAIN_LOG_DIR");
-
     /** Log manager. */
     private static final LogManager manager = LogManager.getLogManager();
 
@@ -126,7 +124,7 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
      * @return Logging directory.
      */
     private static File logDirectory() throws GridException {
-        return GRIDGAIN_LOG_DIR != null ? new File(GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
+        return !F.isEmpty(U.GRIDGAIN_LOG_DIR) ? new File(U.GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
     }
 
     /**

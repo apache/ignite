@@ -65,9 +65,8 @@ public final class GridStringBuilderFactory {
         public SB acquire() {
             // If cached instance is already used, then we don't optimize.
             // Simply return a new StringBuilder in such case.
-            if (used) {
+            if (used)
                 return new SB();
-            }
 
             used = true;
 

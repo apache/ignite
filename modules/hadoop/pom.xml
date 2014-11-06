@@ -36,20 +36,14 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-ggfs</artifactId>
-            <version>${gridgain.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
             <artifactId>gridgain-log4j</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>4.2</version>
         </dependency>
 
         <dependency>
@@ -118,14 +112,6 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-ggfs</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

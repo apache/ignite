@@ -47,7 +47,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    private static final int MAX_REMAP_CNT;
+    private static final int MAX_REMAP_CNT = getInteger(GG_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -90,26 +90,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
-
-    /**
-     * Initializes max remap count.
-     */
-    static {
-        int dfltRemapCnt = DFLT_MAX_REMAP_CNT;
-
-        String s = X.getSystemOrEnv(GG_NEAR_GET_MAX_REMAPS, Integer.toString(dfltRemapCnt));
-
-        int cnt;
-
-        try {
-            cnt = Integer.parseInt(s);
-        }
-        catch (NumberFormatException ignore) {
-            cnt = dfltRemapCnt;
-        }
-
-        MAX_REMAP_CNT = cnt;
-    }
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -282,8 +262,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             return;
         }
 
-        Map<GridNode, LinkedHashMap<K, Boolean>> mappings =
-            new HashMap<>(affNodes.size());
+        Map<GridNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(affNodes.size());
 
         Map<K, GridCacheVersion> savedVers = null;
 
@@ -403,8 +382,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 // First we peek into near cache.
                 if (isNear)
-                    v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, subjId, null, taskName, filters);
+                    v = entry.innerGet(tx,
+                        /*swap*/false,
+                        /*read-through*/false,
+                        /*fail-fast*/true,
+                        /*unmarshal*/true,
+                        /*metrics*/true,
+                        /*events*/true,
+                        /*temporary*/false,
+                        subjId,
+                        null,
+                        taskName,
+                        filters);
 
                 GridNode primary = null;
 
@@ -418,8 +407,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
-                            v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, subjId, null, taskName, filters);
+                            v = entry.innerGet(tx,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/false,
+                                /*events*/!isNear,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                filters);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -462,7 +461,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     entry = nearEntry;
 
                     if (savedVers == null)
-                        savedVers = new HashMap<>(3);
+                        savedVers = U.newHashMap(3);
 
                     savedVers.put(key, nearEntry == null ? null : nearEntry.dhtVersion());
 

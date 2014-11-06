@@ -52,6 +52,10 @@
             <source>docs/mapred-site.gridgain.xml</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
+        <file>
+            <source>docs/hive-site.gridgain.xml</source>
+            <outputDirectory>/docs</outputDirectory>
+        </file>
     </files>
 
     <fileSets>

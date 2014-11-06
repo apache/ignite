@@ -344,7 +344,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             if (F.isEmpty(nodes))
                 nodeIds = contains(node) ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
             else {
-                nodeIds = new HashSet<>(nodes.length + 1);
+                nodeIds = U.newHashSet(nodes.length + 1);
 
                 for (GridNode n : nodes)
                     if (contains(n))
@@ -368,7 +368,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         guard();
 
         try {
-            Set<UUID> nodeIds = new HashSet<>(nodes.size());
+            Set<UUID> nodeIds = U.newHashSet(nodes.size());
 
             for (GridNode n : nodes)
                 if (contains(n))
@@ -393,7 +393,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             if (F.isEmpty(ids))
                 nodeIds = contains(id) ? Collections.singleton(id) : Collections.<UUID>emptySet();
             else {
-                nodeIds = new HashSet<>(ids.length + 1);
+                nodeIds = U.newHashSet(ids.length + 1);
 
                 for (UUID id0 : ids) {
                     if (contains(id))
@@ -418,7 +418,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
         guard();
 
         try {
-            Set<UUID> nodeIds = new HashSet<>(ids.size());
+            Set<UUID> nodeIds = U.newHashSet(ids.size());
 
             for (UUID id : ids) {
                 if (contains(id))
@@ -447,7 +447,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             guard();
 
             try {
-                Set<UUID> nodeIds = new HashSet<>(ids.size());
+                Set<UUID> nodeIds = U.newHashSet(ids.size());
 
                 for (UUID id : ids) {
                     GridNode n = node(id);
@@ -482,7 +482,7 @@ public class GridProjectionAdapter implements GridProjectionEx, Externalizable {
             guard();
 
             try {
-                Set<UUID> nodeIds = new HashSet<>(ids.size());
+                Set<UUID> nodeIds = U.newHashSet(ids.size());
 
                 for (UUID id : ids) {
                     if (!excludeIds.contains(id))

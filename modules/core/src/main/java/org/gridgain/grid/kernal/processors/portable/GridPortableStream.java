@@ -32,4 +32,14 @@ public interface GridPortableStream {
      * @return Copy of data in the stream.
      */
     public byte[] arrayCopy();
+
+    /**
+     * @return Offheap pointer if stream is offheap based, otherwise {@code 0}.
+     */
+    public long offheapPointer();
+
+    /**
+     * @return {@code True} is stream is array based.
+     */
+    public boolean hasArray();
 }

@@ -243,9 +243,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         finally {
             assert fut != null;
 
-            if (!fut.isCancelled()) {
+            if (!fut.isCancelled())
                 fut.cancel();
-            }
         }
     }
 

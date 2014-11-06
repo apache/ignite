@@ -111,11 +111,10 @@ public class GridFilenameUtils {
      */
     private static final char OTHER_SEPARATOR;
     static {
-        if (isSystemWindows()) {
+        if (isSystemWindows())
             OTHER_SEPARATOR = UNIX_SEPARATOR;
-        } else {
+        else
             OTHER_SEPARATOR = WINDOWS_SEPARATOR;
-        }
     }
 
     /**
@@ -342,17 +341,14 @@ public class GridFilenameUtils {
      * @return the normalized filename
      */
     private static String doNormalize(String filename, char separator, boolean keepSeparator) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int size = filename.length();
-        if (size == 0) {
+        if (size == 0)
             return filename;
-        }
         int prefix = getPrefixLength(filename);
-        if (prefix < 0) {
+        if (prefix < 0)
             return null;
-        }
 
         char[] array = new char[size + 2];  // +1 for possible extra slash, +2 for arraycopy
         filename.getChars(0, filename.length(), array, 0);
@@ -360,9 +356,8 @@ public class GridFilenameUtils {
         // fix separators throughout
         char otherSeparator = separator == SYSTEM_SEPARATOR ? OTHER_SEPARATOR : SYSTEM_SEPARATOR;
         for (int i = 0; i < array.length; i++) {
-            if (array[i] == otherSeparator) {
+            if (array[i] == otherSeparator)
                 array[i] = separator;
-            }
         }
 
         // add extra separator on the end to simplify code below
@@ -385,9 +380,8 @@ public class GridFilenameUtils {
         for (int i = prefix + 1; i < size; i++) {
             if (array[i] == separator && array[i - 1] == '.' &&
                     (i == prefix + 1 || array[i - 2] == separator)) {
-                if (i == size - 1) {
+                if (i == size - 1)
                     lastIsDirectory = true;
-                }
                 System.arraycopy(array, i + 1, array, i - 1, size - i);
                 size -=2;
                 i--;
@@ -399,12 +393,10 @@ public class GridFilenameUtils {
         for (int i = prefix + 2; i < size; i++) {
             if (array[i] == separator && array[i - 1] == '.' && array[i - 2] == '.' &&
                     (i == prefix + 2 || array[i - 3] == separator)) {
-                if (i == prefix + 2) {
+                if (i == prefix + 2)
                     return null;
-                }
-                if (i == size - 1) {
+                if (i == size - 1)
                     lastIsDirectory = true;
-                }
                 int j;
                 for (j = i - 4 ; j >= prefix; j--) {
                     if (array[j] == separator) {
@@ -428,9 +420,8 @@ public class GridFilenameUtils {
         if (size <= prefix) {  // should never be less than prefix
             return new String(array, 0, size);
         }
-        if (lastIsDirectory && keepSeparator) {
+        if (lastIsDirectory && keepSeparator)
             return new String(array, 0, size);  // keep trailing separator
-        }
         return new String(array, 0, size - 1);  // lose trailing separator
     }
 
@@ -477,25 +468,20 @@ public class GridFilenameUtils {
      */
     public static String concat(String basePath, String fullFilenameToAdd) {
         int prefix = getPrefixLength(fullFilenameToAdd);
-        if (prefix < 0) {
+        if (prefix < 0)
             return null;
-        }
-        if (prefix > 0) {
+        if (prefix > 0)
             return normalize(fullFilenameToAdd);
-        }
-        if (basePath == null) {
+        if (basePath == null)
             return null;
-        }
         int len = basePath.length();
-        if (len == 0) {
+        if (len == 0)
             return normalize(fullFilenameToAdd);
-        }
         char ch = basePath.charAt(len - 1);
-        if (isSeparator(ch)) {
+        if (isSeparator(ch))
             return normalize(basePath + fullFilenameToAdd);
-        } else {
+        else
             return normalize(basePath + '/' + fullFilenameToAdd);
-        }
     }
 
     /**
@@ -525,17 +511,14 @@ public class GridFilenameUtils {
             throws IOException {
 
         // Fail fast against NullPointerException
-        if (canonicalParent == null) {
+        if (canonicalParent == null)
             throw new IllegalArgumentException("Directory must not be null");
-        }
 
-        if (canonicalChild == null) {
+        if (canonicalChild == null)
             return false;
-        }
 
-        if (IOCase.SYSTEM.checkEquals(canonicalParent, canonicalChild)) {
+        if (IOCase.SYSTEM.checkEquals(canonicalParent, canonicalChild))
             return false;
-        }
 
         return IOCase.SYSTEM.checkStartsWith(canonicalChild, canonicalParent);
     }
@@ -548,9 +531,8 @@ public class GridFilenameUtils {
      * @return the updated path
      */
     public static String separatorsToUnix(String path) {
-        if (path == null || path.indexOf(WINDOWS_SEPARATOR) == -1) {
+        if (path == null || path.indexOf(WINDOWS_SEPARATOR) == -1)
             return path;
-        }
         return path.replace(WINDOWS_SEPARATOR, UNIX_SEPARATOR);
     }
 
@@ -561,9 +543,8 @@ public class GridFilenameUtils {
      * @return the updated path
      */
     public static String separatorsToWindows(String path) {
-        if (path == null || path.indexOf(UNIX_SEPARATOR) == -1) {
+        if (path == null || path.indexOf(UNIX_SEPARATOR) == -1)
             return path;
-        }
         return path.replace(UNIX_SEPARATOR, WINDOWS_SEPARATOR);
     }
 
@@ -574,14 +555,12 @@ public class GridFilenameUtils {
      * @return the updated path
      */
     public static String separatorsToSystem(String path) {
-        if (path == null) {
+        if (path == null)
             return null;
-        }
-        if (isSystemWindows()) {
+        if (isSystemWindows())
             return separatorsToWindows(path);
-        } else {
+        else
             return separatorsToUnix(path);
-        }
     }
 
     //-----------------------------------------------------------------------
@@ -617,29 +596,24 @@ public class GridFilenameUtils {
      * @return the length of the prefix, -1 if invalid or null
      */
     public static int getPrefixLength(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return -1;
-        }
         int len = filename.length();
-        if (len == 0) {
+        if (len == 0)
             return 0;
-        }
         char ch0 = filename.charAt(0);
-        if (ch0 == ':') {
+        if (ch0 == ':')
             return -1;
-        }
         if (len == 1) {
-            if (ch0 == '~') {
+            if (ch0 == '~')
                 return 2;  // return a length greater than the input
-            }
             return isSeparator(ch0) ? 1 : 0;
         } else {
             if (ch0 == '~') {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 1);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 1);
-                if (posUnix == -1 && posWin == -1) {
+                if (posUnix == -1 && posWin == -1)
                     return len + 1;  // return a length greater than the input
-                }
                 posUnix = posUnix == -1 ? posWin : posUnix;
                 posWin = posWin == -1 ? posUnix : posWin;
                 return Math.min(posUnix, posWin) + 1;
@@ -648,9 +622,8 @@ public class GridFilenameUtils {
             if (ch1 == ':') {
                 ch0 = Character.toUpperCase(ch0);
                 if (ch0 >= 'A' && ch0 <= 'Z') {
-                    if (len == 2 || isSeparator(filename.charAt(2)) == false) {
+                    if (len == 2 || isSeparator(filename.charAt(2)) == false)
                         return 2;
-                    }
                     return 3;
                 }
                 return -1;
@@ -658,15 +631,13 @@ public class GridFilenameUtils {
             } else if (isSeparator(ch0) && isSeparator(ch1)) {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 2);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 2);
-                if (posUnix == -1 && posWin == -1 || posUnix == 2 || posWin == 2) {
+                if (posUnix == -1 && posWin == -1 || posUnix == 2 || posWin == 2)
                     return -1;
-                }
                 posUnix = posUnix == -1 ? posWin : posUnix;
                 posWin = posWin == -1 ? posUnix : posWin;
                 return Math.min(posUnix, posWin) + 1;
-            } else {
+            } else
                 return isSeparator(ch0) ? 1 : 0;
-            }
         }
     }
 
@@ -683,9 +654,8 @@ public class GridFilenameUtils {
      * is no such character
      */
     public static int indexOfLastSeparator(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return -1;
-        }
         int lastUnixPos = filename.lastIndexOf(UNIX_SEPARATOR);
         int lastWindowsPos = filename.lastIndexOf(WINDOWS_SEPARATOR);
         return Math.max(lastUnixPos, lastWindowsPos);
@@ -705,9 +675,8 @@ public class GridFilenameUtils {
      * is no such character
      */
     public static int indexOfExtension(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return -1;
-        }
         int extensionPos = filename.lastIndexOf(EXTENSION_SEPARATOR);
         int lastSeparator = indexOfLastSeparator(filename);
         return lastSeparator > extensionPos ? -1 : extensionPos;
@@ -744,16 +713,13 @@ public class GridFilenameUtils {
      * @return the prefix of the file, null if invalid
      */
     public static String getPrefix(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int len = getPrefixLength(filename);
-        if (len < 0) {
+        if (len < 0)
             return null;
-        }
-        if (len > filename.length()) {
+        if (len > filename.length())
             return filename + UNIX_SEPARATOR;  // we know this only happens for unix
-        }
         return filename.substring(0, len);
     }
 
@@ -818,18 +784,15 @@ public class GridFilenameUtils {
      * @return the path
      */
     private static String doGetPath(String filename, int separatorAdd) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int prefix = getPrefixLength(filename);
-        if (prefix < 0) {
+        if (prefix < 0)
             return null;
-        }
         int index = indexOfLastSeparator(filename);
         int endIndex = index+separatorAdd;
-        if (prefix >= filename.length() || index < 0 || prefix >= endIndex) {
+        if (prefix >= filename.length() || index < 0 || prefix >= endIndex)
             return "";
-        }
         return filename.substring(prefix, endIndex);
     }
 
@@ -900,28 +863,23 @@ public class GridFilenameUtils {
      * @return the path
      */
     private static String doGetFullPath(String filename, boolean includeSeparator) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int prefix = getPrefixLength(filename);
-        if (prefix < 0) {
+        if (prefix < 0)
             return null;
-        }
         if (prefix >= filename.length()) {
-            if (includeSeparator) {
+            if (includeSeparator)
                 return getPrefix(filename);  // add end slash if necessary
-            } else {
+            else
                 return filename;
-            }
         }
         int index = indexOfLastSeparator(filename);
-        if (index < 0) {
+        if (index < 0)
             return filename.substring(0, prefix);
-        }
         int end = index + (includeSeparator ?  1 : 0);
-        if (end == 0) {
+        if (end == 0)
             end++;
-        }
         return filename.substring(0, end);
     }
 
@@ -943,9 +901,8 @@ public class GridFilenameUtils {
      * @return the name of the file without the path, or an empty string if none exists
      */
     public static String getName(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int index = indexOfLastSeparator(filename);
         return filename.substring(index + 1);
     }
@@ -990,15 +947,13 @@ public class GridFilenameUtils {
      * if the filename is {@code null}.
      */
     public static String getExtension(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int index = indexOfExtension(filename);
-        if (index == -1) {
+        if (index == -1)
             return "";
-        } else {
+        else
             return filename.substring(index + 1);
-        }
     }
 
     //-----------------------------------------------------------------------
@@ -1020,15 +975,13 @@ public class GridFilenameUtils {
      * @return the filename minus the extension
      */
     public static String removeExtension(String filename) {
-        if (filename == null) {
+        if (filename == null)
             return null;
-        }
         int index = indexOfExtension(filename);
-        if (index == -1) {
+        if (index == -1)
             return filename;
-        } else {
+        else
             return filename.substring(0, index);
-        }
     }
 
     //-----------------------------------------------------------------------
@@ -1110,9 +1063,8 @@ public class GridFilenameUtils {
             String filename1, String filename2,
             boolean normalized, IOCase caseSensitivity) {
 
-        if (filename1 == null || filename2 == null) {
+        if (filename1 == null || filename2 == null)
             return filename1 == null && filename2 == null;
-        }
         if (normalized) {
             filename1 = normalize(filename1);
             filename2 = normalize(filename2);
@@ -1121,9 +1073,8 @@ public class GridFilenameUtils {
                         "Error normalizing one or both of the file names");
             }
         }
-        if (caseSensitivity == null) {
+        if (caseSensitivity == null)
             caseSensitivity = IOCase.SENSITIVE;
-        }
         return caseSensitivity.checkEquals(filename1, filename2);
     }
 
@@ -1140,12 +1091,10 @@ public class GridFilenameUtils {
      * @return true if the filename has the specified extension
      */
     public static boolean isExtension(String filename, String extension) {
-        if (filename == null) {
+        if (filename == null)
             return false;
-        }
-        if (extension == null || extension.length() == 0) {
+        if (extension == null || extension.length() == 0)
             return indexOfExtension(filename) == -1;
-        }
         String fileExt = getExtension(filename);
         return fileExt.equals(extension);
     }
@@ -1162,17 +1111,14 @@ public class GridFilenameUtils {
      * @return true if the filename is one of the extensions
      */
     public static boolean isExtension(String filename, String[] extensions) {
-        if (filename == null) {
+        if (filename == null)
             return false;
-        }
-        if (extensions == null || extensions.length == 0) {
+        if (extensions == null || extensions.length == 0)
             return indexOfExtension(filename) == -1;
-        }
         String fileExt = getExtension(filename);
         for (String extension : extensions) {
-            if (fileExt.equals(extension)) {
+            if (fileExt.equals(extension))
                 return true;
-            }
         }
         return false;
     }
@@ -1189,17 +1135,14 @@ public class GridFilenameUtils {
      * @return true if the filename is one of the extensions
      */
     public static boolean isExtension(String filename, Collection<String> extensions) {
-        if (filename == null) {
+        if (filename == null)
             return false;
-        }
-        if (extensions == null || extensions.isEmpty()) {
+        if (extensions == null || extensions.isEmpty())
             return indexOfExtension(filename) == -1;
-        }
         String fileExt = getExtension(filename);
         for (String extension : extensions) {
-            if (fileExt.equals(extension)) {
+            if (fileExt.equals(extension))
                 return true;
-            }
         }
         return false;
     }
@@ -1272,15 +1215,12 @@ public class GridFilenameUtils {
      * @since 1.3
      */
     public static boolean wildcardMatch(String filename, String wildcardMatcher, IOCase caseSensitivity) {
-        if (filename == null && wildcardMatcher == null) {
+        if (filename == null && wildcardMatcher == null)
             return true;
-        }
-        if (filename == null || wildcardMatcher == null) {
+        if (filename == null || wildcardMatcher == null)
             return false;
-        }
-        if (caseSensitivity == null) {
+        if (caseSensitivity == null)
             caseSensitivity = IOCase.SENSITIVE;
-        }
         String[] wcs = splitOnTokens(wildcardMatcher);
         boolean anyChars = false;
         int textIdx = 0;
@@ -1302,17 +1242,15 @@ public class GridFilenameUtils {
                 if (wcs[wcsIdx].equals("?")) {
                     // ? so move to next text char
                     textIdx++;
-                    if (textIdx > filename.length()) {
+                    if (textIdx > filename.length())
                         break;
-                    }
                     anyChars = false;
 
                 } else if (wcs[wcsIdx].equals("*")) {
                     // set any chars status
                     anyChars = true;
-                    if (wcsIdx == wcs.length - 1) {
+                    if (wcsIdx == wcs.length - 1)
                         textIdx = filename.length();
-                    }
 
                 } else {
                     // matching text token
@@ -1324,9 +1262,8 @@ public class GridFilenameUtils {
                             break;
                         }
                         int repeat = caseSensitivity.checkIndexOf(filename, textIdx + 1, wcs[wcsIdx]);
-                        if (repeat >= 0) {
+                        if (repeat >= 0)
                             backtrack.push(new int[] {wcsIdx, repeat});
-                        }
                     } else {
                         // matching from current position
                         if (!caseSensitivity.checkRegionMatches(filename, textIdx, wcs[wcsIdx])) {
@@ -1344,9 +1281,8 @@ public class GridFilenameUtils {
             }
 
             // full match
-            if (wcsIdx == wcs.length && textIdx == filename.length()) {
+            if (wcsIdx == wcs.length && textIdx == filename.length())
                 return true;
-            }
 
         } while (backtrack.size() > 0);
 
@@ -1365,9 +1301,8 @@ public class GridFilenameUtils {
         // used by wildcardMatch
         // package level so a unit test may run on this
 
-        if (text.indexOf('?') == -1 && text.indexOf('*') == -1) {
+        if (text.indexOf('?') == -1 && text.indexOf('*') == -1)
             return new String[] { text };
-        }
 
         char[] array = text.toCharArray();
         ArrayList<String> list = new ArrayList<String>();
@@ -1378,19 +1313,16 @@ public class GridFilenameUtils {
                     list.add(buffer.toString());
                     buffer.setLength(0);
                 }
-                if (array[i] == '?') {
+                if (array[i] == '?')
                     list.add("?");
-                } else if (list.isEmpty() ||
-                        i > 0 && list.get(list.size() - 1).equals("*") == false) {
+                else if (list.isEmpty() ||
+                        i > 0 && list.get(list.size() - 1).equals("*") == false)
                     list.add("*");
-                }
-            } else {
+            } else
                 buffer.append(array[i]);
-            }
         }
-        if (buffer.length() != 0) {
+        if (buffer.length() != 0)
             list.add(buffer.toString());
-        }
 
         return list.toArray( new String[ list.size() ] );
     }
@@ -1454,15 +1386,12 @@ public class GridFilenameUtils {
          * @throws IllegalArgumentException if the name is invalid
          */
         public static IOCase forName(String name) {
-            if (IOCase.SENSITIVE.name.equals(name)){
+            if (IOCase.SENSITIVE.name.equals(name))
                 return IOCase.SENSITIVE;
-            }
-            if (IOCase.INSENSITIVE.name.equals(name)){
+            if (IOCase.INSENSITIVE.name.equals(name))
                 return IOCase.INSENSITIVE;
-            }
-            if (IOCase.SYSTEM.name.equals(name)){
+            if (IOCase.SYSTEM.name.equals(name))
                 return IOCase.SYSTEM;
-            }
             throw new IllegalArgumentException("Invalid IOCase name: " + name);
         }
 
@@ -1520,9 +1449,8 @@ public class GridFilenameUtils {
          * @throws NullPointerException if either string is null
          */
         public int checkCompareTo(String str1, String str2) {
-            if (str1 == null || str2 == null) {
+            if (str1 == null || str2 == null)
                 throw new NullPointerException("The strings must not be null");
-            }
             return sensitive ? str1.compareTo(str2) : str1.compareToIgnoreCase(str2);
         }
 
@@ -1538,9 +1466,8 @@ public class GridFilenameUtils {
          * @throws NullPointerException if either string is null
          */
         public boolean checkEquals(String str1, String str2) {
-            if (str1 == null || str2 == null) {
+            if (str1 == null || str2 == null)
                 throw new NullPointerException("The strings must not be null");
-            }
             return sensitive ? str1.equals(str2) : str1.equalsIgnoreCase(str2);
         }
 
@@ -1594,9 +1521,8 @@ public class GridFilenameUtils {
             int endIndex = str.length() - search.length();
             if (endIndex >= strStartIndex) {
                 for (int i = strStartIndex; i <= endIndex; i++) {
-                    if (checkRegionMatches(str, i, search)) {
+                    if (checkRegionMatches(str, i, search))
                         return i;
-                    }
                 }
             }
             return -1;

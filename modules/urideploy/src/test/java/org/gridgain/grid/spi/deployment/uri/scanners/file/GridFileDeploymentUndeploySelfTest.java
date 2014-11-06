@@ -85,9 +85,8 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<Grid
     @Override protected void afterTestsStopped() throws Exception {
         File deployDir = new File(tmpDirPath);
 
-        if (deployDir.exists()) {
+        if (deployDir.exists())
             deployDir.delete();
-        }
     }
 
     /**

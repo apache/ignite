@@ -83,6 +83,12 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
+        suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicTimeoutSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
 
         // Local cache.
         suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
@@ -303,6 +309,14 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Cache interceptor tests.
         suite.addTest(GridCacheInterceptorSelfTestSuite.suite());
+
+        // Multi node update.
+        suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
+        // TODO: GG-5353.
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
         return suite;
     }

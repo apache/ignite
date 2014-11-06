@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
@@ -185,9 +186,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
      * @throws GridException If wrapped SPI could not be started.
      */
     protected final void startSpi() throws GridException {
-        assert spis != null;
-
-        Collection<String> names = new HashSet<>(spis.length);
+        Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
             // Print-out all SPI parameters only in DEBUG mode.
@@ -475,6 +474,21 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
                         return ctx.grid().security().authenticatedSubject(subjId);
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
+                        Object key, @Nullable ClassLoader ldr) throws GridException {
+                        GridCache<Object, V> cache = ctx.cache().cache(spaceName);
+
+                        GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+
+                        if (cctx.isNear())
+                            cctx = cctx.near().dht().context();
+
+                        GridCacheSwapEntry e = cctx.swap().read(key);
+
+                        return e != null ? (V)e.value() : null;
                     }
 
                     /**

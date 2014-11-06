@@ -14,7 +14,8 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.lang.GridBiTuple;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.spi.*;
@@ -375,12 +376,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         else {
                             GridCacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
-                            if (keyMeta == null) {
+                            if (keyMeta == null)
                                 processAnnotationsInClass(true, d.keyCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(true, d.keyCls, keyMeta, d);
-                            }
                         }
 
                         if (val instanceof GridPortableObject) {
@@ -404,12 +403,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
                             GridCacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
-                            if (typeMeta == null) {
+                            if (typeMeta == null)
                                 processAnnotationsInClass(false, d.valCls, d, null);
-                            }
-                            else {
+                            else
                                 processClassMeta(false, d.valCls, typeMeta, d);
-                            }
                         }
 
                         d.registered(getSpi(spi).registerType(space, d));
@@ -449,8 +446,11 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         String typeName = cls.getSimpleName();
 
         // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName))
-            typeName = cls.getName().substring(cls.getPackage().getName().length());
+        if (F.isEmpty(typeName)) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
 
         if (cls.isArray()) {
             assert typeName.endsWith("[]");
@@ -560,19 +560,52 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spi, @Nullable String space,
         String clause, Collection<Object> params, boolean includeBackups,
-        GridIndexingQueryFilter<K, V>... filters) throws GridException {
+        GridIndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
+            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
             return getSpi(spi).queryFields(space, clause, params,
-                backupFilter != null ? F.concat(filters, backupFilter) : filters);
+                and(filters, backupFilter));
         }
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param f1 First filter.
+     * @param f2 Second filter.
+     * @return And filter of the given two.
+     */
+    @Nullable private static GridIndexingQueryFilter and(@Nullable final GridIndexingQueryFilter f1,
+        @Nullable final GridIndexingQueryFilter f2) {
+        if (f1 == null)
+            return f2;
+
+        if (f2 == null)
+            return f1;
+
+        return new GridIndexingQueryFilter() {
+            @Nullable @Override public <K, V> GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+                final GridBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
+                final GridBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);
+
+                if (fltr1 == null)
+                    return fltr2;
+
+                if (fltr2 == null)
+                    return fltr1;
+
+                return new GridBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return fltr1.apply(k, v) && fltr2.apply(k, v);
+                    }
+                };
+            }
+        };
     }
 
     /**
@@ -591,7 +624,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String spi, String space, String clause,
         Collection<Object> params, String resType, boolean includeBackups,
-        GridIndexingQueryFilter<K, V>... filters) throws GridException {
+        GridIndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -601,10 +634,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
+            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
-            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).query(space, clause, params, type,
-                backupFilter != null ? F.concat(filters, backupFilter) : filters));
+            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).<K,V>query(space, clause, params, type,
+                and(filters, backupFilter)));
         }
         finally {
             busyLock.leaveBusy();
@@ -626,7 +659,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(String spi, String space,
         String clause, String resType, boolean includeBackups,
-        GridIndexingQueryFilter<K, V>... filters) throws GridException {
+        GridIndexingQueryFilter filters) throws GridException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -636,10 +669,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
+            GridIndexingQueryFilter backupFilter = backupsFilter(includeBackups);
 
-            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).queryText(space, clause, type,
-                backupFilter != null ? F.concat(filters, backupFilter) : filters));
+            return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).<K,V>queryText(space, clause, type,
+                and(filters, backupFilter)));
         }
         finally {
             busyLock.leaveBusy();
@@ -650,25 +683,25 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Predicate.
-     * @param spaceName Space name.
      * @param includeBackups Include backups.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <K, V> GridIndexingQueryFilter<K, V> backupsFilter(String spaceName, boolean includeBackups) {
-        if (includeBackups || ctx.cache().internalCache(spaceName).context().isReplicated())
+    @Nullable private <K, V> GridIndexingQueryFilter backupsFilter(boolean includeBackups) {
+        if (includeBackups)
             return null;
 
-        final UUID nodeId = ctx.localNodeId();
+        return new GridIndexingQueryFilter() {
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(final String spaceName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String spaceName, K key, V val) {
-                try {
-                    return ctx.cache().internalCache(spaceName).context().isReplicated() ||
-                        nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, key).id());
-                }
-                catch (GridException e) {
-                    throw F.wrap(e);
-                }
+                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
+                    return null;
+
+                return new GridBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, -1);
+                    }
+                };
             }
         };
     }
@@ -1192,6 +1225,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         /** */
         private String name;
 
+        /** */
+        private boolean field;
+
         /**
          * Constructor.
          *
@@ -1202,6 +1238,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
 
             name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
                 member.getName().substring(3) : member.getName();
+
+            ((AccessibleObject) member).setAccessible(true);
+
+            field = member instanceof Field;
         }
 
         /** {@inheritDoc} */
@@ -1213,17 +1253,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 return null;
 
             try {
-                if (member instanceof Field) {
+                if (field) {
                     Field field = (Field)member;
-
-                    field.setAccessible(true);
 
                     return field.get(x);
                 }
                 else {
                     Method mtd = (Method)member;
-
-                    mtd.setAccessible(true);
 
                     return mtd.invoke(x);
                 }
@@ -1417,7 +1453,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param name Name.
          */
         void name(String name) {
-            this.name = CU.h2Escape(name);
+            this.name = name;
         }
 
         /** {@inheritDoc} */
@@ -1532,6 +1568,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          *
          * @param key If given property relates to key.
          * @param prop Property.
+         * @param failOnDuplicate Fail on duplicate flag.
          * @throws GridException In case of error.
          */
         public void addProperty(boolean key, Property prop, boolean failOnDuplicate) throws GridException {

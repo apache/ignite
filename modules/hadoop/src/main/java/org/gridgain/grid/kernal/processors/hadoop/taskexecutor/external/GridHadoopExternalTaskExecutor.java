@@ -789,9 +789,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                             proc.destroy();
                         }
                     });
-                else {
+                else
                     proc.destroy();
-                }
             }
             finally {
                 unlock();

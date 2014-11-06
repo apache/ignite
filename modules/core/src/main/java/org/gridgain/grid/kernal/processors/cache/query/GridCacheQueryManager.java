@@ -28,6 +28,7 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -57,13 +58,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** */
     public static final GridProductVersion QUERY_EVENTS_SINCE = GridProductVersion.fromString("6.2.1");
-
-    /** */
-    private static final Collection<String> IGNORED_FIELDS = F.asList(
-        "_GG_VAL_STR__",
-        "_GG_VER__",
-        "_GG_EXPIRES__"
-    );
 
     /** */
     protected GridIndexingManager idxMgr;
@@ -429,6 +423,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param args Arguments.
      * @param loc Local query or not.
+     * @param subjId Security subject ID.
+     * @param taskName Task name.
      * @return Collection of found keys.
      * @throws GridException In case of error.
      */
@@ -444,11 +440,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         switch (qry.type()) {
             case SQL:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "SQL query executed.",
-                        EVT_CACHE_SQL_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
@@ -463,11 +460,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
 
             case SCAN:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Scan query executed.",
-                        EVT_CACHE_SCAN_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
                         cctx.namex(),
                         null,
                         null,
@@ -481,11 +479,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return scanIterator(qry);
 
             case TEXT:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_EXECUTED)) {
+                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                         cctx.localNode(),
                         "Full text query executed.",
-                        EVT_CACHE_FULL_TEXT_QUERY_EXECUTED,
+                        EVT_CACHE_QUERY_EXECUTED,
+                        org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
                         cctx.namex(),
                         qry.queryClassName(),
                         qry.clause(),
@@ -516,6 +515,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param args Arguments.
      * @param loc Local query or not.
+     * @param subjId Security subject ID.
+     * @param taskName Task name.
      * @return Collection of found keys.
      * @throws GridException In case of error.
      */
@@ -533,11 +534,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         assert qry.type() == SQL_FIELDS;
 
-        if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED)) {
+        if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
                 cctx.localNode(),
                 "SQL fields query executed.",
-                EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED,
+                EVT_CACHE_QUERY_EXECUTED,
+                org.gridgain.grid.cache.query.GridCacheQueryType.SQL_FIELDS,
                 cctx.namex(),
                 null,
                 qry.clause(),
@@ -609,21 +611,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
+        GridPredicate<GridCacheEntry<K, V>> filter = null;
 
-        GridPredicate<GridCacheEntry<K, V>> filter = new P1<GridCacheEntry<K, V>>() {
-            @Override public boolean apply(GridCacheEntry<K, V> e) {
-                return qry.projectionFilter() == null ||
-                    qry.projectionFilter().apply((GridCacheEntry<Object, Object>)e);
-            }
-        };
+        if (qry.projectionFilter() != null) {
+            filter = new P1<GridCacheEntry<K, V>>() {
+                @Override public boolean apply(GridCacheEntry<K, V> e) {
+                    return qry.projectionFilter().apply((GridCacheEntry<Object, Object>)e);
+                }
+            };
+        }
 
-        final GridCacheProjection<K, V> prj = cctx.cache().projection(filter);
+        final GridCacheProjection<K, V> prj = filter != null ? cctx.cache().projection(filter) : cctx.cache();
 
         final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         injectResources(keyValFilter);
 
-        final GridIterator<GridIndexingKeyValueRow<K, V>> it = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+        GridIterator<GridIndexingKeyValueRow<K, V>> heapIt = new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
             private GridIndexingKeyValueRow<K, V> next;
 
             private Iterator<K> iter = prj.keySet().iterator();
@@ -677,16 +681,33 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             private boolean checkPredicate(Map.Entry<K, V> e) {
-                try {
+                if (keyValFilter != null) {
                     Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
 
-                    return keyValFilter == null || keyValFilter.apply(e0.getKey(), e0.getValue());
+                    return keyValFilter.apply(e0.getKey(), e0.getValue());
                 }
-                catch (GridException ex) {
-                    throw new GridRuntimeException(ex);
-                }
+
+                return true;
             }
         };
+
+        final GridIterator<GridIndexingKeyValueRow<K, V>> it;
+
+        if (cctx.isSwapOrOffheapEnabled()) {
+            List<GridIterator<GridIndexingKeyValueRow<K, V>>> iters = new ArrayList<>(3);
+
+            iters.add(heapIt);
+
+            if (cctx.isOffHeapEnabled())
+                iters.add(offheapIterator(qry));
+
+            if (cctx.swap().swapEnabled())
+                iters.add(swapIterator(qry));
+
+            it = new CompoundIterator<>(iters);
+        }
+        else
+            it = heapIt;
 
         return new GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
             @Override protected boolean onHasNext() {
@@ -699,6 +720,113 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             @Override protected void onRemove() {
                 it.remove();
+            }
+        };
+    }
+
+    /**
+     * @param qry Query.
+     * @return Swap iterator.
+     * @throws GridException If failed.
+     */
+    private GridIterator<GridIndexingKeyValueRow<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
+        throws GridException {
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+
+        GridBiPredicate<K, V> filter = qry.scanFilter();
+
+        Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawSwapIterator();
+
+        return scanIterator(it, prjPred, filter, qry.keepPortable());
+    }
+
+    /**
+     * @param qry Query.
+     * @return Offheap iterator.
+     */
+    private GridIterator<GridIndexingKeyValueRow<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+
+        GridBiPredicate<K, V> filter = qry.scanFilter();
+
+        if ((cctx.portableEnabled() && cctx.offheapTiered()) && (prjPred != null || filter != null)) {
+            OffheapIteratorClosure c = new OffheapIteratorClosure(prjPred, filter, qry.keepPortable());
+
+            return cctx.swap().rawOffHeapIterator(c);
+        }
+        else {
+            Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator();
+
+            return scanIterator(it, prjPred, filter, qry.keepPortable());
+        }
+    }
+
+    /**
+     * @param it Lazy swap or offheap iterator.
+     * @param prjPred Projection predicate.
+     * @param filter Scan filter.
+     * @param keepPortable Keep portable flag.
+     * @return Iterator.
+     */
+    private GridIteratorAdapter<GridIndexingKeyValueRow<K, V>> scanIterator(
+        @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
+        @Nullable final GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable final GridBiPredicate<K, V> filter,
+        final boolean keepPortable) {
+        if (it == null)
+            return new GridEmptyCloseableIterator<>();
+
+        return new GridIteratorAdapter<GridIndexingKeyValueRow<K, V>>() {
+            private GridIndexingKeyValueRow<K, V> next;
+
+            {
+                advance();
+            }
+
+            @Override public boolean hasNextX() {
+                return next != null;
+            }
+
+            @Override public GridIndexingKeyValueRow<K, V> nextX() {
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                GridIndexingKeyValueRow<K, V> next0 = next;
+
+                advance();
+
+                return next0;
+            }
+
+            @Override public void removeX() {
+                throw new UnsupportedOperationException();
+            }
+
+            private void advance() {
+                next = null;
+
+                while (it.hasNext()) {
+                    final LazySwapEntry e = new LazySwapEntry(it.next());
+
+                    if (prjPred != null) {
+                        GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+
+                        if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
+                            continue;
+                    }
+
+                    if (filter != null) {
+                        K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+                        V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+                        if (!filter.apply(key, val))
+                            continue;
+                    }
+
+                    next = new GridIndexingKeyValueRowAdapter<>(e.key(), e.value());
+
+                    break;
+                }
             }
         };
     }
@@ -774,26 +902,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                     res.metaData();
 
-                BitSet ignored = new BitSet();
-
-                // Filter internal fields.
-                if (meta != null) {
-                    Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
-
-                    int i = 0;
-
-                    while (metaIt.hasNext()) {
-                        if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
-                            ignored.set(i);
-
-                            if (qryInfo.includeMetaData())
-                                metaIt.remove();
-                        }
-
-                        i++;
-                    }
-                }
-
                 if (!qryInfo.includeMetaData())
                     meta = null;
 
@@ -825,23 +933,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         break;
                     }
 
-                    // Filter internal fields.
-                    Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
-
-                    int i = 0;
-
-                    while (rowIt.hasNext()) {
-                        rowIt.next();
-
-                        if (ignored.get(i++))
-                            rowIt.remove();
-                    }
-
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ)) {
+                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                         cctx.gridEvents().record(new GridCacheQueryReadEvent<K, V>(
                             cctx.localNode(),
                             "SQL fields query result set row read.",
-                            EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ,
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            org.gridgain.grid.cache.query.GridCacheQueryType.SQL_FIELDS,
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -929,7 +1026,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qryInfo Query info.
      */
     @SuppressWarnings("unchecked")
-    protected <R> void runQuery(GridCacheQueryInfo qryInfo) {
+    protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
         if (!enterBusy()) {
@@ -1037,11 +1134,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     switch (type) {
                         case SQL:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SQL_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "SQL query entry read.",
-                                    EVT_CACHE_SQL_QUERY_OBJECT_READ,
+                                    EVT_CACHE_QUERY_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1059,11 +1157,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             break;
 
                         case TEXT:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Full text query entry read.",
-                                    EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ,
+                                    EVT_CACHE_QUERY_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1081,11 +1180,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             break;
 
                         case SCAN:
-                            if (cctx.gridEvents().isRecordable(EVT_CACHE_SCAN_QUERY_OBJECT_READ)) {
+                            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
                                 cctx.gridEvents().record(new GridCacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Scan query entry read.",
-                                    EVT_CACHE_SCAN_QUERY_OBJECT_READ,
+                                    EVT_CACHE_QUERY_OBJECT_READ,
+                                    org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
                                     cctx.namex(),
                                     null,
                                     null,
@@ -1241,7 +1341,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 fut.onDone(new QueryResult<>(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
                     qryInfo.query().subjectId(), taskName), qryInfo.query().type()));
             }
-            catch (GridException e) {
+            catch (Error e) {
+                fut.onDone(e);
+
+                throw e;
+            }
+            catch (Throwable e) {
                 fut.onDone(e);
             }
         }
@@ -1544,24 +1649,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    private GridIndexingQueryFilter<K, V> projectionFilter(GridCacheQueryAdapter<?> qry) {
+    @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
         final GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
 
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String s, K k, V v) {
-                if (prjFilter == null || F.isAlwaysTrue(prjFilter) || !F.eq(space, s))
-                    return true;
+        if (prjFilter == null || F.isAlwaysTrue(prjFilter))
+            return null;
 
-                try {
-                    GridCacheEntry<K, V> entry = context().cache().entry(k);
+        return new GridIndexingQueryFilter() {
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+                if (!F.eq(space, spaceName))
+                    return null;
 
-                    return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
-                }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    return false;
-                }
+                return new GridBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        try {
+                            GridCacheEntry<K, V> entry = context().cache().entry(k);
+
+                            return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
+                        }
+                        catch (GridDhtInvalidPartitionException ignore) {
+                            return false;
+                        }
+                    }
+                };
             }
         };
     }
@@ -1647,12 +1759,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 @Override public CacheSqlMetadata apply(String cacheName) {
                     Collection<GridIndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
 
-                    Collection<String> names = new HashSet<>(types.size());
-                    Map<String, String> keyClasses = new HashMap<>(types.size());
-                    Map<String, String> valClasses = new HashMap<>(types.size());
-                    Map<String, Map<String, String>> fields = new HashMap<>(types.size());
-                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes =
-                        new HashMap<>(types.size());
+                    Collection<String> names = U.newHashSet(types.size());
+                    Map<String, String> keyClasses = U.newHashMap(types.size());
+                    Map<String, String> valClasses = U.newHashMap(types.size());
+                    Map<String, Map<String, String>> fields = U.newHashMap(types.size());
+                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
 
                     for (GridIndexingTypeDescriptor type : types) {
                         // Filter internal types (e.g., data structures).
@@ -1666,7 +1777,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         int size = 2 + type.keyFields().size() + type.valueFields().size();
 
-                        Map<String, String> fieldsMap = new LinkedHashMap<>(size);
+                        Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
                         fieldsMap.put("_KEY", type.keyClass().getName());
@@ -2025,6 +2136,643 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private abstract class AbstractLazySwapEntry {
+        /** */
+        private K key;
+
+        /** */
+        private V val;
+
+        /**
+         * @return Key bytes.
+         */
+        protected abstract byte[] keyBytes();
+
+        /**
+         * @return Value.
+         * @throws GridException If failed.
+         */
+        protected abstract V unmarshalValue() throws GridException;
+
+        /**
+         * @return Key.
+         */
+        K key() {
+            try {
+                if (key != null)
+                    return key;
+
+                key = cctx.marshaller().unmarshal(keyBytes(), cctx.deploy().globalLoader());
+
+                return key;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return Value.
+         */
+        V value() {
+            try {
+                if (val != null)
+                    return val;
+
+                val = unmarshalValue();
+
+                return val;
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /**
+         * @return TTL.
+         */
+        abstract long timeToLive();
+
+        /**
+         * @return Expire time.
+         */
+        abstract long expireTime();
+
+        /**
+         * @return Version.
+         */
+        abstract GridCacheVersion version();
+    }
+
+    /**
+     *
+     */
+    private class LazySwapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final Map.Entry<byte[], byte[]> e;
+
+        /**
+         * @param e Entry with
+         */
+        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return e.getKey();
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("IfMayBeConditional")
+        @Override protected V unmarshalValue() throws GridException {
+            byte[] bytes = e.getValue();
+
+            byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
+
+            if (val != null)
+                return (V)val;
+
+            if (cctx.offheapTiered() && cctx.portableEnabled())
+                return (V)cctx.portable().unmarshal(bytes, GridCacheSwapEntryImpl.valueOffset(bytes));
+            else {
+                GridByteArrayInputStream in = new GridByteArrayInputStream(bytes,
+                    GridCacheSwapEntryImpl.valueOffset(bytes),
+                    bytes.length);
+
+                return cctx.marshaller().unmarshal(in, cctx.deploy().globalLoader());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheSwapEntryImpl.timeToLive(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheSwapEntryImpl.expireTime(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheSwapEntryImpl.version(e.getValue());
+        }
+    }
+
+    /**
+     *
+     */
+    private class LazyOffheapEntry extends AbstractLazySwapEntry {
+        /** */
+        private final T2<Long, Integer> keyPtr;
+
+        /** */
+        private final T2<Long, Integer> valPtr;
+
+        /**
+         * @param keyPtr Key address.
+         * @param valPtr Value address.
+         */
+        private LazyOffheapEntry(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
+            assert keyPtr != null;
+            assert valPtr != null;
+
+            this.keyPtr = keyPtr;
+            this.valPtr = valPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected byte[] keyBytes() {
+            return U.copyMemory(keyPtr.get1(), keyPtr.get2());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected V unmarshalValue() throws GridException {
+            long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
+
+            V val = (V)cctx.portable().unmarshal(ptr, false);
+
+            assert val != null;
+
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override long timeToLive() {
+            return GridCacheOffheapSwapEntry.timeToLive(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override long expireTime() {
+            return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
+        }
+
+        /** {@inheritDoc} */
+        @Override GridCacheVersion version() {
+            return GridCacheOffheapSwapEntry.version(valPtr.get1());
+        }
+    }
+
+    /**
+     *
+     */
+    private class OffheapIteratorClosure
+        extends CX2<T2<Long, Integer>, T2<Long, Integer>, GridIndexingKeyValueRow<K, V>> {
+        /** */
+        private static final long serialVersionUID = 7410163202728985912L;
+
+        /** */
+        private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
+
+        /** */
+        private GridBiPredicate<K, V> filter;
+
+        /** */
+        private boolean keepPortable;
+
+        /**
+         * @param prjPred Projection filter.
+         * @param filter Filter.
+         * @param keepPortable Keep portable flag.
+         */
+        private OffheapIteratorClosure(
+            @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+            @Nullable GridBiPredicate<K, V> filter,
+            boolean keepPortable) {
+            assert prjPred != null || filter != null;
+
+            this.prjPred = prjPred;
+            this.filter = filter;
+            this.keepPortable = keepPortable;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridIndexingKeyValueRow<K, V> applyx(T2<Long, Integer> keyPtr,
+            T2<Long, Integer> valPtr)
+            throws GridException {
+            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
+
+            if (prjPred != null) {
+                GridCacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+
+                if (!prjPred.apply((GridCacheEntry<Object, Object>)cacheEntry))
+                    return null;
+            }
+
+            if (filter != null) {
+                K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+                V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+                if (!filter.apply(key, val))
+                    return null;
+            }
+
+            return new GridIndexingKeyValueRowAdapter<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CompoundIterator<T> extends GridIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 4585888051556166304L;
+
+        /** */
+        private final List<GridIterator<T>> iters;
+
+        /** */
+        private int idx;
+
+        /** */
+        private GridIterator<T> iter;
+
+        /**
+         * @param iters Iterators.
+         */
+        private CompoundIterator(List<GridIterator<T>> iters) {
+            if (iters.isEmpty())
+                throw new IllegalArgumentException();
+
+            this.iters = iters;
+
+            iter = F.first(iters);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNextX() throws GridException {
+            if (iter.hasNextX())
+                return true;
+
+            idx++;
+
+            while(idx < iters.size()) {
+                iter = iters.get(idx);
+
+                if (iter.hasNextX())
+                    return true;
+
+                idx++;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T nextX() throws GridException {
+            if (!hasNextX())
+                throw new NoSuchElementException();
+
+            return iter.nextX();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() throws GridException {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     *
+     */
+    private class GridCacheScanSwapEntry implements GridCacheEntry<K, V> {
+        /** */
+        private static final long serialVersionUID = 1262515168518736214L;
+
+        /** */
+        private final AbstractLazySwapEntry e;
+
+        /**
+         * @param e Entry.
+         */
+        private GridCacheScanSwapEntry(AbstractLazySwapEntry e) {
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V peek() {
+            return e.value();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object version() {
+            return e.version();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long expirationTime() {
+            return e.expireTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeToLive() {
+            return e.timeToLive();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V getValue() {
+            return e.value();
+        }
+
+        /** {@inheritDoc} */
+        @Override public K getKey() {
+            return e.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheProjection<K, V> projection() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V reload() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> reloadAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isLocked() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isLockedByThread() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void timeToLive(long ttl) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean primary() {
+            return cctx.affinity().
+                primary(cctx.localNode(), getKey(), cctx.affinity().affinityTopologyVersion());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean backup() {
+            return cctx.affinity().
+                backups(getKey(), cctx.affinity().affinityTopologyVersion()).contains(cctx.localNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition() {
+            return cctx.affinity().partition(getKey());
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V get() {
+            return getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> getAsync() {
+            return new GridFinishedFuture<V>(cctx.kernalContext(), getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V setValue(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V set(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> setAsync(V val, GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V setIfAbsent(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> setIfAbsentAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> setxAsync(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setxIfAbsent(@Nullable V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> setxIfAbsentAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void transform(GridClosure<V, V> transformer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<?> transformAsync(GridClosure<V, V> transformer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V replace(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> replaceAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replacex(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> replacexAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(V oldVal, V newVal) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<V> removeAsync(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removex(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> removexAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(V val) throws GridException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> removeAsync(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evict() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean compact() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean lock(long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFuture<Boolean> lockAsync(long timeout,
+            @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCached() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int memorySize() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(GridMetadataAware from) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(Map<String, ?> data) {
+            throw new UnsupportedOperationException();
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMeta(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V addMetaIfAbsent(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V meta(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V removeMeta(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean removeMeta(String name, V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> Map<String, V> allMeta() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasMeta(String name) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean hasMeta(String name, V val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -73,24 +73,21 @@ public final class GridifyArgumentBuilder {
         for (int i = 0; i < mtdTypes.length; i++) {
             Class<?> paramType = mtdTypes[i];
 
-            if (GridifyUtils.isMethodParameterTypeAllowed(paramType)) {
+            if (GridifyUtils.isMethodParameterTypeAllowed(paramType))
                 allowedParamIdxs.add(i);
-            }
         }
 
         assert !allowedParamIdxs.isEmpty() : "Invalid method signature. Failed to get valid method parameter " +
             "types [mtdName=" + mtdName + ", mtdTypes=" + Arrays.asList(mtdTypes) + ']';
 
-        if (allowedParamIdxs.size() == 1) {
+        if (allowedParamIdxs.size() == 1)
             return allowedParamIdxs.get(0);
-        }
 
         List<Integer> annParamIdxs = new ArrayList<>(mtdTypes.length);
 
         for (int i = 0; i < mtdTypes.length; i++) {
-            if (GridifyUtils.isMethodParameterTypeAnnotated(mtdParamAnns[i])) {
+            if (GridifyUtils.isMethodParameterTypeAnnotated(mtdParamAnns[i]))
                 annParamIdxs.add(i);
-            }
         }
 
         assert annParamIdxs.size() == 1 : "Invalid method signature. Method parameter must be annotated with @" +
@@ -132,9 +129,8 @@ public final class GridifyArgumentBuilder {
 
         Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
 
-        if (paramValue == null) {
+        if (paramValue == null)
             throw new GridException("Failed to create task argument for type: " + paramCls.getName());
-        }
 
         mtdArgs[arg.getParamIndex()] = paramValue;
 
@@ -171,9 +167,8 @@ public final class GridifyArgumentBuilder {
 
         Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
 
-        if (paramValue == null) {
+        if (paramValue == null)
             throw new GridException("Failed to create job argument for type: " + paramCls.getName());
-        }
 
         mtdArgs[arg.getParamIndex()] = paramValue;
 

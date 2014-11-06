@@ -132,9 +132,8 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
             assert taskSes != null;
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -143,21 +142,18 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                     @Override public Serializable execute() throws GridException {
                         assert taskSes != null;
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
-                        }
 
                         if (this.<Integer>argument(0) != 1) {
                             try {
                                 String val = (String)taskSes.waitForAttribute("testName", 20000);
 
-                                if (log.isInfoEnabled()) {
+                                if (log.isInfoEnabled())
                                     log.info("Received attribute 'testName': " + val);
-                                }
 
-                                if ("testVal".equals(val)) {
+                                if ("testVal".equals(val))
                                     return 1;
-                                }
 
                                 fail("Invalid test session value: " + val);
                             }
@@ -177,41 +173,35 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             if (received.size() == 1) {
                 log.info("Got result from setting job: " + result);
 
                 taskSes.setAttribute("testName", "testVal");
             }
-            else {
+            else
                 log.info("Got result from waiting job: " + result);
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail("Results size is less than split count: " + results.size());
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult res : results) {
-                if (res.getData() == null) {
+                if (res.getData() == null)
                     fail("Got null result data: " + res);
-                }
-                else {
+                else
                     log.info("Reducing result: " + res.getData());
-                }
 
                 sum += (Integer)res.getData();
             }

@@ -129,6 +129,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     protected boolean onePhaseCommit;
 
+    /** If this transaction contains transform entries. */
+    protected boolean transform;
+
     /** Commit version. */
     private AtomicReference<GridCacheVersion> commitVer = new AtomicReference<>(null);
 
@@ -356,7 +359,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      * @return Flag indicating whether near cache should be updated.
      */
-    protected boolean updateNearCache() {
+    protected boolean updateNearCache(K key, long topVer) {
         return false;
     }
 
@@ -447,6 +450,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.topVer.compareAndSet(-1, topVer);
 
         return this.topVer.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasTransforms() {
+        return transform;
     }
 
     /** {@inheritDoc} */
@@ -1124,6 +1132,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*unmarshal*/true,
                         /*metrics*/metrics,
                         /*event*/recordEvt,
+                        /*temporary*/true,
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
                         resolveTaskName(),
@@ -1140,7 +1149,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 
-                return F.t(op, val, null);
+                return F.t(op, cctx.<V>unwrapTemporary(val), null);
             }
             catch (GridCacheFilterFailedException e) {
                 assert false : "Empty filter failed for innerGet: " + e;
@@ -1231,7 +1240,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         int part = cached != null ? cached.partition() : cctx.affinity().partition(e.key());
 
-        Collection<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
+        List<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 

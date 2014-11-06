@@ -117,12 +117,10 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
         Thread.sleep(1000);
 
         try {
-            if (deployed) {
+            if (deployed)
                 assert getSpi().findResource(taskId) != null;
-            }
-            else {
+            else
                 assert getSpi().findResource(taskId) == null;
-            }
         }
         finally {
             U.delete(destDir);

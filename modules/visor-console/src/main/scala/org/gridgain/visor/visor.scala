@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
+import scala.io.StdIn
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
@@ -167,7 +168,7 @@ object visor extends VisorTag {
     private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
 
     /** Date format. */
-    private final val dFmt = new SimpleDateFormat("dd MMM yyyy", LOC)
+    private final val dFmt = new SimpleDateFormat("dd MMMM yyyy", LOC)
 
     private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
 
@@ -1506,7 +1507,7 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setRestEnabled(false)
+                cfg.setClientConnectionConfiguration(null)
 
                 def createExecutor = new GridThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
 
@@ -1570,7 +1571,7 @@ object visor extends VisorTag {
     def open(cfg: GridConfiguration, cfgPath: String) {
         val daemon = G.isDaemon
 
-        val shutdownHook = X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK, "false")
+        val shutdownHook = GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
         G.setDaemon(true)
@@ -2054,7 +2055,7 @@ object visor extends VisorTag {
 
         println("\nC: Cancel")
 
-        readLine("\nChoose node: ") match {
+        StdIn.readLine("\nChoose node: ") match {
             case "c" | "C" => None
             case idx =>
                 try

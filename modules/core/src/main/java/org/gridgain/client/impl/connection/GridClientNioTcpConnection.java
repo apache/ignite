@@ -132,8 +132,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Byte marshId,
         GridClientTopology top,
         Object cred,
-        ThreadLocal<Boolean> keepPortablesMode)
-        throws IOException, GridClientException {
+        ThreadLocal<Boolean> keepPortablesMode
+    ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
         assert marsh != null || marshId != null;
@@ -143,10 +143,13 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.pingTimeout = pingTimeout;
         this.keepPortablesMode = keepPortablesMode;
 
-        try {
-            SocketChannel ch = SocketChannel.open();
+        SocketChannel ch = null;
+        Socket sock = null;
+        boolean cleanup = true;
 
-            Socket sock = ch.socket();
+        try {
+            ch = SocketChannel.open();
+            sock = ch.socket();
 
             sock.setTcpNoDelay(tcpNoDelay);
             sock.setKeepAlive(true);
@@ -176,14 +179,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             if (marshId != null)
                 req.marshallerId(marshId);
-            else {
-                assert marsh != null;
-
-                if (marsh instanceof GridClientOptimizedMarshaller)
-                    req.marshallerId(GridClientOptimizedMarshaller.ID);
-                else if (marsh instanceof GridClientJdkMarshaller)
-                    req.marshallerId(GridClientJdkMarshaller.ID);
-            }
+            // marsh != null.
+            else if (marsh instanceof GridClientOptimizedMarshaller)
+                req.marshallerId(GridClientOptimizedMarshaller.ID);
+            else if (marsh instanceof GridClientJdkMarshaller)
+                req.marshallerId(GridClientJdkMarshaller.ID);
 
             GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
 
@@ -192,29 +192,40 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             handshakeFut.get();
 
             ses.addMeta(SES_META_CONN, this);
+
+            if (log.isLoggable(Level.INFO))
+                log.info("Client TCP connection established: " + serverAddress());
+
+            pingTask = pingExecutor.scheduleAtFixedRate(new Runnable() {
+                @Override public void run() {
+                    try {
+                        makeRequest(GridClientPingPacket.PING_MESSAGE, (TcpClientFuture)null, false);
+                    }
+                    catch (Exception e) {
+                        log.warning("Failed to send ping message: " + e);
+                    }
+                }
+            }, 500, 500, TimeUnit.MILLISECONDS);
+
+            createTs = System.currentTimeMillis();
+
+            cleanup = false;
         }
         catch (GridException e) {
-            if (ses != null)
-                srv.close(ses);
-
             throw new GridClientException(e);
         }
+        finally {
+            if (cleanup) {
+                if (ses != null)
+                    srv.close(ses);
 
-        if (log.isLoggable(Level.INFO))
-            log.info("Client TCP connection established: " + serverAddress());
+                if (sock!= null)
+                    sock.close();
 
-        pingTask = pingExecutor.scheduleAtFixedRate(new Runnable() {
-            @Override public void run() {
-                try {
-                    makeRequest(GridClientPingPacket.PING_MESSAGE, (TcpClientFuture)null, false);
-                }
-                catch (Exception e) {
-                    log.warning("Failed to send ping message: " + e);
-                }
+                if (ch != null)
+                    ch.close();
             }
-        }, 500, 500, TimeUnit.MILLISECONDS);
-
-        createTs = System.currentTimeMillis();
+        }
     }
 
     /** {@inheritDoc} */
@@ -525,6 +536,14 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         switch (fut.retryState()) {
             case TcpClientFuture.STATE_INITIAL: {
                 if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE) {
+                    if (credentials() == null) {
+                        fut.onDone(new GridClientAuthenticationException("Authentication failed on server " +
+                            "(client has no credentials) [clientId=" + clientId +
+                            ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+
+                        return;
+                    }
+
                     fut.retryState(TcpClientFuture.STATE_AUTH_RETRY);
 
                     GridClientAuthenticationRequest req = buildAuthRequest();

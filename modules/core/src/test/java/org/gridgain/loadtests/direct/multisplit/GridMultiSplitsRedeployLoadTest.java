@@ -115,9 +115,8 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        if (taskCnt % 500 == 0) {
+                        if (taskCnt % 500 == 0)
                             info(stats.toString());
-                        }
                     }
                     catch (GridException e) {
                         error("Failed to execute grid task.", e);

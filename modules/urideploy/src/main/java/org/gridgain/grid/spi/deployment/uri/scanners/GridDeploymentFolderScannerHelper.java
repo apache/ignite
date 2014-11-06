@@ -36,9 +36,8 @@ public final class GridDeploymentFolderScannerHelper {
     public static void scanFolder(File file, FileFilter filter, GridDeploymentFileHandler handler) {
         assert file != null;
 
-        if (filter.accept(file)) {
+        if (filter.accept(file))
             handler.handle(file);
-        }
         else if (file.isDirectory()) {
             for (File child : file.listFiles()) {
                 scanFolder(child, filter, handler);

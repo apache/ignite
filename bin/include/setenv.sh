@@ -52,13 +52,11 @@ GRIDGAIN_LIBS="${GRIDGAIN_HOME}/libs/*"
 
 for file in ${GRIDGAIN_HOME}/libs/*
 do
-    if [ -d ${file} ] && [ "${file}" != "${GRIDGAIN_HOME}/libs/optional" ]; then
+    if [ -d ${file} ] && [ "${file}" != "${GRIDGAIN_HOME}"/libs/optional ]; then
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
     fi
 
-    base_file_name=$(basename $file)
-
-    if [ "${base_file_name:0:15}" == "gridgain-hadoop" ]; then
+    if [ -d ${file} ] && [ "${file}" == "${GRIDGAIN_HOME}"/libs/gridgain-hadoop ]; then
         HADOOP_EDITION=1
     fi
 done
@@ -67,10 +65,10 @@ if [ "${USER_LIBS}" != "" ]; then
     GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
 fi
 
-if [ "$HADOOP_EDITION" == "1" ]; then
-    . ${GRIDGAIN_HOME}/os/bin/include/hadoop-classpath.sh
+if [ "${HADOOP_EDITION}" == "1" ]; then
+    . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
 
-    if [ "$GRIDGAIN_HADOOP_CLASSPATH" != "" ]; then
+    if [ "${GRIDGAIN_HADOOP_CLASSPATH}" != "" ]; then
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
     fi
 fi

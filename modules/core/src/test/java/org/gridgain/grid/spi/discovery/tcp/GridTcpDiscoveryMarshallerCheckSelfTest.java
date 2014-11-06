@@ -42,12 +42,10 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
 
         cfg.setLocalHost("127.0.0.1");
 
-        if (flag) {
+        if (flag)
             cfg.setMarshaller(new GridJdkMarshaller());
-        }
-        else {
+        else
             cfg.setMarshaller(sameMarsh ? new GridJdkMarshaller() : new GridOptimizedMarshaller());
-        }
 
         // Flip flag.
         flag = !flag;
