@@ -14,15 +14,30 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
  * Data structures proxy object.
  */
-public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures {
+public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Delegate object. */
     private GridCacheDataStructures delegate;
 
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
+
+    /** Context. */
+    private GridCacheContext<K, V> cctx;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheDataStructuresProxy() {
+        // No-op.
+    }
 
     /**
      * @param cctx Cache context.
@@ -30,6 +45,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
      */
     public GridCacheDataStructuresProxy(GridCacheContext<K, V> cctx, GridCacheDataStructures delegate) {
         this.delegate = delegate;
+        this.cctx = cctx;
 
         gate = cctx.gate();
     }
@@ -218,5 +234,26 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
         finally {
             gate.leave(old);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cctx = (GridCacheContext<K, V>)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        return cctx.grid().cache(cctx.cache().name()).dataStructures();
     }
 }

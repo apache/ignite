@@ -17,12 +17,12 @@ import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -33,9 +33,18 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi.*;
 
 /**
- *
+ * Lucene fulltext index.
  */
 public class GridLuceneIndex implements Closeable {
+    /** Field name for string representation of value. */
+    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
+
+    /** Field name for value version. */
+    public static final String VER_FIELD_NAME = "_gg_ver__";
+
+    /** Field name for value expiration time. */
+    public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
+
     /** */
     private final GridIndexingMarshaller marshaller;
 
@@ -153,27 +162,32 @@ public class GridLuceneIndex implements Closeable {
             }
         }
 
-        if (!stringsFound)
-            return; // We did not find any strings to be indexed, will not store data at all.
-
-        doc.add(new Field(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key)), Field.Store.YES,
-            Field.Index.NOT_ANALYZED));
-
-        if (storeVal && type.valueClass() != String.class)
-            doc.add(new Field(VAL_FIELD_NAME, marshaller.marshal(val)));
-
-        doc.add(new Field(VER_FIELD_NAME, ver));
-
-        doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
-            DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        String keyStr = Base64.encodeBase64String(marshaller.marshal(key));
 
         try {
-            writer.addDocument(doc);
+            // Delete first to avoid duplicates.
+            writer.deleteDocuments(new Term(KEY_FIELD_NAME, keyStr));
 
-            updateCntr.incrementAndGet();
+            if (!stringsFound)
+                return; // We did not find any strings to be indexed, will not store data at all.
+
+            doc.add(new Field(KEY_FIELD_NAME, keyStr, Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+            if (storeVal && type.valueClass() != String.class)
+                doc.add(new Field(VAL_FIELD_NAME, marshaller.marshal(val)));
+
+            doc.add(new Field(VER_FIELD_NAME, ver));
+
+            doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
+                DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+            writer.addDocument(doc);
         }
         catch (IOException e) {
             throw new GridSpiException(e);
+        }
+        finally {
+            updateCntr.incrementAndGet();
         }
     }
 
@@ -186,11 +200,12 @@ public class GridLuceneIndex implements Closeable {
     public void remove(GridIndexingEntity<?> key) throws GridSpiException {
         try {
             writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
-
-            updateCntr.incrementAndGet();
         }
         catch (IOException e) {
             throw new GridSpiException(e);
+        }
+        finally {
+            updateCntr.incrementAndGet();
         }
     }
 
@@ -203,7 +218,7 @@ public class GridLuceneIndex implements Closeable {
      * @throws GridSpiException If failed.
      */
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String qry,
-        GridIndexingQueryFilter<K, V>[] filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws GridSpiException {
         IndexReader reader;
 
         try {
@@ -239,7 +254,18 @@ public class GridLuceneIndex implements Closeable {
             throw new GridSpiException(e);
         }
 
-        return new It<>(reader, searcher, docs.scoreDocs, filters);
+        GridBiPredicate<K, V> fltr = null;
+
+        if (filters != null) {
+            try {
+                fltr = filters.forSpace(spaceName);
+            }
+            catch (GridException e) {
+                throw new GridSpiException(e);
+            }
+        }
+
+        return new It<>(reader, searcher, docs.scoreDocs, fltr);
     }
 
     /** {@inheritDoc} */
@@ -265,7 +291,7 @@ public class GridLuceneIndex implements Closeable {
         private final ScoreDoc[] docs;
 
         /** */
-        private final GridIndexingQueryFilter<K, V>[] filters;
+        private final GridBiPredicate<K, V> filters;
 
         /** */
         private int idx;
@@ -282,7 +308,7 @@ public class GridLuceneIndex implements Closeable {
          * @param filters Filters over result.
          * @throws GridSpiException if failed.
          */
-        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, GridIndexingQueryFilter<K, V>[] filters)
+        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, GridBiPredicate<K, V> filters)
             throws GridSpiException {
             this.reader = reader;
             this.searcher = searcher;
@@ -300,14 +326,7 @@ public class GridLuceneIndex implements Closeable {
          * @return {@code True} if key passes filter.
          */
         private boolean filter(K key, V val) {
-            if (!F.isEmpty(filters)) {
-                for (GridIndexingQueryFilter<K, V> f : filters) {
-                    if (!f.apply(spaceName, key, val))
-                        return false;
-                }
-            }
-
-            return true;
+            return filters == null || filters.apply(key, val) ;
         }
 
         /**

@@ -15,6 +15,9 @@ import org.gridgain.client.*;
  * In this case client will try to reconnect to any of the servers specified in configuration.
  */
 public class GridClientConnectionResetException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates an exception with given message.
      *

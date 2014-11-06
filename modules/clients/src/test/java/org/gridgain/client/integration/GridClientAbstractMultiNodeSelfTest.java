@@ -118,14 +118,22 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         GridConfiguration c = super.getConfiguration(gridName);
 
         c.setLocalHost(HOST);
-        c.setRestTcpPort(REST_TCP_PORT_BASE);
-        c.setRestEnabled(restEnabled);
 
-        GridSslContextFactory sslCtxFactory = sslContextFactory();
+        assert c.getClientConnectionConfiguration() == null;
 
-        if (sslCtxFactory != null) {
-            c.setRestTcpSslEnabled(true);
-            c.setRestTcpSslContextFactory(sslCtxFactory);
+        if (restEnabled) {
+            GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+            clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+
+            GridSslContextFactory sslCtxFactory = sslContextFactory();
+
+            if (sslCtxFactory != null) {
+                clientCfg.setRestTcpSslEnabled(true);
+                clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+            }
+
+            c.setClientConnectionConfiguration(clientCfg);
         }
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
@@ -634,7 +642,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     /**
      * @return Client configuration for the test.
      */
-    protected GridClientConfiguration clientConfiguration() {
+    protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         cfg.setBalancer(getBalancer());
@@ -775,18 +783,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridCacheTxEx t = tm.tx(v);
 
-            if (t.hasWriteKey("x1")) {
+            if (t.hasWriteKey("x1"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x2")) {
+            else if (t.hasWriteKey("x2"))
                 assertTrue(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x3")) {
+            else if (t.hasWriteKey("x3"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x4")) {
+            else if (t.hasWriteKey("x4"))
                 assertTrue(t.syncCommit());
-            }
         }
     }
 

@@ -12,15 +12,14 @@ package org.gridgain.grid.util.offheap.unsafe;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.*;
 import org.gridgain.grid.util.tostring.*;
-import org.jetbrains.annotations.*;
-import sun.misc.Unsafe;
+import org.gridgain.grid.util.typedef.internal.*;
+import sun.misc.*;
 
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**
@@ -40,8 +39,7 @@ public class GridUnsafeMemory {
     private static final int ADDR_SIZE = UNSAFE.addressSize();
 
     /** Safe offheap release flag. */
-    private static final boolean SAFE_RELEASE = Boolean.valueOf(
-        X.getSystemOrEnv(GridSystemProperties.GG_OFFHEAP_SAFE_RELEASE, "false"));
+    private static final boolean SAFE_RELEASE = GridSystemProperties.getBoolean(GG_OFFHEAP_SAFE_RELEASE);
 
     /** Total size. */
     @GridToStringInclude
@@ -97,7 +95,7 @@ public class GridUnsafeMemory {
 
         long max = total;
 
-        return max == 0 || mem <= max;
+        return mem <= max;
     }
 
     /**
@@ -463,13 +461,56 @@ public class GridUnsafeMemory {
     }
 
     /**
+     * @param ptr1 First pointer.
+     * @param ptr2 Second pointer.
+     * @param size Memory size.
+     * @return {@code True} if equals.
+     */
+    public static boolean compare(long ptr1, long ptr2, int size) {
+        assert ptr1 > 0 : ptr1;
+        assert ptr2 > 0 : ptr2;
+        assert size > 0 : size;
+
+        if (ptr1 == ptr2)
+            return true;
+
+        int words = size / 8;
+
+        for (int i = 0; i < words; i++) {
+            long w1 = UNSAFE.getLong(ptr1);
+            long w2 = UNSAFE.getLong(ptr2);
+
+            if (w1 != w2)
+                return false;
+
+            ptr1 += 8;
+            ptr2 += 8;
+        }
+
+        int left = size % 8;
+
+        for (int i = 0; i < left; i++) {
+            byte b1 = UNSAFE.getByte(ptr1);
+            byte b2 = UNSAFE.getByte(ptr2);
+
+            if (b1 != b2)
+                return false;
+
+            ptr1++;
+            ptr2++;
+        }
+
+        return true;
+    }
+
+    /**
      * Compares memory.
      *
      * @param ptr Pointer.
      * @param bytes Bytes to compare.
      * @return {@code True} if equals.
      */
-    public boolean compare(long ptr, byte[] bytes) {
+    public static boolean compare(long ptr, byte[] bytes) {
         final int addrSize = ADDR_SIZE;
 
         // Align reads to address size.
@@ -667,373 +708,5 @@ public class GridUnsafeMemory {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridUnsafeMemory.class, this);
-    }
-
-    /** */
-    private final AtomicReference<Operation> head = new AtomicReference<>();
-
-    /** */
-    private final AtomicReference<Operation> tail = new AtomicReference<>();
-
-    /** */
-    private final ThreadLocal<Operation> currOp = new ThreadLocal<>();
-
-    /**
-     * Initialize head and tail with fake operation to avoid {@code null} handling.
-     */
-    {
-        Operation fake = new Operation();
-
-        fake.mayDeallocate(true);
-
-        head.set(fake);
-        tail.set(fake);
-    }
-
-    /**
-     * Begins concurrent memory operation.
-     *
-     * @return Operation instance.
-     */
-    @Nullable public Operation begin() {
-        Operation op = currOp.get();
-
-        if (op != null)
-            return null;
-
-        op = new Operation();
-
-        currOp.set(op);
-
-        for (;;) {
-            Operation prev = head.get();
-
-            op.previous(prev);
-
-            if (head.compareAndSet(prev, op)) {
-                prev.next(op);
-
-                break;
-            }
-        }
-
-        return op;
-    }
-
-    /**
-     * Ends concurrent memory operation and releases resources.
-     *
-     * @param op Operation.
-     */
-    public void end(@Nullable Operation op) {
-        if (op == null)
-            return;
-
-        assert currOp.get() == op : "arg: " + op + " threadLocal:" + currOp.get();
-
-        currOp.remove();
-
-        long curId = op.id;
-
-        op.mayDeallocate(true);
-
-        // Start deallocating from tail.
-        op = tail.get();
-
-        while (op.mayDeallocate()) {
-            if (!op.finish(this) && op.id > curId)
-                break;
-
-            Operation next = op.next;
-
-            if (next == null)
-                break;
-
-            op = next;
-        }
-
-        for (;;) {
-            Operation t = tail.get();
-
-            if (op.id <= t.id || tail.compareAndSet(t, op))
-                break;
-        }
-    }
-
-    /**
-     * Releases memory in the future when it will be safe to do that. Must be called as in following example.
-     * <pre>
-     *     Operation op = memory.begin();
-     *
-     *     try {
-     *         memory.releaseLater(ptr, size);
-     *     }
-     *     finally {
-     *         memory.end(op);
-     *     }
-     * </pre>
-     *
-     * @param ptr Pointer.
-     * @param size Size.
-     */
-    public void releaseLater(long ptr, long size) {
-        head.get().add(this, ptr, size);
-    }
-
-    /**
-     * Releases compound memory. Must be called the same way as {@link #releaseLater(long, long)}.
-     *
-     * @param compound Compound memory.
-     */
-    public void releaseLater(GridUnsafeCompoundMemory compound) {
-        head.get().add(compound);
-    }
-
-    /**
-     * Will run given finalizer in the future when it will be safe to do that. Must be called the same way as
-     * {@link #releaseLater(long, long)}. Gives no guarantees in which thread it will be executed. Gives
-     * no guarantees about execution order of multiple passed finalizers as well.
-     *
-     * @param finalizer Finalizer.
-     */
-    public void finalizeLater(Runnable finalizer) {
-        head.get().add(new Finalizer(finalizer));
-    }
-
-    /**
-     * Memory operation which can be executed in parallel with other memory operations.
-     */
-    @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
-    public static class Operation {
-        /** 24 Bytes each node: next, ptr, size. */
-        private static final long LINKED_STACK_NODE_SIZE = 24L;
-
-        /** */
-        private static final AtomicReferenceFieldUpdater<Operation, Finalizer> finUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(Operation.class, Finalizer.class, "finHead");
-
-        /** */
-        private static final AtomicReferenceFieldUpdater<Operation, GridUnsafeCompoundMemory> compoundUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(Operation.class, GridUnsafeCompoundMemory.class, "compound");
-
-        /** */
-        private static final AtomicLongFieldUpdater<Operation> headUpdater = AtomicLongFieldUpdater.
-            newUpdater(Operation.class, "head");
-
-        /** */
-        private long id;
-
-        /** */
-        private volatile Operation next;
-
-        /** */
-        private volatile boolean mayDeallocate;
-
-        /** Head of linked stack.*/
-        private volatile long head;
-
-        /** */
-        private volatile Finalizer finHead;
-
-        /** */
-        private volatile GridUnsafeCompoundMemory compound;
-
-        /**
-         * Private constructor to avoid creation from outside.
-         */
-        private Operation() {
-            // No-op.
-        }
-
-        /**
-         * Add memory for deallocation.
-         *
-         * @param mem Unsafe memory.
-         * @param ptr Pointer.
-         * @param size Size.
-         */
-        private void add(GridUnsafeMemory mem, long ptr, long size) {
-            long node = mem.allocate(LINKED_STACK_NODE_SIZE);
-
-            UNSAFE.putLong(node + 8, ptr);
-            UNSAFE.putLong(node + 16, size);
-
-            long prev;
-
-            do {
-                prev = head;
-
-                UNSAFE.putLong(node, prev);
-            }
-            while (!headUpdater.compareAndSet(this, prev, node));
-        }
-
-        /**
-         * Adds runnable to the finalization queue.
-         *
-         * @param fin Finalizer.
-         */
-        private void add(Finalizer fin) {
-            for(;;) {
-                Finalizer prev = finHead;
-
-                fin.previous(prev);
-
-                if (finUpdater.compareAndSet(this, prev, fin))
-                    break;
-            }
-        }
-
-        /**
-         * Finish operation and release memory.
-         *
-         * @param mem Unsafe memory.
-         * @return {@code true} If we deallocated memory for this operation.
-         */
-        private boolean finish(GridUnsafeMemory mem) {
-            long node;
-
-            for (;;) {
-                node = head; // -1 means that memory already was deallocated.
-
-                if (node == -1)
-                    return false;
-
-                if (headUpdater.compareAndSet(this, node, -1))
-                    break;
-            }
-
-            while (node != 0) {
-                assert node > 0;
-
-                long next = UNSAFE.getLong(node);
-                long ptr = UNSAFE.getLong(node + 8);
-                long size = UNSAFE.getLong(node + 16);
-
-                mem.release(ptr, size);
-                mem.release(node, LINKED_STACK_NODE_SIZE);
-
-                node = next;
-            }
-
-            GridUnsafeCompoundMemory c = compound;
-
-            if (c != null) {
-                c.deallocate();
-
-                compoundUpdater.lazySet(this, null);
-            }
-
-            Finalizer fin = finHead;
-
-            if (fin != null) {
-                // Need to nullify because last deallocated operation object is still kept in memory.
-
-                finUpdater.lazySet(this, null);
-
-                do {
-                    fin.run();
-
-                    fin = fin.previous();
-                }
-                while(fin != null);
-            }
-
-            return true;
-        }
-
-        /**
-         * @return {@code true} If memory for this operation was already deallocated.
-         */
-        private boolean deallocated() {
-            return head == -1;
-        }
-
-        /**
-         * Adds compound memory for deallocation.
-         *
-         * @param c Compound memory.
-         */
-        private void add(GridUnsafeCompoundMemory c) {
-            GridUnsafeCompoundMemory existing = compound;
-
-            if (existing == null) {
-                if (compoundUpdater.compareAndSet(this, null, c))
-                    return;
-
-                existing = compound;
-            }
-
-            existing.merge(c);
-        }
-
-        /**
-         * @param prev Previous operation.
-         */
-        private void previous(Operation prev) {
-            id = prev.id + 1;
-        }
-
-        /**
-         * @param mayDeallocate Sets flag indicating if memory may be deallocated for this operation.
-         */
-        private void mayDeallocate(boolean mayDeallocate) {
-            this.mayDeallocate = mayDeallocate;
-        }
-
-        /**
-         * @return flag indicating if memory may be deallocated for this operation.
-         */
-        private boolean mayDeallocate() {
-            return mayDeallocate;
-        }
-
-        /**
-         * @param next Next operation.
-         */
-        private void next(Operation next) {
-            this.next = next;
-        }
-    }
-
-    /**
-     * Finalizer.
-     */
-    private class Finalizer {
-        /** */
-        private Finalizer prev;
-
-        /** */
-        private final Runnable delegate;
-
-        /**
-         * @param delegate Actual finalizer.
-         */
-        private Finalizer(Runnable delegate) {
-            assert delegate != null;
-
-            this.delegate = delegate;
-        }
-
-        /**
-         * @return Previous finalizer.
-         */
-        private Finalizer previous() {
-            return prev;
-        }
-
-        /**
-         * @param prev Previous finalizer.
-         */
-        private void previous(Finalizer prev) {
-            this.prev = prev;
-        }
-
-        /**
-         * Run finalization.
-         */
-        private void run() {
-            delegate.run();
-        }
     }
 }

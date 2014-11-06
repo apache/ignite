@@ -15,21 +15,43 @@ import java.util.*;
 /**
  * GridGain properties holder.
  */
-class GridProperties {
+public class GridProperties {
     /** Properties file path. */
     private static final String FILE_PATH = "gridgain.properties";
+
+    /** Enterprise properties file path. */
+    private static final String ENT_FILE_PATH = "gridgain-ent.properties";
 
     /** Properties. */
     private static final Properties PROPS;
 
+    /**
+     *
+     */
     static {
         PROPS = new Properties();
 
-        try {
-            PROPS.load(GridProductImpl.class.getClassLoader().getResourceAsStream(FILE_PATH));
+        readProperties(FILE_PATH, true);
+        readProperties(ENT_FILE_PATH, false);
+    }
+
+    /**
+     * @param path Path.
+     * @param throwExc Flag indicating whether to throw an exception or not.
+     */
+    private static void readProperties(String path, boolean throwExc) {
+        try (InputStream is = GridProductImpl.class.getClassLoader().getResourceAsStream(path)) {
+            if (is == null) {
+                if (throwExc)
+                    throw new RuntimeException("Failed to find properties file: " + path);
+                else
+                    return;
+            }
+
+            PROPS.load(is);
         }
         catch (IOException e) {
-            throw new RuntimeException("Cannot find '" + FILE_PATH + "' file.", e);
+            throw new RuntimeException("Failed to read properties file: " + path, e);
         }
     }
 
@@ -37,9 +59,16 @@ class GridProperties {
      * Gets property value.
      *
      * @param key Property key.
-     * @return Property value.
+     * @return Property value (possibly empty string, but never {@code null}).
      */
     public static String get(String key) {
-        return PROPS.getProperty(key);
+        return PROPS.getProperty(key, "");
+    }
+
+    /**
+     *
+     */
+    private GridProperties() {
+        // No-op.
     }
 }

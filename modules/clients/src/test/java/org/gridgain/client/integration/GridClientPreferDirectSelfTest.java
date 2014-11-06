@@ -55,9 +55,15 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setRestEnabled(true);
         c.setLocalHost(HOST);
-        c.setRestTcpPort(REST_TCP_PORT_BASE);
+
+        assert c.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+
+        c.setClientConnectionConfiguration(clientCfg);
 
         return c;
     }
@@ -65,7 +71,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRandomBalanser() throws Exception {
+    public void testRandomBalancer() throws Exception {
         GridClientRandomBalancer b = new GridClientRandomBalancer();
 
         b.setPreferDirectNodes(true);
@@ -76,7 +82,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRoundRobinBalanser() throws Exception {
+    public void testRoundRobinBalancer() throws Exception {
         GridClientRoundRobinBalancer b = new GridClientRoundRobinBalancer();
 
         b.setPreferDirectNodes(true);

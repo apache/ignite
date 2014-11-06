@@ -11,14 +11,29 @@ package org.gridgain.grid.marshaller;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.affinity.*;
+import org.gridgain.grid.kernal.processors.cache.datastructures.*;
+import org.gridgain.grid.kernal.processors.service.*;
+import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.p2p.*;
+import org.gridgain.grid.product.*;
+import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.service.*;
+import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.streamer.window.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -26,6 +41,9 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Common test for marshallers.
@@ -69,7 +87,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         }
     };
 
-
     /** */
     protected GridMarshallerAbstractTest() {
         super(/*start grid*/true);
@@ -82,8 +99,35 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         GridCacheConfiguration namedCache = new GridCacheConfiguration();
 
         namedCache.setName(CACHE_NAME);
+        namedCache.setAtomicityMode(TRANSACTIONAL);
+        namedCache.setQueryIndexEnabled(true);
 
+        cfg.setMarshaller(new GridOptimizedMarshaller(false));
+        cfg.setStreamerConfiguration(streamerConfiguration());
         cfg.setCacheConfiguration(new GridCacheConfiguration(), namedCache);
+
+        return cfg;
+    }
+
+    /**
+     * @return Streamer configuration.
+     */
+    private static GridStreamerConfiguration streamerConfiguration() {
+        Collection<GridStreamerStage> stages = F.<GridStreamerStage>asList(new GridStreamerStage() {
+            @Override public String name() {
+                return "name";
+            }
+
+            @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection evts) {
+                return null;
+            }
+        });
+
+        GridStreamerConfiguration cfg = new GridStreamerConfiguration();
+
+        cfg.setAtLeastOnce(true);
+        cfg.setWindows(F.asList((GridStreamerWindow)new GridStreamerUnboundedWindow()));
+        cfg.setStages(stages);
 
         return cfg;
     }
@@ -356,9 +400,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         assertEquals(inBools.length, outBools.length);
 
-        for (int i = 0; i < inBools.length; i++) {
+        for (int i = 0; i < inBools.length; i++)
             assertTrue(Arrays.equals(inBools[i], outBools[i]));
-        }
 
         int[] inInts = new int[] {1,2,3,4,5,6,7};
 
@@ -564,10 +607,308 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testScheduler() throws Exception {
+        GridScheduler scheduler = grid().scheduler();
+
+        GridFuture<?> fut = scheduler.runLocal(new Runnable() {
+            @Override public void run() {
+                // No-op.
+            }
+        });
+
+        fut.get();
+
+        GridMarshallerTestBean inBean = newTestBean(scheduler);
+
+        byte[] buf = marshal(inBean);
+
+        GridMarshallerTestBean outBean = unmarshal(buf);
+
+        assert inBean.getObjectField() != null;
+        assert outBean.getObjectField() != null;
+
+        assert inBean.getObjectField().getClass().equals(GridSchedulerImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridSchedulerImpl.class);
+
+        assert inBean != outBean;
+        assert inBean.equals(outBean);
+
+        outBean.checkNullResources();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCompute() throws Exception {
+        GridConfiguration cfg = optimize(getConfiguration("g1"));
+
+        try (Grid g1 = G.start(cfg)) {
+            GridCompute compute = grid().forNode(g1.localNode()).compute();
+
+            GridFuture<?> fut = compute.run(new Runnable() {
+                @Override public void run() {
+                    // No-op.
+                }
+            });
+
+            fut.get();
+
+            GridMarshallerTestBean inBean = newTestBean(compute);
+
+            byte[] buf = marshal(inBean);
+
+            GridMarshallerTestBean outBean = unmarshal(buf);
+
+            assert inBean.getObjectField() != null;
+            assert outBean.getObjectField() != null;
+
+            assert inBean.getObjectField().getClass().equals(GridComputeImpl.class);
+            assert outBean.getObjectField().getClass().equals(GridComputeImpl.class);
+
+            assert inBean != outBean;
+            assert inBean.equals(outBean);
+
+            GridProjection inPrj = compute.projection();
+            GridProjection outPrj = ((GridComputeImpl)outBean.getObjectField()).projection();
+
+            assert inPrj.getClass().equals(outPrj.getClass());
+            assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
+
+            outBean.checkNullResources();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvents() throws Exception {
+        GridConfiguration cfg = optimize(getConfiguration("g1"));
+
+        try (Grid g1 = G.start(cfg)) {
+            GridEvents events = grid().forNode(g1.localNode()).events();
+
+            events.localListen(new GridPredicate<GridEvent>() {
+                @Override public boolean apply(GridEvent gridEvent) {
+                    return true;
+                }
+            }, EVTS_CACHE);
+
+            grid().cache(null).put(1, 1);
+
+            GridMarshallerTestBean inBean = newTestBean(events);
+
+            byte[] buf = marshal(inBean);
+
+            GridMarshallerTestBean outBean = unmarshal(buf);
+
+            assert inBean.getObjectField() != null;
+            assert outBean.getObjectField() != null;
+
+            assert inBean.getObjectField().getClass().equals(GridEventsImpl.class);
+            assert outBean.getObjectField().getClass().equals(GridEventsImpl.class);
+
+            assert inBean != outBean;
+            assert inBean.equals(outBean);
+
+            GridProjection inPrj = events.projection();
+            GridProjection outPrj = ((GridEventsImpl)outBean.getObjectField()).projection();
+
+            assert inPrj.getClass().equals(outPrj.getClass());
+            assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
+
+            outBean.checkNullResources();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMessaging() throws Exception {
+        GridConfiguration cfg = optimize(getConfiguration("g1"));
+
+        try (Grid g1 = G.start(cfg)) {
+            GridMessaging messaging = grid().forNode(g1.localNode()).message();
+
+            messaging.send(null, "test");
+
+            GridMarshallerTestBean inBean = newTestBean(messaging);
+
+            byte[] buf = marshal(inBean);
+
+            GridMarshallerTestBean outBean = unmarshal(buf);
+
+            assert inBean.getObjectField() != null;
+            assert outBean.getObjectField() != null;
+
+            assert inBean.getObjectField().getClass().equals(GridMessagingImpl.class);
+            assert outBean.getObjectField().getClass().equals(GridMessagingImpl.class);
+
+            assert inBean != outBean;
+            assert inBean.equals(outBean);
+
+            GridProjection inPrj = messaging.projection();
+            GridProjection outPrj = ((GridMessagingImpl)outBean.getObjectField()).projection();
+
+            assert inPrj.getClass().equals(outPrj.getClass());
+            assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
+
+            outBean.checkNullResources();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServices() throws Exception {
+        GridConfiguration cfg = optimize(getConfiguration("g1"));
+
+        try (Grid g1 = G.start(cfg)) {
+            GridServices services = grid().forNode(g1.localNode()).services();
+
+            GridFuture<?> fut = services.deployNodeSingleton("test", new DummyService());
+
+            fut.get();
+
+            GridMarshallerTestBean inBean = newTestBean(services);
+
+            byte[] buf = marshal(inBean);
+
+            GridMarshallerTestBean outBean = unmarshal(buf);
+
+            assert inBean.getObjectField() != null;
+            assert outBean.getObjectField() != null;
+
+            assert inBean.getObjectField().getClass().equals(GridServicesImpl.class);
+            assert outBean.getObjectField().getClass().equals(GridServicesImpl.class);
+
+            assert inBean != outBean;
+            assert inBean.equals(outBean);
+
+            GridProjection inPrj = services.projection();
+            GridProjection outPrj = ((GridServicesImpl)outBean.getObjectField()).projection();
+
+            assert inPrj.getClass().equals(outPrj.getClass());
+            assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
+
+            outBean.checkNullResources();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataStructures() throws Exception {
+        GridCacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
+
+        GridCacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
+
+        assert atomicLong != null;
+
+        atomicLong.addAndGet(1);
+
+        GridMarshallerTestBean inBean = newTestBean(dataStructures);
+
+        byte[] buf = marshal(inBean);
+
+        GridMarshallerTestBean outBean = unmarshal(buf);
+
+        assert inBean.getObjectField() != null;
+        assert outBean.getObjectField() != null;
+
+        assert inBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
+        assert outBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
+
+        assert inBean != outBean;
+        assert inBean.equals(outBean);
+
+        outBean.checkNullResources();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinity() throws Exception {
+        GridCache<String, String> cache = grid().cache(CACHE_NAME);
+
+        GridCacheAffinity<String> affinity = cache.affinity();
+
+        cache.putx("tst", "test");
+
+        GridMarshallerTestBean inBean = newTestBean(affinity);
+
+        byte[] buf = marshal(inBean);
+
+        GridMarshallerTestBean outBean = unmarshal(buf);
+
+        assert inBean.getObjectField() != null;
+        assert outBean.getObjectField() != null;
+
+        assert inBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
+        assert outBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
+
+        assert inBean != outBean;
+        assert inBean.equals(outBean);
+
+        outBean.checkNullResources();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStreamer() throws Exception {
+        GridStreamer streamer = grid().streamer(null);
+
+        streamer.addEvent("test");
+
+        GridMarshallerTestBean inBean = newTestBean(streamer);
+
+        byte[] buf = marshal(inBean);
+
+        GridMarshallerTestBean outBean = unmarshal(buf);
+
+        assert inBean.getObjectField() != null;
+        assert outBean.getObjectField() != null;
+
+        assert inBean.getObjectField().getClass().equals(GridStreamerImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridStreamerImpl.class);
+
+        assert inBean != outBean;
+        assert inBean.equals(outBean);
+
+        outBean.checkNullResources();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testProduct() throws Exception {
+        GridProduct product = grid().product();
+
+        GridMarshallerTestBean inBean = newTestBean(product);
+
+        byte[] buf = marshal(inBean);
+
+        GridMarshallerTestBean outBean = unmarshal(buf);
+
+        assert inBean.getObjectField() != null;
+        assert outBean.getObjectField() != null;
+
+        assert inBean.getObjectField().getClass().equals(GridProductImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridProductImpl.class);
+
+        assert inBean != outBean;
+        assert inBean.equals(outBean);
+
+        outBean.checkNullResources();
+    }
+
+    /**
      * @param obj Object field to use.
      * @return New test bean.
      */
-    private GridMarshallerTestBean newTestBean(@Nullable Object obj) {
+    static GridMarshallerTestBean newTestBean(@Nullable Object obj) {
         GridByteArrayList buf = new GridByteArrayList(1);
 
         buf.add((byte)321);

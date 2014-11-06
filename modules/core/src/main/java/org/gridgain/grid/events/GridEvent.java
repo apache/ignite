@@ -14,7 +14,6 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Grid events are used for notification about what happens within the grid. Note that by
@@ -57,7 +56,6 @@ import java.util.*;
  *     <li>{@link GridEventType#EVT_NODE_JOINED}</li>
  *     <li>{@link GridEventType#EVT_NODE_METRICS_UPDATED}</li>
  *     <li>{@link GridEventType#EVT_NODE_SEGMENTED}</li>
- *     <li>{@link GridEventType#EVT_NODE_RECONNECTED}</li>
  * </ul>
  * <p>
  * Hidden events are NEVER sent to SPI level. They serve purpose of local
@@ -100,7 +98,7 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
     /**
      * Node where event occurred and was recorded
      *
-     * @return node where event occured and was recorded.
+     * @return node where event occurred and was recorded.
      */
     public GridNode node();
 

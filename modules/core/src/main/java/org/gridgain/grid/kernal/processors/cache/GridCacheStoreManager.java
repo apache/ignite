@@ -33,6 +33,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param store Store.
      */
+    @SuppressWarnings("unchecked")
     public GridCacheStoreManager(@Nullable GridCacheStore<K, Object> store) {
         this.store = store;
 
@@ -108,7 +109,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            V val = convert(store.load(tx, key));
+            V val = null;
+
+            try {
+                val = convert(store.load(tx, key));
+            }
+            catch (ClassCastException e) {
+                handleClassCastException(e);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Loaded value from store [key=" + key + ", val=" + val + ']');
@@ -161,6 +169,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             vis.apply(k, convert(v));
                         }
                     });
+                }
+                catch (ClassCastException e) {
+                    handleClassCastException(e);
                 }
                 catch (GridRuntimeException e) {
                     throw U.cast(e);
@@ -248,8 +259,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 // Never persist internal keys.
                 return true;
             }
-            else
-                store.put(tx, key, locStore ? F.t(val, ver) : val);
+            else {
+                try {
+                    store.put(tx, key, locStore ? F.t(val, ver) : val);
+                }
+                catch (ClassCastException e) {
+                    handleClassCastException(e);
+                }
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Stored value in cache store [key=" + key + ", val=" + val + ']');
@@ -283,12 +300,17 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Storing values in cache store [map=" + map + ']');
 
-                store.putAll(tx, locStore ? map : F.viewReadOnly(map,
-                    new C1<GridBiTuple<V, GridCacheVersion>, Object>() {
-                    @Override public Object apply(GridBiTuple<V, GridCacheVersion> t) {
-                        return t.get1();
-                    }
-                }));
+                try {
+                    store.putAll(tx, locStore ? map : F.viewReadOnly(map,
+                        new C1<GridBiTuple<V, GridCacheVersion>, Object>() {
+                        @Override public Object apply(GridBiTuple<V, GridCacheVersion> t) {
+                            return t.get1();
+                        }
+                    }));
+                }
+                catch (ClassCastException e) {
+                    handleClassCastException(e);
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Stored value in cache store [map=" + map + ']');
@@ -314,8 +336,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (key instanceof GridCacheInternal)
                 // Never remove internal key from store as it is never persisted.
                 return false;
-            else
-                store.remove(tx, key);
+            else {
+                try {
+                    store.remove(tx, key);
+                }
+                catch (ClassCastException e) {
+                    handleClassCastException(e);
+                }
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Removed value from cache store [key=" + key + ']');
@@ -346,7 +374,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys + ']');
 
-            store.removeAll(tx, keys);
+            try {
+                store.removeAll(tx, keys);
+            }
+            catch (ClassCastException e) {
+                handleClassCastException(e);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Removed values from cache store [keys=" + keys + ']');
@@ -379,5 +412,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
         store.txEnd(tx, commit);
+    }
+
+    /**
+     * @param e Class cast exception.
+     * @throws GridException Thrown exception.
+     */
+    private void handleClassCastException(ClassCastException e) throws GridException {
+        assert e != null;
+
+        if (cctx.portableEnabled() && e.getMessage() != null &&
+            e.getMessage().startsWith("org.gridgain.grid.util.portable.GridPortableObjectImpl")) {
+            throw new GridException("Cache store must work with portable objects if portables are " +
+                "enabled for cache [cacheName=" + cctx.namex() + ']', e);
+        }
+        else
+            throw e;
     }
 }

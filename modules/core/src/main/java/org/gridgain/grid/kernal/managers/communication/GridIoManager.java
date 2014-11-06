@@ -61,6 +61,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
 
+    /** Disconnect listeners. */
+    private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
+
     /** Public pool. */
     private ExecutorService pubPool;
 
@@ -176,6 +179,11 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                         msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
                         "which is illegal - make sure to send messages only via GridProjection API.");
                 }
+            }
+
+            @Override public void onDisconnected(UUID nodeId) {
+                for (GridDisconnectListener lsnr : disconnectLsnrs)
+                    lsnr.onNodeDisconnected(nodeId);
             }
         });
 
@@ -882,11 +890,6 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 processRegularMessage0(ioMsg, locNodeId);
         }
         else {
-            GridNode node0 = ctx.discovery().node(node.id());
-
-            if (node0 == null)
-                throw new GridTopologyException("Failed to send message to node (has node left grid?): " + node.id());
-
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));
 
@@ -894,7 +897,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 getSpi().sendMessage(node, ioMsg);
             }
             catch (GridSpiException e) {
-                throw new GridException("Failed to send message [node=" + node + ", topic=" + topic +
+                throw new GridException("Failed to send message (node may have left the grid or " +
+                    "TCP connection cannot be established due to firewall issues) " +
+                    "[node=" + node + ", topic=" + topic +
                     ", msg=" + msg + ", policy=" + plc + ']', e);
             }
         }
@@ -1240,7 +1245,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                     msg + ", policy=" + plc + ']');
         }
         catch (GridSpiException e) {
-            throw new GridException("Failed to send message [nodes=" + nodes + ", topic=" + topic +
+            throw new GridException("Failed to send message (nodes may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[nodes=" + nodes + ", topic=" + topic +
                 ", msg=" + msg + ", policy=" + plc + ']', e);
         }
     }
@@ -1252,6 +1259,13 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener((Object)topic, lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to add.
+     */
+    public void addDisconnectListener(GridDisconnectListener lsnr) {
+        disconnectLsnrs.add(lsnr);
     }
 
     /**

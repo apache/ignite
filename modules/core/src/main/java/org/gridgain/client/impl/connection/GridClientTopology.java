@@ -356,7 +356,7 @@ public class GridClientTopology {
         // Return a new node instance based on the original one.
         GridClientNodeImpl.Builder nodeBuilder = GridClientNodeImpl.builder(node, !attrCache, !metricsCache);
 
-        for (InetSocketAddress addr : node.availableAddresses(prot)) {
+        for (InetSocketAddress addr : node.availableAddresses(prot, true)) {
             boolean router = routerAddrs == null ||
                 routerAddrs.contains(addr.getHostName() + ":" + addr.getPort()) ||
                 routerAddrs.contains(addr.getAddress().getHostAddress() + ":" + addr.getPort());

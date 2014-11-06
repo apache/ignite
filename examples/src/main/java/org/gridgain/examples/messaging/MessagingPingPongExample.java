@@ -14,7 +14,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.examples.compute.*;
 
 import java.util.*;
 import java.util.concurrent.*;

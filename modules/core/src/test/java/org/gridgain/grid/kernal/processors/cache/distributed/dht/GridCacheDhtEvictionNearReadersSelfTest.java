@@ -255,7 +255,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
             grid(primary).events().waitForLocal(nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.
-        assertEquals(val, nearOther.get(key, null));
+        assertEquals(val, nearOther.get(key, true, null));
 
         entryPrimary = dhtPrimary.peekExx(key);
         entryBackup = dhtBackup.peekExx(key);

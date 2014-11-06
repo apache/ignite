@@ -11,11 +11,12 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -40,9 +41,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.endsWith("1")) {
+        if (gridName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
-        }
         else {
             assert gridName.endsWith("2");
 
@@ -74,8 +74,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         Grid g1 = grid(1);
         Grid g2 = grid(2);
 
-        assert g1.configuration().getCacheConfiguration().length == 0;
-        assert g2.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;
+        assert caches(g1).size() == 0;
+        assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
         Map<GridNode, Collection<String>> map = g1.mapKeysToNodes(null, F.asList("1"));
 
@@ -92,5 +92,17 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         assertNotNull(id2);
         assertEquals(g2.localNode().id(), id2);
+    }
+
+    /**
+     * @param g Grid.
+     * @return Non-system caches.
+     */
+    private Collection<GridCacheConfiguration> caches(Grid g) {
+        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new GridPredicate<GridCacheConfiguration>() {
+            @Override public boolean apply(GridCacheConfiguration c) {
+                return c.getName() == null || !c.getName().equals(CU.UTILITY_CACHE_NAME);
+            }
+        });
     }
 }

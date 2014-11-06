@@ -39,7 +39,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
      * @param req Handshake request.
      */
     public GridClientHandshakeRequestWrapper(GridClientHandshakeRequest req) {
-        bytes = req.rawBytesNoHeader();
+        bytes = req.rawBytes();
     }
 
     /**
@@ -47,13 +47,6 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
      */
     public byte[] bytes() {
         return bytes;
-    }
-
-    /**
-     * @return Protocol ID.
-     */
-    public byte protocolId() {
-        return bytes[4];
     }
 
     /** {@inheritDoc} */
@@ -85,7 +78,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                byte[] bytes0 = commState.getByteArrayClient(5);
+                byte[] bytes0 = commState.getByteArrayClient(GridClientHandshakeRequest.PACKET_SIZE);
 
                 if (bytes0 == BYTE_ARR_NOT_READ)
                     return false;

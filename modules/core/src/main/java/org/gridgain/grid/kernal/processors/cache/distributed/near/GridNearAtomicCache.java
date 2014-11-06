@@ -113,6 +113,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         int nearValIdx = 0;
 
+        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+
         for (int i = 0; i < req.keys().size(); i++) {
             if (F.contains(skipped, i))
                 continue;
@@ -122,7 +124,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(failed, key))
                 continue;
 
-            if (ctx.affinity().nodes(key, req.topologyVersion()).contains(ctx.localNode())) { // Reader became backup.
+            if (ctx.affinity().belongs(ctx.localNode(), key, req.topologyVersion())) { // Reader became backup.
                 GridCacheEntryEx<K, V> entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))
@@ -150,7 +152,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
 
             try {
-                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId());
+                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId(),
+                    taskName);
             }
             catch (GridException e) {
                 res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
@@ -174,7 +177,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable byte[] valBytes,
         Long ttl,
         UUID nodeId,
-        UUID subjId
+        UUID subjId,
+        String taskName
     ) throws GridException {
         try {
             while (true) {
@@ -208,7 +212,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        subjId);
+                        subjId,
+                        taskName);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -249,6 +254,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         Collection<K> backupKeys = req.keys();
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
+
+        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
@@ -301,7 +308,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             null,
                             false,
                             intercept,
-                            req.subjectId());
+                            req.subjectId(),
+                            taskName);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -327,6 +335,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -337,7 +347,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
     }
 
     /** {@inheritDoc} */

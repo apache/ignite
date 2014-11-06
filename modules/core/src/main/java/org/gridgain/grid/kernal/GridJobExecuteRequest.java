@@ -171,7 +171,8 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         boolean dynamicSiblings,
         Map<UUID, GridUuid> ldrParticipants,
         boolean forceLocDep,
-        boolean sesFullSup, boolean internal) {
+        boolean sesFullSup,
+        boolean internal) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -385,6 +386,13 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      */
     public boolean isInternal() {
         return internal;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID getSubjectId() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -733,7 +741,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 if (commState.readSize >= 0) {
                     if (ldrParticipants == null)
-                        ldrParticipants = new HashMap<>(commState.readSize);
+                        ldrParticipants = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {

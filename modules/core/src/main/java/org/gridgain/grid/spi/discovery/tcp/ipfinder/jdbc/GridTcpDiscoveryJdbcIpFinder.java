@@ -35,7 +35,11 @@ import static java.sql.Connection.*;
  *     <li>Data source (see {@link #setDataSource(DataSource)}).</li>
  * </ul>
  * <h2 class="header">Optional</h2>
- * There are no optional configuration parameters.
+ * The following configuration parameters are optional:
+ * <ul>
+ *     <li>Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+ *         was explicitly created by user (see {@link #setInitSchema(boolean)})</li>
+ * </ul>
  * <p>
  * The database will contain 1 table which will hold IP addresses.
  */
@@ -64,6 +68,9 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
 
     /** Data source. */
     private DataSource dataSrc;
+
+    /** Flag for schema initialization. */
+    private boolean initSchema = true;
 
     /** Init guard. */
     @GridToStringExclude
@@ -237,6 +244,18 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     }
 
     /**
+     * Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+     * was explicitly created by user.
+     *
+     * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
+     *      {code @false} if schema was explicitly created by user.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setInitSchema(boolean initSchema) {
+        this.initSchema = initSchema;
+    }
+
+    /**
      * Checks configuration validity.
      *
      * @throws GridSpiException If any error occurs.
@@ -246,6 +265,14 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
             if (dataSrc == null)
                 throw new GridSpiException("Data source is null (you must configure it via setDataSource(..)" +
                     " configuration property)");
+
+            if (!initSchema) {
+                initLatch.countDown();
+
+                checkSchema();
+
+                return;
+            }
 
             Connection conn = null;
 
@@ -287,35 +314,43 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
                 initLatch.countDown();
             }
         }
-        else {
-            try {
-                U.await(initLatch);
-            }
-            catch (GridInterruptedException e) {
-                throw new GridSpiException("Thread has been interrupted.", e);
-            }
+        else
+            checkSchema();
+    }
 
-            Connection conn = null;
+    /**
+     * Checks correctness of existing DB schema.
+     *
+     * @throws GridSpiException If schema wasn't properly initialized.
+     */
+    private void checkSchema() throws GridSpiException {
+        try {
+            U.await(initLatch);
+        }
+        catch (GridInterruptedException e) {
+            throw new GridSpiException("Thread has been interrupted.", e);
+        }
 
-            Statement stmt = null;
+        Connection conn = null;
 
-            try {
-                conn = dataSrc.getConnection();
+        Statement stmt = null;
 
-                conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
+        try {
+            conn = dataSrc.getConnection();
 
-                // Check if tbl_addrs exists and database initialized properly.
-                stmt = conn.createStatement();
+            conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-                stmt.execute(CHK_QRY);
-            }
-            catch (SQLException e) {
-                throw new GridSpiException("IP finder has not been properly initialized.", e);
-            }
-            finally {
-                U.closeQuiet(stmt);
-                U.closeQuiet(conn);
-            }
+            // Check if tbl_addrs exists and database initialized properly.
+            stmt = conn.createStatement();
+
+            stmt.execute(CHK_QRY);
+        }
+        catch (SQLException e) {
+            throw new GridSpiException("IP finder has not been properly initialized.", e);
+        }
+        finally {
+            U.closeQuiet(stmt);
+            U.closeQuiet(conn);
         }
     }
 

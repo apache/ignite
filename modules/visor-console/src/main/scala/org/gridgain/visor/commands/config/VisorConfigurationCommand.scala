@@ -19,6 +19,7 @@ import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.commands.cache.VisorCacheCommand
 import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
@@ -72,9 +73,6 @@ import scala.util.control.Breaks._
  * }}}
  */
 class VisorConfigurationCommand {
-    /** Split tag. */
-    private val CS = ", "
-
     /** Default value */
     private val DFLT = "<n/a>"
 
@@ -447,60 +445,7 @@ class VisorConfigurationCommand {
                 println("\nNo system properties defined.")
 
             cfg.caches().foreach(cacheCfg => {
-                println("\nCache '" + safe(cacheCfg.name(), DFLT) + "':")
-
-                val cacheT = VisorTextTable()
-
-                cacheT += ("Mode", cacheCfg.mode())
-                cacheT += ("Time to live", safe(cacheCfg.defaultConfig().timeToLive(), DFLT))
-                cacheT += ("Refresh ahead ratio", formatDouble(cacheCfg.refreshAheadRatio()))
-                cacheT += ("Atomic sequence reserve size", cacheCfg.sequenceReserveSize())
-                cacheT += ("Swap enabled", bool2Str(cacheCfg.swapEnabled()))
-                cacheT += ("Batch update", bool2Str(cacheCfg.batchUpdateOnCommit()))
-                cacheT += ("Invalidate", bool2Str(cacheCfg.invalidate()))
-                cacheT += ("Start size", safe(cacheCfg.startSize(), DFLT))
-                cacheT += ("Cloner", safe(cacheCfg.cloner(), DFLT))
-                cacheT += ("Transaction manager lookup", safe(cacheCfg.transactionManagerLookupClassName(), DFLT))
-                cacheT += ("Affinity function", cacheCfg.affinityConfig().function())
-                cacheT += ("Affinity mapper", cacheCfg.affinityConfig.mapper())
-                cacheT += ("Preload mode", safe(cacheCfg.preloadConfig().mode(), DFLT))
-                cacheT += ("Preload batch size", cacheCfg.preloadConfig().batchSize())
-                cacheT += ("Preload thread pool size", cacheCfg.preloadConfig().threadPoolSize())
-                cacheT += ("Eviction policy", safe(cacheCfg.evictConfig().policy(), DFLT))
-                cacheT += ("Eviction key buffer size", cacheCfg.evictConfig().synchronizedKeyBufferSize())
-                cacheT += ("Eviction synchronized", bool2Str(cacheCfg.evictConfig().evictSynchronized()))
-                cacheT += ("Eviction near synchronized", bool2Str(cacheCfg.evictConfig().nearSynchronized()))
-                cacheT += ("Eviction overflow ratio", formatDouble(cacheCfg.evictConfig().maxOverflowRatio()))
-                cacheT += ("Near enabled", bool2Str(cacheCfg.nearConfig().nearEnabled()))
-                cacheT += ("Near start size", cacheCfg.nearConfig().nearStartSize())
-                cacheT += ("Near eviction policy", safe(cacheCfg.nearConfig().nearEvictPolicy(), DFLT))
-                cacheT += ("Default isolation", safe(cacheCfg.defaultConfig().txIsolation(), DFLT))
-                cacheT += ("Default concurrency", safe(cacheCfg.defaultConfig().txConcurrency(), DFLT))
-                cacheT += ("Default transaction timeout", cacheCfg.defaultConfig().txTimeout())
-                cacheT += ("Default lock timeout", cacheCfg.defaultConfig().txLockTimeout())
-                cacheT += ("Query Indexing Enabled", bool2Str(cacheCfg.queryIndexEnabled()))
-                cacheT += ("Query Iterators Number", cacheCfg.maxQueryIteratorCount())
-                cacheT += ("Indexing SPI Name", safe(cacheCfg.indexingSpiName(), DFLT))
-                cacheT += ("Cache Interceptor", safe(cacheCfg.interceptor(), DFLT))
-                cacheT += ("Transaction Manager Lookup", safe(cacheCfg.transactionManagerLookupClassName(), DFLT))
-                cacheT += ("DGC frequency", cacheCfg.dgcConfig().frequency())
-                cacheT += ("DGC remove locks flag", bool2Str(cacheCfg.dgcConfig().removedLocks()))
-                cacheT += ("DGC suspect lock timeout", cacheCfg.dgcConfig().suspectLockTimeout())
-                cacheT += ("Store enabled", bool2Str(cacheCfg.storeConfig().enabled()))
-                cacheT += ("Store", safe(cacheCfg.storeConfig().store(), DFLT))
-                cacheT += ("Store values in bytes", bool2Str(cacheCfg.storeConfig().valueBytes()))
-                cacheT += ("Off-Heap Size", formatMemory(cacheCfg.offsetHeapMaxMemory() / 1024L /1024L) + "mb")
-                cacheT += ("Write-Behind Enabled", bool2Str(cacheCfg.writeBehind().enabled()))
-                cacheT += ("Write-Behind Flush Size", cacheCfg.writeBehind().flushSize())
-                cacheT += ("Write-Behind Frequency", cacheCfg.writeBehind().flushFrequency() + "ms")
-                cacheT += ("Write-Behind Flush Threads Count", cacheCfg.writeBehind().flushThreadCount())
-                cacheT += ("Write-Behind Batch Size", cacheCfg.writeBehind().batchSize())
-                cacheT += ("Pessimistic Tx Log Size", cacheCfg.pessimisticTxLoggerSize())
-                cacheT += ("Pessimistic Tx Log Linger", cacheCfg.pessimisticTxLoggerLinger())
-                cacheT += ("Concurrent Asynchronous Operations Number", cacheCfg.maxConcurrentAsyncOperations())
-                cacheT += ("Memory Mode", cacheCfg.memoryMode())
-
-                cacheT.render()
+                VisorCacheCommand.showCacheConfiguration("\nCache '" + safe(cacheCfg.name(), DFLT) + "':", cacheCfg)
             })
         }
     }

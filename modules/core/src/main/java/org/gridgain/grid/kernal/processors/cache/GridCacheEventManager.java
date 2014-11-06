@@ -62,10 +62,15 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
+     * @param subjId Subject ID.
+     * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, GridCacheTx tx, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId) {
-        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId);
+        int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
+        String cloClsName, String taskName) {
+        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
+            taskName);
     }
 
     /**
@@ -79,11 +84,15 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
+     * @param subjId Subject ID.
+     * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, UUID nodeId, GridCacheTx tx, GridCacheMvccCandidate<K> owner,
-        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId) {
+        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
+        String taskName) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
     }
 
     /**
@@ -96,13 +105,17 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
+     * @param subjId Subject ID.
+     * @param cloClsName Closure class name.
+     * @param taskName Task name.
      */
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId) {
+        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
+        String taskName) {
         GridCacheTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId);
+            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
     }
 
     /**
@@ -116,9 +129,25 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param hasNewVal Whether new value is present or not.
      * @param oldVal Old value.
      * @param hasOldVal Whether old value is present or not.
+     * @param subjId Subject ID.
+     * @param cloClsName Closure class name.
+     * @param taskName Task class name.
      */
-    public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridUuid xid, @Nullable Object lockId, int type,
-        @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId) {
+    public void addEvent(
+        int part,
+        K key,
+        UUID evtNodeId,
+        @Nullable GridUuid xid,
+        @Nullable Object lockId,
+        int type,
+        @Nullable V newVal,
+        boolean hasNewVal,
+        @Nullable V oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        @Nullable String cloClsName,
+        @Nullable String taskName
+    ) {
         assert key != null;
 
         if (!cctx.events().isRecordable(type))
@@ -138,7 +167,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal,
-                subjId));
+                subjId, cloClsName, taskName));
         }
     }
 
@@ -204,7 +233,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
-        return cctx.gridEvents().isRecordable(type);
+        return !CU.isUtilityCache(cctx.name()) && cctx.gridEvents().isRecordable(type);
     }
 
     /** {@inheritDoc} */

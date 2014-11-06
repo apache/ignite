@@ -10,20 +10,15 @@
 package org.gridgain.grid.logger.log4j;
 
 import org.apache.log4j.varia.*;
-import org.gridgain.grid.logger.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Log4J {@link ExternallyRolledFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender
-    implements GridLoggerNodeIdAware {
-    /** Node ID. */
-    private UUID nodeId;
-
+public class GridLog4jExternallyRolledFileAppender extends ExternallyRolledFileAppender implements GridLog4jFileAware {
     /** Basic log file name. */
     private String baseFileName;
 
@@ -42,28 +37,19 @@ public class GridLog4jExternallyRolledFileAppender extends ExternallyRolledFileA
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override public synchronized void setNodeId(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-        A.notNull(fileName, "fileName");
-
-        this.nodeId = nodeId;
+    @Override public synchronized void updateFilePath(GridClosure<String, String> filePathClos) {
+        A.notNull(filePathClos, "filePathClos");
 
         if (baseFileName == null)
             baseFileName = fileName;
 
-        fileName = U.nodeIdLogFileName(nodeId, baseFileName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized UUID getNodeId() {
-        return nodeId;
+        fileName = filePathClos.apply(baseFileName);
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void setFile(String fileName, boolean fileAppend, boolean bufIO, int bufSize)
         throws IOException {
-        if (nodeId != null)
+        if (baseFileName != null)
             super.setFile(fileName, fileAppend, bufIO, bufSize);
     }
 }

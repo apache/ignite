@@ -67,7 +67,7 @@ public class VisorQueryUtils {
         if (o instanceof Byte[])
             return "size=" + ((Byte[]) o).length;
         if (o instanceof Object[])
-            return "size=" + ((Object[]) o).length + ", values=[" + mkString((Object[]) o, 60) + "]";
+            return "size=" + ((Object[]) o).length + ", values=[" + mkString((Object[]) o, 120) + "]";
         return o.toString();
     }
 
@@ -92,7 +92,7 @@ public class VisorQueryUtils {
 
             sb.append(v);
 
-            if (sb.length() < maxSz)
+            if (sb.length() > maxSz)
                 break;
         }
 

@@ -83,17 +83,15 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
     public void testGridUuidPerformance() {
         long start = System.currentTimeMillis();
 
-        for (int i = 0; i < NUM; i++) {
+        for (int i = 0; i < NUM; i++)
             UUID.randomUUID();
-        }
 
         long dur1 = System.currentTimeMillis() - start;
 
         start = System.currentTimeMillis();
 
-        for (int i = 0; i < NUM; i++) {
+        for (int i = 0; i < NUM; i++)
             GridUuid.randomUuid();
-        }
 
         long dur2 = System.currentTimeMillis() - start;
 
@@ -109,16 +107,14 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
         UuidBean[] uids = new UuidBean[NUM];
 
         // Populate.
-        for (int i = 0; i < uids.length; i++) {
+        for (int i = 0; i < uids.length; i++)
             uids[i] = new UuidBean(UUID.randomUUID());
-        }
 
         GridUuidBean[] guids = new GridUuidBean[NUM];
 
         // Populate.
-        for (int i = 0; i < guids.length; i++) {
+        for (int i = 0; i < guids.length; i++)
             guids[i] = new GridUuidBean(GridUuid.randomUuid());
-        }
 
         // Warm up.
         testArray(uids, NUM);
@@ -193,9 +189,8 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
             return bout.toByteArray();
         }
         finally {
-            if (out != null) {
+            if (out != null)
                 out.close();
-            }
         }
     }
 
@@ -217,9 +212,8 @@ public class GridUuidSelfTest extends GridCommonAbstractTest {
             return (T)in.readObject();
         }
         finally {
-            if (in != null) {
+            if (in != null)
                 in.close();
-            }
         }
     }
 

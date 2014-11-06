@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.affinity;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -25,11 +27,16 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
+    /** Logger. */
+    private GridLogger log;
+
     /**
      * @param cctx Context.
      */
     public GridCacheAffinityImpl(GridCacheContext<K, V> cctx) {
         this.cctx = cctx;
+
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -62,21 +69,16 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().nodes(key, topologyVersion()).contains(n);
+        return cctx.affinity().belongs(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public int[] primaryPartitions(GridNode n) {
         A.notNull(n, "n");
 
-        Collection<Integer> parts = new HashSet<>();
-
         long topVer = cctx.discovery().topologyVersion();
 
-        for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            if (n.id().equals(F.first(cctx.affinity().nodes(part, topVer)).id()))
-                parts.add(part);
-        }
+        Set<Integer> parts = cctx.affinity().primaryPartitions(n.id(), topVer);
 
         return U.toIntArray(parts);
     }
@@ -85,21 +87,9 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public int[] backupPartitions(GridNode n) {
         A.notNull(n, "n");
 
-        Collection<Integer> parts = new HashSet<>();
-
         long topVer = cctx.discovery().topologyVersion();
 
-        for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            Collection<GridNode> backups = cctx.affinity().backups(part, topVer);
-
-            for (GridNode backup : backups) {
-                if (n.id().equals(backup.id())) {
-                    parts.add(part);
-
-                    break;
-                }
-            }
-        }
+        Set<Integer> parts = cctx.affinity().backupPartitions(n.id(), topVer);
 
         return U.toIntArray(parts);
     }
@@ -149,6 +139,15 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** {@inheritDoc} */
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
+
+        if (cctx.portableEnabled()) {
+            try {
+                key = (K)cctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                U.error(log, "Failed to marshal key to portable: " + key, e);
+            }
+        }
 
         return cctx.config().getAffinityMapper().affinityKey(key);
     }

@@ -9,21 +9,20 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
 
 /**
  * Grid GGFS client logger test.
  */
-public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridGgfsCommonAbstractTest {
     /** Path string. */
     private static final String PATH_STR = "/dir1/dir2/file;test";
 
@@ -80,14 +79,14 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testCreateDelete() throws Exception {
-        GridGgfsHadoopLogger log = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
-        GridGgfsHadoopLogger sameLog0 = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger sameLog0 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // Loggers for the same endpoint must be the same object.
         assert log == sameLog0;
 
-        GridGgfsHadoopLogger otherLog = GridGgfsHadoopLogger.logger("other" + ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger otherLog = GridGgfsLogger.logger("other" + ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // Logger for another endpoint must be different.
         assert log != otherLog;
@@ -103,7 +102,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
         // When there are multiple loggers, closing one must not force flushing.
         assert !logFile.exists();
 
-        GridGgfsHadoopLogger sameLog1 = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger sameLog1 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         assert sameLog0 == sameLog1;
 
@@ -118,7 +117,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
 
         logFile.delete();
 
-        GridGgfsHadoopLogger sameLog2 = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger sameLog2 = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         // This time we expect new logger instance to be created.
         assert sameLog0 != sameLog2;
@@ -135,7 +134,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testLogRead() throws Exception {
-        GridGgfsHadoopLogger log = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         log.logOpen(1, PATH, PRIMARY, 2, 3L);
         log.logRandomRead(1, 4L, 5);
@@ -165,7 +164,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testLogWrite() throws Exception {
-        GridGgfsHadoopLogger log = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         log.logCreate(1, PATH, PRIMARY, true, 2, new Integer(3).shortValue(), 4L);
         log.logAppend(2, PATH, PRIMARY, 8);
@@ -190,7 +189,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("TooBroadScope")
     public void testLogMisc() throws Exception {
-        GridGgfsHadoopLogger log = GridGgfsHadoopLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
+        GridGgfsLogger log = GridGgfsLogger.logger(ENDPOINT, GGFS_NAME, LOG_DIR, 10);
 
         String newFile = "/dir3/file.test";
         String file1 = "/dir3/file1.test";

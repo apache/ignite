@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -31,6 +32,10 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final boolean DISCO_DEBUG_MODE = false;
+
 
     /**
      * Constructs test.
@@ -46,12 +51,14 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
+        disco.setDebugMode(DISCO_DEBUG_MODE);
 
         cfg.setDiscoverySpi(disco);
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
+        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         // This property is essential for this test.
@@ -70,11 +77,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         super.afterTest();
 
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
     }
 
     /**
@@ -113,7 +115,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TooBroadScope"})
     public void testNodeRestartMultithreaded() throws Exception {
         final int keyCnt = 1000;
-        final int retries = 100;
+        final int retries = 300;
         int threadCnt = 5;
 
         Grid g0 = startGrid(0);
@@ -127,7 +129,8 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        multithreaded(new Callable() {
+        multithreaded(
+            new Callable() {
                 @Nullable @Override public Object call() throws Exception {
                     while (true) {
                         int c = cnt.incrementAndGet();
@@ -139,7 +142,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
                         info("Starting additional grid node with index: " + idx);
 
-                        Grid g = startGrid(idx);
+                        startGrid(idx);
 
                         info("Stopping additional grid node with index: " + idx);
 
@@ -148,6 +151,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
                     return null;
                 }
-            }, threadCnt);
+            },
+            threadCnt);
     }
 }

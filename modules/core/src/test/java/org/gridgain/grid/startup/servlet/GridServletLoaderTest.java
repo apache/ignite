@@ -64,9 +64,8 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
                     jmx = getJMXConnector("localhost",
                         Integer.valueOf(GridTestProperties.getProperty("tomcat.jmx.rmi.connector.port")));
 
-                    if (jmx != null) {
+                    if (jmx != null)
                         break;
-                    }
                 }
                 catch (IOException e) {
                     log().warning("Failed to connect to server (will try again).", e);

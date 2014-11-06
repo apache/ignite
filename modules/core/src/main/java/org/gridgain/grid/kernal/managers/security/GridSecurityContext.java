@@ -16,16 +16,13 @@ import java.util.*;
 
 /**
  * Security context.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSecurityContext implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Visor tasks prefix. */
-    private static final String VISOR_TASK_PREFIX = "org.gridgain.grid.kernal.visor.cmd.tasks.";
+    private static final String VISOR_TASK_PREFIX = "org.gridgain.grid.kernal.visor.";
 
     /** Cache query task name. */
     public static final String VISOR_CACHE_QUERY_TASK_NAME =

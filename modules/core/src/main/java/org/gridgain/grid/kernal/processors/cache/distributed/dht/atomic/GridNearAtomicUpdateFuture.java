@@ -125,6 +125,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Subject ID. */
     private final UUID subjId;
 
+    /** Task name hash. */
+    private final int taskNameHash;
+
+    /** Map time. */
+    private volatile long mapTime;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -140,6 +146,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         op = null;
         nearEnabled = false;
         subjId = null;
+        taskNameHash = 0;
     }
 
     /**
@@ -171,7 +178,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
         final GridPredicate<GridCacheEntry<K, V>>[] filter,
-        UUID subjId
+        UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.kernalContext());
         this.rawRetval = rawRetval;
@@ -195,6 +203,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.ttl = ttl;
         this.filter = filter;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         log = U.logger(ctx, logRef, GridFutureAdapter.class);
 
@@ -268,6 +277,15 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkTimeout(long timeout) {
+        long mapTime0 = mapTime;
+
+        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
+            onDone(new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
+                "(consider increasing networkTimeout configuration property)."));
     }
 
     /** {@inheritDoc} */
@@ -386,6 +404,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (futVer == null)
+                    // Assign future version in topology read lock before first exception may be thrown.
+                    futVer = cctx.versions().next(topVer);
+
                 // We are holding topology read lock and current topology is ready, we can start mapping.
                 snapshot = fut.topologySnapshot();
             }
@@ -401,9 +423,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             topVer = snapshot.topologyVersion();
 
-            if (futVer == null)
-                // Assign future version in topology read lock.
-                futVer = cctx.versions().next(topVer);
+            mapTime = U.currentTimeMillis();
 
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
@@ -416,8 +436,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         finally {
             cache.topology().readUnlock();
         }
-
-        assert snapshot != null;
 
         map0(snapshot, keys, remap, oldNodeId);
     }
@@ -512,6 +530,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
+            if (cctx.portableEnabled()) {
+                key = (K)cctx.marshalToPortable(key);
+
+                if (op != TRANSFORM)
+                    val = cctx.marshalToPortable(val);
+            }
+
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
@@ -531,7 +556,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 ttl,
                 filter,
-                subjId);
+                subjId,
+                taskNameHash);
 
             req.addUpdateEntry(key, val, drTtl, drExpireTime, drVer, true);
 
@@ -606,6 +632,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
 
+                if (cctx.portableEnabled()) {
+                    key = (K)cctx.marshalToPortable(key);
+
+                    if (op != TRANSFORM)
+                    val = cctx.marshalToPortable(val);
+                }
+
                 Collection<GridNode> affNodes = mapKey(key, topVer, fastMap);
 
                 int i = 0;
@@ -628,7 +661,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             ttl,
                             filter,
-                            subjId);
+                            subjId,
+                            taskNameHash);
 
                         pendingMappings.put(nodeId, mapped);
 

@@ -23,12 +23,17 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
+
 /**
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
 public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollectTask.VisorEventsCollectArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorEventsCollectJob job(VisorEventsCollectArgs arg) {
         return new VisorEventsCollectJob(arg);
@@ -103,7 +108,8 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
         public static VisorEventsCollectArgs createTasksArg(@Nullable Long timeArg, @Nullable String taskName,
             @Nullable GridUuid taskSessionId) {
             return new VisorEventsCollectArgs(null,
-                VisorTaskUtils.concat(GridEventType.EVTS_JOB_EXECUTION, GridEventType.EVTS_TASK_EXECUTION),
+                VisorTaskUtils.concat(EVTS_JOB_EXECUTION, EVTS_TASK_EXECUTION, EVTS_AUTHENTICATION, EVTS_AUTHORIZATION,
+                    EVTS_SECURE_SESSION),
                 timeArg, taskName, taskSessionId);
         }
 
@@ -254,52 +260,10 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                 nl.get(arg.keyOrder()) : -1L;
 
             Collection<GridEvent> evts = g.events().localQuery(new GridPredicate<GridEvent>() {
-                private Map<String, Boolean> internalTasks = new HashMap<>();
-
-                /**
-                 * TODO-8003 Remove after fix.
-                 * Detects internal task or job.
-                 *
-                 * @param e Event
-                 * @return {@code true} if internal.
-                 */
-                private boolean internal(GridEvent e) {
-                    if (e.getClass().equals(GridTaskEvent.class)) {
-                        GridTaskEvent te = (GridTaskEvent)e;
-
-                        internalTasks.put(te.taskClassName(), te.internal());
-
-                        return te.internal();
-                    }
-
-                    if (e.getClass().equals(GridJobEvent.class)) {
-                        GridJobEvent je = (GridJobEvent)e;
-
-                        Boolean internal = internalTasks.get(je.taskClassName());
-
-                        if (internal != null)
-                            return internal;
-
-                        try {
-                            internal = U.hasAnnotation(Class.forName(je.taskClassName()), GridInternal.class);
-                        }
-                        catch (Exception ignored) {
-                            internal = true;
-                        }
-
-                        internalTasks.put(je.taskClassName(), internal);
-
-                        return internal;
-                    }
-
-                    return true;
-                }
-
                 @Override public boolean apply(GridEvent event) {
                     return event.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
                         event.timestamp() >= startEvtTime &&
-                        !internal(event) &&
                         (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
                         (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
                 }
@@ -341,7 +305,36 @@ public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollec
                     GridLicenseEvent le = (GridLicenseEvent)e;
 
                     res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
-                } else
+                }
+                else if (e instanceof GridDiscoveryEvent) {
+                    GridDiscoveryEvent de = (GridDiscoveryEvent)e;
+
+                    GridNode node = de.eventNode();
+
+                    String addr = F.first(node.addresses());
+
+                    res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
+                        node.id(), addr, node.isDaemon()));
+                }
+                else if (e instanceof GridAuthenticationEvent) {
+                    GridAuthenticationEvent ae = (GridAuthenticationEvent)e;
+
+                    res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
+                        ae.subjectId(), ae.login()));
+                }
+                else if (e instanceof GridAuthorizationEvent) {
+                    GridAuthorizationEvent ae = (GridAuthorizationEvent)e;
+
+                    res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
+                        ae.subject()));
+                }
+                else if (e instanceof GridSecureSessionEvent) {
+                    GridSecureSessionEvent se = (GridSecureSessionEvent) e;
+
+                    res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
+                        se.subjectId()));
+                }
+                else
                     res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
             }
 

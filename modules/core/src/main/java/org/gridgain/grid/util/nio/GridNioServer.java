@@ -158,6 +158,7 @@ public class GridNioServer<T> {
      * @param sockRcvBuf Socket receive buffer.
      * @param sndQueueLimit Send queue limit.
      * @param directMode Whether direct mode is used.
+     * @param daemon Daemon flag to create threads.
      * @param metricsLsnr Metrics listener.
      * @param msgWriter Message writer.
      * @param filters Filters for this server.
@@ -177,6 +178,7 @@ public class GridNioServer<T> {
         int sockRcvBuf,
         int sndQueueLimit,
         boolean directMode,
+        boolean daemon,
         GridNioMetricsListener metricsLsnr,
         GridNioMessageWriter msgWriter,
         GridNioFilter... filters
@@ -237,6 +239,8 @@ public class GridNioServer<T> {
             clientWorkers.add(worker);
 
             clientThreads[i] = new GridThread(worker);
+
+            clientThreads[i].setDaemon(daemon);
         }
 
         this.directMode = directMode;
@@ -471,6 +475,9 @@ public class GridNioServer<T> {
                 srvrCh = ServerSocketChannel.open();
 
                 srvrCh.configureBlocking(false);
+
+                if (sockRcvBuf > 0)
+                    srvrCh.socket().setReceiveBufferSize(sockRcvBuf);
 
                 // Bind the server socket to the specified address and port
                 srvrCh.socket().bind(addr);
@@ -1014,7 +1021,7 @@ public class GridNioServer<T> {
      */
     private abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
-        private final ConcurrentLinkedDeque8<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
+        private final Queue<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
 
         /** Selector to select read events. */
         private Selector selector;
@@ -1040,25 +1047,29 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, GridInterruptedException {
-            boolean reset = false;
+            try {
+                boolean reset = false;
+                while (!closed) {
+                    try {
+                        if (reset)
+                            selector = createSelector(null);
 
-            while (!closed) {
-                try {
-                    if (reset)
-                        selector = createSelector(null);
+                        bodyInternal();
+                    }
+                    catch (GridException e) {
+                        if (!Thread.currentThread().isInterrupted()) {
+                            U.error(log, "Failed to read data from remote connection (will wait for " +
+                                ERR_WAIT_TIME + "ms).", e);
 
-                    bodyInternal();
-                }
-                catch (GridException e) {
-                    if (!Thread.currentThread().isInterrupted()) {
-                        U.error(log, "Failed to read data from remote connection (will wait for " +
-                            ERR_WAIT_TIME + "ms).", e);
+                            U.sleep(ERR_WAIT_TIME);
 
-                        U.sleep(ERR_WAIT_TIME);
-
-                        reset = true;
+                            reset = true;
+                        }
                     }
                 }
+            }
+            catch (Throwable e) {
+                U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
             }
         }
 
@@ -1215,7 +1226,8 @@ public class GridNioServer<T> {
                 try {
                     if (key.isReadable())
                         processRead(key);
-                    else if (key.isWritable())
+
+                    if (key.isValid() && key.isWritable())
                         processWrite(key);
                 }
                 catch (ClosedByInterruptException e) {
@@ -1937,6 +1949,9 @@ public class GridNioServer<T> {
         /** Write timeout. */
         private long writeTimeout = -1;
 
+        /** Daemon flag. */
+        private boolean daemon;
+
         /**
          * Finishes building the instance.
          *
@@ -1958,6 +1973,7 @@ public class GridNioServer<T> {
                 sockRcvBufSize,
                 sndQueueLimit,
                 directMode,
+                daemon,
                 metricsLsnr,
                 msgWriter,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
@@ -2149,6 +2165,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> writeTimeout(long writeTimeout) {
             this.writeTimeout = writeTimeout;
+
+            return this;
+        }
+
+        /**
+         * @param daemon Daemon flag to create threads.
+         * @return This for chaining.
+         */
+        public Builder<T> daemon(boolean daemon) {
+            this.daemon = daemon;
 
             return this;
         }

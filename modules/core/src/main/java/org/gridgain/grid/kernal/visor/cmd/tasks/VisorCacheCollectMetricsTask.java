@@ -29,6 +29,9 @@ import java.util.*;
 @GridInternal
 public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCacheMetricsJob job(GridBiTuple<Boolean, String> arg) {
         return new VisorCacheMetricsJob(arg);
@@ -142,7 +145,7 @@ public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple
                         (double)m.getHeapMemoryUsed() / m.getHeapMemoryMaximum() * 100.0,
                         m.getCurrentCpuLoad() * 100.0,
                         m.getUpTime(),
-                        caches.size(),
+                        c.size(),
                         cm.readTime(),
                         cm.writeTime(),
                         cm.hits(),

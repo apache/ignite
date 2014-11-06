@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @GridInternal
 public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorConfigCollectorJob job(Void arg) {
         return new VisorConfigCollectorJob();

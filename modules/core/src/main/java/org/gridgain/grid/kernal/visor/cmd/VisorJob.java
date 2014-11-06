@@ -31,7 +31,7 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
      *
      * @param arg Job argument.
      */
-    protected VisorJob(A arg) {
+    protected VisorJob(@Nullable A arg) {
         super(arg);
     }
 
@@ -47,5 +47,5 @@ public abstract class VisorJob<A, R> extends GridComputeJobAdapter {
      *
      * @return Result.
      */
-    protected abstract R run(A arg) throws GridException;
+    protected abstract R run(@Nullable A arg) throws GridException;
 }

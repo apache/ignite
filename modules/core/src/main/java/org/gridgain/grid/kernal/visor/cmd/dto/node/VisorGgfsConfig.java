@@ -22,6 +22,12 @@ import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
  * Data transfer object for GGFS configuration properties.
  */
 public class VisorGgfsConfig implements Serializable {
+    /** Property name for path to Hadoop configuration. */
+    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
+
+    /** Property name for URI of file system. */
+    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -121,8 +127,16 @@ public class VisorGgfsConfig implements Serializable {
         cfg.streamBufferSize(ggfs.getStreamBufferSize());
         cfg.perNodeBatchSize(ggfs.getPerNodeBatchSize());
         cfg.perNodeParallelBatchCount(ggfs.getPerNodeParallelBatchCount());
-        cfg.secondaryHadoopFileSystemUri(ggfs.getSecondaryHadoopFileSystemUri());
-        cfg.secondaryHadoopFileSystemConfigPath(ggfs.getSecondaryHadoopFileSystemConfigPath());
+
+        GridGgfsFileSystem secFs = ggfs.getSecondaryFileSystem();
+
+        if (secFs != null) {
+            Map<String, String> props = secFs.properties();
+
+            cfg.secondaryHadoopFileSystemUri(props.get(SECONDARY_FS_URI));
+            cfg.secondaryHadoopFileSystemConfigPath(props.get(SECONDARY_FS_CONFIG_PATH));
+        }
+
         cfg.defaultMode(ggfs.getDefaultMode());
         cfg.pathModes(ggfs.getPathModes());
         cfg.dualModePutExecutorService(compactClass(ggfs.getDualModePutExecutorService()));
@@ -134,7 +148,10 @@ public class VisorGgfsConfig implements Serializable {
         cfg.fragmentizerEnabled(ggfs.isFragmentizerEnabled());
         cfg.fragmentizerThrottlingBlockLength(ggfs.getFragmentizerThrottlingBlockLength());
         cfg.fragmentizerThrottlingDelay(ggfs.getFragmentizerThrottlingDelay());
-        cfg.ipcEndpointConfiguration(ggfs.getIpcEndpointConfiguration());
+
+        Map<String, String> endpointCfg = ggfs.getIpcEndpointConfiguration();
+        cfg.ipcEndpointConfiguration(endpointCfg != null ? endpointCfg.toString() : null);
+
         cfg.ipcEndpointEnabled(ggfs.isIpcEndpointEnabled());
         cfg.maxSpace(ggfs.getMaxSpaceSize());
         cfg.managementPort(ggfs.getManagementPort());

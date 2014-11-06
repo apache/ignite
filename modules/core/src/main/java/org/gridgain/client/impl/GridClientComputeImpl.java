@@ -24,6 +24,13 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  */
 class GridClientComputeImpl extends GridClientAbstractProjection<GridClientComputeImpl> implements GridClientCompute {
     /** */
+    private static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
+
+    /** */
     private static final GridClientPredicate<GridClientNode> DAEMON = new GridClientPredicate<GridClientNode>() {
         @Override public boolean apply(GridClientNode e) {
             return "true".equals(e.<String>attribute(ATTR_DAEMON));
@@ -101,10 +108,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     @Override public <R> GridClientFuture<R> executeAsync(final String taskName, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
+        final boolean keepPortables = KEEP_PORTABLES.get();
+
+        KEEP_PORTABLES.set(false);
+
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId);
+                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
             }
         });
     }
@@ -120,10 +131,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         Object affKey, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
+        final boolean keepPortables = KEEP_PORTABLES.get();
+
+        KEEP_PORTABLES.set(false);
+
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId);
+                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
             }
         }, cacheName, affKey);
     }
@@ -249,6 +264,13 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
                 return conn.log(path, lineFrom, lineTo, destNodeId);
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientCompute withKeepPortables() {
+        KEEP_PORTABLES.set(true);
+
+        return this;
     }
 
     /** {@inheritDoc} */

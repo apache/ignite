@@ -292,7 +292,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Value.
      * @throws GridException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
@@ -412,4 +412,12 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Entry set.
      */
     public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * Gets set of primary entries containing internal entries.
+     *
+     * @param filter Optional filter.
+     * @return Primary entry set.
+     */
+    public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter);
 }

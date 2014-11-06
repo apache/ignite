@@ -60,11 +60,12 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param keys Keys to get.
      * @param cached Cached entry if this method is called from entry wrapper.
      *      Cached entry is passed if and only if there is only one key in collection of keys.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Entry filter.
      * @return Future for this get.
      */
     public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<GridCacheEntry<K, V>>[] filter);
+        boolean deserializePortable, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -335,7 +336,9 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
      * @param c Closure.
+     * @param deserializePortable Deserialize portable flag.
      * @return Future with {@code True} value if loading took place.
      */
-    public GridFuture<Boolean> loadMissing(boolean async, Collection<? extends K> keys, GridBiInClosure<K, V> c);
+    public GridFuture<Boolean> loadMissing(boolean async, Collection<? extends K> keys, boolean deserializePortable,
+        GridBiInClosure<K, V> c);
 }

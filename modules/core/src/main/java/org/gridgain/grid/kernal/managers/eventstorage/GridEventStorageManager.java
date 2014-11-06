@@ -213,6 +213,13 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
+        Map<GridPredicate<? extends GridEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+
+        if (evtLsnrs != null) {
+            for (GridPredicate<? extends GridEvent> lsnr : evtLsnrs.keySet())
+                addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
+        }
+
         startSpi();
 
         msgLsnr = new RequestListener();
@@ -527,6 +534,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
                 if (!isRecordable(t))
                     U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
+
+                if (t == GridEventType.EVT_NODE_RECONNECTED)
+                    U.warn(log, "Added local listener for deprecated EVT_NODE_RECONNECT event " +
+                        "(local listener will never get called).");
             }
         }
         finally {
@@ -559,6 +570,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
                     if (!isRecordable(t))
                         U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
+
+                    if (t == GridEventType.EVT_NODE_RECONNECTED)
+                        U.warn(log, "Added local listener for deprecated EVT_NODE_RECONNECT event " +
+                            "(local listener will never get called).");
                 }
             }
         }
@@ -797,9 +812,8 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 synchronized (qryMux) {
                     uids.remove(((GridDiscoveryEvent)evt).eventNode().id());
 
-                    if (uids.isEmpty()) {
+                    if (uids.isEmpty())
                         qryMux.notifyAll();
-                    }
                 }
             }
         };

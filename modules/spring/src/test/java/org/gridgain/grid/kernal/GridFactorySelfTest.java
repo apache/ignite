@@ -217,12 +217,10 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         GridGainListener factoryLsnr = new GridGainListener() {
             @Override public void onStateChange(String name, GridGainState state) {
                 synchronized (mux) {
-                    if ("grid-factory-test-1".equals(name)) {
+                    if ("grid-factory-test-1".equals(name))
                         gridState1.set(state);
-                    }
-                    else if ("grid-factory-test-2".equals(name)) {
+                    else if ("grid-factory-test-2".equals(name))
                         gridState2.set(state);
-                    }
                 }
             }
         };
@@ -551,17 +549,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             startStopwatch();
 
             // Ack start.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(startInfo());
-            }
         }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws GridSpiException {
             // Ack stop.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(stopInfo());
-            }
         }
 
         /** {@inheritDoc} */
@@ -590,17 +586,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             startStopwatch();
 
             // Ack start.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(startInfo());
-            }
         }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws GridSpiException {
             // Ack stop.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(stopInfo());
-            }
         }
 
         /** {@inheritDoc} */

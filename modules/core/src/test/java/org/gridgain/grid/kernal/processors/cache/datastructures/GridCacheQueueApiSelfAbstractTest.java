@@ -141,9 +141,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         int retries = 100;
 
         // Initialize queue.
-        for (int i = 0; i < retries; i++) {
+        for (int i = 0; i < retries; i++)
             queue.addAll(Arrays.asList(new SameHashItem(Integer.toString(i)), new SameHashItem(Integer.toString(i))));
-        }
 
         // Get arrays from queue.
         assertEquals(retries * 2, queue.toArray().length);
@@ -262,9 +261,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         GridCacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));
-        }
 
         Iterator<String> iter1 = queue.iterator();
 
@@ -687,9 +685,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         @Override public boolean equals(Object o) {
             {
-                if (this == o) {
+                if (this == o)
                     return true;
-                }
                 if (o instanceof SameHashItem) {
                     SameHashItem i = (SameHashItem)o;
                     return s.equals(i.s);

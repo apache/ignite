@@ -16,10 +16,10 @@ public final class GridNodeAttributes {
     /** Prefix for internally reserved attribute names. */
     static final String ATTR_PREFIX = "org.gridgain";
 
-    /** Internal attribute name constant. */
+    /** Node compound version. */
     public static final String ATTR_BUILD_VER = ATTR_PREFIX + ".build.ver";
 
-    /** Node version attribute name. */
+    /** Internal attribute name constant. */
     public static final String ATTR_BUILD_DATE = ATTR_PREFIX + ".build.date";
 
     /** Internal attribute name constant. */
@@ -51,6 +51,10 @@ public final class GridNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_CACHE = ATTR_PREFIX + ".cache";
+
+    /** Internal attribute name constant. */
+    @Deprecated
+    public static final String ATTR_CACHE_PORTABLE = ATTR_PREFIX + ".cache.portable";
 
     /** Internal attribute name constant. */
     public static final String ATTR_GGFS = ATTR_PREFIX + ".ggfs";
@@ -132,6 +136,9 @@ public final class GridNodeAttributes {
 
     /** Cache interceptors. */
     public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
+
+    /** Native platform. */
+    public static final String ATTR_INTEROP_PLATFORM = ATTR_PREFIX + ".interop.platform";
 
     /**
      * Enforces singleton.

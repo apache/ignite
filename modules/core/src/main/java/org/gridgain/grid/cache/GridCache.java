@@ -192,9 +192,9 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * loaded. It is mostly useful when pre-loading the cache from underlying
      * data store before start, or for read-only caches.
      *
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
+     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param args Optional user arguments to be passed into
      *      {@link GridCacheStore#loadCache(GridBiInClosure, Object...)} method.
      * @throws GridException If loading failed.

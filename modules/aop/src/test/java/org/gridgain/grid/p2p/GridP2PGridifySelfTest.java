@@ -127,18 +127,16 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
             GridP2PTestJob.class.getName()
         );
 
-        InputStream in = tstClsLdr.getResourceAsStream(path);
-
-        if (in == null) {
-            System.out.println("Resource could not be loaded: " + path);
-
-            return -2;
-        }
-
         // Test property file load.
         byte [] bytes = new byte[20];
 
-        try {
+        try (InputStream in = tstClsLdr.getResourceAsStream(path)) {
+            if (in == null) {
+                System.out.println("Resource could not be loaded: " + path);
+
+                return -2;
+            }
+
             in.read(bytes);
         }
         catch (IOException e) {

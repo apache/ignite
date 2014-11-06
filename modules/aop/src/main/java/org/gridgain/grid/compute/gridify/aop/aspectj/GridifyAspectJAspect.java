@@ -57,9 +57,8 @@ public class GridifyAspectJAspect {
         // annotation bugs in some scripting languages (e.g. Groovy).
         String gridName = F.isEmpty(ann.gridName()) ? null : ann.gridName();
 
-        if (G.state(gridName) != STARTED) {
+        if (G.state(gridName) != STARTED)
             throw new GridException("Grid is not locally started: " + gridName);
-        }
 
         // Initialize defaults.
         GridifyArgument arg = new GridifyArgumentAdapter(mtd.getDeclaringClass(), mtd.getName(),
@@ -67,9 +66,8 @@ public class GridifyAspectJAspect {
 
         if (!ann.interceptor().equals(GridifyInterceptor.class)) {
             // Check interceptor first.
-            if (!ann.interceptor().newInstance().isGridify(ann, arg)) {
+            if (!ann.interceptor().newInstance().isGridify(ann, arg))
                 return joinPnt.proceed();
-            }
         }
 
         if (!ann.taskClass().equals(GridifyDefaultTask.class) && !ann.taskName().isEmpty()) {
@@ -101,16 +99,14 @@ public class GridifyAspectJAspect {
                 Throwable cause = e.getCause();
 
                 while (cause != null) {
-                    if (ex.isAssignableFrom(cause.getClass())) {
+                    if (ex.isAssignableFrom(cause.getClass()))
                         throw cause;
-                    }
 
                     cause = cause.getCause();
                 }
 
-                if (ex.isAssignableFrom(e.getClass())) {
+                if (ex.isAssignableFrom(e.getClass()))
                     throw e;
-                }
             }
 
             throw new GridifyRuntimeException("Undeclared exception thrown: " + e.getMessage(), e);

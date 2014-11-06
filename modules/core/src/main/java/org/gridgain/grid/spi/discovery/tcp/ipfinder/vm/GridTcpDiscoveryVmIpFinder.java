@@ -50,7 +50,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * Initialize from system property.
      */
     {
-        String ips = X.getSystemOrEnv(GG_TCP_DISCOVERY_ADDRESSES);
+        String ips = GridSystemProperties.getString(GG_TCP_DISCOVERY_ADDRESSES);
 
         if (!F.isEmpty(ips)) {
             Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();
@@ -140,55 +140,88 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * @throws GridSpiException If failed.
      */
     private static Collection<InetSocketAddress> address(String ipStr) throws GridSpiException {
-        if (ipStr.endsWith(":"))
-            ipStr = ipStr.substring(0, ipStr.length() - 1);
-        else if (ipStr.indexOf(':') >= 0) {
-            StringTokenizer st = new StringTokenizer(ipStr, ":");
+        ipStr = ipStr.trim();
 
-            if (st.countTokens() == 2) {
-                String addrStr = st.nextToken();
-                String portStr = st.nextToken();
+        String errMsg = "Failed to parse provided address: " + ipStr;
 
-                if (portStr.contains("..")) {
-                    int port1;
-                    int port2;
+        int colonCnt = ipStr.length() - ipStr.replace(":", "").length();
 
-                    try {
-                        port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
-                        port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
+        if (colonCnt > 1) {
+            // IPv6 address (literal IPv6 addresses are enclosed in square brackets, for example
+            // https://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443).
+            if (ipStr.startsWith("[")) {
+                ipStr = ipStr.substring(1);
 
-                        if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
-                            throw new GridSpiException("Failed to parse provided address: " + ipStr);
-
-                        Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
-
-                        // Upper bound included.
-                        for (int i = port1; i <= port2; i++)
-                            res.add(new InetSocketAddress(addrStr, i));
-
-                        return res;
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new GridSpiException("Failed to parse provided address: " + ipStr, e);
-                    }
-                }
-                else {
-                    try {
-                        int port = Integer.parseInt(portStr);
-
-                        return Collections.singleton(new InetSocketAddress(addrStr, port));
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new GridSpiException("Failed to parse provided address: " + ipStr, e);
-                    }
-                }
+                if (ipStr.contains("]:"))
+                    return addresses(ipStr, "\\]\\:", errMsg);
+                else if (ipStr.endsWith("]"))
+                    ipStr = ipStr.substring(0, ipStr.length() - 1);
+                else
+                    throw new GridSpiException(errMsg);
             }
-            else
-                throw new GridSpiException("Failed to parse provided address: " + ipStr);
+        }
+        else {
+            // IPv4 address.
+            if (ipStr.endsWith(":"))
+                ipStr = ipStr.substring(0, ipStr.length() - 1);
+            else if (ipStr.indexOf(':') >= 0)
+                return addresses(ipStr, "\\:", errMsg);
         }
 
         // Provided address does not contain port (will use default one).
         return Collections.singleton(new InetSocketAddress(ipStr, 0));
+    }
+
+    /**
+     * Creates address from string with port information.
+     *
+     * @param ipStr Address string
+     * @param regexDelim Port regex delimiter.
+     * @param errMsg Error message.
+     * @return Socket addresses (may contain 1 or more addresses if provided string
+     *      includes port range).
+     * @throws GridSpiException If failed.
+     */
+    private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg) throws GridSpiException {
+        String[] tokens = ipStr.split(regexDelim);
+
+        if (tokens.length == 2) {
+            String addrStr = tokens[0];
+            String portStr = tokens[1];
+
+            if (portStr.contains("..")) {
+                try {
+                    int port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
+                    int port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
+
+                    if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
+                        throw new GridSpiException(errMsg);
+
+                    Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
+
+                    // Upper bound included.
+                    for (int i = port1; i <= port2; i++)
+                        res.add(new InetSocketAddress(addrStr, i));
+
+                    return res;
+                }
+                catch (IllegalArgumentException e) {
+                    throw new GridSpiException(errMsg, e);
+                }
+            }
+            else {
+                try {
+                    int port = Integer.parseInt(portStr);
+
+                    return Collections.singleton(new InetSocketAddress(addrStr, port));
+                }
+                catch (IllegalArgumentException e) {
+                    throw new GridSpiException(errMsg, e);
+                }
+            }
+        }
+        else
+            throw new GridSpiException(errMsg);
     }
 
     /** {@inheritDoc} */

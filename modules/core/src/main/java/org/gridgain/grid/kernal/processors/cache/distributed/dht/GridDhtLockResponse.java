@@ -46,6 +46,15 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     @GridDirectCollection(int.class)
     private Set<Integer> invalidParts = new GridLeanSet<>();
 
+    @GridDirectTransient
+    /** Preload entries. */
+    private List<GridCacheEntryInfo<K, V>> preloadEntries;
+
+    /** */
+    @GridDirectCollection(byte[].class)
+    @GridDirectVersion(1)
+    private List<byte[]> preloadEntriesBytes;
+
     /**
      * Empty constructor (required by {@link Externalizable}).
      */
@@ -123,12 +132,36 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         return invalidParts;
     }
 
+    /**
+     * Adds preload entry to lock response.
+     *
+     * @param info Info to add.
+     */
+    public void addPreloadEntry(GridCacheEntryInfo<K, V> info) {
+        if (preloadEntries == null)
+            preloadEntries = new ArrayList<>();
+
+        preloadEntries.add(info);
+    }
+
+    /**
+     * Gets preload entries returned from backup.
+     *
+     * @return Collection of preload entries.
+     */
+    public Collection<GridCacheEntryInfo<K, V>> preloadEntries() {
+        return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
         if (nearEvictedBytes == null && nearEvicted != null)
             nearEvictedBytes = marshalCollection(nearEvicted, ctx);
+
+        if (preloadEntriesBytes == null && preloadEntries != null)
+            preloadEntriesBytes = marshalCollection(preloadEntries, ctx);
     }
 
     /** {@inheritDoc} */
@@ -137,6 +170,9 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
         if (nearEvicted == null && nearEvictedBytes != null)
             nearEvicted = unmarshalCollection(nearEvictedBytes, ctx, ldr);
+
+        if (preloadEntries == null && preloadEntriesBytes != null)
+            preloadEntries = unmarshalCollection(preloadEntriesBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -159,6 +195,8 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         _clone.nearEvictedBytes = nearEvictedBytes;
         _clone.miniId = miniId;
         _clone.invalidParts = invalidParts;
+        _clone.preloadEntries = preloadEntries;
+        _clone.preloadEntriesBytes = preloadEntriesBytes;
     }
 
     /** {@inheritDoc} */
@@ -237,6 +275,33 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
+            case 13:
+                if (preloadEntriesBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(preloadEntriesBytes.size()))
+                            return false;
+
+                        commState.it = preloadEntriesBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
         }
 
         return true;
@@ -261,7 +326,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 if (commState.readSize >= 0) {
                     if (invalidParts == null)
-                        invalidParts = new HashSet<>(commState.readSize);
+                        invalidParts = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -309,6 +374,35 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                             return false;
 
                         nearEvictedBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 13:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (preloadEntriesBytes == null)
+                        preloadEntriesBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        preloadEntriesBytes.add((byte[])_val);
 
                         commState.readItems++;
                     }

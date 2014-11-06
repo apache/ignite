@@ -16,7 +16,8 @@ import java.util.UUID
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.typedef.X
-import org.gridgain.scalar.scalar._
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -67,12 +68,6 @@ import scala.util.control.Breaks._
  * }}}
  */
 class VisorNodeCommand {
-    /** */
-    private val KB = 1024L
-
-    /** */
-    private val MB = KB * 1024L
-
     /**
      * Prints error message and advise.
      *
@@ -156,6 +151,10 @@ class VisorNodeCommand {
                     if (node != null) {
                         val t = VisorTextTable()
 
+                        t.autoBorder = false
+
+                        t.maxCellWidth = 60
+
                         t += ("ID", node.id)
                         t += ("ID8", nid8(node))
                         t += ("Order", node.order)
@@ -166,6 +165,10 @@ class VisorNodeCommand {
 
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
+                        val ver = U.productVersion(node)
+                        val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
+                            (if (F.isEmpty(ver.stage())) "" else "-" + ver.stage())
+
                         if (all) {
                             t += ("OS info", "" +
                                 node.attribute("os.name") + " " +
@@ -175,7 +178,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain version", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
@@ -210,14 +213,14 @@ class VisorNodeCommand {
                             t += ("Busy time %", formatDouble(m.getBusyTimePercentage * 100) + "%")
                             t += ("Current CPU load %", formatDouble(m.getCurrentCpuLoad * 100) + "%")
                             t += ("Average CPU load %", formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory initialized", formatMemory(m.getHeapMemoryInitialized / MB) + "mb")
-                            t += ("Heap memory used", formatMemory(m.getHeapMemoryUsed / MB) + "mb")
-                            t += ("Heap memory committed", formatMemory(m.getHeapMemoryCommitted / MB) + "mb")
-                            t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
-                            t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized / MB) + "mb")
-                            t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed / MB) + "mb")
-                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted / MB) + "mb")
-                            t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum / MB) + "mb")
+                            t += ("Heap memory initialized", formatMemory(m.getHeapMemoryInitialized))
+                            t += ("Heap memory used", formatMemory(m.getHeapMemoryUsed))
+                            t += ("Heap memory committed", formatMemory(m.getHeapMemoryCommitted))
+                            t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum))
+                            t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized))
+                            t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed))
+                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted))
+                            t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum))
                             t += ("Current thread count", formatNumber(m.getCurrentThreadCount))
                             t += ("Maximum thread count", formatNumber(m.getMaximumThreadCount))
                             t += ("Total started thread count", formatNumber(m.getTotalStartedThreadCount))
@@ -232,7 +235,7 @@ class VisorNodeCommand {
                             t += ("OS user", node.attribute(ATTR_USER_NAME))
                             t += ("Deployment mode", node.attribute(ATTR_DEPLOYMENT_MODE))
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
-                            t += ("GridGain build#", node.attribute(ATTR_BUILD_VER))
+                            t += ("GridGain version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Grid name", safe(gridName, "<default>"))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
@@ -255,8 +258,8 @@ class VisorNodeCommand {
                                 "/" + formatDouble(m.getAverageJobExecuteTime) + "ms")
                             t += ("Cur/avg CPU load %", formatDouble(m.getCurrentCpuLoad * 100) +
                                 "/" + formatDouble(m.getAverageCpuLoad * 100) + "%")
-                            t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed / MB) +
-                                "/" +  formatMemory(m.getHeapMemoryMaximum / MB) + "mb")
+                            t += ("Heap memory used/max", formatMemory(m.getHeapMemoryUsed) +
+                                "/" +  formatMemory(m.getHeapMemoryMaximum))
                         }
 
                         println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))

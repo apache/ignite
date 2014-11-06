@@ -24,6 +24,9 @@ import java.util.*;
 @GridInternal
 public class VisorLicenseUpdateTask extends VisorOneNodeTask<GridBiTuple<UUID, String>,
     GridBiTuple<GridProductLicenseException, UUID>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorLicenseUpdateJob job(GridBiTuple<UUID, String> arg) {
         return new VisorLicenseUpdateJob(arg);

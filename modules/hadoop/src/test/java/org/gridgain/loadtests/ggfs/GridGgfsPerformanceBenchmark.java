@@ -28,7 +28,7 @@ public class GridGgfsPerformanceBenchmark {
     private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";
 
     /** FS prefix. */
-    private static final String FS_PREFIX = "ggfs://shmem:10500/";
+    private static final String FS_PREFIX = "ggfs:///";
 
     /** Test writes. */
     private static final int OP_WRITE = 0;

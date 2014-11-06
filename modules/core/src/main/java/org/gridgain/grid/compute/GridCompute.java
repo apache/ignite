@@ -215,7 +215,7 @@ public interface GridCompute {
 
     /**
      * Executes provided job on a node in this grid projection. The result of the
-     * job execution is returned from teh result closure.
+     * job execution is returned from the result closure.
      *
      * @param job Job to execute.
      * @return Future with job result for this execution.
@@ -359,7 +359,7 @@ public interface GridCompute {
      * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
-     * @return Grid projection ({@code this}).
+     * @return This {@code GridCompute} instance for chaining calls.
      */
     public GridCompute withNoFailover();
 

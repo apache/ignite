@@ -28,9 +28,13 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -40,10 +44,13 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridCacheUtils {
     /** DR system cache name prefix. */
-    public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
+    public static final String SYS_CACHE_DR_PREFIX = "gg-dr-sys-cache-";
+
+    /**  Hadoop syste cache name. */
+    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Security system cache name. */
-    public static final String SECURITY_SYS_CACHE_NAME = "gg-security-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -589,7 +596,6 @@ public class GridCacheUtils {
      * @param ctx Cache context to check.
      * @return {@code True} if near cache is enabled, {@code false} otherwise.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(GridCacheContext ctx) {
         return isNearEnabled(ctx.config());
     }
@@ -618,19 +624,6 @@ public class GridCacheUtils {
     public static GridCacheDistributionMode distributionMode(GridCacheConfiguration cfg) {
         return cfg.getDistributionMode() != null ?
             cfg.getDistributionMode() : GridCacheDistributionMode.PARTITIONED_ONLY;
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
-        assert ctx != null;
-
-        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
     }
 
     /**
@@ -801,7 +794,6 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Type filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> GridBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
         return new P2<K, V>() {
             @Override public boolean apply(K k, V v) {
@@ -1355,7 +1347,8 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration) [cacheName=" + cfgName +
+                    "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmt.id() + ']');
@@ -1414,10 +1407,10 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return Name of internal replicated cache used by data center replication component.
+     * @return {@code True} if this is Hadoop system cache.
      */
-    public static String cacheNameForDrSystemCache(String cacheName) {
-        return DR_SYS_CACHE_PREFIX + cacheName;
+    public static boolean isHadoopSystemCache(String cacheName) {
+        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
     }
 
     /**
@@ -1425,15 +1418,71 @@ public class GridCacheUtils {
      * @return {@code True} if this is DR system cache.
      */
     public static boolean isDrSystemCache(String cacheName) {
-        return cacheName != null && cacheName.startsWith(DR_SYS_CACHE_PREFIX);
+        return cacheName != null && cacheName.startsWith(SYS_CACHE_DR_PREFIX);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Name of internal replicated cache used by data center replication component.
+     */
+    public static String cacheNameForDrSystemCache(String cacheName) {
+        return SYS_CACHE_DR_PREFIX + cacheName;
+    }
+
+    /**
+     * Create system cache used by Hadoop component.
+     *
+     * @return Hadoop cache configuration.
+     */
+    public static GridCacheConfiguration hadoopSystemCache() {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(CU.SYS_CACHE_HADOOP_MR);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setEvictionPolicy(null);
+        cache.setSwapEnabled(false);
+        cache.setQueryIndexEnabled(false);
+        cache.setStore(null);
+        cache.setEagerTtl(true);
+        cache.setPreloadMode(SYNC);
+
+        return cache;
+    }
+
+    /**
+     * Creates system cache configuration used by data center replication component.
+     *
+     * @param cacheName Cache name.
+     * @return DR cache configuration.
+     */
+    public static GridCacheConfiguration drSystemCache(String cacheName) {
+        GridCacheConfiguration cache = new GridCacheConfiguration();
+
+        cache.setName(cacheName);
+        cache.setCacheMode(REPLICATED);
+        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cache;
     }
 
     /**
      * @param cacheName Cache name.
      * @return {@code True} if this is security system cache.
      */
-    public static boolean isSecuritySystemCache(String cacheName) {
-        return SECURITY_SYS_CACHE_NAME.equals(cacheName);
+    public static boolean isUtilityCache(String cacheName) {
+        return UTILITY_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if system cache.
+     */
+    public static boolean isSystemCache(String cacheName) {
+        return isDrSystemCache(cacheName) || isUtilityCache(cacheName);
     }
 
     /**
@@ -1445,7 +1494,7 @@ public class GridCacheUtils {
     private static void validateExternalizable(GridLogger log, Object obj) {
         Class<?> cls = obj.getClass();
 
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable))
+        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
             LT.warn(log, null, "For best performance you should implement " +
                 "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }

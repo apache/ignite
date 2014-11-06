@@ -37,13 +37,13 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>3.2.2.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
     </dependencies>
 
@@ -90,9 +90,9 @@
                     </dependency>
 
                     <dependency>
-                        <groupId>javax.mail</groupId>
-                        <artifactId>mail</artifactId>
-                        <version>1.4.7</version>
+                        <groupId>com.sun.mail</groupId>
+                        <artifactId>javax.mail</artifactId>
+                        <version>1.5.2</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -104,7 +104,7 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <copy file="${settings.localRepository}/javax/mail/mail/1.4.7/mail-1.4.7.jar"
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar"
                                       todir="${basedir}/target/classes/lib"/>
 
                                 <taskdef name="gar"

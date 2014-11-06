@@ -9,10 +9,11 @@
 
 package org.gridgain.jdbc.util;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.jdk.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -24,7 +25,7 @@ import static java.sql.Types.*;
  */
 public class GridJdbcUtils {
     /** Marshaller. */
-    private static final GridClientMarshaller MARSHALLER = new GridClientJdkMarshaller();
+    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
     /**
      * Marshals task argument to byte array.
@@ -39,7 +40,7 @@ public class GridJdbcUtils {
         try {
             return MARSHALLER.marshal(args);
         }
-        catch (IOException e) {
+        catch (GridException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }
@@ -66,9 +67,9 @@ public class GridJdbcUtils {
         assert bytes != null;
 
         try {
-            return MARSHALLER.unmarshal(bytes);
+            return MARSHALLER.unmarshal(bytes, null);
         }
-        catch (IOException e) {
+        catch (GridException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }
@@ -92,7 +93,7 @@ public class GridJdbcUtils {
         assert pageSize > 0;
         assert maxRows >= 0;
 
-        Map<String, Object> map = new HashMap<>(7);
+        Map<String, Object> map = U.newHashMap(7);
 
         map.put("confNodeId", nodeId);
         map.put("cache", cacheName);
@@ -120,7 +121,7 @@ public class GridJdbcUtils {
         assert pageSize > 0;
         assert maxRows >= 0;
 
-        Map<String, Object> map = new HashMap<>(4);
+        Map<String, Object> map = U.newHashMap(4);
 
         map.put("nodeId", nodeId);
         map.put("futId", futId);

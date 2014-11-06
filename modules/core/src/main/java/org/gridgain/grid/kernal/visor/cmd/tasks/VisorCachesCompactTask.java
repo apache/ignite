@@ -23,6 +23,9 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCachesCompactTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorCachesCompactJob job(Set<String> names) {
         return new VisorCachesCompactJob(names);

@@ -15,6 +15,9 @@ import org.gridgain.client.*;
  * Adapter for cache metrics.
  */
 public class GridClientDataMetricsAdapter implements GridClientDataMetrics {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Create time. */
     private long createTime = System.currentTimeMillis();
 

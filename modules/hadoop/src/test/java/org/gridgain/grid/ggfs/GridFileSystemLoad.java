@@ -46,7 +46,7 @@ import java.util.concurrent.*;
  */
 public class GridFileSystemLoad {
     /** */
-    private static final String DFLT_URL = "ggfs://ipc";
+    private static final String DFLT_URL = "ggfs:///";
 
     /** */
     private static final int DFLT_MIN_FILE_SIZE = 100 * 1024;
@@ -82,7 +82,7 @@ public class GridFileSystemLoad {
     private static final long DFLT_DELAY = 5;
 
     /** */
-    private static final String DFLT_HADOOP_CFG = "examples/config/hadoop/core-site.xml";
+    private static final String DFLT_HADOOP_CFG = "examples/config/filesystem/core-site.xml";
 
     /** */
     private static final int CREATE_BUF_SIZE = 100 * 1024;

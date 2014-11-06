@@ -32,25 +32,20 @@ public class GridTestGridifyJob extends GridComputeJobAdapter {
 
     /** {@inheritDoc} */
     @Override public Serializable execute() throws GridException {
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled())
             log.info("Execute GridTestGridifyJob.execute(" + argument(0) + ')');
-        }
 
         GridTestAopTarget target = new GridTestAopTarget();
 
         try {
-            if ("1".equals(argument(0))) {
+            if ("1".equals(argument(0)))
                 return target.gridifyNonDefaultClass("10");
-            }
-            else if ("2".equals(argument(0))) {
+            else if ("2".equals(argument(0)))
                 return target.gridifyNonDefaultName("20");
-            }
-            else if ("3".equals(argument(0))) {
+            else if ("3".equals(argument(0)))
                 return target.gridifyNonDefaultClassResource("30");
-            }
-            else if ("4".equals(argument(0))) {
+            else if ("4".equals(argument(0)))
                 return target.gridifyNonDefaultNameResource("40");
-            }
         }
         catch (GridTestGridifyException e) {
             throw new RuntimeException("Failed to execute target method.", e);

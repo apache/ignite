@@ -16,14 +16,15 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import javax.net.ssl.*;
 import java.lang.management.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
@@ -32,6 +33,9 @@ import java.util.*;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, GridLifecycleAware {
+    /** */
+    private static final String ENT_NIO_LSNR_CLS = "org.gridgain.client.router.impl.GridTcpRouterNioListenerEntImpl";
+
     /** Id. */
     private final UUID id = UUID.randomUUID();
 
@@ -66,6 +70,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
      */
     public GridTcpRouterImpl(GridTcpRouterConfiguration cfg) {
         this.cfg = cfg;
+
         log = cfg.getLogger() != null ?
             cfg.getLogger().getLogger(getClass()) : new GridJavaLogger().getLogger(getClass());
     }
@@ -83,9 +88,25 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
             throw new GridException("Failed to initialise embedded client.", e);
         }
 
-        final GridNioServerListener<GridClientMessage> lsnr = new GridTcpRouterNioListener(log, client);
+        GridNioServerListener<GridClientMessage> lsnr;
 
-        parser = new GridTcpRouterNioParser(log);
+        try {
+            Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
+
+            Constructor<?> cons = cls.getDeclaredConstructor(GridLogger.class, GridRouterClientImpl.class);
+
+            cons.setAccessible(true);
+
+            lsnr = (GridNioServerListener<GridClientMessage>)cons.newInstance(log, client);
+        }
+        catch (ClassNotFoundException ignored) {
+            lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
+        }
+        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw new GridException("Failed to create NIO listener.", e);
+        }
+
+        parser = new GridTcpRouterNioParser();
 
         final InetAddress hostAddr;
 
@@ -107,7 +128,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
             throw new GridException("Failed to create SSL context.", e);
         }
 
-        for (int port = cfg.getPort(), last= port + cfg.getPortRange(); port <= last; port++) {
+        for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
             if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), sslCtx, cfg.isSslClientAuth(),
                 cfg.isSslClientAuth())) {
                 if (log.isInfoEnabled())
@@ -122,6 +143,11 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Gri
                 U.warn(log, "TCP REST router failed to start on endpoint: " + hostAddr.getHostAddress() + ":" + port +
                     ". Will try next port within allowed port range.");
         }
+
+        if (bindPort == 0)
+            throw new GridException("Failed to bind TCP router server (possibly all ports in range " +
+                "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
+                ", addr=" + hostAddr + ']');
 
         try {
             ObjectName objName = U.registerMBean(

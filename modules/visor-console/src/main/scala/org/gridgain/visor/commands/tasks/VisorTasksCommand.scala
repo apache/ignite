@@ -391,7 +391,7 @@ class VisorTasksCommand {
                 val p = timePeriod(argValue("t", argLst) getOrElse "1h")
 
                 if (p.isDefined)
-                    list(p.get, "visor", hasArgFlag("r", argLst), hasArgFlag("a", argLst))
+                    list(p.get, null, hasArgFlag("r", argLst), hasArgFlag("a", argLst))
             }
             else if (hasArgName("s", argLst))  {
                 val tf = timePeriod(argValue("t", argLst) getOrElse "1h")
@@ -529,10 +529,29 @@ class VisorTasksCommand {
             })
         }
 
+        /**
+         * If task name is task class name, show simple class name.
+         *
+         * @param taskName Task name.
+         * @param taskClsName Task class name.
+         * @return Simple class name.
+         */
+        def taskSimpleName(taskName: String, taskClsName: String) =  {
+            if (taskName == taskClsName || taskName == null) {
+                val idx = taskClsName.lastIndexOf('.')
+
+                if (idx >= 0) taskClsName.substring(idx + 1) else taskClsName
+            }
+            else
+                taskName
+        }
+
         evts.foreach {
             case te: VisorGridTaskEvent =>
-                val s = getSession(te.taskSessionId(), te.name())
-                val t = getTask(te.name())
+                val displayedTaskName = taskSimpleName(te.taskName(), te.taskClassName())
+
+                val s = getSession(te.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
@@ -558,8 +577,9 @@ class VisorTasksCommand {
                 }
 
             case je: VisorGridJobEvent =>
-                val s = getSession(je.taskSessionId(), je.taskName())
-                val t = getTask(je.taskName())
+                val displayedTaskName = taskSimpleName(je.taskName(), je.taskClassName())
+                val s = getSession(je.taskSessionId(), displayedTaskName)
+                val t = getTask(displayedTaskName)
 
                 t.execs = t.execs + s
 
@@ -574,6 +594,8 @@ class VisorTasksCommand {
                 s.nodeIds = s.nodeIds + je.nid()
                 s.startTs = math.min(s.startTs, je.timestamp())
                 s.endTs = math.max(s.endTs, je.timestamp())
+
+            case _ =>
         }
 
         tMap.values.toList -> sMap.values.toList
@@ -583,16 +605,17 @@ class VisorTasksCommand {
      * Prints list of tasks and executions.
      *
      * @param p Event period.
-     * @param reverse Reverse session chronological sorting?
+     * @param taskName Task name filter.
+     * @param reverse Reverse session chronological sorting.
      * @param all Whether to show full information.
      */
-    private def list(p: Long, s: String, reverse: Boolean, all: Boolean) {
+    private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
                 val prj = grid.forRemotes()
 
                 val evts = prj.compute().execute(classOf[VisorEventsCollectTask],
-                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, null, null))).get
+                    toTaskArgument(prj.nodes.map(_.id()), VisorEventsCollectArgs.createTasksArg(p, taskName, null))).get
 
                 val (tLst, eLst) = mkData(evts)
 

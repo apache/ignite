@@ -12,8 +12,10 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -22,15 +24,12 @@ import java.io.*;
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public final class GridGgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,
-    GridGgfsStreamEventListener {
+    GridGgfsHadoopStreamEventListener {
     /** Minimum buffer size. */
     private static final int MIN_BUF_SIZE = 4 * 1024;
 
-    /** Grid remote client. */
-    private GridGgfsHadoop rmtClient;
-
-    /** Server stream ID. */
-    private long streamId;
+    /** Server stream delegate. */
+    private GridGgfsHadoopStreamDelegate delegate;
 
     /** Stream ID used by logger. */
     private long logStreamId;
@@ -60,7 +59,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
     private Log log;
 
     /** Client logger. */
-    private GridGgfsHadoopLogger clientLog;
+    private GridGgfsLogger clientLog;
 
     /** Read time. */
     private long readTime;
@@ -77,21 +76,17 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
     /**
      * Creates input stream.
      *
-     * @param rmtClient Client to use.
-     * @param streamId Stream ID.
+     * @param delegate Server stream delegate.
      * @param limit Read limit.
      * @param bufSize Buffer size.
      * @param log Log.
      * @param clientLog Client logger.
      */
-    public GridGgfsHadoopInputStream(GridGgfsHadoop rmtClient, long streamId,  long limit, int bufSize, Log log,
-        GridGgfsHadoopLogger clientLog, long logStreamId) {
-        assert rmtClient != null;
-        assert streamId >= 0;
+    public GridGgfsHadoopInputStream(GridGgfsHadoopStreamDelegate delegate, long limit, int bufSize, Log log,
+        GridGgfsLogger clientLog, long logStreamId) {
         assert limit >= 0;
 
-        this.rmtClient = rmtClient;
-        this.streamId = streamId;
+        this.delegate = delegate;
         this.limit = limit;
         this.log = log;
         this.clientLog = clientLog;
@@ -101,7 +96,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
 
         lastTs = System.nanoTime();
 
-        rmtClient.addEventListener(streamId, this);
+        delegate.hadoop().addEventListener(delegate, this);
     }
 
     /**
@@ -148,7 +143,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             return res;
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw GridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -156,7 +151,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized int read(byte[] b, int off, int len) throws IOException {
+    @Override public synchronized int read(@NotNull byte[] b, int off, int len) throws IOException {
         checkClosed();
 
         if (eof())
@@ -176,9 +171,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             if (remaining > 0 && read != len) {
                 int readAmt = (int)Math.min(remaining, len - read);
 
-                GridPlainFuture<byte[]> readFut = rmtClient.readData(streamId, pos, readAmt, b, off + read, len - read);
-
-                readFut.get(); // By now read data is in out buffer.
+                delegate.hadoop().readData(delegate, pos, readAmt, b, off + read, len - read).get();
 
                 read += readAmt;
                 pos += readAmt;
@@ -190,7 +183,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             return read;
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw GridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -229,29 +222,24 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
 
     /** {@inheritDoc} */
     @Override public synchronized void close() throws IOException {
-        try {
-            if (!closed) {
-                readStart();
+        if (!closed) {
+            readStart();
 
-                if (log.isDebugEnabled())
-                    log.debug("Closing input stream: " + streamId);
+            if (log.isDebugEnabled())
+                log.debug("Closing input stream: " + delegate);
 
-                rmtClient.closeStream(streamId).get();
+            delegate.hadoop().closeStream(delegate);
 
-                readEnd();
+            readEnd();
 
-                if (clientLog.isLogEnabled())
-                    clientLog.logCloseIn(logStreamId, userTime, readTime, total);
+            if (clientLog.isLogEnabled())
+                clientLog.logCloseIn(logStreamId, userTime, readTime, total);
 
-                markClosed(false);
+            markClosed(false);
 
-                if (log.isDebugEnabled())
-                    log.debug("Closed stream [streamId=" + streamId + ", readTime=" + readTime +
-                        ", userTime=" + userTime + ']');
-            }
-        }
-        catch (GridException e) {
-            throw new IOException(e);
+            if (log.isDebugEnabled())
+                log.debug("Closed stream [delegate=" + delegate + ", readTime=" + readTime +
+                    ", userTime=" + userTime + ']');
         }
     }
 
@@ -317,10 +305,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             if (read != len) {
                 int readAmt = len - read;
 
-                GridPlainFuture<byte[]> fut = rmtClient.readData(streamId, position + read, readAmt, buf, off + read,
-                    readAmt);
-
-                fut.get(); // Data is in buffer by now.
+                delegate.hadoop().readData(delegate, position + read, readAmt, buf, off + read, readAmt).get();
 
                 total += readAmt;
             }
@@ -329,7 +314,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
                 clientLog.logRandomRead(logStreamId, position, len);
         }
         catch (GridException e) {
-            throw new IOException(e);
+            throw GridGgfsHadoopUtils.cast(e);
         }
         finally {
             readEnd();
@@ -354,7 +339,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             pos = limit;
 
         if (log.isDebugEnabled())
-            log.debug("Seek to position [streamId=" + streamId + ", pos=" + pos + ", oldPos=" + this.pos + ']');
+            log.debug("Seek to position [delegate=" + delegate + ", pos=" + pos + ", oldPos=" + this.pos + ']');
 
         this.pos = pos;
 
@@ -393,7 +378,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
 
             this.connBroken = connBroken;
 
-            rmtClient.removeEventListener(streamId);
+            delegate.hadoop().removeEventListener(delegate);
         }
     }
 
@@ -627,7 +612,7 @@ public final class GridGgfsHadoopInputStream extends InputStream implements Seek
             size = (int)Math.min(size, remaining);
 
             return size <= 0 ? null :
-                new FetchBufferPart(rmtClient.readData(streamId, pos, size, null, 0, 0), pos, size);
+                new FetchBufferPart(delegate.hadoop().readData(delegate, pos, size, null, 0, 0), pos, size);
         }
     }
 }

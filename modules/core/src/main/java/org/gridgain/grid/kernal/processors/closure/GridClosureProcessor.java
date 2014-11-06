@@ -231,9 +231,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return map;
         }
-        else {
+        else
             return Collections.emptyMap();
-        }
     }
 
     /**
@@ -281,9 +280,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return map;
         }
-        else {
+        else
             return Collections.emptyMap();
-        }
     }
 
     /**
@@ -567,6 +565,30 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param job Job closure.
+     * @param arg Optional job argument.
+     * @param nodes Grid nodes.
+     * @return Grid future for execution result.
+     */
+    public <T, R> GridFuture<Collection<R>> broadcastNoFailover(GridClosure<T, R> job, @Nullable T arg,
+        @Nullable Collection<GridNode> nodes) {
+        enterBusy();
+
+        try {
+            if (F.isEmpty(nodes))
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+
+            ctx.task().setThreadContext(TC_SUBGRID, nodes);
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
             return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
         }

@@ -32,9 +32,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("GridGain Examples Test Suite");
 
         suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientApiExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientCacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridClientMessageInterceptorExampleSelfTest.class));
         suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuationExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousMapperExamplesSelfTest.class));
@@ -44,7 +41,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridMessagingExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridMemcacheRestExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridMonteCarloExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridTaskExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridSpringBeanExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsExamplesSelfTest.class));
@@ -55,8 +51,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         // Multi-node.
         suite.addTest(new TestSuite(GridCacheExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheStoreLoadDataExampleMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientApiExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientCacheExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridBasicExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridContinuationExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousMapperExamplesMultiNodeSelfTest.class));
@@ -64,7 +58,6 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridEventsExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridTaskExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMemcacheRestExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridRouterExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMonteCarloExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridHibernateL2CacheExampleMultiNodeSelfTest.class));
 

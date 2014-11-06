@@ -48,9 +48,8 @@ class GridUriDeploymentFileResourceLoader {
      */
     @SuppressWarnings("unchecked")
     Class<? extends GridComputeTask<?, ?>> createResource(String fileName, boolean ignoreUnknownRsrc) throws GridSpiException {
-        if (scanPathDir.isDirectory()) {
+        if (scanPathDir.isDirectory())
             fileName = fileName.substring(scanPathDir.getAbsolutePath().length() + 1);
-        }
 
         if (fileName.endsWith(".class")) {
             String str = fileName;
@@ -68,9 +67,8 @@ class GridUriDeploymentFileResourceLoader {
                 if (ignoreUnknownRsrc) {
                     // No-op.
                 }
-                else {
+                else
                     throw new GridSpiException("Failed to load class: " + str, e);
-                }
             }
         }
 

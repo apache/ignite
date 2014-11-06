@@ -53,9 +53,8 @@ public class GridCacheJndiTmLookup implements GridCacheTmLookup {
             for (String s : jndiNames) {
                 Object obj = ctx.lookup(s);
 
-                if (obj != null && obj instanceof TransactionManager) {
+                if (obj != null && obj instanceof TransactionManager)
                     return (TransactionManager) obj;
-                }
             }
         }
         catch (NamingException e) {

@@ -106,21 +106,21 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridContinuousMessage _clone = new GridContinuousMessage();
+        GridContinuousMessage clone = new GridContinuousMessage();
 
-        clone0(_clone);
+        clone0(clone);
 
-        return _clone;
+        return clone;
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-        GridContinuousMessage _clone = (GridContinuousMessage)_msg;
+    @Override protected void clone0(GridTcpCommunicationMessageAdapter msg) {
+        GridContinuousMessage clone = (GridContinuousMessage)msg;
 
-        _clone.type = type;
-        _clone.routineId = routineId;
-        _clone.data = data;
-        _clone.dataBytes = dataBytes;
+        clone.type = type;
+        clone.routineId = routineId;
+        clone.data = data;
+        clone.dataBytes = dataBytes;
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -31,6 +32,10 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * Client implementation.
  */
 public class GridClientImpl implements GridClient {
+    /** Enterprise connection manager class name. */
+    private static final String ENT_CONN_MGR_CLS =
+        "org.gridgain.client.impl.connection.GridClientConnectionManagerEntImpl";
+
     /** Null mask object. */
     private static final Object NULL_MASK = new Object();
 
@@ -145,7 +150,7 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, null);
+            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null);
 
             try {
                 // Init connection manager, it should cause topology update.
@@ -369,12 +374,43 @@ public class GridClientImpl implements GridClient {
     }
 
     /**
-     * @param protoId Protocol ID to use in this connection manager.
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(Byte protoId) throws GridClientException {
-        return new GridClientConnectionManagerImpl(id, sslCtx, cfg, routers, top, protoId);
+    public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId) throws GridClientException {
+        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId);
+    }
+
+    /**
+     * @param clientId Client ID.
+     * @param sslCtx SSL context to enable secured connection or {@code null} to use unsecured one.
+     * @param cfg Client configuration.
+     * @param routers Routers or empty collection to use endpoints from topology info.
+     * @param top Topology.
+     * @throws GridClientException In case of error.
+     */
+    private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
+        GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
+        @Nullable Byte marshId)
+        throws GridClientException {
+        GridClientConnectionManager mgr;
+
+        try {
+            Class<?> cls = Class.forName(ENT_CONN_MGR_CLS);
+
+            Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
+                Collection.class, GridClientTopology.class, Byte.class);
+
+            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId);
+        }
+        catch (ClassNotFoundException ignored) {
+            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId);
+        }
+        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw new GridClientException("Failed to create client connection manager.", e);
+        }
+
+        return mgr;
     }
 
     /**
@@ -392,7 +428,7 @@ public class GridClientImpl implements GridClient {
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
                 for (GridClientNodeImpl node : top.nodes()) {
-                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
+                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));

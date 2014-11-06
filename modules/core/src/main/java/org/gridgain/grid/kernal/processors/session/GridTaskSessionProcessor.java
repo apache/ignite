@@ -39,18 +39,16 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * Starts session processor.
      */
     @Override public void start() throws GridException {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Session processor started.");
-        }
     }
 
     /**
      * Stops session processor.
      */
     @Override public void stop(boolean cancel) throws GridException {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Session processor stopped.");
-        }
     }
 
     /**
@@ -66,6 +64,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param attrs Map of attributes.
      * @param fullSup {@code True} to enable distributed session attributes
      *      and checkpoints.
+     * @param subjId Subject ID.
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
@@ -79,7 +78,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         long endTime,
         Collection<GridComputeJobSibling> siblings,
         Map<Object, Object> attrs,
-        boolean fullSup) {
+        boolean fullSup,
+        UUID subjId) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
                 taskNodeId,
@@ -93,7 +93,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 siblings,
                 attrs,
                 ctx,
-                fullSup);
+                false,
+                subjId);
         }
 
         while (true) {
@@ -114,7 +115,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         siblings,
                         attrs,
                         ctx,
-                        fullSup));
+                        true,
+                        subjId));
 
                 if (old != null)
                     ses = old;

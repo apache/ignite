@@ -171,4 +171,41 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0, hits);
         assertEquals(expReads, misses);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMissesOnEmptyCache() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        // TODO: GG-7578.
+        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        Integer key =  null;
+
+        for (int i = 0; i < 1000; i++) {
+            if (cache.affinity().isPrimary(grid(0).localNode(), i)) {
+                key = i;
+
+                break;
+            }
+        }
+
+        assertNotNull(key);
+
+        cache.get(key);
+
+        assertEquals("Expected 1 read", 1, cache.metrics().reads());
+        assertEquals("Expected 1 miss", 1, cache.metrics().misses());
+
+        cache.put(key, key); // +1 read, +1 miss.
+
+        cache.get(key);
+
+        assertEquals("Expected 1 write", 1, cache.metrics().writes());
+        assertEquals("Expected 3 reads", 3, cache.metrics().reads());
+        assertEquals("Expected 2 misses", 2, cache.metrics().misses());
+        assertEquals("Expected 1 hit", 1, cache.metrics().hits());
+    }
 }

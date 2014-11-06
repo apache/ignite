@@ -185,7 +185,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
         U.startLifecycleAware(lifecycleAwares());
 
-        stages = new LinkedHashMap<>(c.getStages().size());
+        stages = U.newLinkedHashMap(c.getStages().size());
 
         int stageIdx = 0;
 
@@ -1303,6 +1303,10 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
                     if (res != null) {
                         for (Map.Entry<String, Collection<?>> entry : res.entrySet()) {
+                            if (entry.getKey() == null)
+                                throw new GridException("Failed to pass events to next stage " +
+                                    "(stage name cannot be null).");
+
                             GridStreamerStageExecutionFuture part = addEvents0(
                                 batch.executionId(),
                                 0,

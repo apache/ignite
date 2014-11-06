@@ -15,8 +15,10 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -57,8 +59,9 @@ public class GridAffinityAssignmentCache {
     private final GridCacheContext ctx;
 
     /** Ready futures. */
-    private ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
+    /** Log. */
     private GridLogger log;
 
     /**
@@ -208,7 +211,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Returning finished future for readyFuture [head=" + aff.topologyVersion() +
                     ", topVer=" + topVer + ']');
 
-            return new GridFinishedFutureEx<>(topVer);
+            return null;
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
@@ -243,6 +246,15 @@ public class GridAffinityAssignmentCache {
      * @return Partition.
      */
     public int partition(Object key) {
+        if (ctx.portableEnabled()) {
+            try {
+                key = ctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                U.error(log, "Failed to marshal key to portable: " + key, e);
+            }
+        }
+
         return aff.partition(affMapper.affinityKey(key));
     }
 
@@ -253,7 +265,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(int part, long topVer) {
+    public List<GridNode> nodes(int part, long topVer) {
         // Resolve cached affinity nodes.
         return cachedAffinity(topVer).get(part);
     }
@@ -292,7 +304,7 @@ public class GridAffinityAssignmentCache {
         else
             awaitTopologyVersion(topVer);
 
-        assert topVer >= 0;
+        assert topVer >= 0 : topVer;
 
         GridAffinityAssignment cache = head.get();
 
@@ -306,7 +318,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        assert cache != null && cache.topologyVersion() == topVer : "Invalid cached affinity: " + cache;
+        assert cache.topologyVersion() == topVer : "Invalid cached affinity: " + cache;
 
         return cache;
     }
@@ -325,7 +337,10 @@ public class GridAffinityAssignmentCache {
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
-            readyFuture(topVer).get();
+            GridFuture<Long> fut = readyFuture(topVer);
+
+            if (fut != null)
+                fut.get();
         }
         catch (GridException e) {
             throw new GridRuntimeException("Failed to wait for affinity ready future for topology version: " + topVer,
@@ -371,7 +386,9 @@ public class GridAffinityAssignmentCache {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+        @Override public boolean onDone(Long res, @Nullable Throwable err) {
+            assert res != null;
+
             boolean done = super.onDone(res, err);
 
             if (done)
@@ -380,5 +397,4 @@ public class GridAffinityAssignmentCache {
             return done;
         }
     }
-
 }

@@ -39,7 +39,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      */
     static {
-        if (!Boolean.getBoolean(GridSystemProperties.GG_JETTY_LOG_NO_OVERRIDE)) {
+        if (!GridSystemProperties.getBoolean(GG_JETTY_LOG_NO_OVERRIDE)) {
             Properties p = new Properties();
 
             p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
@@ -95,6 +95,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws GridException {
+        assert ctx.config().getClientConnectionConfiguration() != null;
+
         InetAddress locHost;
 
         try {
@@ -112,7 +114,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             }
         }, log);
 
-        String jettyPath = ctx.config().getRestJettyPath();
+        String jettyPath = config().getRestJettyPath();
 
         final URL cfgUrl;
 
@@ -144,7 +146,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         int initPort = connector.getPort();
 
-        int lastPort = initPort + ctx.config().getRestPortRange() - 1;
+        int lastPort = initPort + config().getRestPortRange() - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);

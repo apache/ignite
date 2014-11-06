@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.apache.commons.lang.exception.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.ipc.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
 import java.util.*;
@@ -27,49 +27,15 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
      * Constructor.
      *
      * @param mode GGFS mode.
+     * @param skipEmbed Skip embedded mode flag.
      */
-    protected GridGgfsHadoopFileSystemShmemAbstractSelfTest(GridGgfsMode mode) {
-        super(mode);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemUriPath() {
-        return "ggfs://primary/";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemConfigPath() {
-        return "modules/core/src/test/config/hadoop/core-site.xml";
+    protected GridGgfsHadoopFileSystemShmemAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed) {
+        super(mode, skipEmbed, false);
     }
 
     /** {@inheritDoc} */
     @Override protected String primaryIpcEndpointConfiguration(String gridName) {
         return "{type:'shmem', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String primaryFileSystemEndpoint() {
-        return "shmem:10500";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemUriPath() {
-        return "ggfs://secondary/";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemConfigPath() {
-        return "modules/core/src/test/config/hadoop/core-site-secondary.xml";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryFileSystemEndpoint() {
-        return "127.0.0.1:11500";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String secondaryIpcEndpointConfiguration() {
-        return "{type:'shmem', port:11500}";
     }
 
     /**
@@ -78,6 +44,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
      *
      * @throws Exception If error occurred.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutOfResources() throws Exception {
         final Collection<GridIpcEndpoint> eps = new LinkedList<>();
 
@@ -97,7 +64,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
 
             String msg = e.getMessage();
 
-            assertTrue("Invalid exception: " + ExceptionUtils.getFullStackTrace(e),
+            assertTrue("Invalid exception: " + X.getFullStackTrace(e),
                 msg.contains("(error code: 28)") ||
                 msg.contains("(error code: 24)") ||
                 msg.contains("(error code: 12)"));

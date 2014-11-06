@@ -32,10 +32,12 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -52,6 +54,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
@@ -179,9 +182,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local flag array. */
     private static final GridCacheFlag[] FLAG_LOCAL = new GridCacheFlag[]{LOCAL};
 
-    /** Thread local peek mode excludes. */
-    private ThreadLocal<GridCachePeekMode[]> peekModeExcl = new ThreadLocal<>();
-
     /** Data center ID. */
     private byte dataCenterId;
 
@@ -296,7 +296,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         trueArr = new GridPredicate[]{F.alwaysTrue()};
 
         // Create unsafe memory only if writing values
-        unsafeMemory = cacheCfg.getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES ?
+        unsafeMemory = cacheCfg.getMemoryMode() == OFFHEAP_VALUES ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
@@ -534,7 +534,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridSecurityException If security check failed.
      */
     public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
-        if (CU.isSecuritySystemCache(name()))
+        if (CU.isSystemCache(name()))
             return;
 
         ctx.security().authorize(name(), op, null);
@@ -761,7 +761,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public GridCacheTxManager<K, V> tm() {
-        return txMgr;
+         return txMgr;
     }
 
     /**
@@ -793,16 +793,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Query manager.
+     * @return Query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheQueryManager<K, V> queries() {
+    public GridCacheQueryManager<K, V> queries() {
         return qryMgr;
     }
 
     /**
-     * @return Continuous query manager.
+     * @return Continuous query manager, {@code null} if disabled.
      */
-    @Nullable public GridCacheContinuousQueryManager<K, V> continuousQueries() {
+    public GridCacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
     }
 
@@ -1034,45 +1034,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheFlag[] forcedFlags() {
         return forcedFlags.get();
-    }
-
-    /**
-     * Force peek mode excludes for current thread.
-     *
-     * @param modes Peek modes to exclude.
-     * @return Excludes prior to this call.
-     */
-    public GridCachePeekMode[] excludePeekModes(@Nullable GridCachePeekMode[] modes) {
-        if (nearContext())
-            return dht().near().context().excludePeekModes(modes);
-
-        GridCachePeekMode[] oldModes = peekModeExcl.get();
-
-        peekModeExcl.set(F.isEmpty(modes) ? null : modes);
-
-        return oldModes;
-    }
-
-    /**
-     * @return Peek mode excludes.
-     */
-    public GridCachePeekMode[] peekModeExcludes() {
-        return nearContext() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
-    }
-
-    /**
-     * @param mode Peek mode.
-     * @return {@code true} if given peek mode is excluded.
-     */
-    public boolean peekModeExcluded(GridCachePeekMode mode) {
-        assert mode != null;
-
-        if (nearContext())
-            return dht().near().context().peekModeExcluded(mode);
-
-        GridCachePeekMode[] excl = peekModeExcl.get();
-
-        return excl != null && U.containsObjectArray(excl, mode);
     }
 
     /**
@@ -1496,15 +1457,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty()) {
-            List<GridNode> owners = dht().topology().owners(entry.partition(), topVer);
-
-            assert dhtNodes.containsAll(owners) : "Invalid nodes resolving [dhtNodes=" + dhtNodes +
-                ", owners=" + owners + ']';
-
-            // Exclude owner nodes.
-            ret |= map(entry, F.view(nearNodes, F.notIn(owners)), nearMap);
-        }
+        if (nearNodes != null && !nearNodes.isEmpty())
+            ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
 
         return ret;
     }
@@ -1717,6 +1671,190 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable() {
+        return kernalContext().portable();
+    }
+
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return cacheCfg.isPortableEnabled();
+    }
+
+    /**
+     * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
+     */
+    public boolean offheapTiered() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+    }
+
+    /**
+     * Converts temporary offheap object to heap-based.
+     *
+     * @param obj Object.
+     * @return Heap-based object.
+     */
+    @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
+        if (!offheapTiered() || !portableEnabled())
+            return (T)obj;
+
+        return (T)portable().unwrapTemporary(obj);
+    }
+
+    /**
+     * @param bytes Object marshalled with portable marshaller.
+     * @return Object marshalled with grid marshaller.
+     * @throws GridException If failed.
+     */
+    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+        assert portableEnabled() && offheapTiered();
+
+        return marshaller().marshal(portable().unmarshal(bytes, 0));
+    }
+
+    /**
+     * @param obj Object.
+     * @return Portable object.
+     * @throws GridPortableException In case of error.
+     */
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+        assert portableEnabled();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
+            return obj;
+
+        GridPortableProcessor proc = kernalContext().portable();
+
+        assert proc != null;
+
+        return proc.marshalToPortable(obj);
+    }
+
+    /**
+     * Unwraps collection.
+     *
+     * @param col Collection to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped collection.
+     */
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
+            return col;
+
+        if (col instanceof ArrayList)
+            return unwrapPortables((ArrayList<Object>)col);
+
+        int idx = 0;
+
+        for (Object obj : col) {
+            Object unwrapped = unwrapPortable(obj);
+
+            if (obj != unwrapped) {
+                Collection<Object> unwrappedCol = new ArrayList<>(col.size());
+
+                int idx0 = 0;
+
+                for (Object obj0 : col) {
+                    if (idx0 < idx)
+                        unwrappedCol.add(obj0);
+                    else if (idx == idx0)
+                        unwrappedCol.add(unwrapped);
+                    else
+                        unwrappedCol.add(unwrapPortable(obj0));
+
+                    idx0++;
+                }
+
+                return unwrappedCol;
+            }
+
+            idx++;
+        }
+
+        return col;
+    }
+
+    /**
+     * Unwraps array list.
+     *
+     * @param col List to unwrap.
+     * @return Unwrapped list.
+     */
+    private ArrayList<Object> unwrapPortables(ArrayList<Object> col) {
+        int size = col.size();
+
+        for (int i = 0; i < size; i++) {
+            Object o = col.get(i);
+
+            Object unwrapped = unwrapPortable(o);
+
+            if (o != unwrapped)
+                col.set(i, unwrapped);
+        }
+
+        return col;
+    }
+
+    /**
+     * Unwraps object for portables.
+     *
+     * @param o Object to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped object.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
+            return o;
+
+        return unwrapPortable(o);
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapPortable(Object o) {
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            boolean unwrapped = false;
+
+            if (key instanceof GridPortableObject) {
+                key = ((GridPortableObject)key).deserialize();
+
+                unwrapped = true;
+            }
+
+            Object val = entry.getValue();
+
+            if (val instanceof GridPortableObject) {
+                val = ((GridPortableObject)val).deserialize();
+
+                unwrapped = true;
+            }
+
+            return unwrapped ? F.t(key, val) : o;
+        }
+        else {
+            if (o instanceof Collection)
+                return unwrapPortablesIfNeeded((Collection<Object>)o, false);
+            else if (o instanceof GridPortableObject)
+                return ((GridPortableObject)o).deserialize();
+        }
+
+        return o;
+    }
+
+    /**
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {
@@ -1773,10 +1911,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

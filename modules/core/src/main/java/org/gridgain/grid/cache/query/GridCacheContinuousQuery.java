@@ -118,7 +118,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /**
-     * Sets mandatory local callback. This callback is called only
+     * Sets local callback. This callback is called only
      * in local node when new updates are received.
      * <p>
      * The callback predicate accepts ID of the node from where updates
@@ -135,14 +135,18 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param cb Local callback.
+     * @deprecated Deprecated in favor of {@link #localCallback(GridBiPredicate)} method.
      */
-    public void callback(GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
+    @Deprecated
+    public void callback(@Nullable GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
 
     /**
      * Gets local callback. See {@link #callback(GridBiPredicate)} for more information.
      *
      * @return Local callback.
+     * @deprecated Deprecated in favor of {@link #localCallback()} method.
      */
+    @Deprecated
     public GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback();
 
     /**
@@ -156,15 +160,68 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param filter Key-value filter.
+     * @deprecated Deprecated in favor of {@link #remoteFilter(GridPredicate)} method.
      */
+    @Deprecated
     public void filter(@Nullable GridBiPredicate<K, V> filter);
 
     /**
      * Gets key-value filter. See {@link #filter(GridBiPredicate)} for more information.
      *
      * @return Key-value filter.
+     * @deprecated Deprecated in favor of {@link #remoteFilter()} method.
      */
+    @Deprecated
     @Nullable public GridBiPredicate<K, V> filter();
+
+    /**
+     * Sets local callback. This callback is called only
+     * in local node when new updates are received.
+     * <p>
+     * The callback predicate accepts ID of the node from where updates
+     * are received and collection of received entries. Note that
+     * for removed entries value will be {@code null}.
+     * <p>
+     * If the predicate returns {@code false}, query execution will
+     * be cancelled.
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local
+     * or distributed locking (e.g., synchronization or transactional
+     * cache operations), should be executed asynchronously without
+     * blocking the thread that called the callback. Otherwise, you
+     * can get deadlocks.
+     *
+     * @param locCb Local callback.
+     */
+    public void localCallback(GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb);
+
+    /**
+     * Gets local callback. See {@link #callback(GridBiPredicate)} for more information.
+     *
+     * @return Local callback.
+     */
+    @Nullable public GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback();
+
+    /**
+     * Sets optional key-value filter. This filter is called before
+     * entry is sent to the master node.
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local
+     * or distributed locking (e.g., synchronization or transactional
+     * cache operations), should be executed asynchronously without
+     * blocking the thread that called the filter. Otherwise, you
+     * can get deadlocks.
+     *
+     * @param filter Key-value filter.
+     */
+    public void remoteFilter(@Nullable GridPredicate<GridCacheContinuousQueryEntry<K, V>> filter);
+
+    /**
+     * Gets key-value filter. See {@link #filter(GridBiPredicate)} for more information.
+     *
+     * @return Key-value filter.
+     */
+    @Nullable public GridPredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter();
 
     /**
      * Sets buffer size.

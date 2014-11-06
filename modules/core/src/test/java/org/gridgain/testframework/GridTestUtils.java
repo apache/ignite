@@ -396,9 +396,8 @@ public final class GridTestUtils {
 
         // Increment address.
         if (addr[3] == 255) {
-            if (addr[2] == 255) {
+            if (addr[2] == 255)
                 assert false;
-            }
             else {
                 addr[2] += 1;
 
@@ -695,9 +694,8 @@ public final class GridTestUtils {
             // To get different addresses for different machines.
             addr = new int[] {229, thirdByte, 1, 1};
         }
-        else {
+        else
             addr = new int[] {229, 1, 1, 1};
-        }
     }
 
     /**
@@ -727,10 +725,8 @@ public final class GridTestUtils {
                 // Exclude log4j because of the design - 1 per VM.
                 if (name.startsWith("spring") || name.startsWith("log4j") ||
                     name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("gridgain-tests")) {
-
+                    name.startsWith("gridgain-tests"))
                     return false;
-                }
 
                 boolean ret = true;
 
@@ -895,9 +891,8 @@ public final class GridTestUtils {
                     }
                 }
 
-                if (wait) {
+                if (wait)
                     Thread.sleep(20);
-                }
                 else
                     break; // While.
             }
@@ -1093,7 +1088,7 @@ public final class GridTestUtils {
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         // We cannot resolve method by parameter classes due to some of parameters can be null.
         // Search correct method among all methods collection.
-        for (Method m : obj.getClass().getMethods()) {
+        for (Method m : obj.getClass().getDeclaredMethods()) {
             // Filter methods by name.
             if (!m.getName().equals(mtd))
                 continue;
@@ -1305,5 +1300,44 @@ public final class GridTestUtils {
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
         return factory;
+    }
+
+    /**
+     * @param o1 Object 1.
+     * @param o2 Object 2.
+     * @return Equals or not.
+     */
+    public static boolean deepEquals(@Nullable Object o1, @Nullable Object o2) {
+        if (o1 == o2)
+            return true;
+        else if (o1 == null || o2 == null)
+            return false;
+        else if (o1.getClass() != o2.getClass())
+            return false;
+        else {
+            Class<?> cls = o1.getClass();
+
+            assert o2.getClass() == cls;
+
+            for (Field f : cls.getDeclaredFields()) {
+                f.setAccessible(true);
+
+                Object v1;
+                Object v2;
+
+                try {
+                    v1 = f.get(o1);
+                    v2 = f.get(o2);
+                }
+                catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+
+                if (!Objects.deepEquals(v1, v2))
+                    return false;
+            }
+
+            return true;
+        }
     }
 }

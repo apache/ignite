@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,13 +26,15 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * This class tests that parser confirms memcache extended specification.
  */
+@SuppressWarnings("TypeMayBeWeakened")
 public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
-    /** Protobuf marshaller. */
-    private GridClientMarshaller marshaller = new GridClientProtobufMarshaller();
+    /** Marshaller. */
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
     /** Extras value. */
     public static final byte[] EXTRAS = new byte[]{
@@ -46,7 +48,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testSimplePacketParsing() throws Exception {
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        GridTcpRestParser parser = new GridTcpRestParser();
 
         byte hdr = MEMCACHE_REQ_FLAG;
 
@@ -81,7 +83,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testIncorrectPackets() throws Exception {
         final GridNioSession ses = new GridMockNioSession();
 
-        final GridTcpRestParser parser = new GridTcpRestParser(log);
+        final GridTcpRestParser parser = new GridTcpRestParser();
 
         final byte[] opaque = new byte[] {0x01, 0x02, 0x03, (byte)0xFF};
 
@@ -128,7 +130,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomMessages() throws Exception {
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);
@@ -139,7 +141,9 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridNioSession ses = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
+
+        GridTcpRestParser parser = new GridTcpRestParser();
 
         GridClientMessage msg = parser.decode(ses, raw);
 
@@ -163,12 +167,14 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      */
     public void testMixedParsing() throws Exception {
         GridNioSession ses1 = new GridMockNioSession();
-
         GridNioSession ses2 = new GridMockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser(log);
+        ses1.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
+        ses2.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
-        GridClientCacheRequest<String, String> req = new GridClientCacheRequest<>(CAS);
+        GridTcpRestParser parser = new GridTcpRestParser();
+
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
 
@@ -231,7 +237,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testParseContinuousSplit() throws Exception {
         ByteBuffer tmp = ByteBuffer.allocate(10 * 1024);
 
-        GridClientCacheRequest<String, Integer> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.key("key");
         req.value(1);
@@ -250,7 +256,9 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
+
+            GridTcpRestParser parser = new GridTcpRestParser();
 
             Collection<GridClientCacheRequest> lst = new ArrayList<>(5);
 
@@ -278,19 +286,21 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * Tests correct parsing of client handshake packets.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testParseClientHandshake() throws Exception {
         for (int splitPos = 1; splitPos < 5; splitPos++) {
             log.info("Checking split position: " + splitPos);
 
-            ByteBuffer tmp = clientHandshakePacket(U.OPTIMIZED_CLIENT_PROTO_ID);
+            ByteBuffer tmp = clientHandshakePacket();
 
             ByteBuffer[] split = split(tmp, splitPos);
 
             GridNioSession ses = new GridMockNioSession();
 
-            GridTcpRestParser parser = new GridTcpRestParser(log);
+            ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
+
+            GridTcpRestParser parser = new GridTcpRestParser();
 
             Collection<GridClientMessage> lst = new ArrayList<>(1);
 
@@ -308,8 +318,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
             assertNotNull(req);
-            assertEquals(U.OPTIMIZED_CLIENT_PROTO_ID, req.protocolId());
-            assertTrue(Arrays.equals(new byte[]{5,0,0,0}, req.versionBytes()));
+            assertEquals(U.bytesToShort(new byte[] {5, 0}, 0), req.version());
         }
     }
 
@@ -347,18 +356,15 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws IOException If serialization failed.
      */
     private ByteBuffer clientRequestPacket(GridClientMessage msg) throws IOException {
-        byte[] data = marshaller.marshal(msg);
+        ByteBuffer res = marshaller.marshal(msg, 45);
 
-        ByteBuffer res = ByteBuffer.allocate(data.length + 45);
+        ByteBuffer slice = res.slice();
 
-        res.put(GRIDGAIN_REQ_FLAG);
-        res.put(U.intToBytes(data.length + 40));
-        res.put(U.longToBytes(msg.requestId()));
-        res.put(U.uuidToBytes(msg.clientId()));
-        res.put(U.uuidToBytes(msg.destinationId()));
-        res.put(data);
-
-        res.flip();
+        slice.put(GRIDGAIN_REQ_FLAG);
+        slice.putInt(res.remaining() - 5);
+        slice.putLong(msg.requestId());
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
         return res;
     }
@@ -366,14 +372,13 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * Assembles GridGain client handshake packet.
      *
-     * @param protoId Protocol ID.
      * @return Raw message bytes.
      */
-    private ByteBuffer clientHandshakePacket(byte protoId) {
+    private ByteBuffer clientHandshakePacket() {
         ByteBuffer res = ByteBuffer.allocate(6);
 
         res.put(new byte[] {
-            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0, protoId
+            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0, 0
         });
 
         res.flip();
@@ -390,7 +395,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @param key Key data.
      * @param val Value data.
      * @param extras Extras data.
-     * @return Bute buffer containing assembled packet.
+     * @return Byte buffer containing assembled packet.
      */
     private ByteBuffer rawPacket(byte magic, byte opCode, byte[] opaque, @Nullable byte[] key, @Nullable byte[] val,
         @Nullable byte[] extras) {

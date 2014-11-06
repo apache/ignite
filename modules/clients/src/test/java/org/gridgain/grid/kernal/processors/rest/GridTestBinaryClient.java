@@ -10,18 +10,19 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.java.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -35,8 +36,8 @@ final class GridTestBinaryClient {
     /** Logger. */
     private final GridLogger log = new GridJavaLogger();
 
-    /** Hessian marshaller. */
-    private final GridClientMarshaller protobufMarshaller = new GridClientProtobufMarshaller();
+    /** Marshaller. */
+    private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
 
     /** Socket. */
     private final Socket sock;
@@ -75,13 +76,21 @@ final class GridTestBinaryClient {
 
             input = sock.getInputStream();
 
+            GridClientHandshakeRequest req = new GridClientHandshakeRequest();
+
+            req.marshallerId(GridClientOptimizedMarshaller.ID);
+
             // Write handshake.
-            sock.getOutputStream().write(new GridClientHandshakeRequest(protobufMarshaller.getProtocolId()).rawBytes());
+            sock.getOutputStream().write(GridClientHandshakeRequestWrapper.HANDSHAKE_HEADER);
+            sock.getOutputStream().write(req.rawBytes());
 
             byte[] buf = new byte[1];
 
             // Wait for handshake response.
-            assert input.read(buf) == 1;
+            int read = input.read(buf);
+
+            assert read == 1 : read;
+
             assert buf[0] == GridClientHandshakeResponse.OK.resultCode() :
                 "Client handshake failed [code=" + buf[0] + ']';
         }
@@ -145,7 +154,7 @@ final class GridTestBinaryClient {
                                     byte[] hdrBytes = Arrays.copyOfRange(bytes, 0, 40);
                                     byte[] msgBytes = Arrays.copyOfRange(bytes, 40, bytes.length);
 
-                                    GridClientResponse msg = protobufMarshaller.unmarshal(msgBytes);
+                                    GridClientResponse msg = marsh.unmarshal(msgBytes);
 
                                     long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
                                     UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
@@ -254,20 +263,21 @@ final class GridTestBinaryClient {
     private byte[] createPacket(GridClientMessage msg) throws IOException {
         msg.clientId(id);
 
-        byte[] data = protobufMarshaller.marshal(msg);
+        ByteBuffer res = marsh.marshal(msg, 45);
 
-        byte[] res = new byte[45 + data.length];
+        ByteBuffer slice = res.slice();
 
-        res[0] = (byte)0x90;
+        slice.put((byte)0x90);
+        slice.putInt(res.remaining() - 5);
+        slice.putLong(msg.requestId());
+        slice.put(U.uuidToBytes(msg.clientId()));
+        slice.put(U.uuidToBytes(msg.destinationId()));
 
-        U.intToBytes(data.length + 40, res, 1);
-        U.longToBytes(msg.requestId(), res, 5);
-        U.uuidToBytes(msg.clientId(), res, 13);
-        U.uuidToBytes(msg.destinationId(), res, 29);
+        byte[] arr = new byte[res.remaining()];
 
-        U.arrayCopy(data, 0, res, 45, data.length);
+        res.get(arr);
 
-        return res;
+        return arr;
     }
 
     /**
@@ -293,11 +303,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert entries != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(PUT_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
 
         req.requestId(idCntr.incrementAndGet());
         req.cacheName(cacheName);
-        req.values(entries);
+        req.values((Map<Object, Object>)entries);
 
         return makeRequest(req).<Boolean>getObject();
     }
@@ -312,7 +322,7 @@ final class GridTestBinaryClient {
         throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
@@ -332,11 +342,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert keys != null;
 
-        GridClientCacheRequest<K, V> req = new GridClientCacheRequest<>(GET_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys(Arrays.asList(keys));
+        req.keys((Iterable<Object>)Arrays.asList(keys));
 
         return makeRequest(req).getObject();
     }
@@ -351,7 +361,7 @@ final class GridTestBinaryClient {
     public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
@@ -370,11 +380,11 @@ final class GridTestBinaryClient {
         throws GridException {
         assert keys != null;
 
-        GridClientCacheRequest<K, Object> req = new GridClientCacheRequest<>(RMV_ALL);
+        GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys(Arrays.asList(keys));
+        req.keys((Iterable<Object>)Arrays.asList(keys));
 
         return makeRequest(req).isSuccess();
     }
@@ -391,7 +401,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> replace = new GridClientCacheRequest<>(REPLACE);
+        GridClientCacheRequest replace = new GridClientCacheRequest(REPLACE);
 
         replace.requestId(idCntr.getAndIncrement());
         replace.cacheName(cacheName);
@@ -413,7 +423,7 @@ final class GridTestBinaryClient {
         throws GridException {
         assert key != null;
 
-        GridClientCacheRequest<K, V> msg = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
 
         msg.requestId(idCntr.getAndIncrement());
         msg.cacheName(cacheName);
@@ -430,7 +440,7 @@ final class GridTestBinaryClient {
      * @throws GridException In case of error.
      */
     public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws GridException {
-        GridClientCacheRequest<K, Object> metrics = new GridClientCacheRequest<>(METRICS);
+        GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.requestId(idCntr.getAndIncrement());
         metrics.cacheName(cacheName);
@@ -450,7 +460,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> add = new GridClientCacheRequest<>(APPEND);
+        GridClientCacheRequest add = new GridClientCacheRequest(APPEND);
 
         add.requestId(idCntr.getAndIncrement());
         add.cacheName(cacheName);
@@ -472,7 +482,7 @@ final class GridTestBinaryClient {
         assert key != null;
         assert val != null;
 
-        GridClientCacheRequest<K, V> add = new GridClientCacheRequest<>(PREPEND);
+        GridClientCacheRequest add = new GridClientCacheRequest(PREPEND);
 
         add.requestId(idCntr.getAndIncrement());
         add.cacheName(cacheName);

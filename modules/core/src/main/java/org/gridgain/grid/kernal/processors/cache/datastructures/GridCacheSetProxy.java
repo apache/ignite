@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -504,10 +503,10 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

@@ -190,11 +190,55 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    public void testPointerAfterRehash() throws Exception {
+        initCap = 10;
+
+        map = newMap();
+
+        Map<String, String> kv = new HashMap<>(1000);
+        Map<String, Long> ptrs = new HashMap<>(1000);
+
+        for (int i = 0; i < 1000; i++)
+            kv.put(string(), string());
+
+        for (Map.Entry<String, String> e : kv.entrySet()) {
+            String key = e.getKey();
+            String val = e.getValue();
+
+            assertTrue(map.put(1, hash(key), key.getBytes(), val.getBytes()));
+
+            GridBiTuple<Long, Integer> ptr = map.valuePointer(1, hash(key), key.getBytes());
+
+            assertNotNull(ptr);
+
+            assertEquals((Integer)val.getBytes().length, ptr.get2());
+
+            assertFalse(map.put(1, hash(key), key.getBytes(), val.getBytes()));
+
+            ptrs.put(key, ptr.get1());
+        }
+
+        for (Map.Entry<String, String> e : kv.entrySet()) {
+            String key = e.getKey();
+
+            GridBiTuple<Long, Integer> ptr = map.valuePointer(1, hash(key), key.getBytes());
+
+            assertNotNull(ptr);
+
+            assertEquals(ptrs.get(key), ptr.get1());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("unchecked")
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
         GridCacheAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(parts, null);
+
+        getTestResources().inject(aff);
 
         GridByteArrayWrapper[] keys = new GridByteArrayWrapper[512];
         Random rnd = new Random();
@@ -934,5 +978,148 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         assertTrue("Invalid map free size [size=" + map.freeSize() + ", evictCnt=" + evictCnt + ']',
             map.freeSize() >= 0);
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("TooBroadScope")
+    public void testValuePointerEvict() {
+        mem = 90;
+
+        final GridTuple<String> evicted = new GridTuple<>();
+
+        evictLsnr = new GridOffHeapEvictListener() {
+            @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
+                String key = new String(k);
+
+                evicted.set(key);
+            }
+        };
+
+        map = newMap();
+
+        final String k1 = "k1";
+        final String k2 = "k2";
+
+        map.put(1, k1.hashCode(), k1.getBytes(), bytes(20));
+
+        assertNull(evicted.get());
+
+        assertNotNull(map.valuePointer(1, k1.hashCode(), k1.getBytes()));
+
+        assertNull(evicted.get());
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(20));
+
+        assertEquals(k2, evicted.get());
+
+        evicted.set(null);
+
+        assertTrue(map.contains(1, k1.hashCode(), k1.getBytes()));
+
+        map.put(1, k1.hashCode(), k1.getBytes(), bytes(20));
+
+        assertNull(evicted.get());
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(20));
+
+        assertEquals(k1, evicted.get());
+
+        assertNull(map.valuePointer(1, k1.hashCode(), k1.getBytes()));
+
+        evicted.set(null);
+
+        assertNotNull(map.valuePointer(1, k2.hashCode(), k2.getBytes()));
+
+        assertNull(evicted.get());
+
+        map.put(1, k1.hashCode(), k1.getBytes(), bytes(21));
+
+        assertEquals(k1, evicted.get());
+
+        evicted.set(null);
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(21));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("TooBroadScope")
+    public void testValuePointerEnableEviction() {
+        mem = 90;
+
+        final GridTuple<String> evicted = new GridTuple<>();
+
+        evictLsnr = new GridOffHeapEvictListener() {
+            @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
+                String key = new String(k);
+
+                evicted.set(key);
+            }
+        };
+
+        map = newMap();
+
+        final String k1 = "k1";
+        final String k2 = "k2";
+
+        map.put(1, k1.hashCode(), k1.getBytes(), bytes(20));
+
+        assertNull(evicted.get());
+
+        assertNotNull(map.valuePointer(1, k1.hashCode(), k1.getBytes()));
+
+        assertNull(evicted.get());
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(20));
+
+        assertEquals(k2, evicted.get());
+
+        evicted.set(null);
+
+        assertTrue(map.contains(1, k1.hashCode(), k1.getBytes()));
+
+        map.enableEviction(1, k1.hashCode(), k1.getBytes());
+
+        assertNull(evicted.get());
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(20));
+
+        assertEquals(k1, evicted.get());
+
+        assertNull(map.valuePointer(1, k1.hashCode(), k1.getBytes()));
+
+        evicted.set(null);
+
+        assertNotNull(map.valuePointer(1, k2.hashCode(), k2.getBytes()));
+
+        assertNull(evicted.get());
+
+        map.put(1, k1.hashCode(), k1.getBytes(), bytes(21));
+
+        assertEquals(k1, evicted.get());
+
+        evicted.set(null);
+
+        map.put(1, k2.hashCode(), k2.getBytes(), bytes(21));
+    }
+
+    /**
+     *
+     */
+    public void testValuePointerRemove() {
+        map = newMap();
+
+        final String k = "k1";
+
+        map.put(1, k.hashCode(), k.getBytes(), bytes(10));
+
+        assertNotNull(map.valuePointer(1, k.hashCode(), k.getBytes()));
+
+        map.remove(1, k.hashCode(), k.getBytes());
+
+        assertNull(map.valuePointer(1, k.hashCode(), k.getBytes()));
     }
 }

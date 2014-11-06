@@ -25,7 +25,7 @@ public @interface GridCacheQuerySqlField {
      * Just like with databases, field indexing may require additional overhead
      * during updates, but makes select operations faster.
      * <p>
-     * When {@code GridH2IndexingSpi} is set as indexing SPI and indexed field is
+     * When {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} is set as indexing SPI and indexed field is
      * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then GridGain will
      * consider this index as spatial providing performance boost for spatial queries.
      *
@@ -56,17 +56,24 @@ public @interface GridCacheQuerySqlField {
      * whenever index should be created on more than one field. All fields within the same
      * group will belong to the same index.
      * <p>
-     * Most of the times user will not specify any group, which means that cache should
-     * simply create a single field index.
+     * Group indexes are needed because SQL engine can utilize only one index per table occurrence in a query.
+     * For example if we have two separate indexes on fields {@code a} and {@code b} of type {@code X} then
+     * query {@code select * from X where a = ? and b = ?} will use for filtering either index on field {@code a}
+     * or {@code b} but not both. For more effective query execution here it is preferable to have a single
+     * group index on both fields.
+     * <p>
+     * For more complex scenarios please refer to {@link GridCacheQuerySqlField.Group} documentation.
      *
      * @return Array of group names.
      */
     String[] groups() default {};
 
     /**
-     * Array of ordered index groups this field belongs to.
+     * Array of ordered index groups this field belongs to. For more information please refer to
+     * {@linkplain GridCacheQuerySqlField.Group} documentation.
      *
      * @return Array of ordered group indexes.
+     * @see #groups()
      */
     Group[] orderedGroups() default {};
 
@@ -79,6 +86,16 @@ public @interface GridCacheQuerySqlField {
 
     /**
      * Describes group of index and position of field in this group.
+     * <p>
+     * Opposite to {@link #groups()} this annotation gives control over order of fields in a group index.
+     * This can be needed in scenarios when we have a query like
+     * {@code select * from X where a = ? and b = ? order by b desc}. If we have index {@code (a asc, b asc)}
+     * sorting on {@code b} will be performed. Here it is preferable to have index {@code (b desc, a asc)}
+     * which will still allow query to search on index using both fields and avoid sorting because index
+     * is already sorted in needed way.
+     *
+     * @see #groups()
+     * @see #orderedGroups()
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.FIELD})

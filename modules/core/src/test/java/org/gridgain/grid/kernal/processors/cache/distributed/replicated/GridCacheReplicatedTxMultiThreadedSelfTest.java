@@ -78,12 +78,12 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends GridCacheTxMulti
 
     /** {@inheritDoc} */
     @Override protected int threadCount() {
-        return 3;
+        return 5;
     }
 
     /** {@inheritDoc} */
     @Override protected int iterations() {
-        return 20;
+        return 1000;
     }
 
     /** {@inheritDoc} */

@@ -12,12 +12,12 @@ package org.gridgain.loadtests.client;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
@@ -27,17 +27,22 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
  */
 public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /** Marshallers to test. */
-    private GridClientMarshaller[] marshallers = new GridClientMarshaller[] {
-        new GridClientJdkMarshaller(),
-        new GridClientOptimizedMarshaller(),
-        new GridClientProtobufMarshaller()
-    };
+    private GridClientMarshaller[] marshallers;
+
+    /**
+     */
+    public GridClientMarshallerBenchmarkTest() {
+        marshallers = new GridClientMarshaller[] {
+            new GridClientJdkMarshaller(),
+            new GridClientOptimizedMarshaller()
+        };
+    }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheRequestTime() throws Exception {
-        GridClientCacheRequest<String, Long> req = new GridClientCacheRequest<>(CAS);
+        GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
         req.clientId(UUID.randomUUID());
         req.cacheName("CacheName");
@@ -46,7 +51,7 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         req.value(1L);
         req.value2(2L);
 
-        Map<String, Long> additional = new HashMap<>();
+        Map<Object, Object> additional = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
             additional.put("key" + i, (long)i);
@@ -66,7 +71,7 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
             assertEquals(req.value(), res.value());
             assertEquals(req.value2(), res.value2());
 
-            for (Map.Entry<String, Long> e : req.values().entrySet())
+            for (Map.Entry<Object, Object> e : req.values().entrySet())
                 assertEquals(e.getValue(), res.values().get(e.getKey()));
         }
 
@@ -89,7 +94,13 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         throws IOException {
         if (iterCnt == 1) {
             // Warm-up, will not print statistics.
-            Object res = marshaller.unmarshal(marshaller.marshal(obj));
+            ByteBuffer buf = marshaller.marshal(obj, 0);
+
+            byte[] arr = new byte[buf.remaining()];
+
+            buf.get(arr);
+
+            Object res = marshaller.unmarshal(arr);
 
             assertNotNull("Failed for marshaller: " + marshaller.getClass().getSimpleName(), res);
 
@@ -103,7 +114,11 @@ public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
         Object res = null;
 
         for (int i = 0; i < iterCnt; i++) {
-            byte[] raw = marshaller.marshal(obj);
+            ByteBuffer buf = marshaller.marshal(obj, 0);
+
+            byte[] raw = new byte[buf.remaining()];
+
+            buf.get(raw);
 
             long end = System.currentTimeMillis();
 

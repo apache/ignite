@@ -9,6 +9,10 @@
 
 package org.gridgain.client;
 
+import org.gridgain.grid.portables.*;
+
+import java.util.*;
+
 /**
  * Cache projection flags that specify projection behaviour.
  */
@@ -27,7 +31,18 @@ public enum GridClientCacheFlag {
      * Instead of updating remote entries with new values, small invalidation
      * messages will be sent to set the values to {@code null}.
      */
-    INVALIDATE;
+    INVALIDATE,
+
+    /**
+     * Disable deserialization of portable objects on get operations.
+     * If set and portable marshaller is used, {@link GridClientData#get(Object)}
+     * and {@link GridClientData#getAll(Collection)} methods will return
+     * instances of {@link GridPortableObject} class instead of user objects.
+     * Use this flag if you don't have corresponding class on your client of
+     * if you want to get access to some individual fields, but do not want to
+     * fully deserialize the object.
+     */
+    KEEP_PORTABLES;
 
     /** */
     private static final GridClientCacheFlag[] VALS = values();

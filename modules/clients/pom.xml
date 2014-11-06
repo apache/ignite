@@ -69,13 +69,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-protobuf</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>net.sf.json-lib</groupId>
             <artifactId>json-lib</artifactId>
             <version>2.4</version>
@@ -108,62 +101,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>docs</id>
-            <activation>
-                <property>
-                    <name>!skipClientDocs</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.gridgain</groupId>
-                                <artifactId>gridgain-tools</artifactId>
-                                <version>${gridgain.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <executions>
-                            <execution>
-                                <id>dotnetdoc</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>prepare-package</phase>
-                                <configuration>
-                                    <target>
-                                        <exec executable="${doxygen.exec}" searchpath="true">
-                                            <arg value="dotnet/dotnet.dxg"/>
-                                        </exec>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>cppdoc</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>prepare-package</phase>
-                                <configuration>
-                                    <target>
-                                        <exec executable="${doxygen.exec}" searchpath="true">
-                                            <arg value="cpp/cpp.dxg"/>
-                                        </exec>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

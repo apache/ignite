@@ -78,6 +78,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Subject ID. */
     private UUID subjId;
 
+    /** Task name. */
+    private int taskNameHash;
+
+    /** Whether to deserialize portable objects. */
+    private boolean deserializePortable;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -104,7 +110,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable GridCacheTxLocalEx<K, V> tx,
         long topVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        int taskNameHash,
+        boolean deserializePortable) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -119,6 +127,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
+        this.deserializePortable = deserializePortable;
+        this.taskNameHash = taskNameHash;
 
         futId = GridUuid.randomUuid();
 
@@ -196,7 +206,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         onDone(e);
                     }
 
-                    LinkedHashMap<K, Boolean> mappedKeys = new LinkedHashMap<>(keys.size());
+                    LinkedHashMap<K, Boolean> mappedKeys = U.newLinkedHashMap(keys.size());
 
                     // Assign keys to primary nodes.
                     for (Map.Entry<? extends K, Boolean> key : keys.entrySet()) {
@@ -259,6 +269,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         final Collection<GridCacheEntryInfo<K, V>> infos = new LinkedList<>();
 
+        String taskName0 = ctx.job().currentTaskName();
+
+        if (taskName0 == null)
+            taskName0 = ctx.task().resolveTaskName(taskNameHash);
+
+        final String taskName = taskName0;
+
         GridCompoundFuture<Boolean, Boolean> txFut = null;
 
         for (Map.Entry<? extends K, Boolean> k : keys.entrySet()) {
@@ -310,10 +327,10 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         if (txFut == null || txFut.isDone()) {
             if (reload && cctx.isStoreEnabled() && cctx.store().configured())
-                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
+                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
             else
-                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
-                    tx.getAllAsync(keys.keySet(), null, filters);
+                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
+                    tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
         }
         else {
             // If we are here, then there were active transactions for some entries
@@ -327,10 +344,11 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             throw new GridClosureException(e);
 
                         if (reload)
-                            return cache().reloadAllAsync(keys.keySet(), true, subjId, filters);
+                            return cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
                         else
-                            return tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, filters) :
-                                tx.getAllAsync(keys.keySet(), null, filters);
+                            return tx == null ?
+                                cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
+                                tx.getAllAsync(keys.keySet(), null, deserializePortable, filters);
                     }
                 },
                 cctx.kernalContext());

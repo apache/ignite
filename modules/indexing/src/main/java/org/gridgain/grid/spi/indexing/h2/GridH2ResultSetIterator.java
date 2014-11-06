@@ -11,117 +11,104 @@ package org.gridgain.grid.spi.indexing.h2;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
 import java.sql.*;
 import java.util.*;
+
 
 /**
  * Iterator over result set.
  */
-abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapterEx<T> {
+abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    protected ResultSet rs;
+    private final ResultSet data;
 
     /** */
-    private Statement stmt;
+    protected final Object[] row;
 
     /** */
-    private T next;
-
-    /** */
-    private boolean init;
+    private boolean hasRow;
 
     /**
-     * @param rs Result set.
-     * @param stmt Statement to close at the end (if provided).
+     * @param data Data array.
+     * @throws GridSpiException If failed.
      */
-    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    protected GridH2ResultSetIterator(ResultSet rs, Statement stmt) {
-        this.rs = rs;
-        this.stmt = stmt;
+    protected GridH2ResultSetIterator(ResultSet data) throws GridSpiException {
+        this.data = data;
+
+        if (data != null) {
+            try {
+                row = new Object[data.getMetaData().getColumnCount()];
+            }
+            catch (SQLException e) {
+                throw new GridSpiException(e);
+            }
+        }
+        else
+            row = null;
     }
 
     /**
-     * Loads first row.
-     *
-     * @throws GridException In case of error.
+     * @return {@code true} If next row was fetched successfully.
      */
-    private void init() throws GridException {
-        if (init)
-            return;
-
-        init = true;
+    private boolean fetchNext() {
+        if (data == null)
+            return false;
 
         try {
-            if (rs != null && rs.next())
-                next = loadRow();
+            if (!data.next())
+                return false;
+
+            for (int c = 0; c < row.length; c++)
+                row[c] = data.getObject(c + 1);
+
+            return true;
         }
-        catch (Exception e) {
-            if (e instanceof SQLException)
-                onSqlException((SQLException)e);
-
-            throw new GridException("Failed to load row.", e);
+        catch (SQLException e) {
+            throw new GridRuntimeException(e);
         }
-    }
-
-    /**
-     * Handles SQL exception.
-     *
-     * @param e Exception.
-     */
-    protected abstract void onSqlException(SQLException e);
-
-    /**
-     * Loads row from result set.
-     *
-     * @return Object associated with row of the result set.
-     * @throws SQLException In case of SQL error.
-     * @throws GridSpiException In case of SPI error.
-     * @throws IOException In case of I/O error.
-     */
-    protected abstract T loadRow() throws SQLException, GridSpiException, IOException;
-
-    /** {@inheritDoc} */
-    @Override protected boolean onHasNext() throws GridException {
-        // Initialize if needed;
-        init();
-
-        return next != null;
     }
 
     /** {@inheritDoc} */
-    @Override protected T onNext() throws GridException {
-        // Initialize if needed;
-        init();
+    @Override public boolean hasNext() {
+        return hasRow || (hasRow = fetchNext());
+    }
 
-        T res = next;
-
-        try {
-            next = rs != null && !rs.isClosed() && rs.next() ? loadRow() : null;
-        }
-        catch (Exception e) {
-            if (e instanceof SQLException)
-                onSqlException((SQLException)e);
-
-            throw new GridException("Failed to load row.", e);
-        }
-
-        if (res == null)
+    /** {@inheritDoc} */
+    @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
+    @Override public T next() {
+        if (!hasNext())
             throw new NoSuchElementException();
 
-        return res;
+        hasRow = false;
+
+        return createRow();
+    }
+
+    /**
+     * @return Row.
+     */
+    protected abstract T createRow();
+
+    /** {@inheritDoc} */
+    @Override public void remove() {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected void onClose() {
-        U.close(rs, null);
-        U.close(stmt, null);
+    @Override public void close() throws GridException {
+        try {
+            U.closeQuiet(data.getStatement());
+        }
+        catch (SQLException e) {
+            throw new GridException(e);
+        }
+
+        U.closeQuiet(data);
     }
 
     /** {@inheritDoc} */

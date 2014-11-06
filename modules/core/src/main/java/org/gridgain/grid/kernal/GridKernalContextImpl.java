@@ -26,12 +26,16 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.interop.*;
+import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -160,6 +164,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
+    private GridServiceProcessor svcProc;
+
+    /** */
+    @GridToStringInclude
     private GridCacheProcessor cacheProc;
 
     /** */
@@ -224,7 +232,19 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridHadoopProcessorAdapter hadoopProc;
+
+    /** */
+    @GridToStringExclude
     private GridVersionProcessor verProc;
+
+    /** */
+    @GridToStringExclude
+    private GridPortableProcessor portableProc;
+
+    /** */
+    @GridToStringExclude
+    private GridInteropProcessor interopProc;
 
     /** */
     @GridToStringExclude
@@ -342,10 +362,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
-            /*
-            * Processors.
-            * ==========
-            */
+        /*
+         * Processors.
+         * ==========
+         */
 
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
@@ -369,6 +389,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
+        else if (comp instanceof GridServiceProcessor)
+            svcProc = (GridServiceProcessor)comp;
         else if (comp instanceof GridScheduleProcessorAdapter)
             scheduleProc = (GridScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
@@ -393,6 +415,12 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
+        else if (comp instanceof GridHadoopProcessorAdapter)
+            hadoopProc = (GridHadoopProcessorAdapter)comp;
+        else if (comp instanceof GridPortableProcessor)
+            portableProc = (GridPortableProcessor)comp;
+        else if (comp instanceof GridInteropProcessor)
+            interopProc = (GridInteropProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -491,6 +519,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridClosureProcessor closure() {
         return closProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridServiceProcessor service() {
+        return svcProc;
     }
 
     /** {@inheritDoc} */
@@ -625,6 +658,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopProcessorAdapter hadoop() {
+        return hadoopProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService drPool() {
         return grid.drPool();
     }
@@ -632,6 +670,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridVersionProcessor versionConverter() {
         return verProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableProcessor portable() {
+        return portableProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridInteropProcessor interop() {
+        return interopProc;
     }
 
     /** {@inheritDoc} */
@@ -720,10 +768,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

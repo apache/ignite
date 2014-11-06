@@ -47,11 +47,13 @@
                 <exclude>org.gridgain:gridgain-extdata-p2p</exclude>
                 <exclude>org.gridgain:gridgain-extdata-uri</exclude>
                 <exclude>org.gridgain:gridgain-examples</exclude>
-                <exclude>org.gridgain:gridgain-visor-console</exclude>
                 <exclude>org.gridgain:gridgain-hibernate</exclude>
                 <exclude>org.gridgain:gridgain-indexing</exclude>
                 <exclude>org.gridgain:gridgain-jta</exclude>
                 <exclude>org.gridgain:gridgain-hadoop</exclude>
+                <exclude>org.gridgain:gridgain-visor-console</exclude>
+                <exclude>org.gridgain:gridgain-visor-plugins</exclude>
+                <exclude>org.gridgain:gridgain-visor-trial</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -61,6 +63,7 @@
                         <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>readme.txt</include>
+                            <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>

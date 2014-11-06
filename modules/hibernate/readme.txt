@@ -9,7 +9,7 @@ To enable Hibernate module when starting a standalone node, move 'optional/gridg
 be added to classpath in this case.
 
 Importing Hibernate Module In Maven Project
--------------------------------------
+-------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Hibernate module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are

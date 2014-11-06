@@ -270,7 +270,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      */
     public List<GridNode> assignPartition(int part, List<GridNode> nodes, int backups,
         @Nullable Map<UUID, Collection<GridNode>> neighborhoodCache) {
-        if (nodes.size() == 1)
+        if (nodes.size() <= 1)
             return nodes;
 
         List<GridBiTuple<Long, GridNode>> lst = new ArrayList<>();
@@ -311,9 +311,20 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
         Collections.sort(lst, COMPARATOR);
 
-        int primaryAndBackups = backups + 1;
+        int primaryAndBackups;
 
-        List<GridNode> res = new ArrayList<>(primaryAndBackups);
+        List<GridNode> res;
+
+        if (backups == Integer.MAX_VALUE) {
+            primaryAndBackups = Integer.MAX_VALUE;
+
+            res = new ArrayList<>();
+        }
+        else {
+            primaryAndBackups = backups + 1;
+
+            res = new ArrayList<>(primaryAndBackups);
+        }
 
         GridNode primary = lst.get(0).get2();
 

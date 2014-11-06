@@ -60,12 +60,6 @@
         <!-- Enable rest protocol. -->
         <property name="restEnabled" value="true"/>
 
-        <!-- Configure TCP rest protocol. -->
-        <property name="restTcpPort" value="10080"/>
-
-        <!-- Configure HTTP rest protocol. -->
-        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty.xml"/>
-
         <!-- Configure to skip all events for better performance. -->
         <property name="includeEventTypes">
             <list>
@@ -73,6 +67,35 @@
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FINISHED"/>
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
             </list>
+        </property>
+
+        <property name="portableConfiguration">
+            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                        </bean>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
+                        </bean>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
+                        </bean>
+                        <bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration">
+                            <property name="className" value="GridNoDefPortablePerson"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
+        <!-- Client configuration. -->
+        <property name="clientConnectionConfiguration">
+            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+                <!-- Configure TCP rest protocol. -->
+                <property name="restTcpPort" value="10080"/>
+            </bean>
         </property>
 
         <property name="cacheConfiguration">
@@ -118,7 +141,63 @@
                         </bean>
                     </property>
 
-                    <property name="queryIndexEnabled" value="false"/>
+                    <property name="portableEnabled" value="true"/>
+
+                    <!-- Enable queries for partitioned cache -->
+                    <property name="queryIndexEnabled" value="true"/>
+
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <property name="typeMetadata">
+                                <list>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address</value>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridImplicitPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="GridNoDefPortablePerson"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="age" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
                 </bean>
 
                 <!--

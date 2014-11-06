@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
@@ -72,8 +72,6 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setIncludeProperties();
-
-        cfg.setRestEnabled(false);
 
         cfg.setMarshaller(new GridOptimizedMarshaller(false));
 
@@ -463,6 +461,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoaderApi() throws Exception {
+        useCache = true;
+
         try {
             Grid g1 = startGrid(1);
 
@@ -483,15 +483,13 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.future().get();
 
-            // Create another loader.
-            ldr = g1.dataLoader("UNKNOWN_CACHE");
-
             try {
-                ldr.addData(0, 0).get();
+                // Create another loader.
+                ldr = g1.dataLoader("UNKNOWN_CACHE");
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IllegalStateException e) {
                 info("Caught expected exception: " + e);
             }
 

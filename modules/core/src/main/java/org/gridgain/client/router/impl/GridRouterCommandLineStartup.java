@@ -18,7 +18,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
-import java.text.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -91,11 +90,6 @@ public class GridRouterCommandLineStartup {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
-
-        String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-        String ver = "ver. " + VER + '#' + buildDate + "-sha1:" + rev;
-
         X.println(
             "  _____     _     _______      _         ",
             " / ___/____(_)___/ / ___/___ _(_)___     ",
@@ -103,7 +97,7 @@ public class GridRouterCommandLineStartup {
             "\\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/",
             " ",
             "GridGain Router Command Line Loader",
-            ver,
+            "ver. " + ACK_VER,
             COPYRIGHT,
             " "
         );

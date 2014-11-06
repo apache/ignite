@@ -21,6 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
@@ -167,9 +168,9 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertEquals(0, spi.size(typeAB.space(), typeAB));
         assertEquals(0, spi.size(typeBA.space(), typeBA));
 
-        assertFalse(spi.query(typeAA.space(), "select * from A.A", Collections.emptySet(), typeAA).hasNext());
-        assertFalse(spi.query(typeAB.space(), "select * from A.B", Collections.emptySet(), typeAB).hasNext());
-        assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA).hasNext());
+        assertFalse(spi.query(typeAA.space(), "select * from A.A", Collections.emptySet(), typeAA, null).hasNext());
+        assertFalse(spi.query(typeAB.space(), "select * from A.B", Collections.emptySet(), typeAB, null).hasNext());
+        assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
         assertFalse(spi.remove("A", new GridIndexingEntityAdapter<>(1, null)));
@@ -223,7 +224,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         // Query data.
         Iterator<GridIndexingKeyValueRow<Integer, Map<String, Object>>> res =
-            spi.query(typeAA.space(), "select * from a order by age", Collections.emptySet(), typeAA);
+            spi.query(typeAA.space(), "select * from a order by age", Collections.emptySet(), typeAA, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa(3, "Borya", 18), value(res.next()));
@@ -231,7 +232,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertEquals(aa(2, "Valera", 19), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeAB.space(), "select * from b order by name", Collections.emptySet(), typeAB);
+        res = spi.query(typeAB.space(), "select * from b order by name", Collections.emptySet(), typeAB, null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here."), value(res.next()));
@@ -239,7 +240,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy"), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeBA.space(), "select * from a", Collections.emptySet(), typeBA);
+        res = spi.query(typeBA.space(), "select * from a", Collections.emptySet(), typeBA, null);
 
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true), value(res.next()));
@@ -247,7 +248,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         // Text queries
         Iterator<GridIndexingKeyValueRow<Integer, Map<String, Object>>> txtRes = spi.queryText(typeAB.space(), "good",
-            typeAB);
+            typeAB, null);
 
         assertTrue(txtRes.hasNext());
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy"), value(txtRes.next()));
@@ -256,7 +257,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         // Fields query
         GridIndexingFieldsResult fieldsRes =
             spi.queryFields(null, "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet());
+            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
@@ -278,7 +279,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
         // Query on not existing table should not fail.
         assertFalse(spi.queryFields(null, "select * from not_existing_table",
-            Collections.emptySet()).iterator().hasNext());
+            Collections.emptySet(), null).iterator().hasNext());
 
         // Remove
         spi.remove(typeAA.space(), entity(2));
@@ -365,7 +366,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
                 time = now;
                 range *= 3;
 
-                GridIndexingFieldsResult res = spi.queryFields(null, sql, Arrays.<Object>asList(1, range));
+                GridIndexingFieldsResult res = spi.queryFields(null, sql, Arrays.<Object>asList(1, range), null);
 
                 assert res.iterator().hasNext();
 
@@ -382,6 +383,17 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
             GridTestUtils.setFieldValue(spi, "log", oldLog);
             ((GridH2IndexingSpi)spi).setLongQueryExecutionTimeout(3000);
         }
+    }
+
+    public void _testResultReuse() throws Exception {
+        final X spi = getSpi();
+
+        multithreaded(new Callable<Object>() {
+              @Override public Object call() throws Exception {
+                  return spi.queryFields(null, "SELECT sum(x) + sum(x) + sum(x) + sum(x) FROM SYSTEM_RANGE(?, ?)",
+                      F.<Object>asList(0, 7000000), null);
+              }
+          }, 5);
     }
 
     /**
@@ -408,7 +420,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
 
             String sql = "SELECT * FROM MyNonExistingTable";
 
-            GridIndexingFieldsResult res = spi.queryFields(null, sql, Collections.emptyList());
+            GridIndexingFieldsResult res = spi.queryFields(null, sql, Collections.emptyList(), null);
 
             assertFalse(res.iterator().hasNext());
 

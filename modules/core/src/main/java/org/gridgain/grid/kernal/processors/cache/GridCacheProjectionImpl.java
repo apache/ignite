@@ -16,12 +16,12 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,8 +34,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Cache projection.
  */
-public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
-    Externalizable {
+public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,6 +70,9 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** Client ID which operates over this projection, if any, */
     private UUID subjId;
 
+    /** */
+    private boolean keepPortable;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -92,7 +94,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         @Nullable GridBiPredicate<K, V> kvFilter,
         @Nullable GridPredicate<? super GridCacheEntry<K, V>> entryFilter,
         @Nullable Set<GridCacheFlag> flags,
-        @Nullable UUID subjId) {
+        @Nullable UUID subjId,
+        boolean keepPortable) {
         assert parent != null;
         assert cctx != null;
 
@@ -120,6 +123,17 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         cache = cctx.cache();
 
         qry = new GridCacheQueriesImpl<>(cctx, this);
+
+        this.keepPortable = keepPortable;
+    }
+
+    /**
+     * Gets cache context.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<K, V> context() {
+        return cctx;
     }
 
     /**
@@ -136,6 +150,20 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      */
     GridBiPredicate<K, V> kvFilter(boolean noNulls) {
         return noNulls ? noNullKvFilter : withNullKvFilter;
+    }
+
+    /**
+     * @return Keep portable flag.
+     */
+    public boolean isKeepPortable() {
+        return keepPortable;
+    }
+
+    /**
+     * @return {@code True} if portables should be deserialized.
+     */
+    public boolean deserializePortables() {
+        return !keepPortable;
     }
 
     /**
@@ -199,25 +227,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * {@code Ands} two passed in filters.
      *
      * @param f1 First filter.
-     * @param f2 Second filter.
-     * @return {@code Anded} filter.
-     */
-    @SuppressWarnings({"unchecked"})
-    private GridBiPredicate<K, V>[] and(@Nullable final GridBiPredicate<K, V>[] f1,
-        @Nullable final GridBiPredicate<K, V>[] f2) {
-        GridBiPredicate<K, V> anded = new P2<K, V>() {
-            @Override public boolean apply(K k, V v) {
-                return F.isAll2(k, v, f1) && F.isAll2(k, v, f2);
-            }
-        };
-
-        return new GridBiPredicate[] {anded};
-    }
-
-    /**
-     * {@code Ands} two passed in filters.
-     *
-     * @param f1 First filter.
      * @param nonNulls Flag indicating whether nulls should be included.
      * @return {@code Anded} filter.
      */
@@ -260,9 +269,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
             GridCacheFlag[] f = cctx.forceLocalRead();
 
             try {
-                if (!p.apply(k, v)) {
+                if (!p.apply(k, v))
                     return false;
-                }
             }
             finally {
                 cctx.forceFlags(f);
@@ -278,9 +286,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @return {@code True} if filter passed.
      */
     Map<? extends K, ? extends V> isAll(Map<? extends K, ? extends V> map, boolean noNulls) {
-        if (F.isEmpty(map)) {
+        if (F.isEmpty(map))
             return Collections.<K, V>emptyMap();
-        }
 
         boolean failed = false;
 
@@ -296,9 +303,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
             }
         }
 
-        if (!failed) {
+        if (!failed)
             return map;
-        }
 
         Map<K, V> cp = new HashMap<>(map.size(), 1.0f);
 
@@ -306,9 +312,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
             K k = e.getKey();
             V v = e.getValue();
 
-            if (isAll(k, v, noNulls)) {
+            if (isAll(k, v, noNulls))
                 cp.put(k, v);
-            }
         }
 
         return cp;
@@ -323,9 +328,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     private GridInClosure<GridCacheEntry<K, V>> visitor(final GridInClosure<GridCacheEntry<K, V>> vis) {
         return new CI1<GridCacheEntry<K, V>>() {
             @Override public void apply(GridCacheEntry<K, V> e) {
-                if (isAll(e, true)) {
+                if (isAll(e, true))
                     vis.apply(e);
-                }
             }
         };
     }
@@ -346,25 +350,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         };
     }
 
-    /**
-     * Entry projection-filter-aware reducer.
-     *
-     * @param rdc Reducer.
-     * @return Projection-filter-aware reducer.
-     */
-    private <R> GridReducer<GridCacheEntry<K, V>, R> reducer(
-        final GridReducer<GridCacheEntry<K, V>, R> rdc) {
-        return new GridReducer<GridCacheEntry<K, V>, R>() {
-            @Override public boolean collect(GridCacheEntry<K, V> e) {
-                return !isAll(e, true) || rdc.collect(e);
-            }
-
-            @Override public R reduce() {
-                return rdc.reduce();
-            }
-        };
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public <K1, V1> GridCache<K1, V1> cache() {
@@ -381,7 +366,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         A.notNull(subjId, "subjId");
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId);
+            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -403,6 +388,15 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
+        if (!keepPortable && (GridPortableObject.class.isAssignableFrom(keyType) ||
+            GridPortableObject.class.isAssignableFrom(valType)))
+            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
+                "Use keepPortable() method instead.");
+
+        if (keepPortable && (!U.isPortableOrCollectionType(keyType) || !U.isPortableOrCollectionType(valType)))
+            throw new IllegalStateException("Failed to create typed cache projection. If keepPortable() was " +
+                "called, projection can work only with portable classes (see GridPortables JavaDoc for details).");
+
         if (cctx.deploymentEnabled()) {
             try {
                 cctx.deploy().registerClasses(keyType, valType);
@@ -416,7 +410,10 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
             (GridCacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)cctx,
             CU.<K1, V1>typeFilter(keyType, valType),
-            (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter, flags, subjId);
+            (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            keepPortable);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
@@ -441,7 +438,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId);
+            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -465,7 +462,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            filter, flags, subjId);
+            filter, flags, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -478,14 +475,13 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
-        if (!F.isEmpty(this.flags)) {
+        if (!F.isEmpty(this.flags))
             res.addAll(this.flags);
-        }
 
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId);
+            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -497,21 +493,51 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
         Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
 
-        if (!F.isEmpty(this.flags)) {
+        if (!F.isEmpty(this.flags))
             res.addAll(this.flags);
-        }
 
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId);
+            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
+        if (cctx.portableEnabled()) {
+            GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+                (GridCacheProjection<K1, V1>)this,
+                (GridCacheContext<K1, V1>)cctx,
+                (GridBiPredicate<K1, V1>)noNullKvFilter.kvFilter,
+                (GridPredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
+                flags,
+                subjId,
+                true);
+
+            return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
+        }
+        else
+            return new GridCacheProxyImpl<>(
+                (GridCacheContext<K1, V1>)cctx,
+                (GridCacheProjectionEx<K1, V1>)this,
+                (GridCacheProjectionImpl<K1, V1>)this);
+    }
+
+    /** {@inheritDoc} */
     @Override public int size() {
         return keySet().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalSize() throws GridException {
+        return cache.globalSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int globalPrimarySize() throws GridException {
+        return cache.globalPrimarySize();
     }
 
     /** {@inheritDoc} */
@@ -582,18 +608,18 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public V get(K key) throws GridException {
-        return cache.get(key, entryFilter(false));
+        return cache.get(key, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return cache.get(key, entry, and(filter, false));
+        return cache.get(key, entry, deserializePortable, and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> getAsync(K key) {
-        return cache.getAsync(key, entryFilter(false));
+        return cache.getAsync(key, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -648,12 +674,12 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
-        return cache.getAll(keys, entryFilter(false));
+        return cache.getAll(keys, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, entryFilter(false));
+        return cache.getAllAsync(keys, deserializePortables(), entryFilter(false));
     }
 
     /** {@inheritDoc} */
@@ -885,7 +911,12 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.entrySetx(filter);
+        return cache.entrySetx(F.and(filter, entryFilter(true)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<GridCacheEntry<K, V>> primaryEntrySetx(GridPredicate<GridCacheEntry<K, V>>... filter) {
+        return cache.primaryEntrySetx(F.and(filter, entryFilter(true)));
     }
 
     /** {@inheritDoc} */
@@ -917,7 +948,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public GridPredicate<GridCacheEntry<K, V>> predicate() {
-        return withNullEntryFilter;
+        return withNullEntryFilter.hasFilter() ? withNullEntryFilter : null;
     }
 
     /** {@inheritDoc} */
@@ -975,6 +1006,11 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public void globalClearAll() throws GridException {
         cache.globalClearAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalClearAll(long timeout) throws GridException {
+        cache.globalClearAll(timeout);
     }
 
     /** {@inheritDoc} */
@@ -1157,7 +1193,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws GridException {
-        return cache.promote(key);
+        return cache.promote(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -1244,6 +1280,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         out.writeObject(withNullKvFilter);
 
         U.writeCollection(out, flags);
+
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -1262,6 +1300,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         cache = cctx.cache();
 
         qry = new GridCacheQueriesImpl<>(cctx, this);
+
+        keepPortable = in.readBoolean();
     }
 
     /** {@inheritDoc} */
@@ -1273,23 +1313,44 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
+    public static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Key filter. */
-        private GridBiPredicate<K, V> kvFilter;
+        private KeyValueFilter<K, V> kvFilter;
 
-        /** Constant array to avoid recreation. */
+        /** Entry filter. */
         private GridPredicate<? super GridCacheEntry<K, V>> entryFilter;
 
         /**
          * @param kvFilter Key-value filter.
          * @param entryFilter Entry filter.
          */
-        private FullFilter(GridBiPredicate<K, V> kvFilter, GridPredicate<? super GridCacheEntry<K, V>> entryFilter) {
+        private FullFilter(KeyValueFilter<K, V> kvFilter, GridPredicate<? super GridCacheEntry<K, V>> entryFilter) {
             this.kvFilter = kvFilter;
             this.entryFilter = entryFilter;
+        }
+
+        /**
+         * @return {@code True} if has non-null key value or entry filter.
+         */
+        boolean hasFilter() {
+            return (kvFilter != null && kvFilter.filter() != null) || entryFilter != null;
+        }
+
+        /**
+         * @return Key-value filter.
+         */
+        public KeyValueFilter<K, V> keyValueFilter() {
+            return kvFilter;
+        }
+
+        /**
+         * @return Entry filter.
+         */
+        public GridPredicate<? super GridCacheEntry<K, V>> entryFilter() {
+            return entryFilter;
         }
 
         /** {@inheritDoc} */
@@ -1307,7 +1368,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
+    public static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1324,6 +1385,13 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         private KeyValueFilter(GridBiPredicate<K, V> kvFilter, boolean noNulls) {
             this.kvFilter = kvFilter;
             this.noNulls = noNulls;
+        }
+
+        /**
+         * @return Key-value filter.
+         */
+        public GridBiPredicate<K, V> filter() {
+            return kvFilter;
         }
 
         /** {@inheritDoc} */

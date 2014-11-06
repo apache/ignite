@@ -196,6 +196,13 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public UUID subjectId();
 
     /**
+     * Task name hash in case if transaction was initiated within task execution.
+     *
+     * @return Task name hash.
+     */
+    public int taskNameHash();
+
+    /**
      * @return {@code True} if transaction is user transaction, which means:
      * <ul>
      *     <li>Explicit</li>
@@ -491,4 +498,10 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @return {@code True} if transaction is a one-phase-commit transaction.
      */
     public boolean onePhaseCommit();
+
+    /**
+     * @return {@code True} if transaction has transform entries. This flag will be only set for local
+     *      transactions.
+     */
+    public boolean hasTransforms();
 }

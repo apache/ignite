@@ -9,7 +9,7 @@ To enable indexing module when starting a standalone node, move 'optional/gridga
 be added to classpath in this case.
 
 Importing indexing Module In Maven Project
--------------------------------------
+------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add indexing module
 dependency like this (replace '${gridgain.version}' with actual GridGain version you are

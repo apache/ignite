@@ -228,25 +228,28 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     GridDhtPartitionTopology<?, ?> top = dht.topology();
 
                     for (int p = 0; p < aff.partitions(); p++) {
-                        Collection<GridNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
-
-                        int exp = affNodes.size();
-
                         long start = 0;
 
                         for (int i = 0; ; i++) {
+                            // Must map on updated version of topology.
+                            Collection<GridNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
+
+                            int exp = affNodes.size();
+
                             Collection<GridNode> owners = top.nodes(p, -1);
 
                             int actual = owners.size();
 
                             if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
                                 LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual + ']');
+                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
+                                    ", affNodes=" + affNodes + ", owners=" + owners +
+                                    ", locNode=" + g.localNode().id() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                Thread.sleep(50); // Busy wait.
+                                Thread.sleep(200); // Busy wait.
 
                                 continue;
                             }
@@ -261,5 +264,155 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Collection of keys for which given cache is primary.
+     * @throws GridException If failed.
+     */
+    protected Integer primaryKey(GridCacheProjection<Integer, ?> cache)
+        throws GridException {
+        return primaryKeys(cache, 1, 1).get(0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> primaryKeys(GridCacheProjection<Integer, ?> cache, int cnt)
+        throws GridException {
+        return primaryKeys(cache, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> primaryKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
+        throws GridException {
+        List<Integer> found = new ArrayList<>(cnt);
+
+        GridNode locNode = cache.gridProjection().grid().localNode();
+
+        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+
+        for (int i = startFrom; i < startFrom + 100_000; i++) {
+            Integer key = i;
+
+            if (aff.isPrimary(locNode, key)) {
+                found.add(key);
+
+                if (found.size() == cnt)
+                    return found;
+            }
+        }
+
+        throw new GridException("Unable to find " + cnt + " keys as primary for cache.");
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Collection of keys for which given cache is backup.
+     * @throws GridException If failed.
+     */
+    protected Integer backupKey(GridCacheProjection<Integer, ?> cache)
+        throws GridException {
+        return backupKeys(cache, 1, 1).get(0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is backup.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> backupKeys(GridCacheProjection<Integer, ?> cache, int cnt)
+        throws GridException {
+        return backupKeys(cache, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is backup.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> backupKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
+        throws GridException {
+        List<Integer> found = new ArrayList<>(cnt);
+
+        GridNode locNode = cache.gridProjection().grid().localNode();
+
+        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+
+        for (int i = startFrom; i < startFrom + 100_000; i++) {
+            Integer key = i;
+
+            if (aff.isBackup(locNode, key)) {
+                found.add(key);
+
+                if (found.size() == cnt)
+                    return found;
+            }
+        }
+
+        throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @throws GridException If failed.
+     */
+    protected Integer nearKey(GridCacheProjection<Integer, ?> cache)
+        throws GridException {
+        return nearKeys(cache, 1, 1).get(0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> nearKeys(GridCacheProjection<Integer, ?> cache, int cnt)
+        throws GridException {
+        return nearKeys(cache, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @throws GridException If failed.
+     */
+    protected List<Integer> nearKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
+        throws GridException {
+        List<Integer> found = new ArrayList<>(cnt);
+
+        GridNode locNode = cache.gridProjection().grid().localNode();
+
+        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+
+        for (int i = startFrom; i < startFrom + 100_000; i++) {
+            Integer key = i;
+
+            if (!aff.isPrimaryOrBackup(locNode, key)) {
+                found.add(key);
+
+                if (found.size() == cnt)
+                    return found;
+            }
+        }
+
+        throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
     }
 }

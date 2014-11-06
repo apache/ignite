@@ -107,17 +107,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         super.afterTestsStopped();
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockPutOneKeyOptimistic() throws Exception {
         checkGroupLockPutOneKey(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockPutOneKeyPessimistic() throws Exception {
         checkGroupLockPutOneKey(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockPutOneKey(GridCacheTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -168,17 +174,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockRemoveOneKeyOptimistic() throws Exception {
         checkGroupLockRemoveOneKey(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockRemoveOneKeyPessimistic() throws Exception {
         checkGroupLockRemoveOneKey(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockRemoveOneKey(GridCacheTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -242,17 +254,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockGetOneKeyOptimistic() throws Exception {
         checkGroupLockGetOneKey(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockGetOneKeyPessimistic() throws Exception {
         checkGroupLockGetOneKey(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockGetOneKey(GridCacheTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -384,17 +402,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testSanityCheckDisabledOptimistic() throws Exception {
         checkSanityCheckDisabled(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testSanityCheckDisabledPessimistic() throws Exception {
         checkSanityCheckDisabled(PESSIMISTIC);
     }
 
-    /** @throws GridException */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkSanityCheckDisabled(final GridCacheTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
@@ -439,17 +463,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupPartitionLockOptimistic() throws Exception {
         checkGroupPartitionLock(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupPartitionLockPessimistic() throws Exception {
         checkGroupPartitionLock(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupPartitionLock(GridCacheTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -515,27 +545,65 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetPutOptimisticReadCommitted() throws Exception {
         checkGetPut(OPTIMISTIC, READ_COMMITTED);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetPutOptimisticRepeatableRead() throws Exception {
         checkGetPut(OPTIMISTIC, REPEATABLE_READ);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetPutPessimisticReadCommitted() throws Exception {
         checkGetPut(PESSIMISTIC, READ_COMMITTED);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetPutPessimisticRepeatableRead() throws Exception {
         checkGetPut(PESSIMISTIC, REPEATABLE_READ);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetPutEmptyCachePessimisticReadCommitted() throws Exception {
+        checkGetPutEmptyCache(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetPutEmptyCachePessimisticRepeatableRead() throws Exception {
+        checkGetPutEmptyCache(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetPutEmptyCacheOptimisticReadCommitted() throws Exception {
+        checkGetPutEmptyCache(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetPutEmptyCacheOptimisticRepeatableRead() throws Exception {
+        checkGetPutEmptyCache(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGetPut(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -592,27 +660,90 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkGetPutEmptyCache(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+        CollectingEventListener locks = new CollectingEventListener();
+        CollectingEventListener unlocks = new CollectingEventListener();
+
+        UUID affinityKey = primaryKeyForCache(grid(0));
+
+        GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
+        GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
+
+        GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
+
+        grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
+        grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
+
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
+
+            assertEquals(null, cache.get(key1));
+
+            assertEquals(null, cache.get(key2));
+
+            cache.put(key1, "val01");
+
+            cache.put(key2, "val02");
+
+            tx.commit();
+        }
+
+        // Check that there are no further locks after transaction commit.
+        assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 1, locks.affectedKeys().size());
+        assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+
+        for (int i = 0; i < gridCount(); i++) {
+            Grid g = grid(i);
+
+            GridCache<Object, Object> gCache = g.cache(null);
+
+            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key1))
+                assertEquals("For index: " + i, "val01", gCache.peek(key1));
+
+            if (gCache.affinity().isPrimaryOrBackup(g.localNode(), key2))
+                assertEquals("For index: " + i, "val02", gCache.peek(key2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRemoveOptimisticReadCommitted() throws Exception {
         checkGetRemove(OPTIMISTIC, READ_COMMITTED);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRemoveOptimisticRepeatableRead() throws Exception {
         checkGetRemove(OPTIMISTIC, REPEATABLE_READ);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRemovePessimisticReadCommitted() throws Exception {
         checkGetRemove(PESSIMISTIC, READ_COMMITTED);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRemovePessimisticRepeatableRead() throws Exception {
         checkGetRemove(PESSIMISTIC, REPEATABLE_READ);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGetRemove(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -676,17 +807,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAfterPutOptimistic() throws Exception {
         checkGetAfterPut(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAfterPut() throws Exception {
         checkGetAfterPut(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGetAfterPut(GridCacheTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
@@ -751,17 +888,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertEquals("val02", cache.get(key2));
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRepeatableReadOptimistic() throws Exception {
         checkGetRepeatableRead(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetRepeatableReadPessimistic() throws Exception {
         checkGetRepeatableRead(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGetRepeatableRead(GridCacheTxConcurrency concurrency) throws Exception {
         UUID key = primaryKeyForCache(grid(0));
 
@@ -773,17 +916,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockPutWrongKeyOptimistic() throws Exception {
         checkGroupLockPutWrongKey(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockPutWrongKeyPessimistic() throws Exception {
         checkGroupLockPutWrongKey(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockPutWrongKey(GridCacheTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
@@ -802,17 +951,23 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertNull(cache.tx());
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockRemoveWrongKeyOptimistic() throws Exception {
         checkGroupLockRemoveWrongKey(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockRemoveWrongKeyPessimistic() throws Exception {
         checkGroupLockRemoveWrongKey(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockRemoveWrongKey(GridCacheTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
@@ -835,7 +990,76 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertNull(cache.tx());
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyPessimitsticRepeatableRead() throws Exception {
+        checkGroupLockReadAffinityKey(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyPessimitsticReadCommitted() throws Exception {
+        checkGroupLockReadAffinityKey(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyOptimisticRepeatableRead() throws Exception {
+        checkGroupLockReadAffinityKey(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGroupLockReadAffinityKeyOptimisticReadCommitted() throws Exception {
+        checkGroupLockReadAffinityKey(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    private void checkGroupLockReadAffinityKey(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+        throws Exception {
+        UUID affinityKey = primaryKeyForCache(grid(0));
+
+        final GridCache<Object, String> cache = grid(0).cache(null);
+
+        final GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
+        final GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
+
+        cache.put(affinityKey, "0");
+        cache.put(key1, "0");
+        cache.put(key2, "0");
+
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 3)) {
+            assertEquals("0", cache.get(affinityKey));
+            assertEquals("0", cache.get(key1));
+            assertEquals("0", cache.get(key2));
+
+            cache.put(affinityKey, "1");
+            cache.put(key1, "1");
+            cache.put(key2, "1");
+
+            assertEquals("1", cache.get(affinityKey));
+            assertEquals("1", cache.get(key1));
+            assertEquals("1", cache.get(key2));
+
+            tx.commit();
+        }
+
+        assertEquals("1", cache.get(affinityKey));
+        assertEquals("1", cache.get(key1));
+        assertEquals("1", cache.get(key2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWriteThroughBatchUpdateOptimistic() throws Exception {
         // Configuration changed according to test name.
         assert batchUpdate();
@@ -843,7 +1067,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         checkGroupLockWriteThrough(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWriteThroughBatchUpdatePessimistic() throws Exception {
         // Configuration changed according to test name.
         assert batchUpdate();
@@ -851,19 +1077,25 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         checkGroupLockWriteThrough(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWriteThroughSingleUpdateOptimistic() throws Exception {
         // Configuration changed according to test name.
         checkGroupLockWriteThrough(OPTIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWriteThroughSingleUpdatePessimistic() throws Exception {
         // Configuration changed according to test name.
         checkGroupLockWriteThrough(PESSIMISTIC);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     private void checkGroupLockWriteThrough(GridCacheTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 

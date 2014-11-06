@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
@@ -43,7 +45,7 @@ import java.util.concurrent.locks.*;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware {
+public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware, GridInteropAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -123,7 +125,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * Sets concurrency level for the write cache. Concurrency level is expected count of concurrent threads
      * attempting to update cache.
      *
-     *@param concurLvl Concurrency level.
+     * @param concurLvl Concurrency level.
      */
     public void setConcurrencyLevel(int concurLvl) {
         this.concurLvl = concurLvl;
@@ -274,6 +276,18 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
                 new GridThread(flushThreads[i]).start();
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(GridKernalContext ctx) throws GridException {
+        if (store instanceof GridInteropAware)
+            ((GridInteropAware)store).initialize(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy(GridKernalContext ctx) throws GridException {
+        if (store instanceof GridInteropAware)
+            ((GridInteropAware)store).destroy(ctx);
     }
 
     /**
@@ -579,7 +593,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
         StoreOperation operation = null;
 
         // Construct a map for underlying store
-        Map<K, V> batch = new HashMap<>(valMap.size());
+        Map<K, V> batch = U.newLinkedHashMap(valMap.size());
 
         for (Map.Entry<K, StatefulValue<V>> e : valMap.entrySet()) {
             if (operation == null)
@@ -694,7 +708,6 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
         }
     }
 
-
     /**
      * Thread that performs time-based flushing of written values to the underlying storage.
      */
@@ -747,7 +760,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
             StoreOperation operation = null;
 
             Map<K, StatefulValue<V>> batch = null;
-            Map<K, StatefulValue<V>> pending  = new LinkedHashMap<>(batchSize);
+            Map<K, StatefulValue<V>> pending  = U.newLinkedHashMap(batchSize);
 
             while (it.hasNext()) {
                 Map.Entry<K, StatefulValue<V>> e = it.next();
@@ -777,7 +790,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
                     if (operation != val.operation()) {
                         // Operation is changed, so we need to perform a batch.
                         batch = pending;
-                        pending = new LinkedHashMap<>(batchSize);
+                        pending = U.newLinkedHashMap(batchSize);
 
                         operation = val.operation();
 
@@ -788,7 +801,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
 
                     if (pending.size() == batchSize) {
                         batch = pending;
-                        pending = new LinkedHashMap<>(batchSize);
+                        pending = U.newLinkedHashMap(batchSize);
 
                         operation = null;
                     }

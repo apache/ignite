@@ -13,6 +13,9 @@ package org.gridgain.client.impl.connection;
  * handled internally and never rethrown to user.
  */
 public class GridConnectionIdleClosedException extends GridClientConnectionResetException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates exception with error message.
      *

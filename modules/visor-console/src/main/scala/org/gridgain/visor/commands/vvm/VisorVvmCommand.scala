@@ -25,7 +25,6 @@ import scala.util.control.Breaks._
 
 import org.jetbrains.annotations.Nullable
 
-import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
@@ -106,7 +105,7 @@ class VisorVvmCommand {
         else {
             val argLst = parseArgs(args)
 
-            val vvmHome = argValue("home", argLst) getOrElse X.getSystemOrEnv("VVM_HOME")
+            val vvmHome = argValue("home", argLst) getOrElse GridSystemProperties.getString("VVM_HOME")
             val id8 = argValue("id8", argLst).orNull
             val id = argValue("id", argLst).orNull
 
@@ -144,7 +143,7 @@ class VisorVvmCommand {
             }
 
             if (vvmCmd == null || vvmCmd.isEmpty)
-                vvmCmd = X.getSystemOrEnv("JAVA_HOME") + fs + "bin" + fs + "jvisualvm" + ext
+                vvmCmd = GridSystemProperties.getString("JAVA_HOME") + fs + "bin" + fs + "jvisualvm" + ext
 
             if (!new File(vvmCmd).exists)
                 warn(

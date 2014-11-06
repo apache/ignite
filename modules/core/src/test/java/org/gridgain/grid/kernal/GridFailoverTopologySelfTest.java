@@ -110,9 +110,8 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             GridNode remoteNode = null;
 
             for (GridNode node : subgrid) {
-                if (!node.id().equals(locNodeId)) {
+                if (!node.id().equals(locNodeId))
                     remoteNode = node;
-                }
             }
 
             return Collections.singletonMap(new GridComputeJobAdapter(arg) {

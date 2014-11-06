@@ -110,6 +110,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
+        String taskName,
+        final boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
@@ -123,14 +125,14 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public GridFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(keys, entry, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(keys, entry, deserializePortable, filter));
                 }
             });
         }
 
         subjId = ctx.subjectIdPerCall(subjId);
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId);
+        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
     }
 
     /**
@@ -140,11 +142,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return Future.
      */
     GridFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx));
+            CU.subjectId(tx, ctx), tx.resolveTaskName(), deserializePortable);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -246,7 +248,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     ctx,
                     req.txSize(),
                     req.groupLockKey(),
-                    req.subjectId()
+                    req.subjectId(),
+                    req.taskNameHash()
                 );
 
                 if (!tx.empty()) {
@@ -342,7 +345,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         ctx,
                                         req.txSize(),
                                         req.groupLockKey(),
-                                        req.subjectId()
+                                        req.subjectId(),
+                                        req.taskNameHash()
                                     );
 
                                     if (req.groupLock())
@@ -508,7 +512,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     ctx,
                                     req.txSize(),
                                     req.groupLockKey(),
-                                    req.subjectId());
+                                    req.subjectId(),
+                                    req.taskNameHash());
 
                                 if (tx.empty())
                                     return tx;
@@ -653,8 +658,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         UUID subjId = prj == null ? null : prj.subjectId();
 
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridNearTxLocal<>(ctx, implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
+            subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -674,10 +682,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /**
      * @param e Transaction entry.
+     * @param topVer Topology version.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, long topVer) {
-        return F.contains(ctx.affinity().nodes(e.key(), topVer), ctx.localNode());
+        return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
     }
 
     /**
@@ -741,7 +750,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                                map = new HashMap<>(affNodes.size());
+                                map = U.newHashMap(affNodes.size());
                             }
 
                             topVer = cand.topologyVersion();
@@ -859,7 +868,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                     keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                                    map = new HashMap<>(affNodes.size());
+                                    map = U.newHashMap(affNodes.size());
                                 }
 
                                 GridNode primary = ctx.affinity().primary(key, cand.topologyVersion());

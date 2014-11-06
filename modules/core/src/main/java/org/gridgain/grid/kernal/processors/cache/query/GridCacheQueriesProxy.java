@@ -10,17 +10,22 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Per-projection queries object returned to user.
  */
-public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
+public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridCacheGateway<K, V> gate;
 
@@ -31,21 +36,37 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     private GridCacheQueriesEx<K, V> delegate;
 
     /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheQueriesProxy() {
+        // No-op.
+    }
+
+    /**
      * Create cache queries implementation.
      *
-     * @param ctx Сontext.
+     * @param cctx Сontext.
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
-    public GridCacheQueriesProxy(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj,
+    public GridCacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
         GridCacheQueriesEx<K, V> delegate) {
-        assert ctx != null;
+        assert cctx != null;
         assert delegate != null;
 
-        gate = ctx.gate();
+        gate = cctx.gate();
 
         this.prj = prj;
         this.delegate = delegate;
+    }
+
+    /**
+     * Gets cache projection.
+     *
+     * @return Cache projection.
+     */
+    public GridCacheProjection<K, V> projection() {
+        return prj;
     }
 
     /** {@inheritDoc} */
@@ -54,6 +75,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
 
         try {
             return delegate.createSqlQuery(cls, clause);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.createSqlQuery(clsName, clause);
         }
         finally {
             gate.leave(prev);
@@ -78,6 +111,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
 
         try {
             return delegate.createFullTextQuery(cls, search);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.createFullTextQuery(clsName, search);
         }
         finally {
             gate.leave(prev);
@@ -114,6 +159,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
 
         try {
             return delegate.rebuildIndexes(cls);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildIndexes(String typeName) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.rebuildIndexes(typeName);
         }
         finally {
             gate.leave(prev);
@@ -178,5 +235,19 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(prj);
+        out.writeObject(delegate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+        delegate = (GridCacheQueriesEx<K, V>)in.readObject();
+
+        gate = prj.context().gate();
     }
 }

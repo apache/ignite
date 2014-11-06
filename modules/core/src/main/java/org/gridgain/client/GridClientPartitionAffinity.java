@@ -10,24 +10,25 @@
 package org.gridgain.client;
 
 import org.gridgain.client.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
-* Affinity function for partitioned cache. This function supports the following
-* configuration:
-* <ul>
-* <li>
-*      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
-*      nodes that pass this filter will be selected as backup nodes and only nodes that
-*      don't pass this filter will be selected as primary nodes. If not provided, then
-*      primary and backup nodes will be selected out of all nodes available for this cache.
-*      <p>
-*      NOTE: In situations where there are no primary nodes at all, i.e. no nodes for which backup
-*      filter returns {@code false}, first backup node for the key will be considered primary.
-* </li>
-* </ul>
+ * Affinity function for partitioned cache. This function supports the following
+ * configuration:
+ * <ul>
+ * <li>
+ *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
+ *      nodes that pass this filter will be selected as backup nodes and only nodes that
+ *      don't pass this filter will be selected as primary nodes. If not provided, then
+ *      primary and backup nodes will be selected out of all nodes available for this cache.
+ *      <p>
+ *      NOTE: In situations where there are no primary nodes at all, i.e. no nodes for which backup
+ *      filter returns {@code false}, first backup node for the key will be considered primary.
+ * </li>
+ * </ul>
 */
 @SuppressWarnings("NullableProblems")
 public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {
@@ -202,7 +203,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         if (nodes.size() == 1) // Minor optimization.
             return GridClientUtils.first(nodes);
 
-        final Map<NodeInfo, GridClientNode> lookup = new HashMap<>(nodes.size());
+        final Map<NodeInfo, GridClientNode> lookup = U.newHashMap(nodes.size());
 
         // Store nodes in map for fast lookup.
         for (GridClientNode node : nodes)
@@ -214,9 +215,8 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         NodeInfo nodeInfo;
         int part = partition(key);
 
-        if (backupFilter == null) {
+        if (backupFilter == null)
             nodeInfo = nodeHash.node(part, nodeInfos);
-        }
         else {
             nodeInfo = nodeHash.node(part, primaryIdFilter, GridClientUtils.contains(nodeInfos));
 

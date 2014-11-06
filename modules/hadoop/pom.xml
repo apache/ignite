@@ -36,50 +36,62 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-jcl</artifactId>
+            <artifactId>gridgain-log4j</artifactId>
             <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>4.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-common</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-core</artifactId>
-            <version>2.0.3-alpha</version>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.6.3</version>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.8.3</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -87,36 +99,7 @@
             <artifactId>json-lib</artifactId>
             <version>2.4</version>
             <classifier>jdk15</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>net.sf.ezmorph</groupId>
-            <artifactId>ezmorph</artifactId>
-            <version>1.0.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.8.3</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -131,13 +114,6 @@
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -155,6 +131,88 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-annotations</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-auth</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-codec:commons-codec</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.httpcomponents:httpclient</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.httpcomponents:httpcore</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-common</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.guava:guava</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-cli:commons-cli</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.commons:commons-math3</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>xmlenc:xmlenc</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-httpclient:commons-httpclient</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-net:commons-net</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.servlet:servlet-api</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.mortbay.jetty:jetty</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.mortbay.jetty:jetty-util</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.jersey:jersey-core</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.jersey:jersey-json</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jettison:jettison</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.xml.bind:jaxb-impl</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-jaxrs</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-xc</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.jersey:jersey-server</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>asm:asm</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>tomcat:jasper-compiler</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>tomcat:jasper-runtime</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.servlet.jsp:jsp-api</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-el:commons-el</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-logging:commons-logging</classpathDependencyExcludes>-->
+                        <classpathDependencyExcludes>net.java.dev.jets3t:jets3t</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.jamesmurty.utils:java-xmlbuilder</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-core-asl</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-mapper-asl</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.avro:avro</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.thoughtworks.paranamer:paranamer</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.xerial.snappy:snappy-java</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.protobuf:protobuf-java</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.jcraft:jsch</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.code.findbugs:jsr305</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.zookeeper:zookeeper</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>org.apache.commons:commons-compress</classpathDependencyExcludes>-->
+                        <classpathDependencyExcludes>org.tukaani:xz</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-hdfs</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-daemon:commons-daemon</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-common</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-common</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-api</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.xml.bind:jaxb-api</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.xml.stream:stax-api</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.activation:activation</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.inject:guice</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>javax.inject:javax.inject</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.jersey.contribs:jersey-guice</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-client</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.sun.jersey:jersey-client</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-server-common</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.inject.extensions:guice-servlet</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>io.netty:netty</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-core</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-beanutils:commons-beanutils</classpathDependencyExcludes>-->
+                        <!--<classpathDependencyExcludes>net.sf.json-lib:json-lib</classpathDependencyExcludes>-->
+                        <!--<classpathDependencyExcludes>net.sf.ezmorph:ezmorph</classpathDependencyExcludes>-->
+                        <classpathDependencyExcludes>org.hamcrest:hamcrest-core</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-collections:commons-collections</classpathDependencyExcludes>-->
+                        <classpathDependencyExcludes>org.eclipse.jetty:jetty-http</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-io:commons-io</classpathDependencyExcludes>
+                        <!--<classpathDependencyExcludes>commons-lang:commons-lang</classpathDependencyExcludes>-->
+                        <classpathDependencyExcludes>commons-configuration:commons-configuration</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.eclipse.jetty:jetty-server</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.eclipse.jetty:jetty-util</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.eclipse.jetty:jetty-io</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>aopalliance:aopalliance</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.beust:jcommander</classpathDependencyExcludes>
+                    </classpathDependencyExcludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

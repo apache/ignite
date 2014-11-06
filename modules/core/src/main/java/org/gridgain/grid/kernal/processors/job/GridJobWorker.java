@@ -310,7 +310,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if parent task is internal or Visor-related.
      */
-    boolean isInternal() {
+    public boolean isInternal() {
         return internal;
     }
 
@@ -454,6 +454,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridException ex = null;
 
         try {
+            ctx.job().currentTaskSession(ses);
+
             // If job has timed out, then
             // avoid computation altogether.
             if (isTimedOut())
@@ -515,6 +517,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             // Finish here only if not held by this thread.
             if (!HOLD.get())
                 finishJob(res, ex, sndRes);
+
+            ctx.job().currentTaskSession(null);
         }
     }
 
@@ -625,6 +629,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
+        evt.taskSubjectId(ses.subjectId());
 
         ctx.event().record(evt);
     }

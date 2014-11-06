@@ -102,10 +102,12 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.versions().next(), implicit, implicitSingle, cctx, concurrency, isolation, timeout, invalidate,
-            syncCommit, syncRollback, false, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId);
+            syncCommit, syncRollback, false, swapEnabled, storeEnabled, txSize, grpLockKey, partLock, subjId,
+            taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -208,9 +210,9 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
-        final GridBiInClosure<K, V> c) {
+        boolean deserializePortable, final GridBiInClosure<K, V> c) {
         return cctx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
-            CU.subjectId(this, cctx), null)
+            CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
             .chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                     try {
@@ -363,12 +365,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                     U.error(log, msg, e);
 
-                    try {
-                        rollback();
-                    }
-                    catch (GridException e1) {
-                        U.error(log, "Failed to rollback transaction: " + this, e1);
-                    }
+                    rollbackAsync();
 
                     fut.onError(null, null, new GridCacheTxRollbackException(msg, e));
                 }

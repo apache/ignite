@@ -10,6 +10,7 @@
 package org.gridgain.grid.security;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -37,7 +38,7 @@ import java.io.*;
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
-public class GridSecurityCredentials implements Externalizable {
+public class GridSecurityCredentials implements Externalizable, GridPortableMarshalAware {
     /** */
     private static final long serialVersionUID = -2655741071578326256L;
 
@@ -173,6 +174,20 @@ public class GridSecurityCredentials implements Externalizable {
         res = 31 * res + (userObj != null ? userObj.hashCode() : 0);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        writer.rawWriter().writeObject(login);
+        writer.rawWriter().writeObject(password);
+        writer.rawWriter().writeObject(userObj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        login = reader.rawReader().readObject();
+        password = reader.rawReader().readObject();
+        userObj = reader.rawReader().readObject();
     }
 
     /** {@inheritDoc} */

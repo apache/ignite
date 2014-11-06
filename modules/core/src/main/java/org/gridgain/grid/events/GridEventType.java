@@ -34,6 +34,7 @@ import java.util.*;
  * <li>{@link #EVTS_LICENSE}</li>
  * <li>{@link #EVTS_CACHE}</li>
  * <li>{@link #EVTS_CACHE_PRELOAD}</li>
+ * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_SWAPSPACE}</li>
  * <li>{@link #EVTS_AUTHENTICATION}</li>
  * <li>{@link #EVTS_SECURE_SESSION}</li>
@@ -159,7 +160,10 @@ public interface GridEventType {
      * internal GridGain events and should not be used by user-defined events.
      *
      * @see GridDiscoveryEvent
+     * @deprecated This event has no effect in current version of GridGain and
+     *      will be removed in the next major release.
      */
+    @Deprecated
     public static final int EVT_NODE_RECONNECTED = 15;
 
     /**
@@ -607,6 +611,142 @@ public interface GridEventType {
     public static final int EVT_CACHE_PRELOAD_OBJECT_UNLOADED = 85;
 
     /**
+     * Built-in event type: {@code SQL} query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_EXECUTED}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SQL_QUERY_EXECUTED = 86;
+
+    /**
+     * Built-in event type: {@code SQL fields} query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_EXECUTED}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SQL_FIELDS_QUERY_EXECUTED = 87;
+
+    /**
+     * Built-in event type: {@code full text} query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_EXECUTED}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_FULL_TEXT_QUERY_EXECUTED = 88;
+
+    /**
+     * Built-in event type: {@code scan} query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_EXECUTED}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SCAN_QUERY_EXECUTED = 89;
+
+    /**
+     * Built-in event type: {@code continuous} query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_EXECUTED}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_CONTINUOUS_QUERY_EXECUTED = 90;
+
+    /**
+     * Built-in event type: {@code SQL} query entry read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_OBJECT_READ}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SQL_QUERY_OBJECT_READ = 91;
+
+    /**
+     * Built-in event type: {@code SQL fields} query result set row read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_OBJECT_READ}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SQL_FIELDS_QUERY_OBJECT_READ = 92;
+
+    /**
+     * Built-in event type: {@code full text} query entry read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_OBJECT_READ}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_FULL_TEXT_QUERY_OBJECT_READ = 93;
+
+    /**
+     * Built-in event type: {@code scan} query entry read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_OBJECT_READ}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_SCAN_QUERY_OBJECT_READ = 94;
+
+    /**
+     * Built-in event type: {@code continuous} query entry read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     *
+     * @deprecated Not used in current version of GridGain (replaced with {@link #EVT_CACHE_QUERY_OBJECT_READ}).
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
+    public static final int EVT_CACHE_CONTINUOUS_QUERY_OBJECT_READ = 95;
+
+    /**
+     * Built-in event type: query executed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_QUERY_EXECUTED = 96;
+
+    /**
+     * Built-in event type: query entry read.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal GridGain events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
+
+    /**
      * Built-in event type: license violation detected.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -948,7 +1088,6 @@ public interface GridEventType {
         EVT_NODE_LEFT,
         EVT_NODE_FAILED,
         EVT_NODE_SEGMENTED,
-        EVT_NODE_RECONNECTED
     };
 
     /**
@@ -964,7 +1103,6 @@ public interface GridEventType {
         EVT_NODE_FAILED,
         EVT_NODE_METRICS_UPDATED,
         EVT_NODE_SEGMENTED,
-        EVT_NODE_RECONNECTED
     };
 
     /**
@@ -1033,6 +1171,16 @@ public interface GridEventType {
         EVT_CACHE_PRELOAD_PART_UNLOADED,
         EVT_CACHE_PRELOAD_OBJECT_LOADED,
         EVT_CACHE_PRELOAD_OBJECT_UNLOADED
+    };
+
+    /**
+     * All cache query events. This array can be directly passed into
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
+     * subscribe to all cache query events.
+     */
+    public static final int[] EVTS_CACHE_QUERY = {
+        EVT_CACHE_QUERY_EXECUTED,
+        EVT_CACHE_QUERY_OBJECT_READ
     };
 
     /**

@@ -23,7 +23,8 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.gridgain.grid.product.GridProductEdition.*;
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
@@ -55,8 +56,10 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         super.onKernalStart();
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkStreamer(n);
+        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkStreamer(n);
+        }
 
         for (GridStreamerImpl s : map.values()) {
             try {
@@ -152,14 +155,18 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
                 if (rmtAttr.atLeastOnce() != locAttr.atLeastOnce())
                     throw new GridException("Streamer atLeastOnce configuration flag mismatch (fix atLeastOnce flag " +
-                        "in streamer configuration and restart) [streamer=" + locAttr.name() +
+                        "in streamer configuration or set " +
+                        "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                        "property) [streamer=" + locAttr.name() +
                         ", locAtLeastOnce=" + locAttr.atLeastOnce() +
                         ", rmtAtLeastOnce=" + rmtAttr.atLeastOnce() +
                         ", rmtNodeId=" + rmtNode.id() + ']');
 
                 if (!rmtAttr.stages().equals(locAttr.stages()))
                     throw new GridException("Streamer stages configuration mismatch (fix streamer stages " +
-                        "configuration and restart) [streamer=" + locAttr.name() +
+                        "configuration or set " +
+                        "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                        "property) [streamer=" + locAttr.name() +
                         ", locStages=" + locAttr.stages() +
                         ", rmtStages=" + rmtAttr.stages() +
                         ", rmtNodeId=" + rmtNode.id() + ']');

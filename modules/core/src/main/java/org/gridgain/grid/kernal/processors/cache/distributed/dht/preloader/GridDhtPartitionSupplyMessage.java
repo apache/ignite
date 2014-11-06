@@ -47,8 +47,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** Entries. */
     @GridDirectTransient
-    private Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos =
-        new HashMap<>();
+    private Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos = new HashMap<>();
 
     /** Cache entries in serialized form. */
     @GridToStringExclude
@@ -211,7 +210,8 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheContext<K, V> ctx) throws GridException {
         assert info != null;
         assert info.keyBytes() != null;
-        assert info.valueBytes() != null;
+        assert info.valueBytes() != null || info.value() instanceof byte[] :
+            "Missing value bytes with invalid value: " + info.value();
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);
@@ -423,7 +423,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (last == null)
-                        last = new HashSet<>(commState.readSize);
+                        last = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -452,7 +452,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (missed == null)
-                        missed = new HashSet<>(commState.readSize);
+                        missed = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)

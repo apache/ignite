@@ -147,6 +147,8 @@ object VisorConsole extends App {
         }
     }
 
+    def terminalWidth() = reader.getTerminal.getWidth
+
     /**
      * Prints standard 'Invalid command' error message.
      */

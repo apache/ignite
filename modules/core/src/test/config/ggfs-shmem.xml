@@ -88,7 +88,12 @@
                     <property name="prefetchBlocks" value="32"/>
 
                     <!-- Shared memory endpoint. -->
-                    <property name="ipcEndpointConfiguration" value="{type:'shmem', port:'10500'}"/>
+                    <property name="ipcEndpointConfiguration">
+                        <map>
+                            <entry key="type" value="shmem"/>
+                            <entry key="port" value="10500"/>
+                        </map>
+                    </property>
                 </bean>
             </list>
         </property>

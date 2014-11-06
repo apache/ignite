@@ -13,14 +13,14 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.gridgain.testframework.*;
 
 import java.lang.reflect.*;
 import java.net.*;
@@ -34,7 +34,7 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 /**
  * Ensures that sampling is really turned on/off.
  */
-public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonAbstractTest {
     /** GGFS. */
     private GridGgfsEx ggfs;
 
@@ -73,7 +73,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration("{type:'tcp', port:10500}");
+        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:10500}"));
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -105,6 +105,9 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
 
         Grid g = G.start(cfg);
 
@@ -263,10 +266,12 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testLogDirectory() throws Exception {
         startUp();
 
-        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(), ggfs.clientLogDirectory());
+        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(),
+            ggfs.clientLogDirectory());
     }
 
     /**
@@ -280,12 +285,14 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
 
         fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
+        fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "primary"), logging);
+            fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "ggfs:ggfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "primary"), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getGridGainHome());
 
-        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://primary/"), fsCfg);
+        return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }
 
     /**
@@ -301,6 +308,6 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridCommonAbstr
 
         field.setAccessible(true);
 
-        return ((GridGgfsHadoopLogger)field.get(fs)).isLogEnabled();
+        return ((GridGgfsLogger)field.get(fs)).isLogEnabled();
     }
 }

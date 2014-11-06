@@ -76,9 +76,8 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     public void testSetAttribute() throws Exception {
         refreshInitialData();
 
-        for (int i = 0; i < EXEC_COUNT; i++) {
+        for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
-        }
     }
 
     /**
@@ -106,9 +105,8 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
             }
         }, EXEC_COUNT, "grid-session-test");
 
-        if (failed.get()) {
+        if (failed.get())
             fail();
-        }
     }
 
     /**
@@ -150,9 +148,8 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     private void refreshInitialData() {
         startSignal = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++){
+        for(int i=0 ; i < EXEC_COUNT; i++)
             startSignal[i] = new CountDownLatch(SPLIT_COUNT);
-        }
     }
 
     /**
@@ -173,9 +170,8 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Serializable arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             assert arg != null;
 
@@ -191,26 +187,22 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
                     @Override public Serializable execute() throws GridException {
                         assert taskSes != null;
 
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
-                        }
 
                         startSignal[taskNum].countDown();
 
                         try {
-                            if (!startSignal[taskNum].await(WAIT_TIME, TimeUnit.MILLISECONDS)) {
+                            if (!startSignal[taskNum].await(WAIT_TIME, TimeUnit.MILLISECONDS))
                                 fail();
-                            }
 
                             String val = (String)taskSes.waitForAttribute("testName", 100000);
 
-                            if (log.isDebugEnabled()) {
+                            if (log.isDebugEnabled())
                                 log.info("Received attribute 'testName': " + val);
-                            }
 
-                            if ("testVal".equals(val)) {
+                            if ("testVal".equals(val))
                                 return 1;
-                            }
                         }
                         catch (InterruptedException e) {
                             throw new GridException("Failed to get attribute due to interruption.", e);
@@ -227,29 +219,25 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult result, List<GridComputeJobResult> received)
             throws GridException {
-            if (result.getException() != null) {
+            if (result.getException() != null)
                 throw result.getException();
-            }
 
             return received.size() == SPLIT_COUNT ? GridComputeJobResultPolicy.REDUCE : GridComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
         @Override public Integer reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() < SPLIT_COUNT) {
+            if (results.size() < SPLIT_COUNT)
                 fail();
-            }
 
             int sum = 0;
 
             for (GridComputeJobResult result : results) {
-                if (result.getData() != null) {
+                if (result.getData() != null)
                     sum += (Integer)result.getData();
-                }
             }
 
             return sum;

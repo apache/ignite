@@ -192,9 +192,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to send time server reply to remote node: " + msg, e);
             }
         }
-        else {
+        else
             timeCoord.onMessage(msg, rcvTs);
-        }
     }
 
     /**
@@ -289,11 +288,15 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     snapshot.version(), snapshot.deltas());
 
                 try {
-                    ctx.io().send(n.id(), TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
+                    ctx.io().send(n, TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
                 }
                 catch (GridException e) {
-                    U.warn(log, "Failed to send time sync snapshot to remote node (did not leave grid?) " +
-                        "[nodeId=" + n.id() + ", msg=" + msg + ", err=" + e.getMessage() + ']');
+                    if (ctx.discovery().pingNode(n.id()))
+                        U.error(log, "Failed to send time sync snapshot to remote node (did not leave grid?) " +
+                            "[nodeId=" + n.id() + ", msg=" + msg + ", err=" + e.getMessage() + ']');
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to send time sync snapshot to remote node (did not leave grid?) " +
+                            "[nodeId=" + n.id() + ", msg=" + msg + ", err=" + e.getMessage() + ']');
                 }
             }
         }
@@ -427,9 +430,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                         ", addr=" + addr + ", port=" + port + ']');
                 }
             }
-            else {
+            else
                 onNodeLeft(rmtNodeId);
-            }
         }
 
         /**

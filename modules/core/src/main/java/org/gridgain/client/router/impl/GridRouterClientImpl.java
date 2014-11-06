@@ -13,6 +13,7 @@ import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.router.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -30,9 +31,8 @@ class GridRouterClientImpl implements GridClient {
     /** Client configuration. */
     private final GridClientConfiguration cliCfg;
 
-    /** TCP connection managers, mapped by protocol ID. */
-    private ConcurrentMap<Byte, GridClientConnectionManager> tcpConnMgrs =
-            new ConcurrentHashMap<>();
+    /** TCP connection managers. */
+    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap8<>();
 
     /**
      * Creates a new TCP client based on the given configuration.
@@ -53,32 +53,8 @@ class GridRouterClientImpl implements GridClient {
         this.cliCfg = cliCfg;
 
         clientImpl = new GridClientImpl(id, cliCfg);
-    }
 
-    /**
-     * Gets the connection manager for a given protocol.
-     *
-     * @param protoId Client protocol ID (if applicable).
-     * @return A connection manager for this protocol.
-     * @throws GridClientException If the protocol is not supported.
-     */
-    private GridClientConnectionManager connectionManager(@Nullable Byte protoId) throws GridClientException {
-        if (cliCfg.getProtocol() == GridClientProtocol.TCP) {
-            assert protoId != null;
-
-            GridClientConnectionManager mgr = tcpConnMgrs.get(protoId);
-
-            if (mgr == null)
-                mgr = clientImpl.newConnectionManager(protoId);
-
-            if (mgr == null)
-                throw new GridClientException("Unsupported protocol [protocolId=" + protoId + ']');
-
-            GridClientConnectionManager old = tcpConnMgrs.putIfAbsent(protoId, mgr);
-
-            return old != null ? old : mgr;
-        }
-        else
+        if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
     }
 
@@ -89,7 +65,6 @@ class GridRouterClientImpl implements GridClient {
      * @param msg Raw message to send.
      * @param destId Id of node to send message to. If {@code null} than node will be chosen
      *     from the topology randomly.
-     * @param protoId Client protocol ID (if applicable).
      * @return Future, representing forwarded message.
      * @throws GridServerUnreachableException If destination node can't be reached.
      * @throws GridClientClosedException If client is closed.
@@ -97,7 +72,7 @@ class GridRouterClientImpl implements GridClient {
      * @throws InterruptedException If router was interrupted while trying.
      *     to establish connection with destination node.
      */
-    GridClientFutureAdapter<?> forwardMessage(Object msg, @Nullable UUID destId, @Nullable Byte protoId)
+    GridClientFutureAdapter<?> forwardMessage(Object msg, @Nullable UUID destId, byte marshId)
         throws GridClientException, InterruptedException {
         GridClientTopology top = clientImpl.topology();
 
@@ -112,7 +87,7 @@ class GridRouterClientImpl implements GridClient {
         if (dest == null)
             throw new GridServerUnreachableException("Failed to resolve node for specified destination ID: " + destId);
 
-        GridClientConnectionManager connMgr = connectionManager(protoId);
+        GridClientConnectionManager connMgr = connectionManager(marshId);
 
         GridClientConnection conn = null;
 
@@ -141,6 +116,25 @@ class GridRouterClientImpl implements GridClient {
         fail.onDone(cause);
 
         return fail;
+    }
+
+    /**
+     * @param marshId Marshaller ID.
+     * @return Connection manager.
+     * @throws GridClientException In case of error.
+     */
+    private GridClientConnectionManager connectionManager(byte marshId) throws GridClientException {
+        GridClientConnectionManager mgr = connMgrMap.get(marshId);
+
+        if (mgr == null) {
+            GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
+                clientImpl.newConnectionManager(marshId));
+
+            if (old != null)
+                mgr = old;
+        }
+
+        return mgr;
     }
 
     /**

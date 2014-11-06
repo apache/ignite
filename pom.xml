@@ -45,7 +45,6 @@
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
-        <module>modules/protobuf</module>
         <module>modules/rest-http</module>
         <module>modules/email</module>
         <module>modules/jta</module>
@@ -84,7 +83,7 @@
                                 <descriptor>assembly/core-jar.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>gridgain-${gridgain.version}</finalName>
+                            <finalName>gridgain-core-${gridgain.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
@@ -101,6 +100,7 @@
             <modules>
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
             </modules>
         </profile>
 

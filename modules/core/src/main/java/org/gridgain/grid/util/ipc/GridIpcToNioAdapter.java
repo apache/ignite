@@ -11,7 +11,6 @@ package org.gridgain.grid.util.ipc;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 
@@ -120,12 +119,19 @@ public class GridIpcToNioAdapter<T> {
                     break; // And close below.
                 }
             }
-
-            // Assuming remote end closed connection - pushing event from head to tail.
-            chain.onSessionClosed(ses);
         }
         catch (Exception e) {
             chain.onExceptionCaught(ses, new GridException("Failed to read from IPC endpoint.", e));
+        }
+        finally {
+            try {
+                // Assuming remote end closed connection - pushing event from head to tail.
+                chain.onSessionClosed(ses);
+            }
+            catch (GridException e) {
+                chain.onExceptionCaught(ses, new GridException("Failed to process session close event " +
+                    "for IPC endpoint.", e));
+            }
         }
     }
 
@@ -150,7 +156,7 @@ public class GridIpcToNioAdapter<T> {
             return new GridNioFinishedFuture<Object>(e);
         }
 
-        return new GridNioFinishedFuture<>(new Object());
+        return new GridNioFinishedFuture<>((Object)null);
     }
 
     /**

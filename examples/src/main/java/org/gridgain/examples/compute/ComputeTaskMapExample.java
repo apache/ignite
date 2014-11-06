@@ -1,5 +1,6 @@
 package org.gridgain.examples.compute;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
@@ -56,7 +57,7 @@ public class ComputeTaskMapExample {
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, String arg) {
             String[] words = arg.split(" ");
 
-            Map<GridComputeJob, GridNode> map = new HashMap<>(words.length);
+            Map<GridComputeJob, GridNode> map = new HashMap<>();
 
             Iterator<GridNode> it = subgrid.iterator();
 

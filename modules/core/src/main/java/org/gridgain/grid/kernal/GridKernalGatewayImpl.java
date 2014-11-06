@@ -28,16 +28,26 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringExclude
     private final GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
 
     /** */
+    @GridToStringExclude
     private final Collection<Runnable> lsnrs = new GridSetWrapper<>(new IdentityHashMap<Runnable, Object>());
 
     /** */
     private volatile GridKernalState state = STOPPED;
 
     /** */
+    @GridToStringExclude
     private final String gridName;
+
+    /**
+     * User stack trace.
+     *
+     * Intentionally uses non-volatile variable for optimization purposes.
+     */
+    private String stackTrace;
 
     /**
      * @param gridName Grid name.
@@ -55,6 +65,9 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
     @Override public void readLock() throws IllegalStateException {
+        if (stackTrace == null)
+            stackTrace = stackTrace();
+
         rwLock.readLock();
 
         if (state != STARTED) {
@@ -77,6 +90,9 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     /** {@inheritDoc} */
     @SuppressWarnings({"BusyWait"})
     @Override public void writeLock() {
+        if (stackTrace == null)
+            stackTrace = stackTrace();
+
         enterThreadLocals();
 
         boolean interrupted = false;
@@ -97,6 +113,19 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
         if (interrupted)
             Thread.currentThread().interrupt();
+    }
+
+    /**
+     * Retrieves user stack trace.
+     *
+     * @return User stack trace.
+     */
+    private static String stackTrace() {
+        StringWriter sw = new StringWriter();
+
+        new Throwable().printStackTrace(new PrintWriter(sw));
+
+        return sw.toString();
     }
 
     /**
@@ -178,6 +207,11 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         synchronized (lsnrs) {
             lsnrs.remove(lsnr);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String userStackTrace() {
+        return stackTrace;
     }
 
     /** {@inheritDoc} */

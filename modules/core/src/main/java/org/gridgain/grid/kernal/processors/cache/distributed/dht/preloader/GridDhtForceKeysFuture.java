@@ -341,9 +341,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 log.debug("Will preload key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
-        else if (locPart.state() != OWNING) {
+        else if (locPart.state() != OWNING)
             invalidParts.add(part);
-        }
         else {
             if (log.isDebugEnabled())
                 log.debug("Will not preload key (local partition is not MOVING) [cacheName=" + cctx.name() +
@@ -500,7 +499,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                     (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
-                                    false, null);
+                                    false, null, null, null);
                         }
                     }
                     catch (GridException e) {

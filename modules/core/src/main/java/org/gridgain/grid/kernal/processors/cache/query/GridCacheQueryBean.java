@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -72,5 +73,10 @@ public class GridCacheQueryBean {
      */
     @Nullable public Object[] arguments() {
         return args;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheQueryBean.class, this);
     }
 }

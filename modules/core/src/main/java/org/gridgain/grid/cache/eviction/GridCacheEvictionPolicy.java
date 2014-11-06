@@ -13,7 +13,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
-import org.gridgain.grid.lang.*;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order

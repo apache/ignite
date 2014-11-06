@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.task;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -21,11 +21,12 @@ import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,11 +36,12 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Command handler for API requests.
@@ -52,8 +54,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
-    private final int maxTaskResults = Integer.getInteger(GridSystemProperties.GG_REST_MAX_TASK_RESULTS,
-        DFLT_MAX_TASK_RESULTS);
+    private final int maxTaskResults = getInteger(GG_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
 
     /** Task results. */
     private final Map<GridUuid, TaskDescriptor> taskDescs =
@@ -232,11 +233,18 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                             if (!async) {
                                 if (desc.error() == null) {
-                                    taskRestRes.setFinished(true);
-                                    taskRestRes.setResult(desc.result());
+                                    try {
+                                        taskRestRes.setFinished(true);
+                                        taskRestRes.setResult(req.portableMode() ?
+                                            ctx.portable().marshalToPortable(desc.result()) : desc.result());
 
-                                    res.setResponse(taskRestRes);
-                                    fut.onDone(res);
+                                        res.setResponse(taskRestRes);
+                                        fut.onDone(res);
+                                    }
+                                    catch (GridPortableException e) {
+                                        fut.onDone(new GridException("Failed to marshal task result: " +
+                                            desc.result(), e));
+                                    }
                                 }
                                 else
                                     fut.onDone(desc.error());
