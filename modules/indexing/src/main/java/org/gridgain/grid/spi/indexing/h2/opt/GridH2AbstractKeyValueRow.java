@@ -110,7 +110,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                 if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                     obj = new Timestamp(((java.util.Date) obj).getTime());
 
-                return GridH2Utils.get((Timestamp)obj);
+                return GridH2Utils.toValueTimestamp((Timestamp)obj);
             case Value.DECIMAL:
                 return ValueDecimal.get((BigDecimal)obj);
             case Value.STRING:

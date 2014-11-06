@@ -67,7 +67,7 @@ public class GridH2Utils {
      * @param timestamp the timestamp
      * @return the value
      */
-    public static ValueTimestamp get(Timestamp timestamp) {
+    public static ValueTimestamp toValueTimestamp(Timestamp timestamp) {
         long ms = timestamp.getTime();
         long nanos = timestamp.getNanos() % 1000000;
 
