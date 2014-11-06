@@ -544,7 +544,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      */
     @SuppressWarnings("unchecked")
-    public <T> T serviceProxy(GridProjection prj, String name, Class<T> svcItf, boolean sticky)
+    public <T> T serviceProxy(GridProjection prj, String name, Class<? super T> svcItf, boolean sticky)
         throws GridRuntimeException {
 
         if (hasLocalNode(prj)) {

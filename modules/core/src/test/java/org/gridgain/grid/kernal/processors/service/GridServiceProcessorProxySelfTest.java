@@ -10,12 +10,9 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -173,17 +170,115 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testProxyInvocationFromSeveralNodes() throws Exception {
+    public void testSingletonProxyInvocation() throws Exception {
         final String name = "testProxyInvocationFromSeveralNodes";
 
-        final Grid grid = randomGrid();
+        final Grid grid = grid(0);
 
-        grid.forLocal().services().deployNodeSingleton(name, new CacheServiceImpl<String, Integer>()).get();
+        grid.forLocal().services().deployClusterSingleton(name, new MapServiceImpl<String, Integer>()).get();
 
-        int counter = 1;
-        grid.forRemotes().services().serviceProxy(name, CacheService.class, false).put(counter++, "executed");
+        for (int i = 1; i < nodeCount(); i++) {
+            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
 
-        assertEquals(nodeCount() - 1, grid.services().serviceProxy(name, CacheService.class, false).size());
+            // Make sure service is a proxy.
+            assertFalse(svc instanceof GridService);
+
+            svc.put(i, Integer.toString(i));
+        }
+
+        assertEquals(nodeCount() - 1, grid.services().serviceProxy(name, MapService.class, false).size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalProxyInvocation() throws Exception {
+        final String name = "testLocalProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        for (int i = 0; i < nodeCount(); i++) {
+            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertTrue(svc instanceof GridService);
+
+            svc.put(i, Integer.toString(i));
+        }
+
+        MapService<Integer, String> map = grid.services().serviceProxy(name, MapService.class, false);
+
+        for (int i = 0; i < nodeCount(); i++)
+            assertEquals(1, map.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteNotStickProxyInvocation() throws Exception {
+        final String name = "testRemoteNotStickProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        // Get remote proxy.
+        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, false);
+
+        // Make sure service is a local instance.
+        assertFalse(svc instanceof GridService);
+
+        for (int i = 0; i < nodeCount(); i++)
+            svc.put(i, Integer.toString(i));
+
+        int size = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertFalse(map instanceof GridService);
+
+            size += map.size();
+        }
+
+        assertEquals(nodeCount(), size);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteStickyProxyInvocation() throws Exception {
+        final String name = "testRemoteStickyProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        // Get remote proxy.
+        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, true);
+
+        // Make sure service is a local instance.
+        assertFalse(svc instanceof GridService);
+
+        for (int i = 0; i < nodeCount(); i++)
+            svc.put(i, Integer.toString(i));
+
+        int size = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertFalse(map instanceof GridService);
+
+            if (map.size() != 0)
+                size += map.size();
+        }
+
+        assertEquals(nodeCount(), size);
     }
 
     /**
@@ -192,20 +287,38 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
      * @param <K> Type of cache keys.
      * @param <V> Type of cache values.
      */
-    protected interface CacheService<K, V> {
+    protected interface MapService<K, V> {
+        /**
+         * Puts key-value pair into map.
+         *
+         * @param key Key.
+         * @param val Value.
+         */
         void put(K key, V val);
 
+        /**
+         * Gets value based on key.
+         *
+         * @param key Key.
+         * @return Value.
+         */
         V get(K key);
 
+        /**
+         * Clears map.
+         */
         void clear();
 
+        /**
+         * @return Map size.
+         */
         int size();
     }
 
     /**
      * Cache service implementation.
      */
-    protected static class CacheServiceImpl<K, V> implements CacheService<K, V>, GridService {
+    protected static class MapServiceImpl<K, V> implements MapService<K, V>, GridService {
         /** Underlying cache map. */
         private final Map<K, V> cache = new ConcurrentHashMap<>();
 

@@ -29,17 +29,13 @@ class GridServiceMethodReflectKey {
 
     /**
      * @param mtdName Method name.
-     * @param args Arguments.
+     * @param argTypes Argument types.
      */
-    GridServiceMethodReflectKey(String mtdName, Object[] args) {
+    GridServiceMethodReflectKey(String mtdName, Class<?>[] argTypes) {
         assert mtdName != null;
 
         this.mtdName = mtdName;
-
-        argTypes = new Class<?>[args == null ? 0 : args.length];
-
-        for (int i = 0; args != null && i < args.length; i++)
-            argTypes[i] = args[i].getClass();
+        this.argTypes = argTypes;
     }
 
     /**

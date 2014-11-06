@@ -179,7 +179,8 @@ public class GridServicesImpl implements GridServices, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(String name, Class<T> svcItf, boolean sticky) throws GridRuntimeException {
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
+        throws GridRuntimeException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
