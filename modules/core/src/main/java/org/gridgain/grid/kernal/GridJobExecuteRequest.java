@@ -741,7 +741,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 if (commState.readSize >= 0) {
                     if (ldrParticipants == null)
-                        ldrParticipants = new HashMap<>(commState.readSize);
+                        ldrParticipants = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {

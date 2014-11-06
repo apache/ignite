@@ -69,7 +69,7 @@ public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID
         else if (ids.length == 1)
             this.ids = Collections.singleton(ids[0]);
         else {
-            this.ids = new HashSet<>(ids.length);
+            this.ids = U.newHashSet(ids.length);
 
             Collections.addAll(this.ids, ids);
         }
@@ -88,7 +88,7 @@ public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID
         else if (nodes.length == 1)
             ids = Collections.singleton(nodes[0].id());
         else {
-            ids = new HashSet<>(nodes.length);
+            ids = U.newHashSet(nodes.length);
 
             for (GridNode n : nodes)
                 ids.add(n.id());
