@@ -159,13 +159,6 @@ public interface GridPortableObject extends Serializable, Cloneable {
     public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
 
     /**
-     * Creates portable builder initialized by this portable object.
-     *
-     * @return Builder initialized by this portable object.
-     */
-    public GridPortableBuilder createBuilder();
-
-    /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
