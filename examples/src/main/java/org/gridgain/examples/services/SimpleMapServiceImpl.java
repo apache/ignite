@@ -11,12 +11,37 @@ package org.gridgain.examples.services;
 
 import org.gridgain.grid.service.*;
 
+import java.util.*;
+import java.util.concurrent.*;
+
 /**
  * Simple service which loops infinitely and prints out a counter.
  */
-public class SimpleService implements GridService {
-    /** */
+public class SimpleMapServiceImpl<K, V> implements GridService, SimpleMapService<K, V> {
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
+
+    /** Underlying cache map. */
+    private Map<K, V> map;
+
+    /** {@inheritDoc} */
+    @Override public void put(K key, V val) {
+        map.put(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V get(K key) {
+        return map.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        map.clear();
+    }
+
+    @Override public int size() {
+        return map.size();
+    }
 
     /** {@inheritDoc} */
     @Override public void cancel(GridServiceContext ctx) {
@@ -26,18 +51,12 @@ public class SimpleService implements GridService {
     /** {@inheritDoc} */
     @Override public void init(GridServiceContext ctx) throws Exception {
         System.out.println("Service was initialized: " + ctx.name());
+
+        map = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
     @Override public void execute(GridServiceContext ctx) throws Exception {
-        System.out.println("Deployed distributed service: " + ctx.name());
-
-        int cntr = 1;
-
-        while (!ctx.isCancelled()) {
-            System.out.println("Distributed service '" + ctx.name() + "' iteration #" + cntr++);
-
-            Thread.sleep(3000);
-        }
+        System.out.println("Executing distributed service: " + ctx.name());
     }
 }
