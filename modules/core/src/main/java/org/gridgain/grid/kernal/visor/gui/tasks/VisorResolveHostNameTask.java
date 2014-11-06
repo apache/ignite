@@ -68,7 +68,9 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
                     String hostName = hostIt.next();
 
-                    if (!F.isEmpty(hostName) && !hostName.equals(ip))
+                    if (F.isEmpty(hostName) && InetAddress.getByName(ip).isLoopbackAddress())
+                        res.put(ip, "localhost");
+                    else if (!hostName.equals(ip))
                         res.put(ip, hostName);
                 }
             }
