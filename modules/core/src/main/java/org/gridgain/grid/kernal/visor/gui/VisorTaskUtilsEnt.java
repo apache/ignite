@@ -318,7 +318,7 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
 
         String[] firstCharsets = {Charset.defaultCharset().name(), "US-ASCII", "UTF-8", "UTF-16BE", "UTF-16LE"};
 
-        Collection<Charset> orderedCharsets = new LinkedHashSet<>(charsets.size());
+        Collection<Charset> orderedCharsets = U.newLinkedHashSet(charsets.size());
 
         for (String c : firstCharsets)
             if (charsets.containsKey(c))

@@ -508,7 +508,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         if (map == null)
             return null;
 
-        LinkedHashMap<byte[], Boolean> byteMap = new LinkedHashMap<>(map.size());
+        LinkedHashMap<byte[], Boolean> byteMap = U.newLinkedHashMap(map.size());
 
         for (Map.Entry<?, Boolean> e : map.entrySet()) {
             if (ctx.deploymentEnabled())
@@ -535,7 +535,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         if (byteMap == null)
             return null;
 
-        LinkedHashMap<K1, Boolean> map = new LinkedHashMap<>(byteMap.size());
+        LinkedHashMap<K1, Boolean> map = U.newLinkedHashMap(byteMap.size());
 
         GridMarshaller marsh = ctx.marshaller();
 

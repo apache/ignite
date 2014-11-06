@@ -415,7 +415,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 if (commState.readSize >= 0) {
                     if (keyBytes == null)
-                        keyBytes = new LinkedHashMap<>(commState.readSize);
+                        keyBytes = U.newLinkedHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {

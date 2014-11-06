@@ -21,7 +21,7 @@ import org.gridgain.grid.kernal.visor.cmd.dto.*;
 import org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
-import org.gridgain.grid.util.typedef.internal.S;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -82,8 +82,14 @@ public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask.VisorQueryA
                         .projection(g.forNodeIds(arg.proj()))
                         .execute();
 
+                    long start = U.currentTimeMillis();
+
                     GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
                         fetchScanQueryRows(fut, null, arg.pageSize());
+
+                    long fetchDuration = U.currentTimeMillis() - start;
+
+                    long duration = fut.duration() + fetchDuration; // Scan duration + fetch duration.
 
                     Map.Entry<Object, Object> next = rows.get2();
 
@@ -93,7 +99,7 @@ public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask.VisorQueryA
                     scheduleResultSetHolderRemoval(qryId);
 
                     return new GridBiTuple<>(null, (VisorQueryResultEx) new VisorQueryResultEx2(g.localNode().id(), qryId,
-                        SCAN_COL_NAMES, rows.get1(), next != null, fut.duration()));
+                        SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
                     GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)c.queries())
@@ -118,7 +124,13 @@ public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask.VisorQueryA
                             names[i] = new VisorFieldsQueryColumn(col.typeName(), col.fieldName());
                         }
 
+                        long start = U.currentTimeMillis();
+
                         GridBiTuple<List<Object[]>, List<?>> rows = fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+
+                        long fetchDuration = U.currentTimeMillis() - start;
+
+                        long duration = fut.duration() + fetchDuration; // Query duration + fetch duration.
 
                         g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, rows.get2(), false));
@@ -126,7 +138,7 @@ public class VisorQueryTask2 extends VisorOneNodeTask<VisorQueryTask.VisorQueryA
                         scheduleResultSetHolderRemoval(qryId);
 
                         return new GridBiTuple<>(null, (VisorQueryResultEx) new VisorQueryResultEx2(g.localNode().id(), qryId,
-                            names, rows.get1(), rows.get2() != null, fut.duration()));
+                            names, rows.get1(), rows.get2() != null, duration));
                     }
                 }
             }
