@@ -38,13 +38,20 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
+     * @param cls Ignite component class.
+     * @return Ignite component or {@code null} if component is not supported.
+     */
+    @Nullable public <T> T createComponent(Class<T> cls);
+
+    /**
      * Starts grid component.
      *
      * @param ctx Plugin context.
      * @param cfg Plugin configuration.
+     * @param attrs Attributes.
      * @throws IgniteException Throws in case of any errors.
      */
-    public void start(PluginContext ctx, C cfg) throws IgniteException;
+    public void start(PluginContext ctx, C cfg, Map<String, Object> attrs) throws IgniteException;
 
     /**
      * Stops grid component.

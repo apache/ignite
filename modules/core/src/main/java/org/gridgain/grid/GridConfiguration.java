@@ -400,7 +400,7 @@ public class GridConfiguration {
     private GridDotNetConfiguration dotNetCfg;
 
     /** */
-    private Collection<PluginConfiguration> pluginCfgs;
+    private Collection<? extends PluginConfiguration> pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
@@ -3217,14 +3217,14 @@ public class GridConfiguration {
     /**
      * @return Plugin configurations.
      */
-    public Collection<PluginConfiguration> getPluginConfigurations() {
+    public Collection<? extends PluginConfiguration> getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
      * @param pluginCfgs Plugin configurations.
      */
-    public void setPluginConfigurations(Collection<PluginConfiguration> pluginCfgs) {
+    public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
     }
 

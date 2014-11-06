@@ -300,13 +300,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridContinuousProcessor continuous();
 
     /**
-     * Gets replication processor.
-     *
-     * @return Replication processor.
-     */
-    public GridDrProcessor dr();
-
-    /**
      * Gets Hadoop processor.
      *
      * @return Hadoop processor.
@@ -481,9 +474,23 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public String userVersion(ClassLoader ldr);
 
     /**
-     * @param name Plugin name.
-     * @return Plugin instance.
-     * @throws PluginNotFoundException If plugin for the given name was not found.
+     * @param cfg Configuration.
+     * @return Collection of instantiated plugin providers.
      */
-    public IgnitePlugin plugin(String name) throws PluginNotFoundException;
+    public Collection<PluginProvider> createPluginProviders(GridConfiguration cfg);
+
+    /**
+     * @param name Plugin name.
+     * @return Plugin provider instance.
+     * @throws PluginNotFoundException If plugin provider for the given name was not found.
+     */
+    public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
+
+    /**
+     * Creates optional component.
+     *
+     * @param cls Component class.
+     * @return Created component.
+     */
+    public <T> T createComponent(Class<T> cls);
 }

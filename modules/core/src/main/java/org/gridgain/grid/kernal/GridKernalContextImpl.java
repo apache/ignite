@@ -26,6 +26,8 @@ import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.dr.os.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.interop.*;
@@ -58,6 +60,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -227,10 +230,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     @GridToStringExclude
     private GridContinuousProcessor contProc;
-
-    /** */
-    @GridToStringExclude
-    private GridDrProcessor drProc;
 
     /** */
     @GridToStringExclude
@@ -416,8 +415,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof GridDrProcessor)
-            drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
         else if (comp instanceof GridHadoopProcessorAdapter)
@@ -426,16 +423,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
             interopProc = (GridInteropProcessor)comp;
-        else if (comp instanceof GridPluginComponent) {
-            PluginProvider plugin = ((GridPluginComponent) comp).plugin();
-
-            if (plugins.containsKey(plugin.name()))
-                throw new IgniteException("Duplicated plugin name: " + plugin.name());
-
-            plugins.put(plugin.name(), plugin);
-        }
          else
-            assert false : "Unknown manager class: " + comp.getClass();
+            assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
     }
@@ -666,11 +655,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridDrProcessor dr() {
-        return drProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridHadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
@@ -771,13 +755,64 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin(String name) throws PluginNotFoundException {
+    @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
         PluginProvider plugin = plugins.get(name);
 
         if (plugin == null)
             throw new PluginNotFoundException(name);
 
-        return plugin.plugin();
+        return plugin;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T createComponent(Class<T> cls) {
+        for (PluginProvider plugin : plugins.values()) {
+            T comp = (T)plugin.createComponent(cls);
+
+            if (comp != null)
+                return comp;
+        }
+
+        if (cls.equals(GridCacheDrManager.class))
+            return (T)new GridOsCacheDrManager();
+
+        throw new IgniteException("Unsupported component type: " + cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<PluginProvider> createPluginProviders(GridConfiguration cfg) {
+        if (!F.isEmpty(cfg.getPluginConfigurations())) {
+            Collection<PluginProvider> res = new ArrayList<>(cfg.getPluginConfigurations().size());
+
+            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
+                try {
+                    if (pluginCfg.providerClass() == null)
+                        throw new IgniteException("Provider class is null.");
+
+                    PluginProvider provider = pluginCfg.providerClass().newInstance();
+
+                    if (F.isEmpty(provider.name()))
+                        throw new IgniteException("Plugin name can not be empty.");
+
+                    if (provider.plugin() == null)
+                        throw new IgniteException("Plugin is null.");
+
+                    res.add(provider);
+
+                    if (plugins.containsKey(provider.name()))
+                        throw new IgniteException("Duplicated plugin name: " + provider.name());
+
+                    plugins.put(provider.name(), provider);
+                }
+                catch (InstantiationException | IllegalAccessException e) {
+                    throw new IgniteException("Failed to create plugin provider instance.", e);
+                }
+            }
+
+            return res;
+        }
+        else
+            return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

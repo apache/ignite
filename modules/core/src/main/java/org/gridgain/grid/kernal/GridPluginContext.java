@@ -24,4 +24,11 @@ public class GridPluginContext implements PluginContext {
     public GridPluginContext(GridKernalContext ctx) {
         this.ctx = ctx;
     }
+
+    /**
+     * @return Kernal context.
+     */
+    public GridKernalContext context() {
+        return ctx;
+    }
 }

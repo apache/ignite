@@ -759,7 +759,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheIoManager ioMgr = new GridCacheIoManager();
             GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-            GridCacheDrManager drMgr = createComponent(GridCacheDrManager.class);
+            GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
             GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, isNearEnabled(cfg));
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(nearStore);
@@ -908,7 +908,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 swapMgr = new GridCacheSwapManager(true);
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
-                drMgr = createComponent(GridCacheDrManager.class);
+                drMgr = ctx.createComponent(GridCacheDrManager.class);
 
                 GridCacheStore dhtStore = cacheStore(ctx.gridName(), cfg, false);
 
@@ -2026,92 +2026,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Creates cache component which has different implementations for enterprise and open source versions.
-     * For such components following convention is used:
-     * <ul>
-     *     <li>component has an interface (org.gridgain.xxx.GridXXXComponent)</li>
-     *     <li>there are two component implementations in the subpackages 'ent' and 'os' where
-     *     component implementations are named correspondingly GridEntXXXComponent and GridOSXXXComponent</li>
-     *     <li>component implementation has public no-arg constructor </li>
-     * </ul>
-     * This method first tries to find component implementation from 'ent' package, if it is not found it
-     * uses implementation from 'os' subpackage.
-     *
-     * @param cls Component interface.
-     * @return Created component.
-     * @throws GridException If failed to create component.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> T createComponent(Class<T> cls) throws GridException {
-        assert cls.isInterface() : cls;
-        assert cls.getSimpleName().startsWith("Grid") : cls;
-
-        Class<T> implCls = null;
-
-        try {
-            implCls = (Class<T>)Class.forName(enterpriseClassName(cls));
-        }
-        catch (ClassNotFoundException ignore) {
-            // No-op.
-        }
-
-        if (implCls == null) {
-            try {
-                implCls = (Class<T>)Class.forName(openSourceClassName(cls));
-            }
-            catch (ClassNotFoundException ignore) {
-                // No-op.
-            }
-        }
-
-        if (implCls == null)
-            throw new GridException("Failed to find component implementation: " + cls.getName());
-
-        if (!cls.isAssignableFrom(implCls))
-            throw new GridException("Component implementation does not implement component interface " +
-                "[component=" + cls.getName() + ", implementation=" + implCls.getName() + ']');
-
-        Constructor<T> constructor;
-
-        try {
-            constructor = implCls.getConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw new GridException("Component does not have expected constructor: " + implCls.getName(), e);
-        }
-
-        try {
-            return constructor.newInstance();
-        }
-        catch (ReflectiveOperationException e) {
-            throw new GridException("Failed to create component [component=" + cls.getName() +
-                ", implementation=" + implCls.getName() + ']', e);
-        }
-    }
-
-    /**
-     * @param cls Component interface.
-     * @return Name of component implementation class for enterprise edition.
-     */
-    private static String enterpriseClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".ent." + cls.getSimpleName().replace("Grid", "GridEnt");
-    }
-
-    /**
-     * @param cls Component interface.
-     * @return Name of component implementation class for open source edition.
-     */
-    private static String openSourceClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
-    }
-
-    /**
      *
      */
     private static class LocalAffinityFunction implements GridCacheAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** {@inheritDoc} */
         @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
             GridNode locNode = null;
 
