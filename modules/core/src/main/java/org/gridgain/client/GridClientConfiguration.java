@@ -17,6 +17,7 @@ import org.gridgain.client.ssl.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -372,7 +373,7 @@ public class GridClientConfiguration {
      * @param dataCfgs Data configurations.
      */
     public void setDataConfigurations(Collection<? extends GridClientDataConfiguration> dataCfgs) {
-        this.dataCfgs = new HashMap<>(dataCfgs.size());
+        this.dataCfgs = U.newHashMap(dataCfgs.size());
 
         for (GridClientDataConfiguration dataCfg : dataCfgs)
             this.dataCfgs.put(dataCfg.getName(), new GridClientDataConfiguration(dataCfg));

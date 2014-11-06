@@ -9,6 +9,7 @@
 package org.gridgain.client.balancer;
 
 import org.gridgain.client.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -39,7 +40,7 @@ public class GridClientRoundRobinBalancer extends GridClientBalancerAdapter impl
                 nodes = direct;
         }
 
-        Map<UUID, GridClientNode> lookup = new HashMap<>(nodes.size());
+        Map<UUID, GridClientNode> lookup = U.newHashMap(nodes.size());
 
         for (GridClientNode node : nodes)
             lookup.put(node.nodeId(), node);

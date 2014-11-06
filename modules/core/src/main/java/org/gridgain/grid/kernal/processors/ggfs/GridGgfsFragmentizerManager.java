@@ -603,7 +603,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
             assert map != null && !map.ranges().isEmpty();
 
-            Map<UUID, Collection<GridGgfsFileAffinityRange>> grpMap = new HashMap<>(map.ranges().size());
+            Map<UUID, Collection<GridGgfsFileAffinityRange>> grpMap = U.newHashMap(map.ranges().size());
 
             for (GridGgfsFileAffinityRange range : map.ranges()) {
                 UUID nodeId = ggfsCtx.data().affinityNode(range.affinityKey()).id();
