@@ -61,6 +61,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     /** Joined latch. */
     private CountDownLatch joinLatch;
 
+    /** Left latch. */
+    private CountDownLatch leaveLatch;
+
     /** Disconnect check interval. */
     private long disconnectCheckInt = DFLT_DISCONNECT_CHECK_INT;
 
@@ -143,20 +146,31 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
         Socket sock0 = sock;
 
+        sock = null;
+
         if (sock0 != null) {
+            leaveLatch = new CountDownLatch(1);
+
             try {
                 GridTcpDiscoveryNodeLeftMessage msg = new GridTcpDiscoveryNodeLeftMessage(locNodeId);
 
                 msg.client(true);
 
                 writeToSocket(sock0, msg);
+
+                if (!U.await(leaveLatch, netTimeout, MILLISECONDS)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Did not receive node left message for local node (will stop anyway) [sock=" +
+                            sock0 + ']');
+                }
             }
             catch (IOException | GridException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock0 + ']', e);
             }
-
-            U.closeQuiet(sock);
+            finally {
+                U.closeQuiet(sock0);
+            }
         }
 
         U.interrupt(hbSender);
@@ -187,7 +201,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         if (locNodeId.equals(nodeId))
             return locNode;
 
-        return rmtNodes.get(nodeId);
+        GridTcpDiscoveryNode node = rmtNodes.get(nodeId);
+
+        return node != null && node.visible() ? node : null;
     }
 
     /** {@inheritDoc} */
@@ -537,17 +553,17 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                                 err = authenticationFailedError((GridTcpDiscoveryAuthFailedMessage)msg);
                             else if (msg instanceof GridTcpDiscoveryCheckFailedMessage)
                                 err = checkFailedError((GridTcpDiscoveryCheckFailedMessage)msg);
+
+                            if (err != null) {
+                                joinErr = err;
+
+                                joinLatch.countDown();
+
+                                return;
+                            }
                         }
 
-                        if (err != null) {
-                            joinErr = err;
-
-                            joinLatch.countDown();
-
-                            return;
-                        }
-                        else
-                            msgWrk.addMessage(msg);
+                        msgWrk.addMessage(msg);
                     }
                     catch (GridException e) {
                         if (log.isDebugEnabled())
@@ -600,13 +616,16 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
      * Message worker.
      */
     private class MessageWorker extends MessageWorkerAdapter {
+        /** Topology history. */
+        private final NavigableMap<Long, Collection<GridNode>> topHist = new TreeMap<>();
+
         /** Current topology version. */
         private long topVer;
 
         /**
          */
         protected MessageWorker() {
-            super("tcp-client-disco-msg-worker", null);
+            super("tcp-client-disco-msg-worker");
         }
 
         /** {@inheritDoc} */
@@ -642,10 +661,16 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                     if (top != null) {
                         for (GridTcpDiscoveryNode n : top) {
-                            n.visible(true);
+                            if (n.order() > 0)
+                                n.visible(true);
 
                             rmtNodes.put(n.id(), n);
                         }
+
+                        topHist.clear();
+
+                        if (msg.topologyHistory() != null)
+                            topHist.putAll(msg.topologyHistory());
 
                         Collection<List<Object>> dataList = msg.oldNodesDiscoveryData();
 
@@ -686,11 +711,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                     locNode.order(topVer);
 
+                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopology(topVer));
+
                     joinErr = null;
 
                     joinLatch.countDown();
-
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Discarding node add finished message (this message has already been processed) " +
@@ -709,11 +734,21 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 long topVer = msg.topologyVersion();
 
                 node.order(topVer);
+                node.visible(true);
 
                 if (locNodeVer.equals(node.version()))
                     node.version(locNodeVer);
 
-                notifyDiscovery(EVT_NODE_JOINED, topVer, node);
+                Collection<GridNode> top = updateTopology(topVer);
+
+                if (joinLatch.getCount() > 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node add finished message (join process is not finished): " + msg);
+
+                    return;
+                }
+
+                notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
 
                 stats.onNodeJoined();
             }
@@ -723,17 +758,30 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
          * @param msg Message.
          */
         private void processNodeLeftMessage(GridTcpDiscoveryNodeLeftMessage msg) {
-            if (!locNodeId.equals(msg.creatorNodeId())) {
+            if (locNodeId.equals(msg.creatorNodeId())) {
+                if (log.isDebugEnabled())
+                    log.debug("Received node left message for local node: " + msg);
+
+                leaveLatch.countDown();
+            }
+            else {
                 GridTcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
 
                 if (node == null) {
                     if (log.isDebugEnabled())
-                        log.debug("Discarding node add left message since node is not found [msg=" + msg + ']');
+                        log.debug("Discarding node left message since node is not found [msg=" + msg + ']');
 
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node);
+                if (joinLatch.getCount() > 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node left message (join process is not finished): " + msg);
+
+                    return;
+                }
+
+                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, updateTopology(topVer));
 
                 stats.onNodeLeft();
             }
@@ -748,12 +796,19 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                 if (node == null) {
                     if (log.isDebugEnabled())
-                        log.debug("Discarding node add failed message since node is not found [msg=" + msg + ']');
+                        log.debug("Discarding node failed message since node is not found [msg=" + msg + ']');
 
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node);
+                if (joinLatch.getCount() > 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node failed message (join process is not finished): " + msg);
+
+                    return;
+                }
+
+                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, updateTopology(topVer));
 
                 stats.onNodeFailed();
             }
@@ -771,11 +826,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                         try {
                             writeToSocket(sock0, msg);
 
-                            int res = readReceipt(sock0, sockTimeout);
-
                             if (log.isDebugEnabled())
-                                log.debug("Heartbeat message sent [sock=" + sock0 + ", msg=" + msg +
-                                    ", res=" + res + ']');
+                                log.debug("Heartbeat message sent [sock=" + sock0 + ", msg=" + msg + ']');
                         }
                         catch (IOException | GridException e) {
                             if (log.isDebugEnabled())
@@ -807,7 +859,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                             node.lastUpdateTime(U.currentTimeMillis());
 
-                            notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node);
+                            notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, updateTopology(topVer));
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Received metrics from unknown node: " + nodeId);
@@ -817,11 +869,40 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         }
 
         /**
+         * @param topVer New topology version.
+         * @return Topology snapshot.
+         */
+        private Collection<GridNode> updateTopology(long topVer) {
+            this.topVer = topVer;
+
+            Collection<GridNode> allNodes = new ArrayList<>(rmtNodes.size() + 1);
+
+            allNodes.addAll(F.view(rmtNodes.values(), VISIBLE_NODES));
+            allNodes.add(locNode);
+
+            if (!topHist.containsKey(topVer)) {
+//                assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
+//                    "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
+
+                topHist.put(topVer, allNodes);
+
+                if (topHist.size() > topHistSize)
+                    topHist.pollFirstEntry();
+
+                assert topHist.lastKey() == topVer;
+                assert topHist.size() <= topHistSize;
+            }
+
+            return allNodes;
+        }
+
+        /**
          * @param type Event type.
          * @param topVer Topology version.
          * @param node Node.
+         * @param top Topology snapshot.
          */
-        private void notifyDiscovery(int type, long topVer, GridNode node) {
+        private void notifyDiscovery(int type, long topVer, GridNode node, Collection<GridNode> top) {
             GridDiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {
@@ -829,11 +910,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                this.topVer = topVer;
-
-                Collection<GridNode> rmtNodes0 = new ArrayList<GridNode>(rmtNodes.values());
-
-                lsnr.onDiscovery(type, topVer, node, F.concat(false, locNode, rmtNodes0), null);
+                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist));
             }
             else if (log.isDebugEnabled())
                 log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +

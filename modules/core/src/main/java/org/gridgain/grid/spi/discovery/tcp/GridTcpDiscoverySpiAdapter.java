@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -57,6 +58,9 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     /** Default heartbeat messages issuing frequency (value is <tt>2,000ms</tt>). */
     public static final long DFLT_HEARTBEAT_FREQ = 2000;
 
+    /** Default size of topology snapshots history. */
+    public static final int DFLT_TOP_HISTORY_SIZE = 1000;
+
     /** Response OK. */
     protected static final int RES_OK = 1;
 
@@ -65,6 +69,13 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
+
+    /** Predicate to filter visible nodes. */
+    protected static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
+        @Override public boolean apply(GridTcpDiscoveryNode node) {
+            return node.visible();
+        }
+    };
 
     /** Local address. */
     protected String locAddr;
@@ -86,6 +97,9 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
     /** Heartbeat messages issuing frequency. */
     protected long hbFreq = DFLT_HEARTBEAT_FREQ;
+
+    /** Size of topology snapshots history. */
+    protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
     /** Grid discovery listener. */
     protected volatile GridDiscoverySpiListener lsnr;
@@ -276,6 +290,32 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
     @GridSpiConfiguration(optional = true)
     public void setHeartbeatFrequency(long hbFreq) {
         this.hbFreq = hbFreq;
+    }
+
+    /**
+     * @return Size of topology snapshots history.
+     */
+    public long getTopHistorySize() {
+        return topHistSize;
+    }
+
+    /**
+     * Sets size of topology snapshots history. Specified size should be greater than or equal to default size
+     * {@link #DFLT_TOP_HISTORY_SIZE}.
+     *
+     * @param topHistSize Size of topology snapshots history.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setTopHistorySize(int topHistSize) {
+        if (topHistSize < DFLT_TOP_HISTORY_SIZE) {
+            U.warn(log, "Topology history size should be greater than or equal to default size. " +
+                "Specified size will not be set [curSize=" + this.topHistSize + ", specifiedSize=" + topHistSize +
+                ", defaultSize=" + DFLT_TOP_HISTORY_SIZE + ']');
+
+            return;
+        }
+
+        this.topHistSize = topHistSize;
     }
 
     /** {@inheritDoc} */
@@ -901,19 +941,13 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
         /** Backed interrupted flag. */
         private volatile boolean interrupted;
 
-        /** Socket. */
-        protected Socket sock;
-
         /**
          * @param name Thread name.
-         * @param sock Socket.
          */
-        protected MessageWorkerAdapter(String name, @Nullable Socket sock) {
+        protected MessageWorkerAdapter(String name) {
             super(gridName, name, log);
 
             setPriority(threadPri);
-
-            this.sock = sock;
         }
 
         /** {@inheritDoc} */
@@ -929,13 +963,6 @@ abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements Grid
 
                 processMessage(msg);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void cleanup() {
-            super.cleanup();
-
-            U.closeQuiet(sock);
         }
 
         /** {@inheritDoc} */

@@ -171,16 +171,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
-    /** Default size of topology snapshots history. */
-    public static final int DFLT_TOP_HISTORY_SIZE = 1000;
-
-    /** Predicate to filter visible nodes. */
-    private static final GridPredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
-        @Override public boolean apply(GridTcpDiscoveryNode node) {
-            return node.visible();
-        }
-    };
-
     /** Predicate to filter client nodes. */
     private static final GridPredicate<GridTcpDiscoveryNode> CLIENT_NODES = new P1<GridTcpDiscoveryNode>() {
         @Override public boolean apply(GridTcpDiscoveryNode node) {
@@ -221,10 +211,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Reconnect attempts count. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
-
-    /** Size of topology snapshots history. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
     /** Grid marshaller. */
     @GridMarshallerResource
@@ -356,32 +342,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     @GridSpiConfiguration(optional = true)
     public void setReconnectCount(int reconCnt) {
         this.reconCnt = reconCnt;
-    }
-
-    /**
-     * Sets size of topology snapshots history. Specified size should be greater than or equal to default size
-     * {@link #DFLT_TOP_HISTORY_SIZE}.
-     *
-     * @param topHistSize Size of topology snapshots history.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setTopHistorySize(int topHistSize) {
-        if (topHistSize < DFLT_TOP_HISTORY_SIZE) {
-            U.warn(log, "Topology history size should be greater than or equal to default size. " +
-                "Specified size will not be set [curSize=" + this.topHistSize + ", specifiedSize=" + topHistSize +
-                ", defaultSize=" + DFLT_TOP_HISTORY_SIZE + ']');
-
-            return;
-        }
-
-        this.topHistSize = topHistSize;
-    }
-
-    /**
-     * @return Size of topology snapshots history.
-     */
-    public long getTopHistorySize() {
-        return topHistSize;
     }
 
     /** {@inheritDoc} */
@@ -1943,14 +1903,16 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param msg Message to prepare.
      * @param msgs Messages to include.
      */
-    private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, @Nullable GridTcpDiscoveryNode destNode,
+    private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, UUID destNodeId,
         @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+        assert destNodeId != null;
+
         if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
             GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
 
             GridTcpDiscoveryNode node = nodeAddedMsg.node();
 
-            if (destNode == null || node.equals(destNode)) {
+            if (node.id().equals(destNodeId)) {
                 Collection<GridTcpDiscoveryNode> allNodes = ring.allNodes();
                 Collection<GridTcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
 
@@ -2462,10 +2424,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** Force pending messages send. */
         private boolean forceSndPending;
 
+        /** Socket. */
+        private Socket sock;
+
         /**
          */
         protected RingMessageWorker() {
-            super("tcp-disco-msg-worker", null);
+            super("tcp-disco-msg-worker");
         }
 
         /**
@@ -2736,7 +2701,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg, next, pendingMsgs);
+                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs);
 
                                     try {
                                         writeToSocket(sock, pendingMsg);
@@ -2761,7 +2726,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 }
                             }
 
-                            prepareNodeAddedMessage(msg, next, pendingMsgs);
+                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs);
 
                             try {
                                 long tstamp = U.currentTimeMillis();
@@ -3706,18 +3671,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 return;
             }
 
-            if (msg.client() && msg.senderNodeId().equals(leavingNodeId)) {
-                ClientMessageWorker clientMsgWrk = clientMsgWorkers.remove(leavingNodeId);
-
-                if (clientMsgWrk != null) {
-                    U.interrupt(clientMsgWrk);
-                    U.join(clientMsgWrk, log);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Stopped client worker because node left: " + leavingNodeId);
-                }
-            }
-
             GridTcpDiscoveryNode leavingNode = ring.node(leavingNodeId);
 
             if (leavingNode != null) {
@@ -4159,17 +4112,19 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 Collection<UUID> clientNodeIds = msg.clientNodeIds();
 
                 for (GridTcpDiscoveryNode clientNode : F.view(ring.allNodes(), CLIENT_NODES)) {
-                    if (clientNodeIds.contains(clientNode.id()))
-                        clientNode.aliveCheck(maxMissedHbs);
-                    else {
-                        int aliveCheck = clientNode.aliveCheck();
+                    if (clientNode.order() > 0) {
+                        if (clientNodeIds.contains(clientNode.id()))
+                            clientNode.aliveCheck(maxMissedHbs);
+                        else {
+                            int aliveCheck = clientNode.aliveCheck();
 
-                        if (--aliveCheck == 0) {
-                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, clientNode.id(),
-                                clientNode.order()));
+                            if (--aliveCheck == 0) {
+                                addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, clientNode.id(),
+                                    clientNode.order()));
+                            }
+                            else
+                                clientNode.aliveCheck(aliveCheck);
                         }
-                        else
-                            clientNode.aliveCheck(aliveCheck);
                     }
                 }
 
@@ -4767,7 +4722,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         msgWorker.addMessage(msg);
 
                         // Send receipt back.
-                        writeToSocket(sock, RES_OK);
+                        if (!client)
+                            writeToSocket(sock, RES_OK);
                     }
                     catch (GridException e) {
                         if (log.isDebugEnabled())
@@ -4908,6 +4864,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         @Override protected void cleanup() {
             super.cleanup();
 
+            U.closeQuiet(sock);
+
             synchronized (mux) {
                 readers.remove(this);
             }
@@ -5001,12 +4959,15 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** */
         private UUID nodeId;
 
+        /** Socket. */
+        private Socket sock;
+
         /**
          * @param sock Socket.
          * @param nodeId Node ID.
          */
         protected ClientMessageWorker(Socket sock, UUID nodeId) {
-            super("tcp-disco-client-message-worker", sock);
+            super("tcp-disco-client-message-worker");
 
             this.sock = sock;
             this.nodeId = nodeId;
@@ -5021,7 +4982,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
                     try {
-                        prepareNodeAddedMessage(msg, null, null);
+                        prepareNodeAddedMessage(msg, nodeId, null);
 
                         writeToSocket(sock, msg);
                     }
@@ -5039,6 +5000,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 U.closeQuiet(sock);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void cleanup() {
+            super.cleanup();
+
+            U.closeQuiet(sock);
         }
     }
 }

@@ -17,7 +17,6 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -28,13 +27,10 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    public static final int GRID_CNT = 1;
+    private static final int GRID_CNT = 2;
 
     /** */
-    public static final int CLIENT_GRID_CNT = 15;
-
-    /** */
-    public static final int THREAD_CNT = 14;
+    private static final int CLIENT_GRID_CNT = 2;
 
     /** */
     private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
@@ -156,7 +152,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"RedundantCast"})
     private void execute() throws Exception {
         info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
 
@@ -164,62 +159,60 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         clientFlagGlobal = true;
 
-//        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
-        for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
-            startGrid(i);
+        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
 
         final AtomicBoolean done = new AtomicBoolean();
-        final AtomicBoolean done0 = new AtomicBoolean();
 
-        final AtomicInteger idx = new AtomicInteger();
+        final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
 
-        final List<Integer> idxs = new ArrayList<>();
-
-        for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
-            idxs.add(i);
-
-        final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT, new Runnable() {
-            @Override public void run() {
-                if (done0.get())
-                    done.set(true);
-
-                Collections.shuffle(idxs);
-
-                idx.set(GRID_CNT);
-            }
-        });
-
-        GridFuture<?> fut = multithreadedAsync(
+        GridFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    while (true) {
-                        barrier.await();
+                    clientFlagPerThread.set(true);
 
-                        if (done.get())
-                            break;
+                    int idx = clientIdx.getAndIncrement();
 
-                        int i = idxs.get(idx.getAndIncrement());
-
-                        stopGrid(i);
-
-                        clientFlagPerThread.set(i >= GRID_CNT);
-
-                        startGrid(i);
+                    while (!done.get()) {
+                        stopGrid(idx);
+                        startGrid(idx);
                     }
-
-                    info("Thread finished.");
 
                     return null;
                 }
             },
-            THREAD_CNT
+            CLIENT_GRID_CNT
         );
 
-        // Duration = test timeout - 1 min.
+        final BlockingQueue<Integer> srvIdx = new LinkedBlockingQueue<>();
+
+        for (int i = 0; i < GRID_CNT; i++)
+            srvIdx.add(i);
+
+        GridFuture<?> fut2 = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFlagPerThread.set(false);
+
+                    while (!done.get()) {
+                        int idx = srvIdx.take();
+
+                        stopGrid(idx);
+                        startGrid(idx);
+
+                        srvIdx.add(idx);
+                    }
+
+                    return null;
+                }
+            },
+            GRID_CNT - 1
+        );
+
         Thread.sleep(getTestTimeout() - 60 * 1000);
 
-        done0.set(true);
+        done.set(true);
 
-        fut.get();
+        fut1.get();
+//        fut2.get();
     }
 }
