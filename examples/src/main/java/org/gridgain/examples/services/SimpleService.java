@@ -24,6 +24,11 @@ public class SimpleService implements GridService {
     }
 
     /** {@inheritDoc} */
+    @Override public void init(GridServiceContext ctx) throws Exception {
+        System.out.println("Service was initialized: " + ctx.name());
+    }
+
+    /** {@inheritDoc} */
     @Override public void execute(GridServiceContext ctx) throws Exception {
         System.out.println("Deployed distributed service: " + ctx.name());
 
