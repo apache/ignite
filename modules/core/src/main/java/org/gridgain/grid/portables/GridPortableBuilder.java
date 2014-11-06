@@ -31,17 +31,21 @@ import java.util.*;
  *
  * GridPortableObject portableObj = builder.build();
  * </pre>
- * For the cases when class definition is present
- * in the class path, it is also possible to populate a standard POJO and then
- * convert it to portable format, like so:
+ * Also {@code GridPortableBuilder} can wrap existing portable object to make a copy of this object with some changes.
+ * <p>
+ * Usage:
  * <pre name=code class=java>
- * MyObject obj = new MyObject();
+ * GridPortableBuilder builder = portableObj.createBuilder();
  *
- * obj.setFieldA("A");
- * obj.setFieldB(123);
+ * String firstName = builder.field("firstName");
+ * String lastName = builder.field("firstName");
+ * builder.fieldValue("fullName", firstName + " " + lastName)
  *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * portableObj = builder.build();
  * </pre>
+ *
+ * <p>
+ * This class is not thread-safe.
  */
 public interface GridPortableBuilder {
     /**
