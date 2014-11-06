@@ -282,7 +282,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     }
 
     /**
-     * Cache service.
+     * Simple map service.
      *
      * @param <K> Type of cache keys.
      * @param <V> Type of cache values.
@@ -320,25 +320,25 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
      */
     protected static class MapServiceImpl<K, V> implements MapService<K, V>, GridService {
         /** Underlying cache map. */
-        private final Map<K, V> cache = new ConcurrentHashMap<>();
+        private final Map<K, V> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void put(K key, V val) {
-            cache.put(key, val);
+            map.put(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public V get(K key) {
-            return cache.get(key);
+            return map.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            cache.clear();
+            map.clear();
         }
 
         @Override public int size() {
-            return cache.size();
+            return map.size();
         }
 
         /** {@inheritDoc} */
