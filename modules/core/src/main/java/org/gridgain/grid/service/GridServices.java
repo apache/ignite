@@ -142,7 +142,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws GridException If failed to deploy service.
      */
-    public void deployClusterSingleton(String name, GridService svc) throws GridException;
+    void deployClusterSingleton(String name, GridService svc) throws GridException;
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -194,7 +194,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws GridException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
+    void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
         throws GridException;
 
     /**

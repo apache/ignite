@@ -159,8 +159,16 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        GridFuture<?> fut1 = randomGrid().services().deployClusterSingleton(name, new DummyService());
-        GridFuture<?> fut2 = randomGrid().services().deployNodeSingleton(name, new DummyService());
+        GridServices svcs1 = randomGrid().services().enableAsync();
+        GridServices svcs2 = randomGrid().services().enableAsync();
+
+        svcs1.deployClusterSingleton(name, new DummyService());
+
+        GridFuture<?> fut1 = svcs1.future();
+
+        svcs2.deployNodeSingleton(name, new DummyService());
+
+        GridFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -303,8 +311,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         GridServices svcs = g.services().enableAsync();
 
-        g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
-            CACHE_NAME, affKey);
+        svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
+                CACHE_NAME, affKey);
 
         GridFuture<?> fut = svcs.future();
 
