@@ -103,7 +103,7 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
 
             if (fut != null) {
                 if (pending == null)
-                    pending = new HashMap<>(keys.size());
+                    pending = new HashMap<>();
 
                 pending.put(key, fut);
             }
@@ -116,7 +116,7 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
 
                 if (old != null) {
                     if (pending == null)
-                        pending = new HashMap<>(keys.size());
+                        pending = new HashMap<>();
 
                     pending.put(key, old);
                 }
