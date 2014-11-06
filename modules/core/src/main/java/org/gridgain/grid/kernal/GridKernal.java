@@ -62,6 +62,7 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
@@ -1342,7 +1343,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
-            boolean securityEnabled = U.securityEnabled(cfg);
+            GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
+
+            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), GridSpiNoop.class);
 
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 
@@ -2309,7 +2312,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
                 "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
     }
 

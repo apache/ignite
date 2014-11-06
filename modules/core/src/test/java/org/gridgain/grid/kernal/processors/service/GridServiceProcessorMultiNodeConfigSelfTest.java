@@ -65,7 +65,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setAffinityKey(AFFINITY_KEY);
         cfg.setMaxPerNodeCount(1);
         cfg.setTotalCount(1);
-        cfg.setService(new AffinityService(new CountDownLatch(1), AFFINITY_KEY));
+        cfg.setService(new AffinityService(AFFINITY_KEY));
 
         arr[2] = cfg;
 

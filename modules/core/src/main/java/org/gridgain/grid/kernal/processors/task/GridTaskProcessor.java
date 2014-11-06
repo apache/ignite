@@ -84,7 +84,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         discoLsnr = new TaskDiscoveryListener();
 
-        tasksMetaCache = ctx.security().securityEnabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */
@@ -327,7 +327,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (taskNameHash == 0)
             return null;
 
-        assert ctx.security().securityEnabled();
+        assert ctx.security().enabled();
 
         return tasksMetaCache.peek(new GridTaskNameHashKey(taskNameHash));
     }
@@ -529,7 +529,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridException securityEx = null;
 
-        if (ctx.security().securityEnabled() && deployEx == null) {
+        if (ctx.security().enabled() && deployEx == null) {
             try {
                 saveTaskMetadata(taskName);
             }
@@ -656,7 +656,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        assert ctx.security().securityEnabled();
+        assert ctx.security().enabled();
 
         int nameHash = taskName.hashCode();
 
