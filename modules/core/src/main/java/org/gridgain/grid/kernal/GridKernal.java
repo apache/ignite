@@ -106,7 +106,7 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends GridProjectionAdapter implements GridCluster, GridEx, GridKernalMBean {
+public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -214,10 +214,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
     /** Portables instance. */
     @GridToStringExclude
     private GridPortables portables;
-
-    /** DR pool. */
-    @GridToStringExclude
-    private ExecutorService drPool;
 
     /** Kernal gateway. */
     @GridToStringExclude
@@ -547,12 +543,11 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
     /**
      * @param cfg Grid configuration to use.
-     * @param drPool Dr executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
+    public void start(GridConfiguration cfg, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -590,6 +585,36 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         }
 
         assert cfg != null;
+
+        Collection<PluginProvider> pluginProviders;
+
+        if (!F.isEmpty(cfg.getPluginConfigurations())) {
+            pluginProviders = new ArrayList<>(cfg.getPluginConfigurations().size());
+
+            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
+                try {
+                    if (pluginCfg.providerClass() == null)
+                        throw new IgniteException("Provider class is null.");
+
+                    PluginProvider provider = pluginCfg.providerClass().newInstance();
+
+                    if (F.isEmpty(provider.name()))
+                        throw new IgniteException("Plugin name can not be empty.");
+
+                    if (provider.plugin() == null)
+                        throw new IgniteException("Plugin is null.");
+
+                    pluginProviders.add(provider);
+
+                    cfg = provider.processConfiguration(cfg, pluginCfg);
+                }
+                catch (InstantiationException | IllegalAccessException e) {
+                    throw new IgniteException("Failed to create plugin provider instance.", e);
+                }
+            }
+        }
+        else
+            pluginProviders = Collections.emptyList();
 
         // Make sure we got proper configuration.
         validateCommon(cfg);
@@ -661,7 +686,7 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, ENT);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, pluginProviders, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -678,8 +703,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
             scheduler = new GridSchedulerImpl(ctx);
 
-            this.drPool = drPool;
-
             startProcessor(ctx, rsrcProc, attrs);
 
             // Inject resources into lifecycle beans.
@@ -693,8 +716,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
-
-            Collection<PluginProvider> pluginProviders = ctx.createPluginProviders(cfg);
 
             GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, pluginProviders, ctx);
 
@@ -858,12 +879,14 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
             updateNtfTimer = new Timer("gridgain-update-notifier-timer");
 
+            final ExecutorService execSvc = cfg.getExecutorService();
+
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
                 @Override public void safeRun() throws InterruptedException {
                     verChecker.topologySize(nodes().size());
 
-                    verChecker.checkForNewVersion(cfg.getExecutorService(), log);
+                    verChecker.checkForNewVersion(execSvc, log);
 
                     // Just wait for 10 secs.
                     Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
@@ -883,6 +906,8 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
+            final ExecutorService execSvc = cfg.getExecutorService();
+
             starveTimer = new Timer("gridgain-starvation-checker");
 
             starveTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -890,7 +915,7 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
                 private long lastCompletedCnt;
 
                 @Override protected void safeRun() {
-                    ExecutorService e = cfg.getExecutorService();
+                    ExecutorService e = execSvc;
 
                     if (!(e instanceof ThreadPoolExecutor))
                         return;
@@ -957,6 +982,8 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
+            final GridConfiguration cfg0 = cfg;
+
             metricsLogTimer = new Timer("gridgain-metrics-logger");
 
             metricsLogTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -997,7 +1024,7 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
                         int pubPoolIdleThreads = 0;
                         int pubPoolQSize = 0;
 
-                        ExecutorService pubExec = cfg.getExecutorService();
+                        ExecutorService pubExec = cfg0.getExecutorService();
 
                         if (pubExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
@@ -1013,7 +1040,7 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
                         int sysPoolIdleThreads = 0;
                         int sysPoolQSize = 0;
 
-                        ExecutorService sysExec = cfg.getSystemExecutorService();
+                        ExecutorService sysExec = cfg0.getSystemExecutorService();
 
                         if (sysExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
@@ -1141,22 +1168,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         A.ensure(cfg.getDataCenterId() >= 0, "cfg.getDataCenterId() >= 0");
         A.ensure(cfg.getDataCenterId() < MAX_DATA_CENTERS, "cfg.getDataCenterId() <= 31");
 
-        boolean hasHubCfg = cfg.getDrSenderHubConfiguration() != null ||
-            cfg.getDrReceiverHubConfiguration() != null;
-
-        if (!hasHubCfg)
-            for (GridCacheConfiguration cacheCfg : cfg.getCacheConfiguration()) {
-                if (cacheCfg.getDrSenderConfiguration() != null || cacheCfg.getDrReceiverConfiguration() != null) {
-                    hasHubCfg = true;
-
-                    break;
-                }
-            }
-
-        if (hasHubCfg)
-            A.ensure(cfg.getDataCenterId() != 0, "cfg.getDataCenterId() must have non-zero value if grid has " +
-                "send or receiver hub configuration.");
-
         if (!F.isEmpty(cfg.getPluginConfigurations())) {
             for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
                 A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
@@ -1228,9 +1239,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             msgs.add("Network segmentation detection.");
-
-        if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
-            msgs.add("Data center replication.");
 
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
             msgs.add("Secure session SPI.");
@@ -1632,7 +1640,7 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
 
             ctx.add(comp);
 
-            provider.start(new GridPluginContext(ctx), cfgIter.next(), attrs);
+            provider.start(new GridPluginContext(ctx, cfgIter.next()), attrs);
         }
     }
 
@@ -2821,11 +2829,6 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService drPool() {
-        return drPool;
     }
 
     /**

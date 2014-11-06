@@ -995,11 +995,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ExecutorService drPool() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public GridProjectionEx forSubjectId(UUID subjId) {
             return null;
         }

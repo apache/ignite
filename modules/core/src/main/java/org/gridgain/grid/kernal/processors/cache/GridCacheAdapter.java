@@ -230,28 +230,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null &&
-                    F.eq(ctx.name(), CU.cacheNameForDrSystemCache(ccfg.getName()))) {
-                drSysCache = true;
-
-                break;
-            }
-        }
-
-        if (!drSysCache) {
-            GridDrSenderHubConfiguration sndHubCfg = gridCfg.getDrSenderHubConfiguration();
-
-            if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-                for (String cacheName : sndHubCfg.getCacheNames()) {
-                    if (F.eq(ctx.name(), CU.cacheNameForDrSystemCache(cacheName))) {
-                        drSysCache = true;
-
-                        break;
-                    }
-                }
-            }
-        }
+        drSysCache = CU.isDrSystemCache(configuration().getName());
 
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());

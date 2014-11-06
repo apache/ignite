@@ -11,9 +11,11 @@ package org.gridgain.grid.design.plugin;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.design.*;
+import org.gridgain.grid.kernal.managers.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Pluggable ignite component.
@@ -33,6 +35,14 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String version();
 
     /**
+     * @param cfg Configuration.
+     * @param pluginCfg Plugin configuration.
+     *
+     * @return Configuration.
+     */
+    public GridConfiguration processConfiguration(GridConfiguration cfg, C pluginCfg);
+
+    /**
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
@@ -44,14 +54,19 @@ public interface PluginProvider<C extends PluginConfiguration> {
     @Nullable public <T> T createComponent(Class<T> cls);
 
     /**
+     * @param type Pool type.
+     * @return Executor service.
+     */
+    @Nullable public ExecutorService createMessageProcessPool(Object type);
+
+    /**
      * Starts grid component.
      *
      * @param ctx Plugin context.
-     * @param cfg Plugin configuration.
      * @param attrs Attributes.
      * @throws IgniteException Throws in case of any errors.
      */
-    public void start(PluginContext ctx, C cfg, Map<String, Object> attrs) throws IgniteException;
+    public void start(PluginContext ctx, Map<String, Object> attrs) throws IgniteException;
 
     /**
      * Stops grid component.

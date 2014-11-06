@@ -707,16 +707,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (GridComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
-        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
-        }
-
-        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
-
-        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-            for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
+        for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
+            if (CU.isDrSystemCache(ccfg.getName()))
+                sysCaches.add(ccfg.getName());
         }
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);

@@ -474,12 +474,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public String userVersion(ClassLoader ldr);
 
     /**
-     * @param cfg Configuration.
-     * @return Collection of instantiated plugin providers.
-     */
-    public Collection<PluginProvider> createPluginProviders(GridConfiguration cfg);
-
-    /**
      * @param name Plugin name.
      * @return Plugin provider instance.
      * @throws PluginNotFoundException If plugin provider for the given name was not found.

@@ -121,13 +121,6 @@ public interface GridEx extends Grid, GridProjectionEx, GridCluster {
     GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
 
     /**
-     * Get DR pool.
-     *
-     * @return DR pool.
-     */
-    @Nullable public ExecutorService drPool();
-
-    /**
      * Get GGFS instance returning null if it doesn't exist.
      *
      * @param name GGFS name.

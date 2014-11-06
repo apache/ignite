@@ -9,26 +9,69 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.design.plugin.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.spi.*;
+
+import java.util.*;
 
 /**
  *
  */
 public class GridPluginContext implements PluginContext {
     /** */
+    private final PluginConfiguration cfg;
+
+    /** */
     private final GridKernalContext ctx;
 
     /**
      * @param ctx Kernal context.
+     * @param cfg Plugin configuration.
      */
-    public GridPluginContext(GridKernalContext ctx) {
+    public GridPluginContext(GridKernalContext ctx, PluginConfiguration cfg) {
+        this.cfg = cfg;
         this.ctx = ctx;
     }
 
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext context() {
-        return ctx;
+    /** {@inheritDoc} */
+    @Override public PluginConfiguration configuration() {
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Grid grid() {
+        return ctx.grid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridNode> nodes() {
+        return ctx.discovery().allNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNode localNode() {
+        return ctx.discovery().localNode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridLogger log(Class<?> cls) {
+        return ctx.log(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerPort(int port, GridPortProtocol proto, Class<?> cls) {
+        ctx.ports().registerPort(port, proto, cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deregisterPort(int port, GridPortProtocol proto, Class<?> cls) {
+        ctx.ports().deregisterPort(port, proto, cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deregisterPorts(Class<?> cls) {
+        ctx.ports().deregisterPorts(cls);
     }
 }

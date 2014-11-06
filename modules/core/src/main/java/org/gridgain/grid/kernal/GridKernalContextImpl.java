@@ -282,6 +282,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** Enterprise release flag. */
     private boolean ent;
 
+    /** */
+    private ExecutorService drPool;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -296,10 +299,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
+     * @param pluginProviders Plugin providers.
      * @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
+    protected GridKernalContextImpl(GridLoggerProxy log,
+        GridEx grid,
+        GridConfiguration cfg,
+        GridKernalGateway gw,
+        Collection<PluginProvider> pluginProviders,
         boolean ent) {
         assert grid != null;
         assert cfg != null;
@@ -317,6 +325,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             if (log != null && log.isDebugEnabled())
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/gridgain.xml.");
+        }
+
+        for (PluginProvider provider : pluginProviders) {
+            if (plugins.containsKey(provider.name()))
+                throw new IgniteException("Duplicated plugin name: " + provider.name());
+
+            plugins.put(provider.name(), provider);
+
+            if (drPool == null)
+                drPool = provider.createMessageProcessPool(GridIoPolicy.DR_POOL);
         }
     }
 
@@ -661,7 +679,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public ExecutorService drPool() {
-        return grid.drPool();
+        return drPool;
     }
 
     /** {@inheritDoc} */
@@ -777,42 +795,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             return (T)new GridOsCacheDrManager();
 
         throw new IgniteException("Unsupported component type: " + cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<PluginProvider> createPluginProviders(GridConfiguration cfg) {
-        if (!F.isEmpty(cfg.getPluginConfigurations())) {
-            Collection<PluginProvider> res = new ArrayList<>(cfg.getPluginConfigurations().size());
-
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                try {
-                    if (pluginCfg.providerClass() == null)
-                        throw new IgniteException("Provider class is null.");
-
-                    PluginProvider provider = pluginCfg.providerClass().newInstance();
-
-                    if (F.isEmpty(provider.name()))
-                        throw new IgniteException("Plugin name can not be empty.");
-
-                    if (provider.plugin() == null)
-                        throw new IgniteException("Plugin is null.");
-
-                    res.add(provider);
-
-                    if (plugins.containsKey(provider.name()))
-                        throw new IgniteException("Duplicated plugin name: " + provider.name());
-
-                    plugins.put(provider.name(), provider);
-                }
-                catch (InstantiationException | IllegalAccessException e) {
-                    throw new IgniteException("Failed to create plugin provider instance.", e);
-                }
-            }
-
-            return res;
-        }
-        else
-            return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
