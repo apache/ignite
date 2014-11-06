@@ -33,6 +33,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -1233,11 +1234,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /**
      * Wrapper list with special compact serialization of map entries.
-     *
-     * @param <K> Key type.
-     * @param <V> Value type.
      */
-    private static class Entries0<K, V> implements Collection<Map.Entry<K, V>>, Externalizable {
+    private static class Entries0<K, V> extends AbstractCollection<Map.Entry<K, V>> implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1245,8 +1243,12 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         private Collection<Map.Entry<K, V>> delegate;
 
         /** Optional portable processor for converting values. */
-        private final GridPortableProcessor portable;
+        private GridPortableProcessor portable;
 
+        /**
+         * @param delegate Delegate.
+         * @param portable Portable processor.
+         */
         private Entries0(Collection<Map.Entry<K, V>> delegate, GridPortableProcessor portable) {
             this.delegate = delegate;
             this.portable = portable;
@@ -1256,12 +1258,22 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * For {@link Externalizable}.
          */
         public Entries0() {
-            this(new ArrayList<Map.Entry<K, V>>(), null);
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Entry<K, V>> iterator() {
+            return delegate.iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return delegate.size();
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(size());
+            out.writeInt(delegate.size());
 
             for (Map.Entry<K, V> entry : delegate) {
                 out.writeObject(entry.getKey());
@@ -1283,83 +1295,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 Object k = in.readObject();
                 Object v = in.readObject();
 
-                add(new Entry0<>((K)k, (V)v));
+                delegate.add(new Entry0<>((K)k, (V)v));
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public int size() {
-            return delegate.size();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isEmpty() {
-            return delegate.isEmpty();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean contains(Object o) {
-            return delegate.contains(o);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<Map.Entry<K, V>> iterator() {
-            return delegate.iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object[] toArray() {
-            return delegate.toArray();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T[] toArray(T[] a) {
-            return delegate.toArray(a);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean add(Map.Entry<K, V> entry) {
-            return delegate.add(entry);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean remove(Object o) {
-            return delegate.remove(o);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean containsAll(Collection<?> c) {
-            return delegate.containsAll(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean addAll(Collection<? extends Map.Entry<K, V>> c) {
-            return delegate.addAll(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removeAll(Collection<?> c) {
-            return delegate.removeAll(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean retainAll(Collection<?> c) {
-            return delegate.retainAll(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear() {
-            delegate.clear();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            return o == this || delegate.equals(o);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return delegate.hashCode();
         }
     }
 }
