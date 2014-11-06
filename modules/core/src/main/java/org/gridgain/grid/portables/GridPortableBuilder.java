@@ -31,17 +31,21 @@ import java.util.*;
  *
  * GridPortableObject portableObj = builder.build();
  * </pre>
- * For the cases when class definition is present
- * in the class path, it is also possible to populate a standard POJO and then
- * convert it to portable format, like so:
+ * Also {@code GridPortableBuilder} can wrap existing portable object to make a copy of this object with some changes.
+ * <p>
+ * Usage:
  * <pre name=code class=java>
- * MyObject obj = new MyObject();
+ * GridPortableBuilder builder = portableObj.createBuilder();
  *
- * obj.setFieldA("A");
- * obj.setFieldB(123);
+ * String firstName = builder.field("firstName");
+ * String lastName = builder.field("firstName");
+ * builder.fieldValue("fullName", firstName + " " + lastName)
  *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * portableObj = builder.build();
  * </pre>
+ *
+ * <p>
+ * This class is not thread-safe.
  */
 public interface GridPortableBuilder {
     /**
@@ -68,6 +72,26 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder hashCode(int hashCode);
+
+    /**
+     * Returns the value of the specified field.
+     * If the value is another portable object instance of {@code GridPortableBuilder} will be returned.
+     * Arrays and collections returned from this method are modifiable.
+     *
+     * @param fldName Field name.
+     * @return Value of the field.
+     */
+    public <F> F field(String fldName);
+
+    /**
+     * Sets field value. Type of field will be determinated by value.
+     * Note: This method can be called for builder created by existing portable object only!!! For new portable objects
+     * you have to specify type of field explicitly.
+     *
+     * @param fldName Field name.
+     * @param val Field value.
+     */
+    public void field(String fldName, @Nullable Object val);
 
     /**
      * Adds {@code byte} field.
@@ -158,6 +182,15 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder uuidField(String fieldName, @Nullable UUID val);
+
+    /**
+     * Adds {@link Date} field.
+     *
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder dateField(String fieldName, @Nullable Date val);
 
     /**
      * Adds {@link Object} field.
@@ -259,6 +292,15 @@ public interface GridPortableBuilder {
     public GridPortableBuilder uuidArrayField(String fieldName, @Nullable UUID[] val);
 
     /**
+     * Adds {@code Date array} field.
+     *
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder dateArrayField(String fieldName, @Nullable Date[] val);
+
+    /**
      * Adds {@code Object array} field.
      *
      * @param fieldName Field name.
@@ -284,6 +326,24 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder mapField(String fieldName, @Nullable Map<?, ?> val);
+
+    /**
+     * Adds {@link Enum} field.
+     *
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return {@code this} instance for chaining.
+     */
+    public <T extends Enum<?>> GridPortableBuilder enumField(String fieldName, T val);
+
+    /**
+     * Adds {@link Enum array} field.
+     *
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return {@code this} instance for chaining.
+     */
+    public <T extends Enum<?>> GridPortableBuilder enumArrayField(String fieldName, T[] val);
 
     /**
      * Builds portable object.
