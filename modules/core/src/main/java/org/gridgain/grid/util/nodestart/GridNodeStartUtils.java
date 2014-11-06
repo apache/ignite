@@ -209,8 +209,7 @@ public class GridNodeStartUtils {
     public static Map<String, Collection<GridRemoteStartSpecification>> specifications(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts)
         throws GridException {
-        Map<String, Collection<GridRemoteStartSpecification>> specsMap =
-            new HashMap<>(hosts.size());
+        Map<String, Collection<GridRemoteStartSpecification>> specsMap = U.newHashMap(hosts.size());
 
         GridRemoteStartSpecification dfltSpec = processDefaults(dflts);
 

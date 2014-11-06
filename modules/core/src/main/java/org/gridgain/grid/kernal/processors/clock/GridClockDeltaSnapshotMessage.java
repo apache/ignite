@@ -159,7 +159,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
                 if (commState.readSize >= 0) {
                     if (deltas == null)
-                        deltas = new HashMap<>(commState.readSize);
+                        deltas = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {

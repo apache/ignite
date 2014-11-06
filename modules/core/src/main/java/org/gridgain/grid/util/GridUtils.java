@@ -22,8 +22,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -649,17 +649,6 @@ public abstract class GridUtils {
         GridDiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
-    }
-
-    /**
-     * Checks whether authentication SPI other than noop authentication SPI is configured.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if authentication SPI is configured.
-     */
-    public static boolean securityEnabled(GridConfiguration cfg) {
-        return cfg.getAuthenticationSpi() != null &&
-            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
     }
 
     /**
@@ -4582,7 +4571,7 @@ public abstract class GridUtils {
         if (size == -1)
             return null;
         else {
-            Map<String, String> map = new HashMap<>(size);
+            Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
                 map.put(in.readUTF(), in.readUTF());
@@ -7764,6 +7753,8 @@ public abstract class GridUtils {
         assert nodeId != null;
         assert fileName != null;
 
+        fileName = GridFilenameUtils.separatorsToSystem(fileName);
+
         int dot = fileName.lastIndexOf('.');
 
         if (dot < 0 || dot == fileName.length() - 1)
@@ -8815,5 +8806,71 @@ public abstract class GridUtils {
         UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
 
         return res;
+    }
+
+    /**
+     * Returns a capacity that is sufficient to keep the map from being resized as
+     * long as it grows no larger than expSize and the load factor is >= its
+     * default (0.75).
+     *
+     * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
+     *
+     * @param expSize Expected size of created map.
+     * @return Capacity.
+     */
+    public static int capacity(int expSize) {
+        if (expSize < 3)
+            return expSize + 1;
+
+        if (expSize < (1 << 30))
+            return expSize + expSize / 3;
+
+        return Integer.MAX_VALUE; // any large value
+    }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
     }
 }
