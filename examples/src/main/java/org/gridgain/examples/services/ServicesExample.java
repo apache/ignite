@@ -133,7 +133,7 @@ public class ServicesExample {
     private static class SimpleClosure implements GridCallable<Integer> {
         // Auto-inject service proxy.
         @GridServiceResource(serviceName = "myClusterSingletonService", proxyInterface = SimpleMapService.class)
-        private SimpleMapService mapSvc;
+        private transient SimpleMapService mapSvc;
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
