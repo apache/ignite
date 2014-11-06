@@ -184,6 +184,18 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException {
+        guard();
+
+        try {
+            return ctx.service().serviceProxy(prj, name, svc, sticky);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> Collection<T> services(String name) {
         guard();
 

@@ -21,8 +21,10 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Tests for {@link GridAffinityProcessor}.
@@ -51,12 +53,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         GridServiceConfiguration[] svcs = services();
 
         if (svcs != null)
-            c.setServiceConfiguration(services());
+            c.setServiceConfiguration(svcs);
 
         GridCacheConfiguration cc = new GridCacheConfiguration();
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setBackups(nodeCount());
 
         c.setCacheConfiguration(cc);
 
@@ -80,7 +83,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
+    @SuppressWarnings("ConstantConditions")
     @Override protected void beforeTestsStarted() throws Exception {
         assert nodeCount() >= 1;
 
@@ -99,6 +102,22 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    protected void startExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            startGrid(nodeCount() + i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void stopExtraNodes(int cnt) throws Exception {
+        for (int i = 0; i < cnt; i++)
+            stopGrid(nodeCount() + i);
+    }
+
+    /**
      * @return Random grid.
      */
     protected Grid randomGrid() {
@@ -108,7 +127,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDuplicateName() throws Exception {
+    public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
         GridServices svcs1 = randomGrid().services().enableAsync();
@@ -126,15 +145,36 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         fut1.get();
 
+        info("Finished waiting for service future1: " + name);
+
+        // This must succeed without exception because configuration is the same.
+        fut2.get();
+
+        info("Finished waiting for service future2: " + name);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentConfiguration() throws Exception {
+        String name = "dupService";
+
+        GridFuture<?> fut1 = randomGrid().services().deployClusterSingleton(name, new DummyService());
+        GridFuture<?> fut2 = randomGrid().services().deployNodeSingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut1.get();
+
         info("Finished waiting for service future: " + name);
 
         try {
             fut2.get();
 
-            fail("Failed to receive duplicate service exception.");
+            fail("Failed to receive mismatching configuration exception.");
         }
         catch (GridException e) {
-            info("Received duplicate service exception: " + e.getMessage());
+            info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
 
@@ -148,13 +188,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         g.services().deployNodeSingleton(name, new DummyService());
 
-        DummyService srvc = g.services().service(name);
+        DummyService svc = g.services().service(name);
 
-        assertNotNull(srvc);
+        assertNotNull(svc);
 
-        Collection<DummyService> srvcs = g.services().services(name);
+        Collection<DummyService> svcs = g.services().services(name);
 
-        assertEquals(1, srvcs.size());
+        assertEquals(1, svcs.size());
     }
 
     /**
@@ -168,14 +208,15 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override public void apply() {
+            @Override
+            public void apply() {
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> srvcs = grid(i).services().services(name);
+                    Collection<DummyService> svcs = grid(i).services().services(name);
 
-                    if (srvcs != null)
-                        cnt += srvcs.size();
+                    if (svcs != null)
+                        cnt += svcs.size();
                 }
 
                 assertEquals(nodeCount() * 2, cnt);
@@ -253,18 +294,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testAffinityDeploy() throws Exception {
         Grid g = randomGrid();
 
-        String name = "serviceAffinity";
-
         final Integer affKey = 1;
 
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        String name = "serviceAffinity";
 
         GridServices svcs = g.services().enableAsync();
 
-        svcs.deployKeyAffinitySingleton(name, new AffinityService(latch, affKey), CACHE_NAME, affKey);
+        g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
+            CACHE_NAME, affKey);
 
         GridFuture<?> fut = svcs.future();
 
@@ -273,8 +313,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         fut.get();
 
         info("Finished waiting for service future: " + name);
-
-        latch.await();
 
         checkCount(name, g.services().deployedServices(), 1);
     }
@@ -416,24 +454,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
-     * @param cnt Nodes count.
-     * @throws Exception If failed.
-     */
-    protected void startExtraNodes(int cnt) throws Exception {
-        for (int i = 0; i < cnt; i++)
-            startGrid(nodeCount() + i);
-    }
-
-    /**
-     * @param cnt Nodes count.
-     * @throws Exception If failed.
-     */
-    protected void stopExtraNodes(int cnt) throws Exception {
-        for (int i = 0; i < cnt; i++)
-            stopGrid(nodeCount() + i);
-    }
-
-    /**
      * @param svcName Service name.
      * @param descs Descriptors.
      * @param cnt Expected count.
@@ -461,28 +481,43 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * Counter service.
+     */
+    protected interface CounterService {
+        /**
+         * @return Number of increments happened on the same service instance.
+         */
+        int localIncrements();
+
+        /**
+         * @return Incremented value.
+         */
+        int increment();
+
+        /**
+         * @return Current value.
+         */
+        int get();
+    }
+
+    /**
      * Affinity service.
      */
     protected static class AffinityService implements GridService {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Latch. */
-        private static CountDownLatch latch;
-
         /** Affinity key. */
         private final Object affKey;
 
+        /** Grid. */
         @GridInstanceResource
         private Grid g;
 
         /**
-         * @param latch Latch.
          * @param affKey Affinity key.
          */
-        public AffinityService(CountDownLatch latch, Object affKey) {
-            AffinityService.latch = latch;
-
+        public AffinityService(Object affKey) {
             this.affKey = affKey;
         }
 
@@ -492,15 +527,131 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) {
-            System.out.println("Executing affinity service for key: " + affKey);
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            X.println("Initializing affinity service for key: " + affKey);
 
             GridNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
 
             assertNotNull(n);
             assertTrue(n.isLocal());
+        }
 
-            latch.countDown();
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) {
+            X.println("Executing affinity service for key: " + affKey);
+        }
+    }
+
+    /**
+     * Counter service implementation.
+     */
+    protected static class CounterServiceImpl implements CounterService, GridService {
+        /** Auto-injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private GridCache<String, Value> cache;
+
+        /** Cache key. */
+        private String key;
+
+        /** Invocation count. */
+        private AtomicInteger locIncrements = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public int localIncrements() {
+            return locIncrements.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int increment() {
+            locIncrements.incrementAndGet();
+
+            try {
+                while (true) {
+                    Value val = cache.get(key);
+
+                    if (val == null) {
+                        Value old = cache.putIfAbsent(key, val = new Value(0));
+
+                        if (old != null)
+                            val = old;
+                    }
+
+                    Value newVal = new Value(val.get() + 1);
+
+                    if (cache.replace(key, val, newVal))
+                        return newVal.get();
+                }
+
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int get() {
+            try {
+                Value val = cache.get(key);
+
+                return val == null ? 0 : val.get();
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(GridServiceContext ctx) {
+            X.println("Stopping counter service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            X.println("Initializing counter service: " + ctx.name());
+
+            key = ctx.name();
+
+            cache = grid.cache(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(GridServiceContext ctx) throws Exception {
+            X.println("Executing counter service: " + ctx.name());
+        }
+
+        /**
+         *
+         */
+        private static class Value implements Serializable {
+            /** Value. */
+            private final int v;
+
+            /**
+             * @param v Value.
+             */
+            private Value(int v) {
+                this.v = v;
+            }
+
+            /**
+             * @return Value.
+             */
+            int get() {
+                return v;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object o) {
+                return this == o || o instanceof Value && v == ((Value)o).v;
+            }
+
+            /** {@inheritDoc} */
+            @Override public int hashCode() {
+                return v;
+            }
         }
     }
 }

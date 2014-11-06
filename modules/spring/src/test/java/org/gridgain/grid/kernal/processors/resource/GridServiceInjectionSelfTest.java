@@ -256,6 +256,11 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }
 
         /** {@inheritDoc} */
+        @Override public void init(GridServiceContext ctx) throws Exception {
+            System.out.println("Initializing service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
         @Override public void execute(GridServiceContext ctx) {
             System.out.println("Executing service: " + ctx.name());
         }

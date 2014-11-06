@@ -50,6 +50,9 @@
         <!-- Explicitly set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>
 
+        <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+
         <property name="marshaller">
             <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->

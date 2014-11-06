@@ -22,8 +22,11 @@ public class DummyService implements GridService {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Started counter per service. */
+    /** Inited counter per service. */
     public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap8<>();
+
+    /** Started counter per service. */
+    public static final ConcurrentMap<String, AtomicInteger> inited = new ConcurrentHashMap8<>();
 
     /** Latches per service. */
     private static final ConcurrentMap<String, CountDownLatch> exeLatches = new ConcurrentHashMap8<>();
@@ -53,6 +56,22 @@ public class DummyService implements GridService {
             latch.countDown();
 
         System.out.println("Cancelling service: " + ctx.name());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(GridServiceContext ctx) throws Exception {
+        AtomicInteger cntr = inited.get(ctx.name());
+
+        if (cntr == null) {
+            AtomicInteger old = inited.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+
+            if (old != null)
+                cntr = old;
+        }
+
+        cntr.incrementAndGet();
+
+        System.out.println("Initializing service: " + ctx.name());
     }
 
     /** {@inheritDoc} */

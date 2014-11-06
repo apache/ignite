@@ -10,15 +10,18 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.resources.*;
+import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Tests service reassignment.
@@ -58,6 +61,13 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    private CounterService proxy(Grid g) throws Exception {
+        return g.services().serviceProxy("testService", CounterService.class, false);
+    }
+
+    /**
      * @param total Total number of services.
      * @param maxPerNode Maximum number of services per node.
      * @throws GridException If failed.
@@ -67,7 +77,10 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         DummyService.exeLatch("testService", latch);
 
-        grid(0).services().deployMultiple("testService", new DummyService(), total, maxPerNode);
+        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
+
+        for (int i = 0; i < 10; i++)
+            proxy(randomGrid()).increment();
 
         Collection<Integer> startedGrids = new HashSet<>();
 
@@ -138,6 +151,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         Collection<UUID> nodes = F.viewReadOnly(grid.nodes(), F.node2id());
 
+        assertNotNull("Grid assignments object is null", assignments);
+
         int sum = 0;
 
         for (Map.Entry<UUID, Integer> entry : assignments.assigns().entrySet()) {
@@ -157,6 +172,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         if (total > 0)
             assertTrue("Total number of services limit exceeded [sum=" + sum +
                 ", assigns=" + assignments.assigns() + ']', sum <= total);
+
+        assertEquals(10, proxy(grid).get());
     }
 
     /**
@@ -175,6 +192,11 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         }
     }
 
+    /**
+     * @param startedGrids Started grids.
+     * @param rnd Random numbers generator.
+     * @return Randomly chosen started grid.
+     */
     private int nextRandomIdx(Iterable<Integer> startedGrids, Random rnd) {
         while (true) {
             for (Integer idx : startedGrids) {
@@ -183,5 +205,4 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
             }
         }
     }
-
 }
