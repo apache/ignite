@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -186,7 +187,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                 if (commState.readSize >= 0) {
                     if (blocks == null)
-                        blocks = new HashMap<>(commState.readSize);
+                        blocks = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {

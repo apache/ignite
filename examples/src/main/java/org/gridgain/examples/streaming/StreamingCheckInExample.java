@@ -174,7 +174,7 @@ public class StreamingCheckInExample {
                                 Collection<GridStreamerIndexEntry<LocationInfo, String, Place>> entries =
                                     idxView.entries(0);
 
-                                Map<String, Place> ret = new HashMap<>(entries.size());
+                                Map<String, Place> ret = new HashMap<>(entries.size(), 1.0f);
 
                                 for (GridStreamerIndexEntry<LocationInfo, String, Place> e : entries)
                                     ret.put(e.key(), e.value());

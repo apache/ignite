@@ -771,7 +771,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                     if (ids == null)
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partitions.
-                        p2n.put(p, ids = new HashSet<>(3));
+                        p2n.put(p, ids = U.newHashSet(3));
 
                     ids.add(e.getKey());
                 }
@@ -856,7 +856,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 if (ids == null)
                     // Initialize HashSet to size 3 in anticipation that there won't be
                     // more than 3 nodes per partition.
-                    part2node.put(p, ids = new HashSet<>(3));
+                    part2node.put(p, ids = U.newHashSet(3));
 
                 changed |= ids.add(parts.nodeId());
             }
@@ -902,7 +902,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             if (state.active()) {
                 int p = part.id();
 
-                Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
+                List<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
 
                 if (!affNodes.contains(cctx.localNode())) {
                     Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));
@@ -1008,7 +1008,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         Set<UUID> ids = part2node.get(p);
 
         if (ids == null)
-            part2node.put(p, ids = new HashSet<>(3));
+            part2node.put(p, ids = U.newHashSet(3));
 
         ids.add(nodeId);
     }

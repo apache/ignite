@@ -2212,7 +2212,7 @@ public class GridFunc {
                         iter.remove();
         }
         else {
-            res = new HashMap<>(m.size());
+            res = U.newHashMap(m.size());
 
             if (!isEmpty(p) && !isAlwaysTrue(p))
                 for (Map.Entry<K, V> e : m.entrySet())
@@ -4562,6 +4562,19 @@ public class GridFunc {
         Iterator<? extends T> it = c.iterator();
 
         return it.hasNext() ? it.next() : null;
+    }
+
+    /**
+     * Gets first element from given list or returns {@code null} if list is empty.
+     *
+     * @param list List.
+     * @return List' first element or {@code null} in case if list is empty.
+     */
+    public static <T> T first(List<? extends T> list) {
+        if (list.isEmpty())
+            return null;
+
+        return list.get(0);
     }
 
     /**

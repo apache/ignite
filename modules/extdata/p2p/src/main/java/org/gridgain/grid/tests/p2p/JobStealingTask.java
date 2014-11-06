@@ -4,6 +4,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,7 +31,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
         @Nullable Object arg) throws GridException {
         assert !subgrid.isEmpty();
 
-        Map<GridComputeJobAdapter, GridNode> map = new HashMap<>(subgrid.size());
+        Map<GridComputeJobAdapter, GridNode> map = U.newHashMap(subgrid.size());
 
         // Put all jobs onto one node.
         for (int i = 0; i < N_JOBS; i++)
@@ -42,7 +43,7 @@ public class JobStealingTask extends GridComputeTaskAdapter<Object, Map<UUID, In
     /** {@inheritDoc} */
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override public Map<UUID, Integer> reduce(List<GridComputeJobResult> results) throws GridException {
-        Map<UUID, Integer> ret = new HashMap<>(results.size());
+        Map<UUID, Integer> ret = U.newHashMap(results.size());
 
         for (GridComputeJobResult res : results) {
             log.info("Job result: " + res.getData());

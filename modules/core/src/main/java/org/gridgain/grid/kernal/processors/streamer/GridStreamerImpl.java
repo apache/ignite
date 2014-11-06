@@ -185,7 +185,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
         U.startLifecycleAware(lifecycleAwares());
 
-        stages = new LinkedHashMap<>(c.getStages().size());
+        stages = U.newLinkedHashMap(c.getStages().size());
 
         int stageIdx = 0;
 

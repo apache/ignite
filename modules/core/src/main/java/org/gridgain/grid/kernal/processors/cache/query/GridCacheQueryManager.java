@@ -60,13 +60,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public static final GridProductVersion QUERY_EVENTS_SINCE = GridProductVersion.fromString("6.2.1");
 
     /** */
-    private static final Collection<String> IGNORED_FIELDS = F.asList(
-        "_GG_VAL_STR__",
-        "_GG_VER__",
-        "_GG_EXPIRES__"
-    );
-
-    /** */
     protected GridIndexingManager idxMgr;
 
     /** Indexing SPI name. */
@@ -909,26 +902,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                     res.metaData();
 
-                BitSet ignored = new BitSet();
-
-                // Filter internal fields.
-                if (meta != null) {
-                    Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
-
-                    int i = 0;
-
-                    while (metaIt.hasNext()) {
-                        if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
-                            ignored.set(i);
-
-                            if (qryInfo.includeMetaData())
-                                metaIt.remove();
-                        }
-
-                        i++;
-                    }
-                }
-
                 if (!qryInfo.includeMetaData())
                     meta = null;
 
@@ -958,18 +931,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         onPageReady(qryInfo.local(), qryInfo, null, true, null);
 
                         break;
-                    }
-
-                    // Filter internal fields.
-                    Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
-
-                    int i = 0;
-
-                    while (rowIt.hasNext()) {
-                        rowIt.next();
-
-                        if (ignored.get(i++))
-                            rowIt.remove();
                     }
 
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
@@ -1065,7 +1026,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qryInfo Query info.
      */
     @SuppressWarnings("unchecked")
-    protected <R> void runQuery(GridCacheQueryInfo qryInfo) {
+    protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
         if (!enterBusy()) {
@@ -1688,24 +1649,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    private GridIndexingQueryFilter<K, V> projectionFilter(GridCacheQueryAdapter<?> qry) {
+    @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
         final GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
 
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String s, K k, V v) {
-                if (prjFilter == null || F.isAlwaysTrue(prjFilter) || !F.eq(space, s))
-                    return true;
+        if (prjFilter == null || F.isAlwaysTrue(prjFilter))
+            return null;
 
-                try {
-                    GridCacheEntry<K, V> entry = context().cache().entry(k);
+        return new GridIndexingQueryFilter() {
+            @Nullable @Override public GridBiPredicate<K, V> forSpace(String spaceName) throws GridException {
+                if (!F.eq(space, spaceName))
+                    return null;
 
-                    return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
-                }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    return false;
-                }
+                return new GridBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        try {
+                            GridCacheEntry<K, V> entry = context().cache().entry(k);
+
+                            return entry != null && prjFilter.apply((GridCacheEntry<Object, Object>)entry);
+                        }
+                        catch (GridDhtInvalidPartitionException ignore) {
+                            return false;
+                        }
+                    }
+                };
             }
         };
     }
@@ -1791,12 +1759,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 @Override public CacheSqlMetadata apply(String cacheName) {
                     Collection<GridIndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
 
-                    Collection<String> names = new HashSet<>(types.size());
-                    Map<String, String> keyClasses = new HashMap<>(types.size());
-                    Map<String, String> valClasses = new HashMap<>(types.size());
-                    Map<String, Map<String, String>> fields = new HashMap<>(types.size());
-                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes =
-                        new HashMap<>(types.size());
+                    Collection<String> names = U.newHashSet(types.size());
+                    Map<String, String> keyClasses = U.newHashMap(types.size());
+                    Map<String, String> valClasses = U.newHashMap(types.size());
+                    Map<String, Map<String, String>> fields = U.newHashMap(types.size());
+                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
 
                     for (GridIndexingTypeDescriptor type : types) {
                         // Filter internal types (e.g., data structures).
@@ -1810,7 +1777,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         int size = 2 + type.keyFields().size() + type.valueFields().size();
 
-                        Map<String, String> fieldsMap = new LinkedHashMap<>(size);
+                        Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
                         fieldsMap.put("_KEY", type.keyClass().getName());
