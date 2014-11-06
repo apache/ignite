@@ -179,7 +179,7 @@ public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploy
     @Override public boolean unregister(String rsrcName) {
         Collection<ClassLoader> rmvClsLdrs = new LinkedList<>();
 
-        Map<String, String> rsrcs = new HashMap<>(1);
+        Map<String, String> rsrcs = U.newHashMap(1);
 
         rsrcs.put(rsrcName, rsrcName);
 
@@ -248,7 +248,7 @@ public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploy
             else {
                 // New resource was added.
                 if (newRsrcs == null)
-                    newRsrcs = new HashMap<>(regRsrcs.size());
+                    newRsrcs = U.newHashMap(regRsrcs.size());
 
                 newRsrcs.put(entry.getKey(), entry.getValue());
             }
