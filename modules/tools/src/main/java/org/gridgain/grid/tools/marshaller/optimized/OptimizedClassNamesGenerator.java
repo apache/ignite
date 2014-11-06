@@ -204,7 +204,7 @@ public class OptimizedClassNamesGenerator {
                 throw new RuntimeException("serialVersionUID field is not final in class: " + cls.getName());
         }
         catch (NoSuchFieldException ignored) {
-            System.out.println(">>> No serialVersionUID field in class: " + cls.getName());
+            throw new RuntimeException("No serialVersionUID field in class: " + cls.getName());
         }
     }
 
