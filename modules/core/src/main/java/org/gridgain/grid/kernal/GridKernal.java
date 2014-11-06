@@ -2631,19 +2631,63 @@ public class GridKernal extends GridProjectionAdapter implements GridCluster, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(File file, boolean restart,
+    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
         int timeout, int maxConn) throws GridException {
+        return startNodesAsync(file, restart, timeout, maxConn).get();
+    }
+
+    /**
+     * @param file Configuration file.
+     * @param restart Whether to stop existing nodes.
+     * @param timeout Connection timeout.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return Future with results.
+     * @throws GridException In case of error.
+     * @see {@link GridCluster#startNodes(java.io.File, boolean, int, int)}.
+     */
+    GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws GridException {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
 
         GridBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
-        return startNodes(t.get1(), t.get2(), restart, timeout, maxConn);
+        return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(
+    @Override public GridCluster enableAsync() {
+        return new GridClusterAsyncImpl(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<R> future() {
+        throw new IllegalStateException("Asynchronous mode is not enabled.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
+        int maxConn) throws GridException {
+        return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
+    }
+
+    /**
+     * @param hosts Startup parameters.
+     * @param dflts Default values.
+     * @param restart Whether to stop existing nodes
+     * @param timeout Connection timeout in milliseconds.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return Future with results.
+     * @throws GridException In case of error.
+     * @see {@link GridCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     */
+    GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
         int maxConn) throws GridException {
         A.notNull(hosts, "hosts");

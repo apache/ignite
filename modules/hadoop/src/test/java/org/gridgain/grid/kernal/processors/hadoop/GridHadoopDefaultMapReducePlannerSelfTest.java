@@ -932,6 +932,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
             Class<V> valCls) {
             return null;
@@ -1050,13 +1051,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(File file,
+        @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
             boolean restart, int timeout, int maxConn) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(
+        @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
             Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
             int maxConn) {
             return null;
@@ -1194,6 +1195,21 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridProjectionMetrics metrics() throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCluster enableAsync() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> GridFuture<R> future() {
             return null;
         }
     }

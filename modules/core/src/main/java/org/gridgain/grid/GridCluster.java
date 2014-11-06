@@ -10,6 +10,7 @@
 package org.gridgain.grid;
 
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.design.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
@@ -23,7 +24,7 @@ import java.util.*;
  * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
  * and get other useful information about topology.
  */
-public interface GridCluster extends GridProjection {
+public interface GridCluster extends GridProjection, IgniteAsyncSupport {
     /**
      * Gets local grid node.
      *
@@ -150,6 +151,8 @@ public interface GridCluster extends GridProjection {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param file Configuration file.
      * @param restart Whether to stop existing nodes. If {@code true}, all existing
@@ -158,11 +161,11 @@ public interface GridCluster extends GridProjection {
      *      nodes on the host than expected.
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
-     * @return Future for collection of tuples, each containing host name, result (success of failure)
+     * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
      * @throws GridException In case of error.
      */
-    public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(File file, boolean restart,
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
         int timeout, int maxConn) throws GridException;
 
     /**
@@ -248,6 +251,8 @@ public interface GridCluster extends GridProjection {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param hosts Startup parameters.
      * @param dflts Default values.
@@ -257,11 +262,11 @@ public interface GridCluster extends GridProjection {
      *      nodes on the host than expected.
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
-     * @return Future for collection of tuples, each containing host name, result (success of failure)
+     * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
      * @throws GridException In case of error.
      */
-    public GridFuture<Collection<GridTuple3<String, Boolean, String>>> startNodes(Collection<Map<String, Object>> hosts,
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws GridException;
 
     /**
@@ -312,4 +317,7 @@ public interface GridCluster extends GridProjection {
      * Resets local I/O, job, and task execution metrics.
      */
     public void resetMetrics();
+
+    /** {@inheritDoc} */
+    public GridCluster enableAsync();
 }

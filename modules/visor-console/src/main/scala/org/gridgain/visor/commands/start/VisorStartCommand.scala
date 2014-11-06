@@ -222,7 +222,7 @@ class VisorStartCommand {
                     scold("File is a directory: " + file.getAbsolutePath).^^
 
                 try
-                    res = grid.startNodes(file, restart, timeout, maxConn).get().map(t => {
+                    res = grid.startNodes(file, restart, timeout, maxConn).map(t => {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
@@ -278,7 +278,7 @@ class VisorStartCommand {
                 )
 
                 try
-                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).get().
+                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
                     case e: GridException => scold(e.getMessage).^^
