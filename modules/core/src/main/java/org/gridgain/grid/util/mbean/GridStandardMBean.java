@@ -22,7 +22,7 @@ public class GridStandardMBean extends StandardMBean {
     /**
      * Objects maps from primitive classes to primitive object classes.
      */
-    private static final Map<String, Class<?>> primCls = new HashMap<>(8);
+    private static final Map<String, Class<?>> primCls = new HashMap<>();
 
     /**
      * Static constructor.

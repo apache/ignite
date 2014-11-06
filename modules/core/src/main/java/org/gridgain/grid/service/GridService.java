@@ -91,10 +91,20 @@ public interface GridService extends Serializable {
     public void cancel(GridServiceContext ctx);
 
     /**
+     * Pre-initializes service before execution. This method is guaranteed to be called before
+     * service deployment is complete (this guarantees that this method will be called
+     * before method {@link #execute(GridServiceContext)} is called).
+     *
+     * @param ctx Service execution context.
+     * @throws Exception If service initialization failed.
+     */
+    public void init(GridServiceContext ctx) throws Exception;
+
+    /**
      * Starts execution of this service. This method is automatically invoked whenever an instance of the service
      * is deployed on a grid node. Note that service is considered deployed even after it exits the {@code execute}
      * method and can be cancelled (or undeployed) only by calling any of the {@code cancel} methods on
-     * {@link GridServices} API. Also not that service is not required to exit from {@code execute} method until
+     * {@link GridServices} API. Also note that service is not required to exit from {@code execute} method until
      * {@link #cancel(GridServiceContext)} method was called.
      *
      * @param ctx Service execution context.

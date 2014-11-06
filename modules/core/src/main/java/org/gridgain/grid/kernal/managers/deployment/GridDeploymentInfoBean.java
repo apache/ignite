@@ -273,7 +273,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
                 if (commState.readSize >= 0) {
                     if (participants == null)
-                        participants = new HashMap<>(commState.readSize);
+                        participants = U.newHashMap(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
