@@ -45,22 +45,28 @@ public class ServicesExample {
 
             GridServices svcs = rmts.services();
 
-            // Deploy cluster singleton.
-            svcs.deployClusterSingleton("myClusterSingletonService", new SimpleMapServiceImpl()).get();
+            try {
+                // Deploy cluster singleton.
+                svcs.deployClusterSingleton("myClusterSingletonService", new SimpleMapServiceImpl()).get();
 
-            // Deploy node singleton.
-            svcs.deployNodeSingleton("myNodeSingletonService", new SimpleMapServiceImpl()).get();
+                // Deploy node singleton.
+                svcs.deployNodeSingleton("myNodeSingletonService", new SimpleMapServiceImpl()).get();
 
-            // Deploy 2 instances, regardless of number nodes.
-            svcs.deployMultiple("myMultiService", new SimpleMapServiceImpl(), 2 /*total number*/, 0 /*0 for unlimited*/).get();
+                // Deploy 2 instances, regardless of number nodes.
+                svcs.deployMultiple("myMultiService", new SimpleMapServiceImpl(), 2 /*total number*/, 0 /*0 for unlimited*/).get();
 
-            // Example for using a service proxy
-            // to access a remotely deployed service.
-            serviceProxyExample(grid);
+                // Example for using a service proxy
+                // to access a remotely deployed service.
+                serviceProxyExample(grid);
 
-            // Example for auto-injecting service proxy
-            // into remote closure execution.
-            serviceInjectionExample(grid);
+                // Example for auto-injecting service proxy
+                // into remote closure execution.
+                serviceInjectionExample(grid);
+            }
+            finally {
+                // Undeploy all services.
+                grid.services().cancelAll();
+            }
         }
     }
 
