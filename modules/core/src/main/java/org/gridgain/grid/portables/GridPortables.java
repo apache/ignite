@@ -224,6 +224,11 @@ import java.util.Date;
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
  * logic in {@link GridPortableSerializer} either globally in {@link GridPortableConfiguration} or
  * for a specific type via {@link GridPortableTypeConfiguration} instance.
+ *
+ * <p>
+ * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
+ * </p>
+ *
  * <h1 class="header">Custom ID Mappers</h1>
  * GridGain implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
