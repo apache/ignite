@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Method reflection key.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridServiceMethodReflectKey {
     /** Method name. */
