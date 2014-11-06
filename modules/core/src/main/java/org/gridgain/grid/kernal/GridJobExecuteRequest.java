@@ -432,6 +432,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.siblings = siblings;
         _clone.siblingsBytes = siblingsBytes;
         _clone.createTime = createTime;
+        _clone.createTime0 = createTime0;
         _clone.clsLdrId = clsLdrId;
         _clone.depMode = depMode;
         _clone.dynamicSiblings = dynamicSiblings;
