@@ -1119,11 +1119,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private GridNodeValidationResult validateHashIdResolvers(GridNode node) {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
-            GridCacheDistributionMode distrMode = U.cacheAttributes(node, cache.name()).partitionedTaxonomy();
-
-            if (distrMode != PARTITIONED_ONLY && distrMode != NEAR_PARTITIONED)
-                continue;
-
             GridCacheConfiguration cfg = cache.configuration();
 
             if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
