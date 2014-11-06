@@ -71,7 +71,7 @@ public interface GridPortableBuilder {
 
     /**
      * Returns the value of the specified field.
-     * If the value is another portable object instance of {@code GridMutablePortableObject} will be returned.
+     * If the value is another portable object instance of {@code GridPortableBuilder} will be returned.
      * Arrays and collections returned from this method are modifiable.
      *
      * @param fldName Field name.
