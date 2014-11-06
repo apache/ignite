@@ -2270,7 +2270,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         }
         else if (cctx.portableEnabled()) {
             if (map != null) {
-                map0 = new HashMap<>(map.size());
+                map0 = U.newHashMap(map.size());
 
                 try {
                     for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
@@ -2288,7 +2288,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 map0 = null;
 
             if (transformMap != null) {
-                transformMap0 = new HashMap<>(transformMap.size());
+                transformMap0 = U.newHashMap(transformMap.size());
 
                 try {
                     for (Map.Entry<? extends K, ? extends GridClosure<V, V>> e : transformMap.entrySet()) {
@@ -2396,7 +2396,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         if (isSingleUpdate() && transformMap0 != null)
                             // Need to preserve order.
-                            transformed = new LinkedHashMap<>(transformMap0.size());
+                            transformed = U.newLinkedHashMap(transformMap0.size());
 
                         Set<K> failed = postLockWrite(keys, loaded, transformed, transformMap0, ret,
                             /*remove*/false, retval, filter);

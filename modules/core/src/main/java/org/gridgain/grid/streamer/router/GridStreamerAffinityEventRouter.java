@@ -14,6 +14,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -81,7 +82,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
                 return ret;
             }
 
-            final Collection<UUID> lookup = new HashSet<>(nodesSize);
+            final Collection<UUID> lookup = U.newHashSet(nodesSize);
 
             // Store nodes in map for fast lookup.
             for (GridNode n : nodes)

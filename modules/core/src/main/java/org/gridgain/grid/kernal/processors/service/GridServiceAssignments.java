@@ -26,63 +26,49 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
-    /** Service name. */
-    private final String name;
-
-    /** Cache name. */
-    private final String cacheName;
-
-    /** Affinity key. */
-    private final Object affKey;
-
     /** Node ID. */
     private final UUID nodeId;
 
-    /** Service. */
-    private final GridService svc;
-
-    /** Node filter. */
-    private final GridPredicate<GridNode> nodeFilter;
-
     /** Topology version. */
     private final long topVer;
+
+    /** Service configuration. */
+    private final GridServiceConfiguration cfg;
 
     /** Assignments. */
     @GridToStringInclude
     private Map<UUID, Integer> assigns = Collections.emptyMap();
 
     /**
-     * @param name Service name.
-     * @param svc Service.
-     * @param cacheName Cache name.
-     * @param affKey Affinity key.
+     * @param cfg Configuration.
      * @param nodeId Node ID.
      * @param topVer Topology version.
-     * @param nodeFilter Node filter.
      */
-    public GridServiceAssignments(String name, GridService svc, String cacheName, Object affKey, UUID nodeId,
-        long topVer, GridPredicate<GridNode> nodeFilter) {
-        this.name = name;
-        this.svc = svc;
-        this.cacheName = cacheName;
-        this.affKey = affKey;
+    public GridServiceAssignments(GridServiceConfiguration cfg, UUID nodeId, long topVer) {
+        this.cfg = cfg;
         this.nodeId = nodeId;
         this.topVer = topVer;
-        this.nodeFilter = nodeFilter;
+    }
+
+    /**
+     * @return Configuration.
+     */
+    public GridServiceConfiguration configuration() {
+        return cfg;
     }
 
     /**
      * @return Service name.
      */
     public String name() {
-        return name;
+        return cfg.getName();
     }
 
     /**
      * @return Service.
      */
     public GridService service() {
-        return svc;
+        return cfg.getService();
     }
 
     /**
@@ -96,14 +82,14 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      * @return Cache name.
      */
     public String cacheName() {
-        return cacheName;
+        return cfg.getCacheName();
     }
 
     /**
      * @return Affinity key.
      */
     public Object affinityKey() {
-        return affKey;
+        return cfg.getAffinityKey();
     }
 
     /**
@@ -117,7 +103,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      * @return Node filter.
      */
     public GridPredicate<GridNode> nodeFilter() {
-        return nodeFilter;
+        return cfg.getNodeFilter();
     }
 
     /**

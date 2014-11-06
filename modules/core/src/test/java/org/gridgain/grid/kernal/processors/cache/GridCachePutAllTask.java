@@ -7,6 +7,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -62,7 +63,7 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
 
                     assert cache != null;
 
-                    HashMap<Integer, Integer> putMap = new LinkedHashMap<>(TX_BOUND);
+                    HashMap<Integer, Integer> putMap = U.newLinkedHashMap(TX_BOUND);
 
                     Iterator<Integer> it = data.iterator();
 
@@ -80,7 +81,7 @@ class GridCachePutAllTask extends GridComputeTaskAdapter<Collection<Integer>, Vo
 
                             cnt = 0;
 
-                            putMap = new LinkedHashMap<>(TX_BOUND);
+                            putMap = U.newLinkedHashMap(TX_BOUND);
                         }
                     }
 

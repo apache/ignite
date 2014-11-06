@@ -1418,7 +1418,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             int written = 0;
             int remainderOff = 0;
 
-            Map<GridGgfsBlockKey, byte[]> nodeBlocks = new LinkedHashMap<>((int)(limit - first));
+            Map<GridGgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
             GridNode node = null;
             int off = 0;
 
@@ -1496,7 +1496,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                     writtenTotal = nodeBlocks.size();
 
-                    nodeBlocks = new LinkedHashMap<>((int)(limit - first));
+                    nodeBlocks = U.newLinkedHashMap((int)(limit - first));
                     node = primaryNode;
                 }
 
