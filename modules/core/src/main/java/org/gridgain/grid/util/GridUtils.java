@@ -23,6 +23,7 @@ import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -7751,6 +7752,8 @@ public abstract class GridUtils {
     public static String nodeIdLogFileName(UUID nodeId, String fileName) {
         assert nodeId != null;
         assert fileName != null;
+
+        fileName = GridFilenameUtils.separatorsToSystem(fileName);
 
         int dot = fileName.lastIndexOf('.');
 
