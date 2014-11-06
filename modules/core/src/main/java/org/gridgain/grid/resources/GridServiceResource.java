@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.resources;
 
+import org.gridgain.grid.service.*;
+
 import java.lang.annotation.*;
-import java.util.*;
 
 /**
  * Annotates a field or a setter method for injection of GridGain service(s) by specified service name.
- * If you want to get all services associated with specified service name than use {@link Collection} type
- * (note that no descendant classes are allowed). Otherwise, just use the type of your service class.
+ * If more than one service is deployed on a server, then the first available instance will be returned.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
@@ -23,18 +23,8 @@ import java.util.*;
  *      ...
  *      // Inject single instance of 'myService'. If there is
  *      // more than one, first deployed instance will be picked.
- *      &#64;GridServiceResource(serviceName = "myService")
- *      private MyService srvc;
- *      ...
- *  }
- * </pre>
- * or
- * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
- *      ...
- *      // Inject all locally deployed instances of 'myService'.
- *      &#64;GridServiceResource(serviceName = "myService")
- *      private Collection&lt;MyService&gt; srvc;
+ *      &#64;GridServiceResource(serviceName = "myService", proxyInterface = MyService.class)
+ *      private MyService svc;
  *      ...
  *  }
  * </pre>
@@ -42,12 +32,12 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements GridComputeJob {
  *     ...
- *     private Collection&lt;MyService&gt; srvcs;
+ *     private MyService svc;
  *     ...
  *      // Inject all locally deployed instances of 'myService'.
  *     &#64;GridServiceResource(serviceName = "myService")
- *     public void setGridServices(Collection&lt;MyService&gt; srvcs) {
- *          this.srvcs = srvcs;
+ *     public void setMyService(MyService svc) {
+ *          this.svc = svc;
  *     }
  *     ...
  * }
@@ -64,4 +54,28 @@ public @interface GridServiceResource {
      * @return Name of the injected services.
      */
     public String serviceName();
+
+    /**
+     * In case if an instance of the service is not available locally,
+     * an instance of the service proxy for a remote service instance
+     * may be returned. If you wish to return only locally deployed
+     * instance, then leave this property as {@code null}.
+     * <p>
+     * For more information about service proxies, see
+     * {@link GridServices#serviceProxy(String, Class, boolean)} documentation.
+     *
+     * @return Interface class for remote service proxy.
+     */
+    public Class<?> proxyInterface() default Void.class;
+
+    /**
+     * Flag indicating if a sticky instance of a service proxy should be returned.
+     * This flag is only valid if {@link #proxyInterface()} is not {@code null}.
+     * <p>
+     * For information about sticky flag, see {@link GridServices#serviceProxy(String, Class, boolean)}
+     * documentation.
+     *
+     * @return {@code True} if a sticky instance of a service proxy should be injected.
+     */
+    public boolean proxySticky() default false;
 }
