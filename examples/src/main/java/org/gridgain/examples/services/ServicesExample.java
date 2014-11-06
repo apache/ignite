@@ -115,19 +115,7 @@ public class ServicesExample {
             mapSvc.put(i, Integer.toString(i));
 
         // Broadcast closure to every node.
-        final Collection<Integer> mapSizes = grid.compute().broadcast(new GridCallable<Integer>() {
-            // Auto-inject service proxy.
-            @GridServiceResource(serviceName = "myClusterSingletonService", proxyInterface = SimpleMapService.class)
-            private SimpleMapService mapSvc;
-
-            @Override public Integer call() throws Exception {
-                int mapSize = mapSvc.size();
-
-                System.out.println("Executing closure [mapSize=" + mapSize + ']');
-
-                return mapSize;
-            }
-        }).get();
+        final Collection<Integer> mapSizes = grid.compute().broadcast(new SimpleClosure()).get();
 
         System.out.println("Closure execution result: " + mapSizes);
 
@@ -137,5 +125,23 @@ public class ServicesExample {
         for (int mapSize : mapSizes)
             if (mapSize != cnt)
                 throw new Exception("Invalid map size [expected=" + cnt + ", actual=" + mapSize + ']');
+    }
+
+    /**
+     * Simple closure to demonstrate auto-injection of the service proxy.
+     */
+    private static class SimpleClosure implements GridCallable<Integer> {
+        // Auto-inject service proxy.
+        @GridServiceResource(serviceName = "myClusterSingletonService", proxyInterface = SimpleMapService.class)
+        private SimpleMapService mapSvc;
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            int mapSize = mapSvc.size();
+
+            System.out.println("Executing closure [mapSize=" + mapSize + ']');
+
+            return mapSize;
+        }
     }
 }
