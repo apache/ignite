@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -255,6 +257,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
+    private Map<String, PluginProvider> plugins = new HashMap<>();
+
+    /** */
     private GridEx grid;
 
     /** */
@@ -421,7 +426,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
             interopProc = (GridInteropProcessor)comp;
-        else
+        else if (comp instanceof GridPluginComponent) {
+            PluginProvider plugin = ((GridPluginComponent) comp).plugin();
+
+            if (plugins.containsKey(plugin.name()))
+                throw new IgniteException("Duplicated plugin name: " + plugin.name());
+
+            plugins.put(plugin.name(), plugin);
+        }
+         else
             assert false : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
@@ -755,6 +768,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
         return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePlugin plugin(String name) throws PluginNotFoundException {
+        PluginProvider plugin = plugins.get(name);
+
+        if (plugin == null)
+            throw new PluginNotFoundException(name);
+
+        return plugin.plugin();
     }
 
     /** {@inheritDoc} */

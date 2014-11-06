@@ -12,6 +12,7 @@ package org.gridgain.grid;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
@@ -289,6 +290,16 @@ public interface Grid extends AutoCloseable {
      * @return Collection of all streamer instances.
      */
     public Collection<GridStreamer> streamers();
+
+    /**
+     * Gets an instance of deployed Ignite plugin.
+     *
+     * @param name Plugin name.
+     * @param <T> Plugin type.
+     * @return Plugin instance.
+     * @throws PluginNotFoundException If plugin for the given name was not found.
+     */
+    public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
