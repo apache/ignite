@@ -124,7 +124,7 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
      *
      * @return Flag value.
      */
-    public boolean getUseOptimizedSerializer();
+    public boolean isUseOptimizedSerializer();
 
     /**
      * Gets script path to be ran against H2 database after opening.

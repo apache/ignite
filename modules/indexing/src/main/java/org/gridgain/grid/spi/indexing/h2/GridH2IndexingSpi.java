@@ -1449,7 +1449,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getUseOptimizedSerializer() {
+    @Override public boolean isUseOptimizedSerializer() {
         return useOptimizedSerializer;
     }
 
