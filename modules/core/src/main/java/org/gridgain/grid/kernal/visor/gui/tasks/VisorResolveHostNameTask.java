@@ -76,11 +76,6 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                 throw new GridException("Failed to resolve host name", e);
             }
 
-            System.out.println("Resolving of node host name");
-
-            for (Map.Entry<String, String> ent: res.entrySet())
-                System.out.println(" IP: " + ent.getKey() + ", name: " + ent.getValue());
-
             return res;
         }
 
