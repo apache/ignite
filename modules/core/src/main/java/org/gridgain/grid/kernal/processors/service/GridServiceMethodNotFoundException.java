@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Exception thrown if service is not found.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceMethodNotFoundException extends GridRuntimeException {
     /**

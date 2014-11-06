@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown if service is not found.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceNotFoundException extends GridException {
     /**
