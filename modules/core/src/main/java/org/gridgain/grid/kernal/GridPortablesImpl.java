@@ -71,11 +71,11 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public GridMutablePortable toMutable(GridPortableObject portableObj) {
+    @Override public GridPortableBuilder builder(GridPortableObject portableObj) {
         guard();
 
         try {
-            return proc.toMutable(portableObj);
+            return proc.builder(portableObj);
         }
         finally {
             unguard();

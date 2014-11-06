@@ -291,12 +291,12 @@ public interface GridPortables {
     public GridPortableBuilder builder();
 
     /**
-     * Gets mutable portable object to edit existing portable object.
+     * Creates portable builder initialized by existing portable object.
      *
-     * @param portableObj Portable object to edit.
+     * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public GridMutablePortable toMutable(GridPortableObject portableObj);
+    public GridPortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * Gets metadata for provided class.
