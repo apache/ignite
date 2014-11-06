@@ -114,7 +114,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
     /** {@inheritDoc} */
     @Override protected void process() {
-        Collection<String> foundFiles = new HashSet<>(tstampCache.size());
+        Collection<String> foundFiles = U.newHashSet(tstampCache.size());
 
         long start = U.currentTimeMillis();
 

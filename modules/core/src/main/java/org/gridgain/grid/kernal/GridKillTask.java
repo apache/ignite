@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -36,7 +37,7 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
 
         this.restart = restart;
 
-        Map<GridComputeJob, GridNode> jobs = new HashMap<>(subgrid.size());
+        Map<GridComputeJob, GridNode> jobs = U.newHashMap(subgrid.size());
 
         for (GridNode n : subgrid)
             if (!daemon(n))

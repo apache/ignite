@@ -113,8 +113,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
      * and notifies listener about every changed or deleted file.
      */
     @Override protected void process() {
-        final Set<File> foundFiles = isFirstScan() ? new HashSet<File>() :
-            new HashSet<File>(tstampCache.size());
+        final Set<File> foundFiles = isFirstScan() ? new HashSet<File>() : U.<File>newHashSet(tstampCache.size());
 
         GridDeploymentFileHandler hnd = new GridDeploymentFileHandler() {
             /** {@inheritDoc} */
@@ -246,8 +245,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
 
         final GridTuple<Boolean> changed = F.t(false);
 
-        final Set<File> foundFiles = firstScan ? new HashSet<File>() :
-            new HashSet<File>(clssTstampCache.size());
+        final Set<File> foundFiles = firstScan ? new HashSet<File>() : U.<File>newHashSet(clssTstampCache.size());
 
         GridDeploymentFileHandler hnd = new GridDeploymentFileHandler() {
             @Override public void handle(File file) {

@@ -102,8 +102,8 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
                 Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 
-                Map<String, Map<String, Map<String, String>>> schemasMap =
-                    new HashMap<>(metas.size());
+                Map<String, Map<String, Map<String, String>>> schemasMap = U.newHashMap(metas.size());
+
                 Collection<List<Object>> indexesInfo = new LinkedList<>();
 
                 for (GridCacheSqlMetadata meta : metas) {
@@ -114,8 +114,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
                     Collection<String> types = meta.types();
 
-                    Map<String, Map<String, String>> typesMap =
-                        new HashMap<>(types.size());
+                    Map<String, Map<String, String>> typesMap = U.newHashMap(types.size());
 
                     for (String type : types) {
                         typesMap.put(type.toUpperCase(), meta.fields(type));
