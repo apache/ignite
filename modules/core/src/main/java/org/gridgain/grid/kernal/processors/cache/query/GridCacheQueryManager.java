@@ -83,12 +83,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         new ConcurrentHashMap8<>();
 
     /** */
-    private final ConcurrentMap<T2<String, List<?>>, GridFutureAdapter<QueryResult<K, V>>> qryResCache =
-        new ConcurrentHashMap8<>();
-
-    /** */
-    private final ConcurrentMap<T2<String, List<?>>, GridFutureAdapter<QueryResult<K, V>>> fieldsResCache =
-        new ConcurrentHashMap8<>();
+    private volatile ConcurrentMap<Object, CachedResult<?>> qryResCache = new ConcurrentHashMap8<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -308,6 +303,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     *
+     */
+    private void invalidateResultCache() {
+        if (!qryResCache.isEmpty())
+            qryResCache = new ConcurrentHashMap8<>();
+    }
+
+    /**
      * Writes key-value pair to index.
      *
      * @param key Key.
@@ -337,6 +340,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             idxMgr.store(spi, space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
         }
         finally {
+            invalidateResultCache();
+
             leaveBusy();
         }
     }
@@ -361,6 +366,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return idxMgr.remove(spi, space, key, keyBytes);
         }
         finally {
+            invalidateResultCache();
+
             leaveBusy();
         }
     }
@@ -381,6 +388,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new GridRuntimeException(e);
         }
         finally {
+            invalidateResultCache();
+
             leaveBusy();
         }
     }
@@ -452,90 +461,120 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
         }
 
-        GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
+        QueryResult<K, V> res;
 
-        switch (qry.type()) {
-            case SQL:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
-                        cctx.localNode(),
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
-                        cctx.namex(),
-                        qry.queryClassName(),
-                        qry.clause(),
-                        null,
-                        null,
-                        args,
-                        subjId,
-                        taskName));
-                }
+        T3<String, String, List<Object>> resKey = null;
 
-                iter = idxMgr.query(spi, space, qry.clause(), F.asList(args),
-                    qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
+        if (qry.type() == SQL) {
+            resKey = new T3<>(qry.queryClassName(), qry.clause(), F.asList(args));
 
-                break;
+            res = (QueryResult<K, V>)qryResCache.get(resKey);
 
-            case SCAN:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
-                        cctx.localNode(),
-                        "Scan query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
-                        cctx.namex(),
-                        null,
-                        null,
-                        qry.scanFilter(),
-                        null,
-                        null,
-                        subjId,
-                        taskName));
-                }
+            if (res != null && res.addRecipient(recipient))
+                return res;
 
-                iter = scanIterator(qry);
+            res = new QueryResult<>(qry.type());
 
-                break;
+            res.addRecipient(recipient);
 
-            case TEXT:
-                if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
-                        cctx.localNode(),
-                        "Full text query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
-                        cctx.namex(),
-                        qry.queryClassName(),
-                        qry.clause(),
-                        null,
-                        null,
-                        null,
-                        subjId,
-                        taskName));
-                }
+            if (qryResCache.putIfAbsent(resKey, res) != null)
+                resKey = null;
+        }
+        else {
+            res = new QueryResult<>(qry.type());
 
-                iter = idxMgr.queryText(spi, space, qry.clause(), qry.queryClassName(),
-                    qry.includeBackups(), projectionFilter(qry));
-
-                break;
-
-            case SET:
-                iter = setIterator(qry);
-
-                break;
-
-            case SQL_FIELDS:
-                assert false : "SQL fields query is incorrectly processed.";
-
-            default:
-                throw new GridException("Unknown query type: " + qry.type());
+            res.addRecipient(recipient);
         }
 
-        QueryResult<K, V> res = new QueryResult<>(iter, qry.type());
+        GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter;
 
-        res.addRecipient(recipient);
-        res.flip();
+        try {
+            switch (qry.type()) {
+                case SQL:
+                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
+                            cctx.localNode(),
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
+                            cctx.namex(),
+                            qry.queryClassName(),
+                            qry.clause(),
+                            null,
+                            null,
+                            args,
+                            subjId,
+                            taskName));
+                    }
+
+                    iter = idxMgr.query(spi, space, qry.clause(), F.asList(args),
+                        qry.queryClassName(), qry.includeBackups(), projectionFilter(qry));
+
+                    break;
+
+                case SCAN:
+                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
+                            cctx.localNode(),
+                            "Scan query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
+                            cctx.namex(),
+                            null,
+                            null,
+                            qry.scanFilter(),
+                            null,
+                            null,
+                            subjId,
+                            taskName));
+                    }
+
+                    iter = scanIterator(qry);
+
+                    break;
+
+                case TEXT:
+                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        cctx.gridEvents().record(new GridCacheQueryExecutedEvent<>(
+                            cctx.localNode(),
+                            "Full text query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
+                            cctx.namex(),
+                            qry.queryClassName(),
+                            qry.clause(),
+                            null,
+                            null,
+                            null,
+                            subjId,
+                            taskName));
+                    }
+
+                    iter = idxMgr.queryText(spi, space, qry.clause(), qry.queryClassName(),
+                        qry.includeBackups(), projectionFilter(qry));
+
+                    break;
+
+                case SET:
+                    iter = setIterator(qry);
+
+                    break;
+
+                case SQL_FIELDS:
+                    assert false : "SQL fields query is incorrectly processed.";
+
+                default:
+                    throw new GridException("Unknown query type: " + qry.type());
+            }
+
+            res.onDone(iter);
+        }
+        catch (Exception e) {
+            res.onDone(e);
+        }
+
+        if (resKey != null)
+            qryResCache.remove(resKey, res);
 
         return res;
     }
@@ -582,11 +621,33 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 taskName));
         }
 
-        FieldsResult res = new FieldsResult(idxMgr.queryFields(spi, space, qry.clause(), F.asList(args), qry.includeBackups(),
-            projectionFilter(qry)));
+        T2<String, List<Object>> resKey = new T2<>(qry.clause(), F.asList(args));
+
+        FieldsResult res = (FieldsResult)qryResCache.get(resKey);
+
+        if (res != null && res.addRecipient(recipient))
+            return res;
+
+        res = new FieldsResult();
 
         res.addRecipient(recipient);
-        res.flip();
+
+        boolean cached = qryResCache.putIfAbsent(resKey, res) == null;
+
+        try {
+            GridIndexingFieldsResult qryRes = idxMgr.queryFields(spi, space, qry.clause(), F.asList(args),
+                qry.includeBackups(), projectionFilter(qry));
+
+            res.metaData(qryRes.metaData());
+
+            res.onDone(qryRes.iterator());
+        }
+        catch (Exception e) {
+            res.onDone(e);
+        }
+
+        if (cached)
+            qryResCache.remove(resKey, res);
 
         return res;
     }
@@ -2096,12 +2157,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final GridCacheQueryType type;
 
         /**
-         * @param it Iterator.
          * @param type Query type.
          */
-        private QueryResult(GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> it, GridCacheQueryType type) {
-            super(it);
-
+        private QueryResult(GridCacheQueryType type) {
             this.type = type;
         }
 
@@ -2118,22 +2176,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private static class FieldsResult extends CachedResult<List<GridIndexingEntity<?>>> {
         /** */
-        private final GridIndexingFieldsResult res;
-
-        /**
-         * @param res Result.
-         */
-        private FieldsResult(GridIndexingFieldsResult res) {
-            super(res.iterator());
-
-            this.res = res;
-        }
+        private List<GridIndexingFieldMetadata> meta;
 
         /**
          * @return Metadata.
          */
         public List<GridIndexingFieldMetadata> metaData() {
-            return res.metaData();
+            return meta;
+        }
+
+        /**
+         * @param meta Metadata.
+         */
+        public void metaData(List<GridIndexingFieldMetadata> meta) {
+            this.meta = meta;
         }
     }
 
@@ -2854,16 +2910,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cached result.
      */
-    private abstract static class CachedResult<R> {
-        /** */
-        protected final GridSpiCloseableIterator<R> it;
-
-        /** */
-        private boolean flipped;
-
-        /** */
-        private boolean endReached;
-
+    private abstract static class CachedResult<R> extends GridFutureAdapter<GridSpiCloseableIterator<R>> {
         /** */
         private CircularQueue<R> queue;
 
@@ -2871,55 +2918,55 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private int pruned;
 
         /** Absolute position of each recipient. */
-        private Map<Object, Integer> recipients = new GridLeanMap<>(1);
-
-        /**
-         * @param it Iterator.
-         */
-        protected CachedResult(GridSpiCloseableIterator<R> it) {
-            this.it = it;
-        }
+        private final Map<Object, Integer> recipients = new GridLeanMap<>(1);
 
         /**
          * Close if this result is not shared between recipients.
          *
          * @throws GridException If failed.
          */
-        public synchronized void closeIfNotShared(Object recipient) throws GridException {
-            assert flipped;
+        public void closeIfNotShared(Object recipient) throws GridException {
+            assert isDone();
 
-            if (recipients.isEmpty())
-                return;
+            synchronized (recipients) {
+                if (recipients.isEmpty())
+                    return;
 
-            recipients.remove(recipient);
+                recipients.remove(recipient);
 
-            if (recipients.isEmpty())
-                it.close();
+                if (recipients.isEmpty())
+                    get().close();
+            }
         }
 
         /**
          * @param recipient ID of the recipient.
          * @return {@code true} If the recipient successfully added.
          */
-        public synchronized boolean addRecipient(Object recipient) {
-            if (flipped)
-                return false;
+        public boolean addRecipient(Object recipient) {
+            synchronized (recipients) {
+                if (isDone())
+                    return false;
 
-            Integer old = recipients.put(recipient, 0);
+                Integer old = recipients.put(recipient, 0);
 
-            assert old == null;
+                assert old == null;
+            }
 
             return true;
         }
 
-        /**
-         * Flips this result disallowing to add new recipients.
-         */
-        public synchronized void flip() {
-            flipped = true;
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable GridSpiCloseableIterator<R> res, @Nullable Throwable err) {
+            if (!super.onDone(res, err))
+                return false;
 
-            if (recipients.size() > 1)
-                queue = new CircularQueue<>();
+            synchronized (recipients) {
+                if (recipients.size() > 1)
+                    queue = new CircularQueue<>();
+            }
+
+            return true;
         }
 
         /**
@@ -2941,6 +2988,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 @Override public R next() {
+                    if (next == null)
+                        throw new NoSuchElementException();
+
                     R res = next;
 
                     next = null;
@@ -2958,27 +3008,38 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param recipient ID of the recipient.
          * @return Next element for the given recipient.
          */
-        @Nullable private synchronized R nextFromQueue(Object recipient) {
-            int pos = recipients.get(recipient);
+        @Nullable private R nextFromQueue(Object recipient) {
+            synchronized (recipients) {
+                int pos = recipients.get(recipient);
 
-            try {
-                int off = pos - pruned; // Offset is relative to queue begin.
+                try {
+                    int off = pos - pruned; // Offset is relative to queue begin.
 
-                if (off < queue.size)
-                    return queue.get(off);
+                    if (off < queue.size)
+                        return queue.get(off);
 
-                if (it.hasNext()) {
-                    R res = it.next();
+                    GridSpiCloseableIterator<R> it;
 
-                    queue.add(res);
+                    try {
+                        it = get();
+                    }
+                    catch (GridException e) {
+                        throw new GridRuntimeException(e);
+                    }
 
-                    return res;
+                    if (it.hasNext()) {
+                        R res = it.next();
+
+                        queue.add(res);
+
+                        return res;
+                    }
+
+                    return null;
                 }
-
-                return null;
-            }
-            finally {
-                pruneQueue(recipient, pos + 1);
+                finally {
+                    pruneQueue(recipient, pos + 1);
+                }
             }
         }
 
@@ -3004,12 +3065,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param recipient ID of the recipient.
          * @throws GridException If failed.
          */
-        public synchronized GridSpiCloseableIterator<R> nextPageIterator(Object recipient)
+        public GridSpiCloseableIterator<R> nextPageIterator(Object recipient)
             throws GridException {
-            assert flipped;
+            assert isDone();
             assert recipient != null;
 
-            return queue == null ? it : nextPageFromQueue(recipient);
+            synchronized (recipients) {
+                return queue == null ? get() : nextPageFromQueue(recipient);
+            }
         }
     }
 
