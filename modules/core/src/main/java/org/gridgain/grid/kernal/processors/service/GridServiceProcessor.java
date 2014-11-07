@@ -737,9 +737,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 assigns.assigns(cnts);
 
-                U.debug(log, "Updated assignments [locNodeId=" + ctx.localNodeId() + ", key=" + key +
-                    ", assigns=" + assigns + ']');
-
                 cache.put(key, assigns);
 
                 tx.commit();
@@ -1223,9 +1220,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
                         if (assigns != null) {
-                            U.debug(log, "Received assignments callback [locNodeId=" + ctx.localNodeId() +
-                                ", assigns=" + assigns + ']');
-
                             svcName.set(assigns.name());
 
                             Throwable t = null;
