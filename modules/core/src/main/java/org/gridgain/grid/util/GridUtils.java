@@ -8926,4 +8926,36 @@ public abstract class GridUtils {
             }
         };
     }
+
+    /**
+     * Finds a method in the class and it parents.
+     *
+     * Method.getMethod() does not return non-public method,
+     * Method.getDeclaratedMethod() does not look at parent classes.
+     *
+     * @param cls The class to search,
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}
+     */
+    @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        while (cls != null) {
+            try {
+                Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+                if (mtd.getReturnType() != void.class) {
+                    mtd.setAccessible(true);
+
+                    return mtd;
+                }
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
 }
