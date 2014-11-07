@@ -53,12 +53,11 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /**
      * @param ctx Context for IO operations.
-     * @param taskAttemptID Task execution id.
      */
-    public GridHadoopV2Context(GridHadoopV2TaskContext ctx, TaskAttemptID taskAttemptID) {
-        super(ctx.jobConf(), taskAttemptID.getJobID());
+    public GridHadoopV2Context(GridHadoopV2TaskContext ctx) {
+        super(ctx.jobConf(), ctx.jobContext().getJobID());
 
-        this.taskAttemptID = taskAttemptID;
+        taskAttemptID = ctx.attemptId();
 
         conf.set("mapreduce.job.id", taskAttemptID.getJobID().toString());
         conf.set("mapreduce.task.id", taskAttemptID.getTaskID().toString());
@@ -86,7 +85,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
                 throw new UnsupportedOperationException(); // TODO
             }
             else if (split instanceof GridHadoopSplitWrapper) {
-                inputSplit = (InputSplit)((GridHadoopSplitWrapper)split).innerSplit();
+                inputSplit = (InputSplit)GridHadoopUtils.unwrapSplit((GridHadoopSplitWrapper)split);
             }
             else
                 throw new IllegalStateException();

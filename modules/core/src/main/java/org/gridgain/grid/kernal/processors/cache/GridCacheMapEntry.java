@@ -149,6 +149,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
         log = U.logger(cctx.kernalContext(), logRef, this);
 
+        if (cctx.portableEnabled())
+            key = (K)cctx.kernalContext().portable().detachPortable(key);
+
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
@@ -1591,9 +1594,26 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (!drNeedResolve) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
                     if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received entry update for with smaller version than current (will ignore) " +
-                                "[entry=" + this + ", newVer=" + newVer + ']');
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.isStoreEnabled() && primary) {
+                            if (log.isDebugEnabled())
+                                log.debug("Received entry update with same version as current (will update store) " +
+                                    "[entry=" + this + ", newVer=" + newVer + ']');
+
+                            V val = rawGetOrUnmarshalUnlocked();
+
+                            if (val == null) {
+                                assert deletedUnlocked();
+
+                                cctx.store().removeFromStore(null, key());
+                            }
+                            else
+                                cctx.store().putToStore(null, key(), val, ver);
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Received entry update with smaller version than current (will ignore) " +
+                                    "[entry=" + this + ", newVer=" + newVer + ']');
+                        }
 
                         old = retval ? rawGetOrUnmarshalUnlocked() : val;
 

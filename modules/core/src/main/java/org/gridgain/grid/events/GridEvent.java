@@ -56,7 +56,6 @@ import java.io.*;
  *     <li>{@link GridEventType#EVT_NODE_JOINED}</li>
  *     <li>{@link GridEventType#EVT_NODE_METRICS_UPDATED}</li>
  *     <li>{@link GridEventType#EVT_NODE_SEGMENTED}</li>
- *     <li>{@link GridEventType#EVT_NODE_RECONNECTED}</li>
  * </ul>
  * <p>
  * Hidden events are NEVER sent to SPI level. They serve purpose of local

@@ -152,8 +152,11 @@ public abstract class GridCacheTxPreloadAbstractTest extends GridCacheAbstractSe
             try (GridCacheTx tx = cache.txStart(txConcurrency, GridCacheTxIsolation.READ_COMMITTED)) {
                 cache.transform(TX_KEY, new C1<Integer, Integer>() {
                     @Override public Integer apply(Integer val) {
-                        if (val == null)
+                        if (val == null) {
                             keyNotLoaded = true;
+
+                            return 1;
+                        }
 
                         return val + 1;
                     }

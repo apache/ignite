@@ -315,12 +315,15 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
 
-        if (mode != PRIMARY) {
-            cfg.setSecondaryHadoopFileSystemUri(SECONDARY_URI);
-            cfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG_PATH);
-        }
+        if (mode != PRIMARY)
+            cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(SECONDARY_URI, SECONDARY_CFG_PATH));
 
-        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
+        String x = primaryIpcEndpointConfiguration(gridName);
+
+        Map<String, String> endPointCfg = GridHadoopTestUtils.jsonToMap(x);
+
+        cfg.setIpcEndpointConfiguration(endPointCfg);
+
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -1282,7 +1285,11 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
     /** @throws Exception If failed. */
     public void testListStatusIfPathDoesNotExist() throws Exception {
-        assertNull(fs.listStatus(new Path("/tmp/some/dir")));
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return fs.listStatus(new Path("/tmp/some/dir"));
+                }
+            }, FileNotFoundException.class, null);
     }
 
     /**

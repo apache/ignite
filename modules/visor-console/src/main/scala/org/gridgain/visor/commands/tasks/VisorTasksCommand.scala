@@ -391,7 +391,7 @@ class VisorTasksCommand {
                 val p = timePeriod(argValue("t", argLst) getOrElse "1h")
 
                 if (p.isDefined)
-                    list(p.get, "visor", hasArgFlag("r", argLst), hasArgFlag("a", argLst))
+                    list(p.get, null, hasArgFlag("r", argLst), hasArgFlag("a", argLst))
             }
             else if (hasArgName("s", argLst))  {
                 val tf = timePeriod(argValue("t", argLst) getOrElse "1h")
@@ -594,6 +594,8 @@ class VisorTasksCommand {
                 s.nodeIds = s.nodeIds + je.nid()
                 s.startTs = math.min(s.startTs, je.timestamp())
                 s.endTs = math.max(s.endTs, je.timestamp())
+
+            case _ =>
         }
 
         tMap.values.toList -> sMap.values.toList

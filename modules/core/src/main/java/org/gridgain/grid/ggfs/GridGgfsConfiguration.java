@@ -41,13 +41,13 @@ public class GridGgfsConfiguration {
     public static final long DFLT_FRAGMENTIZER_THROTTLING_DELAY = 200;
 
     /** Default fragmentizer concurrent files. */
-    public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 1;
+    public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 0;
 
     /** Default fragmentizer local writes ratio. */
     public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
-    public static final boolean DFLT_FRAGMENTIZER_ENABLED = false;
+    public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
 
     /** Default batch size for logging. */
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
@@ -115,11 +115,8 @@ public class GridGgfsConfiguration {
     /** Management port. */
     private int mgmtPort = DFLT_MGMT_PORT;
 
-    /** Hadoop file system URI. */
-    private String hadoopUri;
-
-    /** Hadoop config path. */
-    private String hadoopCfgPath;
+    /** Secondary file system */
+    private GridGgfsFileSystem secondaryFs;
 
     /** GGFS mode. */
     private GridGgfsMode dfltMode = DFLT_MODE;
@@ -190,8 +187,7 @@ public class GridGgfsConfiguration {
         fragmentizerEnabled = cfg.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
-        hadoopCfgPath = cfg.getSecondaryHadoopFileSystemConfigPath();
-        hadoopUri = cfg.getSecondaryHadoopFileSystemUri();
+        secondaryFs = cfg.getSecondaryFileSystem();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
@@ -511,42 +507,23 @@ public class GridGgfsConfiguration {
     }
 
     /**
-     * Gets URI of the secondary Hadoop file system, like {@code HDFS}. Secondary Hadoop file system is provided
-     * for pass-through, write-through, and read-through purposes.
+     * Gets the secondary file system. Secondary file system is provided for pass-through, write-through,
+     * and read-through purposes.
      *
-     * @return URI of the secondary Hadoop file system.
+     * @return Secondary file system.
      */
-    @Nullable public String getSecondaryHadoopFileSystemUri() {
-        return hadoopUri;
+    public GridGgfsFileSystem getSecondaryFileSystem() {
+        return secondaryFs;
     }
 
     /**
-     * Sets URI of the secondary Hadoop file system, like {@code HDFS}. Secondary Hadoop
-     * file system is provided for pass-through, write-through, and read-through purposes.
+     * Sets the secondary file system. Secondary file system is provided for pass-through, write-through,
+     * and read-through purposes.
      *
-     * @param hadoopUri URI of the secondary Hadoop file system.
+     * @param fileSystem
      */
-    public void setSecondaryHadoopFileSystemUri(String hadoopUri) {
-        this.hadoopUri = hadoopUri;
-    }
-
-    /**
-     * Gets path for the secondary hadoop file system config.
-     *
-     * @return Path for the secondary hadoop file system config.
-     */
-    @Nullable public String getSecondaryHadoopFileSystemConfigPath() {
-        return hadoopCfgPath;
-    }
-
-    /**
-     * Sets path for the secondary hadoop file system config. Secondary Hadoop file system
-     * is provided for pass-through, write-through, and read-through purposes.
-     *
-     * @param hadoopCfgPath Path for the secondary hadoop file system config.
-     */
-    public void setSecondaryHadoopFileSystemConfigPath(String hadoopCfgPath) {
-        this.hadoopCfgPath = hadoopCfgPath;
+    public void setSecondaryFileSystem(GridGgfsFileSystem fileSystem) {
+        secondaryFs = fileSystem;
     }
 
     /**

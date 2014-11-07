@@ -42,7 +42,7 @@ public class GridHadoopChildProcessRunner {
     private ExecutorService msgExecSvc;
 
     /** Task executor service. */
-    private ThreadPoolExecutor execSvc;
+    private GridHadoopExecutorService execSvc;
 
     /** */
     protected GridUnsafeMemory mem = new GridUnsafeMemory(0);
@@ -90,7 +90,7 @@ public class GridHadoopChildProcessRunner {
         comm.setListener(new MessageListener());
         log = parentLog.getLogger(GridHadoopChildProcessRunner.class);
 
-        startTime = System.currentTimeMillis();
+        startTime = U.currentTimeMillis();
 
         // At this point node knows that this process has started.
         comm.sendMessage(this.nodeDesc, new GridHadoopProcessStartedAck());
@@ -113,16 +113,14 @@ public class GridHadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
-                UUID locNodeId = comm.localProcessDescriptor().parentNodeId();
-
-                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), locNodeId, log, job, mem,
+                shuffleJob = new GridHadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, null, mem,
                     req.totalReducerCount(), req.localReducers());
 
                 initializeExecutors(req);
 
                 if (log.isDebugEnabled())
                     log.debug("External process initialized [initWaitTime=" +
-                        (System.currentTimeMillis() - startTime) + ']');
+                        (U.currentTimeMillis() - startTime) + ']');
 
                 initFut.onDone(null, null);
             }
@@ -159,8 +157,8 @@ public class GridHadoopChildProcessRunner {
 
                     int size = info.type() == MAP ? concMappers : concReducers;
 
-                    execSvc.setCorePoolSize(size);
-                    execSvc.setMaximumPoolSize(size);
+//                    execSvc.setCorePoolSize(size);
+//                    execSvc.setMaximumPoolSize(size);
 
                     if (log.isDebugEnabled())
                         log.debug("Set executor service size for task type [type=" + info.type() +
@@ -170,7 +168,7 @@ public class GridHadoopChildProcessRunner {
                         if (log.isDebugEnabled())
                             log.debug("Submitted task for external execution: " + taskInfo);
 
-                        execSvc.submit(new GridHadoopRunnableTask(log, job, mem, taskInfo) {
+                        execSvc.submit(new GridHadoopRunnableTask(log, job, null, mem, taskInfo) {
                             @Override protected void onTaskFinished(GridHadoopTaskStatus status) {
                                 onTaskFinished0(this, status);
                             }
@@ -202,12 +200,11 @@ public class GridHadoopChildProcessRunner {
      */
     private void initializeExecutors(GridHadoopPrepareForJobRequest req) {
         int cpus = Runtime.getRuntime().availableProcessors();
+//
+//        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
+//        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
 
-        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
-        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
-
-        execSvc = new ThreadPoolExecutor(concMappers, concMappers,
-            1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+        execSvc = new GridHadoopExecutorService(log, "", cpus * 2, 1024);
     }
 
     /**
@@ -242,7 +239,7 @@ public class GridHadoopChildProcessRunner {
      */
     private void shutdown() {
         if (execSvc != null)
-            execSvc.shutdownNow();
+            execSvc.shutdown(5000);
 
         if (msgExecSvc != null)
             msgExecSvc.shutdownNow();
@@ -310,12 +307,12 @@ public class GridHadoopChildProcessRunner {
                 log.debug("Flushing shuffle messages before sending last task completion notification [taskInfo=" +
                     taskInfo + ", state=" + state + ", err=" + err + ']');
 
-            final long start = System.currentTimeMillis();
+            final long start = U.currentTimeMillis();
 
             try {
                 shuffleJob.flush().listenAsync(new CI1<GridFuture<?>>() {
                     @Override public void apply(GridFuture<?> f) {
-                        long end = System.currentTimeMillis();
+                        long end = U.currentTimeMillis();
 
                         if (log.isDebugEnabled())
                             log.debug("Finished flushing shuffle messages [taskInfo=" + taskInfo +

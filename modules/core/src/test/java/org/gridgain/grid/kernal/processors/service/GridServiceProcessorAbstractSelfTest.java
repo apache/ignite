@@ -17,6 +17,8 @@ import org.gridgain.grid.service.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -126,6 +128,51 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         catch (GridException e) {
             info("Received duplicate service exception: " + e.getMessage());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetServiceByName() throws Exception {
+        String name = "serviceByName";
+
+        Grid g = randomGrid();
+
+        g.services().deployNodeSingleton(name, new DummyService()).get();
+
+        DummyService srvc = g.services().service(name);
+
+        assertNotNull(srvc);
+
+        Collection<DummyService> srvcs = g.services().services(name);
+
+        assertEquals(1, srvcs.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetServicesByName() throws Exception {
+        final String name = "servicesByName";
+
+        Grid g = randomGrid();
+
+        g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3).get();
+
+        GridTestUtils.retryAssert(log, 50, 200, new CA() {
+            @Override public void apply() {
+                int cnt = 0;
+
+                for (int i = 0; i < nodeCount(); i++) {
+                    Collection<DummyService> srvcs = grid(i).services().services(name);
+
+                    if (srvcs != null)
+                        cnt += srvcs.size();
+                }
+
+                assertEquals(nodeCount() * 2, cnt);
+            }
+        });
     }
 
     /**

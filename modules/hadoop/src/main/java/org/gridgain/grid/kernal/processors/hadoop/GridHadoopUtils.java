@@ -11,59 +11,68 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
+import java.io.*;
+import java.util.*;
 
 /**
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
-    /** Speculative concurrency on this machine. Mimics default public pool size calculation. */
-    public static final int SPECULATIVE_CONCURRENCY = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
-
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 
-    /** Step span. */
-    private static final long STEP_SPAN = 1000L;
+    /** Old mapper class attribute. */
+    private static final String OLD_MAP_CLASS_ATTR = "mapred.mapper.class";
 
-    /** Minimum possible amount of steps giving 50% of remaining progress. */
-    private static final int MIN_STEPS_PER_HALF_PROGRESS = 5;
-
-    /** Range of possible amount of steps giving 50% of remaining progress. Gives [5 .. 50] range. */
-    private static final int STEPS_PER_HALF_PROGRESS_RANGE = 45;
+    /** Old reducer class attribute. */
+    private static final String OLD_REDUCE_CLASS_ATTR = "mapred.reducer.class";
 
     /**
-     * Convert Hadoop job metadata to job status.
+     * Wraps native split.
      *
-     * @param meta Metadata.
-     * @return Status.
+     * @param id Split ID.
+     * @param split Split.
+     * @param hosts Hosts.
+     * @throws IOException If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static GridHadoopJobStatus status(GridHadoopJobMetadata meta) {
-        GridHadoopDefaultJobInfo jobInfo = (GridHadoopDefaultJobInfo)meta.jobInfo();
+    public static GridHadoopSplitWrapper wrapSplit(int id, Object split, String[] hosts) throws IOException {
+        ByteArrayOutputStream arr = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(arr);
 
-        return new GridHadoopJobStatus(
-            meta.jobId(),
-            meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
-            jobInfo.configuration().getJobName(),
-            jobInfo.configuration().getUser(),
-            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
-            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.mapReducePlan().mappers(),
-            meta.mapReducePlan().reducers(),
-            meta.startTimestamp(),
-            meta.setupCompleteTimestamp(),
-            meta.mapCompleteTimestamp(),
-            meta.phase(),
-            SPECULATIVE_CONCURRENCY,
-            meta.version()
-        );
+        assert split instanceof Writable;
+
+        ((Writable)split).write(out);
+
+        out.flush();
+
+        return new GridHadoopSplitWrapper(id, split.getClass().getName(), arr.toByteArray(), hosts);
+    }
+
+    /**
+     * Unwraps native split.
+     *
+     * @param o Wrapper.
+     * @return Split.
+     */
+    public static Object unwrapSplit(GridHadoopSplitWrapper o) {
+        try {
+            Writable w = (Writable)GridHadoopUtils.class.getClassLoader().loadClass(o.className()).newInstance();
+
+            w.readFields(new ObjectInputStream(new ByteArrayInputStream(o.bytes())));
+
+            return w;
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -75,77 +84,51 @@ public class GridHadoopUtils {
     public static JobStatus status(GridHadoopJobStatus status, Configuration conf) {
         JobID jobId = new JobID(status.jobId().globalId().toString(), status.jobId().localId());
 
-        JobStatus.State state;
+        float setupProgress = 0;
+        float mapProgress = 0;
+        float reduceProgress = 0;
+        float cleanupProgress = 0;
 
-        switch (status.jobState()) {
-            case STATE_RUNNING:
-                state = JobStatus.State.RUNNING;
-
-                break;
-
-            case STATE_SUCCEEDED:
-                state = JobStatus.State.SUCCEEDED;
-
-                break;
-
-            case STATE_FAILED:
-                state = JobStatus.State.FAILED;
-
-                break;
-
-            default:
-                assert status.jobState() == STATE_KILLED;
-
-                state = JobStatus.State.KILLED;
-        }
-
-        float setupProgress;
-        float mapProgress;
-        float reduceProgress;
-        float cleanupProgress;
+        JobStatus.State state = JobStatus.State.RUNNING;
 
         switch (status.jobPhase()) {
             case PHASE_SETUP:
-                setupProgress = setupProgress(status);
-                mapProgress = 0.0f;
-                reduceProgress = 0.0f;
-                cleanupProgress = 0.0f;
+                setupProgress = 0.42f;
 
                 break;
 
             case PHASE_MAP:
-                setupProgress = 1.0f;
-                mapProgress = mapProgress(status);
-                reduceProgress = 0.0f;
-                cleanupProgress = 0.0f;
+                setupProgress = 1;
+                mapProgress = 1f - status.pendingMapperCnt() / (float)status.totalMapperCnt();
 
                 break;
 
             case PHASE_REDUCE:
-                setupProgress = 1.0f;
-                mapProgress = 1.0f;
-                reduceProgress = reduceProgress(status);
-                cleanupProgress = 0.0f;
+                assert status.totalReducerCnt() > 0;
+
+                setupProgress = 1;
+                mapProgress = 1;
+                reduceProgress = 1f - status.pendingReducerCnt() / (float)status.totalReducerCnt();
 
                 break;
 
             case PHASE_CANCELLING:
-                // Do not know where cancel occurred => calculate setup/map/reduce progress.
-                setupProgress = setupProgress(status);
-                mapProgress = mapProgress(status);
-                reduceProgress = reduceProgress(status);
-                cleanupProgress = 0.0f;
+            case PHASE_COMPLETE:
+                if (!status.isFailed()) {
+                    setupProgress = 1;
+                    mapProgress = 1;
+                    reduceProgress = 1;
+                    cleanupProgress = 1;
+
+                    state = JobStatus.State.SUCCEEDED;
+                }
+                else
+                    state = JobStatus.State.FAILED;
 
                 break;
 
             default:
-                assert status.jobPhase() == PHASE_COMPLETE;
-
-                // Do not know whether this is complete on success or failure => calculate setup/map/reduce progress.
-                setupProgress = setupProgress(status);
-                mapProgress = mapProgress(status);
-                reduceProgress = reduceProgress(status);
-                cleanupProgress = 1.0f;
+                assert false;
         }
 
         return new JobStatus(jobId, setupProgress, mapProgress, reduceProgress, cleanupProgress, state,
@@ -177,109 +160,121 @@ public class GridHadoopUtils {
     }
 
     /**
-     * Calculate setup progress.
+     * Checks the attribute in configuration is not set.
      *
-     * @param status Status.
-     * @return Setup progress.
+     * @param attr Attribute name.
+     * @param msg Message for creation of exception.
+     * @throws org.gridgain.grid.GridException If attribute is set.
      */
-    private static float setupProgress(GridHadoopJobStatus status) {
-        // Map phase was started => setup had been finished.
-        if (status.mapStartTime() > 0)
-            return 1.0f;
-
-        return progress(1, 0, 1, status.setupStartTime());
+    public static void ensureNotSet(Configuration cfg, String attr, String msg) throws GridException {
+        if (cfg.get(attr) != null)
+            throw new GridException(attr + " is incompatible with " + msg + " mode.");
     }
 
     /**
-     * Calculate map progress.
+     * Creates JobInfo from hadoop configuration.
      *
-     * @param status Status.
-     * @return Map progress.
+     * @param cfg Hadoop configuration.
+     * @return Job info.
+     * @throws GridException If failed.
      */
-    private static float mapProgress(GridHadoopJobStatus status) {
-        // Reduce phase was started => map had been finished.
-        if (status.reduceStartTime() > 0)
-            return 1.0f;
+    public static GridHadoopDefaultJobInfo createJobInfo(Configuration cfg) throws GridException {
+        JobConf jobConf = new JobConf(cfg);
 
-        return progress(status.totalMapperCnt(), status.totalMapperCnt() - status.pendingMapperCnt(),
-            Math.min(status.totalMapperCnt(), status.concurrencyLevel()), status.mapStartTime());
-    }
+        boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
+                || jobConf.get(MRJobConfig.COMBINE_CLASS_ATTR) != null;
 
-    /**
-     * Calculate reduce progress.
-     *
-     * @param status Status.
-     * @return Reduce progress.
-     */
-    private static float reduceProgress(GridHadoopJobStatus status) {
-        // Reduce has net started yet => no progress.
-        if (status.reduceStartTime() == 0)
-            return 0.0f;
+        int numReduces = jobConf.getNumReduceTasks();
 
-        return progress(status.totalReducerCnt(), status.totalReducerCnt() - status.pendingReducerCnt(),
-            Math.min(status.totalReducerCnt(), status.concurrencyLevel()), status.reduceStartTime());
-    }
+        jobConf.setBooleanIfUnset("mapred.mapper.new-api", jobConf.get(OLD_MAP_CLASS_ATTR) == null);
 
-    /**
-     * Calculate progress.
-     *
-     * @param totalTasks Total tasks.
-     * @param completedTasks Completed tasks.
-     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
-     * @param startTime Start time.
-     * @return Progress.
-     */
-    private static float progress(int totalTasks, int completedTasks, int maxConcurrentTasks, long startTime) {
-        // Fast-path when all tasks are completed.
-        if (totalTasks == 0 || totalTasks == completedTasks)
-            return 1.0f;
-        else {
-            assert maxConcurrentTasks <= totalTasks;
+        if (jobConf.getUseNewMapper()) {
+            String mode = "new map API";
 
-            int concurrentTasks = Math.min(totalTasks - completedTasks, maxConcurrentTasks);
+            ensureNotSet(jobConf, "mapred.input.format.class", mode);
+            ensureNotSet(jobConf, OLD_MAP_CLASS_ATTR, mode);
 
-            long dur = U.currentTimeMillis() - startTime;
-
-            float speculativeProgress = speculativeProgress(totalTasks, maxConcurrentTasks, dur) * concurrentTasks;
-
-            float res = ((float)completedTasks + speculativeProgress) / totalTasks;
-
-            assert res <= 1.01f; // Assume that > .01f is an algorithm bug, not precision problem.
-
-            if (res > 1.0f)
-                res = 1.0f; // Protect from FP precision problems.
-
-            return res;
+            if (numReduces != 0)
+                ensureNotSet(jobConf, "mapred.partitioner.class", mode);
+            else
+                ensureNotSet(jobConf, "mapred.output.format.class", mode);
         }
+        else {
+            String mode = "map compatibility";
+
+            ensureNotSet(jobConf, MRJobConfig.INPUT_FORMAT_CLASS_ATTR, mode);
+            ensureNotSet(jobConf, MRJobConfig.MAP_CLASS_ATTR, mode);
+
+            if (numReduces != 0)
+                ensureNotSet(jobConf, MRJobConfig.PARTITIONER_CLASS_ATTR, mode);
+            else
+                ensureNotSet(jobConf, MRJobConfig.OUTPUT_FORMAT_CLASS_ATTR, mode);
+        }
+
+        if (numReduces != 0) {
+            jobConf.setBooleanIfUnset("mapred.reducer.new-api", jobConf.get(OLD_REDUCE_CLASS_ATTR) == null);
+
+            if (jobConf.getUseNewReducer()) {
+                String mode = "new reduce API";
+
+                ensureNotSet(jobConf, "mapred.output.format.class", mode);
+                ensureNotSet(jobConf, OLD_REDUCE_CLASS_ATTR, mode);
+            }
+            else {
+                String mode = "reduce compatibility";
+
+                ensureNotSet(jobConf, MRJobConfig.OUTPUT_FORMAT_CLASS_ATTR, mode);
+                ensureNotSet(jobConf, MRJobConfig.REDUCE_CLASS_ATTR, mode);
+            }
+        }
+
+        Map<String, String> props = new HashMap<>();
+
+        for (Map.Entry<String, String> entry : jobConf)
+            props.put(entry.getKey(), entry.getValue());
+
+        return new GridHadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
     }
 
     /**
-     * Calculate speculative progress.
+     * Throws new {@link GridException} with original exception is serialized into string.
+     * This is needed to transfer error outside the current class loader.
      *
-     * @param totalTasks Total tasks.
-     * @param maxConcurrentTasks Maximum possible number of concurrent tasks.
-     * @param dur Duration.
-     * @return Speculative progress.
+     * @param e Original exception.
+     * @return GridException New exception.
      */
-    private static float speculativeProgress(int totalTasks, int maxConcurrentTasks, long dur) {
-        // Determine amount of steps needed to cover 50% of remaining progress.
-        // More total tasks => less steps to double the progress.
-        float halfRatio = (float)maxConcurrentTasks / totalTasks;
+    public static GridException transformException(Throwable e) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-        int halfProgressSteps = MIN_STEPS_PER_HALF_PROGRESS + (int)(STEPS_PER_HALF_PROGRESS_RANGE * halfRatio);
+        e.printStackTrace(new PrintStream(os, true));
 
-        // Determine amount of step size half events and amount of tail steps with the same size.
-        long stepSizeChanges = dur / (halfProgressSteps * STEP_SPAN);
+        return new GridException(os.toString());
+    }
 
-        long tailSteps = dur / STEP_SPAN - stepSizeChanges * halfProgressSteps;
+    /**
+     * Returns work directory for job execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param jobId Job ID.
+     * @return Working directory for job.
+     * @throws GridException If Failed.
+     */
+    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws GridException {
+        return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    }
 
-        assert halfProgressSteps * stepSizeChanges + tailSteps == dur / STEP_SPAN;
+    /**
+     * Returns subdirectory of job working directory for task execution.
+     *
+     * @param locNodeId Local node ID.
+     * @param info Task info.
+     * @return Working directory for task.
+     * @throws GridException If Failed.
+     */
+    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws GridException {
+        File jobLocDir = jobLocalDir(locNodeId, info.jobId());
 
-        // Calculate speculative progress.
-        float power2 = (float)Math.pow(0.5, stepSizeChanges);
-
-        return /** Sum of geom. progression 1/2 + 1/4 ... */ 1 - power2 +
-            /** Relative progress of tail steps. */ (power2 / 2) * tailSteps / halfProgressSteps;
+        return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
 
     /**

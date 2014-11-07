@@ -14,20 +14,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example of {@link GridCacheStore} implementation that uses JDBC
  * transaction with cache transactions and maps {@link UUID} to {@link Person}.
  *
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Transaction metadata attribute name. */
     private static final String ATTR_NAME = "SIMPLE_STORE_CONNECTION";

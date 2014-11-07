@@ -117,7 +117,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void testNextJobId() throws Exception {
+    private void tstNextJobId() throws Exception {
         GridHadoopClientProtocolProvider provider = provider();
 
         ClientProtocol proto = provider.create(config(GridHadoopAbstractSelfTest.REST_PORT));
@@ -177,13 +177,13 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.submit();
 
-        final Counter counter = job.getCounters().findCounter(TestCounter.COUNTER1);
+        final Counter cntr = job.getCounters().findCounter(TestCounter.COUNTER1);
 
-        assertEquals(0, counter.getValue());
+        assertEquals(0, cntr.getValue());
 
-        counter.increment(10);
+        cntr.increment(10);
 
-        assertEquals(10, counter.getValue());
+        assertEquals(10, cntr.getValue());
 
         // Transferring to map phase.
         setupLockFile.delete();
@@ -209,7 +209,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    public void testUnknownJobCounters() throws Exception {
+    private void tstUnknownJobCounters() throws Exception {
         GridHadoopClientProtocolProvider provider = provider();
 
         ClientProtocol proto = provider.create(config(GridHadoopAbstractSelfTest.REST_PORT));
@@ -226,28 +226,28 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    public void testJobSubmitMap() throws Exception {
+    private void tstJobSubmitMap() throws Exception {
         checkJobSubmit(true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testJobSubmitMapCombine() throws Exception {
+    private void tstJobSubmitMapCombine() throws Exception {
         checkJobSubmit(false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testJobSubmitMapReduce() throws Exception {
+    private void tstJobSubmitMapReduce() throws Exception {
         checkJobSubmit(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testJobSubmitMapCombineReduce() throws Exception {
+    private void tstJobSubmitMapCombineReduce() throws Exception {
         checkJobSubmit(false, false);
     }
 
@@ -445,7 +445,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
-        conf.set("fs.default.name", "ggfs://:" + getTestGridName(0) + "@/");
+        conf.set("fs.defaultFS", "ggfs://:" + getTestGridName(0) + "@/");
 
         return conf;
     }

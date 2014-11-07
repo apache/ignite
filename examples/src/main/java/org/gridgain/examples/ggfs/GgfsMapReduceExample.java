@@ -14,12 +14,9 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
-import org.gridgain.grid.product.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Example that shows how to use {@link GridGgfsTask} to find lines matching particular pattern in the file in pretty
@@ -31,7 +28,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
-@GridOnlyAvailableIn(HADOOP)
 public class GgfsMapReduceExample {
     /**
      * Executes example.

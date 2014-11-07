@@ -74,6 +74,7 @@
 
         <moduleSet>
             <includes>
+                <include>org.gridgain:gridgain-ggfs</include>
                 <include>org.gridgain:gridgain-hadoop</include>
             </includes>
             <sources>
@@ -85,6 +86,13 @@
                         <includes>
                             <include>readme.txt</include>
                             <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>*asm*.jar</include>
                         </includes>
                     </fileSet>
                     <fileSet>

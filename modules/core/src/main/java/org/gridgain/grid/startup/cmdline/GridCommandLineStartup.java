@@ -82,7 +82,7 @@ public final class GridCommandLineStartup {
 
             Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
 
-            String icoPath = "gg_cube_node_128x128.png";
+            String icoPath = "ggcube_node_128x128.png";
 
             URL url = GridCommandLineStartup.class.getResource(icoPath);
 
@@ -95,7 +95,7 @@ public final class GridCommandLineStartup {
             // Setting Up about dialog
             Class<?> aboutHndCls = Class.forName("com.apple.eawt.AboutHandler");
 
-            final URL bannerUrl = GridCommandLineStartup.class.getResource("gg_cube_node_48x48.png");
+            final URL bannerUrl = GridCommandLineStartup.class.getResource("ggcube_node_48x48.png");
 
             Object aboutHndProxy = Proxy.newProxyInstance(
                 appCls.getClassLoader(),

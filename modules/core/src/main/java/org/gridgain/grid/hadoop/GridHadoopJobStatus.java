@@ -23,9 +23,6 @@ public class GridHadoopJobStatus implements Externalizable {
     /** Job ID. */
     private GridHadoopJobId jobId;
 
-    /** Job state. */
-    private GridHadoopJobState jobState;
-
     /** Job name. */
     private String jobName;
 
@@ -43,21 +40,11 @@ public class GridHadoopJobStatus implements Externalizable {
 
     /** Total reducers count. */
     private int totalReducerCnt;
-
-    /** Setup start timestamp. */
-    private long setupStartTs;
-
-    /** Map start time. */
-    private long mapStartTs;
-
-    /** Reduce start time. */
-    private long reduceStartTs;
-
     /** Phase. */
     private GridHadoopJobPhase jobPhase;
 
-    /** Speculative concurrency level. */
-    private int concurrencyLvl;
+    /** */
+    private boolean failed;
 
     /** Version. */
     private long ver;
@@ -73,49 +60,37 @@ public class GridHadoopJobStatus implements Externalizable {
      * Constructor.
      *
      * @param jobId Job ID.
-     * @param jobState Job state.
      * @param jobName Job name.
      * @param usr User.
      * @param pendingMapperCnt Pending mappers count.
      * @param pendingReducerCnt Pending reducers count.
      * @param totalMapperCnt Total mappers count.
      * @param totalReducerCnt Total reducers count.
-     * @param setupStartTs Map start time.
-     * @param mapStartTs Map start time.
-     * @param reduceStartTs Reduce start time.
      * @param jobPhase Job phase.
-     * @param concurrencyLvl Speculative concurrency level.
+     * @param failed Failed.
      * @param ver Version.
      */
     public GridHadoopJobStatus(
         GridHadoopJobId jobId,
-        GridHadoopJobState jobState,
         String jobName,
         String usr,
         int pendingMapperCnt,
         int pendingReducerCnt,
         int totalMapperCnt,
         int totalReducerCnt,
-        long setupStartTs,
-        long mapStartTs,
-        long reduceStartTs,
         GridHadoopJobPhase jobPhase,
-        int concurrencyLvl,
+        boolean failed,
         long ver
     ) {
         this.jobId = jobId;
-        this.jobState = jobState;
         this.jobName = jobName;
         this.usr = usr;
         this.pendingMapperCnt = pendingMapperCnt;
         this.pendingReducerCnt = pendingReducerCnt;
         this.totalMapperCnt = totalMapperCnt;
         this.totalReducerCnt = totalReducerCnt;
-        this.setupStartTs = setupStartTs;
-        this.mapStartTs = mapStartTs;
-        this.reduceStartTs = reduceStartTs;
         this.jobPhase = jobPhase;
-        this.concurrencyLvl = concurrencyLvl;
+        this.failed = failed;
         this.ver = ver;
     }
 
@@ -124,13 +99,6 @@ public class GridHadoopJobStatus implements Externalizable {
      */
     public GridHadoopJobId jobId() {
         return jobId;
-    }
-
-    /**
-     * @return Job state.
-     */
-    public GridHadoopJobState jobState() {
-        return jobState;
     }
 
     /**
@@ -176,34 +144,6 @@ public class GridHadoopJobStatus implements Externalizable {
     }
 
     /**
-     * @return Setup start time.
-     */
-    public long setupStartTime() {
-        return setupStartTs;
-    }
-
-    /**
-     * @return Map start time.
-     */
-    public long mapStartTime() {
-        return mapStartTs;
-    }
-
-    /**
-     * @return Reduce start time.
-     */
-    public long reduceStartTime() {
-        return reduceStartTs;
-    }
-
-    /**
-     * @return Speculative concurrency level.
-     */
-    public int concurrencyLevel() {
-        return concurrencyLvl;
-    }
-
-    /**
      * @return Version.
      */
     public long version() {
@@ -217,6 +157,13 @@ public class GridHadoopJobStatus implements Externalizable {
         return jobPhase;
     }
 
+    /**
+     * @return {@code true} If the job failed.
+     */
+    public boolean isFailed() {
+        return failed;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopJobStatus.class, this);
@@ -225,36 +172,28 @@ public class GridHadoopJobStatus implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(jobId);
-        out.writeObject(jobState);
         U.writeString(out, jobName);
         U.writeString(out, usr);
         out.writeInt(pendingMapperCnt);
         out.writeInt(pendingReducerCnt);
         out.writeInt(totalMapperCnt);
         out.writeInt(totalReducerCnt);
-        out.writeLong(setupStartTs);
-        out.writeLong(mapStartTs);
-        out.writeLong(reduceStartTs);
         out.writeObject(jobPhase);
-        out.writeInt(concurrencyLvl);
+        out.writeBoolean(failed);
         out.writeLong(ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         jobId = (GridHadoopJobId)in.readObject();
-        jobState = (GridHadoopJobState)in.readObject();
         jobName = U.readString(in);
         usr = U.readString(in);
         pendingMapperCnt = in.readInt();
         pendingReducerCnt = in.readInt();
         totalMapperCnt = in.readInt();
         totalReducerCnt = in.readInt();
-        setupStartTs = in.readLong();
-        mapStartTs = in.readLong();
-        reduceStartTs = in.readLong();
         jobPhase = (GridHadoopJobPhase)in.readObject();
-        concurrencyLvl = in.readInt();
+        failed = in.readBoolean();
         ver = in.readLong();
     }
 }
