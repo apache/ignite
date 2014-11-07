@@ -121,7 +121,7 @@ public interface GridServices extends IgniteAsyncSupport {
      *
      * @return Grid projection to which this {@code GridServices} instance belongs.
      */
-    GridProjection projection();
+    public GridProjection projection();
 
     /**
      * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always
@@ -142,7 +142,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws GridException If failed to deploy service.
      */
-    void deployClusterSingleton(String name, GridService svc) throws GridException;
+    public void deployClusterSingleton(String name, GridService svc) throws GridException;
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -159,7 +159,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws GridException If failed to deploy service.
      */
-    void deployNodeSingleton(String name, GridService svc) throws GridException;
+    public void deployNodeSingleton(String name, GridService svc) throws GridException;
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -194,7 +194,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws GridException If failed to deploy service.
      */
-    void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
+    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
         throws GridException;
 
     /**
@@ -229,7 +229,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @throws GridException If failed to deploy service.
      */
-    void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) throws GridException;
+    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) throws GridException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -269,7 +269,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param cfg Service configuration.
      * @throws GridException If failed to deploy service.
      */
-    void deploy(GridServiceConfiguration cfg) throws GridException;
+    public void deploy(GridServiceConfiguration cfg) throws GridException;
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -284,7 +284,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param name Name of service to cancel.
      * @throws GridException If failed to cancel service.
      */
-    void cancel(String name) throws GridException;
+    public void cancel(String name) throws GridException;
 
     /**
      * Cancels all deployed services.
@@ -296,14 +296,14 @@ public interface GridServices extends IgniteAsyncSupport {
      *
      * @throws GridException If failed to cancel services.
      */
-    void cancelAll() throws GridException;
+    public void cancelAll() throws GridException;
 
     /**
      * Gets metadata about all deployed services.
      *
      * @return Metadata about all deployed services.
      */
-    Collection<GridServiceDescriptor> deployedServices();
+    public Collection<GridServiceDescriptor> deployedServices();
 
     /**
      * Gets deployed service with specified name.
@@ -312,7 +312,7 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param <T> Service type
      * @return Deployed service with specified name.
      */
-    <T> T service(String name);
+    public <T> T service(String name);
 
     /**
      * Gets all deployed services with specified name.
@@ -321,19 +321,20 @@ public interface GridServices extends IgniteAsyncSupport {
      * @param <T> Service type.
      * @return all deployed services with specified name.
      */
-    <T> Collection<T> services(String name);
+    public <T> Collection<T> services(String name);
 
     /**
      * Gets a remote handle on the service. If service is available locally,
      * then local instance is returned, otherwise, a remote proxy is dynamically
      * created and provided for the specified service.
      *
-     * @param svc Interface for the service.
+     * @param name Service name.
+     * @param svcItf Interface for the service.
      * @param sticky Whether or not GridGain should always contact the same remote
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException;
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws GridRuntimeException;
 
     /** {@inheritDoc} */
     @Override public GridServices enableAsync();

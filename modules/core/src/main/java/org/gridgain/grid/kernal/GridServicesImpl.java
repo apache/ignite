@@ -184,11 +184,16 @@ public class GridServicesImpl extends IgniteAsyncSupportAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(String name, Class<T> svc, boolean sticky) throws GridRuntimeException {
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
+        throws GridRuntimeException {
+        A.notNull(name, "name");
+        A.notNull(svcItf, "svcItf");
+        A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
+
         guard();
 
         try {
-            return ctx.service().serviceProxy(prj, name, svc, sticky);
+            return ctx.service().serviceProxy(prj, name, svcItf, sticky);
         }
         finally {
             unguard();

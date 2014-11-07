@@ -10,12 +10,9 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.util.typedef.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -177,61 +174,175 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testProxyInvocationFromSeveralNodes() throws Exception {
+    public void testSingletonProxyInvocation() throws Exception {
         final String name = "testProxyInvocationFromSeveralNodes";
 
-        final Grid grid = randomGrid();
+        final Grid grid = grid(0);
 
-        grid.services(grid.cluster().forLocal()).deployNodeSingleton(name, new CacheServiceImpl<String, Integer>());
+        grid.services(grid.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
-        int counter = 1;
+        for (int i = 1; i < nodeCount(); i++) {
+            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
 
-        grid.services(grid.cluster().forRemotes()).serviceProxy(name, CacheService.class, false).
-                put(counter++, "executed");
+            // Make sure service is a proxy.
+            assertFalse(svc instanceof GridService);
 
-        assertEquals(nodeCount() - 1, grid.services().serviceProxy(name, CacheService.class, false).size());
+            svc.put(i, Integer.toString(i));
+        }
+
+        assertEquals(nodeCount() - 1, grid.services().serviceProxy(name, MapService.class, false).size());
     }
 
     /**
-     * Cache service.
+     * @throws Exception If failed.
+     */
+    public void testLocalProxyInvocation() throws Exception {
+        final String name = "testLocalProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        for (int i = 0; i < nodeCount(); i++) {
+            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertTrue(svc instanceof GridService);
+
+            svc.put(i, Integer.toString(i));
+        }
+
+        MapService<Integer, String> map = grid.services().serviceProxy(name, MapService.class, false);
+
+        for (int i = 0; i < nodeCount(); i++)
+            assertEquals(1, map.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteNotStickProxyInvocation() throws Exception {
+        final String name = "testRemoteNotStickProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        // Get remote proxy.
+        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, false);
+
+        // Make sure service is a local instance.
+        assertFalse(svc instanceof GridService);
+
+        for (int i = 0; i < nodeCount(); i++)
+            svc.put(i, Integer.toString(i));
+
+        int size = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertFalse(map instanceof GridService);
+
+            size += map.size();
+        }
+
+        assertEquals(nodeCount(), size);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteStickyProxyInvocation() throws Exception {
+        final String name = "testRemoteStickyProxyInvocation";
+
+        final Grid grid = grid(0);
+
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+
+        // Get remote proxy.
+        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, true);
+
+        // Make sure service is a local instance.
+        assertFalse(svc instanceof GridService);
+
+        for (int i = 0; i < nodeCount(); i++)
+            svc.put(i, Integer.toString(i));
+
+        int size = 0;
+
+        for (GridNode n : grid.forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+
+            // Make sure service is a local instance.
+            assertFalse(map instanceof GridService);
+
+            if (map.size() != 0)
+                size += map.size();
+        }
+
+        assertEquals(nodeCount(), size);
+    }
+
+    /**
+     * Simple map service.
      *
      * @param <K> Type of cache keys.
      * @param <V> Type of cache values.
      */
-    protected interface CacheService<K, V> {
+    protected interface MapService<K, V> {
+        /**
+         * Puts key-value pair into map.
+         *
+         * @param key Key.
+         * @param val Value.
+         */
         void put(K key, V val);
 
+        /**
+         * Gets value based on key.
+         *
+         * @param key Key.
+         * @return Value.
+         */
         V get(K key);
 
+        /**
+         * Clears map.
+         */
         void clear();
 
+        /**
+         * @return Map size.
+         */
         int size();
     }
 
     /**
      * Cache service implementation.
      */
-    protected static class CacheServiceImpl<K, V> implements CacheService<K, V>, GridService {
+    protected static class MapServiceImpl<K, V> implements MapService<K, V>, GridService {
         /** Underlying cache map. */
-        private final Map<K, V> cache = new ConcurrentHashMap<>();
+        private final Map<K, V> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void put(K key, V val) {
-            cache.put(key, val);
+            map.put(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public V get(K key) {
-            return cache.get(key);
+            return map.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            cache.clear();
+            map.clear();
         }
 
         @Override public int size() {
-            return cache.size();
+            return map.size();
         }
 
         /** {@inheritDoc} */
