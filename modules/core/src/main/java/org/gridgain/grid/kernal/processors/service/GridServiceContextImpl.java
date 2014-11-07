@@ -14,6 +14,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -23,6 +24,9 @@ import java.util.concurrent.*;
 public class GridServiceContextImpl implements GridServiceContext {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Null method. */
+    private static final Method NULL_METHOD = GridServiceContextImpl.class.getMethods()[0];
 
     /** Service name. */
     private final String name;
@@ -43,6 +47,9 @@ public class GridServiceContextImpl implements GridServiceContext {
     /** Executor service. */
     @GridToStringExclude
     private final ExecutorService exe;
+
+    /** Methods reflection cache. */
+    private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
     /** Cancelled flag. */
     private volatile boolean isCancelled;
@@ -104,6 +111,27 @@ public class GridServiceContextImpl implements GridServiceContext {
      */
     ExecutorService executor() {
         return exe;
+    }
+
+    /**
+     * @param key Method key.
+     * @return Method.
+     */
+    @Nullable Method method(GridServiceMethodReflectKey key) {
+        Method mtd = mtds.get(key);
+
+        if (mtd == null) {
+            try {
+                mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
+            }
+            catch (NoSuchMethodException e) {
+                mtd = NULL_METHOD;
+            }
+
+            mtds.put(key, mtd);
+        }
+
+        return mtd == NULL_METHOD ? null : mtd;
     }
 
     /**

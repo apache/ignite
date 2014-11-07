@@ -137,6 +137,9 @@ public final class GridNodeAttributes {
     /** Cache interceptors. */
     public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
 
+    /** Native platform. */
+    public static final String ATTR_INTEROP_PLATFORM = ATTR_PREFIX + ".interop.platform";
+
     /**
      * Enforces singleton.
      */

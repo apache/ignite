@@ -81,6 +81,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder(GridPortableObject portableObj) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void addMeta(int typeId, GridPortableMetadata newMeta) throws GridPortableException {
         // No-op.
     }

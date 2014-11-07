@@ -786,7 +786,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         boolean rmv;
 
         synchronized (mux) {
-            Map<String, String> rsrcs = new HashMap<>(1);
+            Map<String, String> rsrcs = U.newHashMap(1);
 
             rsrcs.put(rsrcName, rsrcName);
 
@@ -867,7 +867,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
             // Add resources that should be removed for another class loaders.
             else {
                 if (newRsrcs == null)
-                    newRsrcs = new HashMap<>(alias2Cls.size() + clss.length);
+                    newRsrcs = U.newHashMap(alias2Cls.size() + clss.length);
 
                 newRsrcs.put(newAlias, newName);
                 newRsrcs.put(newName, newName);

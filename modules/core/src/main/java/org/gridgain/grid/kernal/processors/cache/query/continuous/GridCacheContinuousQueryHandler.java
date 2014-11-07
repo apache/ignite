@@ -227,7 +227,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             @Nullable private String taskName() {
                 String taskName = null;
 
-                if (ctx.security().securityEnabled()) {
+                if (ctx.security().enabled()) {
                     assert GridCacheContinuousQueryHandler.this instanceof GridCacheContinuousQueryHandlerV2;
 
                     int taskHash = ((GridCacheContinuousQueryHandlerV2)GridCacheContinuousQueryHandler.this).taskHash();

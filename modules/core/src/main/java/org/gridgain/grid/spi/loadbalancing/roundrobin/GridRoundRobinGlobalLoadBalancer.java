@@ -173,7 +173,7 @@ class GridRoundRobinGlobalLoadBalancer {
                 // request topology only after full cycle (approximately).
                 if (misses >= cycleSize) {
                     if (topMap == null) {
-                        topMap = new HashMap<>(top.size());
+                        topMap = U.newHashMap(top.size());
 
                         for (GridNode node : top)
                             topMap.put(node.id(), node);
