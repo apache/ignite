@@ -171,9 +171,8 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             Object obj0 = results.get(0).getData();
 
             if (obj0.equals(results.get(1).getData())) {
-                if (obj0.equals(grid.name())) {
+                if (obj0.equals(grid.name()))
                     return JobStealingResult.NONE_STOLEN;
-                }
 
                 return JobStealingResult.BOTH_STOLEN;
             }

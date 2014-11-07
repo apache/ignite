@@ -132,6 +132,11 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                 fail();
         }
 
+        /** {@inheritDoc} */
+        @Override public void onDisconnected(UUID nodeId) {
+            // No-op.
+        }
+
         /**
          * @return Queue containing received messages in receive order.
          */

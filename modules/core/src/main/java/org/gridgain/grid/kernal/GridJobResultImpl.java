@@ -122,9 +122,8 @@ public class GridJobResultImpl implements GridComputeJobResult {
         this.ex = ex;
         this.isCancelled = isCancelled;
 
-        if (jobAttrs != null) {
+        if (jobAttrs != null)
             jobCtx.setAttributes(jobAttrs);
-        }
 
         hasRes = true;
     }

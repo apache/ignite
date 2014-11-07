@@ -35,7 +35,6 @@
         <module>modules/extdata/uri</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
-        <module>modules/ggfs</module>
         <module>modules/clients</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>

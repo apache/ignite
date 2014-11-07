@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -49,7 +50,7 @@ public class GridCacheUtils {
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
     /** Security system cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-utility-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
 
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
@@ -218,22 +219,6 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
-
-    /**
-     * List of keywords that can't be used as identifiers for H2 (table names, column names and so on),
-     * unless they are surrounded with double quotes.
-     */
-    private static final String[] H2_RESERVED_WORDS = {
-        "cross", "current_date", "current_time", "current_timestamp", "distinct", "except", "exists", "false", "for",
-        "from", "full", "group", "having", "inner", "intersect", "is", "join", "like", "limit", "minus", "natural",
-        "not", "null", "on", "order", "primary", "rownum", "select", "sysdate", "systime", "systimestamp", "today",
-        "true", "union", "unique", "where"
-    };
-
-    /** */
-    static {
-        Arrays.sort(H2_RESERVED_WORDS);
-    }
 
     /**
      * Ensure singleton.
@@ -1362,7 +1347,7 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration or set -D" + GridSystemProperties.GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
@@ -1619,23 +1604,5 @@ public class GridCacheUtils {
      */
     public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
         return cache.clear(key);
-    }
-
-    /**
-     * Escapes specified string if it is keyword reserved by H2 or contains special characters
-     * (such strings should be surrounded with double quotes to be used as identifier).
-     *
-     * @param s String.
-     * @return Escaped string if specified string is keyword reserved by H2 or contains special characters,
-     *      original input otherwise.
-     */
-    public static String h2Escape(String s) {
-        if (s == null)
-            return null;
-
-        if (s.contains("-") || Arrays.binarySearch(H2_RESERVED_WORDS, s.toLowerCase()) >= 0)
-            return "\"" + s + "\"";
-
-        return s;
     }
 }

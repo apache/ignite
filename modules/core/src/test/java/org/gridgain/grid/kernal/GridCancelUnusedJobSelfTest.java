@@ -116,15 +116,13 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
-            }
 
             Collection<GridComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
-            for (int i = 1; i <= SPLIT_COUNT; i++) {
+            for (int i = 1; i <= SPLIT_COUNT; i++)
                 jobs.add(new GridCancelTestJob(i));
-            }
 
             return jobs;
         }
@@ -136,13 +134,11 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Serializable reduce(List<GridComputeJobResult> results) throws GridException {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
-            }
 
-            if (results.size() > 1) {
+            if (results.size() > 1)
                 fail();
-            }
 
             return results.get(0).getData();
         }
@@ -172,37 +168,31 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
             int arg = this.<Integer>argument(0);
 
             try {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Executing job [job=" + this + ", arg=" + arg + ']');
-                }
 
                 startSignal.countDown();
 
                 try {
-                    if (!startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS)) {
+                    if (!startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS))
                         fail();
-                    }
 
                     if (arg == 1) {
-                        if (log.isInfoEnabled()) {
+                        if (log.isInfoEnabled())
                             log.info("Job one is proceeding.");
-                        }
                     }
-                    else {
+                    else
                         Thread.sleep(WAIT_TIME);
-                    }
                 }
                 catch (InterruptedException e) {
-                    if (log.isInfoEnabled()) {
+                    if (log.isInfoEnabled())
                         log.info("Job got cancelled [arg=" + arg + ", ses=" + ses + ", e=" + e + ']');
-                    }
 
                     return 0;
                 }
 
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("Completing job: " + ses);
-                }
 
                 return argument(0);
             }

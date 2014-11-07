@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.5.0</gridgain.version>
+        <gridgain.version>6.5.1</gridgain.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -62,7 +62,6 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/ggfs</module>
     </modules>
 
     <dependencyManagement>
@@ -96,13 +95,6 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
             <scope>test</scope>
         </dependency>
 
@@ -350,7 +342,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -545,6 +537,10 @@
                                     <title>Spring Caching</title>
                                     <packages>org.gridgain.grid.cache.spring</packages>
                                 </group>
+                                <group>
+                                    <title>.Net Configuration</title>
+                                    <packages>org.gridgain.grid.dotnet</packages>
+                                </group>
                             </groups>
                             <header>
                                 <![CDATA[
@@ -560,7 +556,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -678,7 +674,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
@@ -772,7 +768,7 @@
                         <configuration>
                             <target>
                                 <replaceregexp byline="true">
-                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.\s*::.+'/>
+                                    <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
                                     <substitution expression='pushd "%~dp0"/..'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
@@ -780,7 +776,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"\s*#.*'/>
+                                    <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -788,7 +784,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin\s*::.*'/>
+                                    <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
                                     <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
@@ -796,7 +792,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"\s*#.*'/>
+                                    <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
                                     <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -804,7 +800,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh\s*#.*'/>
+                                    <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
@@ -812,7 +808,7 @@
                                 </replaceregexp>
 
                                 <replaceregexp byline="true">
-                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"\s*::.*'/>
+                                    <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
                                     <substitution expression=""/>
                                     <fileset dir="target/release-package/bin">
                                         <include name="**/*.bat"/>
@@ -954,8 +950,8 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin/include</outputDirectory>
-                            <finalName>visorcmd</finalName>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -1027,6 +1023,10 @@
                             <filesets>
                                 <fileset>
                                     <directory>libs</directory>
+                                </fileset>
+
+                                <fileset>
+                                    <directory>bin/include/visor-common</directory>
                                 </fileset>
 
                                 <fileset>

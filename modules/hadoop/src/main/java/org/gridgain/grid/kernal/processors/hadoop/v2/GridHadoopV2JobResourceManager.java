@@ -211,20 +211,16 @@ public class GridHadoopV2JobResourceManager {
 
                 String archiveNameLC = archiveFile.getName().toLowerCase();
 
-                if (archiveNameLC.endsWith(".jar")) {
+                if (archiveNameLC.endsWith(".jar"))
                     RunJar.unJar(archiveFile, dstPath);
-                }
-                else if (archiveNameLC.endsWith(".zip")) {
+                else if (archiveNameLC.endsWith(".zip"))
                     FileUtil.unZip(archiveFile, dstPath);
-                }
                 else if (archiveNameLC.endsWith(".tar.gz") ||
                     archiveNameLC.endsWith(".tgz") ||
-                    archiveNameLC.endsWith(".tar")) {
+                    archiveNameLC.endsWith(".tar"))
                     FileUtil.unTar(archiveFile, dstPath);
-                }
-                else {
+                else
                     throw new IOException("Cannot unpack archive [path=" + srcPath + ", jobId=" + jobId + ']');
-                }
             }
             else
                 FileUtil.copy(srcFs, srcPath, dstFs, new Path(dstPath.toString()), false, cfg);

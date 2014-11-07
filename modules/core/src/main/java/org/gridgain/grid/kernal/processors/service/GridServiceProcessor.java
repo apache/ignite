@@ -396,7 +396,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (GridException e) {
-                log.error("Failed to deploy service: " + cfg.getName(), e);
+                if (e.hasCause(GridTopologyException.class)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
+
+                    continue;
+                }
+
+                U.error(log, "Failed to deploy service: " + cfg.getName(), e);
 
                 return new GridFinishedFuture<>(ctx, e);
             }
@@ -476,8 +483,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)assignCache.flagsOn(GridCacheFlag.GET_PRIMARY).
-                    get(new GridServiceAssignmentsKey(dep.configuration().getName()));
+                GridServiceAssignments assigns = (GridServiceAssignments)assignCache.flagsOn(GridCacheFlag.GET_PRIMARY)
+                    .get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
                     desc.topologySnapshot(assigns.assigns());

@@ -812,9 +812,8 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 synchronized (qryMux) {
                     uids.remove(((GridDiscoveryEvent)evt).eventNode().id());
 
-                    if (uids.isEmpty()) {
+                    if (uids.isEmpty())
                         qryMux.notifyAll();
-                    }
                 }
             }
         };

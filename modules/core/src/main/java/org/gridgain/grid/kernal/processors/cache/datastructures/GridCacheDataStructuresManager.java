@@ -44,6 +44,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
+    /** */
+    private static final int MAX_UPDATE_RETRIES = 100;
+
+    /** */
+    private static final long RETRY_DELAY = 1;
+
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
     private GridCacheProjection<GridCacheInternal, GridCacheInternal> dsView;
 
@@ -633,41 +639,28 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             queueQry.filter(new QueueHeaderPredicate());
 
-            queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
-                @Override public boolean apply(UUID id, Collection<Map.Entry> entries) {
-                    if (!busyLock.enterBusy())
-                        return false;
+            queueQry.localCallback(new GridBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
+               @Override public boolean apply(UUID id, Collection<GridCacheContinuousQueryEntry> entries) {
+                   if (!busyLock.enterBusy())
+                       return false;
 
-                    try {
-                        for (Map.Entry e : entries) {
+                   try {
+                        for (GridCacheContinuousQueryEntry e : entries) {
                             GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
                             GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
 
                             for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                 if (queue.name().equals(key.queueName())) {
                                     if (hdr == null) {
-                                        /*
-                                         * Potentially there can be queues with the same names, need to check that
-                                         * queue was really removed.
-                                         */
-                                        cctx.closures().callLocalSafe(new Callable<Void>() {
-                                            @Override public Void call() throws Exception {
-                                                if (!busyLock.enterBusy())
-                                                    return null;
+                                        GridCacheQueueHeader rmvd = (GridCacheQueueHeader)e.getOldValue();
 
-                                                try {
-                                                    queue.size();
-                                                }
-                                                catch (GridCacheDataStructureRemovedRuntimeException ignore) {
-                                                    queuesMap.remove(queue.delegate().id());
-                                                }
-                                                finally {
-                                                    busyLock.leaveBusy();
-                                                }
+                                        assert rmvd != null;
 
-                                                return null;
-                                            }
-                                        }, false);
+                                        if (rmvd.id().equals(queue.delegate().id())) {
+                                            queue.delegate().onRemoved(false);
+
+                                            queuesMap.remove(queue.delegate().id());
+                                        }
                                     }
                                     else
                                         queue.delegate().onHeaderChanged(hdr);
@@ -676,11 +669,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         }
 
                         return true;
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
-                }
+                   }
+                   finally {
+                       busyLock.leaveBusy();
+                   }
+               }
             });
 
             queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
@@ -1291,63 +1284,50 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             keys.add(key);
 
             if (keys.size() == BATCH_SIZE) {
-                retryRemove(cache, keys);
+                retryRemoveAll(cache, keys);
 
                 keys.clear();
             }
         }
 
         if (!keys.isEmpty())
-            retryRemove(cache, keys);
+            retryRemoveAll(cache, keys);
 
         setDataMap.remove(setId);
     }
 
     /**
-     * @param cache Cache.
-     * @param keys Keys to remove.
-     * @throws GridException If failed.
+     * @param call Callable.
+     * @return Callable result.
+     * @throws GridException If all retrys failed.
      */
-    @SuppressWarnings("unchecked")
-    private void retryRemove(GridCache cache, Collection<GridCacheSetItemKey> keys) throws GridException {
-        int cnt = 0;
+    <R> R retry(Callable<R> call) throws GridException {
+        try {
+            int cnt = 0;
 
-        while (true) {
-            try {
-                cache.removeAll(keys);
+            while (true) {
+                try {
+                    return call.call();
+                }
+                catch (GridEmptyProjectionException e) {
+                    throw new GridRuntimeException(e);
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to execute data structure operation, will retry [err=" + e + ']');
 
-                break;
-            }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == 3)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to remove set items, will retry [err=" + e + ']');
+                        U.sleep(RETRY_DELAY);
+                    }
+                }
             }
         }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @param val Value.
-     * @throws GridException If failed.
-     * @return Previous value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(GridCache cache, Object key, T val) throws GridException {
-        int cnt = 0;
-
-        while (true) {
-            try {
-                return (T)cache.putIfAbsent(key, val);
-            }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == 3)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to create cache item, will retry [err=" + e + ']');
-            }
+        catch (GridException | GridRuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException(e);
         }
     }
 
@@ -1358,20 +1338,46 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(GridCache cache, Object key) throws GridException {
-        int cnt = 0;
-
-        while (true) {
-            try {
+    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws GridException {
+        return retry(new Callable<T>() {
+            @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
             }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == 3)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to remove cache item, will retry [err=" + e + ']');
+        });
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys to remove.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
+        throws GridException {
+        retry(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.removeAll(keys);
+
+                return null;
             }
-        }
+        });
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @throws GridException If failed.
+     * @return Previous value.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
+        throws GridException {
+        return retry(new Callable<T>() {
+            @Nullable @Override public T call() throws Exception {
+                return (T)cache.putIfAbsent(key, val);
+            }
+        });
     }
 
     /**

@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridCacheTestStore implements GridCacheStore<Integer, String> {
     /** Store. */
-    private final Map<Integer, String> map = new ConcurrentHashMap<>();
+    private final Map<Integer, String> map;
 
     /** Transactions. */
     private final Collection<GridCacheTx> txs = new GridConcurrentHashSet<>();
@@ -51,6 +52,20 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** Configurable delay to simulate slow storage. */
     private int operationDelay;
+
+    /**
+     * @param map Underlying store map.
+     */
+    public GridCacheTestStore(Map<Integer, String> map) {
+        this.map = map;
+    }
+
+    /**
+     * Default constructor.
+     */
+    public GridCacheTestStore() {
+        map = new ConcurrentHashMap<>();
+    }
 
     /**
      * @return Underlying map.
@@ -276,9 +291,8 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
         if (shouldFail)
             throw new GridException("Store exception.");
 
-        if (operationDelay > 0) {
+        if (operationDelay > 0)
             U.sleep(operationDelay);
-        }
     }
 
     /**

@@ -534,6 +534,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public V promote(K key, boolean deserializePortable) throws GridException {
+        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
+
+        // Unswap only from dht(). Near cache does not have swap storage.
+        return dht().promote(key, deserializePortable);
+    }
+
+    /** {@inheritDoc} */
     @Override public V promote(K key) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 

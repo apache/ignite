@@ -166,9 +166,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         return
             F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
                 @Nullable @Override public GridNode apply(GridFuture<?> f) {
-                    if (isMini(f)) {
+                    if (isMini(f))
                         return ((MiniFuture)f).node();
-                    }
 
                     return cctx.discovery().localNode();
                 }

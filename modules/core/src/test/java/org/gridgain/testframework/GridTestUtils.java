@@ -396,9 +396,8 @@ public final class GridTestUtils {
 
         // Increment address.
         if (addr[3] == 255) {
-            if (addr[2] == 255) {
+            if (addr[2] == 255)
                 assert false;
-            }
             else {
                 addr[2] += 1;
 
@@ -695,9 +694,8 @@ public final class GridTestUtils {
             // To get different addresses for different machines.
             addr = new int[] {229, thirdByte, 1, 1};
         }
-        else {
+        else
             addr = new int[] {229, 1, 1, 1};
-        }
     }
 
     /**
@@ -727,10 +725,8 @@ public final class GridTestUtils {
                 // Exclude log4j because of the design - 1 per VM.
                 if (name.startsWith("spring") || name.startsWith("log4j") ||
                     name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("gridgain-tests")) {
-
+                    name.startsWith("gridgain-tests"))
                     return false;
-                }
 
                 boolean ret = true;
 
@@ -895,9 +891,8 @@ public final class GridTestUtils {
                     }
                 }
 
-                if (wait) {
+                if (wait)
                     Thread.sleep(20);
-                }
                 else
                     break; // While.
             }

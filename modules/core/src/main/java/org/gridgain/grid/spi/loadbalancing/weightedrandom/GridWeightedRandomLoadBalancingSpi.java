@@ -237,9 +237,8 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
         registerMBean(gridName, this, GridWeightedRandomLoadBalancingSpiMBean.class);
 
         // Ack ok start.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(startInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -247,9 +246,8 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
         unregisterMBean();
 
         // Ack ok stop.
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug(stopInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -264,9 +262,8 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
 
                     taskTops.remove(sesId);
 
-                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled())
                         log.debug("Removed task topology from topology cache for session: " + sesId);
-                    }
                 }
                 // We should keep topology and use cache in GridComputeTask#map() method to
                 // avoid O(n*n/2) complexity, after that we can drop caches.
@@ -276,13 +273,11 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
 
                     GridBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(sesId);
 
-                    if (weightedTop != null) {
+                    if (weightedTop != null)
                         weightedTop.set1(true);
-                    }
 
-                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled())
                         log.debug("Job has been mapped. Ignore cache for session: " + sesId);
-                    }
                 }
             }
         },
@@ -309,9 +304,8 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
         A.notNull(job, "job");
 
         // Optimization for non-weighted randomization.
-        if (!isUseWeights) {
+        if (!isUseWeights)
             return top.get(RAND.nextInt(top.size()));
-        }
 
         GridBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(ses.getId());
 
@@ -337,9 +331,8 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
     private int getWeight(GridNode node) {
         Integer weight = (Integer)node.attribute(createSpiAttributeName(NODE_WEIGHT_ATTR_NAME));
 
-        if (weight != null && weight == 0) {
+        if (weight != null && weight == 0)
             throw new IllegalStateException("Node weight cannot be zero: " + node);
-        }
 
         return weight == null ? DFLT_NODE_WEIGHT : weight;
     }

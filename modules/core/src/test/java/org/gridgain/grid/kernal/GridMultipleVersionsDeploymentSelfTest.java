@@ -68,9 +68,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     private boolean checkDeployed(Grid grid, String taskName) {
         Map<String, Class<? extends GridComputeTask<?, ?>>> locTasks = grid.compute().localTasks();
 
-        if (log().isInfoEnabled()) {
+        if (log().isInfoEnabled())
             log().info("Local tasks found: " + locTasks);
-        }
 
         return locTasks.get(taskName) != null;
     }
@@ -234,18 +233,15 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
 
             boolean ignoreLocNode = false;
 
-            if (subgrid.size() == 1) {
+            if (subgrid.size() == 1)
                 assert subgrid.get(0).id().equals(locNodeId) : "Wrong node id.";
-            }
-            else {
+            else
                 ignoreLocNode = true;
-            }
 
             for (GridNode node : subgrid) {
                 // Ignore local node.
-                if (ignoreLocNode && node.id().equals(locNodeId)) {
+                if (ignoreLocNode && node.id().equals(locNodeId))
                     continue;
-                }
 
                 map.put(new GridDeploymentTestJob(), node);
             }
@@ -271,9 +267,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override public Integer execute() throws GridException {
             try {
-                if (log.isInfoEnabled()) {
+                if (log.isInfoEnabled())
                     log.info("GridDeploymentTestJob job started");
-                }
 
                 // Again there is no way to get access to any
                 // mutex of the test class because of the different class loaders.

@@ -221,9 +221,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         entries.add(entry);
 
         if (c == null && timeout < 0) {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
-            }
 
             onFailed();
 
@@ -247,9 +246,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                 e.removeLock(lockVer);
             }
             catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled())
                     log.debug("Got removed entry while undoing locks: " + e);
-                }
             }
         }
     }
@@ -267,9 +265,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param t Error.
      */
     void onError(Throwable t) {
-        if (err.compareAndSet(null, t)) {
+        if (err.compareAndSet(null, t))
             onFailed();
-        }
     }
 
     /**
@@ -279,9 +276,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private boolean filter(GridCacheEntryEx<K, V> cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled())
                     log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-                }
 
                 onFailed();
 
@@ -339,18 +335,16 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                     GridCacheEntryEx<K, V> cached = entries.get(i);
 
                     try {
-                        if (!locked(cached)) {
+                        if (!locked(cached))
                             return true;
-                        }
 
                         break;
                     }
                     // Possible in concurrent cases, when owner is changed after locks
                     // have been released or cancelled.
                     catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled()) {
+                        if (log.isDebugEnabled())
                             log.debug("Got removed entry in onOwnerChanged method (will retry): " + cached);
-                        }
 
                         // Replace old entry with new one.
                         entries.add(i, (GridLocalCacheEntry<K,V>)cache.entryEx(cached.key()));
@@ -358,9 +352,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                 }
             }
 
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Local lock acquired for entries: " + entries);
-            }
 
             onComplete(true);
         }
@@ -387,20 +380,17 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param success If {@code true}, then lock has been acquired.
      */
     private void onComplete(boolean success) {
-        if (!success) {
+        if (!success)
             undoLocks();
-        }
 
         if (onDone(success, err.get())) {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
-            }
 
             cache.onFutureDone(this);
 
-            if (timeoutObj != null) {
+            if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
-            }
         }
     }
 
@@ -410,9 +400,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @throws GridException If execution failed.
      */
     private void checkError() throws GridException {
-        if (err.get() != null) {
+        if (err.get() != null)
             throw U.cast(err.get());
-        }
     }
 
     /** {@inheritDoc} */
@@ -439,9 +428,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         /** {@inheritDoc} */
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
-            }
 
             onComplete(false);
         }

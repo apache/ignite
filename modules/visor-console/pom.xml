@@ -41,24 +41,50 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-spring</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <!-- Third party dependencies -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.10.4</version>
+            <version>2.11.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>jline</artifactId>
-            <version>2.10.4</version>
+            <version>2.11.0-M3</version>
         </dependency>
+        <!-- Third party dependencies -->
 
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>test</scope>
-        </dependency>
-
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-indexing</artifactId>
@@ -68,8 +94,8 @@
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.10</artifactId>
-            <version>2.1.5</version>
+            <artifactId>scalatest_2.11</artifactId>
+            <version>2.2.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -78,19 +104,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Test dependencies -->
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.1.6</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>

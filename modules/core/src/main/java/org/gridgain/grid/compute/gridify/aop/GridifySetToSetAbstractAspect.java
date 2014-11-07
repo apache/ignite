@@ -39,9 +39,8 @@ public class GridifySetToSetAbstractAspect {
         for (int i = 0; i < paramTypes.length; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (GridifyUtils.isMethodParameterTypeAllowed(paramType)) {
+            if (GridifyUtils.isMethodParameterTypeAllowed(paramType))
                 allowedParamIdxs.add(i);
-            }
         }
 
         if (allowedParamIdxs.isEmpty()) {
@@ -54,9 +53,8 @@ public class GridifySetToSetAbstractAspect {
         for (int i = 0; i < paramTypes.length; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (GridifyUtils.isMethodParameterTypeAnnotated(paramType.getDeclaredAnnotations())) {
+            if (GridifyUtils.isMethodParameterTypeAnnotated(paramType.getDeclaredAnnotations()))
                 annParamIdxs.add(i);
-            }
         }
 
         if (annParamIdxs.size() > 1) {
@@ -126,13 +124,11 @@ public class GridifySetToSetAbstractAspect {
         long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;
 
         // Prevent overflow.
-        if (end < 0) {
+        if (end < 0)
             end = Long.MAX_VALUE;
-        }
 
-        if (now > end) {
+        if (now > end)
             throw new GridComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
-        }
 
         Collection<?> res = subgrid.compute().withTimeout(timeout == 0 ? 0L : (end - now)).execute(
             new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, false),

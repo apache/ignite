@@ -629,9 +629,8 @@ final class GridTestMemcacheClient {
         byte[] bytes;
         short flags = 0;
 
-        if (obj instanceof String) {
+        if (obj instanceof String)
             bytes = ((String)obj).getBytes();
-        }
         else if (obj instanceof Boolean) {
             bytes = new byte[] {(byte)((Boolean)obj ? '1' : '0')};
 

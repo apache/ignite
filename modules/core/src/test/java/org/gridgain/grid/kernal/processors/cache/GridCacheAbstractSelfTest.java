@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -103,14 +104,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws GridException {
                                     GridCache<String, Integer> cache = cache(fi);
 
-                                    if (txEnabled())
-                                        cache.removeAll();
-                                    else
-                                        cache.clearAll();
+                                    cache.removeAll();
 
-                                    // clearAll() does not remove entries with readers.
-                                    if (!cache.isEmpty() && !txEnabled() && CU.isNearEnabled(cache.configuration()))
-                                        cache.removeAll();
+                                    if (offheapTiered(cache)) {
+                                        Iterator it = cache.offHeapIterator();
+
+                                        while (it.hasNext()) {
+                                            it.next();
+
+                                            it.remove();
+                                        }
+
+                                        if (cache.offHeapIterator().hasNext())
+                                            return false;
+                                    }
 
                                     return cache.isEmpty();
                                 }
@@ -352,6 +359,84 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected boolean belongs(String key, int idx) {
         return context(idx).cache().affinity().isPrimaryOrBackup(context(idx).localNode(), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
+     */
+    protected boolean offheapTiered(GridCache cache) {
+        return cache.configuration().getMemoryMode() == OFFHEAP_TIERED;
+    }
+
+    /**
+     * Executes regular peek or peek from swap.
+     *
+     * @param prj Cache projection.
+     * @param key Key.
+     * @return Value.
+     * @throws Exception If failed.
+     */
+    @Nullable protected <K, V> V peek(GridCacheProjection<K, V> prj, K key) throws Exception {
+        return offheapTiered(prj.cache()) ? prj.peek(key, F.asList(GridCachePeekMode.SWAP)) : prj.peek(key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @return {@code True} if cache contains given key.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected boolean containsKey(GridCache cache, Object key) throws Exception {
+        return offheapTiered(cache) ? containsOffheapKey(cache, key) : cache.containsKey(key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param val Value.
+     * @return {@code True} if cache contains given value.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected boolean containsValue(GridCache cache, Object val) throws Exception {
+        return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @return {@code True} if offheap contains given key.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected boolean containsOffheapKey(GridCache cache, Object key) throws Exception {
+        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
+            Map.Entry e = it.next();
+
+            if (key.equals(e.getKey()))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param val Value.
+     * @return {@code True} if offheap contains given value.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected boolean containsOffheapValue(GridCache cache, Object val) throws Exception {
+        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
+            Map.Entry e = it.next();
+
+            if (val.equals(e.getValue()))
+                return true;
+        }
+
+        return false;
     }
 
     /**

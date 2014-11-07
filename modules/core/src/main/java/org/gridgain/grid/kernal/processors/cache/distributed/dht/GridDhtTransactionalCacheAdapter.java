@@ -800,7 +800,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         // Invalidate key in near cache, if any.
                         if (isNearEnabled(cacheCfg))
-                            invalidateNearEntry(key, req.version());
+                            obsoleteNearEntry(key, req.version());
 
                         break;
                     }
@@ -913,7 +913,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     // Invalidate key in near cache, if any.
                     if (isNearEnabled(cacheCfg))
-                        invalidateNearEntry(key, req.version());
+                        obsoleteNearEntry(key, req.version());
 
                     if (tx != null) {
                         tx.clearEntry(key);
@@ -1840,6 +1840,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             /*unmarshal*/false,
                                             /*update-metrics*/true,
                                             /*event notification*/req.returnValue(i),
+                                            /*temporary*/false,
                                             CU.subjectId(tx, ctx),
                                             null,
                                             tx != null ? tx.resolveTaskName() : null,
@@ -1864,11 +1865,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         filterPassed = writeEntry.filtersPassed();
                                     }
 
+                                    GridCacheValueBytes valBytes = ret ? e.valueBytes(null) : GridCacheValueBytes.nil();
+
                                     // We include values into response since they are required for local
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
-                                        val,
-                                        ret ? e.valueBytes(null).getIfMarshaled() : null,
+                                        val != null ? val : (V)valBytes.getIfPlain(),
+                                        ret ? valBytes.getIfMarshaled() : null,
                                         filterPassed,
                                         ver,
                                         mappedVer,
@@ -2308,5 +2311,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (nearEntry != null)
             nearEntry.invalidate(null, ver);
+    }
+
+    /**
+     * @param key Key
+     * @param ver Version.
+     */
+    private void obsoleteNearEntry(K key, GridCacheVersion ver) {
+        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+
+        if (nearEntry != null)
+            nearEntry.markObsolete(ver);
     }
 }

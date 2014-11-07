@@ -239,9 +239,8 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Map<GridComputeJob, GridNode> map = new HashMap<>(subgrid.size());
 
             for (GridNode node : subgrid) {
-                if (!node.id().equals(nodeId)) {
+                if (!node.id().equals(nodeId))
                     map.put(new GridP2PTestJob(null) , node);
-                }
             }
 
             return map;
@@ -253,13 +252,11 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
 
             GridComputeJobResult res = results.get(0);
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Got job result for aggregation: " + res);
-            }
 
-            if (res.getException() != null) {
+            if (res.getException() != null)
                 throw res.getException();
-            }
 
             return res.getData();
         }

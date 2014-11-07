@@ -72,9 +72,8 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
                                 ((GridDiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
                                 ", type=" + evt.type() + ']';
 
-                        if (evt.type() == EVT_NODE_LEFT) {
+                        if (evt.type() == EVT_NODE_LEFT)
                             latch.countDown();
-                        }
                     }
 
                     return true;

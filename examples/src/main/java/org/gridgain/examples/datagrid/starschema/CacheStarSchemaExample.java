@@ -210,9 +210,8 @@ public class CacheStarSchemaExample {
         int i = 0;
 
         for (T t : c) {
-            if (i++ == n) {
+            if (i++ == n)
                 return t;
-            }
         }
 
         throw new ConcurrentModificationException();

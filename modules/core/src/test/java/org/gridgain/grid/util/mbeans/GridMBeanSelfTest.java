@@ -32,9 +32,8 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         assert info.getOperations().length == 2;
 
         for (MBeanOperationInfo opInfo: info.getOperations()) {
-            if (opInfo.getDescription().equals("MBeanOperation.")) {
+            if (opInfo.getDescription().equals("MBeanOperation."))
                 assert opInfo.getSignature().length == 2;
-            }
             else {
                 assert opInfo.getDescription().equals("MBeanSuperOperation.") == true;
                 assert opInfo.getSignature().length == 1;
@@ -42,9 +41,8 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         }
 
         for (MBeanParameterInfo paramInfo: info.getOperations()[0].getSignature()) {
-            if (paramInfo.getName().equals("ignored")) {
+            if (paramInfo.getName().equals("ignored"))
                 assert paramInfo.getDescription().equals("MBeanOperationParameter1.") == true;
-            }
             else {
                 assert paramInfo.getName().equals("someData") == true;
                 assert paramInfo.getDescription().equals("MBeanOperationParameter2.") == true;
