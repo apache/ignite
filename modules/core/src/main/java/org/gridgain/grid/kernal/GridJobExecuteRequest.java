@@ -90,8 +90,13 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /** */
     private byte[] siblingsBytes;
 
-    /** */
-    private long createTime = U.currentTimeMillis();
+    /** @deprecated need to remove and use only {@link #createTime0}. */
+    @Deprecated
+    private long createTime;
+
+    /** Transient since needs to hold local creation time. */
+    @GridDirectTransient
+    private long createTime0 = U.currentTimeMillis();
 
     /** */
     private GridUuid clsLdrId;
@@ -279,7 +284,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @return This instance creation time.
      */
     public long getCreateTime() {
-        return createTime;
+        return createTime0;
     }
 
     /**
@@ -427,6 +432,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.siblings = siblings;
         _clone.siblingsBytes = siblingsBytes;
         _clone.createTime = createTime;
+        _clone.createTime0 = createTime0;
         _clone.clsLdrId = clsLdrId;
         _clone.depMode = depMode;
         _clone.dynamicSiblings = dynamicSiblings;

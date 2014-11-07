@@ -161,31 +161,4 @@ public abstract class GridClientUtils {
 
         return i < 0 ? 0 : i;
     }
-
-    /**
-     * Returns comparator that sorts remote node endpoint. If remote node resides on the same host, then put
-     * loopback addresses first, last otherwise.
-     *
-     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
-     * @return Comparator.
-     * @throws NullPointerException If address to compare is unresolved ( {@link InetSocketAddress#isUnresolved()}
-     * returns {@code True} ).
-     */
-    public static Comparator<InetSocketAddress> inetSocketAddressesComparator(final boolean sameHost) {
-        return new Comparator<InetSocketAddress>() {
-            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
-                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
-                boolean addr2Loopback = addr2.getAddress().isLoopbackAddress();
-
-                // No need to reorder.
-                if (addr1Loopback == addr2Loopback)
-                    return 0;
-
-                if (sameHost)
-                    return addr1Loopback ? -1 : 1;
-                else
-                    return addr1Loopback ? 1 : -1;
-            }
-        };
-    }
 }

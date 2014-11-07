@@ -7,18 +7,35 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.query;
+package org.gridgain.examples.services;
 
 /**
- * Interface allowing to override table name for portable objects stored in cache.
+ * Simple map service.
  */
-public interface GridCacheQueryTypeResolver {
+public interface SimpleMapService<K, V> {
     /**
-     * Allows to override type name for portable objects being stored in cache.
+     * Puts key-value pair into map.
      *
      * @param key Key.
      * @param val Value.
-     * @return Type name.
      */
-    public String resolveTypeName(Object key, Object val);
+    void put(K key, V val);
+
+    /**
+     * Gets value based on key.
+     *
+     * @param key Key.
+     * @return Value.
+     */
+    V get(K key);
+
+    /**
+     * Clears map.
+     */
+    void clear();
+
+    /**
+     * @return Map size.
+     */
+    int size();
 }
