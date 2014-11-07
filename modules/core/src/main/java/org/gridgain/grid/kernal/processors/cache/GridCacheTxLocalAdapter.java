@@ -2188,8 +2188,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             transformed.put(k, val);
                         }
 
-                        if (cctx.portableEnabled() && !cctx.portableValues() && v instanceof GridPortableObject)
-                            v = (V)((GridPortableObject)v).deserialize();
+                        if (cctx.portableEnabled() && !cctx.keepPortable() && v instanceof GridPortableObject)
+                            v = ((GridPortableObject)v).deserialize();
 
                         ret.value(v);
                     }

@@ -181,7 +181,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        if (ctx.portableEnabled() && !ctx.portableKeys() && key instanceof GridPortableObject) {
+        if (ctx.portableEnabled() && !ctx.keepPortable() && key instanceof GridPortableObject) {
             try {
                 return (K)((GridPortableObject)key).deserialize();
             }
@@ -327,8 +327,8 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                         if (peek != null) {
                             V v = peek.get();
 
-                            if (ctx.portableEnabled() && !ctx.portableValues() && v instanceof GridPortableObject)
-                                v = (V)((GridPortableObject)v).deserialize();
+                            if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                                v = ((GridPortableObject)v).deserialize();
 
                             return v;
                         }

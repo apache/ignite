@@ -1685,21 +1685,12 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Portable keys flag.
+     * @return Keep portable flag.
      */
-    public boolean portableKeys() {
+    public boolean keepPortable() {
         GridCacheProjectionImpl<K, V> prj = projectionPerCall();
 
-        return prj != null && prj.portableKeys();
-    }
-
-    /**
-     * @return Portable values flag.
-     */
-    public boolean portableValues() {
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
-
-        return prj != null && prj.portableValues();
+        return prj != null && prj.isKeepPortable();
     }
 
     /**

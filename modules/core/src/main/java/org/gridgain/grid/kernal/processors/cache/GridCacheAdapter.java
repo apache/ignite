@@ -712,8 +712,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.portableValues() && v instanceof GridPortableObject)
-                        v = (V)((GridPortableObject)v).deserialize();
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                        v = ((GridPortableObject)v).deserialize();
 
                     return F.t(ctx.cloneOnFlag(v));
                 }
@@ -727,8 +727,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.portableValues() && v instanceof GridPortableObject)
-                        v = (V)((GridPortableObject)v).deserialize();
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                        v = ((GridPortableObject)v).deserialize();
 
                     return F.t(ctx.cloneOnFlag(v));
                 }

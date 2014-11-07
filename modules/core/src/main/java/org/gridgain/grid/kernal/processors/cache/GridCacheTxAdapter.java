@@ -1140,8 +1140,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         CU.<K, V>empty());
 
                 try {
-                    if (cctx.portableEnabled() && !cctx.portableValues() && val instanceof GridPortableObject)
-                        val = (V)((GridPortableObject)val).deserialize();
+                    if (cctx.portableEnabled() && !cctx.keepPortable() && val instanceof GridPortableObject)
+                        val = ((GridPortableObject)val).deserialize();
 
                     for (GridClosure<V, V> clos : txEntry.transformClosures())
                         val = clos.apply(val);
