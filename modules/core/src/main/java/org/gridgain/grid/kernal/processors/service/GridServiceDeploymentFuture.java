@@ -16,9 +16,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Service deployment future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /** */
