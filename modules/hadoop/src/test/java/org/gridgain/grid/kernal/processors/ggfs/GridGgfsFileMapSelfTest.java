@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -22,7 +21,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileAffinityRange
 /**
  * File map self test.
  */
-public class GridGgfsFileMapSelfTest extends GridCommonAbstractTest {
+public class GridGgfsFileMapSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

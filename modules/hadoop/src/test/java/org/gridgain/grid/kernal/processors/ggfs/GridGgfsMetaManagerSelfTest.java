@@ -18,7 +18,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -34,7 +33,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
 /**
  * {@link GridGgfsMetaManager} test case.
  */
-public class GridGgfsMetaManagerSelfTest extends GridCommonAbstractTest {
+public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -209,7 +208,7 @@ public class GridGgfsMetaManagerSelfTest extends GridCommonAbstractTest {
         assertNull(mgr.putIfAbsent(a.id(), "f2", f2));
         assertNull(mgr.putIfAbsent(b.id(), "f3", f3));
 
-        assertEquals(b, mgr.putIfAbsent(a.id(), "b", f3));
+        assertEquals(b.id(), mgr.putIfAbsent(a.id(), "b", f3));
         expectsPutIfAbsentFail(a.id(), "c", f3, "Failed to add file details into cache");
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),

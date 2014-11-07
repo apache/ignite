@@ -29,12 +29,6 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>target/gridgain.jar</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>gridgain-${gridgain.edition}-${gridgain.version}.jar</destName>
-        </file>
-
-        <file>
             <source>apache-2.0.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
@@ -45,20 +39,13 @@
         </file>
 
         <file>
-            <source>modules/clients/dotnet/readme.pdf</source>
-            <outputDirectory>/clients/dotnet</outputDirectory>
+            <source>config/java.util.logging.properties</source>
+            <outputDirectory>/config</outputDirectory>
         </file>
 
         <file>
-            <source>examples/pom-standalone.xml</source>
-            <outputDirectory>/examples</outputDirectory>
-            <destName>pom.xml</destName>
-        </file>
-
-        <file>
-            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
-            <outputDirectory>/examples/clients/dotnet</outputDirectory>
-            <destName>GridClientApiExample.csproj</destName>
+            <source>docs/release_notes.pdf</source>
+            <outputDirectory>/docs</outputDirectory>
         </file>
     </files>
 
@@ -69,7 +56,14 @@
             <includes>
                 <include>**/*.bat</include>
                 <include>**/*.exe</include>
+                <include>**/*.jar</include>
+                <include>**/*.txt</include>
             </includes>
+            <excludes>
+                <exclude>*hadoop*.bat</exclude>
+                <exclude>ggrouter.bat</exclude>
+                <exclude>**/target-classpath.bat</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
@@ -79,6 +73,11 @@
             <includes>
                 <include>**/*.sh</include>
             </includes>
+            <excludes>
+                <exclude>*hadoop*.sh</exclude>
+                <exclude>ggrouter.sh</exclude>
+                <exclude>**/target-classpath.sh</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
@@ -87,107 +86,8 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients/src/main/java</directory>
-            <outputDirectory>/clients/java</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>readme.pdf</include>
-                <include>readme.txt</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/cpp</directory>
-            <outputDirectory>/clients/cpp</outputDirectory>
-            <excludes>
-                <exclude>main/tests/**</exclude>
-                <exclude>vsproject/gridgain-tests/**</exclude>
-                <exclude>vsproject/gridgain-router-tests/**</exclude>
-                <exclude>vsproject/gridgain-client-dev.sln</exclude>
-                <exclude>**/*.md</exclude>
-                <exclude>**/*.dxg</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/dotnet/client-lib/libs</directory>
-            <outputDirectory>/clients/dotnet</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>clients/**</include>
-                <include>libs/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/*.md</exclude>
-                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
-                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <includes>
-                <include>gridgain_readme.pdf</include>
-                <include>release_notes.pdf</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/core</directory>
-            <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/client</directory>
-            <outputDirectory>/clients/java/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/dotnetdoc</directory>
-            <outputDirectory>/clients/dotnet/doc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/clients/target/cppdoc</directory>
-            <outputDirectory>/clients/cpp/doc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>libs</directory>
+            <directory>assembly/libs</directory>
             <outputDirectory>/libs</outputDirectory>
         </fileSet>
     </fileSets>
-
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>/libs</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <excludes>
-                <exclude>org.apache.ant:ant</exclude>
-                <exclude>org.apache.tomcat:catalina</exclude>
-                <exclude>jboss:*</exclude>
-                <exclude>org.apache.hadoop:*</exclude>
-                <exclude>org.apache.avro:avro</exclude>
-            </excludes>
-        </dependencySet>
-
-        <dependencySet>
-            <outputDirectory>/libs/hadoop2</outputDirectory>
-            <useTransitiveDependencies>false</useTransitiveDependencies>
-            <includes>
-                <include>org.apache.hadoop:*</include>
-                <include>org.apache.avro:avro</include>
-            </includes>
-        </dependencySet>
-    </dependencySets>
 </component>

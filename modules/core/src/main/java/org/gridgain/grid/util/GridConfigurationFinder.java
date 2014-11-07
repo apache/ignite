@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -44,7 +44,7 @@ public final class GridConfigurationFinder {
      * @return Collection of configuration files and their last modification timestamps.
      * @throws IOException Thrown in case of any IO error.
      */
-    public static List<GridBiTuple<String, Long>> getConfigFiles() throws IOException {
+    public static List<GridTuple3<String, Long, File>> getConfigFiles() throws IOException {
         return getConfigFiles(new File(U.getGridGainHome()));
     }
 
@@ -56,14 +56,14 @@ public final class GridConfigurationFinder {
      * @return Collection of configuration files and their last modification timestamps.
      * @throws IOException Thrown in case of any IO error.
      */
-    public static List<GridBiTuple<String, Long>> getConfigFiles(File dir) throws IOException {
+    private static List<GridTuple3<String, Long, File>> getConfigFiles(File dir) throws IOException {
         assert dir != null;
 
-        LinkedList<GridBiTuple<String, Long>> lst = listFiles(dir);
+        LinkedList<GridTuple3<String, Long, File>> lst = listFiles(dir);
 
         // Sort.
-        Collections.sort(lst, new Comparator<GridBiTuple<String, Long>>() {
-            @Override public int compare(GridBiTuple<String, Long> t1, GridBiTuple<String, Long> t2) {
+        Collections.sort(lst, new Comparator<GridTuple3<String, Long, File>>() {
+            @Override public int compare(GridTuple3<String, Long, File> t1, GridTuple3<String, Long, File> t2) {
                 String s1 = t1.get1();
                 String s2 = t2.get1();
 
@@ -78,7 +78,7 @@ public final class GridConfigurationFinder {
         File dflt = new File(U.getGridGainHome() + File.separator + DFLT_CFG);
 
         if (dflt.exists())
-            lst.addFirst(F.t(DFLT_CFG, dflt.lastModified()));
+            lst.addFirst(F.t(DFLT_CFG, dflt.lastModified(), dflt));
 
         return lst;
     }
@@ -93,10 +93,10 @@ public final class GridConfigurationFinder {
      * @return Collection of configuration files and their last modification timestamps.
      * @throws IOException Thrown in case of any IO error.
      */
-    private static LinkedList<GridBiTuple<String, Long>> listFiles(File dir) throws IOException {
+    private static LinkedList<GridTuple3<String, Long, File>> listFiles(File dir) throws IOException {
         assert dir != null;
 
-        LinkedList<GridBiTuple<String, Long>> paths = new LinkedList<>();
+        LinkedList<GridTuple3<String, Long, File>> paths = new LinkedList<>();
 
         for (String name : dir.list()) {
             File file = new File(dir, name);
@@ -131,7 +131,7 @@ public final class GridConfigurationFinder {
                             if (!ggCfg)
                                 path = Q_PREFIX + ' ' + path;
 
-                            paths.add(F.t(path, file.lastModified()));
+                            paths.add(F.t(path, file.lastModified(), file));
                         }
                     }
                 }

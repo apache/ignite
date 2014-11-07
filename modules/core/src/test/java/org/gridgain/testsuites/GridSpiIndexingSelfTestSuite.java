@@ -10,8 +10,6 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.indexing.h2.*;
-import org.gridgain.grid.spi.indexing.h2.opt.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 
 /**
@@ -25,26 +23,7 @@ public class GridSpiIndexingSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Indexing SPI Test Suite");
 
-        // H2 Optimized table test.
-        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
-
-        // H2 Indexing in-memory.
-        suite.addTest(new TestSuite(GridH2IndexingSpiInMemStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridH2IndexingSpiInMemSelfTest.class));
-
-        // H2 Off-heap memory.
-        suite.addTest(new TestSuite(GridH2IndexingSpiOffheapStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridH2IndexingSpiOffheapSelfTest.class));
         suite.addTest(new TestSuite(GridOffheapSnapTreeSelfTest.class));
-
-        // Result set iterator.
-        suite.addTest(new TestSuite(GridH2ResultSetIteratorSelfTest.class));
-
-        // Index rebuilding.
-        suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
-
-        // Geo.
-        suite.addTestSuite(GridH2IndexingSpiGeoSelfTest.class);
 
         return suite;
     }

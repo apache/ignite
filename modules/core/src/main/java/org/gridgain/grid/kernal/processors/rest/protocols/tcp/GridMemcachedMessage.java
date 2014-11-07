@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
@@ -467,5 +468,10 @@ public class GridMemcachedMessage implements GridClientMessage {
             opCode == 0x09 ||
             opCode == 0x0C ||
             opCode == 0x0D;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridMemcachedMessage.class, this);
     }
 }

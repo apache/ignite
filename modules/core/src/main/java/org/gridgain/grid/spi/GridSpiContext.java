@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -59,6 +59,18 @@ public interface GridSpiContext {
      * @see GridDiscoverySpi
      */
     public GridNode localNode();
+
+    /**
+     * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
+     * underlying {@link GridDiscoverySpi} implementation used.
+     *
+     * @return Collection of all daemon nodes.
+     * @see #localNode()
+     * @see #remoteNodes()
+     * @see #nodes()
+     * @see GridDiscoverySpi
+     */
+    public Collection<GridNode> remoteDaemonNodes();
 
     /**
      * Gets a node instance based on its ID.
@@ -319,17 +331,6 @@ public interface GridSpiContext {
     public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) throws GridException;
 
     /**
-     * Authenticate grid node via underlying {@link GridAuthenticationSpi} implementation.
-     *
-     * @param nodeId Node id to authenticate.
-     * @param attrs Node attributes.
-     * @return {@code true} if authentication passes, {@code false} if authentication fails.
-     * @throws GridException If any exception occurs.
-     * @see GridAuthenticationSpi
-     */
-    public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
-
-    /**
      * Validates that new node can join grid topology, this method is called on coordinator
      * node before new node joins topology.
      *
@@ -357,4 +358,19 @@ public interface GridSpiContext {
      * @return Whether delta was fully read.
      */
     public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+
+    /**
+     * Gets collection of authenticated subjects together with their permissions.
+     *
+     * @return Collection of authenticated subjects.
+     */
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
+
+    /**
+     * Gets security subject based on subject ID.
+     *
+     * @param subjId Subject ID.
+     * @return Authorized security subject.
+     */
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
 }

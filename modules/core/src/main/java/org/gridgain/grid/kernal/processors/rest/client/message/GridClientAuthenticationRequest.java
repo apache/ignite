@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -47,5 +50,28 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         super.readExternal(in);
 
         cred = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        super.writePortable(writer);
+
+        GridPortableRawWriter raw = writer.rawWriter();
+
+        raw.writeObject(cred);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        super.readPortable(reader);
+
+        GridPortableRawReader raw = reader.rawReader();
+
+        cred = raw.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridClientAuthenticationRequest.class, this, super.toString());
     }
 }

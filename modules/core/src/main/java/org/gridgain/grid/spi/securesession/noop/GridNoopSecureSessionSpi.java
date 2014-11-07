@@ -11,10 +11,13 @@ package org.gridgain.grid.spi.securesession.noop;
 
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * Default no-op implementation of the secure session SPI which supports all subject types and denies any token.
@@ -72,15 +75,16 @@ public class GridNoopSecureSessionSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] validate(GridSecuritySubjectType subjType, byte[] subjId, @Nullable byte[] tok,
+    @Override public boolean validate(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
         @Nullable Object params) throws GridSpiException {
-        // New token generation.
-        if (tok == null)
-            // Always generate new token.
-            return EMPTY_BYTE_ARRAY;
-
         // Never validate any token - all tokens are invalid.
-        return null;
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] generateSessionToken(GridSecuritySubjectType subjType, UUID subjId,
+        @Nullable Object params) {
+        return EMPTY_BYTE_ARRAY;
     }
 
     /** {@inheritDoc} */

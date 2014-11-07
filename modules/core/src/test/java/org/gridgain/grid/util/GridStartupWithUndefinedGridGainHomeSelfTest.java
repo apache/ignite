@@ -9,10 +9,9 @@
 package org.gridgain.grid.util;
 
 import junit.framework.*;
-import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -63,7 +62,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
         assert ggHome0 == null;
 
-        GridLogger log = new GridLog4jLogger(Logger.getRootLogger());
+        GridLogger log = new GridJavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);

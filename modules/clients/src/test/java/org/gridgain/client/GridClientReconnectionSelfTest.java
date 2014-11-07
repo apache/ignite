@@ -17,7 +17,6 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.client.GridClientTestRestServer.*;
 
@@ -225,45 +224,5 @@ public class GridClientReconnectionSelfTest extends GridCommonAbstractTest {
         srvs[idx] = srv;
 
         return srv;
-    }
-
-    /**
-     * Test connection cancellation to fake host with five different timeouts.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("BusyWait")
-    public void testCancelConnection() throws Exception {
-        for (int i = 0; i < 5; i++) {
-            final CountDownLatch returnLatch = new CountDownLatch(1);
-
-            Thread testThread = new Thread("client-interruption-test-thread") {
-                @Override public void run() {
-                    try {
-                        client("ya.ru");
-                    } catch (Exception e) {
-                        assertTrue("Thrown exception doesn't have an expected cause: " + ExceptionUtils.getStackTrace(e),
-                            X.hasCause(e, GridClientConnectionResetException.class) ||
-                            "Client startup was interrupted.".equals(e.getMessage()));
-                    } finally {
-                        returnLatch.countDown();
-                    }
-                }
-            };
-
-            testThread.start();
-
-            // Simulates different time before cancellation.
-            Thread.sleep(i * 1500);
-
-            testThread.interrupt();
-
-            // On the first iteration interruption handling is limited by classloading.
-            // Later it should be handled quickly.
-            if (i == 0)
-                assertTrue(returnLatch.await(2, TimeUnit.SECONDS));
-            else
-                assertTrue(returnLatch.await(100, TimeUnit.MILLISECONDS));
-        }
     }
 }

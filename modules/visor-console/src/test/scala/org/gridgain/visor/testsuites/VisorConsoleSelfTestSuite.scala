@@ -11,17 +11,13 @@
 
 package org.gridgain.visor.testsuites
 
-import java.net.{UnknownHostException, InetAddress}
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.Suites
+import java.net.{InetAddress, UnknownHostException}
+
 import org.gridgain.grid.GridSystemProperties._
-import org.gridgain.visor.{VisorTextTableSpec, VisorScalarSpec}
+import org.gridgain.visor.commands.VisorArgListSpec
 import org.gridgain.visor.commands.ack.VisorAckCommandSpec
 import org.gridgain.visor.commands.alert.VisorAlertCommandSpec
-import org.gridgain.visor.commands.cache.VisorCacheCommandSpec
-import org.gridgain.visor.commands.cache.VisorCacheClearCommandSpec
-import org.gridgain.visor.commands.cache.VisorCacheCompactCommandSpec
+import org.gridgain.visor.commands.cache.{VisorCacheClearCommandSpec, VisorCacheCommandSpec, VisorCacheCompactCommandSpec}
 import org.gridgain.visor.commands.config.VisorConfigurationCommandSpec
 import org.gridgain.visor.commands.cswap.VisorCacheSwapCommandSpec
 import org.gridgain.visor.commands.deploy.VisorDeployCommandSpec
@@ -38,14 +34,16 @@ import org.gridgain.visor.commands.ping.VisorPingCommandSpec
 import org.gridgain.visor.commands.start.VisorStartCommandSpec
 import org.gridgain.visor.commands.tasks.VisorTasksCommandSpec
 import org.gridgain.visor.commands.top.VisorTopologyCommandSpec
-import org.gridgain.visor.commands.VisorArgListSpec
+import org.gridgain.visor.VisorTextTableSpec
+import org.junit.runner.RunWith
+import org.scalatest.Suites
+import org.scalatest.junit.JUnitRunner
 
 /**
  *
  */
 @RunWith(classOf[JUnitRunner])
 class VisorConsoleSelfTestSuite extends Suites (
-    new VisorScalarSpec,
     new VisorTextTableSpec,
     new VisorAckCommandSpec,
     new VisorAlertCommandSpec,

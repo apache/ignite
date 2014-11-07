@@ -79,9 +79,9 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 :: Set GRIDGAIN_LIBS
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
+call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
+set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorcmd\*
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
-set CP=%CP%;%GRIDGAIN_HOME%\os\modules\visor-console\libs\*
 ::
 :: Parse command line parameters.
 ::
@@ -90,11 +90,6 @@ if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
 )
-
-::
-:: Append hadoop libs to classpath after arguments are parsed.
-::
-set CP=%CP%;%GRIDGAIN_HOME%\libs\%HADOOP_LIB_DIR%\*
 
 ::
 :: Set program name.
@@ -127,10 +122,8 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 
 ::
 :: Starts Visor console.
-:: Make sure to add -DVISOR if you start visor from your own
-:: or modified script.
 ::
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DVISOR -DVISOR_REPL -DGRIDGAIN_SCRIPT -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
 -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED %QUIET% %JVM_XOPTS% -cp "%CP%" ^
  org.gridgain.visor.commands.VisorConsole
 

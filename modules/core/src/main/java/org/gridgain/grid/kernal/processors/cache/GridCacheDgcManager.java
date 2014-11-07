@@ -25,6 +25,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 
@@ -81,8 +83,8 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
-        if (cctx.config().getCacheMode() == GridCacheMode.LOCAL)
-            // No-op for local cache.
+        if (cctx.config().getCacheMode() == LOCAL || cctx.config().getAtomicityMode() == ATOMIC)
+            // No-op for local and atomic caches.
             return;
 
         traceLog = log.getLogger(DGC_TRACE_LOGGER_NAME);
@@ -140,8 +142,8 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
-        if (cctx.config().getCacheMode() == GridCacheMode.LOCAL)
-            // No-op for local cache.
+        if (cctx.config().getCacheMode() == LOCAL || cctx.config().getAtomicityMode() == ATOMIC)
+            // No-op for local and atomic caches.
             return;
 
         cctx.io().removeHandler(GridCacheDgcRequest.class, reqHnd);

@@ -40,8 +40,6 @@
 
 package org.jdk8.backport;
 
-import org.jetbrains.annotations.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -897,7 +895,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param cleanupQ {@code True} if need to cleanup queue.
          * @return Old value, if entry existed, {@code null} otherwise.
          */
-        V remove(Object key, int hash, @Nullable Object val, boolean cleanupQ) {
+        V remove(Object key, int hash, Object val, boolean cleanupQ) {
             writeLock().lock();
 
             try {
@@ -918,7 +916,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @return Old value, if entry existed, {@code null} otherwise.
          */
         @SuppressWarnings({"unchecked"})
-        V removeLocked(Object key, int hash, @Nullable Object val, boolean cleanupQ) {
+        V removeLocked(Object key, int hash, Object val, boolean cleanupQ) {
             int c = cnt - 1;
 
             HashEntry<K, V>[] tab = tbl;

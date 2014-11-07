@@ -19,7 +19,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import static com.google.common.collect.ObjectArrays.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -34,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * <p>
  * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(GridNode)}.
  */
-public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest {
+public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -83,6 +82,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
         g1GgfsCfg2.setMetaCacheName(metaCache2Name);
 
         cfg.setGgfsConfiguration(g1GgfsCfg1, g1GgfsCfg2);
+
+        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }
@@ -296,7 +297,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data block size should be same on all nodes in grid for GGFS", false);
+        checkGridStartFails(g2Cfg, "Data block size should be the same on all nodes in grid for GGFS", false);
     }
 
     /**

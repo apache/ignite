@@ -12,8 +12,8 @@ package org.gridgain.client.impl;
 import org.apache.commons.io.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.context.support.*;
 
@@ -42,9 +42,9 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
      */
     static {
         GRID_CLIENT_SPRING_CONFIG =
-            U.resolveGridGainUrl("/modules/clients/src/main/java/config/grid-client-spring-config.xml");
+            U.resolveGridGainUrl("/modules/clients/config/grid-client-spring-config.xml");
 
-        GRID_CLIENT_CONFIG = U.resolveGridGainUrl("/modules/clients/src/main/java/config/grid-client-config.properties");
+        GRID_CLIENT_CONFIG = U.resolveGridGainUrl("/modules/clients/config/grid-client-config.properties");
     }
 
     /**
@@ -115,7 +115,7 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
             GRID_CLIENT_SPRING_CONFIG.toString()).getBean(GridClientConfiguration.class);
 
         assertEquals(Arrays.asList("127.0.0.1:11211"), new ArrayList<>(cfg.getServers()));
-        assertNull(cfg.getCredentials());
+        assertNull(cfg.getSecurityCredentialsProvider());
 
         Collection<GridClientDataConfiguration> dataCfgs = cfg.getDataConfigurations();
 
@@ -194,7 +194,7 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
     private void validateConfig(int expDataCfgs, GridClientConfiguration cfg) {
         assertEquals(GridClientRandomBalancer.class, cfg.getBalancer().getClass());
         assertEquals(10000, cfg.getConnectTimeout());
-        assertEquals(null, cfg.getCredentials());
+        assertEquals(null, cfg.getSecurityCredentialsProvider());
 
         assertEquals(expDataCfgs, cfg.getDataConfigurations().size());
 

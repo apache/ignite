@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.managers.eventstorage;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -18,6 +17,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.eventstorage.*;
 import org.gridgain.grid.util.*;
@@ -61,6 +61,9 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     /** Request listener. */
     private RequestListener msgLsnr;
 
+    /** Events types enabled in configuration. */
+    private final int[] cfgInclEvtTypes;
+
     /** Events of these types should be recorded. */
     private volatile int[] inclEvtTypes;
 
@@ -90,13 +93,20 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         isDaemon = ctx.isDaemon();
 
-        int[] cfgInclEvtTypes = ctx.config().getIncludeEventTypes();
+        int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
-        int[] inclEvtTypes = cfgInclEvtTypes != null ? copy(cfgInclEvtTypes) : EMPTY;
+        if (F.isEmpty(cfgInclEvtTypes0))
+            cfgInclEvtTypes = EMPTY;
+        else {
+            cfgInclEvtTypes0 = copy(cfgInclEvtTypes0);
 
-        Arrays.sort(inclEvtTypes);
+            Arrays.sort(cfgInclEvtTypes0);
 
-        this.inclEvtTypes = inclEvtTypes;
+            if (cfgInclEvtTypes0[0] < 0)
+                throw new IllegalArgumentException("Invalid event type: " + cfgInclEvtTypes0[0]);
+
+            cfgInclEvtTypes = compact(cfgInclEvtTypes0, cfgInclEvtTypes0.length);
+        }
 
         // Initialize recordable events arrays.
         int maxIdx = 0;
@@ -118,11 +128,13 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
         boolean[] recordableEvts = new boolean[len];
         boolean[] userRecordableEvts = new boolean[len];
 
+        Collection<Integer> inclEvtTypes0 = new HashSet<>(U.toIntList(cfgInclEvtTypes));
+
         // Internal events are always "recordable" for notification
         // purposes (regardless of whether they were enabled or disabled).
         // However, won't be sent down to SPI level if user specifically excluded them.
         for (int type : EVTS_ALL) {
-            boolean userRecordable = isUserRecordable0(type);
+            boolean userRecordable = inclEvtTypes0.remove(type);
 
             if (userRecordable)
                 userRecordableEvts[type] = true;
@@ -139,6 +151,12 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         this.recordableEvts = recordableEvts;
         this.userRecordableEvts = userRecordableEvts;
+
+        int[] inclEvtTypes = U.toIntArray(inclEvtTypes0);
+
+        Arrays.sort(inclEvtTypes);
+
+        this.inclEvtTypes = inclEvtTypes;
     }
 
     /** {@inheritDoc} */
@@ -195,6 +213,13 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
+        Map<GridPredicate<? extends GridEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+
+        if (evtLsnrs != null) {
+            for (GridPredicate<? extends GridEvent> lsnr : evtLsnrs.keySet())
+                addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
+        }
+
         startSpi();
 
         msgLsnr = new RequestListener();
@@ -242,6 +267,25 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
+     * Gets types of enabled user-recordable events.
+     *
+     * @return Array of types of enabled user-recordable events.
+     */
+    public int[] enabledEvents() {
+        boolean[] userRecordableEvts0 = userRecordableEvts;
+
+        int[] enabledEvts = new int[len];
+        int enabledEvtsLen = 0;
+
+        for (int type = 0; type < len; type++) {
+            if (userRecordableEvts0[type])
+                enabledEvts[enabledEvtsLen++] = type;
+        }
+
+        return U.unique(enabledEvts, enabledEvtsLen, inclEvtTypes, inclEvtTypes.length);
+    }
+
+    /**
      * Enables provided events.
      *
      * @param types Events to enable.
@@ -249,11 +293,14 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
-        boolean[] userRecordableEvts0 = copy(userRecordableEvts);
-        boolean[] recordableEvts0 = copy(recordableEvts);
-        int[] inclEvtTypes0 = copy(inclEvtTypes);
+        ctx.security().authorize(null, GridSecurityPermission.EVENTS_ENABLE, null);
 
-        Collection<Integer> userTypes = new HashSet<>(types.length);
+        boolean[] userRecordableEvts0 = userRecordableEvts;
+        boolean[] recordableEvts0 = recordableEvts;
+        int[] inclEvtTypes0 = inclEvtTypes;
+
+        int[] userTypes = new int[types.length];
+        int userTypesLen = 0;
 
         for (int type : types) {
             if (type < len) {
@@ -261,15 +308,20 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 recordableEvts0[type] = true;
             }
             else
-                userTypes.add(type);
+                userTypes[userTypesLen++] = type;
         }
 
-        if (!userTypes.isEmpty()) {
-            Integer[] userTypesArr = userTypes.toArray(new Integer[userTypes.size()]);
+        if (userTypesLen > 0) {
+            Arrays.sort(userTypes, 0, userTypesLen);
 
-            inclEvtTypes0 = include(inclEvtTypes0, userTypesArr);
+            userTypes = compact(userTypes, userTypesLen);
+
+            inclEvtTypes0 = U.unique(inclEvtTypes0, inclEvtTypes0.length, userTypes, userTypesLen);
         }
 
+        // Volatile write.
+        // The below line is intentional to ensure a volatile write is
+        // made to the array, since it is exist access via unsynchronized blocks.
         userRecordableEvts = userRecordableEvts0;
         recordableEvts = recordableEvts0;
         inclEvtTypes = inclEvtTypes0;
@@ -284,14 +336,17 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
-        boolean[] userRecordableEvts0 = copy(userRecordableEvts);
-        boolean[] recordableEvts0 = copy(recordableEvts);
-        int[] inclEvtTypes0 = copy(inclEvtTypes);
+        ctx.security().authorize(null, GridSecurityPermission.EVENTS_DISABLE, null);
 
-        Collection<Integer> userTypes = new HashSet<>(types.length);
+        boolean[] userRecordableEvts0 = userRecordableEvts;
+        boolean[] recordableEvts0 = recordableEvts;
+        int[] inclEvtTypes0 = inclEvtTypes;
+
+        int[] userTypes = new int[types.length];
+        int userTypesLen = 0;
 
         for (int type : types) {
-            if (binarySearch(ctx.config().getIncludeEventTypes(), type)) {
+            if (binarySearch(cfgInclEvtTypes, type)) {
                 U.warn(log, "Can't disable event since it was enabled in configuration: " + U.gridEventName(type));
 
                 continue;
@@ -304,58 +359,47 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                     recordableEvts0[type] = false;
             }
             else
-                userTypes.add(type);
+                userTypes[userTypesLen++] = type;
         }
 
-        if (!userTypes.isEmpty()) {
-            Integer[] userTypesArr = userTypes.toArray(new Integer[userTypes.size()]);
+        if (userTypesLen > 0) {
+            Arrays.sort(userTypes, 0, userTypesLen);
 
-            inclEvtTypes0 = exclude(inclEvtTypes0, userTypesArr);
+            userTypes = compact(userTypes, userTypesLen);
+
+            inclEvtTypes0 = U.difference(inclEvtTypes0, inclEvtTypes0.length, userTypes, userTypesLen);
         }
 
+        // Volatile write.
+        // The below line is intentional to ensure a volatile write is
+        // made to the array, since it is exist access via unsynchronized blocks.
         userRecordableEvts = userRecordableEvts0;
         recordableEvts = recordableEvts0;
         inclEvtTypes = inclEvtTypes0;
     }
 
     /**
+     * Removes duplicates in non-decreasing array.
+     *
      * @param arr Array.
-     * @param includes Types to include.
-     * @return Array with includes.
+     * @param len Prefix length.
+     * @return Arrays with removed duplicates.
      */
-    private int[] include(int[] arr, Integer[] includes) {
+    private int[] compact(int[] arr, int len) {
         assert arr != null;
-        assert includes != null;
+        assert U.isNonDecreasingArray(arr, len);
 
-        int[] tmp = Arrays.copyOf(arr, arr.length + includes.length);
-        int len = arr.length;
+        if (arr.length <= 1)
+            return U.copyIfExceeded(arr, len);
 
-        for (int val : includes) {
-            if (!binarySearch(arr, val))
-                tmp[len++] = val;
+        int newLen = 1;
+
+        for (int i = 1; i < len; i++) {
+            if (arr[i] != arr[newLen - 1])
+                arr[newLen++] = arr[i];
         }
 
-        return Arrays.copyOf(tmp, len);
-    }
-
-    /**
-     * @param arr Array.
-     * @param excludes Types to exclude.
-     * @return Array without excludes.
-     */
-    private int[] exclude(int[] arr, Integer[] excludes) {
-        assert arr != null;
-        assert excludes != null;
-
-        int[] tmp = new int[arr.length];
-        int len = 0;
-
-        for (int val : arr) {
-            if (!ArrayUtils.contains(excludes, val))
-                tmp[len++] = val;
-        }
-
-        return Arrays.copyOf(tmp, len);
+        return U.copyIfExceeded(arr, len);
     }
 
     /**
@@ -381,7 +425,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @return {@code true} if this is an internal event.
      */
     private boolean isInternalEvent(int type) {
-        return ArrayUtils.contains(EVTS_DISCOVERY_ALL, type);
+        return F.contains(EVTS_DISCOVERY_ALL, type);
     }
 
     /**
@@ -414,10 +458,10 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * Checks whether all provided events are user-recordable.
      * <p>
      * Note that this method supports only predefined GridGain events.
-     * If arrays contains user event type, assertion will be thrown.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
+     * @throws IllegalArgumentException If {@code types} contains user event type.
      */
     public boolean isAllUserRecordable(int[] types) {
         assert types != null;
@@ -425,7 +469,8 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
         boolean[] userRecordableEvts0 = userRecordableEvts;
 
         for (int type : types) {
-            assert type > 0 && type < len : "Invalid event type: " + type;
+            if (type < 0 || type >= len)
+                throw new IllegalArgumentException("Invalid event type: " + type);
 
             if (!userRecordableEvts0[type])
                 return false;
@@ -454,7 +499,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             return false;
 
         // If length is relatively small, full iteration is faster.
-        return arr.length <= 128 ? ArrayUtils.contains(arr, val) : Arrays.binarySearch(arr, val) >= 0;
+        return arr.length <= 128 ? F.contains(arr, val) : Arrays.binarySearch(arr, val) >= 0;
     }
 
     /**
@@ -634,7 +679,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
-                if (p != null && p.apply(evt) || p == null) {
+                if (p == null || p.apply(evt)) {
                     fut.onDone(evt);
 
                     removeLocalEventListener(this);

@@ -25,9 +25,6 @@ import java.util.*;
  * minimum amount of reassignments between existing nodes.
  * <p>
  * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {

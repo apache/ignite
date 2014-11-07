@@ -16,6 +16,8 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -76,7 +78,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean invalidate,
         boolean syncCommit,
         boolean syncRollback,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
         @Nullable Object grpLockKey,
@@ -84,8 +86,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     ) {
         assert !isNearEnabled(cacheCfg);
 
+        // Use null as subject ID for transactions if subject per call is not set.
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = prj == null ? null : prj.subjectId();
+
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridDhtColocatedTxLocal<>(implicit, implicitSingle, ctx, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
+            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
+            subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -180,9 +190,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable UUID subjId,
+        String taskName,
+        final boolean deserializePortable,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -192,14 +206,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public GridFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(keys, entry, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(keys, entry, deserializePortable, filter));
                 }
             });
         }
 
         long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        return loadAsync(keys, false, forcePrimary, topVer, filter);
+        subjId = ctx.subjectIdPerCall(subjId);
+
+        return loadAsync(keys, false, forcePrimary, topVer, subjId, taskName, deserializePortable, filter);
     }
 
     /** {@inheritDoc} */
@@ -239,7 +255,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, long topVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -270,6 +287,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /*event*/true,
+                                subjId,
+                                null,
+                                taskName,
                                 filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -282,8 +302,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                                 success = false;
                             }
-                            else
+                            else {
+                                if (ctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
+                                    v = ((GridPortableObject)v).deserialize();
+
                                 locVals.put(key, v);
+                            }
                         }
                         else
                             success = false;
@@ -320,8 +344,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, reload, forcePrimary, null,
-            filter);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
+            filter, subjId, taskName, deserializePortable);
 
         fut.init();
 
@@ -616,15 +640,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         assert keys != null;
 
         GridFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
-
-        if (beforePessimisticLock != null) {
-            keyFut = new GridEmbeddedFuture<>(true, keyFut,
-                new C2<Object, Exception, GridFuture<Object>>() {
-                    @Override public GridFuture<Object> apply(Object o, Exception e) {
-                        return beforePessimisticLock.apply(keys, tx != null);
-                    }
-                }, ctx.kernalContext());
-        }
 
         // Prevent embedded future creation if possible.
         if (keyFut.isDone()) {

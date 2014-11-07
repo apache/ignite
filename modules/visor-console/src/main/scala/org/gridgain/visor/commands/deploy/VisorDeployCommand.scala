@@ -11,20 +11,25 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.scalar._
-import scalar._
+import java.io._
+import java.net.UnknownHostException
+import java.util.concurrent._
+
+import com.jcraft.jsch._
+import org.gridgain.grid.util.io.GridFilenameUtils
+import org.gridgain.grid.util.typedef.X
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
-import visor._
+import org.gridgain.visor.visor._
+
+import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import com.jcraft.jsch._
-import java.io._
-import java.util.concurrent._
 
 /**
  * Host data.
  */
-private case class Host(
+private case class VisorHost(
     name: String,
     port: Int,
     uname: String,
@@ -38,10 +43,10 @@ private case class Host(
     override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
-        else if (r == null || !r.isInstanceOf[Host])
+        else if (r == null || !r.isInstanceOf[VisorHost])
             false
         else
-            r.asInstanceOf[Host].name == name
+            r.asInstanceOf[VisorHost].name == name
 
     override def hashCode() =
         name.hashCode()
@@ -50,8 +55,8 @@ private case class Host(
 /**
  * Runnable that copies file or directory.
  */
-private case class Copier(
-    host: Host,
+private case class VisorCopier(
+    host: VisorHost,
     key: Option[String],
     src: String,
     dest: String
@@ -85,28 +90,37 @@ private case class Copier(
         try {
             ses.connect()
 
-            val ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
+            var ch: ChannelSftp = null
 
             try {
-                ch.connect()
-
                 val ggh = ggHome()
 
                 if (ggh == "")
                     warn("GRIDGAIN_HOME is not set on " + host.name)
                 else {
-                    copy(ch, src, ggh + File.separatorChar + dest)
+                    ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
+
+                    ch.connect()
+
+                    copy(ch, src, GridFilenameUtils.separatorsToUnix(ggh + "/" + dest))
 
                     println("ok => " + host.name)
                 }
             }
             finally {
-                if (ch.isConnected)
+                if (ch != null && ch.isConnected)
                     ch.disconnect()
             }
         }
         catch {
-            case e: Exception => warn(e.getMessage)
+            case e: JSchException if X.hasCause(e, classOf[UnknownHostException]) =>
+                println("Visor Console failed to deploy. Reason: unknown host - " + host.name)
+
+            case e: JSchException =>
+                println("Visor Console failed to deploy. Reason: " + e.getMessage)
+
+            case e: Exception =>
+                warn(e.getMessage)
         }
         finally {
             if (ses.isConnected)
@@ -120,15 +134,21 @@ private case class Copier(
      * @return `GRIDGAIN_HOME` value.
      */
     private def ggHome(): String = {
-        def exec(cmd: String): String = {
+        /**
+         * Non interactively execute command.
+         *
+         * @param cmd command.
+         * @return command results
+         */
+        def exec(cmd: String) = {
             val ch = ses.openChannel("exec").asInstanceOf[ChannelExec]
 
-            ch.setCommand(cmd)
-
             try {
+                ch.setCommand(cmd)
+
                 ch.connect()
 
-                new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine.trim
+                new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine
             }
             catch {
                 case e: JSchException =>
@@ -136,18 +156,70 @@ private case class Copier(
 
                     ""
             }
-            finally
+            finally {
                 if (ch.isConnected)
                     ch.disconnect()
+            }
         }
 
-        // Try Linux and than Windows.
-        var ggh = exec("echo $GRIDGAIN_HOME")
+        /**
+         * Interactively execute command.
+         *
+         * @param cmd command.
+         * @return command results.
+         */
+        def shell(cmd: String): String = {
+            val ch = ses.openChannel("shell").asInstanceOf[ChannelShell]
 
-        if (ggh == "")
-            ggh = exec("echo %GRIDGAIN_HOME%")
+            try {
+                ch.connect()
 
-        ggh
+                // Added to skip login message.
+                U.sleep(1000)
+
+                val writer = new PrintStream(ch.getOutputStream, true)
+
+                val reader = new BufferedReader(new InputStreamReader(ch.getInputStream))
+
+                // Send command.
+                writer.println(cmd)
+
+                // Read echo command.
+                reader.readLine()
+
+                // Read command result.
+                reader.readLine()
+            }
+            catch {
+                case e: JSchException =>
+                    warn(e.getMessage)
+
+                    ""
+            }
+            finally {
+                if (ch.isConnected)
+                    ch.disconnect()
+            }
+        }
+
+        /**
+         * Checks whether host is running Windows OS.
+         *
+         * @return Whether host is running Windows OS.
+         * @throws JSchException In case of SSH error.
+         */
+        def windows = {
+            try
+                exec("cmd.exe") != null
+            catch {
+                case ignored: IOException => false
+            }
+        }
+
+        if (windows)
+            exec("echo %GRIDGAIN_HOME%")
+        else
+            shell("echo $GRIDGAIN_HOME") // Use interactive shell under nix because need read env from .profile and etc.
     }
 
     /**
@@ -167,26 +239,26 @@ private case class Copier(
         if (!root.exists)
             throw new Exception("File or folder not found: " + src)
 
-        if (root.isDirectory) {
-            val exists =
-                try {
+        try {
+            if (root.isDirectory) {
+                try
                     ch.ls(dest)
-
-                    true
-                }
                 catch {
-                    case _: SftpException => false
+                    case _: SftpException => ch.mkdir(dest)
                 }
 
-            if (!exists)
-                ch.mkdir(dest)
-
-            root.list.foreach(
-                f => copy(ch, src + File.separatorChar + f, dest + File.separatorChar + f)
-            )
+                root.listFiles.foreach(
+                    f => copy(ch, f.getPath, GridFilenameUtils.separatorsToUnix(dest + "/" + f.getName)))
+            }
+            else
+                ch.put(src, dest)
         }
-        else
-            ch.put(src, dest)
+        catch {
+            case e: SftpException =>
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
+            case e: IOException =>
+                println("Visor Console failed to deploy from: " + src + " to: " + dest + ". Reason: " + e.getMessage)
+        }
     }
 }
 
@@ -267,7 +339,6 @@ class VisorDeployCommand {
         warn("Type 'help deploy' to see how to use this command.")
     }
 
-
     /**
      * Catch point for missing arguments case.
      */
@@ -289,37 +360,36 @@ class VisorDeployCommand {
     def deploy(args: String) = breakable {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
-            val argLst = parseArgs(args)
+        val argLst = parseArgs(args)
 
-            val dfltUname = argValue("u", argLst)
-            val dfltPasswd = argValue("p", argLst)
-            val key = argValue("k", argLst)
-            val src = argValue("s", argLst)
-            val dest = argValue("d", argLst)
+        val dfltUname = argValue("u", argLst)
+        val dfltPasswd = argValue("p", argLst)
+        val key = argValue("k", argLst)
+        val src = argValue("s", argLst)
+        val dest = argValue("d", argLst)
 
-            if (!src.isDefined)
-                scold("Source is not defined.") ^^
+        if (!src.isDefined)
+            scold("Source is not defined.").^^
 
-            var hosts = Set.empty[Host]
+        var hosts = Set.empty[VisorHost]
 
-            argLst.filter(_._1 == "h").map(_._2).foreach(h => {
-                try
-                    hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
-                catch {
-                    case e: IllegalArgumentException => scold(e.getMessage) ^^
-                }
-            })
-
-            val copiers = hosts.map(Copier(_, key, src.get, dest getOrElse ""))
-
+        argLst.filter(_._1 == "h").map(_._2).foreach(h => {
             try
-                copiers.map(pool.submit(_)).foreach(_.get)
+                hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
             catch {
-                case _: RejectedExecutionException => scold("Failed due to system error.") ^^
+                case e: IllegalArgumentException => scold(e.getMessage).^^
             }
+        })
+
+        if (hosts.isEmpty)
+            scold("At least one remote host should be specified.").^^
+
+        val copiers = hosts.map(VisorCopier(_, key, src.get, dest getOrElse ""))
+
+        try
+            copiers.map(pool.submit(_)).foreach(_.get)
+        catch {
+            case _: RejectedExecutionException => scold("Failed due to system error.").^^
         }
     }
 
@@ -336,7 +406,7 @@ class VisorDeployCommand {
         host: String,
         dfltUname: Option[String],
         dfltPasswd: Option[String],
-        hasKey: Boolean): Set[Host] = {
+        hasKey: Boolean): Set[VisorHost] = {
         assert(host != null)
         assert(dfltUname != null)
         assert(dfltPasswd != null)
@@ -357,14 +427,14 @@ class VisorDeployCommand {
                     if (hostPort.size > 1) hostPort(1).toInt else DFLT_PORT
                 catch {
                     case e: NumberFormatException =>
-                        scold("Invalid port number: " + hostPort(1)) ^^
+                        scold("Invalid port number: " + hostPort(1)).^^
 
                         // Never happens.
                         0
                 }
 
             if (port <= 0)
-                scold("Invalid port number: " + port) ^^
+                scold("Invalid port number: " + port).^^
 
             (hosts, port)
         }
@@ -375,7 +445,7 @@ class VisorDeployCommand {
             val uname = dfltUname getOrElse System.getProperty("user.name")
             val passwd = if (!hasKey) Some(dfltPasswd getOrElse askPassword(uname)) else None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else if (arr.size == 2) {
             val (hosts, port) = extractHostsPort(arr(1))
@@ -392,10 +462,10 @@ class VisorDeployCommand {
                 else
                     None
 
-            hosts.map(Host(_, port, uname, passwd))
+            hosts.map(VisorHost(_, port, uname, passwd))
         }
         else {
-            scold("Invalid host string: " + host) ^^
+            scold("Invalid host string: " + host).^^
 
             // Never happens.
             Set.empty
@@ -416,12 +486,12 @@ class VisorDeployCommand {
             val parts = addr.split(RANGE_SMB)
 
             if (parts.size != 2)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val lastDot = parts(0).lastIndexOf('.')
 
             if (lastDot < 0)
-                scold("Invalid IP range: " + addr) ^^
+                scold("Invalid IP range: " + addr).^^
 
             val (base, begin) = parts(0).splitAt(lastDot)
             val end = parts(1)
@@ -431,13 +501,13 @@ class VisorDeployCommand {
                 val b = end.toInt
 
                 if (a > b)
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                 (a to b).map(base + "." + _).toSet
             }
             catch {
                 case _: NumberFormatException =>
-                    scold("Invalid IP range: " + addr) ^^
+                    scold("Invalid IP range: " + addr).^^
 
                     // Never happens.
                     Set.empty

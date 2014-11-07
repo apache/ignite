@@ -15,8 +15,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -24,10 +25,10 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -38,20 +39,39 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * Test hadoop file system implementation.
  */
-public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommonAbstractTest {
+@SuppressWarnings("all")
+public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsCommonAbstractTest {
+    /** Primary file system authority. */
+    private static final String PRIMARY_AUTHORITY = "ggfs:grid0@";
+
+    /** Primary file systme URI. */
+    private static final String PRIMARY_URI = "ggfs://" + PRIMARY_AUTHORITY + "/";
+
+    /** Secondary file system authority. */
+    private static final String SECONDARY_AUTHORITY = "ggfs_secondary:grid_secondary@127.0.0.1:11500";
+
+    /** Secondary file systme URI. */
+    private static final String SECONDARY_URI = "ggfs://" + SECONDARY_AUTHORITY + "/";
+
+    /** Secondary file system configuration path. */
+    private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
+
+    /** Secondary endpoint configuration. */
+    private static final String SECONDARY_ENDPOINT_CFG = "{type:'tcp', port:11500}";
+
     /** Group size. */
     public static final int GRP_SIZE = 128;
 
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Thread count for multithreaded tests. */
     private static final int THREAD_CNT = 8;
@@ -66,7 +86,16 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     private static FileSystem fs;
 
     /** Default GGFS mode. */
-    protected GridGgfsMode mode;
+    protected final GridGgfsMode mode;
+
+    /** Skip embedded mode flag. */
+    private final boolean skipEmbed;
+
+    /** Skip local shmem flag. */
+    private final boolean skipLocShmem;
+
+    /** Endpoint. */
+    private final String endpoint;
 
     /** Primary file system URI. */
     protected URI primaryFsUri;
@@ -89,13 +118,32 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * Constructor.
      *
      * @param mode Default GGFS mode.
+     * @param skipEmbed Whether to skip embedded mode.
+     * @param skipLocShmem Whether to skip local shmem mode.
+     * @param skipLocTcp Whether to skip local TCP mode.
      */
-    protected GridGgfsHadoopFileSystemAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsHadoopFileSystemAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed, boolean skipLocShmem) {
         this.mode = mode;
+        this.skipEmbed = skipEmbed;
+        this.skipLocShmem = skipLocShmem;
+
+        endpoint = skipLocShmem ? "127.0.0.1:10500" : "shmem:10500";
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        Configuration secondaryConf = configuration(SECONDARY_AUTHORITY, true, true);
+
+        secondaryConf.setInt("fs.ggfs.block.size", 1024);
+
+        String path = U.getGridGainHome() + SECONDARY_CFG_PATH;
+
+        File file = new File(path);
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            secondaryConf.writeXml(fos);
+        }
+
         startNodes();
     }
 
@@ -117,7 +165,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_ENDPOINT_CFG));
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
 
@@ -152,7 +200,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
             cfg.setGgfsConfiguration(ggfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-            cfg.setLocalHost(U.getLocalHost().getHostAddress());
 
             cfg.setCommunicationSpi(communicationSpi());
 
@@ -165,15 +212,17 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         G.stopAll(true);
+
+        String path = U.getGridGainHome() + SECONDARY_CFG_PATH;
+
+        new File(path).delete();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        primaryFsUri = new URI(primaryFileSystemUriPath());
+        primaryFsUri = new URI(PRIMARY_URI);
 
-        primaryFsCfg = new Configuration();
-
-        primaryFsCfg.addResource(U.resolveGridGainUrl(primaryFileSystemConfigPath()));
+        primaryFsCfg = configuration(PRIMARY_AUTHORITY, skipEmbed, skipLocShmem);
 
         fs = FileSystem.get(primaryFsUri, primaryFsCfg);
 
@@ -193,28 +242,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /**
-     * Gets primary file system URI path.
-     *
-     * @return Primary file system URI path.
-     */
-    protected abstract String primaryFileSystemUriPath();
-
-    /**
-     * Gets primary file system config path.
-     *
-     * @return Primary file system config path.
-     */
-    protected abstract String primaryFileSystemConfigPath();
-
-    /**
-     * Gets IPC endpoint as it is resolved in the primary file system.
-     *
-     * @return IPC endpoint.
-     * @throws Exception If failed.
-     */
-    protected abstract String primaryFileSystemEndpoint() throws Exception;
-
-    /**
      * Get primary IPC endpoint configuration.
      *
      * @param gridName Grid name.
@@ -222,34 +249,10 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     protected abstract String primaryIpcEndpointConfiguration(String gridName);
 
-    /**
-     * Gets secondary file system URI path.
-     *
-     * @return Secondary file system URI path.
-     */
-    protected abstract String secondaryFileSystemUriPath();
-
-    /**
-     * Gets secondary file system config path.
-     *
-     * @return Secondary file system config path.
-     */
-    protected abstract String secondaryFileSystemConfigPath();
-
-    /**
-     * Gets IPC endpoint as it is resolved in the secondary file system.
-     *
-     * @return IPC endpoint.
-     * @throws Exception If failed.
-     */
-    protected abstract String secondaryFileSystemEndpoint() throws Exception;
-
-    /**
-     * Get secondary IPC endpoint configuration.
-     *
-     * @return Secondary IPC endpoint configuration.
-     */
-    protected abstract String secondaryIpcEndpointConfiguration();
+    /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -263,7 +266,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setLocalHost(U.getLocalHost().getHostAddress());
         cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
@@ -304,7 +306,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected GridGgfsConfiguration ggfsConfiguration(String gridName) {
+    protected GridGgfsConfiguration ggfsConfiguration(String gridName) throws GridException {
         GridGgfsConfiguration cfg = new GridGgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -314,11 +316,11 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         cfg.setDefaultMode(mode);
 
         if (mode != PRIMARY) {
-            cfg.setSecondaryHadoopFileSystemUri(secondaryFileSystemUriPath());
-            cfg.setSecondaryHadoopFileSystemConfigPath(secondaryFileSystemConfigPath());
+            cfg.setSecondaryHadoopFileSystemUri(SECONDARY_URI);
+            cfg.setSecondaryHadoopFileSystemConfigPath(SECONDARY_CFG_PATH);
         }
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -396,63 +398,65 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testIpcCache() throws Exception {
-        FileSystem fsOther = null;
+        GridGgfsHadoopEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
 
-        try {
-            Field field = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
+        if (hadoop instanceof GridGgfsHadoopOutProc) {
+            FileSystem fsOther = null;
 
-            field.setAccessible(true);
+            try {
+                Field field = GridGgfsHadoopIpcIo.class.getDeclaredField("ipcCache");
 
-            Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)field.get(null);
+                field.setAccessible(true);
 
-            Configuration cfg = new Configuration();
+                Map<String, GridGgfsHadoopIpcIo> cache = (Map<String, GridGgfsHadoopIpcIo>)field.get(null);
 
-            cfg.addResource(U.resolveGridGainUrl(primaryFileSystemConfigPath()));
+                Configuration cfg = configuration(PRIMARY_AUTHORITY, skipEmbed, skipLocShmem);
 
-            // we disable caching in order to obtain new FileSystem instance.
-            cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+                // we disable caching in order to obtain new FileSystem instance.
+                cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
-            // Initial cache size.
-            int initSize = cache.size();
+                // Initial cache size.
+                int initSize = cache.size();
 
-            // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
-            fsOther = FileSystem.get(new URI(primaryFileSystemUriPath()), cfg);
+                // Ensure that when IO is used by multiple file systems and one of them is closed, IO is not stopped.
+                fsOther = FileSystem.get(new URI(PRIMARY_URI), cfg);
 
-            assert fs != fsOther;
+                assert fs != fsOther;
 
-            assertEquals(initSize, cache.size());
+                assertEquals(initSize, cache.size());
 
-            fsOther.close();
+                fsOther.close();
 
-            assertEquals(initSize, cache.size());
+                assertEquals(initSize, cache.size());
 
-            Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
+                Field stopField = GridGgfsHadoopIpcIo.class.getDeclaredField("stopping");
 
-            stopField.setAccessible(true);
+                stopField.setAccessible(true);
 
-            GridGgfsHadoopIpcIo io = null;
+                GridGgfsHadoopIpcIo io = null;
 
-            for (Map.Entry<String, GridGgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
-                if (primaryFileSystemEndpoint().contains(ioEntry.getKey())) {
-                    io = ioEntry.getValue();
+                for (Map.Entry<String, GridGgfsHadoopIpcIo> ioEntry : cache.entrySet()) {
+                    if (endpoint.contains(ioEntry.getKey())) {
+                        io = ioEntry.getValue();
 
-                    break;
+                        break;
+                    }
                 }
+
+                assert io != null;
+
+                assert !(Boolean)stopField.get(io);
+
+                // Ensure that IO is stopped when nobody else is need it.
+                fs.close();
+
+                assertEquals(initSize - 1, cache.size());
+
+                assert (Boolean)stopField.get(io);
             }
-
-            assert io != null;
-
-            assert !(Boolean)stopField.get(io);
-
-            // Ensure that IO is stopped when nobody else is need it.
-            fs.close();
-
-            assertEquals(initSize - 1, cache.size());
-
-            assert (Boolean)stopField.get(io);
-        }
-        finally {
-            U.closeQuiet(fsOther);
+            finally {
+                U.closeQuiet(fsOther);
+            }
         }
     }
 
@@ -608,8 +612,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.create(file, FsPermission.getDefault(), false, 1024, (short)1, 2048, null);
             }
-        }, IOException.class, "Failed to create the file [path=" + convertPath(file) +
-            ", permission=rwxrwxrwx, bufferSize=1024, replication=1, blockSize=2048]");
+        }, PathExistsException.class, null);
 
         // Overwrite should be successful.
         FSDataOutputStream out1 = fs.create(file, true);
@@ -974,7 +977,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.open(file, 1024);
             }
-        }, IOException.class, "Failed to open a file [path=" + convertPath(file) + ", bufferSize=1024]");
+        }, FileNotFoundException.class, null);
     }
 
     /** @throws Exception If failed. */
@@ -1038,7 +1041,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             @Override public Object call() throws Exception {
                 return fs.append(new Path(fsHome, dir), 1024);
             }
-        }, IOException.class, "Failed to append to a file [path=" + convertPath(dir) + ", bufferSize=1024]");
+        }, IOException.class, null);
     }
 
     /** @throws Exception If failed. */
@@ -1288,7 +1291,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testListStatus() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
+        Path ggfsHome = new Path(PRIMARY_URI);
 
         // Test listing of an empty directory.
         Path dir = new Path(ggfsHome, "dir");
@@ -1339,7 +1342,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
         String path = fs.getFileStatus(file).getPath().toString();
 
-        assertTrue(path.endsWith("/Users/" + System.getProperty("user.name", "anonymous") + "/file"));
+        assertTrue(path.endsWith("/user/" + System.getProperty("user.name", "anonymous") + "/file"));
     }
 
     /** @throws Exception If failed. */
@@ -1369,7 +1372,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     public void testGetWorkingDirectoryIfDefault() throws Exception {
         String path = fs.getWorkingDirectory().toString();
 
-        assertTrue(path.endsWith("/Users/" + System.getProperty("user.name", "anonymous")));
+        assertTrue(path.endsWith("/user/" + System.getProperty("user.name", "anonymous")));
     }
 
     /** @throws Exception If failed. */
@@ -1406,7 +1409,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     /** @throws Exception If failed. */
     @SuppressWarnings("OctalInteger")
     public void testMkdirs() throws Exception {
-        Path fsHome = new Path(primaryFileSystemUriPath());
+        Path fsHome = new Path(PRIMARY_URI);
         Path dir = new Path(fsHome, "/tmp/staging");
         Path nestedDir = new Path(dir, "nested");
 
@@ -1465,7 +1468,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
     /** @throws Exception If failed. */
     public void testGetFileBlockLocations() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
+        Path ggfsHome = new Path(PRIMARY_URI);
 
         Path file = new Path(ggfsHome, "someFile");
 
@@ -1510,7 +1513,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
-            Path ggfsHome = new Path("ggfs://localhost/");
+            Path ggfsHome = new Path(PRIMARY_URI);
 
             Path file = new Path(ggfsHome, "someFile");
 
@@ -1531,8 +1534,6 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
@@ -1542,7 +1543,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedCreate() throws Exception {
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1616,7 +1617,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
         is.close();
 
-        assert Arrays.equals(expData, data);
+        assert Arrays.equals(expData, data) : "Expected=" + Arrays.toString(expData) + ", actual=" +
+            Arrays.toString(data);
     }
 
     /**
@@ -1625,7 +1627,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedAppend() throws Exception {
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1714,7 +1716,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         for (int i = 0; i < dataChunk.length; i++)
             dataChunk[i] = (byte)i;
 
-        Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1780,14 +1782,14 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
         assert fs.mkdirs(dir);
 
         final int depth = 3;
         final int entryCnt = 5;
 
-        final AtomicBoolean err = new AtomicBoolean();
+        final AtomicReference<IOException> err = new AtomicReference();
 
         multithreaded(new Runnable() {
             @Override public void run() {
@@ -1811,13 +1813,12 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
                             Path subDir = new Path(curPath, "dir-" + newDepth + "-" + i);
 
                             try {
-                                fs.mkdirs(subDir);
+                                if (fs.mkdirs(subDir))
+                                    queue.addLast(F.t(newDepth, subDir));
                             }
-                            catch (IOException ignore) {
-                                err.set(true);
+                            catch (IOException e) {
+                                err.compareAndSet(null, e);
                             }
-
-                            queue.addLast(F.t(newDepth, subDir));
                         }
                     }
                 }
@@ -1825,7 +1826,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         }, THREAD_CNT);
 
         // Ensure there were no errors.
-        assert !err.get();
+        assert err.get() == null : err.get();
 
         // Ensure correct folders structure.
         Deque<GridBiTuple<Integer, Path>> queue = new ArrayDeque<>();
@@ -1860,7 +1861,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     @SuppressWarnings("TooBroadScope")
     public void testMultithreadedDelete() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
         assert fs.mkdirs(dir);
 
@@ -1918,7 +1919,17 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         assert !err.get();
 
         // Ensure the directory was actually deleted.
-        assert !fs.exists(dir);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return !fs.exists(dir);
+                }
+                catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }, 5000L);
     }
 
     /** @throws Exception If failed. */
@@ -1943,53 +1954,12 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     }
 
     /**
-     * Test file systems behaviour: local FS vs GGFS.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("deprecation")
-    public void testFileSystem() throws Exception {
-        Path ggfsHome = new Path("ggfs://localhost/");
-        Path locHome = new Path("file:///" + U.getGridGainHome() + "/");
-
-        FileSystem loc = local(locHome);
-
-        loc.setWriteChecksum(false);
-
-        Path locSrc = new Path(locHome, "os/examples");
-        Path locTmp = new Path(locHome, "work/tmp");
-        Path ggfsTmp = new Path(ggfsHome, "/tmp");
-
-        Map<String, Config> map = new LinkedHashMap<>();
-
-        map.put("LOC => GGFS", new Config(loc, locSrc, fs, ggfsTmp));
-        map.put("GGFS => LOC", new Config(fs, ggfsTmp, loc, locTmp));
-
-        FileStatus status = loc.getFileStatus(locSrc);
-
-        assertTrue("Expects source directory exist [status=" + status + ", locSrc=" + locSrc + ']',
-            status != null && status.isDir());
-
-        for (Map.Entry<String, Config> e : map.entrySet()) {
-            String name = e.getKey();
-            Config c = e.getValue();
-
-            copy(name, c.srcFs, c.src, c.destFs, c.dest);
-
-            compareContent(new Config(c.srcFs, c.src, c.destFs, new Path(c.dest, c.src.getName())));
-        }
-
-        // Cleanup.
-        loc.delete(locTmp, true);
-    }
-
-    /**
      * Verifies that client reconnects after connection to the server has been lost.
      *
      * @throws Exception If error occurs.
      */
     public void testClientReconnect() throws Exception {
-        Path filePath = new Path("ggfs://localhost/file1");
+        Path filePath = new Path(PRIMARY_URI, "file1");
 
         final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping GGFS.
 
@@ -1998,7 +1968,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
             startNodes(); // Start server again.
 
-            assertTrue(fs.mkdirs(new Path("ggfs://localhost/dir1/dir2"))); // Check that client is again operational.
+            // Check that client is again operational.
+            assertTrue(fs.mkdirs(new Path(PRIMARY_URI, "dir1/dir2")));
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -2033,7 +2004,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
-        final int nClients = 16;
+        final int nClients = 1;
 
         // Initialize clients.
         for (int i = 0; i < nClients; i++)
@@ -2049,7 +2020,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs://localhost/" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("/" + Thread.currentThread().getName())));
 
                     return true;
                 }
@@ -2073,7 +2044,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
      */
     private void checkConsistency(int createBufSize, int writeCntsInCreate, int openAfterCreateBufSize,
         int appendBufSize, int writeCntsInAppend, int openAfterAppendBufSize) throws Exception {
-        final Path ggfsHome = new Path("ggfs://localhost/");
+        final Path ggfsHome = new Path(PRIMARY_URI);
 
         Path file = new Path(ggfsHome, "/someDir/someInnerDir/someFile");
 
@@ -2341,12 +2312,39 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
         if (mode != PROXY)
             return path;
         else {
-            URI secondaryUri = new URI(secondaryFileSystemUriPath());
+            URI secondaryUri = new URI(SECONDARY_URI);
 
             URI pathUri = path.toUri();
 
             return new Path(new URI(pathUri.getScheme() != null ? secondaryUri.getScheme() : null,
                 pathUri.getAuthority() != null ? secondaryUri.getAuthority() : null, pathUri.getPath(), null, null));
         }
+    }
+
+    /**
+     * Create configuration for test.
+     *
+     * @param authority Authority.
+     * @param skipEmbed Whether to skip embedded mode.
+     * @param skipLocShmem Whether to skip local shmem mode.
+     * @return Configuration.
+     */
+    private static Configuration configuration(String authority, boolean skipEmbed, boolean skipLocShmem) {
+        Configuration cfg = new Configuration();
+
+        cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
+        cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ggfs.impl",
+            org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+
+        cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
+
+        if (skipEmbed)
+            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, authority), true);
+
+        if (skipLocShmem)
+            cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+
+        return cfg;
     }
 }

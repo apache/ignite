@@ -13,6 +13,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -25,6 +26,9 @@ public class GridRestRequest {
     /** Client ID. */
     private UUID clientId;
 
+    /** Client network address. */
+    private InetSocketAddress addr;
+
     /** Client credentials. */
     @GridToStringExclude
     private Object cred;
@@ -34,6 +38,9 @@ public class GridRestRequest {
 
     /** Command. */
     private GridRestCommand cmd;
+
+    /** Portable mode flag. */
+    private boolean portableMode;
 
     /**
      * @return Destination ID.
@@ -115,6 +122,34 @@ public class GridRestRequest {
      */
     public void sessionToken(byte[] sesTok) {
         this.sesTok = sesTok;
+    }
+
+    /**
+     * @return Client address.
+     */
+    public InetSocketAddress address() {
+        return addr;
+    }
+
+    /**
+     * @param addr Client address.
+     */
+    public void address(InetSocketAddress addr) {
+        this.addr = addr;
+    }
+
+    /**
+     * @return Portable mode flag.
+     */
+    public boolean portableMode() {
+        return portableMode;
+    }
+
+    /**
+     * @param portableMode Portable mode flag.
+     */
+    public void portableMode(boolean portableMode) {
+        this.portableMode = portableMode;
     }
 
     /** {@inheritDoc} */

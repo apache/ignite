@@ -9,9 +9,9 @@
 
 package org.gridgain.examples.compute.montecarlo;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.examples.compute.*;
 
 import java.util.*;
 

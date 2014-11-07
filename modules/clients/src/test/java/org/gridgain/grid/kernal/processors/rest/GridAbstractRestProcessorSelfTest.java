@@ -59,7 +59,11 @@ abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest 
 
         cfg.setLocalHost(LOC_HOST);
 
-        cfg.setRestEnabled(true);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 

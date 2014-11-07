@@ -97,10 +97,12 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, nodeId, xidVer, ctx.versions().last(), Thread.currentThread().getId(), concurrency, isolation,
-            timeout, invalidate, false, false, txSize, grpLockKey);
+            timeout, invalidate, false, false, txSize, grpLockKey, subjId, taskNameHash);
 
         this.rmtThreadId = rmtThreadId;
 
@@ -602,12 +604,14 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         if (isSystemInvalidate() || (isInvalidate() && cctx.isNear()))
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                                 topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
-                                                near() ? null : explicitVer);
+                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                                resolveTaskName());
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
                                                 txEntry.ttl(), true, true, topVer, txEntry.filters(),
                                                 replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
-                                                near() ? null : explicitVer);
+                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                                resolveTaskName());
 
                                             // Keep near entry up to date.
                                             if (nearCached != null) {
@@ -633,7 +637,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     else if (op == DELETE) {
                                         cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                             topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
-                                            near() ? null : explicitVer);
+                                            near() ? null : explicitVer, CU.subjectId(this, cctx), resolveTaskName());
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)

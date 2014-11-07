@@ -15,6 +15,9 @@ import org.jetbrains.annotations.*;
  * Different GridGain editions.
  */
 public enum GridProductEdition {
+    /** In-Memory HPC. */
+    HPC,
+
     /** In-Memory Data Grid. */
     DATA_GRID,
 

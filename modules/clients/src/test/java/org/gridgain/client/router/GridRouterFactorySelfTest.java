@@ -13,11 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
 
@@ -30,9 +28,6 @@ public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int GRID_HTTP_PORT = 11087;
-
-    /** */
-    private static final int ROUTER_HTTP_PORT = 12207;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -73,51 +68,16 @@ public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < size; i++)
                 tcpRouters.add(GridRouterFactory.startTcpRouter(tcpCfg));
 
-            final Collection<GridHttpRouter> httpRouters = new LinkedList<>();
-            final GridHttpRouterConfiguration httpCfg = new GridHttpRouterConfiguration();
-
-            httpCfg.setServers(Collections.singleton("127.0.0.1:" + GRID_HTTP_PORT));
-
-            System.setProperty(GG_JETTY_PORT, String.valueOf(ROUTER_HTTP_PORT));
-
-            httpCfg.setJettyConfigurationPath("modules/clients/src/main/java/config/router/router-jetty.xml");
-
-            try {
-                httpRouters.add(GridRouterFactory.startHttpRouter(httpCfg));
-
-                // Expects fail due to port is already binded with previous http router.
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        GridRouterFactory.startHttpRouter(httpCfg);
-
-                        return null;
-                    }
-                }, GridException.class, null);
-            }
-            finally {
-                System.clearProperty(GG_JETTY_PORT);
-            }
-
             for (GridTcpRouter tcpRouter : tcpRouters) {
                 assertEquals(tcpCfg, tcpRouter.configuration());
                 assertEquals(tcpRouter, GridRouterFactory.tcpRouter(tcpRouter.id()));
             }
 
-            for (GridHttpRouter httpRouter : httpRouters) {
-                assertEquals(httpCfg, httpRouter.configuration());
-                assertEquals(httpRouter, GridRouterFactory.httpRouter(httpRouter.id()));
-            }
-
             assertEquals("Validate all started tcp routers.", new HashSet<>(tcpRouters),
                 new HashSet<>(GridRouterFactory.allTcpRouters()));
 
-            assertEquals("Validate all started http routers.", new HashSet<>(httpRouters),
-                new HashSet<>(GridRouterFactory.allHttpRouters()));
-
             for (Iterator<GridTcpRouter> it = tcpRouters.iterator(); it.hasNext(); ) {
                 GridTcpRouter tcpRouter = it.next();
-
-                GridRouterFactory.stopHttpRouter(tcpRouter.id());
 
                 assertEquals("Validate all started tcp routers.", new HashSet<>(tcpRouters),
                     new HashSet<>(GridRouterFactory.allTcpRouters()));
@@ -130,24 +90,7 @@ public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
                     new HashSet<>(GridRouterFactory.allTcpRouters()));
             }
 
-            for (Iterator<GridHttpRouter> it = httpRouters.iterator(); it.hasNext(); ) {
-                GridHttpRouter httpRouter = it.next();
-
-                GridRouterFactory.stopTcpRouter(httpRouter.id());
-
-                assertEquals("Validate all started http routers.", new HashSet<>(httpRouters),
-                    new HashSet<>(GridRouterFactory.allHttpRouters()));
-
-                it.remove();
-
-                GridRouterFactory.stopHttpRouter(httpRouter.id());
-
-                assertEquals("Validate all started http routers.", new HashSet<>(httpRouters),
-                    new HashSet<>(GridRouterFactory.allHttpRouters()));
-            }
-
             assertEquals(Collections.<GridTcpRouter>emptyList(), GridRouterFactory.allTcpRouters());
-            assertEquals(Collections.<GridHttpRouter>emptyList(), GridRouterFactory.allHttpRouters());
         }
         finally {
             GridRouterFactory.stopAllRouters();

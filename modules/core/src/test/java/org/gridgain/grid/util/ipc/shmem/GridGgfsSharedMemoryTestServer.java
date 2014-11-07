@@ -27,7 +27,7 @@ public class GridGgfsSharedMemoryTestServer {
     public static void main(String[] args) throws GridException {
         System.out.println("Starting server ...");
 
-        U.setWorkDirectory(U.getGridGainHome(), null);
+        U.setWorkDirectory(null, U.getGridGainHome());
 
         // Tell our process PID to the wrapper.
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());

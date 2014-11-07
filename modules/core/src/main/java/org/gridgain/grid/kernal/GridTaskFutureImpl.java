@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -78,6 +79,8 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridC
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws GridException {
+        ctx.security().authorize(ses.getTaskName(), GridSecurityPermission.TASK_CANCEL, null);
+
         checkValid();
 
         if (onCancelled()) {

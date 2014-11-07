@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -751,11 +752,160 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testIgnoreStoreMismatchForAtomicClientCache() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(CLIENT_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        startGrid(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckAtomic() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(ATOMIC);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckTransactional() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoreCheckTransactionalClient() throws Exception {
+        cacheEnabled = true;
+
+        cacheMode = PARTITIONED;
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setStore(new TestStore());
+
+                return null;
+            }
+        };
+
+        startGrid(1);
+
+        initCache = new C1<GridCacheConfiguration, Void>() {
+            @Override public Void apply(GridCacheConfiguration cc) {
+                cc.setAtomicityMode(TRANSACTIONAL);
+                cc.setDistributionMode(CLIENT_ONLY);
+                cc.setStore(null);
+
+                return null;
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new GridCallable<Object>() {
+            @Override public Object call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, GridException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
-        aff = new GridCacheConsistentHashAffinityFunction();
-        backups = 10;
+        aff = new GridCachePartitionFairAffinity(); // Check cannot use GridCachePartitionFairAffinity.
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -763,7 +913,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         }, GridException.class, null);
 
-        aff = new GridCacheConsistentHashAffinityFunction(true);
+        aff = new GridCacheConsistentHashAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
         backups = Integer.MAX_VALUE;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -776,6 +926,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         startGrid(1);
 
+        // Try to start node with  different number of partitions.
         aff = new GridCacheConsistentHashAffinityFunction(false, 200);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -784,6 +935,29 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 return startGrid(2);
             }
         }, GridException.class, "Affinity partitions count mismatch");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentInterceptors() throws Exception {
+        cacheMode = PARTITIONED;
+
+        checkSecondGridStartFails(
+            new C1<GridCacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(GridCacheConfiguration cfg) {
+                    cfg.setInterceptor(new GridCacheInterceptorAdapter() {/*No-op.*/});
+                    return null;
+                }
+            },
+            new C1<GridCacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(GridCacheConfiguration cfg) {
+                    return null;
+                }
+            }
+        );
     }
 
     /**

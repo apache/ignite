@@ -15,7 +15,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
         Configuration below demonstrates how to setup a GridGain node with three
         preconfigured caches.
@@ -27,7 +27,7 @@
         folder. To start a GGFS data node use 'config/hadoop/default-config.xml' file. To start
         a GGFS client node use 'config/hadoop/default-config-client.xml' file.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!-- Cache configurations. -->
         <property name="cacheConfiguration">
             <list>

@@ -38,9 +38,11 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * Test predefined affinity - must be ported to other clients.
      */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefined() {
+    public void testPredefined() throws Exception {
         // Use Md5 hasher for this test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
+
+        getTestResources().inject(aff);
 
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
@@ -140,9 +142,11 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
      * Test predefined affinity - must be ported to other clients.
      */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefinedHashIdResolver() {
+    public void testPredefinedHashIdResolver() throws Exception {
         // Use Md5 hasher for this test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
+
+        getTestResources().inject(aff);
 
         aff.setHashIdResolver(new GridClientPartitionAffinity.HashIdResolver() {
             @Override public Object getHashId(GridClientNode node) {
@@ -269,9 +273,13 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
         // Define affinities to test.
         GridClientPartitionAffinity aff = new GridClientPartitionAffinity();
 
+        getTestResources().inject(aff);
+
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
         GridCacheConsistentHashAffinityFunction srvAff = new GridCacheConsistentHashAffinityFunction();
+
+        getTestResources().inject(srvAff);
 
         srvAff.setHashIdResolver(new GridCacheAffinityNodeIdHashResolver());
 
@@ -385,38 +393,6 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
                 return (T)replicaCnt;
 
             return super.attribute(name);
-        }
-    }
-
-    /**
-     * The grid stub over emulated server topology.
-     */
-    private static class TestGrid extends GridSpringBean {
-        /**
-         * Server emulated topology.
-         */
-        private final List<GridNode> nodes;
-
-        /**
-         * Externalizable class requires public no-arg constructor.
-         */
-        @SuppressWarnings("UnusedDeclaration")
-        public TestGrid() {
-            this(new ArrayList<GridNode>());
-        }
-
-        /**
-         * Constructs the grid stub over emulated server topology.
-         *
-         * @param nodes Emulated server topology.
-         */
-        private TestGrid(List<GridNode> nodes) {
-            this.nodes = nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNode node(UUID nodeId) {
-            return F.find(nodes, null, F.<GridNode>nodeForNodeId(nodeId));
         }
     }
 }

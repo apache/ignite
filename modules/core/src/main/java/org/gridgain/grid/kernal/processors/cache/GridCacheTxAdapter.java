@@ -30,6 +30,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -117,7 +118,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     private boolean sysInvalidate;
 
     /** */
-    protected boolean swapEnabled;
+    protected boolean swapOrOffheapEnabled;
 
     /** */
     protected boolean storeEnabled;
@@ -177,6 +178,15 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Lock condition. */
     private final Condition cond = lock.newCondition();
 
+    /** Subject ID initiated this transaction. */
+    protected UUID subjId;
+
+    /** Task name hash code. */
+    protected int taskNameHash;
+
+    /** Task name. */
+    protected String taskName;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -194,7 +204,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param invalidate Invalidation policy.
-     * @param swapEnabled Whether to use swap storage.
+     * @param swapOrOffheapEnabled Whether to use swap storage.
      * @param storeEnabled Whether to use read/write through.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
@@ -209,10 +219,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         assert xidVer != null;
         assert cctx != null;
@@ -226,10 +238,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.isolation = isolation;
         this.timeout = timeout;
         this.invalidate = invalidate;
-        this.swapEnabled = swapEnabled;
+        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
         this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         startVer = cctx.versions().last();
 
@@ -250,7 +264,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param invalidate Invalidation policy.
-     * @param swapEnabled Swap enabled flag.
+     * @param swapOrOffheapEnabled Swap enabled flag.
      * @param storeEnabled Store enabled (read/write through) flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
@@ -265,10 +279,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
-        boolean swapEnabled,
+        boolean swapOrOffheapEnabled,
         boolean storeEnabled,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         this.cctx = cctx;
         this.nodeId = nodeId;
@@ -279,10 +295,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.isolation = isolation;
         this.timeout = timeout;
         this.invalidate = invalidate;
-        this.swapEnabled = swapEnabled;
+        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
         this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         implicit = false;
         implicitSingle = false;
@@ -349,6 +367,17 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         if (!groupLock())
             return writeEntries();
         else {
+            if (!F.isEmpty(invalidParts)) {
+                assert invalidParts.size() == 1 : "Only one partition expected for group lock transaction " +
+                    "[tx=" + this + ", invalidParts=" + invalidParts + ']';
+                assert groupLockEntry() == null : "Group lock key should be rejected " +
+                    "[tx=" + this + ", groupLockEntry=" + groupLockEntry() + ']';
+                assert F.isEmpty(writeMap()) : "All entries should be rejected for group lock transaction " +
+                    "[tx=" + this + ", writes=" + writeMap() + ']';
+
+                return Collections.emptyList();
+            }
+
             GridCacheTxEntry<K, V> grpLockEntry = groupLockEntry();
 
             assert grpLockEntry != null || (near() && !local()):
@@ -388,6 +417,19 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @Override public UUID otherNodeId() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        if (subjId != null)
+            return subjId;
+
+        return originatingNodeId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
+        return taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -1072,6 +1114,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
+                boolean recordEvt = cctx.events().isRecordable(EVT_CACHE_OBJECT_READ);
+
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this,
                         /*swap*/false,
@@ -1079,7 +1123,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*fail fast*/true,
                         /*unmarshal*/true,
                         /*metrics*/metrics,
-                        /*event*/false,
+                        /*event*/recordEvt,
+                        /*subjId*/subjId,
+                        /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
+                        resolveTaskName(),
                         CU.<K, V>empty());
 
                 try {
@@ -1101,6 +1148,16 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 return null;
             }
         }
+    }
+
+    /**
+     * @return Resolves task name.
+     */
+    public String resolveTaskName() {
+        if (taskName != null)
+            return taskName;
+
+        return (taskName = cctx.kernalContext().task().resolveTaskName(taskNameHash));
     }
 
     /**
@@ -1250,10 +1307,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         return new TxShadow(

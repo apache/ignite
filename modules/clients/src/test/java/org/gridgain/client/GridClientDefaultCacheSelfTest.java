@@ -67,7 +67,13 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestJettyPath(REST_JETTY_CFG);
+        assert cfg.getClientConnectionConfiguration() == null;
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -76,8 +82,6 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-
-        cfg.setRestEnabled(true);
 
         return cfg;
     }
@@ -91,30 +95,6 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setProtocol(TCP);
         cfg.setServers(getServerList(TCP_PORT));
-        cfg.setDataConfigurations(Collections.singleton(new GridClientDataConfiguration()));
-
-        GridClient gridClient = GridClientFactory.start(cfg);
-
-        assert F.exist(gridClient.compute().nodes(), new GridPredicate<GridClientNode>() {
-            @Override public boolean apply(GridClientNode n) {
-                return n.nodeId().equals(locNodeId);
-            }
-        });
-
-        return gridClient;
-    }
-
-    /**
-     * Creates client working on HTTP protocol.
-     *
-     * @return Client.
-     * @throws GridClientException In case of error.
-     */
-    private GridClient clientHttp() throws GridClientException {
-        GridClientConfiguration cfg = new GridClientConfiguration();
-
-        cfg.setProtocol(HTTP);
-        cfg.setServers(getServerList(HTTP_PORT));
         cfg.setDataConfigurations(Collections.singleton(new GridClientDataConfiguration()));
 
         GridClient gridClient = GridClientFactory.start(cfg);
@@ -160,29 +140,6 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
             assert val != null;
 
             assert val == 1;
-        }
-        finally {
-            GridClientFactory.stopAll();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testHttp() throws Exception {
-        try {
-            boolean putRes = cache().putx("key", 1);
-
-            assert putRes : "Put operation failed";
-
-            GridClient client = clientHttp();
-
-            assert client.data() != null;
-
-            Integer res = client.data().<String, Integer>get("key");
-
-            assert res != null;
-            assert res == 1;
         }
         finally {
             GridClientFactory.stopAll();

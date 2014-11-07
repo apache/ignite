@@ -13,7 +13,6 @@ import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,6 +40,12 @@ import java.util.concurrent.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheStarSchemaExample {
+    /** Partitioned cache name. */
+    private static final String PARTITIONED_CACHE_NAME = "partitioned";
+
+    /** Replicated cache name. */
+    private static final String REPLICATED_CACHE_NAME = "replicated";
+
     /** ID generator. */
     private static int idGen = (int)System.currentTimeMillis();
 
@@ -51,10 +56,14 @@ public class CacheStarSchemaExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        GridGain.start("examples/config/example-cache.xml");
+        Grid g = GridGain.start("examples/config/example-cache.xml");
 
         System.out.println();
         System.out.println(">>> Cache star schema example started.");
+
+        // Clean up caches on all nodes before run.
+        g.cache(PARTITIONED_CACHE_NAME).globalClearAll(0);
+        g.cache(REPLICATED_CACHE_NAME).globalClearAll(0);
 
         try {
             populateDimensions();
@@ -75,7 +84,7 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void populateDimensions() throws GridException {
-        GridCache<Integer, Object> cache = GridGain.grid().cache("replicated");
+        GridCache<Integer, Object> cache = GridGain.grid().cache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
@@ -98,8 +107,8 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void populateFacts() throws GridException {
-        GridCache<Integer, Object> dimCache = GridGain.grid().cache("replicated");
-        GridCache<Integer, Object> factCache = GridGain.grid().cache("partitioned");
+        GridCache<Integer, Object> dimCache = GridGain.grid().cache(REPLICATED_CACHE_NAME);
+        GridCache<Integer, Object> factCache = GridGain.grid().cache(PARTITIONED_CACHE_NAME);
 
         GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
@@ -122,7 +131,7 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void queryStorePurchases() throws GridException {
-        GridCache<Integer, FactPurchase> factCache = GridGain.grid().cache("partitioned");
+        GridCache<Integer, FactPurchase> factCache = GridGain.grid().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
@@ -146,8 +155,8 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void queryProductPurchases() throws GridException {
-        GridCache<Integer, Object> dimCache = GridGain.grid().cache("replicated");
-        GridCache<Integer, FactPurchase> factCache = GridGain.grid().cache("partitioned");
+        GridCache<Integer, Object> dimCache = GridGain.grid().cache(REPLICATED_CACHE_NAME);
+        GridCache<Integer, FactPurchase> factCache = GridGain.grid().cache(PARTITIONED_CACHE_NAME);
 
         GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
@@ -193,7 +202,8 @@ public class CacheStarSchemaExample {
      */
     @SuppressWarnings("UnusedDeclaration")
     private static <T> T rand(Collection<? extends T> c) {
-        A.notNull(c, "c");
+        if (c == null)
+            throw new IllegalArgumentException();
 
         int n = ThreadLocalRandom.current().nextInt(c.size());
 

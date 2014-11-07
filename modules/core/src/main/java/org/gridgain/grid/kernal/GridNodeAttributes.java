@@ -16,10 +16,10 @@ public final class GridNodeAttributes {
     /** Prefix for internally reserved attribute names. */
     static final String ATTR_PREFIX = "org.gridgain";
 
-    /** Internal attribute name constant. */
+    /** Node compound version. */
     public static final String ATTR_BUILD_VER = ATTR_PREFIX + ".build.ver";
 
-    /** Node version attribute name. */
+    /** Internal attribute name constant. */
     public static final String ATTR_BUILD_DATE = ATTR_PREFIX + ".build.date";
 
     /** Internal attribute name constant. */
@@ -51,6 +51,10 @@ public final class GridNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_CACHE = ATTR_PREFIX + ".cache";
+
+    /** Internal attribute name constant. */
+    @Deprecated
+    public static final String ATTR_CACHE_PORTABLE = ATTR_PREFIX + ".cache.portable";
 
     /** Internal attribute name constant. */
     public static final String ATTR_GGFS = ATTR_PREFIX + ".ggfs";
@@ -106,9 +110,6 @@ public final class GridNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_STREAMER = ATTR_PREFIX + ".streamer";
 
-    /** Libraries list attribute name constant. */
-    public static final String ATTR_LIBRARIES = ATTR_PREFIX + ".libs";
-
     /** Time server host attribute name. */
     public static final String ATTR_TIME_SERVER_HOST = ATTR_PREFIX + ".time.host";
 
@@ -126,6 +127,15 @@ public final class GridNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
+
+    /** Security credentials attribute name. Attribute is not available via public API. */
+    public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
+
+    /** Security subject for authenticated node. */
+    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
+
+    /** Cache interceptors. */
+    public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
 
     /**
      * Enforces singleton.

@@ -24,9 +24,9 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/util
-       http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+       http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!--
         Optional description.
@@ -46,7 +46,7 @@
     <!--
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!--
             For better performance set this property to false in case
             peer deployment is not used.
@@ -88,7 +88,12 @@
                     <property name="prefetchBlocks" value="32"/>
 
                     <!-- Loopback endpoint. -->
-                    <property name="ipcEndpointConfiguration" value="{type:'tcp'}"/>
+                    <property name="ipcEndpointConfiguration">
+                        <map>
+                            <entry key="type" value="tcp"/>
+                        </map>
+                    </property>
+
                 </bean>
             </list>
         </property>

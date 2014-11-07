@@ -10,15 +10,18 @@
 package org.gridgain.examples;
 
 import org.gridgain.client.router.*;
-import org.gridgain.client.router.impl.*;
 import org.gridgain.examples.misc.client.router.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
+import org.springframework.beans.factory.xml.*;
 import org.springframework.context.*;
+import org.springframework.context.support.*;
+import org.springframework.core.io.*;
 
 import java.net.*;
 import java.util.*;
@@ -34,7 +37,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         // Start up a grid node.
         startGrid("grid-router-examples", "examples/config/example-cache.xml");
         // Start up a router.
-        startRouter("modules/clients/src/main/java/config/router/default-router.xml");
+        startRouter("config/router/default-router.xml");
     }
 
     /**
@@ -65,7 +68,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         if (cfgUrl == null)
             throw new GridException("Spring XML file not found (is GRIDGAIN_HOME set?): " + cfgPath);
 
-        ApplicationContext ctx = GridRouterCommandLineStartup.loadCfg(cfgUrl);
+        ApplicationContext ctx = loadCfg(cfgUrl);
 
         if (ctx == null)
             throw new GridException("Application context can not be null");
@@ -76,15 +79,30 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
             throw new GridException("GridTcpRouterConfiguration is not found");
 
         GridRouterFactory.startTcpRouter(tcpCfg);
+    }
 
-        GridHttpRouterConfiguration httpCfg = getBean(ctx, GridHttpRouterConfiguration.class);
+    /**
+     * Reads spring context from the given location.
+     * @param springCfgUrl Context descriptor loxcation.
+     * @return Spring context.
+     * @throws GridException If context can't be loaded.
+     */
+    private static ApplicationContext loadCfg(URL springCfgUrl) throws GridException {
+        GenericApplicationContext springCtx;
 
-        if (httpCfg == null)
-            throw new GridException("GridHttpRouterConfiguration is not found");
+        try {
+            springCtx = new GenericApplicationContext();
 
-        httpCfg.setJettyConfigurationPath("modules/clients/src/main/java/config/router/router-jetty.xml");
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(springCfgUrl));
 
-        GridRouterFactory.startHttpRouter(httpCfg);
+            springCtx.refresh();
+        }
+        catch (BeansException e) {
+            throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
+                springCfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
+        return springCtx;
     }
 
     /**

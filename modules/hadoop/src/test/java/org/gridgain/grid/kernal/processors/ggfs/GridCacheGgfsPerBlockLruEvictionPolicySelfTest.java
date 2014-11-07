@@ -16,10 +16,10 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -31,7 +31,8 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 /**
  * Tests for GGFS per-block LR eviction policy.
  */
-public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAbstractTest {
+@SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsCommonAbstractTest {
     /** Primary GGFS name. */
     private static final String GGFS_PRIMARY = "ggfs-primary";
 
@@ -39,7 +40,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
     private static final String GGFS_SECONDARY = "ggfs-secondary";
 
     /** Secondary file system URI. */
-    private static final String SECONDARY_URI = "ggfs://secondary/";
+    private static final String SECONDARY_URI = "ggfs://ggfs-secondary:grid-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     private static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
@@ -122,6 +123,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
 
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
+
         Grid g = G.start(cfg);
 
         ggfsPrimary = (GridGgfsImpl)g.ggfs(GGFS_PRIMARY);
@@ -143,7 +147,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(512);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
+        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(SECONDARY_REST_CFG));
 
         GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -176,6 +180,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setGgfsConfiguration(ggfsCfg);
+
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setRestEnabled(false);
 
         Grid g = G.start(cfg);
 
@@ -440,11 +447,21 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
      * @param blocksReadRmt Expected blocks read remote.
      * @throws Exception If failed.
      */
-    public void checkMetrics(long blocksRead, long blocksReadRmt) throws Exception {
-        GridGgfsMetrics metrics = ggfsPrimary.metrics();
+    public void checkMetrics(final long blocksRead, final long blocksReadRmt) throws Exception {
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    GridGgfsMetrics metrics = ggfsPrimary.metrics();
 
-        assert metrics.blocksReadTotal() == blocksRead;
-        assert metrics.blocksReadRemote() == blocksReadRmt;
+                    return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
+                }
+                catch (GridException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 5000) : "Unexpected metrics [expectedBlocksReadTotal=" + blocksRead + ", actualBlocksReadTotal=" +
+            ggfsPrimary.metrics().blocksReadTotal() + ", expectedBlocksReadRemote=" + blocksReadRmt +
+            ", actualBlocksReadRemote=" + ggfsPrimary.metrics().blocksReadRemote() + ']';
     }
 
     /**
@@ -453,8 +470,12 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridCommonAb
      * @param curBlocks Current blocks.
      * @param curBytes Current bytes.
      */
-    private void checkEvictionPolicy(int curBlocks, long curBytes) {
-        assert evictPlc.getCurrentBlocks() == curBlocks;
-        assert evictPlc.getCurrentSize() == curBytes;
+    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws GridInterruptedException {
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return evictPlc.getCurrentBlocks() == curBlocks && evictPlc.getCurrentSize() == curBytes;
+            }
+        }, 5000) : "Unexpected counts [expectedBlocks=" + curBlocks + ", actualBlocks=" + evictPlc.getCurrentBlocks() +
+            ", expectedBytes=" + curBytes + ", currentBytes=" + curBytes + ']';
     }
 }

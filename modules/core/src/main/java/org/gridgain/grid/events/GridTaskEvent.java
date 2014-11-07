@@ -12,6 +12,9 @@ package org.gridgain.grid.events;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * Grid task event.
@@ -57,27 +60,23 @@ public class GridTaskEvent extends GridEventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String taskName;
+    private final String taskName;
 
     /** */
-    private String taskClsName;
+    private final String taskClsName;
 
     /** */
-    private GridUuid sesId;
+    private final GridUuid sesId;
 
     /** */
-    private boolean internal;
+    private final boolean internal;
+
+    /**  */
+    private final UUID subjId;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
         return name() + ": taskName=" + taskName;
-    }
-
-    /**
-     * No-arg constructor.
-     */
-    public GridTaskEvent() {
-        // No-op.
     }
 
     /**
@@ -88,23 +87,17 @@ public class GridTaskEvent extends GridEventAdapter {
      * @param type Event type.
      * @param sesId Task session ID.
      * @param taskName Task name.
+     * @param subjId Subject ID.
      */
-    public GridTaskEvent(GridNode node, String msg, int type, GridUuid sesId, String taskName) {
+    public GridTaskEvent(GridNode node, String msg, int type, GridUuid sesId, String taskName, String taskClsName,
+        boolean internal, @Nullable UUID subjId) {
         super(node, msg, type);
 
         this.sesId = sesId;
         this.taskName = taskName;
-    }
-
-    /**
-     * Creates task event with given parameters.
-     *
-     * @param node Node.
-     * @param msg Optional message.
-     * @param type Event type.
-     */
-    public GridTaskEvent(GridNode node, String msg, int type) {
-        super(node, msg, type);
+        this.taskClsName = taskClsName;
+        this.internal = internal;
+        this.subjId = subjId;
     }
 
     /**
@@ -135,52 +128,25 @@ public class GridTaskEvent extends GridEventAdapter {
     }
 
     /**
-     * Sets the task name.
-     *
-     * @param taskName Task name to set.
-     */
-    public void taskName(String taskName) {
-        assert taskName != null;
-
-        this.taskName = taskName;
-    }
-
-    /**
-     * Sets name of the task class that triggered this event.
-     *
-     * @param taskClsName Task class name to set.
-     */
-    public void taskClassName(String taskClsName) {
-        this.taskClsName = taskClsName;
-    }
-
-    /**
-     * Sets task session ID.
-     *
-     * @param sesId Task session ID to set.
-     */
-    public void taskSessionId(GridUuid sesId) {
-        assert sesId != null;
-
-        this.sesId = sesId;
-    }
-
-    /**
-     * Set to {@code true} if task is created by GridGain and is used for system needs.
-     *
-     * @param internal {@code True} if task is created by GridGain and is used for system needs.
-     */
-    public void internal(boolean internal) {
-        this.internal = internal;
-    }
-
-    /**
      * Returns {@code true} if task is created by GridGain and is used for system needs.
      *
      * @return {@code True} if task is created by GridGain and is used for system needs.
      */
     public boolean internal() {
         return internal;
+    }
+
+    /**
+     * Gets security subject ID initiated this task event, if available. This property
+     * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
+     * <p>
+     * Subject ID will be set either to node ID or client ID initiated
+     * task execution.
+     *
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 
     /** {@inheritDoc} */

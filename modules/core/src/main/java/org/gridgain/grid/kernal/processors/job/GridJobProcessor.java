@@ -21,6 +21,7 @@ import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -47,6 +48,9 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(GG_JOBS_HISTORY_SIZE, 10240);
+
+    /** Version when subject ID was added. */
+    public static final GridProductVersion SUBJECT_ID_ADDED_SINCE_VER = GridProductVersion.fromString("6.2.1");
 
     /** */
     private final GridMarshaller marsh;
@@ -143,6 +147,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return false;
         }
     };
+
+    /** Current session. */
+    private final GridThreadLocal<GridComputeTaskSession> currentSess = new GridThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -987,7 +994,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             endTime,
                             siblings,
                             sesAttrs,
-                            req.isSessionFullSupport());
+                            req.isSessionFullSupport(),
+                            req.getSubjectId());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1107,6 +1115,43 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Callback from job worker to set current task session for execution.
+     *
+     * @param ses Session.
+     */
+    public void currentTaskSession(GridComputeTaskSession ses) {
+        currentSess.set(ses);
+    }
+
+    /**
+     * Gets hash of task name executed by current thread.
+     *
+     * @return Task name hash or {@code 0} if security is disabled.
+     */
+    public int currentTaskNameHash() {
+        String name = currentTaskName();
+
+        return name == null ? 0 : name.hashCode();
+    }
+
+    /**
+     * Gets name task executed by current thread.
+     *
+     * @return Task name or {@code null} if security is disabled.
+     */
+    public String currentTaskName() {
+        if (!ctx.security().securityEnabled())
+            return null;
+
+        GridComputeTaskSession ses = currentSess.get();
+
+        if (ses == null)
+            return null;
+
+        return ses.getTaskName();
+    }
+
+    /**
      * @param jobWorker Worker.
      * @return {@code True} if job has not been cancelled and should be activated.
      */
@@ -1216,6 +1261,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
+                evt.taskSubjectId(req.getSubjectId());
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1263,7 +1309,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     topic,
                     msgId,
                     jobRes,
-                    SYSTEM_POOL,
+                    req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
                     false);
             }
@@ -1271,7 +1317,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().send(sndNode, TOPIC_TASK, jobRes, SYSTEM_POOL);
+                ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (GridException e) {
             // The only option here is to log, as we must assume that resending will fail too.
@@ -1297,6 +1343,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
+                evt.taskSubjectId(req.getSubjectId());
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1335,14 +1382,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                GridTaskEvent evt = new GridTaskEvent();
-
-                evt.message("Changed attributes: " + attrs);
-                evt.node(ctx.discovery().localNode());
-                evt.taskName(ses.getTaskName());
-                evt.taskClassName(ses.getTaskClassName());
-                evt.taskSessionId(ses.getId());
-                evt.type(EVT_TASK_SESSION_ATTR_SET);
+                GridEvent evt = new GridTaskEvent(
+                    ctx.discovery().localNode(),
+                    "Changed attributes: " + attrs,
+                    EVT_TASK_SESSION_ATTR_SET,
+                    ses.getId(),
+                    ses.getTaskName(),
+                    ses.getTaskClassName(),
+                    false,
+                    null);
 
                 ctx.event().record(evt);
             }

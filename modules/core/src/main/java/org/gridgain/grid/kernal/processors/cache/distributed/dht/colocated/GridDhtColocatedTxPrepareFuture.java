@@ -391,9 +391,21 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
             assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +
                 ", nodeId=" + n.id() + ']';
 
-            GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(futId, tx.topologyVersion(), tx,
-                tx.optimistic() && tx.serializable() ? m.reads() : null, m.writes(), null, false,
-                tx.syncCommit(), tx.syncRollback(), txMapping.transactionNodes(), m.last(), m.lastBackups());
+            GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
+                futId,
+                tx.topologyVersion(),
+                tx,
+                tx.optimistic() && tx.serializable() ? m.reads() : null,
+                m.writes(),
+                /*grp lock key*/null,
+                /*part lock*/false,
+                tx.syncCommit(),
+                tx.syncRollback(),
+                txMapping.transactionNodes(),
+                m.last(),
+                m.lastBackups(),
+                tx.subjectId(),
+                tx.taskNameHash());
 
             for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
                 assert txEntry.cached().detached() : "Expected detached entry while preparign transaction " +

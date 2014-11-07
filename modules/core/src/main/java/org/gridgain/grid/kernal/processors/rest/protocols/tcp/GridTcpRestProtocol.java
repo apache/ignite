@@ -9,22 +9,31 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.gridgain.client.marshaller.*;
+import org.gridgain.client.marshaller.jdk.*;
+import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.util.*;
+
+import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * TCP binary protocol implementation.
@@ -33,9 +42,93 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
 
+    /** JDK marshaller. */
+    private final GridMarshaller jdkMarshaller = new GridJdkMarshaller();
+
+    /** NIO server listener. */
+    private GridTcpRestNioListener lsnr;
+
+    /** Message reader. */
+    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
+        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageReader(this, nodeId);
+
+            return msg.readFrom(buf);
+        }
+    };
+
+    /** Message writer. */
+    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
+        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
+            assert msg != null;
+            assert buf != null;
+
+            msg.messageWriter(this, nodeId);
+
+            return msg.writeTo(buf);
+        }
+
+        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+            ByteBuffer buf) throws IOException {
+            assert msg != null;
+            assert out != null;
+            assert buf != null;
+            assert buf.hasArray();
+
+            msg.messageWriter(this, nodeId);
+
+            boolean finished = false;
+            int cnt = 0;
+
+            while (!finished) {
+                finished = msg.writeTo(buf);
+
+                out.write(buf.array(), 0, buf.position());
+
+                cnt += buf.position();
+
+                buf.clear();
+            }
+
+            return cnt;
+        }
+    };
+
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @return JDK marshaller.
+     */
+    GridMarshaller jdkMarshaller() {
+        return jdkMarshaller;
+    }
+
+    /**
+     * Returns marshaller.
+     *
+     * @param ses Session.
+     * @return Marshaller.
+     */
+    GridClientMarshaller marshaller(GridNioSession ses) {
+        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
+
+        assert marsh != null;
+
+        return marsh;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Whether portable marshaller is used.
+     */
+    boolean portableMode(GridNioSession ses) {
+        return ctx.portable().isPortable(marshaller(ses));
     }
 
     /** {@inheritDoc} */
@@ -48,14 +141,16 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridConfiguration cfg = ctx.config();
+        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
-        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRestNioListener(log, hnd);
+        assert cfg != null;
 
-        GridNioParser parser = new GridTcpRestParser(log);
+        lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
+
+        GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
 
         try {
-            host = resolveRestTcpHost(cfg);
+            host = resolveRestTcpHost(ctx.config());
 
             SSLContext sslCtx = null;
 
@@ -71,8 +166,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             int lastPort = cfg.getRestTcpPort() + cfg.getRestPortRange() - 1;
 
-            for (port = cfg.getRestTcpPort(); port <= lastPort; port++) {
-                if (startTcpServer(host, port, lsnr, parser, sslCtx, cfg)) {
+            for (int port0 = cfg.getRestTcpPort(); port0 <= lastPort; port0++) {
+                if (startTcpServer(host, port0, lsnr, parser, sslCtx, cfg)) {
+                    port = port0;
+
                     if (log.isInfoEnabled())
                         log.info(startInfo());
 
@@ -96,6 +193,19 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        super.onKernalStart();
+
+        Map<Byte, GridClientMarshaller> marshMap = new HashMap<>();
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+
+        lsnr.marshallers(marshMap);
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         if (srv != null) {
             ctx.ports().deregisterPorts(getClass());
@@ -115,7 +225,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(GridConfiguration cfg) throws IOException {
-        String host = cfg.getRestTcpHost();
+        String host = cfg.getClientConnectionConfiguration().getRestTcpHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -136,14 +246,16 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
+            GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
+
+                sslFilter.directMode(true);
 
                 boolean auth = cfg.isRestTcpSslClientAuth();
 
@@ -151,7 +263,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 sslFilter.needClientAuth(auth);
 
-                filters = new GridNioFilter[] { codec, sslFilter };
+                filters = new GridNioFilter[] {
+                    codec,
+                    sslFilter
+                };
             }
             else
                 filters = new GridNioFilter[] { codec };
@@ -170,6 +285,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getRestTcpReceiveBufferSize())
                 .sendQueueLimit(cfg.getRestTcpSendQueueLimit())
                 .filters(filters)
+                .directMode(true)
+                .messageWriter(msgWriter)
                 .build();
 
             srv.idleTimeout(cfg.getRestIdleTimeout());

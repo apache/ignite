@@ -11,7 +11,9 @@ package org.gridgain.grid.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
@@ -363,7 +365,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                 rsrcMgr.inject(spi);
 
                 spi.setNodeAttributes(Collections.<String, Object>singletonMap(TEST_ATTRIBUTE_NAME, "true"),
-                    VERSION_UNKNOWN);
+                    fromString("99.99.99"));
 
                 spi.setListener(new GridDiscoverySpiListener() {
                     @SuppressWarnings({"NakedNotify"})
@@ -387,9 +389,19 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
                     }
                 });
 
+                spi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+                    @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                        GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                            GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                        subj.permissions(new GridAllowAllPermissionSet());
+
+                        return new GridSecurityContext(subj);
+                    }
+                });
+
 
                 spi.spiStart(getTestGridName() + i);
-
 
                 spis.add(spi);
 

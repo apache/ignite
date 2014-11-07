@@ -9,11 +9,9 @@
 
 package org.gridgain.loadtests.direct.newnodes;
 
-import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.thread.*;
@@ -51,10 +49,6 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
         cfg.setDiscoverySpi(getDiscoverySpi(cfg));
 
         cfg.setMetricsHistorySize(1000);
-
-        GridLog4jLogger log = (GridLog4jLogger)cfg.getGridLogger().getLogger(null);
-
-        log.setLevel(Level.INFO);
 
         // Set up new executor service because we have 1 per test and thus all
         // nodes have the same executor service. As soon as node get stopped

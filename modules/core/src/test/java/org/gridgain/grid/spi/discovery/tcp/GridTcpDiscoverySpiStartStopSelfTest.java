@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.spi.discovery.tcp;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -42,6 +45,25 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
 
             @Override public void onExchange(List<Object> data) {
                 // No-op.
+            }
+        };
+    }
+
+    /**
+     * Discovery SPI authenticator.
+     *
+     * @return Authenticator.
+     */
+    @GridSpiTestConfig
+    public GridDiscoverySpiNodeAuthenticator getAuthenticator() {
+        return new GridDiscoverySpiNodeAuthenticator() {
+            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                    GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                subj.permissions(new GridAllowAllPermissionSet());
+
+                return new GridSecurityContext(subj);
             }
         };
     }

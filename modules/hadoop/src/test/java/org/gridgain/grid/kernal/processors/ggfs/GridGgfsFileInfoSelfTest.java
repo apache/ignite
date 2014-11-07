@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,7 +22,7 @@ import java.util.concurrent.*;
 /**
  * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo} test case.
  */
-public class GridGgfsFileInfoSelfTest extends GridCommonAbstractTest {
+public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
     private final GridMarshaller marshaller = new GridOptimizedMarshaller();
 

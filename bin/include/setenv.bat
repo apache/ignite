@@ -33,25 +33,24 @@ goto :eof
 
 :run
 :: The following libraries are required for GridGain.
-set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\config\userversion;%GRIDGAIN_HOME%\libs\*
+set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
 
-:: Uncomment if using JBoss.
-:: JBOSS_HOME must point to JBoss installation folder.
-:: set JBOSS_HOME=
+for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not %%F == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
 
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\lib\jboss-common.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\lib\jboss-jmx.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\lib\jboss-system.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jbossha.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jboss-j2ee.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jboss.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jboss-transaction.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jmx-adaptor-plugin.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\server\all\lib\jnpserver.jar
+if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop* set HADOOP_EDITION=1
 
-:: If using JBoss AOP following libraries need to be downloaded separately
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\lib\jboss-aop-jdk50.jar
-:: set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%JBOSS_HOME%\lib\jboss-aspect-library-jdk50.jar
+if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
 
-:: Set user external libraries
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\libs\ext\*
+if "%HADOOP_EDITION%" == "1" call "%GRIDGAIN_HOME%\os\bin\include\hadoop-classpath.bat"
+
+set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
+
+if "%GRIDGAIN_HADOOP_CLASSPATH%" == "" goto :eof
+
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
+
+goto :eof
+
+:concat
+set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%1
+goto :eof

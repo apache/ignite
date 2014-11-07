@@ -299,7 +299,9 @@ public interface GridCompute {
     @Nullable public <R> GridComputeTaskFuture<R> taskFuture(GridUuid sesId);
 
     /**
-     * Cancels task with the given execution session ID, if it currently running inside this projection.
+     * Cancels task with the given execution session ID, if it is currently running inside this projection
+     * or on local node. Note that if local node is master for the task, task gets alway cancelled, even
+     * if local node is not the part of the projection.
      *
      * @param sesId Execution session ID.
      * @throws GridException If task cancellation failed.
@@ -357,7 +359,7 @@ public interface GridCompute {
      * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
-     * @return Grid projection ({@code this}).
+     * @return This {@code GridCompute} instance for chaining calls.
      */
     public GridCompute withNoFailover();
 

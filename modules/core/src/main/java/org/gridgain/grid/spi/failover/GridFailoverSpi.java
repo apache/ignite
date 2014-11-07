@@ -46,7 +46,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridFailoverSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridFailoverSpi extends GridSpi {
     /**
      * This method is called when method {@link GridComputeTask#result(GridComputeJobResult, List)} returns
      * value {@link GridComputeJobResultPolicy#FAILOVER} policy indicating that the result of

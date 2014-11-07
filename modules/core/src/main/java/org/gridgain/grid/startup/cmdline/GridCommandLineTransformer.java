@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.startup.cmdline;
 
-import com.beust.jcommander.*;
-
 import java.io.*;
 import java.util.*;
 
@@ -41,24 +39,13 @@ public class GridCommandLineTransformer {
     /** Delimiter used in step 5 of the Workaround. */
     private static final String ARGS_DELIMITER = " ";
 
-    /** Main arguments (arguments without prefix '-') fall here. */
-    @Parameter(description = "Main arguments")
-    private Iterable<String> mainArgs = new ArrayList<>();
-
-    /** Supported parameter, parsed automagically with JCommander. */
-    @Parameter(names = "-i", description = "Interactive mode")
+    /** Interactive mode. */
     private boolean interactive;
 
-    /** Supported parameter, parsed automagically with JCommander. */
-    @Parameter(names = "-v", description = "Verbose mode")
+    /** Verbose mode. */
     private boolean verbose;
 
-    /** Supported parameter, parsed automagically with JCommander. */
-    @Parameter(names = "-h1", description = "Use Hadoop 1.x libraries")
-    private boolean useHadoop1;
-
-    /** Supported parameter, parsed automagically with JCommander. */
-    @Parameter(names = "-np", description = "No pause mode")
+    /** No pause mode. */
     private boolean noPause;
 
     /** Supported parameter, parsed manually. */
@@ -115,32 +102,47 @@ public class GridCommandLineTransformer {
      * @return Transformed arguments.
      */
     private String doTransformation(String[] args) {
-        JCommander jCommander = new JCommander();
+        List<String> argsList = new ArrayList<>();
 
-        jCommander.setAcceptUnknownOptions(true);
-        jCommander.addObject(this);
+        for (String arg : args) {
+            switch (arg) {
+                case "-i":
+                    interactive = true;
 
-        jCommander.parse(args);
+                    break;
 
-        return reformatArguments(jCommander);
+                case "-v":
+                    verbose = true;
+
+                    break;
+
+                case "-np":
+                    noPause = true;
+
+                    break;
+
+                default:
+                    argsList.add(arg);
+            }
+        }
+
+        return reformatArguments(argsList);
     }
 
     /**
      * Transforms parsed arguments into a string.
      *
-     * @param jCommander JCommander instance.
+     * @param args Non-standard arguments.
      * @return Transformed arguments.
      */
-    private String reformatArguments(JCommander jCommander) {
+    private String reformatArguments(List<String> args) {
         StringBuilder sb = new StringBuilder();
 
         addArgWithValue(sb, "INTERACTIVE", formatBooleanValue(interactive));
         addArgWithValue(sb, "QUIET", "-DGRIDGAIN_QUIET=" + !verbose);
         addArgWithValue(sb, "NO_PAUSE", formatBooleanValue(noPause));
-        addArgWithValue(sb, "HADOOP_LIB_DIR", useHadoop1 ? "hadoop1" : "hadoop2");
 
-        parseJvmOptionsAndSpringConfig(mainArgs);
-        parseJvmOptionsAndSpringConfig(jCommander.getUnknownOptions());
+        parseJvmOptionsAndSpringConfig(args);
 
         addArgWithValue(sb, "JVM_XOPTS", jvmOptions);
         addArgWithValue(sb, "CONFIG", springCfgPath);
@@ -184,11 +186,11 @@ public class GridCommandLineTransformer {
             if (arg.startsWith(JVM_OPTION_PREFIX)) {
                 String jvmOpt = arg.substring(JVM_OPTION_PREFIX.length());
 
-                if (!checkJVMOptionIsSupported(jvmOpt)) {
+                if (!checkJVMOptionIsSupported(jvmOpt))
                     throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for GridGain batch scripts " +
                         "with double quotes are not supported. " +
                         "Use JVM_OPTS environment variable to pass any custom JVM option.");
-                }
+
                 jvmOptions = jvmOptions.isEmpty() ? jvmOpt : jvmOptions + " " + jvmOpt;
             }
             else {

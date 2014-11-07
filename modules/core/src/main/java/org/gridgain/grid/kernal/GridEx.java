@@ -11,6 +11,8 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -20,7 +22,16 @@ import java.util.concurrent.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Grid {
+public interface GridEx extends Grid, GridProjectionEx {
+    /**
+     * Gets utility cache.
+     *
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Utility cache.
+     */
+    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls);
+
     /**
      * Gets the cache instance for the given name if one is configured or
      * <tt>null</tt> otherwise returning even non-public caches.
@@ -63,10 +74,10 @@ public interface GridEx extends Grid {
      * Checks whether all provided events are user-recordable.
      * <p>
      * Note that this method supports only predefined GridGain events.
-     * If arrays contains user event type, assertion will be thrown.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
+     * @throws IllegalArgumentException If {@code types} contains user event type.
      */
     public boolean allEventsUserRecordable(int[] types);
 
@@ -114,4 +125,12 @@ public interface GridEx extends Grid {
      * @return DR pool.
      */
     @Nullable public ExecutorService drPool();
+
+    /**
+     * Get GGFS instance returning null if it doesn't exist.
+     *
+     * @param name GGFS name.
+     * @return GGFS.
+     */
+    @Nullable public GridGgfs ggfsx(@Nullable String name);
 }

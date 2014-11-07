@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.apache.commons.io.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
@@ -17,8 +16,8 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,7 +32,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
 /**
  * Tests for GGFS streams content.
  */
-public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
+public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -107,6 +106,7 @@ public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setName("ggfs");
         ggfsCfg.setBlockSize(CFG_BLOCK_SIZE);
+        ggfsCfg.setFragmentizerEnabled(true);
 
         cfg.setGgfsConfiguration(ggfsCfg);
 
@@ -320,7 +320,7 @@ public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
 
                     cleanUp.add(f); // Add all created into cleanup list.
 
-                    IOUtils.copy(new GridGgfsTestInputStream(size, salt), out);
+                    U.copy(new GridGgfsTestInputStream(size, salt), out);
                 }
 
                 return null;

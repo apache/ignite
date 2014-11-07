@@ -446,32 +446,6 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRunLocal() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++) {
-            GridFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
-
-            assert fut.get() == null;
-
-            assertEquals(1, execCntr.getAndSet(0));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCallLocal() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++) {
-            GridFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
-
-            assertEquals(1, fut.get());
-
-            assertEquals(1, execCntr.getAndSet(0));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReducerError() throws Exception {
         Grid g = grid(0);
 

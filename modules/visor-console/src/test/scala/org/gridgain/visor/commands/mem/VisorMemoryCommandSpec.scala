@@ -11,60 +11,59 @@
 
 package org.gridgain.visor.commands.mem
 
-import org.scalatest._
-import matchers._
 import org.gridgain.visor._
+import org.scalatest._
 
 /**
  * Unit test for memory commands.
  */
-class VisorMemoryCommandSpec extends FlatSpec with ShouldMatchers {
+class VisorMemoryCommandSpec extends FlatSpec with Matchers {
     "A 'mget' visor command" should "get correct value" in {
-        visor mset("key", "value")
+        visor.mset("key", "value")
 
         assertResult(Option("value"))(visor.mgetOpt("key"))
 
-        visor mclear()
+        visor.mclear()
     }
 
     "A 'mlist' visor command" should "list all variables" in {
-        visor mset("key1", "value1")
-        visor mset("key2", "value2")
-        visor mset("key3", "value3")
+        visor.mset("key1", "value1")
+        visor.mset("key2", "value2")
+        visor.mset("key3", "value3")
 
-        visor mlist()
-        visor mclear()
+        visor.mlist()
+        visor.mclear()
     }
 
     "A 'mlist' visor command" should "list ax and cx variables" in {
-        visor mset("a1", "1")
-        visor mset("a2", "2")
-        visor mset("b1", "3")
-        visor mset("b2", "4")
-        visor mset("c1", "5")
-        visor mset("c2", "6")
+        visor.mset("a1", "1")
+        visor.mset("a2", "2")
+        visor.mset("b1", "3")
+        visor.mset("b2", "4")
+        visor.mset("c1", "5")
+        visor.mset("c2", "6")
 
-        visor mlist("ac")
-        visor mclear()
+        visor.mlist("ac")
+        visor.mclear()
     }
 
     "A 'mclear' visor command" should "remove first two variables" in {
-        visor mset("key1", "value1")
-        visor mset("key2", "value2")
-        visor mset("key3", "value3")
+        visor.mset("key1", "value1")
+        visor.mset("key2", "value2")
+        visor.mset("key3", "value3")
 
         visor mclear "key1 key2"
 
-        visor mlist()
-        visor mclear()
+        visor.mlist()
+        visor.mclear()
     }
 
     "A 'mclear' visor command" should "remove all variables" in {
-        visor mset("key1", "value1")
-        visor mset("key2", "value2")
-        visor mset("key3", "value3")
+        visor.mset("key1", "value1")
+        visor.mset("key2", "value2")
+        visor.mset("key3", "value3")
 
-        visor mclear()
-        visor mlist()
+        visor.mclear()
+        visor.mlist()
     }
 }

@@ -10,13 +10,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.swapspace.inmemory.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -24,12 +24,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
@@ -99,12 +99,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         super.beforeTest();
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().primaryKeySet().size());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = grid(0);
     }
@@ -115,8 +119,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals(0, cache().primarySize());
         assertEquals(0, cache().size());
+        assertEquals(0, cache().globalSize());
+        assertEquals(0, cache().globalPrimarySize());
 
         dfltGrid = null;
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testDgc() throws Exception {
+        // Just check dgc() call does not fail.
+        cache().dgc();
+
+        cache().dgc(1000, true, true);
     }
 
     /**
@@ -132,21 +148,69 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);
 
-        cache().putAll(map);
+        // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
+        Map<GridNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, map.keySet());
+
+        for (int i = 0; i < gridCount(); i++) {
+            Collection<String> keys = mapped.get(grid(i).localNode());
+
+            if (!F.isEmpty(keys)) {
+                for (String key : keys)
+                    cache(i).put(key, map.get(key));
+            }
+        }
+
+        map.remove("key0");
+
+        mapped = grid(0).mapKeysToNodes(null, map.keySet());
+
+        for (int i = 0; i < gridCount(); i++) {
+            // Will actually delete entry from map.
+            CU.invalidate(cache(i), "key0");
+
+            assertNull("Failed check for grid: " + i, cache(i).peek("key0"));
+
+            Collection<String> keysCol = mapped.get(grid(i).localNode());
+
+            assert !cache(i).isEmpty() || F.isEmpty(keysCol);
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheContext<String, Integer> ctx = context(i);
+
+            int sum = 0;
+
+            for (String key : map.keySet())
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
+                    sum++;
+
+            assertEquals("Incorrect key size on cache #" + i, sum, cache(i).keySet().size());
+            assertEquals("Incorrect key size on cache #" + i, sum, cache(i).size());
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            Collection<String> keysCol = mapped.get(grid(i).localNode());
+
+            assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
+                cache(i).primarySize());
+        }
+
+        int globalPrimarySize = map.size();
 
         for (int i = 0; i < gridCount(); i++)
-            CU.invalidate(cache(i), "key0"); // Will actually delete entry from map.
+            assertEquals(globalPrimarySize, cache(i).globalPrimarySize());
 
-        checkKeySize(F.lose(map.keySet(), true, F.asSet("key0")));
-        checkSize(F.lose(map.keySet(), true, F.asSet("key0")));
+        int times = 1;
 
-        Map<GridNode, Collection<String>> mapped = grid(0).mapKeysToNodes(null, cache().keySet());
+        if (cacheMode() == REPLICATED)
+            times = gridCount();
+        else if (cacheMode() == PARTITIONED)
+            times = Math.min(gridCount(), cache().configuration().getBackups() + 1);
 
-        Collection<String> keysCol = mapped.get(grid(0).localNode());
+        int globalSize = globalPrimarySize * times;
 
-        assertEquals(keysCol != null ? keysCol.size() : 0, cache().primarySize());
-
-        assert !cache().isEmpty() || keysCol == null || keysCol.isEmpty();
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(globalSize, cache(i).globalSize());
     }
 
     /**
@@ -3234,11 +3298,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLockedByThread("key");
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return cache().lock("key", 100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return cache().lock("key", 100);
+                }
+            }).get();
 
             cache().unlock("key");
         }
@@ -3263,11 +3327,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e.isLocked();
 
             assert !dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws GridException {
-                        return e.lock(100);
-                    }
-                }).get();
+                @Override
+                public Boolean call() throws GridException {
+                    return e.lock(100);
+                }
+            }).get();
 
             e.unlock();
         }
@@ -3291,29 +3355,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch latch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        GridFuture<Boolean> f = cache().lockAsync("key", 1000);
+                @Override
+                public Boolean call() throws Exception {
+                    GridFuture<Boolean> f = cache().lockAsync("key", 1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        latch.countDown();
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            cache().unlock("key");
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    latch.countDown();
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        cache().unlock("key");
+                    }
+
+                    return true;
+                }
+            });
 
             // Let another thread start.
             latch.await();
@@ -3365,29 +3429,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
             GridFuture<Boolean> f = dfltGrid.forLocal().compute().call(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        syncLatch.countDown();
+                @Override
+                public Boolean call() throws Exception {
+                    syncLatch.countDown();
 
-                        GridFuture<Boolean> f = e.lockAsync(1000);
+                    GridFuture<Boolean> f = e.lockAsync(1000);
 
-                        try {
-                            f.get(100);
+                    try {
+                        f.get(100);
 
-                            fail();
-                        } catch (GridFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        try {
-                            assert f.get();
-                        } finally {
-                            e.unlock();
-                        }
-
-                        return true;
+                        fail();
+                    } catch (GridFutureTimeoutException ex) {
+                        info("Caught expected exception: " + ex);
                     }
-                });
+
+                    try {
+                        assert f.get();
+                    } finally {
+                        e.unlock();
+                    }
+
+                    return true;
+                }
+            });
 
             syncLatch.await();
 
@@ -4290,7 +4354,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         entry = c.entry(key);
 
-        assert entry.get() != null;
+        assertEquals((Integer)10, entry.get());
 
         assertEquals(0, entry.timeToLive());
         assertEquals(0, entry.expirationTime());
@@ -4809,7 +4873,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
                         assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
-                        assert !e.deleted();
+                        assert !e.deleted() : "Entry is deleted: " + e;
 
                         size++;
                     }

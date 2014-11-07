@@ -11,6 +11,9 @@ package org.gridgain.testframework.junits.spi;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.security.*;
+import org.gridgain.grid.product.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -38,6 +41,9 @@ import static org.gridgain.grid.product.GridProductVersion.*;
  */
 @SuppressWarnings({"JUnitTestCaseWithNonTrivialConstructors"})
 public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstractTest {
+    /** */
+    private static final GridProductVersion VERSION = fromString("99.99.99");
+
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
 
@@ -181,7 +187,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
                 initSpiClassAndVersionAttributes(discoSpi));
 
             // Set all local node attributes into discovery SPI.
-            discoSpi.setNodeAttributes(getTestData().getAttributes(), VERSION_UNKNOWN);
+            discoSpi.setNodeAttributes(getTestData().getAttributes(), VERSION);
 
             discoSpi.setMetricsProvider(createMetricsProvider());
 
@@ -207,7 +213,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
         if (spi instanceof GridDiscoverySpi) {
             getTestData().getAttributes().putAll(initSpiClassAndVersionAttributes(spi));
 
-            ((GridDiscoverySpi)spi).setNodeAttributes(getTestData().getAttributes(), VERSION_UNKNOWN);
+            ((GridDiscoverySpi)spi).setNodeAttributes(getTestData().getAttributes(), VERSION);
 
             ((GridDiscoverySpi)spi).setMetricsProvider(createMetricsProvider());
         }
@@ -304,6 +310,17 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         getTestResources().inject(discoSpi);
 
+        discoSpi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+            @Override public GridSecurityContext authenticateNode(GridNode n, GridSecurityCredentials cred) {
+                GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
+                    GridSecuritySubjectType.REMOTE_NODE, n.id());
+
+                subj.permissions(new GridAllowAllPermissionSet());
+
+                return new GridSecurityContext(subj);
+            }
+        });
+
         configure(discoSpi);
 
         if (discoSpi.getNodeAttributes() != null)
@@ -391,7 +408,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @throws Exception If failed.
      */
     protected void spiStart(GridSpi spi) throws Exception {
-        U.setWorkDirectory(U.getGridGainHome(), null);
+        U.setWorkDirectory(null, U.getGridGainHome());
 
         // Start SPI with unique grid name.
         spi.spiStart(getTestGridName());

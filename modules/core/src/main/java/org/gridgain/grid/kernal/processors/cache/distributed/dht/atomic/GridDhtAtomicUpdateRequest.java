@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
@@ -103,6 +104,36 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
+    /** Force transform backups flag. */
+    @GridDirectVersion(2)
+    private boolean forceTransformBackups;
+
+    /** Transform closures. */
+    @GridDirectTransient
+    private List<GridClosure<V, V>> transformClos;
+
+    /** Transform closure bytes. */
+    @GridDirectCollection(byte[].class)
+    @GridDirectVersion(2)
+    private List<byte[]> transformClosBytes;
+
+    /** Near transform closures. */
+    @GridDirectTransient
+    private List<GridClosure<V, V>> nearTransformClos;
+
+    /** Near transform closures bytes. */
+    @GridDirectCollection(byte[].class)
+    @GridDirectVersion(2)
+    private List<byte[]> nearTransformClosBytes;
+
+    /** Subject ID. */
+    @GridDirectVersion(3)
+    private UUID subjId;
+
+    /** Task name hash. */
+    @GridDirectVersion(4)
+    private int taskNameHash;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -119,6 +150,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
      * @param ttl Time to live.
+     * @param forceTransformBackups Force transform backups flag.
+     * @param subjId Subject ID.
      */
     public GridDhtAtomicUpdateRequest(
         UUID nodeId,
@@ -126,7 +159,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridCacheVersion writeVer,
         GridCacheWriteSynchronizationMode syncMode,
         long topVer,
-        long ttl
+        long ttl,
+        boolean forceTransformBackups,
+        UUID subjId,
+        int taskNameHash
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -134,11 +170,28 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.syncMode = syncMode;
         this.ttl = ttl;
         this.topVer = topVer;
+        this.forceTransformBackups = forceTransformBackups;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
-        vals = new ArrayList<>();
-        valBytes = new ArrayList<>();
+
+        if (forceTransformBackups) {
+            transformClos = new ArrayList<>();
+            transformClosBytes = new ArrayList<>();
+        }
+        else {
+            vals = new ArrayList<>();
+            valBytes = new ArrayList<>();
+        }
+    }
+
+    /**
+     * @return Force transform backups flag.
+     */
+    public boolean forceTransformBackups() {
+        return forceTransformBackups;
     }
 
     /**
@@ -150,12 +203,17 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
      */
-    public void addWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes, long drTtl,
-        long drExpireTime, @Nullable GridCacheVersion drVer) {
+    public void addWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
+        GridClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer) {
         keys.add(key);
         this.keyBytes.add(keyBytes);
-        vals.add(val);
-        this.valBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+
+        if (forceTransformBackups && transformC != null)
+            transformClos.add(transformC);
+        else {
+            vals.add(val);
+            this.valBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+        }
 
         // In case there is no DR, do not create the list.
         if (drVer != null) {
@@ -200,18 +258,34 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
      */
-    public void addNearWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes) {
+    public void addNearWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
+        GridClosure<V, V> transformC) {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
             nearKeyBytes = new ArrayList<>();
-            nearVals = new ArrayList<>();
-            nearValBytes = new ArrayList<>();
+
+            if (forceTransformBackups) {
+                nearTransformClos = new ArrayList<>();
+                nearTransformClosBytes = new ArrayList<>();
+            }
+            else {
+                nearVals = new ArrayList<>();
+                nearValBytes = new ArrayList<>();
+            }
         }
 
         nearKeys.add(key);
         nearKeyBytes.add(keyBytes);
-        nearVals.add(val);
-        nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+
+        if (forceTransformBackups) {
+            assert transformC != null;
+
+            nearTransformClos.add(transformC);
+        }
+        else {
+            nearVals.add(val);
+            nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+        }
     }
 
     /** {@inheritDoc} */
@@ -224,6 +298,20 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -337,6 +425,14 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
+     * @param idx Key index.
+     * @return Transform closure.
+     */
+    @Nullable public GridClosure<V, V> transformClosure(int idx) {
+        return transformClos == null ? null : transformClos.get(idx);
+    }
+
+    /**
      * @param idx Near key index.
      * @return Value.
      */
@@ -356,6 +452,14 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         }
 
         return null;
+    }
+
+    /**
+     * @param idx Key index.
+     * @return Transform closure.
+     */
+    @Nullable public GridClosure<V, V> nearTransformClosure(int idx) {
+        return nearTransformClos == null ? null : nearTransformClos.get(idx);
     }
 
     /**
@@ -457,8 +561,15 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         keyBytes = marshalCollection(keys, ctx);
         valBytes = marshalValuesCollection(vals, ctx);
+
+        if (forceTransformBackups)
+            transformClosBytes = marshalCollection(transformClos, ctx);
+
         nearKeyBytes = marshalCollection(nearKeys, ctx);
         nearValBytes = marshalValuesCollection(nearVals, ctx);
+
+        if (forceTransformBackups)
+            nearTransformClosBytes = marshalCollection(nearTransformClos, ctx);
     }
 
     /** {@inheritDoc} */
@@ -467,8 +578,15 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         keys = unmarshalCollection(keyBytes, ctx, ldr);
         vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
+
+        if (forceTransformBackups)
+            transformClos = unmarshalCollection(transformClosBytes, ctx, ldr);
+
         nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
         nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
+
+        if (forceTransformBackups)
+            nearTransformClos = unmarshalCollection(nearTransformClosBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -504,6 +622,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.nearKeyBytes = nearKeyBytes;
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
+        _clone.forceTransformBackups = forceTransformBackups;
+        _clone.transformClos = transformClos;
+        _clone.transformClosBytes = transformClosBytes;
+        _clone.nearTransformClos = nearTransformClos;
+        _clone.nearTransformClosBytes = nearTransformClosBytes;
+        _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -702,6 +827,78 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 15:
+                if (nearTransformClosBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearTransformClosBytes.size()))
+                            return false;
+
+                        commState.it = nearTransformClosBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 16:
+                if (!commState.putBoolean(forceTransformBackups))
+                    return false;
+
+                commState.idx++;
+
+            case 17:
+                if (transformClosBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(transformClosBytes.size()))
+                            return false;
+
+                        commState.it = transformClosBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 18:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putInt(taskNameHash))
+                    return false;
 
                 commState.idx++;
 
@@ -937,6 +1134,90 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 15:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearTransformClosBytes == null)
+                        nearTransformClosBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        nearTransformClosBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 16:
+                if (buf.remaining() < 1)
+                    return false;
+
+                forceTransformBackups = commState.getBoolean();
+
+                commState.idx++;
+
+            case 17:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (transformClosBytes == null)
+                        transformClosBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        transformClosBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 18:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 19:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

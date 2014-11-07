@@ -19,7 +19,8 @@ import java.util.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
- * This examples demonstrates events API.
+ * This examples demonstrates events API. Note that grid events are disabled by default and
+ * must be specifically enabled, just like in {@code examples/config/example-cache.xml} file.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
@@ -43,6 +44,9 @@ public class CacheEventsExample {
             System.out.println(">>> Cache events example started.");
 
             final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+
+            // Clean up caches on all nodes before run.
+            cache.globalClearAll(0);
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
@@ -68,6 +72,7 @@ public class CacheEventsExample {
             };
 
             // Subscribe to specified cache events on all nodes that have cache running.
+            // Cache events are explicitly enabled in examples/config/example-cache.xml file.
             GridFuture<UUID> fut = g.forCache(CACHE_NAME).events().remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 

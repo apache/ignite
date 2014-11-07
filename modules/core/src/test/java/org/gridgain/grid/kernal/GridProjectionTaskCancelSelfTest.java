@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -73,15 +72,13 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
 
         grid(1).compute().cancelTask(fut.getTaskSession().getId());
 
-        U.sleep(1000);
-
-        finishJobs.countDown();
-
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return fut.get();
             }
         }, GridFutureCancelledException.class, null);
+
+        finishJobs.countDown();
 
         assert fut.isCancelled();
     }
@@ -89,7 +86,7 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMissedCancel() throws Exception {
+    public void testLocalCancelThroughtRemoteNode() throws Exception {
         finishJobs = new CountDownLatch(1);
 
         final GridComputeTaskFuture<String> fut = grid(0).compute().execute(TestTask.class, finishJobs);
@@ -99,9 +96,15 @@ public class GridProjectionTaskCancelSelfTest extends GridCommonAbstractTest {
 
         p.compute().cancelTask(fut.getTaskSession().getId());
 
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return fut.get();
+            }
+        }, GridFutureCancelledException.class, null);
+
         finishJobs.countDown();
 
-        assert TestTask.SUCCESS.equals(fut.get());
+        assert fut.isCancelled();
     }
 
     /**

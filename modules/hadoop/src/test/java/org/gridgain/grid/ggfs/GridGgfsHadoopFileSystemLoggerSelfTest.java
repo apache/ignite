@@ -12,18 +12,17 @@ package org.gridgain.grid.ggfs;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopLogger.*;
 
 /**
  * Grid GGFS client logger test.
  */
-public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridCommonAbstractTest {
+public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridGgfsCommonAbstractTest {
     /** Path string. */
     private static final String PATH_STR = "/dir1/dir2/file;test";
 

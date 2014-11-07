@@ -47,6 +47,7 @@ public enum GridSegmentationPolicy {
      * has support for reconnect (i.e. annotated with {@link GridDiscoverySpiReconnectSupport}
      * annotation).
      */
+    @Deprecated
     RECONNECT,
 
     /**

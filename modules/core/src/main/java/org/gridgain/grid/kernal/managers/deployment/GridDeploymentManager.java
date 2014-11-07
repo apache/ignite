@@ -61,7 +61,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
                     ctx.config().getDeploymentMode(),
                     U.gridClassLoader(),
                     GridUuid.fromUuid(ctx.localNodeId()),
-                    U.getUserVersion(U.gridClassLoader(), log),
+                    ctx.userVersion(U.gridClassLoader()),
                     String.class.getName()) :
                 null;
         }
@@ -283,8 +283,18 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
             return dep;
         }
+        else if (locDep != null) {
+            if (GridComputeTask.class.isAssignableFrom(cls)) {
+                GridComputeTaskName taskNameAnn = locDep.annotation(cls, GridComputeTaskName.class);
+
+                if (taskNameAnn != null)
+                    locDep.addDeployedClass(cls, taskNameAnn.value());
+            }
+
+            return locDep;
+        }
         else
-            return locDep != null ? locDep : locStore.explicitDeploy(cls, clsLdr);
+            return locStore.explicitDeploy(cls, clsLdr);
     }
 
     /**

@@ -47,6 +47,9 @@ import java.util.*;
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
 public interface GridGgfs {
+    /** GGFS scheme name. */
+    public static final String GGFS_SCHEME = "ggfs";
+
     /** Property: user name. */
     public static final String PROP_USER_NAME = "usrName";
 

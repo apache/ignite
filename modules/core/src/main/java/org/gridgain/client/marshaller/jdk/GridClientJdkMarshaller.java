@@ -6,30 +6,41 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 package org.gridgain.client.marshaller.jdk;
 
 import org.gridgain.client.marshaller.*;
+import org.gridgain.grid.util.io.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Simple marshaller that utilize JDK serialization features.
  */
 public class GridClientJdkMarshaller implements GridClientMarshaller {
-    /** Unique marshaller ID. */
-    public static final Byte PROTOCOL_ID = 3;
+    /** ID. */
+    public static final byte ID = 2;
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(Object obj) throws IOException {
-        ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+    @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
+        GridByteArrayOutputStream bOut = new GridByteArrayOutputStream();
 
-        ObjectOutputStream out = new ObjectOutputStream(tmp);
+        ObjectOutput out = new ObjectOutputStream(bOut);
 
         out.writeObject(obj);
 
         out.flush();
 
-        return tmp.toByteArray();
+        ByteBuffer buf = ByteBuffer.allocate(off + bOut.size());
+
+        buf.position(off);
+
+        buf.put(bOut.internalArray(), 0, bOut.size());
+
+        buf.flip();
+
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -37,7 +48,7 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         ByteArrayInputStream tmp = new ByteArrayInputStream(bytes);
 
-        ObjectInputStream in = new ObjectInputStream(tmp);
+        ObjectInput in = new ObjectInputStream(tmp);
 
         try {
             return (T)in.readObject();
@@ -45,10 +56,5 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
         catch (ClassNotFoundException e) {
             throw new IOException("Failed to unmarshal target object: " + e.getMessage(), e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return PROTOCOL_ID;
     }
 }

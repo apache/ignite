@@ -699,14 +699,16 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() ? tx.groupLockKey() : null,
-                                        inTx() && tx.partitionLock());
+                                        inTx() && tx.partitionLock(),
+                                        inTx() ? tx.subjectId() : null,
+                                        inTx() ? tx.taskNameHash() : 0);
 
                                     mapping.request(req);
                                 }
 
                                 distributedKeys.add(key);
 
-                                if (inTx() && implicitTx() && mappings.size() == 1) {
+                                if (inTx() && implicitTx() && mappings.size() == 1 && !cctx.isStoreEnabled()) {
                                     tx.onePhaseCommit(true);
 
                                     req.onePhaseCommit(true);
@@ -953,7 +955,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (tx != null) {
                 tx.addKeyMapping(cctx.localNode(), distributedKeys);
 
-                if (tx.implicit())
+                if (tx.implicit() && !cctx.isStoreEnabled())
                     tx.onePhaseCommit(true);
             }
 
@@ -1240,7 +1242,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                         cctx.events().addEvent(cctx.affinity().partition(k), k, tx, null,
                             EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                            null, false);
+                            null, false, CU.subjectId(tx, cctx), null, tx == null ? null : tx.resolveTaskName());
 
                     i++;
                 }

@@ -58,7 +58,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
             grid$.compute().affinityRun("partitioned", i,
-                () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
+                () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']')).get
         )
     }
 

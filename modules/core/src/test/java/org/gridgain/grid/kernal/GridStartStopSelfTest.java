@@ -33,7 +33,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(GridFactorySelfTest.class));
+        System.setProperty(GG_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(GridStartStopSelfTest.class));
     }
 
     /**
@@ -41,6 +41,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      */
     public void testStartStop() throws Exception {
         GridConfiguration cfg = new GridConfiguration();
+
+        cfg.setRestEnabled(false);
 
         info("Grid start-stop test count: " + COUNT);
 
@@ -61,6 +63,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      */
     public void _testStopWhileInUse() throws Exception {
         GridConfiguration cfg = new GridConfiguration();
+
+        cfg.setRestEnabled(false);
 
         cfg.setGridName(getTestGridName(0));
 
@@ -121,6 +125,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
      */
     public void testStoppedState() throws Exception {
         GridConfiguration cfg = new GridConfiguration();
+
+        cfg.setRestEnabled(false);
 
         Grid grid = G.start(cfg);
 

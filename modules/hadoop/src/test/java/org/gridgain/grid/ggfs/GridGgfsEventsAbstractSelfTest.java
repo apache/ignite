@@ -12,12 +12,12 @@ package org.gridgain.grid.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -76,7 +76,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected GridGgfsConfiguration getGgfsConfiguration() {
+    protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
         GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -90,7 +90,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = G.loadConfiguration("config/hadoop/default-config.xml").get1();
+        GridConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 
@@ -101,6 +101,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         cfg.setGgfsConfiguration(getGgfsConfiguration());
 
         cfg.setCacheConfiguration(getCacheConfiguration(gridName));
+
+        cfg.setHadoopConfiguration(null);
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
@@ -663,13 +665,12 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         ggfs.create(file, true).close(); // Will generate same event set + delete and purge events.
 
-        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ggfs.create(file, false).close(); // Won't generate any event.
-
-                return true;
-            }
-        }, GridGgfsPathAlreadyExistsException.class);
+        try {
+            ggfs.create(file, false).close(); // Won't generate any event.
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 

@@ -65,6 +65,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -118,7 +126,9 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheTxEntry<K, V>> recoverWrites,
         boolean reply,
         boolean onePhaseCommit,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
             writes, recoverWrites, reply, grpLockKey);
@@ -135,6 +145,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         this.miniId = miniId;
         this.sysInvalidate = sysInvalidate;
         this.onePhaseCommit = onePhaseCommit;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -154,6 +166,20 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      */
     public GridUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -274,6 +300,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.pendingVers = pendingVers;
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.writeVer = writeVer;
+        _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -384,6 +412,18 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 26:
                 if (!commState.putCacheVersion(writeVer))
+                    return false;
+
+                commState.idx++;
+
+            case 27:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -521,6 +561,24 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                     return false;
 
                 writeVer = writeVer0;
+
+                commState.idx++;
+
+            case 27:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 28:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

@@ -19,7 +19,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -34,7 +33,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
 /**
  * {@link GridGgfsDataManager} test case.
  */
-public class GridGgfsDataManagerSelfTest extends GridCommonAbstractTest {
+public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 

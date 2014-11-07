@@ -36,7 +36,8 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>
@@ -52,15 +53,16 @@
                 <exclude>pom-standalone.xml</exclude>
                 <exclude>src/test/**</exclude>
                 <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
+                <exclude>src/**/client/interceptor/**</exclude>
+                <exclude>src/**/client/memcache/**</exclude>
                 <exclude>src/**/ClientCacheExample*</exclude>
                 <exclude>src/**/scala/**/ScalarCache*</exclude>
                 <exclude>src/**/scala/**/ScalarPopularNumbersRealTimeExample*</exclude>
                 <exclude>src/**/scala/**/ScalarSnowflakeSchemaExample*</exclude>
                 <exclude>src/main/java/org/gridgain/examples/ggfs/**</exclude>
                 <exclude>config/example-cache*</exclude>
-                <exclude>config/hibernate-L2-cache*</exclude>
-                <exclude>config/hadoop/**</exclude>
-                <exclude>config/example-ggfs*</exclude>
+                <exclude>config/hibernate/**</exclude>
+                <exclude>config/filesystem/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>

@@ -11,19 +11,16 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.scalatest._
-import matchers._
-import org.gridgain.visor._
-import VisorCacheCommand._
-import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
-import GridCacheQueryType._
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
+import org.gridgain.grid.{GridGain => G}
+import org.gridgain.visor._
+import org.gridgain.visor.commands.cache.VisorCacheCommand._
+import org.scalatest._
 
 /**
  * Unit test for 'events' command.
  */
-class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     /**
      * Open Visor.
      */
@@ -32,7 +29,7 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
         assert(g.caches().size() > 0)
 
-        visor.open("-e", false)
+        visor.open("-e")
     }
 
     /**
@@ -49,7 +46,7 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
     it should "put/get some values to/from cache and display information about caches" in {
         val c = G.grid.cache[String, String]("partitioned")
 
-        for (i <- (0 to 3)) {
+        for (i <- 0 to 3) {
             val kv = "" + i
 
             c.put(kv, kv)

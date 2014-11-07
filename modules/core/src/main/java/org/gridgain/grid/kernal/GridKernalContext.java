@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -31,15 +31,18 @@ import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -86,24 +89,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridProduct product();
 
     /**
-     * Ges version string of the GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain version string (excluding the build number).
-     * @see #build()
-     */
-    public String version();
-
-    /**
-     * Gets build number of this GridGain instance. This method is for information
-     * purpose only.
-     *
-     * @return GridGain instance build number.
-     * @see #version()
-     */
-    public String build();
-
-    /**
      * Gets list of compatible versions.
      *
      * @return Compatible versions.
@@ -142,7 +127,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Grid instance.
      */
-    public Grid grid();
+    public GridEx grid();
 
     /**
      * Gets grid configuration.
@@ -236,6 +221,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridClosureProcessor closure();
 
     /**
+     * Gets service processor.
+     *
+     * @return Service processor.
+     */
+    public GridServiceProcessor service();
+
+    /**
      * Gets port processor.
      *
      * @return Port processor.
@@ -247,14 +239,14 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Email processor.
      */
-    public GridEmailProcessor email();
+    public GridEmailProcessorAdapter email();
 
     /**
      * Gets schedule processor.
      *
      * @return Schedule processor.
      */
-    public GridScheduleProcessor schedule();
+    public GridScheduleProcessorAdapter schedule();
 
     /**
      * Gets REST processor.
@@ -285,6 +277,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridGgfsProcessorAdapter ggfs();
 
     /**
+     * Gets GGFS utils processor.
+     *
+     * @return GGFS utils processor.
+     */
+    public GridGgfsHelper ggfsHelper();
+
+    /**
      * Gets stream processor.
      *
      * @return Stream processor.
@@ -306,6 +305,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridDrProcessor dr();
 
     /**
+     * Gets Hadoop processor.
+     *
+     * @return Hadoop processor.
+     */
+    public GridHadoopProcessorAdapter hadoop();
+
+    /**
      * Gets DR pool.
      *
      * @return DR pool.
@@ -318,6 +324,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Version converter processor.
      */
     public GridVersionProcessor versionConverter();
+
+    /**
+     * Gets portable processor.
+     *
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable();
 
     /**
      * Gets deployment manager.
@@ -373,7 +386,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Authentication manager.
      */
-    public GridAuthenticationManager auth();
+    public GridSecurityManager security();
 
     /**
      * Gets secure session manager.
@@ -445,4 +458,16 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Enterprise release flag.
      */
     public boolean isEnterprise();
+
+    /**
+     * Gets user version for given class loader by checking
+     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
+     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * then default version (empty string) is returned.
+     *
+     * @param ldr Class loader.
+     * @return User version for given class loader or empty string if no version
+     *      was explicitly specified.
+     */
+    public String userVersion(ClassLoader ldr);
 }

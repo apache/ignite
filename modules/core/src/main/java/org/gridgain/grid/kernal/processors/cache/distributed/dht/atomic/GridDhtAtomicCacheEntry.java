@@ -17,7 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * DHT atomic cache entry..
+ * DHT atomic cache entry.
  */
 public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     /** */
@@ -46,6 +46,11 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
             return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
 
         return new GridPartitionedCacheEntryImpl<>(null, cctx, key, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String cacheName() {
+        return CU.isNearEnabled(cctx) ? super.cacheName() : cctx.dht().name();
     }
 
     /** {@inheritDoc} */

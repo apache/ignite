@@ -1524,17 +1524,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
             }
         }
-
-        if (tx.pessimistic() && !tx.near()) {
-            GridInClosure3<K, Boolean, GridCacheOperation> clos = cctx.cache().afterPessimisticUnlock();
-
-            if (clos != null) {
-                for (GridCacheTxEntry<K, V> entry : entries) {
-                    if (!entry.cached().detached())
-                        clos.apply(entry.key(), true, entry.op());
-                }
-            }
-        }
     }
 
     /**
@@ -1870,45 +1859,60 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            if (log.isDebugEnabled())
-                log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
-                    ", failedNodeId=" + evtNodeId + ']');
+            try {
+                cctx.kernalContext().gateway().readLock();
+            }
+            catch (IllegalStateException ignore) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to acquire kernal gateway (grid is stopping).");
 
-            for (GridCacheTxEx<K, V> tx : idMap.values()) {
-                if ((tx.near() && !tx.local()) || (cctx.isStoreEnabled() && tx.masterNodeIds().contains(evtNodeId))) {
-                    // Invalidate transactions.
-                    salvageTx(tx, false, RECOVERY_FINISH);
-                }
-                else if (tx.optimistic()) {
-                    // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
-                    if (tx.originatingNodeId().equals(evtNodeId)) {
-                        if (tx.state() == PREPARED)
-                            commitIfPrepared(tx);
-                        else {
-                            if (tx.setRollbackOnly())
-                                tx.rollbackAsync();
-                            // If we could not mark tx as rollback, it means that transaction is committing.
-                        }
+                return;
+            }
+
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
+                        ", failedNodeId=" + evtNodeId + ']');
+
+                for (GridCacheTxEx<K, V> tx : idMap.values()) {
+                    if ((tx.near() && !tx.local()) || (cctx.isStoreEnabled() && tx.masterNodeIds().contains(evtNodeId))) {
+                        // Invalidate transactions.
+                        salvageTx(tx, false, RECOVERY_FINISH);
                     }
-                }
-                else {
-                    // Pessimistic.
-                    if (tx.originatingNodeId().equals(evtNodeId)) {
-                        if (tx.state() != COMMITTING && tx.state() != COMMITTED) {
-                            commitIfRemotelyCommitted(tx);
-                        }
-                        else {
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping pessimistic transaction check (transaction is being committed) " +
-                                    "[tx=" + tx + ", locNodeId=" + cctx.localNodeId() + ']');
+                    else if (tx.optimistic()) {
+                        // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
+                        if (tx.originatingNodeId().equals(evtNodeId)) {
+                            if (tx.state() == PREPARED)
+                                commitIfPrepared(tx);
+                            else {
+                                if (tx.setRollbackOnly())
+                                    tx.rollbackAsync();
+                                // If we could not mark tx as rollback, it means that transaction is committing.
+                            }
                         }
                     }
                     else {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping pessimistic transaction check [tx=" + tx +
-                                ", evtNodeId=" + evtNodeId + ", locNodeId=" + cctx.localNodeId() + ']');
+                        // Pessimistic.
+                        if (tx.originatingNodeId().equals(evtNodeId)) {
+                            if (tx.state() != COMMITTING && tx.state() != COMMITTED) {
+                                commitIfRemotelyCommitted(tx);
+                            }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Skipping pessimistic transaction check (transaction is being committed) " +
+                                        "[tx=" + tx + ", locNodeId=" + cctx.localNodeId() + ']');
+                            }
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Skipping pessimistic transaction check [tx=" + tx +
+                                    ", evtNodeId=" + evtNodeId + ", locNodeId=" + cctx.localNodeId() + ']');
+                        }
                     }
                 }
+            }
+            finally {
+                cctx.kernalContext().gateway().readUnlock();
             }
         }
 

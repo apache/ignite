@@ -160,13 +160,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
-        nodeBean.setJettyPort(attribute(node, ATTR_REST_JETTY_PORT, 0));
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
-        nodeBean.setJettyAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_ADDRS)));
-        nodeBean.setJettyHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_HOST_NAMES)));
 
         Integer dfltReplicaCnt = node.attribute(GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
@@ -178,11 +175,12 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
         if (!F.isEmpty(caches)) {
-            assert caches != null;
-
-            Map<String, String> cacheMap = new HashMap<>(caches.length);
+            Map<String, String> cacheMap = new HashMap<>();
 
             for (GridCacheAttributes cacheAttr : caches) {
+                if (ctx.cache().systemCache(cacheAttr.cacheName()))
+                    continue;
+
                 if (cacheAttr.cacheName() != null)
                     cacheMap.put(cacheAttr.cacheName(), cacheAttr.cacheMode().toString());
                 else
@@ -256,6 +254,15 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_VER_CONVERTERS);
+            attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                if (e.getValue() != null) {
+                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                      e.setValue(e.getValue().toString());
+                }
+            }
 
             nodeBean.setAttributes(attrs);
         }

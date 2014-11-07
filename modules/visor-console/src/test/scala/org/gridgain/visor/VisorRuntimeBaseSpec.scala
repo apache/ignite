@@ -10,31 +10,15 @@
  */
 package org.gridgain.visor
 
+import org.gridgain.grid.{GridGain => G, _}
 import org.scalatest._
-import org.scalatest.matchers._
-import org.gridgain.grid._
-import org.gridgain.grid.{GridGain => G}
 
 /**
  * Base abstract class for unit tests requiring Visor runtime.
  */
-abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with ShouldMatchers
-    with BeforeAndAfterAll {
+abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with Matchers
+    with BeforeAndAfterAll with BeforeAndAfterEach {
     assert(num >= 1)
-
-    /**
-     * Runs before all tests.
-     */
-    final override def beforeAll() {
-        (1 to num).foreach((n: Int) => GridGain.start(config("node-" + n)))
-    }
-
-    /**
-     * Runs after all tests.
-     */
-    override def afterAll() {
-        (1 to num).foreach((n: Int) => GridGain.stop("node-" + n, false))
-    }
 
     /**
      * Gets grid configuration.
@@ -48,5 +32,36 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec
         cfg.setGridName(name)
 
         cfg
+    }
+
+    protected def openVisor() {
+        visor.open(config("visor-demo-node"), "n/a")
+    }
+
+    protected def closeVisorQuiet() {
+        if (visor.isConnected)
+            visor.close()
+    }
+
+    /**
+     * Runs before all tests.
+     */
+    override protected def beforeAll() {
+        (1 to num).foreach((n: Int) => G.start(config("node-" + n)))
+    }
+
+    /**
+     * Runs after all tests.
+     */
+    override def afterAll() {
+        (1 to num).foreach((n: Int) => G.stop("node-" + n, false))
+    }
+
+    override protected def beforeEach() {
+        openVisor()
+    }
+
+    override protected def afterEach() {
+        closeVisorQuiet()
     }
 }

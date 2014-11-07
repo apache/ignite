@@ -85,10 +85,12 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         int txSize,
         @Nullable Object grpLockKey,
         GridCacheVersion nearXidVer,
-        Map<UUID, Collection<UUID>> txNodes
+        Map<UUID, Collection<UUID>> txNodes,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
-            grpLockKey);
+            grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -139,10 +141,12 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long timeout,
         GridCacheContext<K, V> ctx,
         int txSize,
-        @Nullable Object grpLockKey
+        @Nullable Object grpLockKey,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
-            grpLockKey);
+            grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;

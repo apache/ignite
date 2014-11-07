@@ -10,11 +10,11 @@
 package org.gridgain.grid.tools.ant.beautifier;
 
 import jodd.jerry.*;
-import org.apache.commons.io.*;
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.taskdefs.*;
 
 import java.io.*;
+import java.nio.charset.*;
 import java.util.*;
 
 /**
@@ -125,7 +125,7 @@ public class GridJavadocAntTask extends MatchingTask {
     private void processFile(String file) throws IOException {
         assert file != null;
 
-        String fileContent = FileUtils.readFileToString(new File(file));
+        String fileContent = readFileToString(file, Charset.forName("UTF-8"));
 
         if (verify) {
             // Parse HTML.
@@ -351,9 +351,7 @@ public class GridJavadocAntTask extends MatchingTask {
      * @return {@code True} if it's a view-related HTML.
      */
     private boolean isViewHtml(String fileName) {
-        int sepIdx = fileName.lastIndexOf(File.separatorChar);
-
-        String baseName = sepIdx >= 0 && sepIdx < fileName.length() ? fileName.substring(sepIdx + 1) : fileName;
+        String baseName = new File(fileName).getName();
 
         return "index.html".equals(baseName) || baseName.contains("-");
     }
@@ -430,5 +428,29 @@ public class GridJavadocAntTask extends MatchingTask {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
             out.write(body.getBytes());
         }
+    }
+
+    /**
+     * Reads file to string using specified charset.
+     *
+     * @param fileName File name.
+     * @param charset File charset.
+     * @return File content.
+     * @throws IOException If error occurred.
+     */
+    public static String readFileToString(String fileName, Charset charset) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+
+        StringWriter output = new StringWriter();
+
+        char[] buf = new char[4096];
+
+        int n;
+
+        while ((n = input.read(buf)) != -1) {
+            output.write(buf, 0, n);
+        }
+
+        return output.toString();
     }
 }

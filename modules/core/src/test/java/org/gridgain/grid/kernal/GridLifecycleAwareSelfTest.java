@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.testframework.junits.common.*;
@@ -115,7 +115,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLogger extends GridLog4jLogger implements GridLifecycleAware {
+    private static class TestLogger extends GridJavaLogger implements GridLifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
@@ -143,7 +143,11 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestClientMessageInterceptor interceptor = new TestClientMessageInterceptor();
 
-        cfg.setClientMessageInterceptor(interceptor);
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setClientMessageInterceptor(interceptor);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         lifecycleAwares.add(interceptor);
 
@@ -155,7 +159,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestContextFactory ctxFactory = new TestContextFactory();
 
-        cfg.setRestTcpSslContextFactory(ctxFactory);
+        clientCfg.setRestTcpSslContextFactory(ctxFactory);
 
         lifecycleAwares.add(ctxFactory);
 

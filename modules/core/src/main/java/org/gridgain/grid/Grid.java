@@ -16,10 +16,13 @@ import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
+import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.streamer.*;
@@ -135,6 +138,20 @@ public interface Grid extends GridProjection, AutoCloseable {
     public GridScheduler scheduler();
 
     /**
+     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
+     *
+     * @return Instance of {@code GridSecurity} interface.
+     */
+    public GridSecurity security();
+
+    /**
+     * Gets an instance of {@code GridPortables} interface. Available in enterprise edition only.
+     *
+     * @return Instance of {@code GridPortables} interface.
+     */
+    public GridPortables portables();
+
+    /**
      * Gets an instance of Data Center Replication.
      *
      * @return Instance of Data Center Replication.
@@ -203,6 +220,13 @@ public interface Grid extends GridProjection, AutoCloseable {
      */
     @GridOnlyAvailableIn(HADOOP)
     public Collection<GridGgfs> ggfss();
+
+    /**
+     * Gets an instance of Hadoop.
+     *
+     * @return Hadoop instance.
+     */
+    public GridHadoop hadoop();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then

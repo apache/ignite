@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.marshaller.optimized.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -22,8 +23,8 @@ import java.util.*;
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
-    /** Unique marshaller protocol ID. */
-    public static final Byte PROTOCOL_ID = 1;
+    /** ID. */
+    public static final byte ID = 1;
 
     /** Optimized marshaller. */
     private final GridOptimizedMarshaller opMarsh;
@@ -59,13 +60,23 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(Object obj) throws IOException {
+    @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {
             if (!(obj instanceof GridClientMessage))
                 throw new IOException("Message serialization of given type is not supported: " +
                     obj.getClass().getName());
 
-            return opMarsh.marshal(obj);
+            byte[] bytes = opMarsh.marshal(obj);
+
+            ByteBuffer buf = ByteBuffer.allocate(off + bytes.length);
+
+            buf.position(off);
+
+            buf.put(bytes);
+
+            buf.flip();
+
+            return buf;
         }
         catch (GridException e) {
             throw new IOException(e);
@@ -80,10 +91,5 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         catch (GridException e) {
             throw new IOException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolId() {
-        return PROTOCOL_ID;
     }
 }

@@ -11,6 +11,7 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.spi.swapspace.noop.*;
 
 /**
  *
@@ -25,6 +26,7 @@ public class GridSpiSwapSpaceSelfTestSuite {
 
         suite.addTest(new TestSuite(GridFileSwapCompactionSelfTest.class));
         suite.addTest(new TestSuite(GridFileSwapSpaceSpiSelfTest.class));
+        suite.addTest(new TestSuite(GridNoopSwapSpaceSpiSelfTest.class));
 
         return suite;
     }

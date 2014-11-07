@@ -82,25 +82,36 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * Checks internal set maps are cleared.
      */
     private void assertSetResourcesCleared() {
+        assertSetIteratorsCleared();
+
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            GridCacheQueryManager queries = grid.internalCache(null).context().queries();
-
-            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
-
-            for (Object obj : map.values())
-                assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
-
             GridCacheDataStructuresManager ds = grid.internalCache(null).context().dataStructures();
 
-            map = GridTestUtils.getFieldValue(ds, "setsMap");
+            Map map = GridTestUtils.getFieldValue(ds, "setsMap");
 
             assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
             map = GridTestUtils.getFieldValue(ds, "setDataMap");
 
             assertEquals("Set data not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
+        }
+    }
+
+    /**
+     * Checks internal iterators maps are cleared.
+     */
+    private void assertSetIteratorsCleared() {
+        for (int i = 0; i < gridCount(); i++) {
+            GridKernal grid = (GridKernal) grid(i);
+
+            GridCacheQueryManager queries = grid.internalCache(null).context().queries();
+
+            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
+
+            for (Object obj : map.values())
+                assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
         }
     }
 
@@ -374,18 +385,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     private void testIterator(boolean collocated) throws Exception {
         final GridCacheSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                set0.iterator();
-
-                return null;
-            }
-        }, UnsupportedOperationException.class, null);
-
         for (int i = 0; i < gridCount(); i++) {
             GridCacheSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
 
-            assertFalse(set.iteratorEx().hasNext());
+            assertFalse(set.iterator().hasNext());
         }
 
         int cnt = 0;
@@ -407,7 +410,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         Collection<Integer> data = new HashSet<>(cnt);
 
-        GridCloseableIterator<Integer> iter = set0.iteratorEx();
+        Iterator<Integer> iter = set0.iterator();
 
         for (int i = 0; i < cnt; i++)
             assertTrue(data.add(iter.next()));
@@ -426,7 +429,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             GridCacheSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
 
-            assertFalse(set.iteratorEx().hasNext());
+            assertFalse(set.iterator().hasNext());
         }
 
         // Iterator.remove().
@@ -434,7 +437,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < 10; i++)
             assertTrue(set0.add(i));
 
-        iter = set0.iteratorEx();
+        iter = set0.iterator();
 
         while (iter.hasNext()) {
             Integer val = iter.next();
@@ -468,34 +471,69 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"BusyWait", "ErrorNotRethrown"})
     private void testIteratorClose(boolean collocated) throws Exception {
-        final GridCacheSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        GridCacheSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
 
-        for (int i = 0; i < 500; i++)
+        for (int i = 0; i < 5000; i++)
             assertTrue(set0.add(i));
 
-        final GridCloseableIterator<Integer> iter = set0.iteratorEx();
+        createIterators(set0);
 
-        assertFalse(iter.isClosed());
+        System.gc();
 
-        assertTrue(iter.hasNext());
+        for (int i = 0; i < 10; i++) {
+            try {
+                set0.size(); // Trigger weak queue poll.
 
-        iter.next();
-
-        assertTrue(iter.hasNext());
-
-        iter.close();
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                iter.next();
-
-                return null;
+                assertSetIteratorsCleared();
             }
-        }, NoSuchElementException.class, null);
+            catch (AssertionFailedError e) {
+                if (i == 9)
+                    throw e;
 
-        assertTrue(iter.isClosed());
-        assertFalse(iter.hasNext());
+                log.info("Set iterators not cleared, will wait");
+
+                Thread.sleep(500);
+            }
+        }
+
+        // Check iterators are closed on set remove.
+
+        createIterators(set0);
+
+        int idx = gridCount() > 1 ? 1 : 0;
+
+        cache(idx).dataStructures().removeSet(SET_NAME);
+
+        for (int i = 0; i < 10; i++) {
+            try {
+                assertSetIteratorsCleared();
+            }
+            catch (AssertionFailedError e) {
+                if (i == 9)
+                    throw e;
+
+                log.info("Set iterators not cleared, will wait");
+
+                Thread.sleep(500);
+            }
+        }
+    }
+
+    /**
+     * @param set Set.
+     */
+    private void createIterators(GridCacheSet<Integer> set) {
+        for (int i = 0; i < 10; i++) {
+            Iterator<Integer> iter = set.iterator();
+
+            assertTrue(iter.hasNext());
+
+            iter.next();
+
+            assertTrue(iter.hasNext());
+        }
     }
 
     /**
@@ -658,10 +696,8 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
                                 break;
 
                             case 3:
-                                Iterator<Integer> iter = set.iteratorEx();
-
-                                while (iter.hasNext())
-                                    assertNotNull(iter.next());
+                                for (Integer val : set)
+                                    assertNotNull(val);
 
                                 break;
 
@@ -819,7 +855,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     private void assertSetContent(GridCacheSet<Integer> set, int size) {
         Collection<Integer> data = new HashSet<>(size);
 
-        for (Integer val : set.iteratorEx())
+        for (Integer val : set)
             assertTrue(data.add(val));
 
         assertEquals(size, data.size());

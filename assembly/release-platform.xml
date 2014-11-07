@@ -36,7 +36,8 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>
@@ -45,14 +46,6 @@
             <outputDirectory>/config</outputDirectory>
             <includes>
                 <include>hadoop/*</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>docs</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <includes>
-                <include>*.pdf</include>
             </includes>
         </fileSet>
 

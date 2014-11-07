@@ -17,18 +17,6 @@ import org.gridgain.grid.ggfs.*;
  * or passed to map-reduce task directly when using Hadoop driver for GGFS file system:
  * <ul>
  *     <li>
- *         {@code fs.ggfs.[name].endpoint.type} - this parameter specifies IPC endpoint type. In case not provided,
- *         "tcp" will be used for Windows platforms and "shmem" for all the other platforms.
- *     </li>
- *     <li>
- *         {@code fs.ggfs.[name].endpoint.host} - optional name of loopback interface to which IPC endpoint is bound.
- *         In case not provided, IPC endpoint will be bound to 127.0.0.1 IP address by default.
- *     </li>
- *     <li>
- *         {@code fs.ggfs.[name].endpoint.port} - this parameter specifies IPC endpoint port. In case not provided,
- *         default port {@link GridGgfsConfiguration#DFLT_IPC_PORT} will be used.
- *     </li>
- *     <li>
  *         {@code fs.ggfs.[name].open.sequential_reads_before_prefetch} - this parameter overrides
  *         the one specified in {@link GridGgfsConfiguration#getSequentialReadsBeforePrefetch()}
  *         GGFS data node configuration property.
@@ -49,29 +37,21 @@ import org.gridgain.grid.ggfs.*;
  *         to a single data node. Default value is {@code true}.
  *     </li>
  * </ul>
- * Where {@code [name]} is arbitrary file system name which you specify in file system URI authority part. E.g. in
- * case your file system URI is {@code ggfs://ipc} then {@code name} will be {@code ipc}.
+ * Where {@code [name]} is file system endpoint which you specify in file system URI authority part. E.g. in
+ * case your file system URI is {@code ggfs://127.0.0.1:10500} then {@code name} will be {@code 127.0.0.1:10500}.
  * <p>
  * Sample configuration that can be placed to {@code core-site.xml} file:
  * <pre name="code" class="xml">
  *     &lt;property&gt;
- *         &lt;name&gt;fs.ggfs.ipc.endpoint.type&lt;/name&gt;
- *         &lt;value&gt;shmem&lt;/value&gt;
- *     &lt;/property&gt;
- *     &lt;property&gt;
- *         &lt;name&gt;fs.ggfs.ipc.endpoint.port&lt;/name&gt;
- *         &lt;value&gt;10501&lt;/value&gt;
- *     &lt;/property&gt;
- *     &lt;property&gt;
- *         &lt;name&gt;fs.ggfs.ipc.log.enabled&lt;/name&gt;
+ *         &lt;name&gt;fs.ggfs.127.0.0.1:10500.log.enabled&lt;/name&gt;
  *         &lt;value&gt;true&lt;/value&gt;
  *     &lt;/property&gt;
  *     &lt;property&gt;
- *         &lt;name&gt;fs.ggfs.ipc.log.dir&lt;/name&gt;
+ *         &lt;name&gt;fs.ggfs.127.0.0.1:10500.log.dir&lt;/name&gt;
  *         &lt;value&gt;/home/gridgain/log/sampling&lt;/value&gt;
  *     &lt;/property&gt;
  *     &lt;property&gt;
- *         &lt;name&gt;fs.ggfs.ipc.log.batch_size&lt;/name&gt;
+ *         &lt;name&gt;fs.ggfs.127.0.0.1:10500.log.batch_size&lt;/name&gt;
  *         &lt;value&gt;16&lt;/value&gt;
  *     &lt;/property&gt;
  * </pre>
@@ -80,18 +60,9 @@ import org.gridgain.grid.ggfs.*;
  * hadoop jar myjarfile.jar MyMapReduceJob -Dfs.ggfs.open.sequential_reads_before_prefetch=4
  * </pre>
  * If you want to use these parameters in code, then you have to substitute you file system name in it. The easiest
- * way to do that is {@code String.format(PARAM_GGFS_ENDPOINT_TYPE, [name])}.
+ * way to do that is {@code String.format(PARAM_GGFS_COLOCATED_WRITES, [name])}.
  */
 public class GridGgfsHadoopParameters {
-    /** Parameter name for IPC endpoint type. */
-    public static final String PARAM_GGFS_ENDPOINT_TYPE = "fs.ggfs.%s.endpoint.type";
-
-    /** Parameter name for IPC endpoint host. */
-    public static final String PARAM_GGFS_ENDPOINT_HOST = "fs.ggfs.%s.endpoint.host";
-
-    /** Parameter name for IPC endpoint port. */
-    public static final String PARAM_GGFS_ENDPOINT_PORT = "fs.ggfs.%s.endpoint.port";
-
     /** Parameter name for control over file colocation write mode. */
     public static final String PARAM_GGFS_COLOCATED_WRITES = "fs.ggfs.%s.colocated.writes";
 

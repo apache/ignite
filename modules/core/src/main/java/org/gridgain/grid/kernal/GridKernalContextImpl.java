@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.authentication.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -26,11 +26,15 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.service.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -57,6 +61,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
@@ -109,7 +114,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridAuthenticationManager authMgr;
+    private GridSecurityManager authMgr;
 
     /** */
     @GridToStringExclude
@@ -158,6 +163,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
+    private GridServiceProcessor svcProc;
+
+    /** */
+    @GridToStringInclude
     private GridCacheProcessor cacheProc;
 
     /** */
@@ -174,11 +183,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridEmailProcessor emailProc;
+    private GridEmailProcessorAdapter emailProc;
 
     /** */
     @GridToStringInclude
-    private GridScheduleProcessor scheduleProc;
+    private GridScheduleProcessorAdapter scheduleProc;
 
     /** */
     @GridToStringInclude
@@ -191,6 +200,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     @GridToStringInclude
     private GridGgfsProcessorAdapter ggfsProc;
+
+    /** */
+    @GridToStringInclude
+    private GridGgfsHelper ggfsHelper;
 
     /** */
     @GridToStringInclude
@@ -218,7 +231,19 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridHadoopProcessorAdapter hadoopProc;
+
+    /** */
+    @GridToStringExclude
     private GridVersionProcessor verProc;
+
+    /** */
+    @GridToStringExclude
+    private GridPortableProcessor portableProc;
+
+    /** */
+    @GridToStringExclude
+    private GridSpringProcessor spring;
 
     /** */
     @GridToStringExclude
@@ -229,12 +254,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     private GridProduct product;
-
-    /** */
-    private String buildDate;
-
-    /** */
-    private String ver;
 
     /** */
     private GridConfiguration cfg;
@@ -264,12 +283,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /**
      * Creates new kernal context.
      *
+     * @param log Logger.
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
-    protected GridKernalContextImpl(GridEx grid, GridConfiguration cfg, GridKernalGateway gw, boolean ent) {
+    @SuppressWarnings("TypeMayBeWeakened")
+    protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
+        boolean ent) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -278,6 +300,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.cfg = cfg;
         this.gw = gw;
         this.ent = ent;
+
+        try {
+            spring = SPRING.create(false);
+        }
+        catch (GridException ignored) {
+            if (log != null && log.isDebugEnabled())
+                log.debug("Failed to load spring component, will not be able to extract userVersion from " +
+                    "META-INF/gridgain.xml.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -315,8 +346,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridAuthenticationManager)
-            authMgr = (GridAuthenticationManager)comp;
+        else if (comp instanceof GridSecurityManager)
+            authMgr = (GridSecurityManager)comp;
         else if (comp instanceof GridSecureSessionManager)
             sesMgr = (GridSecureSessionManager)comp;
         else if (comp instanceof GridLoadBalancerManager)
@@ -326,10 +357,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
-            /*
-            * Processors.
-            * ==========
-            */
+        /*
+         * Processors.
+         * ==========
+         */
 
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
@@ -349,12 +380,14 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
-        else if (comp instanceof GridEmailProcessor)
-            emailProc = (GridEmailProcessor)comp;
+        else if (comp instanceof GridEmailProcessorAdapter)
+            emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
-        else if (comp instanceof GridScheduleProcessor)
-            scheduleProc = (GridScheduleProcessor)comp;
+        else if (comp instanceof GridServiceProcessor)
+            svcProc = (GridServiceProcessor)comp;
+        else if (comp instanceof GridScheduleProcessorAdapter)
+            scheduleProc = (GridScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
@@ -377,39 +410,26 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-
+        else if (comp instanceof GridHadoopProcessorAdapter)
+            hadoopProc = (GridHadoopProcessorAdapter)comp;
+        else if (comp instanceof GridPortableProcessor)
+            portableProc = (GridPortableProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
     }
 
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return ver;
-    }
-
     /**
-     * Sets version.
-     *
-     * @param ver Version.
+     * @param helper Helper to add.
      */
-    public void version(String ver) {
-        this.ver = ver;
-    }
+    public void addHelper(Object helper) {
+        assert helper != null;
 
-    /** {@inheritDoc} */
-    @Override public String build() {
-        return buildDate;
-    }
-
-    /**
-     * Sets build date.
-     *
-     * @param buildDate Build date.
-     */
-    public void build(String buildDate) {
-        this.buildDate = buildDate;
+        if (helper instanceof GridGgfsHelper)
+            ggfsHelper = (GridGgfsHelper)helper;
+        else
+            assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -440,7 +460,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public Grid grid() {
+    @Override public GridEx grid() {
         return grid;
     }
 
@@ -495,12 +515,17 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridServiceProcessor service() {
+        return svcProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridEmailProcessor email() {
+    @Override public GridEmailProcessorAdapter email() {
         return emailProc;
     }
 
@@ -510,7 +535,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduleProcessor schedule() {
+    @Override public GridScheduleProcessorAdapter schedule() {
         return scheduleProc;
     }
 
@@ -555,7 +580,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridAuthenticationManager auth() {
+    @Override public GridSecurityManager security() {
         return authMgr;
     }
 
@@ -611,6 +636,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridGgfsHelper ggfsHelper() {
+        return ggfsHelper;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
     }
@@ -621,6 +651,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopProcessorAdapter hadoop() {
+        return hadoopProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService drPool() {
         return grid.drPool();
     }
@@ -628,6 +663,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridVersionProcessor versionConverter() {
         return verProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableProcessor portable() {
+        return portableProc;
     }
 
     /** {@inheritDoc} */
@@ -701,6 +741,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public String userVersion(ClassLoader ldr) {
+        return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, grid.name());
     }
@@ -711,10 +756,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

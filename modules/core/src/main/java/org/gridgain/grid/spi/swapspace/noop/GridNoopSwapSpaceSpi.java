@@ -32,9 +32,7 @@ public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
-        U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi or GridLevelDbSwapSpaceSpi " +
-            "(must have Microsoft Visual C++ Redistributable Package installed).",
-            "Swap space is disabled (to enable use GridFileSwapSpaceSpi or GridLevelDbSwapSpaceSpi).");
+        U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi.");
     }
 
     /** {@inheritDoc} */

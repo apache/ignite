@@ -27,7 +27,9 @@ public class GridJettyRestProcessorSignedSelfTest extends GridJettyRestProcessor
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestSecretKey(REST_SECRET_KEY);
+        assert cfg.getClientConnectionConfiguration() != null;
+
+        cfg.getClientConnectionConfiguration().setRestSecretKey(REST_SECRET_KEY);
 
         return cfg;
     }

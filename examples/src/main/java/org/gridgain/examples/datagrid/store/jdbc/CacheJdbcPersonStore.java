@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
@@ -236,9 +235,15 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      * @param conn Allocated connection.
      */
     private void end(@Nullable GridCacheTx tx, @Nullable Connection conn) {
-        if (tx == null)
+        if (tx == null && conn != null) {
             // Close connection right away if there is no transaction.
-            U.closeQuiet(conn);
+            try {
+                conn.close();
+            }
+            catch (SQLException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**

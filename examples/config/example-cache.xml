@@ -25,10 +25,10 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
-    <bean id="grid.cfg" scope="singleton" class="org.gridgain.grid.GridConfiguration">
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
@@ -68,6 +68,63 @@
                     <property name="backups" value="1"/>
                 </bean>
 
+                <!--
+                    Partitioned cache example configuration with portable objects enabled.
+                    Used in .NET, C++ and Java client examples that are available only in
+                    enterprise edition.
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_portable"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="backups" value="1"/>
+                    <property name="portableEnabled" value="true"/>
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <property name="typeMetadata">
+                                <list>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="Organization"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="EmployeeKey"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="organizationId" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                    </bean>
+                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                        <property name="type" value="Employee"/>
+                                        <property name="ascendingFields">
+                                            <map>
+                                                <entry key="address.zip" value="java.lang.Integer"/>
+                                            </map>
+                                        </property>
+                                        <property name="queryFields">
+                                            <map>
+                                                <entry key="name" value="java.lang.String"/>
+                                                <entry key="salary" value="java.lang.Long"/>
+                                            </map>
+                                        </property>
+                                        <property name="textFields">
+                                            <list>
+                                                <value>address.street</value>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+
                 <!-- Replicated cache example configuration (Atomic mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="replicated"/>
@@ -82,12 +139,12 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
 
-                  <!-- Local cache example configuration (Atomic mode). -->
-                  <bean parent="cache-template">
-                      <property name="name" value="local"/>
-                      <property name="cacheMode" value="LOCAL"/>
-                      <property name="atomicityMode" value="ATOMIC"/>
-                  </bean>
+                <!-- Local cache example configuration (Atomic mode). -->
+                <bean parent="cache-template">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                </bean>
 
                 <!-- Local cache example configuration (Transactional mode). -->
                 <bean parent="cache-template">
@@ -102,6 +159,11 @@
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
+                    <!--
+                        GridGain provides several options for automatic discovery that can be used
+                        instead os static IP based discovery. For information on all options refer
+                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
+                    -->
                     <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
                     <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
@@ -141,4 +203,3 @@
         <property name="queryIndexEnabled" value="true"/>
     </bean>
 </beans>
-

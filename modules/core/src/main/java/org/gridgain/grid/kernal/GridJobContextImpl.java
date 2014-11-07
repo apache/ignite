@@ -184,7 +184,12 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
 
                             @Override public void onTimeout() {
                                 try {
-                                    ctx.config().getExecutorService().submit(new Runnable() {
+                                    ExecutorService execSvc = job.isInternal() ?
+                                        ctx.config().getManagementExecutorService() : ctx.config().getExecutorService();
+
+                                    assert execSvc != null;
+
+                                    execSvc.submit(new Runnable() {
                                         @Override public void run() {
                                             callcc();
                                         }

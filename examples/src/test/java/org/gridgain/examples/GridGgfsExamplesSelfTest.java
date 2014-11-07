@@ -12,11 +12,11 @@ package org.gridgain.examples;
 import org.gridgain.examples.ggfs.*;
 import org.gridgain.examples.ggfs.filesystem.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.nio.file.*;
+import java.io.*;
 
 /**
  * GGFS examples self test.
@@ -36,11 +36,10 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        String cfgPath = CLIENT_LIGHT_GRID_NAME.equals(gridName) ?
-            (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
+        String cfgPath = gridName == null ? (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
             GGFS_NO_ENDPOINT_CFG;
 
-        GridConfiguration cfg = G.loadConfiguration(cfgPath).get1();
+        GridConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
 
         cfg.setGridName(gridName);
 
@@ -65,13 +64,13 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testHadoopFileSystemExample() throws Exception {
-        Path path = U.resolveGridGainPath("examples/config").toPath();
+        File cpDir = U.resolveGridGainPath("examples/config/filesystem");
 
-        startGrid(CLIENT_LIGHT_GRID_NAME);
+        startGrid(null);
 
         try {
             // Execute light version of this benchmark in order to ensure that it work.
-            GgfsFileSystemExample.main(new String[]{Paths.get(U.getGridGainHome()).relativize(path).toString()});
+            GgfsFileSystemExample.main(new String[]{ cpDir.getAbsolutePath() });
         }
         finally {
             stopAllGrids();

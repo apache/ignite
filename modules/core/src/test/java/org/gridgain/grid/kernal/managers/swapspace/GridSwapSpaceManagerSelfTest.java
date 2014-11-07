@@ -62,7 +62,6 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @throws Exception If test failed.
      */
     public void testSize() throws Exception {

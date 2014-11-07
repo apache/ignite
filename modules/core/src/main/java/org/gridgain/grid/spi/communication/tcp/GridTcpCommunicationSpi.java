@@ -75,7 +75,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <li>Node local IP address (see {@link #setLocalAddress(String)})</li>
  * <li>Node local port number (see {@link #setLocalPort(int)})</li>
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
- * <li>Port resolver (see {@link #setSpiPortResolver(GridSpiPortResolver)}</li>
  * <li>Connection buffer flush frequency (see {@link #setConnectionBufferFlushFrequency(long)})</li>
  * <li>Connection buffer size (see {@link #setConnectionBufferSize(int)})</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
@@ -153,8 +152,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /** Node attribute that is mapped to node port number (value is <tt>comm.shmem.tcp.port</tt>). */
     public static final String ATTR_SHMEM_PORT = "comm.shmem.tcp.port";
 
-    /** Node attribute that is mapped to node's external ports numbers (value is <tt>comm.tcp.ext-ports</tt>). */
-    public static final String ATTR_EXT_PORTS = "comm.tcp.ext-ports";
+    /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
+    public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
@@ -170,6 +169,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Default value for connection buffer size (value is <tt>0</tt>). */
     public static final int DFLT_CONN_BUF_SIZE = 0;
+
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
     /** Default connection timeout (value is <tt>1000</tt>ms). */
     public static final long DFLT_CONN_TIMEOUT = 1000;
@@ -232,15 +234,15 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             }
 
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                if (!ses.accepted()) {
-                    UUID id = ses.meta(NODE_ID_META);
+                UUID id = ses.meta(NODE_ID_META);
 
-                    if (id != null) {
-                        GridCommunicationClient rmv = clients.remove(id);
+                if (id != null) {
+                    GridCommunicationClient rmv = clients.get(id);
 
-                        if (rmv != null)
-                            rmv.forceClose();
-                    }
+                    if (rmv instanceof GridTcpNioCommunicationClient &&
+                        ((GridTcpNioCommunicationClient)rmv).session() == ses &&
+                        clients.remove(id, rmv))
+                        rmv.forceClose();
                 }
             }
 
@@ -379,10 +381,10 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Socket send buffer. */
-    private int sockSndBuf;
+    private int sockSndBuf = DFLT_SOCK_BUF_SIZE;
 
     /** Socket receive buffer. */
-    private int sockRcvBuf;
+    private int sockRcvBuf = DFLT_SOCK_BUF_SIZE;
 
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
@@ -438,8 +440,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
-    /** Port resolver. */
-    private GridSpiPortResolver portRsvr;
+    /** Address resolver. */
+    private GridAddressResolver addrRslvr;
 
     /** Local node ID message. */
     private NodeIdMessage nodeIdMsg;
@@ -555,6 +557,28 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     };
 
     /**
+     * Sets address resolver.
+     *
+     * @param addrRslvr Address resolver.
+     */
+    @GridSpiConfiguration(optional = true)
+    @GridAddressResolverResource
+    public void setAddressResolver(GridAddressResolver addrRslvr) {
+        // Injection should not override value already set by Spring or user.
+        if (this.addrRslvr == null)
+            this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Gets address resolver.
+     *
+     * @return Address resolver.
+     */
+    public GridAddressResolver getAddressResolver() {
+        return addrRslvr;
+    }
+
+    /**
      * Sets local host address for socket binding. Note that one node could have
      * additional addresses beside the loopback one. This configuration
      * parameter is optional.
@@ -635,21 +659,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /** {@inheritDoc} */
     @Override public int getSharedMemoryPort() {
         return shmemPort;
-    }
-
-    /**
-     * Sets port resolver for ports mapping determination.
-     *
-     * @param portRsvr Port resolver.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setSpiPortResolver(GridSpiPortResolver portRsvr) {
-        this.portRsvr = portRsvr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSpiPortResolver getSpiPortResolver() {
-        return portRsvr;
     }
 
     /**
@@ -857,8 +866,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /**
      * Sets receive buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves buffer unchanged after
-     * socket creation (OS defaults).
+     * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockRcvBuf Socket receive buffer size.
      */
@@ -875,8 +883,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /**
      * Sets send buffer size for sockets created or accepted by this SPI.
      * <p>
-     * If not provided, default is {@code 0} which leaves the buffer unchanged
-     * after socket creation (OS defaults).
+     * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockSndBuf Socket send buffer size.
      */
@@ -1064,28 +1071,19 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             throw new GridSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
-        Collection<Integer> extPorts = null;
-
-        if (portRsvr != null) {
-            try {
-                extPorts = portRsvr.getExternalPorts(boundTcpPort);
-            }
-            catch (GridException e) {
-                throw new GridSpiException("Failed to get mapped external ports for bound port [portRsvr=" + portRsvr +
-                    ", boundTcpPort=" + boundTcpPort + ']', e);
-            }
-        }
-
         // Set local node attributes.
         try {
             GridBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
+
+            Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
+                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
             return F.asMap(
                 createSpiAttributeName(ATTR_ADDRS), addrs.get1(),
                 createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
                 createSpiAttributeName(ATTR_PORT), boundTcpPort,
                 createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
-                createSpiAttributeName(ATTR_EXT_PORTS), extPorts);
+                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (IOException | GridException e) {
             throw new GridSpiException("Failed to resolve local host to addresses: " + locHost, e);
@@ -1412,8 +1410,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            boolean closeOnRelease = true;
-
             try {
                 client = reserveClient(node);
 
@@ -1424,23 +1420,18 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                 client.sendMessage(nodeId, msg);
 
-                sentMsgsCnt.increment();
+                client.release();
 
-                closeOnRelease = false;
+                client = null;
+
+                sentMsgsCnt.increment();
             }
             catch (GridException e) {
                 throw new GridSpiException("Failed to send message to remote node: " + node, e);
             }
             finally {
-                if (client != null) {
-                    if (closeOnRelease) {
-                        client.forceClose();
-
-                        clients.remove(node.id(), client);
-                    }
-                    else
-                        client.release();
-                }
+                if (client != null && clients.remove(node.id(), client))
+                    client.forceClose();
             }
         }
     }
@@ -1610,39 +1601,35 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @throws GridException If failed.
      */
     protected GridCommunicationClient createTcpClient(GridNode node) throws GridException {
-        // Try to connect first on bound address.
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
-
-        if (F.isEmpty(rmtAddrs0))
-            throw new GridException("Failed to send message to the destination node." +
-                "Node doesn't have any TCP communication addresses. Check configuration and make sure that you use " +
-                "the same communication SPI on all nodes. Remote node id: " + node.id());
-
-        final boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
-
-        List<InetAddress> rmtAddrs = new ArrayList<>(U.toInetAddresses(rmtAddrs0, rmtHostNames0));
-
-        Collections.sort(rmtAddrs, inetAddressesComparator(sameHost));
-
-        Collection<Integer> ports = new LinkedHashSet<>();
-
-        // Try to connect first on bound port.
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));
+        Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
 
-        if (boundPort != null)
-            ports.add(boundPort);
+        boolean isRmtAddrsExist = (!F.isEmpty(rmtAddrs0) && boundPort != null);
+        boolean isExtAddrsExist = !F.isEmpty(extAddrs);
 
-        // Then on mapped external ports, if any.
-        Collection<Integer> extPorts = node.attribute(createSpiAttributeName(ATTR_EXT_PORTS));
-
-        if (extPorts != null)
-            ports.addAll(extPorts);
-
-        if (ports.isEmpty())
-            throw new GridSpiException("Failed to send message to the destination node. " +
-                "Node does not have TCP communication port set up. Check configuration and make sure " +
+        if (!isRmtAddrsExist && !isExtAddrsExist)
+            throw new GridException("Failed to send message to the destination node. Node doesn't have any " +
+                "TCP communication addresses or mapped external addresses. Check configuration and make sure " +
                 "that you use the same communication SPI on all nodes. Remote node id: " + node.id());
+
+        List<InetSocketAddress> addrs;
+
+        // Try to connect first on bound addresses.
+        if (isRmtAddrsExist) {
+            addrs = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
+
+            boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
+
+            Collections.sort(addrs, inetAddressesComparator(sameHost));
+        }
+        else
+            addrs = new ArrayList<>();
+
+        // Then on mapped external addresses.
+        if (isExtAddrsExist)
+            addrs.addAll(extAddrs);
 
         boolean conn = false;
         GridCommunicationClient client = null;
@@ -1650,143 +1637,136 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         int connectAttempts = 1;
 
-        for (InetAddress addr : rmtAddrs) {
-            for (Integer port : ports) {
-                long connTimeout0 = connTimeout;
+        for (InetSocketAddress addr : addrs) {
+            long connTimeout0 = connTimeout;
 
-                int attempt = 1;
+            int attempt = 1;
 
-                while (!conn) { // Reconnection on handshake timeout.
-                    try {
-                        if (asyncSnd) {
-                            SocketChannel ch = SocketChannel.open();
+            while (!conn) { // Reconnection on handshake timeout.
+                try {
+                    if (asyncSnd) {
+                        SocketChannel ch = SocketChannel.open();
 
-                            ch.configureBlocking(true);
+                        ch.configureBlocking(true);
 
-                            ch.socket().setTcpNoDelay(tcpNoDelay);
-                            ch.socket().setKeepAlive(true);
+                        ch.socket().setTcpNoDelay(tcpNoDelay);
+                        ch.socket().setKeepAlive(true);
 
-                            if (sockRcvBuf > 0)
-                                ch.socket().setReceiveBufferSize(sockRcvBuf);
+                        if (sockRcvBuf > 0)
+                            ch.socket().setReceiveBufferSize(sockRcvBuf);
 
-                            if (sockSndBuf > 0)
-                                ch.socket().setSendBufferSize(sockSndBuf);
+                        if (sockSndBuf > 0)
+                            ch.socket().setSendBufferSize(sockSndBuf);
 
-                            ch.socket().connect(new InetSocketAddress(addr, port), (int)connTimeout);
+                        ch.socket().connect(addr, (int)connTimeout);
 
-                            safeHandshake(ch, node.id(), connTimeout0);
+                        safeHandshake(ch, node.id(), connTimeout0);
 
-                            UUID diffVerNodeId = null;
+                        UUID diffVerNodeId = null;
 
-                            GridProductVersion locVer = getSpiContext().localNode().version();
-                            GridProductVersion rmtVer = node.version();
+                        GridProductVersion locVer = getSpiContext().localNode().version();
+                        GridProductVersion rmtVer = node.version();
 
-                            if (!locVer.equals(rmtVer))
-                                diffVerNodeId = node.id();
+                        if (!locVer.equals(rmtVer))
+                            diffVerNodeId = node.id();
 
-                            GridNioSession ses = nioSrvr.createSession(
-                                ch,
-                                F.asMap(
-                                    NODE_ID_META, node.id(),
-                                    GridNioServer.DIFF_VER_NODE_ID_META_KEY, diffVerNodeId)
-                            ).get();
+                        GridNioSession ses = nioSrvr.createSession(
+                            ch,
+                            F.asMap(
+                                NODE_ID_META, node.id(),
+                                GridNioServer.DIFF_VER_NODE_ID_META_KEY, diffVerNodeId)
+                        ).get();
 
-                            client = new GridTcpNioCommunicationClient(ses);
-                        }
-                        else {
-                            client = new GridTcpCommunicationClient(
-                                metricsLsnr,
-                                msgWriter,
-                                addr,
-                                port,
-                                locHost,
-                                connTimeout,
-                                tcpNoDelay,
-                                sockRcvBuf,
-                                sockSndBuf,
-                                connBufSize,
-                                minBufferedMsgCnt,
-                                bufSizeRatio);
-
-                            safeHandshake(client, node.id(), connTimeout0);
-                        }
-
-                        conn = true;
+                        client = new GridTcpNioCommunicationClient(ses);
                     }
-                    catch (HandshakeTimeoutException e) {
-                        if (client != null) {
-                            client.forceClose();
+                    else {
+                        client = new GridTcpCommunicationClient(
+                            metricsLsnr,
+                            msgWriter,
+                            addr,
+                            locHost,
+                            connTimeout,
+                            tcpNoDelay,
+                            sockRcvBuf,
+                            sockSndBuf,
+                            connBufSize,
+                            minBufferedMsgCnt,
+                            bufSizeRatio);
 
-                            client = null;
-                        }
-
-                        if (log.isDebugEnabled())
-                            log.debug(
-                                "Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
-                                    ", addr=" + addr + ", port=" + port + ", err=" + e + ']');
-
-                        if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
-                            if (log.isDebugEnabled())
-                                log.debug("Handshake timedout (will stop attempts to perform the handshake) " +
-                                    "[timeout=" + connTimeout0 + ", maxConnTimeout=" + maxConnTimeout +
-                                    ", attempt=" + attempt + ", reconCnt=" + reconCnt +
-                                    ", err=" + e.getMessage() + ", addr=" + addr + ']');
-
-                            if (errs == null)
-                                errs = new GridException("Failed to connect to node (is node still alive?). " +
-                                    "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
-                                    "in order to prevent parties from waiting forever in case of network issues " +
-                                    "[nodeId=" + node.id() + ", addrs=" + rmtAddrs + ']');
-
-                            errs.addSuppressed(e);
-
-                            break;
-                        }
-                        else {
-                            attempt++;
-
-                            connTimeout0 *= 2;
-
-                            // Continue loop.
-                        }
+                        safeHandshake(client, node.id(), connTimeout0);
                     }
-                    catch (Exception e) {
-                        if (client != null) {
-                            client.forceClose();
 
-                            client = null;
-                        }
+                    conn = true;
+                }
+                catch (HandshakeTimeoutException e) {
+                    if (client != null) {
+                        client.forceClose();
 
+                        client = null;
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug(
+                            "Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                                ", addr=" + addr + ", err=" + e + ']');
+
+                    if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
                         if (log.isDebugEnabled())
-                            log.debug("Client creation failed [addr=" + addr + ", port=" + port +
-                                ", err=" + e + ']');
-
-                        if (X.hasCause(e, SocketTimeoutException.class))
-                            LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
-                                "configuration property) [addr=" + addr + ", port=" + port + ']');
+                            log.debug("Handshake timedout (will stop attempts to perform the handshake) " +
+                                "[timeout=" + connTimeout0 + ", maxConnTimeout=" + maxConnTimeout +
+                                ", attempt=" + attempt + ", reconCnt=" + reconCnt +
+                                ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         if (errs == null)
                             errs = new GridException("Failed to connect to node (is node still alive?). " +
                                 "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + rmtAddrs + ']');
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                        errs.addSuppressed(e);
-
-                        // Reconnect for the second time, if connection is not established.
-                        if (connectAttempts < 2 &&
-                            (e instanceof ConnectException || X.hasCause(e, ConnectException.class))) {
-                            connectAttempts++;
-
-                            continue;
-                        }
+                        errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
 
                         break;
                     }
-                }
+                    else {
+                        attempt++;
 
-                if (conn)
+                        connTimeout0 *= 2;
+
+                        // Continue loop.
+                    }
+                }
+                catch (Exception e) {
+                    if (client != null) {
+                        client.forceClose();
+
+                        client = null;
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
+
+                    if (X.hasCause(e, SocketTimeoutException.class))
+                        LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
+                            "configuration property) [addr=" + addr + ']');
+
+                    if (errs == null)
+                        errs = new GridException("Failed to connect to node (is node still alive?). " +
+                            "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                            "in order to prevent parties from waiting forever in case of network issues " +
+                            "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
+
+                    errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
+
+                    // Reconnect for the second time, if connection is not established.
+                    if (connectAttempts < 2 &&
+                        (e instanceof ConnectException || X.hasCause(e, ConnectException.class))) {
+                        connectAttempts++;
+
+                        continue;
+                    }
+
                     break;
+                }
             }
 
             if (conn)
@@ -1797,9 +1777,10 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote node (make sure that destination node is alive and " +
-                    "operating system firewall is disabled on local and remote host) " +
-                    "[addrs=" + rmtAddrs + ", ports=" + ports + ']');
+                LT.warn(log, null, "Failed to connect to a remote node " +
+                    "(make sure that destination node is alive and " +
+                    "operating system firewall is disabled on local and remote hosts) " +
+                    "[addrs=" + addrs + ']');
 
             throw errs;
         }
@@ -1905,11 +1886,11 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
      * @return Comparator.
      */
-    private static Comparator<InetAddress> inetAddressesComparator(final boolean sameHost) {
-        return new Comparator<InetAddress>() {
-            @Override public int compare(InetAddress addr1, InetAddress addr2) {
-                boolean addr1Loopback = addr1.isLoopbackAddress();
-                boolean addr2Loopback = addr2.isLoopbackAddress();
+    private static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost) {
+        return new Comparator<InetSocketAddress>() {
+            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
+                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
+                boolean addr2Loopback = addr2.getAddress().isLoopbackAddress();
 
                 // No need to reorder.
                 if (addr1Loopback == addr2Loopback)

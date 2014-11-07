@@ -22,9 +22,11 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.lang.ref.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -67,6 +69,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** Removed flag. */
     private volatile boolean rmvd;
 
+    /** Iterators weak references queue. */
+    private final ReferenceQueue<SetIterator<?>> itRefQueue = new ReferenceQueue<>();
+
+    /** Iterators futures. */
+    private final Map<WeakReference<SetIterator<?>>, GridCacheQueryFuture<?>> itFuts = new ConcurrentHashMap8<>();
+
     /**
      * @param ctx Cache context.
      * @param name Set name.
@@ -105,7 +113,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     @SuppressWarnings("unchecked")
     @Override public int size() {
         try {
-            checkRemoved();
+            onAccess();
 
             if (ctx.isLocal() || ctx.isReplicated()) {
                 GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
@@ -114,7 +122,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             }
 
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false);
+                new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -137,7 +145,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean isEmpty() {
-        checkRemoved();
+        onAccess();
 
         GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
 
@@ -146,7 +154,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public boolean contains(Object o) {
-        checkRemoved();
+        onAccess();
 
         final GridCacheSetItemKey key = itemKey(o);
 
@@ -159,7 +167,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public boolean add(T o) {
-        checkRemoved();
+        onAccess();
 
         final GridCacheSetItemKey key = itemKey(o);
 
@@ -172,7 +180,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public boolean remove(Object o) {
-        checkRemoved();
+        onAccess();
 
         final GridCacheSetItemKey key = itemKey(o);
 
@@ -195,7 +203,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public boolean addAll(Collection<? extends T> c) {
-        checkRemoved();
+        onAccess();
 
         boolean add = false;
 
@@ -226,7 +234,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public boolean removeAll(Collection<?> c) {
-        checkRemoved();
+        onAccess();
 
         boolean rmv = false;
 
@@ -258,9 +266,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** {@inheritDoc} */
     @Override public boolean retainAll(Collection<?> c) {
         try {
-            checkRemoved();
+            onAccess();
 
-            try (GridCloseableIterator<T> iter = iteratorEx()) {
+            try (GridCloseableIterator<T> iter = iterator0()) {
                 boolean rmv = false;
 
                 Set<GridCacheSetItemKey> rmvKeys = null;
@@ -296,9 +304,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** {@inheritDoc} */
     @Override public void clear() {
         try {
-            checkRemoved();
+            onAccess();
 
-            try (GridCloseableIterator<T> iter = iteratorEx()) {
+            try (GridCloseableIterator<T> iter = iterator0()) {
                 Collection<GridCacheSetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
 
                 for (T val : iter) {
@@ -322,17 +330,17 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        return iteratorEx();
+        onAccess();
+
+        return iterator0();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCloseableIterator<T> iteratorEx() {
+    private GridCloseableIterator<T> iterator0() {
         try {
-            checkRemoved();
-
             GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false);
+                new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -340,7 +348,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             GridCacheQueryFuture<T> fut = qry.execute();
 
-            return new SetIterator<>(fut);
+            SetIterator<T> it = new SetIterator<>(fut);
+
+            itFuts.put(it.weakReference(), fut);
+
+            if (rmvd) {
+                itFuts.remove(it.weakReference());
+
+                it.close();
+
+                checkRemoved();
+            }
+
+            return it;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -438,7 +458,23 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * @param rmvd Removed flag.
      */
     void removed(boolean rmvd) {
+        if (this.rmvd)
+            return;
+
         this.rmvd = rmvd;
+
+        if (rmvd) {
+            for (GridCacheQueryFuture<?> fut : itFuts.values()) {
+                try {
+                    fut.cancel();
+                }
+                catch (GridException e) {
+                    log.error("Failed to close iterator.", e);
+                }
+            }
+
+            itFuts.clear();
+        }
     }
 
     /**
@@ -447,6 +483,34 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private void checkRemoved() {
         if (rmvd)
             throw new GridCacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + this);
+    }
+
+    /**
+     * Closes unreachable iterators.
+     */
+    private void checkWeakQueue() {
+        for (Reference<? extends SetIterator<?>> itRef = itRefQueue.poll(); itRef != null; itRef = itRefQueue.poll()) {
+            try {
+                WeakReference<SetIterator<?>> weakRef = (WeakReference<SetIterator<?>>)itRef;
+
+                GridCacheQueryFuture<?> fut = itFuts.remove(weakRef);
+
+                if (fut != null)
+                    fut.cancel();
+            }
+            catch (GridException e) {
+                log.error("Failed to close iterator.", e);
+            }
+        }
+    }
+
+    /**
+     * Checks if set was removed and handles iterators weak reference queue.
+     */
+    private void onAccess() {
+        checkWeakQueue();
+
+        checkRemoved();
     }
 
     /**
@@ -480,6 +544,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      *
      */
     private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = -1460570789166994846L;
+
         /** Query future. */
         private final GridCacheQueryFuture<T> fut;
 
@@ -492,25 +559,36 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         /** Current item. */
         private T cur;
 
+        /** Weak reference. */
+        private final WeakReference<SetIterator<?>> weakRef;
+
         /**
          * @param fut Query future.
          */
         private SetIterator(GridCacheQueryFuture<T> fut) {
             this.fut = fut;
+
+            weakRef = new WeakReference<SetIterator<?>>(this, itRefQueue);
         }
 
         /** {@inheritDoc} */
         @Override protected T onNext() throws GridException {
             init();
 
-            if (next == null)
+            if (next == null) {
+                clearWeakReference();
+
                 throw new NoSuchElementException();
+            }
 
             cur = next;
 
             Map.Entry e = (Map.Entry)fut.next();
 
             next = e != null ? (T)e.getKey() : null;
+
+            if (next == null)
+                clearWeakReference();
 
             return cur;
         }
@@ -519,12 +597,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         @Override protected boolean onHasNext() throws GridException {
             init();
 
-            return next != null;
+            boolean hasNext = next != null;
+
+            if (!hasNext)
+                clearWeakReference();
+
+            return hasNext;
         }
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws GridException {
             fut.cancel();
+
+            clearWeakReference();
         }
 
         /** {@inheritDoc} */
@@ -547,12 +632,31 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                 init = true;
             }
         }
+
+        /**
+         * @return Iterator weak reference.
+         */
+        WeakReference<SetIterator<?>> weakReference() {
+            return weakRef;
+        }
+
+        /**
+         * Clears weak reference.
+         */
+        private void clearWeakReference() {
+            weakRef.clear(); // Do not need to enqueue.
+
+            itFuts.remove(weakRef);
+        }
     }
 
     /**
      *
      */
     private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
+        /** */
+        private static final long serialVersionUID = -3436987759126521204L;
+
         /** */
         private int cntr;
 
@@ -590,6 +694,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * Item key for collocated set.
      */
     private static class CollocatedItemKey extends GridCacheSetItemKey {
+        /** */
+        private static final long serialVersionUID = -1400701398705953750L;
+
         /** */
         private String setName;
 

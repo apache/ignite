@@ -63,6 +63,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridToStringInclude
     private GridCacheVersion[] dhtVers;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -108,7 +116,9 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         int keyCnt,
         int txSize,
         @Nullable Object grpLockKey,
-        boolean partLock
+        boolean partLock,
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(nodeId, lockVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout, keyCnt,
             txSize, grpLockKey, partLock);
@@ -120,6 +130,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.implicitSingleTx = implicitSingleTx;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }
@@ -129,6 +141,20 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     @Override public long topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -281,6 +307,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.implicitSingleTx = implicitSingleTx;
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.dhtVers = dhtVers;
+        _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -391,6 +419,18 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 31:
                 if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 32:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 33:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -522,6 +562,24 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 32:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 33:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

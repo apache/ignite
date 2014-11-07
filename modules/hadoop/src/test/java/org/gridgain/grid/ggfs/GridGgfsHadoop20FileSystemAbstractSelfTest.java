@@ -11,9 +11,11 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -24,7 +26,6 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -34,15 +35,15 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * Hadoop 2.x compliant file system.
  */
-public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgfsCommonAbstractTest {
     /** Group size. */
     public static final int GRP_SIZE = 128;
 
@@ -137,7 +138,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
+            ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(secondaryIpcEndpointConfiguration()));
             ggfsCfg.setManagementPort(-1);
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
@@ -183,6 +184,11 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestGridName() {
+        return "grid";
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
@@ -194,7 +200,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setGgfsConfiguration(ggfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setLocalHost(U.getLocalHost().getHostAddress());
+        cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
@@ -235,7 +241,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected GridGgfsConfiguration ggfsConfiguration(String gridName) {
+    protected GridGgfsConfiguration ggfsConfiguration(String gridName) throws GridException {
         GridGgfsConfiguration cfg = new GridGgfsConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -250,7 +256,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             cfg.setSecondaryHadoopFileSystemConfigPath(secondaryFileSystemConfigPath());
         }
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
         cfg.setManagementPort(-1);
 
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
@@ -1296,8 +1302,6 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             GridGgfsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
-
-            assertEquals(grid(0).localNode().id(), F.first(location.nodeIds()));
         }
     }
 
@@ -1530,7 +1534,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testMultithreadedMkdirs() throws Exception {
-        final Path dir = new Path(new Path("ggfs://localhost/"), "/dir");
+        final Path dir = new Path(new Path("ggfs:///"), "/dir");
 
         fs.mkdir(dir, FsPermission.getDefault(), true);
 
@@ -1721,7 +1725,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            fs.mkdir(new Path("ggfs://localhost/dir1/dir2"), FsPermission.getDefault(), true);
+            fs.mkdir(new Path("ggfs:///dir1/dir2"), FsPermission.getDefault(), true);
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1778,7 +1782,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("ggfs://localhost/" + Thread.currentThread().getName())));
+                    assertTrue(fs.mkdirs(new Path("ggfs:///" + Thread.currentThread().getName())));
 
                     return true;
                 }

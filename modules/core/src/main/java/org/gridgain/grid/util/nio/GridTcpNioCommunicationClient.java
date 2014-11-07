@@ -46,6 +46,13 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         this.ses = ses;
     }
 
+    /**
+     * @return Gets underlying session.
+     */
+    public GridNioSession session() {
+        return ses;
+    }
+
     /** {@inheritDoc} */
     @Override public void doHandshake(GridInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
         throw new UnsupportedOperationException();

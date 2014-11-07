@@ -14,10 +14,10 @@ import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
+import org.gridgain.testframework.junits.logger.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -296,7 +296,7 @@ abstract class GridCacheAbstractLoadTest {
         //Logger.getLogger("org.gridgain").setLevel(Level.INFO);
         //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
 
-        return new GridLog4jLogger(false);
+        return new GridTestLog4jLogger(false);
     }
 
     /**

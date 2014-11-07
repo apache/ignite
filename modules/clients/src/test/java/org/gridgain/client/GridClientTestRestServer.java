@@ -50,7 +50,6 @@ public class GridClientTestRestServer {
             node.setNodeId(UUID.randomUUID());
             node.setConsistentId("127.0.0.1:" + port);
             node.setTcpPort(port);
-            node.setJettyAddresses(Arrays.asList("127.0.0.1"));
             node.setTcpAddresses(Arrays.asList("127.0.0.1"));
 
             top.add(node);
@@ -80,9 +79,6 @@ public class GridClientTestRestServer {
 
     /** */
     private volatile GridNioSession lastSes;
-
-    /** */
-    private GridClientMarshaller optMarsh = new GridClientOptimizedMarshaller();
 
     /**
      * @param port Port to listen on.
@@ -123,7 +119,7 @@ public class GridClientTestRestServer {
                 .directBuffer(false)
                 .filters(
                     new GridNioAsyncNotifyFilter(gridName, Executors.newFixedThreadPool(2), log),
-                    new GridNioCodecFilter(new GridTcpRestParser(log), log, false)
+                    new GridNioCodecFilter(new TestParser(), log, false)
                 )
                 .build();
         }
@@ -243,15 +239,8 @@ public class GridClientTestRestServer {
 
                 ses.send(res);
             }
-            else if (msg instanceof GridClientHandshakeRequest) {
-                GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
-
-                assert hs.protocolId() == GridClientOptimizedMarshaller.PROTOCOL_ID;
-
-                ses.addMeta(GridNioSessionMetaKey.MARSHALLER.ordinal(), optMarsh);
-
+            else if (msg instanceof GridClientHandshakeRequest)
                 ses.send(GridClientHandshakeResponse.OK);
-            }
         }
 
         /** {@inheritDoc} */
@@ -262,6 +251,18 @@ public class GridClientTestRestServer {
         /** {@inheritDoc} */
         @Override public void onSessionIdleTimeout(GridNioSession ses) {
             ses.close();
+        }
+    }
+
+    /**
+     */
+    private static class TestParser extends GridTcpRestParser {
+        /** */
+        private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
+
+        /** {@inheritDoc} */
+        @Override protected GridClientMarshaller marshaller(GridNioSession ses) {
+            return marsh;
         }
     }
 }

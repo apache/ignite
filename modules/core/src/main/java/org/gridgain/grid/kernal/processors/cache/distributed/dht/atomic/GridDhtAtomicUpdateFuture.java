@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -27,6 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE;
 
 /**
  * DHT atomic cache backup update future.
@@ -50,6 +52,9 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
     /** Write version. */
     private GridCacheVersion writeVer;
+
+    /** Force transform backup flag. */
+    private boolean forceTransformBackups;
 
     /** Completion callback. */
     @GridToStringExclude
@@ -101,6 +106,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         this.updateReq = updateReq;
         this.completionCb = completionCb;
         this.updateRes = updateRes;
+
+        forceTransformBackups = updateReq.forceTransformBackups();
 
         log = U.logger(ctx, logRef, GridDhtAtomicUpdateFuture.class);
 
@@ -179,8 +186,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param drVer DR version (optional).
      * @param ttl Time to live.
      */
-    public void addWriteEntry(GridDhtCacheEntry<K, V> entry, @Nullable V val, @Nullable byte[] valBytes, long drTtl,
-        long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
+    public void addWriteEntry(GridDhtCacheEntry<K, V> entry, @Nullable V val, @Nullable byte[] valBytes,
+        GridClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
         long topVer = updateReq.topologyVersion();
 
         Collection<GridNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
@@ -196,15 +203,20 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             UUID nodeId = node.id();
 
             if (!nodeId.equals(ctx.localNodeId())) {
+                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
+
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
-                    updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
+                    updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
+                        forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                        this.updateReq.taskNameHash());
 
                     mappings.put(nodeId, updateReq);
                 }
 
-                updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
+                updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, transformC, drTtl,
+                    drExpireTime, drVer);
             }
         }
     }
@@ -217,7 +229,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param ttl Time to live.
      */
     public void addNearWriteEntries(Iterable<UUID> readers, GridDhtCacheEntry<K, V> entry, @Nullable V val,
-        @Nullable byte[] valBytes, long ttl) {
+        @Nullable byte[] valBytes, GridClosure<V, V> transformC, long ttl) {
         GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         keys.add(entry.key());
@@ -228,7 +240,17 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
-                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
+                GridNode node = ctx.discovery().node(nodeId);
+
+                // Node left the grid.
+                if (node == null)
+                    continue;
+
+                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
+
+                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
+                    forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                    this.updateReq.taskNameHash());
 
                 mappings.put(nodeId, updateReq);
             }
@@ -238,7 +260,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
             nearReadersEntries.put(entry.key(), entry);
 
-            updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes);
+            updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes, transformC);
         }
     }
 

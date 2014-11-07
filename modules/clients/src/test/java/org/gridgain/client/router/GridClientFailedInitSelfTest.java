@@ -55,10 +55,16 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
+        assert cfg.getClientConnectionConfiguration() == null;
+
         cfg.setLocalHost(HOST);
-        cfg.setRestTcpPort(BINARY_PORT);
-        cfg.setRestJettyPath(REST_JETTY_CFG);
-        cfg.setRestEnabled(true);
+
+        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+
+        clientCfg.setRestTcpPort(BINARY_PORT);
+        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+
+        cfg.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -107,13 +113,6 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
      */
     public void testTcpClient() throws Exception {
         doTestClient(TCP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testHttpClient() throws Exception {
-        doTestClient(HTTP);
     }
 
     /**
@@ -222,20 +221,6 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
         tcpCfg.setServers(Collections.singleton(HOST + ":" + BINARY_PORT));
 
         GridRouterFactory.startTcpRouter(tcpCfg);
-
-        GridHttpRouterConfiguration httpCfg = new GridHttpRouterConfiguration();
-
-        httpCfg.setJettyConfigurationPath(ROUTER_JETTY_CFG);
-        httpCfg.setServers(Collections.singleton(HOST + ":" + JETTY_PORT));
-
-        System.setProperty(GG_JETTY_PORT, Integer.toString(ROUTER_JETTY_PORT));
-
-        try {
-            GridRouterFactory.startHttpRouter(httpCfg);
-        }
-        finally {
-            System.clearProperty(GG_JETTY_PORT);
-        }
     }
 
     /**

@@ -9,7 +9,7 @@
 
 package org.gridgain.examples.misc.deployment;
 
-import org.gridgain.examples.compute.*;
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
@@ -56,8 +56,9 @@ public final class DeploymentExample {
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not
             // always be the case. In those cases you should use explicit
-            // 'Grid.deployTask(Class)}' apply and then use 'Grid.execute(String, Object)'
-            // method passing your task name as first parameter.
+            // 'GridCompute.localDeployTask(Class, ClassLoader) apply and
+            // then use 'GridCompute.execute(String, Object)' method
+            // passing your task name as first parameter.
             g.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 
             for (Map.Entry<String, Class<? extends GridComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
@@ -69,7 +70,7 @@ public final class DeploymentExample {
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.
-            // grid.execute(ExampleTask.class.getName(), null).get();
+            // g.compute().execute(ExampleTask.class.getName(), null).get();
 
             // Undeploy task
             g.compute().undeployTask(TASK_NAME);

@@ -30,6 +30,8 @@ public class GridCacheEvictionSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridCacheFifoEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheLruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLruNearEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheNearOnlyLruNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheRandomEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
@@ -40,7 +42,6 @@ public class GridCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
         suite.addTest(new TestSuite(GridCacheBatchEvictUnswapSelfTest.class));
-        suite.addTest(new TestSuite(GridIndexingWithNoopSwapSelfTest.class));
         suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));

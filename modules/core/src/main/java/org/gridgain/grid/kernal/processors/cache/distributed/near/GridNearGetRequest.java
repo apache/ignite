@@ -63,6 +63,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     @GridDirectTransient
     private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
+    /** Subject ID. */
+    @GridDirectVersion(1)
+    private UUID subjId;
+
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -80,7 +88,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param filter Filter.
      */
     public GridNearGetRequest(GridUuid futId, GridUuid miniId, GridCacheVersion ver, LinkedHashMap<K, Boolean> keys,
-        boolean reload, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean reload, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, int taskNameHash) {
         assert futId != null;
         assert miniId != null;
         assert ver != null;
@@ -93,6 +101,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         this.reload = reload;
         this.topVer = topVer;
         this.filter = filter;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -107,6 +117,22 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      */
     public GridUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * Gets task name hash.
+     *
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -199,6 +225,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         _clone.filterBytes = filterBytes;
         _clone.topVer = topVer;
         _clone.filter = filter;
+        _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -308,6 +336,18 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
             case 8:
                 if (!commState.putCacheVersion(ver))
+                    return false;
+
+                commState.idx++;
+
+            case 9:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 10:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -440,6 +480,24 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                     return false;
 
                 ver = ver0;
+
+                commState.idx++;
+
+            case 9:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 10:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -91,11 +90,10 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             final CountDownLatch latch1 = new CountDownLatch(1);
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
-            GridFuture<?> fut1 = grid(0).scheduler().runLocal(new CAX() {
-                @GridInstanceResource
-                private Grid grid;
+            GridFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws GridException {
+                    Grid grid = grid(0);
 
-                @Override public void applyx() throws GridException {
                     GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
                         true, true);
 
@@ -119,6 +117,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                             throw e;
                         }
                     }
+
+                    return null;
                 }
             });
 
@@ -130,11 +130,10 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
             //latch2.countDown();
 
-            GridFuture<?> fut2 = grid(GRID_CNT).scheduler().runLocal(new CAX() {
-                @GridInstanceResource
-                private Grid grid;
+            GridFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws GridException {
+                    Grid grid = grid(GRID_CNT);
 
-                @Override public void applyx() throws GridException {
                     GridCacheQueue<Integer> queue = grid.cache(null).dataStructures().
                         queue(queueName, Integer.MAX_VALUE, true, true);
 
@@ -162,6 +161,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                         }
                     }
                     while (cnt < QUEUE_CAP * 2);
+
+                    return null;
                 }
             });
 
@@ -177,6 +178,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      * Start additional nodes above {@link #GRID_CNT}.
      *
      * @param cnt Number of additional nodes.
+     * @param queueName Queue name.
      * @throws Exception If failed.
      */
     private void startAdditionalNodes(int cnt, String queueName) throws Exception {

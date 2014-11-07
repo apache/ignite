@@ -36,7 +36,8 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>assembly/release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-base-non-hadoop.xml</componentDescriptor>
     </componentDescriptors>
 
     <fileSets>
@@ -53,8 +54,7 @@
                 <exclude>src/test/**</exclude>
                 <exclude>src/main/java/org/gridgain/examples/ggfs/**</exclude>
                 <exclude>src/main/java/org/gridgain/examples/streaming/**</exclude>
-                <exclude>config/hadoop/**</exclude>
-                <exclude>config/example-ggfs*</exclude>
+                <exclude>config/filesystem/**</exclude>
                 <exclude>config/example-streamer*</exclude>
             </excludes>
         </fileSet>

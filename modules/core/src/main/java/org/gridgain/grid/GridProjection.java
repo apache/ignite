@@ -13,6 +13,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.service.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -84,6 +85,15 @@ public interface GridProjection {
      * @return Events instance over this grid projection.
      */
     public GridEvents events();
+
+    /**
+     * Gets {@code services} functionality over this grid projection. All operations
+     * on the returned {@link GridMessaging} instance will only include nodes from
+     * this projection.
+     *
+     * @return Services instance over this grid projection.
+     */
+    public GridServices services();
 
     /**
      * Creates a grid projection over a given set of nodes.
@@ -215,6 +225,26 @@ public interface GridProjection {
      * @return Grid projection with one random node from current projection.
      */
     public GridProjection forRandom();
+
+    /**
+     * Creates grid projection with one oldest node in the current projection.
+     * The resulting projection is dynamic and will always pick the next oldest
+     * node if the previous one leaves topology even after the projection has
+     * been created.
+     *
+     * @return Grid projection with one oldest node from the current projection.
+     */
+    public GridProjection forOldest();
+
+    /**
+     * Creates grid projection with one youngest node in the current projection.
+     * The resulting projection is dynamic and will always pick the newest
+     * node in the topology, even if more nodes entered after the projection
+     * has been created.
+     *
+     * @return Grid projection with one youngest node from the current projection.
+     */
+    public GridProjection forYoungest();
 
     /**
      * Gets read-only collections of nodes in this projection.

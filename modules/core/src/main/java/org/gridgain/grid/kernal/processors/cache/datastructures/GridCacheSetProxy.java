@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -408,8 +407,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
             try {
                 if (cctx.transactional()) {
                     CU.outTx(new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
+                        @Override public Void call() throws Exception {
                             delegate.clear();
 
                             return null;
@@ -432,7 +430,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<T> iteratorEx() {
+    @Override public Iterator<T> iterator() {
         enterBusy();
 
         try {
@@ -440,13 +438,13 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
 
             try {
                 if (cctx.transactional())
-                    return CU.outTx(new Callable<GridCloseableIterator<T>>() {
-                        @Override public GridCloseableIterator<T> call() throws Exception {
-                            return delegate.iteratorEx();
+                    return CU.outTx(new Callable<Iterator<T>>() {
+                        @Override public Iterator<T> call() throws Exception {
+                            return delegate.iterator();
                         }
                     }, cctx);
 
-                return delegate.iteratorEx();
+                return delegate.iterator();
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
@@ -458,12 +456,6 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
         finally {
             leaveBusy();
         }
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
-        throw new UnsupportedOperationException("Method iterator() is not supported for GridCacheSet, " +
-            "use iteratorEx() instead.");
     }
 
     /** {@inheritDoc} */
@@ -511,10 +503,10 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
     }
 
     /**
-     * Reconstructs object on demarshalling.
+     * Reconstructs object on unmarshalling.
      *
      * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
         try {

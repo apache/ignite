@@ -3048,7 +3048,7 @@ public class GridFunc {
      * @param <T> Type of the inner collections.
      * @return Iterable over the elements of the inner collections.
      */
-    public static <T> Collection<T> flat(@Nullable final Collection<? extends Collection<T>> c) {
+    public static <T> Collection<T> flatCollections(@Nullable final Collection<? extends Collection<T>> c) {
         if (F.isEmpty(c)) {
             return Collections.emptyList();
         }
@@ -4580,7 +4580,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Collections' first element or {@code null} in case if the collection is empty.
      */
-    @Nullable public static <T> T first(@Nullable Iterable<? extends T> c) {
+    public static <T> T first(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
 
@@ -7379,6 +7379,36 @@ public class GridFunc {
                 return !c.contains(t);
             }
         };
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(int[] arr, int val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static boolean contains(Integer[] arr, Integer val) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals(val))
+                return true;
+        }
+
+        return false;
     }
 
     /**
