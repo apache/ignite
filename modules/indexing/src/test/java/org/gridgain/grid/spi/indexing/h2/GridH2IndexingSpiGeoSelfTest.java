@@ -124,6 +124,8 @@ public class GridH2IndexingSpiGeoSelfTest extends GridCacheAbstractSelfTest {
             points[idx] = Integer.toString(idx);
         }
 
+        Thread.sleep(200);
+
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -171,7 +173,7 @@ public class GridH2IndexingSpiGeoSelfTest extends GridCacheAbstractSelfTest {
 
                         checkPoints(res, points);
 
-                        U.sleep(50);
+                        U.sleep(5);
                     }
                     catch (Exception e) {
                         err.set(e);

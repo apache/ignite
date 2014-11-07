@@ -656,6 +656,32 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test InetAddress Comparator.
+     */
+    public void testInetAddressesComparator() {
+        List<InetSocketAddress> ips = new ArrayList<InetSocketAddress>() {
+            {
+                add(new InetSocketAddress("127.0.0.1", 1));
+                add(new InetSocketAddress("10.0.0.1", 1));
+                add(new InetSocketAddress("172.16.0.1", 1));
+                add(new InetSocketAddress("192.168.0.1", 1));
+                add(new InetSocketAddress("100.0.0.1", 1));
+                add(new InetSocketAddress("XXX", 1));
+            }
+        };
+
+        Collections.sort(ips, U.inetAddressesComparator(true));
+
+        assertTrue(ips.get(0).getAddress().isLoopbackAddress());
+        assertTrue(ips.get(ips.size() - 1).isUnresolved());
+
+        Collections.sort(ips, U.inetAddressesComparator(false));
+
+        assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
+        assertTrue(ips.get(ips.size() - 1).isUnresolved());
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {
