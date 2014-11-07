@@ -226,7 +226,13 @@ import java.util.Date;
  * for a specific type via {@link GridPortableTypeConfiguration} instance.
  *
  * <p>
- * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
+ * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods. <br/>
+ *
+ * {@code readResolve} is defined as follows: {@code ANY-ACCESS-MODIFIER Object readResolve()}. It may be used to
+ * replace the de-serialized object by another one of your choice. <br/>
+ *
+ * {@code writeReplace} is defined as follows: {@code ANY-ACCESS-MODIFIER Object writeReplace()}. This method allows the
+ * developer to provide a replacement object that will be serialized instead of the original one.
  * </p>
  *
  * <h1 class="header">Custom ID Mappers</h1>
