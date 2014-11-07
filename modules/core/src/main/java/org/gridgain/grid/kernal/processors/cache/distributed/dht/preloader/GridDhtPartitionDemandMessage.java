@@ -103,7 +103,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
      * @return Partition.
      */
     Set<Integer> partitions() {
-        return Collections.unmodifiableSet(parts);
+        return parts;
     }
 
     /**
