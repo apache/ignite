@@ -144,6 +144,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         U.interrupt(disconnectHnd);
         U.join(disconnectHnd, log);
 
+        U.interrupt(hbSender);
+        U.join(hbSender, log);
+
         Socket sock0 = sock;
 
         sock = null;
@@ -172,9 +175,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 U.closeQuiet(sock0);
             }
         }
-
-        U.interrupt(hbSender);
-        U.join(hbSender, log);
 
         U.interrupt(sockRdr);
         U.join(sockRdr, log);
@@ -403,6 +403,15 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
         U.closeQuiet(sock);
 
+        U.interrupt(disconnectHnd);
+        U.join(disconnectHnd, log);
+
+        U.interrupt(hbSender);
+        U.join(hbSender, log);
+
+        U.interrupt(sockRdr);
+        U.join(sockRdr, log);
+
         U.interrupt(sockTimeoutWorker);
         U.join(sockTimeoutWorker, log);
     }
@@ -426,6 +435,12 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     if (sock == null) {
                         if (log.isDebugEnabled())
                             log.debug("Node is disconnected from topology, will try to reconnect.");
+
+                        U.interrupt(hbSender);
+                        U.join(hbSender, log);
+
+                        U.interrupt(sockRdr);
+                        U.join(sockRdr, log);
 
                         rmtNodes.clear();
 
@@ -478,11 +493,6 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
             catch (GridInterruptedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Heartbeat sender was interrupted.");
-            }
-            finally {
-                U.closeQuiet(sock0);
-
-                sock = null;
             }
         }
     }
@@ -598,7 +608,13 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 U.closeQuiet(sock0);
 
                 U.interrupt(msgWrk);
-                U.join(msgWrk, log);
+
+                try {
+                    U.join(msgWrk);
+                }
+                catch (GridInterruptedException ignored) {
+                    // No-op.
+                }
 
                 sock = null;
             }
@@ -783,7 +799,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, updateTopology(topVer));
+                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, updateTopology(msg.topologyVersion()));
 
                 stats.onNodeLeft();
             }
@@ -810,7 +826,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, updateTopology(topVer));
+                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, updateTopology(msg.topologyVersion()));
 
                 stats.onNodeFailed();
             }
@@ -883,8 +899,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
             allNodes.add(locNode);
 
             if (!topHist.containsKey(topVer)) {
-//                assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-//                    "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
+                assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
+                    "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
 
                 topHist.put(topVer, allNodes);
 

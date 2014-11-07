@@ -713,6 +713,30 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cancel Cancel flag.
+     */
+    protected void stopAllClients(boolean cancel) {
+        List<Grid> grids = G.allGrids();
+
+        for (Grid g : grids) {
+            if (g.localNode().isClient())
+                stopGrid(g.name(), cancel);
+        }
+    }
+
+    /**
+     * @param cancel Cancel flag.
+     */
+    protected void stopAllServers(boolean cancel) {
+        List<Grid> grids = G.allGrids();
+
+        for (Grid g : grids) {
+            if (!g.localNode().isClient())
+                stopGrid(g.name(), cancel);
+        }
+    }
+
+    /**
      * @param grid Grid
      * @param cnt Count
      * @throws GridException If failed.

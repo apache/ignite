@@ -119,7 +119,10 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        stopAllClients(true);
+        stopAllServers(true);
+
+        assert G.allGrids().isEmpty();
     }
 
     /**

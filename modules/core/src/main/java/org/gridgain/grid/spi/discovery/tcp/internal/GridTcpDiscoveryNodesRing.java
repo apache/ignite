@@ -69,14 +69,20 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of all nodes.
      */
     public Collection<GridTcpDiscoveryNode> allNodes() {
+        List<GridTcpDiscoveryNode> nodes;
+
         rwLock.readLock().lock();
 
         try {
-            return Collections.unmodifiableCollection(nodesMap.values());
+            nodes = new ArrayList<>(nodesMap.values());
         }
         finally {
             rwLock.readLock().unlock();
         }
+
+        Collections.sort(nodes);
+
+        return Collections.unmodifiableCollection(nodes);
     }
 
     /**
@@ -85,15 +91,20 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of remote nodes in grid.
      */
     public Collection<GridTcpDiscoveryNode> remoteNodes() {
+        List<GridTcpDiscoveryNode> nodes;
+
         rwLock.readLock().lock();
 
         try {
-            return Collections.unmodifiableCollection(F.view(nodesMap.values(),
-                F.<GridTcpDiscoveryNode>remoteNodes(locNode.id())));
+            nodes = new ArrayList<>(F.view(nodesMap.values(), F.<GridTcpDiscoveryNode>remoteNodes(locNode.id())));
         }
         finally {
             rwLock.readLock().unlock();
         }
+
+        Collections.sort(nodes);
+
+        return Collections.unmodifiableCollection(nodes);
     }
 
     /**

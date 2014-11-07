@@ -3878,8 +3878,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    msg.redirectToClients(false);
-
                     addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
