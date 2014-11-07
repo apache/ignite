@@ -224,6 +224,19 @@ import java.util.Date;
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
  * logic in {@link GridPortableSerializer} either globally in {@link GridPortableConfiguration} or
  * for a specific type via {@link GridPortableTypeConfiguration} instance.
+ * <p>
+ * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
+ * <ul>
+ *     <li>
+ *         {@code readResolve} is defined as follows: {@code ANY-ACCESS-MODIFIER Object readResolve()}.
+ *         It may be used to replace the de-serialized object by another one of your choice.
+ *     </li>
+ *     <li>
+ *          {@code writeReplace} is defined as follows: {@code ANY-ACCESS-MODIFIER Object writeReplace()}. This method allows the
+ *          developer to provide a replacement object that will be serialized instead of the original one.
+ *     </li>
+ * </ul>
+ *
  * <h1 class="header">Custom ID Mappers</h1>
  * GridGain implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
@@ -289,6 +302,14 @@ public interface GridPortables {
      * @return Portable builder.
      */
     public GridPortableBuilder builder();
+
+    /**
+     * Creates portable builder initialized by existing portable object.
+     *
+     * @param portableObj Portable object to initialize builder.
+     * @return Portable builder.
+     */
+    public GridPortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * Gets metadata for provided class.

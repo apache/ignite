@@ -281,7 +281,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
                             Collections.sort(iterKeys);
 
-                            Map<Integer, String> vals = new LinkedHashMap<>(keysCnt);
+                            Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
 
                             for (Integer key : iterKeys)
                                 vals.put(key, String.valueOf(key) + threadId);

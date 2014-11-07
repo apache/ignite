@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.engine.*;
 import org.h2.index.*;
@@ -26,8 +27,7 @@ import java.util.*;
  */
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
-    protected static final ThreadLocal<GridIndexingQueryFilter<?, ?>[]> filters =
-        new ThreadLocal<>();
+    protected static final ThreadLocal<GridIndexingQueryFilter> filters = new ThreadLocal<>();
 
     /** */
     protected final int keyCol;
@@ -49,7 +49,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @param fs Filters.
      */
-    public static void setFiltersForThread(GridIndexingQueryFilter<?, ?>[] fs) {
+    public static void setFiltersForThread(GridIndexingQueryFilter fs) {
         filters.set(fs);
     }
 
@@ -103,7 +103,22 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Filtered iterator.
      */
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
-        return new FilteringIterator(iter, U.currentTimeMillis());
+        GridBiPredicate<Object, Object> p = null;
+
+        GridIndexingQueryFilter f = filters.get();
+
+        if (f != null) {
+            String spaceName = ((GridH2Table)getTable()).spaceName();
+
+            try {
+                p = f.forSpace(spaceName);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        return new FilteringIterator(iter, U.currentTimeMillis(), p);
     }
 
     /** {@inheritDoc} */
@@ -146,7 +161,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     protected class FilteringIterator extends GridFilteredIterator<GridH2Row> {
         /** */
-        private final GridIndexingQueryFilter<?, ?>[] fs = filters.get();
+        private final GridBiPredicate<Object, Object> fltr;
 
         /** */
         private final long time;
@@ -155,10 +170,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param iter Iterator.
          * @param time Time for expired rows filtering.
          */
-        protected FilteringIterator(Iterator<GridH2Row> iter, long time) {
+        protected FilteringIterator(Iterator<GridH2Row> iter, long time,
+            GridBiPredicate<Object, Object> fltr) {
             super(iter);
 
             this.time = time;
+            this.fltr = fltr;
         }
 
         /**
@@ -172,10 +189,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     return false;
             }
 
-            if (F.isEmpty(fs))
+            if (fltr == null)
                 return true;
-
-            String spaceName = ((GridH2Table)getTable()).spaceName();
 
             Object key = row.getValue(keyCol).getObject();
             Object val = row.getValue(valCol).getObject();
@@ -183,12 +198,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             assert key != null;
             assert val != null;
 
-            for (GridIndexingQueryFilter f : fs) {
-                if (f != null && !f.apply(spaceName, key, val))
-                    return false;
-            }
-
-            return true;
+            return fltr.apply(key, val);
         }
     }
 }

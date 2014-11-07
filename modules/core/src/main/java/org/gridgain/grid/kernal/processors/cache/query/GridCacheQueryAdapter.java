@@ -461,4 +461,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
             }
         });
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheQueryAdapter.class, this);
+    }
 }

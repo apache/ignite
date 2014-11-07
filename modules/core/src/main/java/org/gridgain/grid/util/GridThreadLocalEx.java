@@ -11,6 +11,7 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -56,7 +57,7 @@ public class GridThreadLocalEx<T> extends ThreadLocal<T> {
 
         Map<GridThreadLocalEx<?>, Object> ret = F.isEmpty(threadLocals) ?
             Collections.<GridThreadLocalEx<?>, Object>emptyMap() :
-            new HashMap<GridThreadLocalEx<?>, Object>(threadLocals.size());
+            U.<GridThreadLocalEx<?>, Object>newHashMap(threadLocals.size());
 
         for (GridThreadLocalEx<?> t : threadLocals)
             ret.put(t, t.get());

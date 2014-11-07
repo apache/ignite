@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -160,6 +162,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
+        GridIndexingQueryFilter f = filters.get();
+
+        try { // Fast path if we don't need to perform any filtering.
+            if (f == null || f.forSpace(((GridH2Table)getTable()).spaceName()) == null)
+                return treeForRead().size();
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+
         Iterator<GridH2Row> iter = doFind(null, false, null);
 
         long size = 0;

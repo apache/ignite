@@ -22,8 +22,8 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -652,17 +652,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks whether authentication SPI other than noop authentication SPI is configured.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if authentication SPI is configured.
-     */
-    public static boolean securityEnabled(GridConfiguration cfg) {
-        return cfg.getAuthenticationSpi() != null &&
-            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
-    }
-
-    /**
      * @return Checks if disco ordering should be enforced.
      */
     public static boolean relaxDiscoveryOrdered() {
@@ -1154,6 +1143,29 @@ public abstract class GridUtils {
 
             for (int i = 0; i < len; i++)
                 arr[i] = in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        Class<?>[] arr = null;
+
+        if (len > 0) {
+            arr = new Class<?>[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (Class<?>)in.readObject();
         }
 
         return arr;
@@ -4582,7 +4594,7 @@ public abstract class GridUtils {
         if (size == -1)
             return null;
         else {
-            Map<String, String> map = new HashMap<>(size);
+            Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
                 map.put(in.readUTF(), in.readUTF());
@@ -7764,6 +7776,8 @@ public abstract class GridUtils {
         assert nodeId != null;
         assert fileName != null;
 
+        fileName = GridFilenameUtils.separatorsToSystem(fileName);
+
         int dot = fileName.lastIndexOf('.');
 
         if (dot < 0 || dot == fileName.length() - 1)
@@ -8815,5 +8829,133 @@ public abstract class GridUtils {
         UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
 
         return res;
+    }
+
+    /**
+     * Returns a capacity that is sufficient to keep the map from being resized as
+     * long as it grows no larger than expSize and the load factor is >= its
+     * default (0.75).
+     *
+     * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
+     *
+     * @param expSize Expected size of created map.
+     * @return Capacity.
+     */
+    public static int capacity(int expSize) {
+        if (expSize < 3)
+            return expSize + 1;
+
+        if (expSize < (1 << 30))
+            return expSize + expSize / 3;
+
+        return Integer.MAX_VALUE; // any large value
+    }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
+     * loopback addresses first, last otherwise.
+     *
+     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
+     * @return Comparator.
+     */
+    public static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost) {
+        return new Comparator<InetSocketAddress>() {
+            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
+                if (addr1.isUnresolved() && addr2.isUnresolved())
+                    return 0;
+
+                if (addr1.isUnresolved() || addr2.isUnresolved())
+                    return addr1.isUnresolved() ? 1 : -1;
+
+                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
+
+                // No need to reorder.
+                if (addr1Loopback == addr2.getAddress().isLoopbackAddress())
+                    return 0;
+
+                if (sameHost)
+                    return addr1Loopback ? -1 : 1;
+                else
+                    return addr1Loopback ? 1 : -1;
+            }
+        };
+    }
+
+    /**
+     * Finds a method in the class and it parents.
+     *
+     * Method.getMethod() does not return non-public method,
+     * Method.getDeclaratedMethod() does not look at parent classes.
+     *
+     * @param cls The class to search,
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}
+     */
+    @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        while (cls != null) {
+            try {
+                Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+                if (mtd.getReturnType() != void.class) {
+                    mtd.setAccessible(true);
+
+                    return mtd;
+                }
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
     }
 }

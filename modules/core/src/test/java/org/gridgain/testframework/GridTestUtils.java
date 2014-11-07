@@ -1301,4 +1301,43 @@ public final class GridTestUtils {
 
         return factory;
     }
+
+    /**
+     * @param o1 Object 1.
+     * @param o2 Object 2.
+     * @return Equals or not.
+     */
+    public static boolean deepEquals(@Nullable Object o1, @Nullable Object o2) {
+        if (o1 == o2)
+            return true;
+        else if (o1 == null || o2 == null)
+            return false;
+        else if (o1.getClass() != o2.getClass())
+            return false;
+        else {
+            Class<?> cls = o1.getClass();
+
+            assert o2.getClass() == cls;
+
+            for (Field f : cls.getDeclaredFields()) {
+                f.setAccessible(true);
+
+                Object v1;
+                Object v2;
+
+                try {
+                    v1 = f.get(o1);
+                    v2 = f.get(o2);
+                }
+                catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+
+                if (!Objects.deepEquals(v1, v2))
+                    return false;
+            }
+
+            return true;
+        }
+    }
 }

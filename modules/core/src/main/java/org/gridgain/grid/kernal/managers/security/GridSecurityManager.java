@@ -22,13 +22,6 @@ import java.util.*;
  */
 public interface GridSecurityManager extends GridManager {
     /**
-     * Checks if security check is enabled.
-     *
-     * @return {@code True} if authentication check is enabled.
-     */
-    public boolean securityEnabled();
-
-    /**
      * Authenticates grid node with it's attributes via underlying {@link GridAuthenticationSpi}s.
      *
      * @param node Node id to authenticate.
