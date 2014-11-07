@@ -201,7 +201,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 0; i < nodeCount(); i++) {
             MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
@@ -226,10 +226,11 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, false);
+        MapService<Integer, String> svc =  grid.services(grid.cluster().forRemotes()).
+            serviceProxy(name, MapService.class, false);
 
         // Make sure service is a local instance.
         assertFalse(svc instanceof GridService);
@@ -239,8 +240,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.services(grid.cluster().forNode(n)).
+                serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
             assertFalse(map instanceof GridService);
@@ -259,10 +261,11 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final Grid grid = grid(0);
 
-        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>()).get();
+        grid.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  grid.forRemotes().services().serviceProxy(name, MapService.class, true);
+        MapService<Integer, String> svc =  grid.services(grid.cluster().forRemotes()).
+            serviceProxy(name, MapService.class, true);
 
         // Make sure service is a local instance.
         assertFalse(svc instanceof GridService);
@@ -272,8 +275,9 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         int size = 0;
 
-        for (GridNode n : grid.forRemotes().nodes()) {
-            MapService<Integer, String> map = grid.forNode(n).services().serviceProxy(name, MapService.class, false);
+        for (GridNode n : grid.cluster().forRemotes().nodes()) {
+            MapService<Integer, String> map = grid.services(grid.cluster().forNode(n)).
+                serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
             assertFalse(map instanceof GridService);
