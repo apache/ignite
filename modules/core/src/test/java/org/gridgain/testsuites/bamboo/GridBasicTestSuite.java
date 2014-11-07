@@ -35,7 +35,8 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTest(GridUtilSelfTestSuite.suite());
         suite.addTest(GridMarshallerSelfTestSuite.suite());
         suite.addTest(GridKernalSelfTestSuite.suite());
-        suite.addTest(GridLoadersSelfTestSuite.suite());
+
+        /*suite.addTest(GridLoadersSelfTestSuite.suite());
         suite.addTest(GridRichSelfTestSuite.suite());
         suite.addTest(GridExternalizableSelfTestSuite.suite());
         suite.addTest(GridP2PSelfTestSuite.suite());
@@ -62,7 +63,7 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridMessageListenSelfTest.class);
 
         // Streamer.
-        suite.addTest(GridStreamerSelfTestSuite.suite());
+        suite.addTest(GridStreamerSelfTestSuite.suite());*/
 
         return suite;
     }

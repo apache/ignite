@@ -342,6 +342,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                         if (dep != null) {
+                            U.debug(log, "Deployment key already exists in cache [locNodeId=" + ctx.localNodeId() +
+                                ", key=" + key + ']');
+
                             if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
                                 // Remove future from local map.
                                 depFuts.remove(cfg.getName(), fut);
@@ -350,9 +353,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                             }
                             else {
+                                U.debug(log, "Configurations are equal, will try to complete local future " +
+                                    "[locNodeId=" + ctx.localNodeId() + ", key=" + key + ']');
+
                                 for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
                                     if (e.getKey() instanceof GridServiceAssignmentsKey) {
                                         GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+
+                                        U.debug(log, "Checking assignments [locNodeId=" + ctx.localNodeId() +
+                                            ", key=" + key + ", assigns=" + assigns + ']');
 
                                         if (assigns.name().equals(cfg.getName())) {
                                             // Remove future from local map.
@@ -369,6 +378,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     U.warn(log, "Service already deployed with different configuration (will ignore) " +
                                         "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
                             }
+                        }
+                        else {
+                            U.debug(log, "Successfully put deployment key to system cache " +
+                                "[locNodeId=" + ctx.localNodeId() + ", key=" + key + ']');
                         }
                     }
                     finally {
@@ -718,6 +731,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
 
                 assigns.assigns(cnts);
+
+                U.debug(log, "Updated assignments [locNodeId=" + ctx.localNodeId() + ", key=" + key +
+                    ", assigns=" + assigns + ']');
 
                 cache.put(key, assigns);
 
@@ -1202,6 +1218,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
                         if (assigns != null) {
+                            U.debug(log, "Received assignments callback [locNodeId=" + ctx.localNodeId() +
+                                ", assigns=" + assigns + ']');
+
                             svcName.set(assigns.name());
 
                             Throwable t = null;
