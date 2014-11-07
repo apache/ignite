@@ -330,11 +330,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
 
                     U.debug(log, "Will return existing future for deploy [name=" + cfg.getName() +
-                        ", old=" + old + ']');
+                        ", old=" + old + ", futsEq=" + (old == fut) + ']');
 
                     fut = old;
                 }
                 else {
+                    U.debug(log, "Put future to depFuts map [name=" + cfg.getName() + ", fut=" + fut + ']');
+
                     GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
                     if (ctx.deploy().enabled())
