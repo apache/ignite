@@ -25,6 +25,7 @@ import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.service.*;
 import org.gridgain.grid.streamer.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -426,6 +427,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.cache(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTransactions transactions() {
+        assert g != null;
+
+        return g.transactions();
     }
 
     /** {@inheritDoc} */

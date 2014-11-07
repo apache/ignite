@@ -777,19 +777,21 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridKernal g = (GridKernal)G.grid(nodeId);
 
-            GridCacheTxManager<Object, Object> tm = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context().tm();
+            GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
+
+            GridCacheTxManager<Object, Object> tm = cacheCtx.tm();
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
             GridCacheTxEx t = tm.tx(v);
 
-            if (t.hasWriteKey("x1"))
+            if (t.hasWriteKey(cacheCtx.txKey("x1")))
                 assertFalse(t.syncCommit());
-            else if (t.hasWriteKey("x2"))
+            else if (t.hasWriteKey(cacheCtx.txKey("x2")))
                 assertTrue(t.syncCommit());
-            else if (t.hasWriteKey("x3"))
+            else if (t.hasWriteKey(cacheCtx.txKey("x3")))
                 assertFalse(t.syncCommit());
-            else if (t.hasWriteKey("x4"))
+            else if (t.hasWriteKey(cacheCtx.txKey("x4")))
                 assertTrue(t.syncCommit());
         }
     }

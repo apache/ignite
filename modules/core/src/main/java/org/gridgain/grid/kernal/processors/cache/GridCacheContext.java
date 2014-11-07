@@ -42,7 +42,6 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
@@ -185,9 +184,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param ctx Kernal context.
+     * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
-     * @param mvccMgr Cache locking manager.
-     * @param verMgr Cache version manager.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
@@ -195,7 +193,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param qryMgr Cache query manager.
      * @param contQryMgr Continuous query manager.
      * @param affMgr Affinity manager.
-     * @param txMgr Cache transaction manager.
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
@@ -204,6 +201,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
         GridKernalContext ctx,
+        GridCacheSharedContext sharedCtx,
         GridCacheConfiguration cacheCfg,
 
         /*
@@ -211,8 +209,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
-        GridCacheMvccManager<K, V> mvccMgr,
-        GridCacheVersionManager<K, V> verMgr,
         GridCacheEventManager<K, V> evtMgr,
         GridCacheSwapManager<K, V> swapMgr,
         GridCacheStoreManager<K, V> storeMgr,
@@ -220,16 +216,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        GridCacheTxManager<K, V> txMgr,
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         GridCacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
+        assert sharedCtx != null;
         assert cacheCfg != null;
 
-        assert mvccMgr != null;
-        assert verMgr != null;
         assert evtMgr != null;
         assert swapMgr != null;
         assert storeMgr != null;
@@ -237,11 +231,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert qryMgr != null;
         assert contQryMgr != null;
         assert affMgr != null;
-        assert txMgr != null;
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
 
         this.ctx = ctx;
+        this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
 
         /*

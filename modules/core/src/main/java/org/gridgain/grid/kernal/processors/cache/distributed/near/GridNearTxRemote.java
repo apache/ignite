@@ -127,15 +127,9 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
-     * @param key Key.
-     * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param drVer DR version.
      * @param ctx Cache registry.
-     * @param txSize Ecpected transaction size.
+     * @param txSize Expected transaction size.
      * @param grpLockKey Collection of group lock keys if this is a group-lock transaction.
-     * @throws GridException If failed.
      */
     public GridNearTxRemote(
         UUID nodeId,
@@ -148,17 +142,12 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheTxKey<K> key,
-        byte[] keyBytes,
-        V val,
-        byte[] valBytes,
-        @Nullable GridCacheVersion drVer,
         GridCacheSharedContext<K, V> ctx,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
-    ) throws GridException {
+    ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
@@ -169,8 +158,6 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
         readMap = new LinkedHashMap<>(1, 1.0f);
         writeMap = new LinkedHashMap<>(txSize, 1.0f);
-
-        addEntry(key, keyBytes, val, valBytes, drVer);
     }
 
     /** {@inheritDoc} */
@@ -379,10 +366,11 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws GridException If failed.
      * @return {@code True} if entry has been enlisted.
      */
-    private boolean addEntry(
+    public boolean addEntry(
         GridCacheContext<K, V> cacheCtx,
         GridCacheTxKey<K> key,
         byte[] keyBytes,
+        GridCacheOperation op,
         V val,
         byte[] valBytes,
         @Nullable GridCacheVersion drVer
@@ -414,7 +402,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     return false;
                 }
                 else {
-                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, NOOP, val, 0L, -1L, cached,
+                    GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached,
                         drVer);
 
                     txEntry.keyBytes(keyBytes);

@@ -30,6 +30,15 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     }
 
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
@@ -38,7 +47,6 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
         cfg.setAtomicityMode(atomicityMode());
         cfg.setSwapEnabled(true);
-        cfg.setTxSerializableEnabled(true);
 
         return cfg;
     }

@@ -64,6 +64,13 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     private transient boolean deleted;
 
     /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
      * @param key Entry key.
      */
     public void key(K key) {

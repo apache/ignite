@@ -295,6 +295,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         return key;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridCacheTxKey<K> txKey() {
+        return new GridCacheTxKey<>(key, 0);
+    }
+
     /** @inheritDoc */
     @Override public V rawGet() {
         return val;

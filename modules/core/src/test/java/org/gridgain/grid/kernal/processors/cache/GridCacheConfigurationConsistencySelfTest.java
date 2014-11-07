@@ -641,7 +641,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(GridCacheConfiguration cfg) {
                 cfg.setAtomicSequenceReserveSize(1000);
-                cfg.setBatchUpdateOnCommit(true);
                 cfg.setCloner(new GridCacheCloner() {
                     @Nullable @Override public <T> T cloneValue(T val) {
                         return null;
@@ -662,7 +661,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(GridCacheConfiguration cfg) {
                 cfg.setAtomicSequenceReserveSize(2 * 1000);
-                cfg.setBatchUpdateOnCommit(false);
                 cfg.setCloner(new GridCacheCloner() {
                     @Nullable @Override public <T> T cloneValue(T val) {
                         return null;
@@ -680,7 +678,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         String log = strLog.toString();
 
         assertTrue(log.contains("Atomic sequence reserve size mismatch"));
-        assertTrue(log.contains("Batch update on commit mismatch"));
         assertTrue(log.contains("Cache cloner mismatch"));
         assertTrue(log.contains("Default lock timeout"));
         assertTrue(log.contains("Default query timeout"));

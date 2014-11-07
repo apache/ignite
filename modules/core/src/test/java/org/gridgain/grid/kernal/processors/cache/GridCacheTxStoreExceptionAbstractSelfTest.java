@@ -48,10 +48,18 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
     }
 
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setTxSerializableEnabled(true);
         ccfg.setStore(store);
 
         return ccfg;

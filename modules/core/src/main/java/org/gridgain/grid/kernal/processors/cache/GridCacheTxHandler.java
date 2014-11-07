@@ -40,7 +40,16 @@ public class GridCacheTxHandler<K, V> {
 
     public GridFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
-        prepareTx(nearNodeId, req);
+        return prepareTx(nearNodeId, req);
+    }
+
+    /**
+     * @param ctx Shared cache context.
+     */
+    public GridCacheTxHandler(GridCacheSharedContext<K, V> ctx) {
+        this.ctx = ctx;
+
+        log = ctx.logger(GridCacheTxHandler.class);
     }
 
     /**
@@ -639,7 +648,7 @@ public class GridCacheTxHandler<K, V> {
                     tx.addWrite(entry, ctx.deploy().globalLoader());
 
                     if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
-                        invalidateNearEntry(entry.key(), req.version());
+                        invalidateNearEntry(cacheCtx, entry.key().key(), req.version());
 
                     try {
                         if (req.needPreloadKey(idx)) {
@@ -683,6 +692,19 @@ public class GridCacheTxHandler<K, V> {
         }
 
         return null;
+    }
+
+    /**
+     * @param key Key
+     * @param ver Version.
+     * @throws GridException If invalidate failed.
+     */
+    private void invalidateNearEntry(GridCacheContext<K, V> cacheCtx, K key, GridCacheVersion ver)
+        throws GridException {
+        GridCacheEntryEx<K, V> nearEntry = cacheCtx.near().peekEx(key);
+
+        if (nearEntry != null)
+            nearEntry.invalidate(null, ver);
     }
 
     /**
@@ -929,20 +951,7 @@ public class GridCacheTxHandler<K, V> {
                             // Handle implicit locks for pessimistic transactions.
                             tx = ctx.tm().tx(req.version());
 
-                            if (tx != null) {
-                                if (tx.local())
-                                    return null;
-
-                                if (!marked)
-                                    marked = tx.markFinalizing(USER_FINISH);
-
-                                if (marked)
-                                    tx.addWrite(cacheCtx, txEntry.key(), txEntry.keyBytes(), txEntry.op(), txEntry.value(),
-                                        txEntry.valueBytes(), txEntry.drVersion());
-                                else
-                                    return null;
-                            }
-                            else {
+                            if (tx == null) {
                                 tx = new GridNearTxRemote<>(
                                     nodeId,
                                     req.nearNodeId(),
@@ -955,19 +964,11 @@ public class GridCacheTxHandler<K, V> {
                                     req.isolation(),
                                     req.isInvalidate(),
                                     0,
-                                    txEntry.key(),
-                                    txEntry.keyBytes(),
-                                    txEntry.value(),
-                                    txEntry.valueBytes(),
-                                    txEntry.drVersion(),
                                     ctx,
                                     req.txSize(),
                                     req.groupLockKey(),
                                     req.subjectId(),
                                     req.taskNameHash());
-
-                                if (tx.empty())
-                                    return tx;
 
                                 tx = ctx.tm().onCreated(tx);
 
@@ -981,6 +982,18 @@ public class GridCacheTxHandler<K, V> {
                                 if (!marked)
                                     return null;
                             }
+
+                            if (tx.local())
+                                return null;
+
+                            if (!marked)
+                                marked = tx.markFinalizing(USER_FINISH);
+
+                            if (marked)
+                                tx.addEntry(cacheCtx, txEntry.key(), txEntry.keyBytes(), txEntry.op(), txEntry.value(),
+                                    txEntry.valueBytes(), txEntry.drVersion());
+                            else
+                                return null;
 
                             if (req.groupLock()) {
                                 tx.markGroupLock();
@@ -1031,6 +1044,8 @@ public class GridCacheTxHandler<K, V> {
                                 log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +
                                     entry + ", tx=" + tx + ']');
                         }
+
+                        // Will retry in while loop.
                     }
                 }
             }

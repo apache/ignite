@@ -128,16 +128,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testDgc() throws Exception {
-        // Just check dgc() call does not fail.
-        cache().dgc();
-
-        cache().dgc(1000, true, true);
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testSize() throws Exception {
         assert cache().isEmpty();
 

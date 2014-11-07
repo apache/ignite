@@ -127,9 +127,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
-        String cacheName = cctx.name();
+        //String cacheName = cctx.name(); TODO GG-9141 how to determine policy?
 
-        plc = CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
+        plc = SYSTEM_POOL; // TODO GG-9141 CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
 
         depEnabled = cctx.gridDeploy().enabled();
 
@@ -244,7 +244,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
         }
         catch (Throwable e) {
-            if (CU.isUtilityCache(cctx.name()) && X.hasCause(e, ClassNotFoundException.class))
+            if (X.hasCause(e, ClassNotFoundException.class))
                 U.error(log, "Failed to process message (note that distributed services " +
                     "do not support peer class loading, if you deploy distributed service " +
                     "you should have all required classes in CLASSPATH on all nodes in topology) " +

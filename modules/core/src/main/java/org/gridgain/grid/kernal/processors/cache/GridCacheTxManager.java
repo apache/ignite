@@ -64,6 +64,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> nearIdMap = newMap();
 
+    /** TX handler. */
+    private GridCacheTxHandler<K, V> txHandler;
+
     /** All transactions. */
     private final Queue<GridCacheTxEx<K, V>> committedQ = new ConcurrentLinkedDeque8<>();
 
@@ -138,10 +141,15 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         pessimisticRecoveryBuf = new GridCachePerThreadTxCommitBuffer<>(cctx);
 
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
+
+        txHandler = new GridCacheTxHandler<>(cctx);
     }
 
+    /**
+     * @return TX handler.
+     */
     public GridCacheTxHandler<K, V> txHandler() {
-        return null;
+        return txHandler;
     }
 
     /**

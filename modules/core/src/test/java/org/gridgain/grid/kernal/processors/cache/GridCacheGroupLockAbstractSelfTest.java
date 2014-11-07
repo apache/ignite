@@ -73,7 +73,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         boolean txBatchUpdate = batchUpdate();
 
-        cacheCfg.setBatchUpdateOnCommit(txBatchUpdate);
         cacheCfg.setStore(store);
 
         cfg.setCacheConfiguration(cacheCfg);

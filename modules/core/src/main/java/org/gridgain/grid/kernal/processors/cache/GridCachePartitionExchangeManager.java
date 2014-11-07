@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -31,10 +30,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.events.GridEventType.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 
 /**
  * Partition exchange manager.
@@ -50,7 +49,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final long partResendTimeout = getLong(GG_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
     /** Latch which completes after local exchange future is created. */
-    private final GridFutureAdapter<?> locExchFut;
+    private GridFutureAdapter<?> locExchFut;
 
     /** */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -137,14 +136,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     };
 
-    public GridCachePartitionExchangeManager(GridKernalContext ctx) {
+    public GridCachePartitionExchangeManager() {
         exchWorker = new ExchangeWorker();
-        locExchFut = new GridFutureAdapter<>(ctx);
     }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         super.start0();
+
+        locExchFut = new GridFutureAdapter<>(cctx.kernalContext());
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -425,7 +425,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws GridException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
 
-        // TODO fill message.
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -445,7 +446,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws GridException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
-        // TODO fill message.
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
@@ -739,7 +741,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
                                         GridDiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                                        cctx.gridEvents().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
+                                        cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                                     }
                                 }

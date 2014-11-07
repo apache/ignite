@@ -42,13 +42,14 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc1 = new GridCacheConfiguration();
 
         cc1.setName(CACHE_REGULAR);
         cc1.setAtomicityMode(TRANSACTIONAL);
         cc1.setCacheMode(LOCAL);
         cc1.setWriteSynchronizationMode(FULL_SYNC);
-        cc1.setTxSerializableEnabled(true);
         cc1.setSwapEnabled(true);
         cc1.setEvictSynchronized(false);
         cc1.setEvictNearSynchronized(false);
@@ -59,7 +60,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc2.setAtomicityMode(TRANSACTIONAL);
         cc2.setCacheMode(LOCAL);
         cc2.setWriteSynchronizationMode(FULL_SYNC);
-        cc2.setTxSerializableEnabled(true);
         cc2.setMemoryMode(OFFHEAP_VALUES);
         cc2.setOffHeapMaxMemory(100 * 1024 * 1024);
         cc2.setQueryIndexEnabled(false);

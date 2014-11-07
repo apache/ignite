@@ -31,6 +31,12 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
  * Shared context.
  */
 public class GridCacheSharedContext<K, V> {
+    /** Kernal context. */
+    private GridKernalContext kernalCtx;
+
+    /** Managers in starting order. */
+    private List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
+
     /** Cache transaction manager. */
     private GridCacheTxManager<K, V> txMgr;
 
@@ -47,16 +53,10 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheIoManager<K, V> ioMgr;
 
     /** Deployment manager. */
-    private GridCacheDeploymentManager<K, V> deployMgr;
+    private GridCacheDeploymentManager<K, V> depMgr;
 
     /** Cache contexts map. */
     private Map<Integer, GridCacheContext<K, V>> ctxMap;
-
-    /** Managers. */
-    private List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
-
-    /** Kernal context. */
-    private GridKernalContext kernalContext;
 
     /** Tx metrics. */
     private GridCacheTxMetricsAdapter txMetrics;
@@ -70,13 +70,25 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      */
     public GridCacheSharedContext(
+        GridKernalContext kernalCtx,
         GridCacheTxManager<K, V> txMgr,
         GridCacheVersionManager<K, V> verMgr,
-        GridCacheMvccManager<K, V> mvccMgr
+        GridCacheMvccManager<K, V> mvccMgr,
+        GridCacheDeploymentManager<K, V> depMgr,
+        GridCachePartitionExchangeManager<K, V> exchMgr,
+        GridCacheIoManager<K, V> ioMgr
     ) {
+        this.kernalCtx = kernalCtx;
         this.mvccMgr = add(mvccMgr);
         this.verMgr = add(verMgr);
         this.txMgr = add(txMgr);
+        this.depMgr = add(depMgr);
+        this.exchMgr = add(exchMgr);
+        this.ioMgr = add(ioMgr);
+
+        txMetrics = new GridCacheTxMetricsAdapter();
+
+        ctxMap = new HashMap<>();
     }
 
     /**
@@ -86,6 +98,31 @@ public class GridCacheSharedContext<K, V> {
      */
     public Collection<GridCacheContext<K, V>> cacheContexts() {
         return ctxMap.values();
+    }
+
+    /**
+     * Adds cache context to shared cache context.
+     *
+     * @param cacheCtx Cache context.
+     */
+    @SuppressWarnings("unchecked")
+    public void addCacheContext(GridCacheContext cacheCtx) throws GridException {
+        if (ctxMap.containsKey(cacheCtx.cacheId())) {
+            GridCacheContext<K, V> existing = ctxMap.get(cacheCtx.cacheId());
+
+            throw new GridException("Failed to start cache due to conflicting cache ID " +
+                "(change cache name and restart grid) [cacheName=" + cacheCtx.name() +
+                ", conflictingCacheName=" + existing.name() + ']');
+        }
+
+        ctxMap.put(cacheCtx.cacheId(), cacheCtx);
+    }
+
+    /**
+     * @return List of shared context managers in starting order.
+     */
+    public List<GridCacheSharedManager<K, V>> managers() {
+        return mgrs;
     }
 
     /**
@@ -102,7 +139,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Grid name.
      */
     public String gridName() {
-        return kernalContext.gridName();
+        return kernalCtx.gridName();
     }
 
     /**
@@ -111,7 +148,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Transactions configuration.
      */
     public GridTransactionsConfiguration txConfig() {
-        return kernalContext.config().getTransactionsConfiguration();
+        return kernalCtx.config().getTransactionsConfiguration();
     }
 
     /**
@@ -210,77 +247,77 @@ public class GridCacheSharedContext<K, V> {
      * @return Cache deployment manager.
      */
     public GridCacheDeploymentManager<K, V> deploy() {
-        return deployMgr;
+        return depMgr;
     }
 
     /**
      * @return Marshaller.
      */
     public GridMarshaller marshaller() {
-        return kernalContext.config().getMarshaller();
+        return kernalCtx.config().getMarshaller();
     }
 
     /**
      * @return Grid configuration.
      */
     public GridConfiguration gridConfig() {
-        return kernalContext.config();
+        return kernalCtx.config();
     }
 
     /**
      * @return Kernal context.
      */
     public GridKernalContext kernalContext() {
-        return kernalContext;
+        return kernalCtx;
     }
 
     /**
      * @return Grid IO manager.
      */
     public GridIoManager gridIO() {
-        return kernalContext.io();
+        return kernalCtx.io();
     }
 
     /**
      * @return Grid deployment manager.
      */
     public GridDeploymentManager gridDeploy() {
-        return kernalContext.deploy();
+        return kernalCtx.deploy();
     }
 
     /**
      * @return Grid event storage manager.
      */
     public GridEventStorageManager gridEvents() {
-        return kernalContext.event();
+        return kernalCtx.event();
     }
 
     /**
      * @return Discovery manager.
      */
     public GridDiscoveryManager discovery() {
-        return kernalContext.discovery();
+        return kernalCtx.discovery();
     }
 
     /**
      * @return Timeout processor.
      */
     public GridTimeoutProcessor time() {
-        return kernalContext.timeout();
+        return kernalCtx.timeout();
     }
 
     /**
      * @return Node ID.
      */
     public UUID localNodeId() {
-        return kernalContext.localNodeId();
+        return kernalCtx.localNodeId();
     }
 
     /**
      * @return Local node.
      */
     public GridNode localNode() {
-        return kernalContext.discovery().localNode();
+        return kernalCtx.discovery().localNode();
     }
 
     /**
@@ -288,7 +325,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Node or {@code null}.
      */
     public GridNode node(UUID nodeId) {
-        return kernalContext.discovery().node(nodeId);
+        return kernalCtx.discovery().node(nodeId);
     }
 
     /**
@@ -298,7 +335,7 @@ public class GridCacheSharedContext<K, V> {
      * @return GridLogger instance.
      */
     public GridLogger logger(Class<?> cls) {
-        return kernalContext.log(cls);
+        return kernalCtx.log(cls);
     }
 
     /**
@@ -306,7 +343,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Logger.
      */
     public GridLogger logger(String category) {
-        return kernalContext.log().getLogger(category);
+        return kernalCtx.log().getLogger(category);
     }
 
     /**
@@ -317,7 +354,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public GridFuture<?> partitionReleaseFuture(long topVer) {
-        GridCompoundFuture f = new GridCompoundFuture(kernalContext);
+        GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));

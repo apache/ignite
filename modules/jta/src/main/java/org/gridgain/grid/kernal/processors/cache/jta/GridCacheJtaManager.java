@@ -65,13 +65,16 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                             // Start with default concurrency and isolation.
                             GridCacheConfiguration cfg = cctx.config();
 
+                            GridTransactionsConfiguration tCfg = cctx.kernalContext().config()
+                                .getTransactionsConfiguration();
+
                             tx = cctx.tm().onCreated(
                                 cctx.cache().newTx(
                                     false,
                                     false,
-                                    cfg.getDefaultTxConcurrency(),
-                                    cfg.getDefaultTxIsolation(),
-                                    cfg.getDefaultTxTimeout(),
+                                    tCfg.getDefaultTxConcurrency(),
+                                    tCfg.getDefaultTxIsolation(),
+                                    tCfg.getDefaultTxTimeout(),
                                     cfg.isInvalidate() || cctx.hasFlag(INVALIDATE),
                                     cctx.syncCommit(),
                                     cctx.syncRollback(),

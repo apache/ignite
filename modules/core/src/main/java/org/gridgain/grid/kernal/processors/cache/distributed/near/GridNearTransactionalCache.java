@@ -250,9 +250,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             if (req.inTx()) {
                                 tx = ctx.tm().tx(req.version());
 
-                                if (tx != null)
-                                    tx.addWrite(txKey, bytes, null/*Value.*/, null/*Value bytes.*/, drVer);
-                                else {
+                                if (tx == null) {
                                     tx = new GridNearTxRemote<>(
                                         nodeId,
                                         req.nearNodeId(),
@@ -264,11 +262,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.isolation(),
                                         req.isInvalidate(),
                                         req.timeout(),
-                                        txKey,
-                                        bytes,
-                                        null, // Value.
-                                        null, // Value bytes.
-                                        drVer,
                                         ctx.shared(),
                                         req.txSize(),
                                         req.groupLockKey(),
@@ -296,6 +289,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         throw new GridCacheTxRollbackException("Failed to acquire lock " +
                                             "(transaction has been completed): " + req.version());
                                 }
+
+                                tx.addEntry(ctx, txKey, bytes, GridCacheOperation.NOOP, /*Value.*/null,
+                                    /*Value byts.*/null, drVer);
                             }
 
                             // Add remote candidate before reordering.

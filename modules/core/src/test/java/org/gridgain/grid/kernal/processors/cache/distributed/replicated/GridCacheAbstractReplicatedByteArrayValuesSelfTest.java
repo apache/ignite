@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
@@ -23,13 +24,21 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration0() {
         GridCacheConfiguration cfg = new GridCacheConfiguration();
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setSwapEnabled(true);
         cfg.setEvictSynchronized(false);
         cfg.setEvictNearSynchronized(false);
@@ -44,7 +53,6 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setMemoryMode(OFFHEAP_VALUES);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
         cfg.setQueryIndexEnabled(false);
@@ -59,7 +67,6 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setMemoryMode(OFFHEAP_TIERED);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
         cfg.setQueryIndexEnabled(false);

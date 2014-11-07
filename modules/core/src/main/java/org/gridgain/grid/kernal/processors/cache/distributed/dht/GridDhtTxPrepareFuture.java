@@ -1019,7 +1019,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             if (entry.initialValue(info.value(), info.valueBytes(), info.version(),
                                 info.ttl(), info.expireTime(), true, topVer, drType)) {
                                 if (rec && !entry.isInternal())
-                                    cctx.gridEvents().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                         (GridUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null);
                             }
