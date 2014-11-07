@@ -329,6 +329,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         return fut;
                     }
 
+                    U.debug(log, "Will return existing future for deploy [name=" + cfg.getName() +
+                        ", old=" + old + ']');
+
                     fut = old;
                 }
                 else {
