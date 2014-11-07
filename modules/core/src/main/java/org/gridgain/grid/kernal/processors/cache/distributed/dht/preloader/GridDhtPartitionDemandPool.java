@@ -1369,10 +1369,11 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                         GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
 
-                        if (msg == null)
-                            msg = F.addIfAbsent(assigns, n,
-                                new GridDhtPartitionDemandMessage<K, V>(top.updateSequence(),
-                                    exchFut.exchangeId().topologyVersion()));
+                        if (msg == null) {
+                            assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
+                                top.updateSequence(),
+                                exchFut.exchangeId().topologyVersion()));
+                        }
 
                         msg.addPartition(p);
                     }
