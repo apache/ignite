@@ -911,7 +911,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                         GridPortableProcessor portable = ctx.portable();
 
                         for (Map.Entry<K, V> entry : entries)
-                            entries0.add(new Entry0<>(entry.getKey(),
+                            entries0.add(new Entry0<>(
+                                portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
                                 portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
 
                         entriesBytes = ctx.config().getMarshaller().marshal(entries0);
@@ -1275,13 +1276,17 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(delegate.size());
 
-            for (Map.Entry<K, V> entry : delegate) {
-                out.writeObject(entry.getKey());
+            boolean portableEnabled = portable != null;
 
-                if (portable != null)
+            for (Map.Entry<K, V> entry : delegate) {
+                if (portableEnabled) {
+                    out.writeObject(portable.marshalToPortable(entry.getKey()));
                     out.writeObject(portable.marshalToPortable(entry.getValue()));
-                else
+                }
+                else {
+                    out.writeObject(entry.getKey());
                     out.writeObject(entry.getValue());
+                }
             }
         }
 

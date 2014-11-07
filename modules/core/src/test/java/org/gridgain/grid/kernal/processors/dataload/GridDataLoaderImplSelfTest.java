@@ -58,7 +58,9 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             GridPortableConfiguration portableCfg = new GridPortableConfiguration();
 
             portableCfg.setTypeConfigurations(Arrays.asList(
-                new GridPortableTypeConfiguration(TestObject.class.getName())));
+                new GridPortableTypeConfiguration(TestObject.class.getName()),
+                new GridPortableTypeConfiguration(TestObjectBad.class.getName()))
+            );
 
             cfg.setPortableConfiguration(portableCfg);
         }
@@ -118,7 +120,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             G.stopAll(true);
         }
     }
-
 
     /**
      * Data loader should correctly load entries from HashMap in case of grids with more than one node
@@ -229,12 +230,42 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
-     * Gets cache configuration.
+     * Data loader should correctly load portable entries from HashMap in case of grids with more than one node
+     *  and with GridOptimizedMarshaller that requires serializable.
      *
-     * @return Cache configuration.
+     * @throws Exception If failed.
      */
+    public void testAddNonPortable() throws Exception {
+        try {
+            portables = true;
+
+            startGrids(2);
+
+            Grid g0 = grid(0);
+
+            GridDataLoader<Integer, TestObjectBad> dataLdr = g0.dataLoader(null);
+
+            Map<Integer, TestObjectBad> map = U.newHashMap(KEYS_COUNT);
+
+            for (int i = 0; i < KEYS_COUNT; i ++)
+                map.put(i, new TestObjectBad(i));
+
+            dataLdr.addData(map);
+
+            dataLdr.close(false);
+        }
+        finally {
+            G.stopAll(true);
+        }
+    }
+
+
+        /**
+         * Gets cache configuration.
+         *
+         * @return Cache configuration.
+         */
     private GridCacheConfiguration cacheConfiguration() {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -289,6 +320,38 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
             val = reader.readInt("val");
+        }
+    }
+
+    private static class TestObjectBad implements Serializable {
+        /** */
+        private int val;
+
+        /**
+         */
+        private TestObjectBad() {
+            // No-op.
+        }
+
+        /**
+         * @param val Value.
+         */
+        private TestObjectBad(int val) {
+            this.val = val;
+        }
+
+        public Integer val() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj instanceof TestObjectBad && ((TestObjectBad)obj).val == val;
         }
     }
 }
