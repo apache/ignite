@@ -2634,7 +2634,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         }
 
         if (next != null)
-            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.order()));
+            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
     }
 
     /**
@@ -4068,7 +4068,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
          * Processes node added message.
          *
          * @param msg Node added message.
+         * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring,
+         *      if new node auth fails due to config inconsistency. So, we need to finish add
+         *      and only then initiate failure.
          */
+        @Deprecated
         private void processNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
@@ -4120,6 +4124,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
 
                 if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
+                    boolean authFailed = true;
+
                     try {
                         GridSecurityCredentials cred = unmarshalCredentials(node);
 
@@ -4132,11 +4138,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             // TODO kick the node out.
                             System.out.println("!!!!!!!!!!!!!!!");
                         }
+                        else
+                            // Node will not be kicked out.
+                            authFailed = false;
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+                    }
+                    finally {
+                        if (authFailed) {
+                            try {
+                                trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send unauthenticated message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
 
-                        // TODO kick the node out.
+                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
+                                node.internalOrder()));
+                        }
                     }
                 }
 
