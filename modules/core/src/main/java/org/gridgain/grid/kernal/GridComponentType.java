@@ -116,7 +116,7 @@ public enum GridComponentType {
      *
      * @return {@code True} if in classpath.
      */
-    public boolean isInClassPath() {
+    public boolean inClassPath() {
         try {
             Class.forName(clsName);
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.logger.log4j;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,6 +21,9 @@ import java.util.*;
  * Closure that generates file path adding node id to filename as a suffix.
  */
 class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node id. */
     private final UUID nodeId;
 
@@ -34,15 +38,19 @@ class GridLog4jNodeIdFilePath implements GridClosure<String, String> {
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
+        if (!F.isEmpty(U.GRIDGAIN_LOG_DIR))
+            return U.nodeIdLogFileName(nodeId, new File(U.GRIDGAIN_LOG_DIR, "gridgain.log").getAbsolutePath());
+
         if (oldPath != null) // fileName could be null if GRIDGAIN_HOME is not defined.
             return U.nodeIdLogFileName(nodeId, oldPath);
 
-        String tmpDir = X.getSystemOrEnv("java.io.tmpdir");
+        String tmpDir = GridSystemProperties.getString("java.io.tmpdir");
 
         if (tmpDir != null)
             return U.nodeIdLogFileName(nodeId, new File(tmpDir, "gridgain.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
+
         return null;
     }
 }

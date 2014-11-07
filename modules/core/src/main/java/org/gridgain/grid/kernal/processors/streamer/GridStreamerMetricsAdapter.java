@@ -117,14 +117,14 @@ public class GridStreamerMetricsAdapter implements GridStreamerMetrics {
         stageWaitingExecCnt = metrics.stageWaitingExecutionCount();
 
         // Stage metrics.
-        Map<String, GridStreamerStageMetrics> map = new LinkedHashMap<>(metrics.stageMetrics().size());
+        Map<String, GridStreamerStageMetrics> map = U.newLinkedHashMap(metrics.stageMetrics().size());
 
         for (GridStreamerStageMetrics m : metrics.stageMetrics())
             map.put(m.name(), new GridStreamerStageMetricsAdapter(m));
 
         stageMetrics = Collections.unmodifiableMap(map);
 
-        Map<String, GridStreamerWindowMetrics> map0 = new LinkedHashMap<>(metrics.windowMetrics().size());
+        Map<String, GridStreamerWindowMetrics> map0 = U.newLinkedHashMap(metrics.windowMetrics().size());
 
         for (GridStreamerWindowMetrics m : metrics.windowMetrics())
             map0.put(m.name(), new GridStreamerWindowMetricsAdapter(m));

@@ -212,7 +212,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.isEnterprise()) {
+                if (ctx.secureSession().enabled()) {
                     try {
                         res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
                     }
@@ -342,7 +342,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             Map<Object, Object> oldVals = req0.values();
 
             if (oldVals != null) {
-                Map<Object, Object> newVals = new HashMap<>(oldVals.size());
+                Map<Object, Object> newVals = U.newHashMap(oldVals.size());
 
                 for (Map.Entry<Object, Object> e : oldVals.entrySet())
                     newVals.put(interceptor.onReceive(e.getKey()), interceptor.onReceive(e.getValue()));

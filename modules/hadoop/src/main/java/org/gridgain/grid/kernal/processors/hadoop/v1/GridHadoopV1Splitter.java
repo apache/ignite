@@ -13,7 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -51,7 +51,7 @@ public class GridHadoopV1Splitter {
                     res.add(new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(), s.getStart(), s.getLength()));
                 }
                 else
-                    res.add(new GridHadoopSplitWrapper(i, nativeSplit, nativeSplit.getLocations()));
+                    res.add(GridHadoopUtils.wrapSplit(i, nativeSplit, nativeSplit.getLocations()));
             }
 
             return res;

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.portables.*;
@@ -46,7 +47,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    private static final int MAX_REMAP_CNT;
+    private static final int MAX_REMAP_CNT = getInteger(GG_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -84,28 +85,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Subject ID. */
     private UUID subjId;
 
+    /** Task name. */
+    private String taskName;
+
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
-
-    /**
-     * Initializes max remap count.
-     */
-    static {
-        int dfltRemapCnt = DFLT_MAX_REMAP_CNT;
-
-        String s = X.getSystemOrEnv(GG_NEAR_GET_MAX_REMAPS, Integer.toString(dfltRemapCnt));
-
-        int cnt;
-
-        try {
-            cnt = Integer.parseInt(s);
-        }
-        catch (NumberFormatException ignore) {
-            cnt = dfltRemapCnt;
-        }
-
-        MAX_REMAP_CNT = cnt;
-    }
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -131,6 +115,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Nullable GridCacheTxLocalEx<K, V> tx,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
+        String taskName,
         boolean deserializePortable
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
@@ -145,6 +130,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.filters = filters;
         this.tx = tx;
         this.subjId = subjId;
+        this.taskName = taskName;
         this.deserializePortable = deserializePortable;
 
         futId = GridUuid.randomUuid();
@@ -158,7 +144,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * Initializes future.
      */
     public void init() {
-        long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         map(keys, Collections.<GridNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
 
@@ -276,8 +262,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             return;
         }
 
-        Map<GridNode, LinkedHashMap<K, Boolean>> mappings =
-            new HashMap<>(affNodes.size());
+        Map<GridNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(affNodes.size());
 
         Map<K, GridCacheVersion> savedVers = null;
 
@@ -305,7 +290,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId, deserializePortable, filters);
+                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
+                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -353,7 +339,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
 
                 GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters, subjId);
+                    reload, topVer, filters, subjId, taskName == null ? 0 : taskName.hashCode());
 
                 add(fut); // Append new future.
 
@@ -396,8 +382,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 // First we peek into near cache.
                 if (isNear)
-                    v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, subjId, filters);
+                    v = entry.innerGet(tx,
+                        /*swap*/false,
+                        /*read-through*/false,
+                        /*fail-fast*/true,
+                        /*unmarshal*/true,
+                        /*metrics*/true,
+                        /*events*/true,
+                        /*temporary*/false,
+                        subjId,
+                        null,
+                        taskName,
+                        filters);
 
                 GridNode primary = null;
 
@@ -411,8 +407,18 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
-                            v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, subjId, filters);
+                            v = entry.innerGet(tx,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/false,
+                                /*events*/!isNear,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                filters);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -455,7 +461,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     entry = nearEntry;
 
                     if (savedVers == null)
-                        savedVers = new HashMap<>(3);
+                        savedVers = U.newHashMap(3);
 
                     savedVers.put(key, nearEntry == null ? null : nearEntry.dhtVersion());
 
@@ -565,6 +571,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             true,
                             topVer,
                             subjId);
+
+                        cctx.evicts().touch(entry, topVer);
                     }
 
                     V val = info.value();
@@ -677,14 +685,30 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
             long updTopVer = ctx.discovery().topologyVersion();
 
-            assert updTopVer > topVer : "Got topology exception but topology version did " +
-                "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                ", nodeId=" + node.id() + ']';
+            if (updTopVer > topVer) {
+                // Remap.
+                map(keys.keySet(), F.t(node, keys), updTopVer);
 
-            // Remap.
-            map(keys.keySet(), F.t(node, keys), updTopVer);
+                onDone(Collections.<K, V>emptyMap());
+            }
+            else {
+                final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
 
-            onDone(Collections.<K, V>emptyMap());
+                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<GridFuture<Long>>() {
+                    @Override public void apply(GridFuture<Long> longGridFuture) {
+                        if (timeout.finish()) {
+                            ctx.timeout().removeTimeoutObject(timeout);
+
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), cctx.affinity().affinityTopologyVersion());
+
+                            onDone(Collections.<K, V>emptyMap());
+                        }
+                    }
+                });
+
+                ctx.timeout().addTimeoutObject(timeout);
+            }
         }
 
         /**
@@ -745,6 +769,46 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this);
+        }
+
+        /**
+         * Remap timeout object.
+         */
+        private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
+            /** Finished flag. */
+            private AtomicBoolean finished = new AtomicBoolean();
+
+            /** Topology version to wait. */
+            private long topVer;
+
+            /** Exception cause. */
+            private GridException e;
+
+            /**
+             * @param timeout Timeout.
+             * @param topVer Topology version timeout was created on.
+             */
+            private RemapTimeoutObject(long timeout, long topVer, GridException e) {
+                super(timeout);
+
+                this.topVer = topVer;
+                this.e = e;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onTimeout() {
+                if (finish())
+                    // Fail the whole get future.
+                    onDone(new GridException("Failed to wait for topology version to change: " + (topVer + 1), e));
+                // else remap happened concurrently.
+            }
+
+            /**
+             * @return Guard against concurrent completion.
+             */
+            public boolean finish() {
+                return finished.compareAndSet(false, true);
+            }
         }
     }
 }

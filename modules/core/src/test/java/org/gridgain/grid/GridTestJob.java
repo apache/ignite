@@ -34,9 +34,8 @@ public class GridTestJob extends GridComputeJobAdapter {
 
     /** {@inheritDoc} */
     @Override public String execute() throws GridException {
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Executing job [job=" + this + ", arg=" + argument(0) + ']');
-        }
 
         return argument(0);
     }

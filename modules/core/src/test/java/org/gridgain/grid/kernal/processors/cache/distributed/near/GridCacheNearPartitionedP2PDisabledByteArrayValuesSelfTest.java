@@ -13,7 +13,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
  * Tests for byte array values in NEAR-PARTITIONED caches with P2P disabled.
  */
 public class GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest extends
-    GridCacheAbstractNearPartitionedByteArrayValuesSelfTest{
+    GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean peerClassLoading() {
         return false;

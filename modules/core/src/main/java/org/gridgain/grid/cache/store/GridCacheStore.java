@@ -13,8 +13,12 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
+
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * API for cache persistent storage for read-through and write-through behavior.
@@ -52,6 +56,39 @@ import java.util.*;
  *     tx.addMeta("some.name", conn);
  * }
  * </pre>
+ * <h1 class="header">Working With Portable Objects</h1>
+ * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
+ * {@code true}), all portable keys and values are converted to instances of {@link GridPortableObject}.
+ * Therefore, all cache store methods will take parameters in portable format. To avoid class
+ * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
+ * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
+ * signature should be the following:
+ * <pre>
+ * public class PortableCacheStore implements GridCacheStore&lt;Integer, GridPortableObject&gt; {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws GridException {
+ *         ...
+ *     }
+ *
+ *     ...
+ * }
+ * </pre>
+ * Note that only portable classes are converted to {@link GridPortableObject} format. Following
+ * types are stored in cache without changes and therefore should not affect cache store signature:
+ * <ul>
+ *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+ *     <li>Arrays of primitives (byte[], int[], ...)</li>
+ *     <li>{@link String} and array of {@link String}s</li>
+ *     <li>{@link UUID} and array of {@link UUID}s</li>
+ *     <li>{@link Date} and array of {@link Date}s</li>
+ *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+ *     <li>Enums and array of enums</li>
+ *     <li>
+ *         Maps, collections and array of objects (but objects inside
+ *         them will still be converted if they are portable)
+ *     </li>
+ * </ul>
+ *
+ * @see GridPortables
  */
 public interface GridCacheStore<K, V> {
     /**
@@ -101,9 +138,8 @@ public interface GridCacheStore<K, V> {
         throws GridException;
 
     /**
-     * Stores a given value in persistent storage. Note that cache transaction is implicitly created
-     * even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Stores a given value in persistent storage. Note that if write-behind is configured for a
+     * particular cache, transaction object passed in the cache store will be always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to put.
@@ -113,9 +149,8 @@ public interface GridCacheStore<K, V> {
     public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException;
 
     /**
-     * Stores given key value pairs in persistent storage. Note that cache transaction is implicitly created
-     * even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Stores given key value pairs in persistent storage. Note that if write-behind is configured
+     * for a particular cache, transaction object passed in the cache store will be always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param map Values to store.
@@ -124,9 +159,9 @@ public interface GridCacheStore<K, V> {
     public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws GridException;
 
     /**
-     * Removes the value identified by given key from persistent storage. Note that cache transaction is
-     * implicitly created even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Removes the value identified by given key from persistent storage. Note that  if write-behind is
+     * configured for a particular cache, transaction object passed in the cache store will be always
+     * {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to remove.
@@ -135,9 +170,9 @@ public interface GridCacheStore<K, V> {
     public void remove(@Nullable GridCacheTx tx, K key) throws GridException;
 
     /**
-     * Removes all vales identified by given keys from persistent storage. Note that cache transaction
-     * is implicitly created even for a single put. However, if write-behind is configured for a particular cache,
-     * transaction object passed in the cache store will be always {@code null}.
+     * Removes all vales identified by given keys from persistent storage. Note that if write-behind
+     * is configured for a particular cache, transaction object passed in the cache store will be
+     * always {@code null}.
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param keys Keys to remove.
@@ -148,11 +183,6 @@ public interface GridCacheStore<K, V> {
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
      * parameter.
-     * <p>
-     * Note that if explicit transactions are not used in code, then it is possible
-     * to commit or rollback transactions directly in {@code 'put(..)'}, or {@code 'remove(..)'}
-     * methods. In that case, this method should be left empty ({@link GridCacheStoreAdapter} provides
-     * empty implementation of this method).
      *
      * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.

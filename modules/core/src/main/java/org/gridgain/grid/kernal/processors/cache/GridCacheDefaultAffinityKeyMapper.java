@@ -82,13 +82,17 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
             GridPortableObject po = (GridPortableObject)key;
 
             try {
-                String affKeyFieldName = po.metaData().affinityKeyFieldName();
+                GridPortableMetadata meta = po.metaData();
 
-                if (affKeyFieldName != null)
-                    return po.field(affKeyFieldName);
+                if (meta != null) {
+                    String affKeyFieldName = meta.affinityKeyFieldName();
+
+                    if (affKeyFieldName != null)
+                        return po.field(affKeyFieldName);
+                }
             }
             catch (GridPortableException e) {
-                U.error(log, "Failed ", e);
+                U.error(log, "Failed to get affinity field from portable object: " + key, e);
             }
         }
         else {

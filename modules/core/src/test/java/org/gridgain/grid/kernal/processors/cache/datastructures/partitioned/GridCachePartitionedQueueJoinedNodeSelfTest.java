@@ -10,7 +10,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -35,7 +34,7 @@ public class GridCachePartitionedQueueJoinedNodeSelfTest extends GridCacheQueueJ
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setDistributionMode(PARTITIONED_ONLY);
 
         c.setCacheConfiguration(cc);
 

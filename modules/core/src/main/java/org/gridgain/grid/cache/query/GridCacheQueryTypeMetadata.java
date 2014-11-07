@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Cache query type metadata.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryTypeMetadata {
     /** Type name, e.g. class name. */
@@ -91,7 +88,7 @@ public class GridCacheQueryTypeMetadata {
      * @param type Type name.
      */
     public void setType(String type) {
-        this.type = CU.h2Escape(type);
+        this.type = type;
     }
 
     /**

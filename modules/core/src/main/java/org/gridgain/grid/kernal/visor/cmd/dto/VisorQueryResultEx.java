@@ -32,7 +32,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     /**
      * @param resNodeId Node where query executed.
      * @param qryId Query ID for future extraction in nextPage() access.
-     * @param colNames Column type and names.
+     * @param colNames Columns types and names.
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
      */
@@ -65,7 +65,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     }
 
     /**
-     * @return Column names.
+     * @return Columns names.
      */
     public VisorFieldsQueryColumn[] columnNames() {
         return colNames;

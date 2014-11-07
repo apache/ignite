@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -83,11 +84,11 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(mode);
         ggfsCfg.setPathModes(pathModes);
-        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:10500}"));
+        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:10500}"));
         ggfsCfg.setManagementPort(-1);
-        ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/");
-        ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-            "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
+        ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
+            "ggfs://ggfs-secondary:ggfs-grid-secondary@127.0.0.1:11500/",
+            "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -146,7 +147,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
         ggfsCfg.setName("ggfs-secondary");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap("{type:'tcp', port:11500}"));
+        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:11500}"));
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

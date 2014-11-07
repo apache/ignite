@@ -23,6 +23,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
@@ -46,6 +47,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -373,7 +375,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             case ONHEAP_TIERED:
-                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null)
+                if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
                     U.quietAndWarn(log, "Eviction policy not enabled with ONHEAP_TIERED mode for cache " +
                         "(entries will not be moved to off-heap store): " + cc.getName());
 
@@ -613,6 +615,74 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter.GridSubjectIdAddedMessageConverter616.class,
             GridDhtCacheAdapter.SUBJECT_ID_EVENTS_SINCE_VER);
 
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearTxFinishRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxFinishRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearGetRequest.class,
+            GridDhtCacheAdapter.GridTaskNameHashAddedMessageConverter621.class,
+            GridDhtCacheAdapter.TASK_NAME_HASH_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestPortablesConverter620.class,
+            GridCacheQueryManager.QUERY_PORTABLES_SINCE);
+
+        ctx.versionConverter().registerLocal(GridCacheQueryRequest.class,
+            GridCacheQueryManager.GridCacheQueryRequestEventsConverter621.class,
+            GridCacheQueryManager.QUERY_EVENTS_SINCE);
+
+        ctx.versionConverter().registerLocal(GridDhtLockRequest.class,
+            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareRequest.class,
+            GridDhtCacheAdapter.PreloadKeysAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtLockResponse.class,
+            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtTxPrepareResponse.class,
+            GridDhtCacheAdapter.PreloadEntriesAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridCachePessimisticCheckCommittedTxRequest.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearLockRequest.class,
+            GridDhtCacheAdapter.BooleanFlagAddedMessageConverter650.class,
+            GridDhtCacheAdapter.PRELOAD_WITH_LOCK_SINCE_VER);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -634,7 +704,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (GridComponentType.HADOOP.isInClassPath())
+        if (GridComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
@@ -1186,8 +1256,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                             locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
-                            locAttr.storeClassName(), rmtAttr.storeClassName(), true);
+                        if (!skipStoreConsistencyCheck(locAttr, rmtAttr))
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
+                                locAttr.storeClassName(), rmtAttr.storeClassName(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cloner", "Cache cloner",
                             locAttr.clonerClassName(), rmtAttr.clonerClassName(), false);
@@ -1279,9 +1350,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeEnabled", "Store enabled",
-                            locAttr.storeEnabled(), rmtAttr.storeEnabled(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
                             "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
@@ -1401,6 +1469,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Checks if store check should be skipped for given nodes.
+     *
+     * @param locAttr Local node attributes.
+     * @param rmtAttr Remote node attributes.
+     * @return {@code True} if store check should be skipped.
+     */
+    private boolean skipStoreConsistencyCheck(GridCacheAttributes locAttr, GridCacheAttributes rmtAttr) {
+        return
+            // In atomic mode skip check if either local or remote node is client.
+            locAttr.atomicityMode() == ATOMIC &&
+                (locAttr.partitionedTaxonomy() == CLIENT_ONLY || locAttr.partitionedTaxonomy() == NEAR_ONLY ||
+                rmtAttr.partitionedTaxonomy() == CLIENT_ONLY || rmtAttr.partitionedTaxonomy() == NEAR_ONLY);
+    }
+
+    /**
      * @param cache Cache.
      * @throws GridException If failed.
      */
@@ -1439,8 +1522,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridNode n : ctx.discovery().remoteNodes())
-            checkCache(n);
+        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (GridNode n : ctx.discovery().remoteNodes())
+                checkCache(n);
+        }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();

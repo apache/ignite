@@ -15,20 +15,23 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
+import static java.util.Arrays.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -183,9 +186,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
      * @throws GridException If wrapped SPI could not be started.
      */
     protected final void startSpi() throws GridException {
-        assert spis != null;
-
-        Collection<String> names = new HashSet<>(spis.length);
+        Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
             // Print-out all SPI parameters only in DEBUG mode.
@@ -275,6 +276,18 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.discovery().localNode();
                     }
 
+                    @Override public Collection<GridNode> remoteDaemonNodes() {
+                        final Collection<GridNode> all = ctx.discovery().daemonNodes();
+
+                        return !localNode().isDaemon() ?
+                            all :
+                            F.view(all, new GridPredicate<GridNode>() {
+                                @Override public boolean apply(GridNode n) {
+                                    return n.isDaemon();
+                                }
+                            });
+                    }
+
                     @Nullable @Override public GridNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
@@ -297,7 +310,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                             if (msg instanceof GridTcpCommunicationMessageAdapter)
                                 ctx.io().send(node, topic, (GridTcpCommunicationMessageAdapter)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(Arrays.asList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
                         catch (GridException e) {
                             throw unwrapException(e);
@@ -461,6 +474,21 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
                     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
                         return ctx.grid().security().authenticatedSubject(subjId);
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
+                        Object key, @Nullable ClassLoader ldr) throws GridException {
+                        GridCache<Object, V> cache = ctx.cache().cache(spaceName);
+
+                        GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+
+                        if (cctx.isNear())
+                            cctx = cctx.near().dht().context();
+
+                        GridCacheSwapEntry e = cctx.swap().read(key);
+
+                        return e != null ? (V)e.value() : null;
                     }
 
                     /**

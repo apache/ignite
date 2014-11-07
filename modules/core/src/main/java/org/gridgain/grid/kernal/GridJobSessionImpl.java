@@ -181,9 +181,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     @Override public void setAttributes(Map<?, ?> attrs) throws GridException {
         ses.setAttributes(attrs);
 
-        if (!isTaskNode()) {
+        if (!isTaskNode())
             ctx.job().setAttributes(this, attrs);
-        }
     }
 
 
@@ -281,6 +280,11 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public boolean isFullSupport() {
         return ses.isFullSupport();
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        return ses.subjectId();
     }
 
     /** {@inheritDoc} */

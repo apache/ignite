@@ -121,18 +121,20 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
         assert c.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        if (restEnabled) {
+            GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+            clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
-        GridSslContextFactory sslCtxFactory = sslContextFactory();
+            GridSslContextFactory sslCtxFactory = sslContextFactory();
 
-        if (sslCtxFactory != null) {
-            clientCfg.setRestTcpSslEnabled(true);
-            clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+            if (sslCtxFactory != null) {
+                clientCfg.setRestTcpSslEnabled(true);
+                clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+            }
+
+            c.setClientConnectionConfiguration(clientCfg);
         }
-
-        c.setClientConnectionConfiguration(clientCfg);
 
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
@@ -781,18 +783,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridCacheTxEx t = tm.tx(v);
 
-            if (t.hasWriteKey("x1")) {
+            if (t.hasWriteKey("x1"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x2")) {
+            else if (t.hasWriteKey("x2"))
                 assertTrue(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x3")) {
+            else if (t.hasWriteKey("x3"))
                 assertFalse(t.syncCommit());
-            }
-            else if (t.hasWriteKey("x4")) {
+            else if (t.hasWriteKey("x4"))
                 assertTrue(t.syncCommit());
-            }
         }
     }
 

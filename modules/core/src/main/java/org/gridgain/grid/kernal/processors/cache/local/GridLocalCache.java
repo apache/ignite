@@ -91,6 +91,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
         UUID subjId = prj == null ? null : prj.subjectId();
 
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
         return new GridLocalTx<>(
             ctx,
             implicit,
@@ -102,7 +104,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             swapOrOffheapEnabled,
             storeEnabled,
             txSize,
-            subjId);
+            subjId,
+            taskNameHash);
     }
 
     /**
@@ -146,9 +149,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      */
     public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        if (F.isEmpty(keys)) {
+        if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
-        }
 
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 
@@ -175,9 +177,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignored) {
-                        if (log().isDebugEnabled()) {
+                        if (log().isDebugEnabled())
                             log().debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
-                        }
                     }
                 }
             }
@@ -223,9 +224,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      */
     void onFutureDone(GridCacheFuture<?> fut) {
         if (ctx.mvcc().removeFuture(fut)) {
-            if (log().isDebugEnabled()) {
+            if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
-            }
         }
     }
 }

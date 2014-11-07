@@ -234,15 +234,20 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             }
 
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                if (!ses.accepted()) {
-                    UUID id = ses.meta(NODE_ID_META);
+                UUID id = ses.meta(NODE_ID_META);
 
-                    if (id != null) {
-                        GridCommunicationClient rmv = clients.remove(id);
+                if (id != null) {
+                    GridCommunicationClient rmv = clients.get(id);
 
-                        if (rmv != null)
-                            rmv.forceClose();
-                    }
+                    if (rmv instanceof GridTcpNioCommunicationClient &&
+                        ((GridTcpNioCommunicationClient)rmv).session() == ses &&
+                        clients.remove(id, rmv))
+                        rmv.forceClose();
+
+                    GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
+
+                    if (lsnr0 != null)
+                        lsnr0.onDisconnected(id);
                 }
             }
 
@@ -393,7 +398,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int minBufferedMsgCnt = Integer.getInteger(GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
 
     /** Buffer size ratio. */
-    private double bufSizeRatio = X.parseDouble(X.getSystemOrEnv(GG_COMMUNICATION_BUF_RESIZE_RATIO), 0.8);
+    private double bufSizeRatio = GridSystemProperties.getDouble(GG_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
 
     /** Dual socket connection flag. */
     private boolean dualSockConn = DFLT_DUAL_SOCKET_CONNECTION;
@@ -1410,8 +1415,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            boolean closeOnRelease = true;
-
             try {
                 client = reserveClient(node);
 
@@ -1422,23 +1425,18 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                 client.sendMessage(nodeId, msg);
 
-                sentMsgsCnt.increment();
+                client.release();
 
-                closeOnRelease = false;
+                client = null;
+
+                sentMsgsCnt.increment();
             }
             catch (GridException e) {
                 throw new GridSpiException("Failed to send message to remote node: " + node, e);
             }
             finally {
-                if (client != null) {
-                    if (closeOnRelease) {
-                        client.forceClose();
-
-                        clients.remove(node.id(), client);
-                    }
-                    else
-                        client.release();
-                }
+                if (client != null && clients.remove(node.id(), client))
+                    client.forceClose();
             }
         }
     }

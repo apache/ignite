@@ -82,7 +82,7 @@ public class GridFileSystemLoad {
     private static final long DFLT_DELAY = 5;
 
     /** */
-    private static final String DFLT_HADOOP_CFG = "examples/config/hadoop/core-site.xml";
+    private static final String DFLT_HADOOP_CFG = "examples/config/filesystem/core-site.xml";
 
     /** */
     private static final int CREATE_BUF_SIZE = 100 * 1024;

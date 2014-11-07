@@ -1422,6 +1422,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     tx.addLocalCandidates(txEntry1.key(), entry1.localCandidates(tx.xidVersion()));
 
+                    entry1.unswap();
+
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
@@ -1521,17 +1523,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     // Renew cache entry.
                     txEntry.cached(cctx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
-                }
-            }
-        }
-
-        if (tx.pessimistic() && !tx.near()) {
-            GridInClosure3<K, Boolean, GridCacheOperation> clos = cctx.cache().afterPessimisticUnlock();
-
-            if (clos != null) {
-                for (GridCacheTxEntry<K, V> entry : entries) {
-                    if (!entry.cached().detached())
-                        clos.apply(entry.key(), true, entry.op());
                 }
             }
         }
@@ -1738,7 +1729,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param nearXidVer Near tx ID.
      * @return Near local or colocated local transaction.
      */
-    @Nullable public GridCacheTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer) {
+    @Nullable public GridCacheTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
         // First check if we have near transaction with this ID.
         GridCacheTxEx<K, V> tx = idMap.get(nearXidVer);
 
@@ -1746,7 +1737,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
             // Check all local transactions and mark them as waiting for recovery to prevent finish race.
             for (GridCacheTxEx<K, V> txEx : idMap.values()) {
                 if (nearXidVer.equals(txEx.nearXidVersion())) {
-                    if (!txEx.markFinalizing(RECOVERY_WAIT))
+                    if (!markFinalizing || !txEx.markFinalizing(RECOVERY_WAIT))
                         tx = txEx;
                 }
             }
@@ -1905,9 +1896,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     else {
                         // Pessimistic.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.state() != COMMITTING && tx.state() != COMMITTED) {
+                            if (tx.state() != COMMITTING && tx.state() != COMMITTED)
                                 commitIfRemotelyCommitted(tx);
-                            }
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("Skipping pessimistic transaction check (transaction is being committed) " +

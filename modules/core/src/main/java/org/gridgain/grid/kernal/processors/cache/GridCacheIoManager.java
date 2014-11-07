@@ -521,7 +521,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(nodes) + ']');
+            log.debug("Sent cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
 
         return true;
     }
@@ -629,6 +629,13 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (log != null && log.isDebugEnabled())
             log.debug("Registered cache communication handler [cacheName=" + cctx.name() + ", type=" + type +
                 ", msgIdx=" + msgIdx + ", handler=" + c + ']');
+    }
+
+    /**
+     * @param lsnr Listener to add.
+     */
+    public void addDisconnectListener(GridDisconnectListener lsnr) {
+        cctx.kernalContext().io().addDisconnectListener(lsnr);
     }
 
     /**

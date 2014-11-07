@@ -10,14 +10,10 @@
 package org.gridgain.examples.streaming;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up node with example streamer configuration.
  */
-@GridOnlyAvailableIn(STREAMING)
 public class StreamingNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.

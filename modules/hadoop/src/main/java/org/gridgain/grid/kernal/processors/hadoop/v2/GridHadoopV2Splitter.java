@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -50,7 +51,7 @@ public class GridHadoopV2Splitter {
                     res.add(new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(), s.getStart(), s.getLength()));
                 }
                 else
-                    res.add(new GridHadoopSplitWrapper(id, nativeSplit, nativeSplit.getLocations()));
+                    res.add(GridHadoopUtils.wrapSplit(id, nativeSplit, nativeSplit.getLocations()));
 
                 id++;
             }

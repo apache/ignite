@@ -288,9 +288,17 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
             cctx.near().dht().context().swap().onUndeploy(leftNodeId, ldr) :
             cctx.swap().onUndeploy(leftNodeId, ldr);
 
-        if (log.isInfoEnabled())
-            log.info("Undeployed all entries (if any) for obsolete class loader [undeployCnt=" + keys.size() +
-                ", swapUndeployCnt=" + swapUndeployCnt + ", clsLdr=" + ldr.getClass().getName() + ']');
+        U.quietAndWarn(log, "");
+        U.quietAndWarn(
+            log,
+            "Cleared all cache entries for undeployed class loader [[cacheName=" + cctx.namexx() +
+                ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
+                ", clsLdr=" + ldr.getClass().getName() + ']',
+            "Cleared all cache entries for undeployed class loader for cache: " + cctx.namexx());
+        U.quietAndWarn(
+            log,
+            "  ^-- Cache auto-undeployment happens in SHARED deployment mode (to turn off, switch to CONTINUOUS mode)");
+        U.quietAndWarn(log, "");
 
         // Avoid class caching issues inside classloader.
         globalLdr = new CacheClassLoader();
@@ -466,7 +474,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
                     allParticipants.put(nodeId, ldrVer);
 
                     if (added == null)
-                        added = new HashMap<>(participants.size());
+                        added = GridUtils.newHashMap(participants.size());
 
                     added.put(nodeId, ldrVer);
                 }
@@ -481,7 +489,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K,
                 allParticipants.put(sndNodeId, sndLdrId);
 
                 if (added == null)
-                    added = new HashMap<>(1);
+                    added = U.newHashMap(1);
 
                 added.put(sndNodeId, sndLdrId);
             }

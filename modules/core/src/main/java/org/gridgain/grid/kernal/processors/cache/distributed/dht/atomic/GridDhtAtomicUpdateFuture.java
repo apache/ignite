@@ -76,6 +76,9 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** Future keys. */
     private Collection<K> keys;
 
+    /** Future map time. */
+    private volatile long mapTime;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -152,6 +155,20 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
+    @Override public void checkTimeout(long timeout) {
+        long mapTime0 = mapTime;
+
+        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
+            GridException ex = new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
+                "(consider increasing networkTimeout configuration property).");
+
+            updateRes.addFailedKeys(keys, ex);
+
+            onDone(ex);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean trackable() {
         return true;
     }
@@ -209,7 +226,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
                 if (updateReq == null) {
                     updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                        forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId());
+                        forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                        this.updateReq.taskNameHash());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -248,7 +266,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
 
                 updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                    forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId());
+                    forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                    this.updateReq.taskNameHash());
 
                 mappings.put(nodeId, updateReq);
             }
@@ -280,6 +299,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * Sends requests to remote nodes.
      */
     public void map() {
+        mapTime = U.currentTimeMillis();
+
         if (!mappings.isEmpty()) {
             for (GridDhtAtomicUpdateRequest<K, V> req : mappings.values()) {
                 try {

@@ -67,6 +67,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
+    /** Has transforms flag. */
+    @GridDirectVersion(3)
+    private boolean hasTransforms;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -113,7 +121,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(nodeId, lockVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout, keyCnt,
             txSize, grpLockKey, partLock);
@@ -126,6 +135,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }
@@ -142,6 +152,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -215,6 +232,20 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public void miniId(GridUuid miniId) {
         this.miniId = miniId;
+    }
+
+    /**
+     * @param hasTransforms {@code True} if originating transaction has transform entries.
+     */
+    public void hasTransforms(boolean hasTransforms) {
+        this.hasTransforms = hasTransforms;
+    }
+
+    /**
+     * @return {@code True} if originating transaction has transform entries.
+     */
+    public boolean hasTransforms() {
+        return hasTransforms;
     }
 
     /**
@@ -295,6 +326,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.onePhaseCommit = onePhaseCommit;
         _clone.dhtVers = dhtVers;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
+        _clone.hasTransforms = hasTransforms;
     }
 
     /** {@inheritDoc} */
@@ -411,6 +444,18 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 32:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 33:
+                if (!commState.putInt(taskNameHash))
+                    return false;
+
+                commState.idx++;
+
+            case 34:
+                if (!commState.putBoolean(hasTransforms))
                     return false;
 
                 commState.idx++;
@@ -552,6 +597,22 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 33:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 34:
+                if (buf.remaining() < 1)
+                    return false;
+
+                hasTransforms = commState.getBoolean();
 
                 commState.idx++;
 

@@ -13,7 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Task info.
@@ -21,9 +20,6 @@ import java.util.*;
 public class GridHadoopTaskInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private UUID nodeId;
 
     /** */
     private GridHadoopTaskType type;
@@ -50,16 +46,14 @@ public class GridHadoopTaskInfo implements Externalizable {
     /**
      * Creates new task info.
      *
-     * @param nodeId Node id.
      * @param type Task type.
      * @param jobId Job id.
      * @param taskNum Task number.
      * @param attempt Attempt for this task.
      * @param inputSplit Input split.
      */
-    public GridHadoopTaskInfo(UUID nodeId, GridHadoopTaskType type, GridHadoopJobId jobId, int taskNum, int attempt,
+    public GridHadoopTaskInfo(GridHadoopTaskType type, GridHadoopJobId jobId, int taskNum, int attempt,
         @Nullable GridHadoopInputSplit inputSplit) {
-        this.nodeId = nodeId;
         this.type = type;
         this.jobId = jobId;
         this.taskNum = taskNum;
@@ -70,7 +64,6 @@ public class GridHadoopTaskInfo implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(type.ordinal());
-        U.writeUuid(out, nodeId);
         out.writeObject(jobId);
         out.writeInt(taskNum);
         out.writeInt(attempt);
@@ -80,18 +73,10 @@ public class GridHadoopTaskInfo implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type = GridHadoopTaskType.fromOrdinal(in.readByte());
-        nodeId = U.readUuid(in);
         jobId = (GridHadoopJobId)in.readObject();
         taskNum = in.readInt();
         attempt = in.readInt();
         inputSplit = (GridHadoopInputSplit)in.readObject();
-    }
-
-    /**
-     * @return Node id.
-     */
-    public UUID nodeId() {
-        return nodeId;
     }
 
     /**
@@ -139,20 +124,18 @@ public class GridHadoopTaskInfo implements Externalizable {
 
         GridHadoopTaskInfo that = (GridHadoopTaskInfo)o;
 
-        return attempt == that.attempt && taskNum == that.taskNum && jobId.equals(that.jobId) &&
-            nodeId.equals(that.nodeId) && type == that.type;
+        return attempt == that.attempt && taskNum == that.taskNum && jobId.equals(that.jobId) && type == that.type;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = nodeId.hashCode();
+        int res = type.hashCode();
 
-        result = 31 * result + type.hashCode();
-        result = 31 * result + jobId.hashCode();
-        result = 31 * result + taskNum;
-        result = 31 * result + attempt;
+        res = 31 * res + jobId.hashCode();
+        res = 31 * res + taskNum;
+        res = 31 * res + attempt;
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -19,10 +19,11 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -49,6 +50,7 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
+import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -269,6 +271,15 @@ public abstract class GridUtils {
     public static final List<String> DFLT_HELP_LINKS = Arrays.asList(
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
         "Documentation Center: http://bit.ly/GridGain-Documentation");
+
+    /** Portable classes. */
+    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+
+    /** GridGain Logging Directory. */
+    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
+
+    /** GridGain Work Directory. */
+    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
 
     /**
      * Initializes enterprise check.
@@ -495,6 +506,8 @@ public abstract class GridUtils {
                     }
                     catch (InterruptedException ignored) {
                         U.log(null, "Timer thread has been interrupted.");
+
+                        break;
                     }
                 }
             }
@@ -505,6 +518,31 @@ public abstract class GridUtils {
         timer.setPriority(10);
 
         timer.start();
+
+        PORTABLE_CLS.add(Byte.class);
+        PORTABLE_CLS.add(Short.class);
+        PORTABLE_CLS.add(Integer.class);
+        PORTABLE_CLS.add(Long.class);
+        PORTABLE_CLS.add(Float.class);
+        PORTABLE_CLS.add(Double.class);
+        PORTABLE_CLS.add(Character.class);
+        PORTABLE_CLS.add(Boolean.class);
+        PORTABLE_CLS.add(String.class);
+        PORTABLE_CLS.add(UUID.class);
+        PORTABLE_CLS.add(Date.class);
+        PORTABLE_CLS.add(Timestamp.class);
+        PORTABLE_CLS.add(byte[].class);
+        PORTABLE_CLS.add(short[].class);
+        PORTABLE_CLS.add(int[].class);
+        PORTABLE_CLS.add(long[].class);
+        PORTABLE_CLS.add(float[].class);
+        PORTABLE_CLS.add(double[].class);
+        PORTABLE_CLS.add(char[].class);
+        PORTABLE_CLS.add(boolean[].class);
+        PORTABLE_CLS.add(String[].class);
+        PORTABLE_CLS.add(UUID[].class);
+        PORTABLE_CLS.add(Date[].class);
+        PORTABLE_CLS.add(Timestamp[].class);
     }
 
     /**
@@ -611,17 +649,6 @@ public abstract class GridUtils {
         GridDiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
-    }
-
-    /**
-     * Checks whether authentication SPI other than noop authentication SPI is configured.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if authentication SPI is configured.
-     */
-    public static boolean securityEnabled(GridConfiguration cfg) {
-        return cfg.getAuthenticationSpi() != null &&
-            cfg.getAuthenticationSpi().getClass() != GridNoopAuthenticationSpi.class;
     }
 
     /**
@@ -1129,6 +1156,29 @@ public abstract class GridUtils {
      * @throws IOException If failed.
      * @throws ClassNotFoundException If class not found.
      */
+    @Nullable public static Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        Class<?>[] arr = null;
+
+        if (len > 0) {
+            arr = new Class<?>[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (Class<?>)in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
     @SuppressWarnings("unchecked")
     @Nullable public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
@@ -1431,7 +1481,7 @@ public abstract class GridUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = X.getSystemOrEnv(GG_LOCAL_HOST);
+        String sysLocHost = GridSystemProperties.getString(GG_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -1535,7 +1585,7 @@ public abstract class GridUtils {
      * @return List of all known local IPs (empty list if no addresses available).
      */
     public static synchronized Collection<String> allLocalIps() {
-        Collection<String> ips = new HashSet<>(4);
+        List<String> ips = new ArrayList<>(4);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1545,10 +1595,14 @@ public abstract class GridUtils {
                     if (!itf.isLoopback()) {
                         Enumeration<InetAddress> addrs = itf.getInetAddresses();
 
-                        if (addrs != null)
-                            for (InetAddress addr : asIterable(addrs))
-                                if (!addr.isLoopbackAddress())
-                                    ips.add(addr.getHostAddress());
+                        if (addrs != null) {
+                            for (InetAddress addr : asIterable(addrs)) {
+                                String hostAddr = addr.getHostAddress();
+
+                                if (!addr.isLoopbackAddress() && !ips.contains(hostAddr))
+                                    ips.add(hostAddr);
+                            }
+                        }
                     }
                 }
             }
@@ -1556,6 +1610,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(ips);
 
         return ips;
     }
@@ -1576,7 +1632,7 @@ public abstract class GridUtils {
      *      if no MACs could be found.
      */
     public static synchronized Collection<String> allLocalMACs() {
-        Collection<String> macs = new HashSet<>(3);
+        List<String> macs = new ArrayList<>(3);
 
         try {
             Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
@@ -1589,7 +1645,8 @@ public abstract class GridUtils {
                     if (hwAddr != null && hwAddr.length > 0) {
                         String mac = byteArray2HexString(hwAddr);
 
-                        macs.add(mac);
+                        if (!macs.contains(mac))
+                            macs.add(mac);
                     }
                 }
             }
@@ -1597,6 +1654,8 @@ public abstract class GridUtils {
         catch (SocketException ignore) {
             return Collections.emptyList();
         }
+
+        Collections.sort(macs);
 
         return macs;
     }
@@ -2153,18 +2212,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Gets boolean system or environment property.
-     *
-     * @param name Property name.
-     * @return {@code True} if system or environment property is set to {@code true}. Otherwise returns {@code false}.
-     */
-    public static boolean getBoolean(String name) {
-        String v = X.getSystemOrEnv(name);
-
-        return v != null && "true".equalsIgnoreCase(v.trim());
-    }
-
-    /**
      * Resolve project home directory based on source code base.
      *
      * @return Project home directory (or {@code null} if it cannot be resolved).
@@ -2173,7 +2220,7 @@ public abstract class GridUtils {
         assert Thread.holdsLock(GridUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = X.getSystemOrEnv(GG_HOME);
+        String ggHome0 = GridSystemProperties.getString(GG_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -3020,6 +3067,21 @@ public abstract class GridUtils {
             }
             catch (IOException e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
             }
     }
 
@@ -4267,6 +4329,25 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr, int maxLen) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            int len = Math.min(arr.length, maxLen);
+
+            out.writeInt(len);
+
+            out.write(arr, 0, len);
+        }
+    }
+
+    /**
      * Reads byte array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -4513,7 +4594,7 @@ public abstract class GridUtils {
         if (size == -1)
             return null;
         else {
-            Map<String, String> map = new HashMap<>(size);
+            Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
                 map.put(in.readUTF(), in.readUTF());
@@ -7096,22 +7177,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work synchronously.
-     */
-    public static boolean isFutureNotificationSynchronous(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_SYNC_NOTIFICATION, dflt));
-    }
-
-    /**
-     * @param dflt Default value.
-     * @return {@code true} if future notification should work concurrently.
-     */
-    public static boolean isFutureNotificationConcurrent(String dflt) {
-        return "true".equalsIgnoreCase(X.getSystemOrEnv(GG_FUT_CONCURRENT_NOTIFICATION, dflt));
-    }
-
-    /**
      * Adds listener to asynchronously log errors.
      *
      * @param f Future to listen to.
@@ -7710,6 +7775,8 @@ public abstract class GridUtils {
     public static String nodeIdLogFileName(UUID nodeId, String fileName) {
         assert nodeId != null;
         assert fileName != null;
+
+        fileName = GridFilenameUtils.separatorsToSystem(fileName);
 
         int dot = fileName.lastIndexOf('.');
 
@@ -8313,6 +8380,8 @@ public abstract class GridUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
+                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
+                    workDir = new File(GRIDGAIN_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {
@@ -8520,5 +8589,311 @@ public abstract class GridUtils {
         }
 
         return youngest;
+    }
+
+    /**
+     * Tells whether provided type is portable.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable.
+     */
+    public static boolean isPortableType(Class<?> cls) {
+        assert cls != null;
+
+        return GridPortableObject.class.isAssignableFrom(cls) ||
+            PORTABLE_CLS.contains(cls) ||
+            cls.isEnum() ||
+            (cls.isArray() && cls.getComponentType().isEnum());
+    }
+    /**
+     * Tells whether provided type is portable or a collection.
+     *
+     * @param cls Class to check.
+     * @return Whether type is portable or a collection.
+     */
+    public static boolean isPortableOrCollectionType(Class<?> cls) {
+        assert cls != null;
+
+        return isPortableType(cls) ||
+            cls == Object[].class ||
+            Collection.class.isAssignableFrom(cls) ||
+            Map.class.isAssignableFrom(cls) ||
+            Map.Entry.class.isAssignableFrom(cls);
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param uid UUID.
+     * @return Offset.
+     */
+    public static long writeGridUuid(byte[] arr, long off, @Nullable GridUuid uid) {
+        UNSAFE.putBoolean(arr, off++, uid != null);
+
+        if (uid != null) {
+            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, uid.localId());
+
+            off += 8;
+        }
+
+        return off;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(byte[] arr, long off) {
+        if (UNSAFE.getBoolean(arr, off++)) {
+            long most = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            long least = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(arr, off);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @return UUID.
+     */
+    @Nullable public static GridUuid readGridUuid(long ptr) {
+        if (UNSAFE.getBoolean(null, ptr++)) {
+            long most = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            long least = UNSAFE.getLong(ptr);
+
+            ptr += 8;
+
+            UUID globalId = new UUID(most, least);
+
+            long locId = UNSAFE.getLong(ptr);
+
+            return new GridUuid(globalId, locId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param ver Version.
+     * @return Offset.
+     */
+    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
+        boolean verEx = ver instanceof GridCacheVersionEx;
+
+        UNSAFE.putBoolean(arr, off++, verEx);
+
+        if (verEx) {
+            GridCacheVersion drVer = ver.drVersion();
+
+            assert drVer != null;
+
+            UNSAFE.putInt(arr, off, drVer.topologyVersion());
+
+            off += 4;
+
+            UNSAFE.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
+
+            off += 4;
+
+            UNSAFE.putLong(arr, off, drVer.globalTime());
+
+            off += 8;
+
+            UNSAFE.putLong(arr, off, drVer.order());
+
+            off += 8;
+        }
+
+        UNSAFE.putInt(arr, off, ver.topologyVersion());
+
+        off += 4;
+
+        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+
+        off += 4;
+
+        UNSAFE.putLong(arr, off, ver.globalTime());
+
+        off += 8;
+
+        UNSAFE.putLong(arr, off, ver.order());
+
+        off += 8;
+
+        return off;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
+        GridCacheVersion ver = new GridCacheVersion(UNSAFE.getInt(ptr),
+            UNSAFE.getInt(ptr + 4),
+            UNSAFE.getLong(ptr + 8),
+            UNSAFE.getLong(ptr + 16));
+
+        if (verEx) {
+            ptr += 24;
+
+            ver = new GridCacheVersionEx(UNSAFE.getInt(ptr),
+                UNSAFE.getInt(ptr + 4),
+                UNSAFE.getLong(ptr + 8),
+                UNSAFE.getLong(ptr + 16),
+                ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
+        int topVer = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        int nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+        off += 4;
+
+        long globalTime = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        long order = UNSAFE.getLong(arr, off);
+
+        off += 8;
+
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+        if (verEx) {
+            topVer = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            nodeOrderDrId = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            globalTime = UNSAFE.getLong(arr, off);
+
+            off += 8;
+
+            order = UNSAFE.getLong(arr, off);
+
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param ptr Address.
+     * @param size Size.
+     * @return Bytes.
+     */
+    public static byte[] copyMemory(long ptr, int size) {
+        byte[] res = new byte[size];
+
+        UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
+
+        return res;
+    }
+
+    /**
+     * Returns a capacity that is sufficient to keep the map from being resized as
+     * long as it grows no larger than expSize and the load factor is >= its
+     * default (0.75).
+     *
+     * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
+     *
+     * @param expSize Expected size of created map.
+     * @return Capacity.
+     */
+    public static int capacity(int expSize) {
+        if (expSize < 3)
+            return expSize + 1;
+
+        if (expSize < (1 << 30))
+            return expSize + expSize / 3;
+
+        return Integer.MAX_VALUE; // any large value
+    }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
     }
 }

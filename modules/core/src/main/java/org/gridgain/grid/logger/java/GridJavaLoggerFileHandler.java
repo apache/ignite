@@ -10,6 +10,7 @@
 package org.gridgain.grid.logger.java;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,9 +22,6 @@ import java.util.logging.*;
  * File logging handler which skips all the messages until node ID is set.
  */
 public final class GridJavaLoggerFileHandler extends StreamHandler {
-    /* GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv("GRIDGAIN_LOG_DIR");
-
     /** Log manager. */
     private static final LogManager manager = LogManager.getLogManager();
 
@@ -74,26 +72,26 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
         if (delegate != null)
             return;
 
-        String className = getClass().getName();
+        String clsName = getClass().getName();
 
-        String pattern = manager.getProperty(className + ".pattern");
+        String ptrn = manager.getProperty(clsName + ".pattern");
 
-        if (pattern == null)
-            pattern = "gridgain-%{id8}.%g.log";
+        if (ptrn == null)
+            ptrn = "gridgain-%{id8}.%g.log";
 
-        pattern = new File(logDirectory(), pattern.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
+        ptrn = new File(logDirectory(), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
-        int limit = getIntProperty(className + ".limit", 0);
+        int limit = getIntProperty(clsName + ".limit", 0);
 
         if (limit < 0)
             limit = 0;
 
-        int count = getIntProperty(className + ".count", 1);
+        int cnt = getIntProperty(clsName + ".count", 1);
 
-        if (count <= 0)
-            count = 1;
+        if (cnt <= 0)
+            cnt = 1;
 
-        boolean append = getBooleanProperty(className + ".append", false);
+        boolean append = getBooleanProperty(clsName + ".append", false);
 
         FileHandler delegate0;
 
@@ -101,7 +99,7 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
             if (delegate != null)
                 return;
 
-            delegate = delegate0 = new FileHandler(pattern, limit, count, append);
+            delegate = delegate0 = new FileHandler(ptrn, limit, cnt, append);
         }
 
         delegate0.setLevel(getLevel());
@@ -112,15 +110,12 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
     }
 
     /**
-     * Returns file pattern.
+     * Returns current log file.
      *
      * @return Pattern or {@code null} if node id has not been set yet.
      */
-    @Nullable public String pattern() {
-        if (delegate == null)
-            return null;
-
-        return (String)U.field(delegate, "pattern");
+    @Nullable public String fileName() {
+        return GridJavaLogger.fileName(delegate);
     }
 
     /**
@@ -129,21 +124,21 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
      * @return Logging directory.
      */
     private static File logDirectory() throws GridException {
-        return GRIDGAIN_LOG_DIR != null ? new File(GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
+        return !F.isEmpty(U.GRIDGAIN_LOG_DIR) ? new File(U.GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
     }
 
     /**
      * Returns integer property from logging configuration.
      *
      * @param name Property name.
-     * @param defaultValue Default value.
+     * @param dfltVal Default value.
      * @return Parsed property value if it is set and valid or default value otherwise.
      */
-    private int getIntProperty(String name, int defaultValue) {
+    private int getIntProperty(String name, int dfltVal) {
         String val = manager.getProperty(name);
 
         if (val == null)
-            return defaultValue;
+            return dfltVal;
 
         try {
             return Integer.parseInt(val.trim());
@@ -151,7 +146,7 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
         catch (Exception ex) {
             ex.printStackTrace();
 
-            return defaultValue;
+            return dfltVal;
         }
     }
 
@@ -159,15 +154,15 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
      * Returns boolean property from logging configuration.
      *
      * @param name Property name.
-     * @param defaultValue Default value.
+     * @param dfltVal Default value.
      * @return Parsed property value if it is set and valid or default value otherwise.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    private boolean getBooleanProperty(String name, boolean defaultValue) {
+    private boolean getBooleanProperty(String name, boolean dfltVal) {
         String val = manager.getProperty(name);
 
         if (val == null)
-            return defaultValue;
+            return dfltVal;
 
         val = val.toLowerCase();
 
@@ -177,7 +172,7 @@ public final class GridJavaLoggerFileHandler extends StreamHandler {
         if ("false".equals(val) || "0".equals(val))
             return false;
 
-        return defaultValue;
+        return dfltVal;
     }
 
     /** {@inheritDoc} */

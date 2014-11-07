@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -84,10 +85,25 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * Gets affinity ready future, a future that will be completed after affinity with given
      * topology version is calculated.
      *
-     * @param topVer Topology version to affinity for.
+     * @param topVer Topology version to wait.
      * @return Affinity ready future.
      */
     public GridFuture<Long> affinityReadyFuture(long topVer) {
+        assert !cctx.isLocal();
+
+        GridFuture<Long> fut = aff.readyFuture(topVer);
+
+        return fut != null ? fut : new GridFinishedFutureEx<>(topVer);
+    }
+
+    /**
+     * Gets affinity ready future that will be completed after affinity with given topology version is calculated.
+     * Will return {@code null} if topology with given version is ready by the moment method is invoked.
+     *
+     * @param topVer Topology version to wait.
+     * @return Affinity ready future or {@code null}.
+     */
+    @Nullable public GridFuture<Long> affinityReadyFuturex(long topVer) {
         assert !cctx.isLocal();
 
         return aff.readyFuture(topVer);
@@ -176,7 +192,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(K key, long topVer) {
+    public List<GridNode> nodes(K key, long topVer) {
         return nodes(partition(key), topVer);
     }
 
@@ -185,7 +201,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public Collection<GridNode> nodes(int part, long topVer) {
+    public List<GridNode> nodes(int part, long topVer) {
         if (cctx.isLocal())
             topVer = 1;
 
@@ -207,12 +223,12 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Primary node for given key.
      */
     @Nullable public GridNode primary(int part, long topVer) {
-        Collection<GridNode> nodes = nodes(part, topVer);
+        List<GridNode> nodes = nodes(part, topVer);
 
         if (nodes.isEmpty())
             return null;
 
-        return nodes.iterator().next();
+        return nodes.get(0);
     }
 
     /**
@@ -250,14 +266,14 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Backup nodes.
      */
     public Collection<GridNode> backups(int part, long topVer) {
-        Collection<GridNode> nodes = nodes(part, topVer);
+        List<GridNode> nodes = nodes(part, topVer);
 
         assert !F.isEmpty(nodes);
 
         if (nodes.size() <= 1)
             return Collections.emptyList();
 
-        return F.view(nodes, F.notEqualTo(nodes.iterator().next()));
+        return F.view(nodes, F.notEqualTo(nodes.get(0)));
     }
 
     /**
@@ -305,6 +321,18 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
         assert part >= 0 : "Invalid partition: " + part;
 
         return nodes(part, topVer).contains(node);
+    }
+
+    /**
+     * @param node Node.
+     * @param key Key to check.
+     * @param topVer Topology version.
+     * @return {@code true} if given key belongs to specified node.
+     */
+    public boolean belongs(GridNode node, K key, long topVer) {
+        assert node != null;
+
+        return belongs(node, partition(key), topVer);
     }
 
     /**

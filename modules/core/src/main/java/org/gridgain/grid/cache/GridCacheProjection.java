@@ -14,9 +14,12 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.*;
 
 /**
@@ -142,6 +145,31 @@ import java.util.concurrent.*;
  * to any participating grid nodes. However, in case of redeployment, caches will be cleared and
  * all entries will be removed. This behavior is useful during development, but should not be
  * used in production.
+ * <h1 class="header">Portable Objects</h1>
+ * If an object is defined as portable GridGain cache will automatically store it in portable (i.e. binary)
+ * format. User can choose to work either with the portable format or with the deserialized form (assuming
+ * that class definitions are present in the classpath). By default, cache works with deserialized form
+ * (example shows the case when {@link Integer} is used as a key for a portable object):
+ * <pre>
+ * GridCacheProjection<Integer, Value> prj = GridGain.grid().cache(null);
+ *
+ * // Value will be serialized and stored in cache in portable format.
+ * prj.put(1, new Value());
+ *
+ * // Value will be deserialized since it's stored in portable format.
+ * Value val = prj.get(1);
+ * </pre>
+ * You won't be able to work with deserialized form if class definition for the {@code Value} is not on
+ * classpath. Even if you have the class definition, you should always avoid full deserialization if it's not
+ * needed for performance reasons. To work with portable format directly you should create special projection
+ * using {@link #keepPortable()} method:
+ * <pre>
+ * GridCacheProjection<Integer, GridPortableObject> prj = GridGain.grid().cache(null).keepPortable();
+ *
+ * // Value is not deserialized and returned in portable format.
+ * GridPortableObject po = prj.get(1);
+ * </pre>
+ * See {@link #keepPortable()} method JavaDoc for more details.
  */
 public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>> {
     /**
@@ -242,6 +270,45 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return New projection based on this one, but with the specified flags turned off.
      */
     public GridCacheProjection<K, V> flagsOff(@Nullable GridCacheFlag... flags);
+
+    /**
+     * Creates projection that will operate with portable objects.
+     * <p>
+     * Projection returned by this method will force cache not to deserialize portable objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@link GridPortableObject} for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in portable format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * GridCacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * GridPortableObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@link GridCacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
+     *
+     * @return Projection for portable objects.
+     */
+    public <K1, V1> GridCacheProjection<K1, V1> keepPortable();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
@@ -1991,7 +2058,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public int globalPrimarySize() throws GridException;
 
     /**
-     * This method promotes cache entry from offheap by given key, if any, from offheap or swap storage
+     * This method promotes cache entry by given key, if any, from offheap or swap storage
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.

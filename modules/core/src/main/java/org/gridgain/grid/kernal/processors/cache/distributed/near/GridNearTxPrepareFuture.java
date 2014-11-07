@@ -117,9 +117,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         return
             F.viewReadOnly(futures(), new GridClosure<GridFuture<?>, GridNode>() {
                 @Nullable @Override public GridNode apply(GridFuture<?> f) {
-                    if (isMini(f)) {
+                    if (isMini(f))
                         return ((MiniFuture)f).node();
-                    }
 
                     return cctx.discovery().localNode();
                 }
@@ -421,7 +420,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             txMapping.transactionNodes(),
             m.last(),
             m.lastBackups(),
-            tx.subjectId());
+            tx.subjectId(),
+            tx.taskNameHash());
 
         for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
             if (txEntry.op() == TRANSFORM)
@@ -505,7 +505,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     private GridDistributedTxMapping<K, V> map(GridCacheTxEntry<K, V> entry, long topVer,
         GridDistributedTxMapping<K, V> cur) throws GridException {
-        Collection<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
+        List<GridNode> nodes = cctx.affinity().nodes(entry.key(), topVer);
 
         txMapping.addMapping(nodes);
 

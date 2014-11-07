@@ -37,6 +37,7 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
@@ -61,11 +62,15 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.authentication.*;
+import org.gridgain.grid.spi.authentication.noop.*;
+import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -87,7 +92,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
+import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
 /**
@@ -100,11 +105,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Ant-augmented compatible versions. */
+    /** Compatible versions. */
     private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
-    static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
+    static final String SITE = "www.gridgain.com";
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -129,30 +134,38 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+    @GridToStringExclude
     private GridLoggerProxy log;
 
     /** */
     private String gridName;
 
     /** */
+    @GridToStringExclude
     private ObjectName kernalMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName locNodeMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName pubExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName sysExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName mgmtExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName p2PExecSvcMBean;
 
     /** */
+    @GridToStringExclude
     private ObjectName restExecSvcMBean;
 
     /** Kernal start timestamp. */
@@ -162,45 +175,59 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private GridSpringResourceContext rsrcCtx;
 
     /** */
+    @GridToStringExclude
     private Timer updateNtfTimer;
 
     /** */
+    @GridToStringExclude
     private Timer starveTimer;
 
     /** */
+    @GridToStringExclude
     private Timer licTimer;
 
     /** */
+    @GridToStringExclude
     private Timer metricsLogTimer;
 
     /** Indicate error on grid stop. */
+    @GridToStringExclude
     private boolean errOnStop;
 
     /** Node local store. */
+    @GridToStringExclude
     private GridNodeLocalMap nodeLoc;
 
     /** Scheduler. */
+    @GridToStringExclude
     private GridScheduler scheduler;
 
     /** Grid security instance. */
+    @GridToStringExclude
     private GridSecurity security;
 
     /** Portables instance. */
+    @GridToStringExclude
     private GridPortables portables;
 
     /** DR pool. */
+    @GridToStringExclude
     private ExecutorService drPool;
 
     /** Kernal gateway. */
+    @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
     /** Data Grid edition usage registered flag. */
+    @GridToStringExclude
     private volatile boolean dbUsageRegistered;
 
     /** */
+    @GridToStringExclude
     private final Collection<String> compatibleVers;
 
     /** Stop guard. */
+    @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
     /**
@@ -559,7 +586,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = !"false".equalsIgnoreCase(X.getSystemOrEnv(GG_UPDATE_NOTIFIER));
+        boolean notifyEnabled = GridSystemProperties.getBoolean(GG_UPDATE_NOTIFIER, true);
 
         GridUpdateNotifier verChecker0 = null;
 
@@ -685,6 +712,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
+            startProcessor(ctx, createComponent(GridInteropProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -722,6 +750,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Suggest configuration optimizations.
             suggestOptimizations(ctx, cfg);
+
+            if (!ctx.isEnterprise())
+                warnNotSupportedFeaturesForOs(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -805,7 +836,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
 
-        String intervalStr = X.getSystemOrEnv(GG_STARVATION_CHECK_INTERVAL);
+        String intervalStr = GridSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
 
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
@@ -1144,6 +1175,38 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
+     * Warns user about unsupported features which was configured in OS edition.
+     *
+     * @param cfg Grid configuration.
+     */
+    private void warnNotSupportedFeaturesForOs(GridConfiguration cfg) {
+        Collection<String> msgs = new ArrayList<>();
+
+        if (!F.isEmpty(cfg.getSegmentationResolvers()))
+            msgs.add("Network segmentation detection.");
+
+        if (cfg.getDrReceiverHubConfiguration() != null || cfg.getDrSenderHubConfiguration() != null)
+            msgs.add("Data center replication.");
+
+        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
+            msgs.add("Secure session SPI.");
+
+        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
+            msgs.add("Authentication SPI.");
+
+        if (!F.isEmpty(msgs)) {
+            U.quietAndInfo(log, "The following features are not supported in open source edition, " +
+                "related configuration settings will be ignored " +
+                "(consider downloading enterprise edition from http://www.gridgain.com):");
+
+            for (String s : msgs)
+                U.quietAndInfo(log, "  ^-- " + s);
+
+            U.quietAndInfo(log, "");
+        }
+    }
+
+    /**
      * Creates attributes map and fills it in.
      *
      * @param cfg Grid configuration.
@@ -1237,7 +1300,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         add(attrs, ATTR_JVM_PID, U.jvmPid());
 
-        // Build a string from JVM arguments, because parameters with spaces are splited.
+        // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
 
         for (String arg : U.jvmArgs()) {
@@ -1280,7 +1343,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
-            boolean securityEnabled = U.securityEnabled(cfg);
+            GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
+
+            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), GridSpiNoop.class);
 
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 
@@ -1755,10 +1820,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
 
         if (scala) {
-            Properties props = new Properties();
+            try (InputStream in = getClass().getResourceAsStream("/library.properties")) {
+                Properties props = new Properties();
 
-            try {
-                props.load(getClass().getResourceAsStream("/library.properties"));
+                if (in != null)
+                    props.load(in);
 
                 return "Scala ver. " + props.getProperty("version.number", "<unknown>");
             }
@@ -2246,8 +2312,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().securityEnabled()) + ", " +
-                "secure-session=" + onOff(ctx.secureSession().securityEnabled()) + ']');
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
+                "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
     }
 
     /**
@@ -2935,6 +3001,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridInteropProcessor interop() {
+        return ctx.interop();
     }
 
     /** {@inheritDoc} */

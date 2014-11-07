@@ -77,8 +77,18 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
+        suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicTimeoutSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
 
         // Local cache.
         suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
@@ -102,6 +112,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTtlSelfTest.class);
+        suite.addTestSuite(GridCacheTransformEventSelfTest.class);
 
         // Partitioned cache.
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
@@ -117,6 +128,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAffinitySelfTest.class));
         suite.addTest(new TestSuite(GridCacheConsistentHashAffinityFunctionExcludeNeighborsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheRendezvousAffinityClientSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedProjectionAffinitySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicOpSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreNoBatchSelfTest.class));
@@ -232,6 +244,7 @@ public class GridDataGridTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheReplicatedTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTtlSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
         // TODO: GG-7434
         // suite.addTestSuite(GridReplicatedTxPreloadTest.class);
 
@@ -259,10 +272,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Write-behind.
         suite.addTest(GridCacheWriteBehindTestSuite.suite());
-
-        // Before-after lock-unlock.
-        suite.addTestSuite(GridCacheColocatedBeforeAfterLockSelfTest.class);
-        // suite.addTestSuite(GridCacheNearBeforeAfterLockSelfTest.class); TODO gg-6221
 
         // Transform.
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
@@ -300,6 +309,14 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Cache interceptor tests.
         suite.addTest(GridCacheInterceptorSelfTestSuite.suite());
+
+        // Multi node update.
+        suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
+        // TODO: GG-5353.
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
+        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
         return suite;
     }

@@ -306,9 +306,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                 case WAIT_FOR_ATTRIBUTES_ATTRS: {
                     Map<Object, Object> map = new HashMap<>();
 
-                    for (int i = 0; i < ATTR_NUM; i++) {
+                    for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
-                    }
 
                     boolean attrs = ses.waitForAttributes(map);
 
@@ -321,9 +320,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                 case WAIT_FOR_ATTRIBUTES_ATTRS_TIMEOUT: {
                     Map<Object, Object> map = new HashMap<>();
 
-                    for (int i = 0; i < ATTR_NUM; i++) {
+                    for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
-                    }
 
                     boolean attrs = ses.waitForAttributes(map, WAIT_TIMEOUT);
 
@@ -336,9 +334,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                 case WAIT_FOR_ATTRIBUTES_KEYS: {
                     Map<Object, Object> map = new HashMap<>();
 
-                    for (int i = 0; i < ATTR_NUM; i++) {
+                    for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
-                    }
 
                     Map<?, ?> res = ses.waitForAttributes(map.keySet());
 
@@ -358,9 +355,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                 case WAIT_FOR_ATTRIBUTES_KEYS_TIMEOUT: {
                     Map<Object, Object> map = new HashMap<>();
 
-                    for (int i = 0; i < ATTR_NUM; i++) {
+                    for (int i = 0; i < ATTR_NUM; i++)
                         map.put(createKey(prefix, type, i), createValue(prefix, type, i));
-                    }
 
                     Map<?, ?> res = ses.waitForAttributes(map.keySet(), WAIT_TIMEOUT);
 
@@ -396,9 +392,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
             Collection<TestSessionJob> jobs = new ArrayList<>(JOB_NUM);
 
-            for (int i = 0; i < JOB_NUM; i++) {
+            for (int i = 0; i < JOB_NUM; i++)
                 jobs.add(new TestSessionJob(type));
-            }
 
             return jobs;
         }
@@ -447,15 +442,13 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
             Collection<GridComputeJobSibling> siblings = taskSes.getJobSiblings();
 
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info("Got siblings from job [size=" + siblings.size() + ", siblings=" + siblings + ']');
-            }
 
             // Check attributes from siblings.
             for (GridComputeJobSibling sibling : taskSes.getJobSiblings()) {
-                if (!sibling.getJobId().equals(jobId)) {
+                if (!sibling.getJobId().equals(jobId))
                     checkSessionAttributes(taskSes, sibling.getJobId().toString(), m);
-                }
             }
 
             try {

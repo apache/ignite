@@ -63,6 +63,14 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
+    /** Indexes of keys needed to be preloaded. */
+    @GridDirectVersion(3)
+    private BitSet preloadKeys;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -107,7 +115,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int txSize,
         @Nullable Object grpLockKey,
         boolean partLock,
-        @Nullable UUID subjId
+        @Nullable UUID subjId,
+        int taskNameHash
     ) {
         super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
@@ -122,6 +131,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         this.miniId = miniId;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
     }
 
     /** {@inheritDoc} */
@@ -141,6 +151,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
     /**
@@ -204,6 +221,25 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         invalidateEntries.set(idx, invalidateEntry);
 
         addKeyBytes(key, keyBytes, writeEntry, false, null, drVer, ctx);
+    }
+
+    /**
+     * Marks last added key for preloading.
+     */
+    public void markLastKeyForPreload() {
+        assert idx > 0;
+
+        if (preloadKeys == null)
+            preloadKeys = new BitSet();
+
+        preloadKeys.set(idx - 1, true);
+    }
+
+    /**
+     * @return {@code True} if need to preload key with given index.
+     */
+    public boolean needPreloadKey(int idx) {
+        return preloadKeys != null && preloadKeys.get(idx);
     }
 
     /**
@@ -288,6 +324,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.ownedBytes = ownedBytes;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
+        _clone.preloadKeys = preloadKeys;
     }
 
     /** {@inheritDoc} */
@@ -359,6 +397,18 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
             case 28:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putInt(taskNameHash))
+                    return false;
+
+                commState.idx++;
+
+            case 30:
+                if (!commState.putBitSet(preloadKeys))
                     return false;
 
                 commState.idx++;
@@ -451,6 +501,24 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 29:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 30:
+                BitSet preloadKeys0 = commState.getBitSet();
+
+                if (preloadKeys0 == BIT_SET_NOT_READ)
+                    return false;
+
+                preloadKeys = preloadKeys0;
 
                 commState.idx++;
 

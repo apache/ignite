@@ -419,6 +419,7 @@ public class GridCacheConfiguration {
         dgcFreq = cc.getDgcFrequency();
         dgcRmvLocks = cc.isDgcRemoveLocks();
         dgcSuspectLockTimeout = cc.getDgcSuspectLockTimeout();
+        distro = cc.getDistributionMode();
         drSndCacheCfg = cc.getDrSenderConfiguration() != null ?
             new GridDrSenderCacheConfiguration(cc.getDrSenderConfiguration()) : null;
         drRcvCacheCfg = cc.getDrReceiverConfiguration() != null ?
@@ -442,7 +443,6 @@ public class GridCacheConfiguration {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        distro = cc.getDistributionMode();
         pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cc.getPessimisticTxLogSize();
         portableEnabled = cc.isPortableEnabled();

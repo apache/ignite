@@ -1,12 +1,12 @@
 ::
-:: Copyright (C) GridGain Systems. All Rights Reserved.
+:: @bat.file.header
 :: _________        _____ __________________        _____
 :: __  ____/___________(_)______  /__  ____/______ ____(_)_______
 :: _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
 :: / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
 :: \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 ::
-:: Version: 6.2.0
+:: Version: @bat.file.version
 ::
 
 ::
@@ -22,14 +22,14 @@ if not "%JAVA_HOME%" == "" goto checkJdk
     echo %0, ERROR: JAVA_HOME environment variable is not found.
     echo %0, ERROR: Please create JAVA_HOME variable pointing to location of JDK 1.7 or JDK 1.8.
     echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
-    exit 1
+goto error_finish
 
 :checkJdk
 :: Check that JDK is where it should be.
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR: The JDK is not found in %JAVA_HOME%.
     echo %0, ERROR: Please modify your script so that JAVA_HOME would point to valid location of JDK.
-    exit 1
+goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
@@ -37,7 +37,7 @@ if %ERRORLEVEL% equ 0 goto checkGridGainHome1
     echo %0, ERROR: The version of JAVA installed in %JAVA_HOME% is incorrect.
     echo %0, ERROR: Please install JDK 1.7 or 1.8.
     echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
-    exit 1
+goto error_finish
 
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
@@ -64,28 +64,34 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
     echo Please create GRIDGAIN_HOME environment variable pointing to location of
     echo GridGain installation folder.
-    exit 1
+    goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
+
+:: Remove trailing spaces
+for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :run
 
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
-
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
-
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\bin\include\visorui\*
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
+set CP=%GRIDGAIN_HOME%\bin\include\visor-common\*;%GRIDGAIN_HOME%\bin\include\visorui\*;%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\bin\include\parseargs.bat" %*
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
@@ -111,11 +117,23 @@ if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g
 :: set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -Dsun.java2d.opengl=True
 
 ::
+:: Set Visor plugins directory.
+::
+set VISOR_PLUGINS_DIR=%GRIDGAIN_HOME%\bin\include\visorui\plugins
+
+::
 :: Starts Visor Dashboard.
 ::
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DGRIDGAIN_PROG_NAME="%PROG_NAME%" ^
--DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% -cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
+-DGRIDGAIN_PERFORMANCE_SUGGESTIONS_DISABLED=true %QUIET% %JVM_XOPTS% ^
+-Dpf4j.pluginsDir="%VISOR_PLUGINS_DIR%" ^
+-cp "%CP%" org.gridgain.visor.gui.VisorGuiLauncher
 
-exit %ERRORLEVEL%
+:error_finish
+
+if %ERRORLEVEL% neq 0 (
+    echo Visor exit with error
+    exit /b %ERRORLEVEL%
+)
 
 goto :eof

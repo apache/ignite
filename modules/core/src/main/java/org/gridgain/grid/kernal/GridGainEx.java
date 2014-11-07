@@ -11,9 +11,11 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
@@ -419,7 +421,7 @@ public class GridGainEx {
         URL url = U.resolveGridGainUrl(DFLT_CFG);
 
         if (url != null)
-            return start(DFLT_CFG, springCtx);
+            return start(DFLT_CFG, null, springCtx);
 
         U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
 
@@ -476,6 +478,52 @@ public class GridGainEx {
      */
     public static Grid start(@Nullable String springCfgPath) throws GridException {
         return springCfgPath == null ? start() : start(springCfgPath, null);
+    }
+
+    /**
+     * Starts all grids specified within given Spring XML configuration file. If grid with given name
+     * is already started, then exception is thrown. In this case all instances that may
+     * have been started so far will be stopped too.
+     * <p>
+     * Usually Spring XML configuration file will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL.
+     * @param gridName Grid name that will override default.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
+     *      then the 1st found instance is returned.
+     * @throws GridException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static Grid start(@Nullable String springCfgPath, @Nullable String gridName) throws GridException {
+        if (springCfgPath == null) {
+            GridConfiguration cfg = new GridConfiguration();
+
+            if (cfg.getGridName() == null && !F.isEmpty(gridName))
+                cfg.setGridName(gridName);
+
+            return start(cfg);
+        }
+        else
+            return start(springCfgPath, gridName, null);
+    }
+
+    /**
+     * Start Grid for interop scenario.
+     *
+     * @param springCfgPath Spring config path.
+     * @param gridName Grid name.
+     * @param envPtr Environment pointer.
+     * @return Started Grid.
+     * @throws GridException If failed.
+     */
+    public static Grid startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
+        throws GridException {
+        GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
+
+        return start(springCfgPath, gridName);
     }
 
     /**
@@ -583,6 +631,7 @@ public class GridGainEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
@@ -593,7 +642,8 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(String springCfgPath, @Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Grid start(String springCfgPath, @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -610,7 +660,7 @@ public class GridGainEx {
                     "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
         }
 
-        return start(url, springCtx);
+        return start(url, gridName, springCtx);
     }
 
     /**
@@ -630,7 +680,7 @@ public class GridGainEx {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Grid start(URL springCfgUrl) throws GridException {
-        return start(springCfgUrl, null);
+        return start(springCfgUrl, null, null);
     }
 
     /**
@@ -643,6 +693,7 @@ public class GridGainEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
+     * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
@@ -653,8 +704,8 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    // Warning is due to Spring.
-    public static Grid start(URL springCfgUrl, @Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Grid start(URL springCfgUrl, @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
@@ -686,6 +737,9 @@ public class GridGainEx {
         try {
             for (GridConfiguration cfg : cfgMap.get1()) {
                 assert cfg != null;
+
+                if (cfg.getGridName() == null && !F.isEmpty(gridName))
+                    cfg.setGridName(gridName);
 
                 // Use either user defined context or our one.
                 GridNamedInstance grid = start0(
@@ -752,6 +806,9 @@ public class GridGainEx {
             else
                 throw new GridException("Grid instance with this name has already been started: " + name);
         }
+
+        if (startCtx.config().getWarmupClosure() != null)
+            startCtx.config().getWarmupClosure().apply(startCtx.config());
 
         startCtx.single(grids.size() == 1);
 
@@ -1268,7 +1325,7 @@ public class GridGainEx {
 
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
-                System.setProperty(GridSystemProperties.GG_CONFIG_URL, startCtx.configUrl().toString());
+                System.setProperty(GG_CONFIG_URL, startCtx.configUrl().toString());
 
             myCfg.setGridName(cfg.getGridName());
 
@@ -1308,6 +1365,7 @@ public class GridGainEx {
             myCfg.setMetricsExpireTime(cfg.getMetricsExpireTime());
             myCfg.setMetricsUpdateFrequency(cfg.getMetricsUpdateFrequency());
             myCfg.setLifecycleBeans(cfg.getLifecycleBeans());
+            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
             myCfg.setPeerClassLoadingMissedResourcesCacheSize(cfg.getPeerClassLoadingMissedResourcesCacheSize());
             myCfg.setIncludeEventTypes(cfg.getIncludeEventTypes());
             myCfg.setDaemon(cfg.isDaemon());
@@ -1319,6 +1377,8 @@ public class GridGainEx {
             myCfg.setDataCenterId(cfg.getDataCenterId());
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
+            myCfg.setWarmupClosure(cfg.getWarmupClosure());
+            myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
 
             GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
@@ -1352,13 +1412,13 @@ public class GridGainEx {
                 clientCfg = new GridClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = X.getSystemOrEnv(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = GridSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = X.getSystemOrEnv(GG_LOCAL_HOST);
+            String locHost = GridSystemProperties.getString(GG_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1367,7 +1427,7 @@ public class GridGainEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = X.getSystemOrEnv(GG_DEP_MODE_OVERRIDE);
+            String depModeName = GridSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1716,42 +1776,34 @@ public class GridGainEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = X.getSystemOrEnv(GG_SMTP_FROM);
+            String fromEmail = GridSystemProperties.getString(GG_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = X.getSystemOrEnv(GG_SMTP_HOST);
+            String smtpHost = GridSystemProperties.getString(GG_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = X.getSystemOrEnv(GG_SMTP_USERNAME);
+            String smtpUsername = GridSystemProperties.getString(GG_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = X.getSystemOrEnv(GG_SMTP_PWD);
+            String smtpPwd = GridSystemProperties.getString(GG_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            String smtpPort = X.getSystemOrEnv(GG_SMTP_PORT);
+            int smtpPort = GridSystemProperties.getInteger(GG_SMTP_PORT,-1);
 
-            if (smtpPort != null)
-                try {
-                    myCfg.setSmtpPort(Integer.parseInt(smtpPort));
-                }
-                catch (NumberFormatException e) {
-                    U.error(log, "Invalid SMTP port override value (safely ignored): " + smtpPort, e);
-                }
+            if(smtpPort != -1)
+                myCfg.setSmtpPort(smtpPort);
 
-            String smtpSsl = X.getSystemOrEnv(GG_SMTP_SSL);
+            myCfg.setSmtpSsl(GridSystemProperties.getBoolean(GG_SMTP_SSL));
 
-            if (smtpSsl != null)
-                myCfg.setSmtpSsl(Boolean.parseBoolean(smtpSsl));
-
-            String adminEmails = X.getSystemOrEnv(GG_ADMIN_EMAILS);
+            String adminEmails = GridSystemProperties.getString(GG_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1767,7 +1819,7 @@ public class GridGainEx {
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
-            boolean hasHadoop = GridComponentType.HADOOP.isInClassPath();
+            boolean hasHadoop = GridComponentType.HADOOP.inClassPath();
 
             GridCacheConfiguration[] copies;
 
@@ -1911,7 +1963,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!"true".equalsIgnoreCase(X.getSystemOrEnv(GG_NO_SHUTDOWN_HOOK))) {
+            if (GridSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -2020,6 +2072,7 @@ public class GridGainEx {
             cache.setQueryIndexEnabled(false);
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new GridCacheRendezvousAffinityFunction(false, 100));
 
             return cache;
         }

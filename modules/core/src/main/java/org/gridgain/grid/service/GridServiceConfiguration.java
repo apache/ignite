@@ -227,15 +227,37 @@ public class GridServiceConfiguration implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantIfStatement")
+    @SuppressWarnings({"RedundantIfStatement", "EqualsWhichDoesntCheckParameterClass"})
     @Override public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (!equalsIgnoreNodeFilter(o))
             return false;
+
+        GridServiceConfiguration that = (GridServiceConfiguration)o;
+
+        if (nodeFilter != null && that.nodeFilter != null) {
+            if (!nodeFilter.getClass().equals(that.nodeFilter.getClass()))
+                return false;
         }
+        else if (nodeFilter != null || that.nodeFilter != null)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * Checks if configurations are equal ignoring the node filter. Node filters control on which
+     * nodes the services are deployed and often can be ignored for equality checks.
+     *
+     * @param o Other configuration.
+     * @return {@code True} if configurations are equal, {@code false} otherwise.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    public boolean equalsIgnoreNodeFilter(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         GridServiceConfiguration that = (GridServiceConfiguration)o;
 
@@ -252,9 +274,6 @@ public class GridServiceConfiguration implements Serializable {
             return false;
 
         if (name != null ? !name.equals(that.name) : that.name != null)
-            return false;
-
-        if (nodeFilter != null ? !nodeFilter.getClass().equals(that.nodeFilter.getClass()) : that.nodeFilter != null)
             return false;
 
         if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)

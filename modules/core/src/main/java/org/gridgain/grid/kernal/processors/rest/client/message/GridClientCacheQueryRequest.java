@@ -22,6 +22,9 @@ import java.io.ObjectOutput;
  * Cache query request.
  */
 public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Available query operations.
      */

@@ -107,11 +107,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         @Nullable Object grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
-        UUID subjId
+        UUID subjId,
+        int taskNameHash
     ) {
         super(cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer), implicit, implicitSingle, cctx,
             concurrency, isolation, timeout, invalidate, syncCommit, syncRollback, explicitLock, txSize, grpLockKey,
-            partLock, subjId);
+            partLock, subjId, taskNameHash);
 
         assert cctx != null;
         assert nearNodeId != null;
@@ -202,7 +203,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache() {
+    @Override protected boolean updateNearCache(K key, long topVer) {
         return cctx.isDht() && isNearEnabled(cctx) && !cctx.localNodeId().equals(nearNodeId());
     }
 

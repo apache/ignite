@@ -26,9 +26,6 @@ public class GridServicesImpl implements GridServices, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<GridKernalContext> stash = new ThreadLocal<>();
-
-    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -169,6 +166,47 @@ public class GridServicesImpl implements GridServices, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T service(String name) {
+        guard();
+
+        try {
+            return ctx.service().service(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
+        throws GridRuntimeException {
+        A.notNull(name, "name");
+        A.notNull(svcItf, "svcItf");
+        A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
+
+        guard();
+
+        try {
+            return ctx.service().serviceProxy(prj, name, svcItf, sticky);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Collection<T> services(String name) {
+        guard();
+
+        try {
+            return ctx.service().services(name);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
@@ -185,12 +223,12 @@ public class GridServicesImpl implements GridServices, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
+        out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set((GridKernalContext)in.readObject());
+        prj = (GridProjection)in.readObject();
     }
 
     /**
@@ -200,16 +238,6 @@ public class GridServicesImpl implements GridServices, Externalizable {
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        try {
-            GridKernalContext ctx = stash.get();
-
-            return ctx.grid().services();
-        }
-        catch (Exception e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return prj.services();
     }
 }

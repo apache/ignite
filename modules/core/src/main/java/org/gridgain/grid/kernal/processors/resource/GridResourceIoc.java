@@ -83,8 +83,7 @@ class GridResourceIoc {
     }
 
     /**
-     * Injects given resource via field or setter with specified annotations
-     * on provided target object.
+     * Injects given resource via field or setter with specified annotations on provided target object.
      *
      * @param target Target object.
      * @param annCls Setter annotation.
@@ -221,7 +220,8 @@ class GridResourceIoc {
      * @return Filtered set of annotations that present in target.
      */
     @SuppressWarnings({"SuspiciousToArrayCall", "unchecked"})
-    Class<? extends Annotation>[] filter(@Nullable GridDeployment dep, Object target,
+    Class<? extends Annotation>[] filter(
+        @Nullable GridDeployment dep, Object target,
         Collection<Class<? extends Annotation>> annClss) {
         assert target != null;
         assert annClss != null && !annClss.isEmpty();
@@ -292,7 +292,7 @@ class GridResourceIoc {
         List<GridResourceMethod> mtds = getMethodsFromCache(cls, annCls);
 
         if (mtds == null) {
-            mtds = new LinkedList<>();
+            mtds = new ArrayList<>();
 
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Method mtd : cls0.getDeclaredMethods()) {
@@ -323,7 +323,7 @@ class GridResourceIoc {
         List<GridResourceField> fields = getFieldsFromCache(cls, annCls);
 
         if (fields == null) {
-            fields = new LinkedList<>();
+            fields = new ArrayList<>();
 
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
@@ -351,10 +351,7 @@ class GridResourceIoc {
     @Nullable private List<GridResourceField> getFieldsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
         Map<Class<? extends Annotation>, List<GridResourceField>> annCache = fieldCache.get(cls);
 
-        if (annCache != null)
-            return annCache.get(annCls);
-
-        return null;
+        return annCache != null ? annCache.get(annCls) : null;
     }
 
     /**
@@ -390,14 +387,10 @@ class GridResourceIoc {
      * @param annCls Annotation class for fields.
      * @return List of methods with given annotation, possibly {@code null}.
      */
-    @Nullable
-    private List<GridResourceMethod> getMethodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
+    @Nullable private List<GridResourceMethod> getMethodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
         Map<Class<? extends Annotation>, List<GridResourceMethod>> annCache = mtdCache.get(cls);
 
-        if (annCache != null)
-            return annCache.get(annCls);
-
-        return null;
+        return annCache != null ? annCache.get(annCls) : null;
     }
 
     /**

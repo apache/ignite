@@ -17,12 +17,7 @@ public interface GridCacheSwapListener<K, V> {
      * @param part Partition.
      * @param key Cache key.
      * @param keyBytes Key bytes.
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @param ver Version.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
+     * @param e Entry.
      */
-    public void onEntryUnswapped(int part, K key, byte[] keyBytes, V val, byte[] valBytes,
-        GridCacheVersion ver, long ttl, long expireTime);
+    public void onEntryUnswapped(int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> e);
 }

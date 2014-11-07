@@ -83,6 +83,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final Collection<UUID> top;
 
+    /** */
+    private final UUID subjId;
+
     /**
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
@@ -96,6 +99,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
+     * @param subjId Subject ID.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -109,7 +113,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         Collection<GridComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
-        boolean fullSup) {
+        boolean fullSup,
+        UUID subjId) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -136,11 +141,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         }
 
         this.fullSup = fullSup;
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFullSupport() {
         return fullSup;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        return subjId;
     }
 
     /**
@@ -365,9 +376,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         checkFullSupport();
 
-        if (attrs.isEmpty()) {
+        if (attrs.isEmpty())
             return true;
-        }
 
         if (timeout == 0)
             timeout = Long.MAX_VALUE;

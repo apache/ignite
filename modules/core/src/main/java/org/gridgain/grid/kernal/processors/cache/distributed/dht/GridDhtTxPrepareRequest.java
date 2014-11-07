@@ -72,6 +72,14 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     @GridDirectVersion(1)
     private UUID subjId;
 
+    /** Task name hash. */
+    @GridDirectVersion(2)
+    private int taskNameHash;
+
+    @GridDirectVersion(3)
+    /** Preload keys. */
+    private BitSet preloadKeys;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -104,7 +112,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
         boolean last,
-        UUID subjId) {
+        UUID subjId,
+        int taskNameHash) {
         super(tx, null, dhtWrites, grpLockKey, partLock, txNodes);
 
         assert futId != null;
@@ -117,6 +126,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         this.nearXidVer = nearXidVer;
         this.last = last;
         this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
 
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
@@ -157,6 +167,13 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     }
 
     /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
      * @return Near writes.
      */
     public Collection<GridCacheTxEntry<K, V>> nearWrites() {
@@ -177,6 +194,26 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      */
     public boolean invalidateNearEntry(int idx) {
         return invalidateNearEntries.get(idx);
+    }
+
+    /**
+     * Marks last added key for preloading.
+     */
+    public void markKeyForPreload(int idx) {
+        if (preloadKeys == null)
+            preloadKeys = new BitSet();
+
+        preloadKeys.set(idx, true);
+    }
+
+    /**
+     * Checks whether entry info should be sent to primary node from backup.
+     *
+     * @param idx Index.
+     * @return {@code True} if value should be sent, {@code false} otherwise.
+     */
+    public boolean needPreloadKey(int idx) {
+        return preloadKeys != null && preloadKeys.get(idx);
     }
 
     /**
@@ -293,6 +330,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         _clone.nearXidVer = nearXidVer;
         _clone.last = last;
         _clone.subjId = subjId;
+        _clone.taskNameHash = taskNameHash;
+        _clone.preloadKeys = preloadKeys;
     }
 
     /** {@inheritDoc} */
@@ -388,6 +427,18 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
             case 29:
                 if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 30:
+                if (!commState.putInt(taskNameHash))
+                    return false;
+
+                commState.idx++;
+
+            case 31:
+                if (!commState.putBitSet(preloadKeys))
                     return false;
 
                 commState.idx++;
@@ -518,6 +569,24 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                     return false;
 
                 subjId = subjId0;
+
+                commState.idx++;
+
+            case 30:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 31:
+                BitSet preloadKeys0 = commState.getBitSet();
+
+                if (preloadKeys0 == BIT_SET_NOT_READ)
+                    return false;
+
+                preloadKeys = preloadKeys0;
 
                 commState.idx++;
 

@@ -92,6 +92,13 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /**
+     * @return Cache context.
+     */
+    public GridCacheContext context() {
+        return ctx;
+    }
+
+    /**
      * @return Proxy delegate.
      */
     public GridCacheProjectionEx<K, V> delegate() {
@@ -296,6 +303,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** {@inheritDoc} */
     @Override public GridCacheProjection<K, V> flagsOff(@Nullable GridCacheFlag[] flags) {
         return delegate.flagsOff(flags);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProjection<K1, V1> keepPortable() {
+        return delegate.keepPortable();
     }
 
     /** {@inheritDoc} */
@@ -1070,18 +1082,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.primaryEntrySetx(filter);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<?, ?> forPortables() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.forPortables();
         }
         finally {
             gate.leave(prev);

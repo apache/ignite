@@ -19,6 +19,9 @@ import java.util.*;
  */
 public class GridClientGetMetaDataRequest extends GridClientAbstractMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Collection<Integer> typeIds;
 
     /**

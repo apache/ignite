@@ -16,11 +16,13 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
@@ -54,6 +56,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
@@ -127,7 +130,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         int size = 10;
 
-        Map<String, Integer> map = new LinkedHashMap<>(size);
+        Map<String, Integer> map = U.newLinkedHashMap(size);
 
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);

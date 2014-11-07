@@ -135,8 +135,9 @@ public class GridClockServer {
             sock.send(packet);
         }
         catch (IOException e) {
-            throw new GridException("Failed to send datagram message to remote node [addr=" + addr +
-                ", port=" + port + ", msg=" + msg + ']', e);
+            if (!sock.isClosed())
+                throw new GridException("Failed to send datagram message to remote node [addr=" + addr +
+                    ", port=" + port + ", msg=" + msg + ']', e);
         }
     }
 

@@ -24,21 +24,33 @@ import java.util.concurrent.atomic.*;
  * Skip list.
  */
 public class GridHadoopSkipList extends GridHadoopMultimapBase {
+    /** */
+    private static final int HEADS_SIZE = 24 + 33 * 8; // Offset + max level is from 0 to 32 inclusive.
+
     /** Top level. */
     private final AtomicInteger topLevel = new AtomicInteger(-1);
 
     /** Heads for all the lists. */
-    private final AtomicLongArray heads = new AtomicLongArray(33); // Level is from 0 to 32 inclusive.
+    private final long heads;
 
     /** */
     private final AtomicBoolean visitGuard = new AtomicBoolean();
 
     /**
-     * @param job Job.
+     * @param jobInfo Job info.
      * @param mem Memory.
      */
-    public GridHadoopSkipList(GridHadoopJob job, GridUnsafeMemory mem) {
-        super(job, mem);
+    public GridHadoopSkipList(GridHadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+        super(jobInfo, mem);
+
+        heads = mem.allocate(HEADS_SIZE, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        super.close();
+
+        mem.release(heads, HEADS_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -46,7 +58,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         if (!visitGuard.compareAndSet(false, true))
             return false;
 
-        for (long meta = heads.get(0); meta != 0L; meta = nextMeta(meta, 0)) {
+        for (long meta = nextMeta(heads, 0); meta != 0L; meta = nextMeta(meta, 0)) {
             long valPtr = value(meta);
 
             long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
@@ -153,7 +165,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @return Next meta pointer.
      */
     private long nextMeta(long meta, int level) {
-        return meta == 0 ? heads.get(level) : mem.readLongVolatile(meta + 24 + 8 * level);
+        assert meta > 0 : meta;
+
+        return mem.readLongVolatile(meta + 24 + 8 * level);
     }
 
     /**
@@ -164,8 +178,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @return {@code true} If operation succeeded.
      */
     private boolean casNextMeta(long meta, int level, long oldNext, long newNext) {
-        return meta == 0 ? heads.compareAndSet(level, oldNext, newNext) :
-            mem.casLong(meta + 24 + 8 * level, oldNext, newNext);
+        assert meta > 0 : meta;
+
+        return mem.casLong(meta + 24 + 8 * level, oldNext, newNext);
     }
 
     /**
@@ -199,7 +214,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      * @param rnd Random.
      * @return Next level.
      */
-    static int randomLevel(Random rnd) {
+    public static int randomLevel(Random rnd) {
         int x = rnd.nextInt();
 
         int level = 0;
@@ -364,9 +379,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             long newMeta = 0;
             int newMetaLevel = -1;
 
-            long prevMeta = 0;
+            long prevMeta = heads;
             int level = topLevel.get();
-            long meta = level < 0 ? 0 : heads.get(level);
+            long meta = level < 0 ? 0 : nextMeta(heads, level);
 
             for (;;) {
                 if (level < 0) { // We did not find our key, trying to add new meta.
@@ -456,7 +471,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          */
         private void laceUp(Object key, long newMeta, int newMetaLevel) {
             for (int level = 1; level <= newMetaLevel; level++) { // Go from the bottom up.
-                long prevMeta = 0;
+                long prevMeta = heads;
                 long meta = 0;
 
                 if (!stack.isEmpty()) { // Get the path back.
@@ -549,7 +564,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
      */
     private class Input implements GridHadoopTaskInput {
         /** */
-        private long metaPtr;
+        private long metaPtr = heads;
 
         /** */
         private final Reader keyReader;

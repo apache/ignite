@@ -14,6 +14,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -162,6 +163,19 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
+    @Override public GridBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes) {
+        return mapFor(p).valuePointer(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableEviction(int p, int hash, byte[] keyBytes) {
+        if (lru == null)
+            return;
+
+        mapFor(p).enableEviction(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] remove(int p, int hash, byte[] keyBytes) {
         return mapFor(p).remove(hash, keyBytes);
     }
@@ -279,6 +293,69 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                     throw new NoSuchElementException();
 
                 GridBiTuple<byte[], byte[]> t = curIt.next();
+
+                if (!curIt.hasNext()) {
+                    curIt.close();
+
+                    advance();
+                }
+
+                return t;
+            }
+
+            @Override protected boolean onHasNext() {
+                return curIt != null;
+            }
+
+            @Override protected void onRemove() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override protected void onClose() throws GridException {
+                if (curIt != null)
+                    curIt.close();
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> GridCloseableIterator<T> iterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c) {
+        assert c != null;
+
+        return new GridCloseableIteratorAdapter<T>() {
+            private int p;
+
+            private GridCloseableIterator<T> curIt;
+
+            {
+                try {
+                    advance();
+                }
+                catch (GridException e) {
+                    e.printStackTrace(); // Should never happen.
+                }
+            }
+
+            private void advance() throws GridException {
+                curIt = null;
+
+                while (p < parts) {
+                    curIt = mapFor(p++).iterator(c);
+
+                    if (curIt.hasNext())
+                        return;
+                    else
+                        curIt.close();
+                }
+
+                curIt = null;
+            }
+
+            @Override protected T onNext() throws GridException {
+                if (curIt == null)
+                    throw new NoSuchElementException();
+
+                T t = curIt.next();
 
                 if (!curIt.hasNext()) {
                     curIt.close();

@@ -84,17 +84,15 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
             startStopwatch();
 
             // Ack start.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(startInfo());
-            }
         }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws GridSpiException {
             // Ack stop.
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled())
                 log.info(stopInfo());
-            }
         }
 
         /** {@inheritDoc} */

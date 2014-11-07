@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -55,17 +56,15 @@ public class GridP2PTestTaskExternalPath1 extends GridComputeTaskAdapter<Object,
             sleep = false;
         }
 
-        Map<TestJob, GridNode> jobs = new HashMap<>(subgrid.size());
+        Map<TestJob, GridNode> jobs = U.newHashMap(subgrid.size());
 
         for (GridNode node : subgrid) {
-            if (nodeIds.contains(node.id())) {
+            if (nodeIds.contains(node.id()))
                 jobs.put(new TestJob(node.id(), sleep), node);
-            }
         }
 
-        if (!jobs.isEmpty()) {
+        if (!jobs.isEmpty())
             return jobs;
-        }
 
         throw new GridException("Failed to find target node: " + arg);
     }

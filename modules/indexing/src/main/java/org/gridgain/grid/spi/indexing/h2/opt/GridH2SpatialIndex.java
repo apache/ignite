@@ -96,7 +96,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row put(GridH2Row row, boolean ifAbsent) {
+    @Override public GridH2Row put(GridH2Row row) {
         Lock l = lock.writeLock();
 
         l.lock();

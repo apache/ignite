@@ -46,18 +46,12 @@ import java.util.*;
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
-public interface GridGgfs {
+public interface GridGgfs extends GridGgfsFileSystem {
     /** GGFS scheme name. */
     public static final String GGFS_SCHEME = "ggfs";
 
-    /** Property: user name. */
-    public static final String PROP_USER_NAME = "usrName";
-
-    /** Property: group name. */
-    public static final String PROP_GROUP_NAME = "grpName";
-
-    /** Property: permission. */
-    public static final String PROP_PERMISSION = "permission";
+    /** File property: prefer writes to local node. */
+    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
 
     /**
      * Gets GGFS name.
@@ -74,24 +68,6 @@ public interface GridGgfs {
     public GridGgfsConfiguration configuration();
 
     /**
-     * Checks if the specified path exists in the file system.
-     *
-     * @param path Path to check for existence in the file system.
-     * @return {@code True} if such file exists, otherwise - {@code false}.
-     * @throws GridException In case of error.
-     */
-    public boolean exists(GridGgfsPath path) throws GridException;
-
-    /**
-     * Gets file information for the specified path.
-     *
-     * @param path Path to get information for.
-     * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws GridException In case of error.
-     */
-    @Nullable public GridGgfsFile info(GridGgfsPath path) throws GridException;
-
-    /**
      * Gets summary (total number of files, total number of directories and total length)
      * for a given path.
      *
@@ -101,94 +77,6 @@ public interface GridGgfs {
      * @throws GridException If failed.
      */
     public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException;
-
-    /**
-     * Updates file information for the specified path. Existent properties, not listed in the passed collection,
-     * will not be affected. Other properties will be added or overwritten. Passed properties with {@code null} values
-     * will be removed from the stored properties or ignored if they don't exist in the file info.
-     * <p>
-     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
-     * to the secondary file system:
-     * <ul>
-     * <li>{@code usrName} - file owner name;</li>
-     * <li>{@code grpName} - file owner group;</li>
-     * <li>{@code permission} - Unix-style string representing file permissions.</li>
-     * </ul>
-     *
-     * @param path File path to set properties for.
-     * @param props Properties to update.
-     * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws GridException In case of error.
-     */
-    @Nullable public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException;
-
-    /**
-     * Renames/moves a file.
-     * <p>
-     * You are free to rename/move data files as you wish, but directories can be only renamed.
-     * You cannot move the directory between different parent directories.
-     * <p>
-     * Examples:
-     * <ul>
-     *     <li>"/work/file.txt" => "/home/project/Presentation Scenario.txt"</li>
-     *     <li>"/work" => "/work-2012.bkp"</li>
-     *     <li>"/work" => "<strike>/backups/work</strike>" - such operation is restricted for directories.</li>
-     * </ul>
-     *
-     * @param src Source file path to rename.
-     * @param dest Destination file path. If destination path is a directory, then source file will be placed
-     *     into destination directory with original name.
-     * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If source file doesn't exist.
-     */
-    public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException;
-
-    /**
-     * Deletes file.
-     *
-     * @param path File path to delete.
-     * @param recursive Delete non-empty directories recursively.
-     * @return {@code True} in case of success, {@code false} otherwise.
-     * @throws GridException In case of error.
-     */
-    public boolean delete(GridGgfsPath path, boolean recursive) throws GridException;
-
-    /**
-     * Creates directories under specified path.
-     *
-     * @param path Path of directories chain to create.
-     * @throws GridException In case of error.
-     */
-    public void mkdirs(GridGgfsPath path) throws GridException;
-
-    /**
-     * Creates directories under specified path with the specified properties.
-     *
-     * @param path Path of directories chain to create.
-     * @param props Metadata properties to set on created directories.
-     * @throws GridException In case of error.
-     */
-    public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException;
-
-    /**
-     * Lists file paths under the specified path.
-     *
-     * @param path Path to list files under.
-     * @return List of files under the specified path.
-     * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException;
-
-    /**
-     * Lists files under the specified path.
-     *
-     * @param path Path to list files under.
-     * @return List of files under the specified path.
-     * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -209,7 +97,7 @@ public interface GridGgfs {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
+    @Override public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -231,7 +119,22 @@ public interface GridGgfs {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+
+    /**
+     * Creates a file and opens it for writing.
+     *
+     * @param path File path to create.
+     * @param bufSize Write buffer size (bytes) or {@code zero} to use default value.
+     * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
+     * @param replication Replication factor.
+     * @param blockSize Block size.
+     * @param props File properties to set.
+     * @return File output stream to write data to.
+     * @throws GridException In case of error.
+     */
+    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+        long blockSize, @Nullable Map<String, String> props) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -273,7 +176,7 @@ public interface GridGgfs {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+    @Override public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException;
 
     /**

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -29,7 +31,6 @@ import java.util.concurrent.*;
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
-
     /** */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
@@ -42,18 +43,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      *
      * @param name Index name.
      * @param tbl Table.
-     * @param unique If this index unique.
+     * @param pk If this index is primary key.
      * @param keyCol Primary key column index.
      * @param valCol Value column index.
-     * @param memory Memory.
      * @param cols Index columns list.
      */
     @SuppressWarnings("unchecked")
-    public GridH2TreeIndex(String name, GridH2Table tbl, boolean unique, int keyCol, int valCol,
-        final GridUnsafeMemory memory, IndexColumn... cols) {
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols) {
         super(keyCol, valCol);
-        if (!unique) {
-            // For non unique index we add primary key at the end to avoid conflicts.
+        if (!pk) {
+            // For other indexes we add primary key at the end to avoid conflicts.
             cols = Arrays.copyOf(cols, cols.length + 1);
 
             cols[cols.length - 1] = tbl.indexColumn(keyCol, SortOrder.ASCENDING);
@@ -62,11 +61,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
-            unique ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
+            pk ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
 
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
 
-        tree = memory == null ? new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
+        tree = desc == null || desc.memory() == null ? new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
             @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
                 if (val != null)
                     node.key = (GridSearchRowPointer)val;
@@ -78,14 +77,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 return super.comparable(key);
             }
-        } : new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, memory, this) {
+        } : new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
             @Override protected void afterNodeUpdate_nl(long node, GridH2Row val) {
                 final long oldKey = keyPtr(node);
 
                 if (val != null) {
                     key(node, val);
 
-                    memory.finalizeLater(new Runnable() {
+                    guard.finalizeLater(new Runnable() {
                         @Override public void run() {
                             desc.createPointer(oldKey).decrementRefCount();
                         }
@@ -163,6 +162,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
+        GridIndexingQueryFilter f = filters.get();
+
+        try { // Fast path if we don't need to perform any filtering.
+            if (f == null || f.forSpace(((GridH2Table)getTable()).spaceName()) == null)
+                return treeForRead().size();
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+
         Iterator<GridH2Row> iter = doFind(null, false, null);
 
         long size = 0;
@@ -229,8 +238,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /**
      * Finds row with key equal one in given search row.
-     * WARNING!! Method call must be protected by {@link GridUnsafeMemory#begin()}
-     * {@link GridUnsafeMemory#end(GridUnsafeMemory.Operation)} block.
+     * WARNING!! Method call must be protected by {@link GridUnsafeGuard#begin()}
+     * {@link GridUnsafeGuard#end()} block.
      *
      * @param row Search row.
      * @return Row.
@@ -343,8 +352,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row put(GridH2Row row, boolean ifAbsent) {
-        return ifAbsent ? tree.putIfAbsent(row, row) : tree.put(row, row);
+    @Override public GridH2Row put(GridH2Row row) {
+        return tree.put(row, row);
     }
 
     /** {@inheritDoc} */
@@ -444,14 +453,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2TreeIndex rebuild(GridUnsafeMemory memory) throws InterruptedException {
+    @Override public GridH2TreeIndex rebuild() throws InterruptedException {
         IndexColumn[] cols = getIndexColumns();
 
         if (!getIndexType().isUnique())
             cols = Arrays.copyOf(cols, cols.length - 1);
 
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(), keyCol, valCol,
-            memory, cols);
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(),
+            keyCol, valCol, cols);
 
         Thread thread = Thread.currentThread();
 

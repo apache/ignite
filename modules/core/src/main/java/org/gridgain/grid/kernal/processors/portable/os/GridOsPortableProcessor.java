@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -32,6 +33,26 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws GridPortableException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object unmarshal(byte[] arr, int off) throws GridPortableException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unwrapTemporary(Object obj) throws GridPortableException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -60,6 +81,11 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder(GridPortableObject portableObj) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void addMeta(int typeId, GridPortableMetadata newMeta) throws GridPortableException {
         // No-op.
     }
@@ -71,12 +97,17 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metaData(int typeId) {
+    @Nullable @Override public GridPortableMetadata metadata(int typeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridPortableMetadata> metaData(Collection<Integer> typeIds) {
+    @Override public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridPortableMetadata> metadata() throws GridPortableException {
+        return Collections.emptyList();
     }
 }

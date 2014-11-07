@@ -257,7 +257,7 @@ public class GridTcpRestParser implements GridNioParser {
         int rem = buf.remaining();
 
         if (rem > 0) {
-            byte[] bbuf = new byte[4]; // Buffer to read data to.
+            byte[] bbuf = new byte[5]; // Buffer to read data to.
 
             int nRead = Math.min(rem, bbuf.length); // Number of bytes to read.
 
@@ -278,7 +278,7 @@ public class GridTcpRestParser implements GridNioParser {
             assert idx <= 4 : "Wrong idx: " + idx;
             assert nAvailable == 0 || nAvailable == 1 : "Wrong nav: " + nAvailable;
 
-            if (idx == 4)
+            if (idx == 4 && nAvailable > 0)
                 return packet;
         }
 
@@ -659,9 +659,8 @@ public class GridTcpRestParser implements GridNioParser {
 
         byte[] data = null;
 
-        if (obj instanceof String) {
+        if (obj instanceof String)
             data = ((String)obj).getBytes(UTF_8);
-        }
         else if (obj instanceof Boolean) {
             data = new byte[] {(byte)((Boolean)obj ? '1' : '0')};
 

@@ -70,9 +70,8 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
             attrVal = UUID.randomUUID();
 
             for (GridNode node : subgrid) {
-                if (node.id().equals(arg)) {
+                if (node.id().equals(arg))
                     return Collections.singletonMap(new SessionTestJob(attrVal), node);
-                }
             }
 
             assert false;

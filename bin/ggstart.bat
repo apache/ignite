@@ -46,7 +46,7 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if defined GRIDGAIN_HOME goto checkGridGainHome2
-    pushd "%~dp0"/../..
+    pushd "%~dp0"/../.. &:: Will be replaced by pushd "%~dp0"/..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -71,7 +71,16 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto setProgName
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
+
+:: Remove trailing spaces
+for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :setProgName
@@ -83,21 +92,18 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
 
-:: This is Ant-augmented variable.
-set ANT_AUGMENTED_GGJAR=gridgain.jar
-
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
-
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
 set CP=%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.
 ::
-if not defined DEFAULT_CONFIG set "DEFAULT_CONFIG=%GRIDGAIN_HOME%\os\config\default-config.xml"
-call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
+if not defined DEFAULT_CONFIG set "DEFAULT_CONFIG=config\default-config.xml"
+call "%SCRIPTS_HOME%\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
@@ -117,7 +123,7 @@ set RESTART_SUCCESS_OPT=-DGRIDGAIN_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 ::
 :: You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
 ::
-for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp "%GRIDGAIN_HOME%\libs\*" org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
+for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
     set JMX_PORT=%%A
 )
 
@@ -142,16 +148,7 @@ if "%JMX_PORT%" == "" (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-set BASE_JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts
-
-if "%JVM_OPTS%" == "" (
-    :: Hadoop needs class unloading enabled and large size of perm space.
-    if defined GRIDGAIN_HADOOP_CLASSPATH (
-        set JVM_OPTS=%BASE_JVM_OPTS% -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m
-    ) else (
-        set JVM_OPTS=%BASE_JVM_OPTS%
-    )
-)
+if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
@@ -220,7 +217,6 @@ goto run_java
 if not exist %RESTART_SUCCESS_FILE% goto error_finish
 del %RESTART_SUCCESS_FILE%
 
-:error_finish
 :error_finish
 
 if not "%NO_PAUSE%" == "1" pause

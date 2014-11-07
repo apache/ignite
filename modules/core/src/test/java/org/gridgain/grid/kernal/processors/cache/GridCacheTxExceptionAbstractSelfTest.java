@@ -582,21 +582,21 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
         /** {@inheritDoc} */
         @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-            Collection<Object> params, GridIndexingQueryFilter<K, V>... filters) {
+            Collection<Object> params, GridIndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(
             @Nullable String spaceName, String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
-            GridIndexingQueryFilter<K, V>... filters) {
+            GridIndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(
             @Nullable String spaceName, String qry, GridIndexingTypeDescriptor type,
-            GridIndexingQueryFilter<K, V>... filters) {
+            GridIndexingQueryFilter filters) {
             throw new UnsupportedOperationException();
         }
 

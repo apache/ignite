@@ -54,6 +54,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
@@ -295,7 +296,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         trueArr = new GridPredicate[]{F.alwaysTrue()};
 
         // Create unsafe memory only if writing values
-        unsafeMemory = cacheCfg.getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES ?
+        unsafeMemory = cacheCfg.getMemoryMode() == OFFHEAP_VALUES ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
@@ -1456,15 +1457,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
-        if (nearNodes != null && !nearNodes.isEmpty()) {
-            List<GridNode> owners = dht().topology().owners(entry.partition(), topVer);
-
-            assert dhtNodes.containsAll(owners) : "Invalid nodes resolving [dhtNodes=" + dhtNodes +
-                ", owners=" + owners + ']';
-
-            // Exclude owner nodes.
-            ret |= map(entry, F.view(nearNodes, F.notIn(owners)), nearMap);
-        }
+        if (nearNodes != null && !nearNodes.isEmpty())
+            ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
 
         return ret;
     }
@@ -1677,6 +1671,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Portable processor.
+     */
+    public GridPortableProcessor portable() {
+        return kernalContext().portable();
+    }
+
+    /**
      * @return Portable enabled flag.
      */
     public boolean portableEnabled() {
@@ -1702,11 +1703,42 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
+     */
+    public boolean offheapTiered() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+    }
+
+    /**
+     * Converts temporary offheap object to heap-based.
+     *
+     * @param obj Object.
+     * @return Heap-based object.
+     */
+    @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
+        if (!offheapTiered() || !portableEnabled())
+            return (T)obj;
+
+        return (T)portable().unwrapTemporary(obj);
+    }
+
+    /**
+     * @param bytes Object marshalled with portable marshaller.
+     * @return Object marshalled with grid marshaller.
+     * @throws GridException If failed.
+     */
+    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+        assert portableEnabled() && offheapTiered();
+
+        return marshaller().marshal(portable().unmarshal(bytes, 0));
+    }
+
+    /**
      * @param obj Object.
      * @return Portable object.
      * @throws GridPortableException In case of error.
      */
-    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
         assert portableEnabled();
 
         if (obj == null)
@@ -1726,64 +1758,118 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param portableKeys Keep portable keys flag.
-     * @param portableVals Keep portable values flag.
+     * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
-     * @throws GridException
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean portableKeys,
-        boolean portableVals) throws GridException {
-        if (!config().isPortableEnabled())
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
             return col;
 
-        Collection<Object> unwrapped = new ArrayList<>(col.size());
+        if (col instanceof ArrayList)
+            return unwrapPortables((ArrayList<Object>)col);
 
-        for (Object o : col) {
-            unwrapped.add(unwrapPortableIfNeeded(o, portableKeys, portableVals));
+        int idx = 0;
+
+        for (Object obj : col) {
+            Object unwrapped = unwrapPortable(obj);
+
+            if (obj != unwrapped) {
+                Collection<Object> unwrappedCol = new ArrayList<>(col.size());
+
+                int idx0 = 0;
+
+                for (Object obj0 : col) {
+                    if (idx0 < idx)
+                        unwrappedCol.add(obj0);
+                    else if (idx == idx0)
+                        unwrappedCol.add(unwrapped);
+                    else
+                        unwrappedCol.add(unwrapPortable(obj0));
+
+                    idx0++;
+                }
+
+                return unwrappedCol;
+            }
+
+            idx++;
         }
 
-        return unwrapped;
+        return col;
+    }
+
+    /**
+     * Unwraps array list.
+     *
+     * @param col List to unwrap.
+     * @return Unwrapped list.
+     */
+    private ArrayList<Object> unwrapPortables(ArrayList<Object> col) {
+        int size = col.size();
+
+        for (int i = 0; i < size; i++) {
+            Object o = col.get(i);
+
+            Object unwrapped = unwrapPortable(o);
+
+            if (o != unwrapped)
+                col.set(i, unwrapped);
+        }
+
+        return col;
     }
 
     /**
      * Unwraps object for portables.
      *
      * @param o Object to unwrap.
-     * @param portableKeys Keep portable keys flag.
-     * @param portableVals Keep portable values flag.
+     * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
-     * @throws GridException If failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean portableKeys, boolean portableVals) throws GridException {
-        if (!config().isPortableEnabled())
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
             return o;
 
+        return unwrapPortable(o);
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapPortable(Object o) {
         if (o instanceof Map.Entry) {
             Map.Entry entry = (Map.Entry)o;
 
             Object key = entry.getKey();
 
-            if (key instanceof GridPortableObject && !portableKeys)
+            boolean unwrapped = false;
+
+            if (key instanceof GridPortableObject) {
                 key = ((GridPortableObject)key).deserialize();
+
+                unwrapped = true;
+            }
 
             Object val = entry.getValue();
 
-            if (val instanceof GridPortableObject && !portableVals)
+            if (val instanceof GridPortableObject) {
                 val = ((GridPortableObject)val).deserialize();
 
-            return F.t(key, val);
+                unwrapped = true;
+            }
+
+            return unwrapped ? F.t(key, val) : o;
         }
-        else if (!portableKeys || !portableVals) {
+        else {
             if (o instanceof Collection)
-                return unwrapPortablesIfNeeded((Collection<Object>)o, portableKeys, portableVals);
+                return unwrapPortablesIfNeeded((Collection<Object>)o, false);
             else if (o instanceof GridPortableObject)
                 return ((GridPortableObject)o).deserialize();
-            else
-                return o;
         }
-        else
-            return o;
+
+        return o;
     }
 
     /**

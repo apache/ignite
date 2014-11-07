@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.license;
 
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
 
@@ -21,7 +20,7 @@ import java.util.concurrent.*;
  */
 public class GridLicenseUseRegistry {
     /** Usage map. */
-    private static final ConcurrentMap<GridProductEdition, Collection<Class<?>>> useMap =
+    private static final ConcurrentMap<GridLicenseSubsystem, Collection<Class<?>>> useMap =
         new ConcurrentHashMap8<>();
 
     /**
@@ -34,10 +33,10 @@ public class GridLicenseUseRegistry {
     /**
      * Callback for whenever component gets used.
      *
-     * @param ed Edition.
+     * @param ed Subsystem.
      * @param cls Component.
      */
-    public static void onUsage(GridProductEdition ed, Class<?> cls) {
+    public static void onUsage(GridLicenseSubsystem ed, Class<?> cls) {
         Collection<Class<?>> c = useMap.get(ed);
 
         if (c == null) {
@@ -51,24 +50,24 @@ public class GridLicenseUseRegistry {
     }
 
     /**
-     * Gets used components for given edition.
+     * Gets used subsystems for given subsystem.
      *
-     * @param ed Edition.
+     * @param ed Subsystem.
      * @return Component.
      */
-    public static Collection<Class<?>> usedClasses(GridProductEdition ed) {
+    public static Collection<Class<?>> usedClasses(GridLicenseSubsystem ed) {
         Collection<Class<?>> c = useMap.get(ed);
 
         return c == null ? Collections.<Class<?>>emptySet() : c;
     }
 
     /**
-     * Checks if edition is used.
+     * Checks if subsystem is used.
      *
-     * @param ed Edition to check.
+     * @param ed Subsystem to check.
      * @return {@code True} if used.
      */
-    public static boolean used(GridProductEdition ed) {
+    public static boolean used(GridLicenseSubsystem ed) {
         return !usedClasses(ed).isEmpty();
     }
 

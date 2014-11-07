@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -48,18 +49,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = mappers(top, topIds, job.input());
 
-        int rdcCnt = 0;
+        int rdcCnt = job.info().reducers();
 
-        if (job.info().hasReducer()) {
-            rdcCnt = 1;
-
-            if (job.info() instanceof GridHadoopDefaultJobInfo) {
-                rdcCnt = ((GridHadoopDefaultJobInfo)job.info()).reducers();
-
-                if (rdcCnt < 1)
-                    throw new GridException("Number of reducers must be positive, actual: " + rdcCnt);
-            }
-        }
+        if (rdcCnt < 0)
+            throw new GridException("Number of reducers must be non-negative, actual: " + rdcCnt);
 
         Map<UUID, int[]> reducers = reducers(top, mappers, rdcCnt);
 
@@ -116,7 +109,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @return Map.
      */
     private static Map<String, Collection<UUID>> hosts(Collection<GridNode> top) {
-        Map<String, Collection<UUID>> grouped = new HashMap<>(top.size());
+        Map<String, Collection<UUID>> grouped = U.newHashMap(top.size());
 
         for (GridNode node : top) {
             for (String host : node.hostNames()) {

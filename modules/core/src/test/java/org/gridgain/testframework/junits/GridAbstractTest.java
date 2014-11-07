@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -960,12 +961,10 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     protected String getDefaultCheckpointPath(GridMarshaller marshaller) {
-        if (marshaller instanceof GridJdkMarshaller) {
+        if (marshaller instanceof GridJdkMarshaller)
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
-        }
-        else {
+        else
             return GridSharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
-        }
     }
 
     /**
@@ -1066,6 +1065,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setStartSize(1024);
         cfg.setQueryIndexEnabled(true);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -1083,7 +1083,7 @@ public abstract class GridAbstractTest extends TestCase {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            return new URLClassLoader(new URL[]{new URL(path)}, U.gridClassLoader());
+            return new URLClassLoader(new URL[] {new URL(path)}, U.gridClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL: " + path, e);
@@ -1102,40 +1102,43 @@ public abstract class GridAbstractTest extends TestCase {
             info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
                 ", stopped=" + cntrs.getStopped() + ']');
 
-        afterTest();
-
-        if (isLastTest()) {
-            info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
-
-            TestCounters counters = getTestCounters();
-
-            // Stop all threads started by runMultithreaded() methods.
-            GridTestUtils.stopThreads(log);
-
-            // Safety.
-            getTestResources().stopThreads();
-
-            // Set reset flags, so counters will be reset on the next setUp.
-            counters.setReset(true);
-
-            afterTestsStopped();
-
-            if (startGrid)
-                G.stop(getTestGridName(), true);
-
-            // Remove counters.
-            tests.remove(getClass());
-
-            // Remove resources cached in static, if any.
-            GridClassLoaderCache.clear();
-            GridOptimizedMarshaller.clearCache();
-            GridMarshallerExclusions.clearCache();
-            GridEnumCache.clear();
+        try {
+            afterTest();
         }
+        finally {
+            if (isLastTest()) {
+                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
-        Thread.currentThread().setContextClassLoader(clsLdr);
+                TestCounters counters = getTestCounters();
 
-        clsLdr = null;
+                // Stop all threads started by runMultithreaded() methods.
+                GridTestUtils.stopThreads(log);
+
+                // Safety.
+                getTestResources().stopThreads();
+
+                // Set reset flags, so counters will be reset on the next setUp.
+                counters.setReset(true);
+
+                afterTestsStopped();
+
+                if (startGrid)
+                    G.stop(getTestGridName(), true);
+
+                // Remove counters.
+                tests.remove(getClass());
+
+                // Remove resources cached in static, if any.
+                GridClassLoaderCache.clear();
+                GridOptimizedMarshaller.clearCache();
+                GridMarshallerExclusions.clearCache();
+                GridEnumCache.clear();
+            }
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+        }
     }
 
     /**

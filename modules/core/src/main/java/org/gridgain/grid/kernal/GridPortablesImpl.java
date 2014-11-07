@@ -13,6 +13,8 @@ import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.portables.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * {@link GridPortables} implementation.
  */
@@ -69,11 +71,11 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
+    @Override public GridPortableBuilder builder(GridPortableObject portableObj) {
         guard();
 
         try {
-            return proc.metaData(proc.typeId(cls.getName()));
+            return proc.builder(portableObj);
         }
         finally {
             unguard();
@@ -81,11 +83,23 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(String clsName) throws GridPortableException {
+    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException {
         guard();
 
         try {
-            return proc.metaData(proc.typeId(clsName));
+            return proc.metadata(proc.typeId(cls.getName()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridPortableMetadata metadata(String typeName) throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata(proc.typeId(typeName));
         }
         finally {
             unguard();
@@ -97,11 +111,30 @@ public class GridPortablesImpl implements GridPortables {
         guard();
 
         try {
-            return proc.metaData(typeId);
+            return proc.metadata(typeId);
         }
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridPortableMetadata> metadata() throws GridPortableException {
+        guard();
+
+        try {
+            return proc.metadata();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * @return Portable processor.
+     */
+    public GridPortableProcessor processor() {
+        return proc;
     }
 
     /**

@@ -140,12 +140,10 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public GridNode failover(GridFailoverContext ctx, List<GridNode> grid) {
-            if (getName().equals(expName)) {
+            if (getName().equals(expName))
                 isTaskFailoverCalled = true;
-            }
-            else {
+            else
                 isWrongTaskFailoverCalled = true;
-            }
 
             return super.failover(ctx, grid);
         }
@@ -168,12 +166,10 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public GridNode getBalancedNode(GridComputeTaskSession ses, List<GridNode> top,
             GridComputeJob job) throws GridException {
-            if (getName().equals(expName)) {
+            if (getName().equals(expName))
                 isTaskLoadBalancingCalled = true;
-            }
-            else {
+            else
                 isWrongTaskLoadBalancingCalled = true;
-            }
 
             return super.getBalancedNode(ses, top, job);
         }
@@ -196,24 +192,20 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean saveCheckpoint(String key, byte[] state, long timeout,
             boolean overwrite) throws GridSpiException {
-            if (getName().equals(expName)) {
+            if (getName().equals(expName))
                 isTaskCheckPntCalled = true;
-            }
-            else {
+            else
                 isWrongTaskCheckPntCalled = true;
-            }
 
             return super.saveCheckpoint(key, state, timeout, overwrite);
         }
 
         /** {@inheritDoc} */
         @Override public byte[] loadCheckpoint(String key) throws GridSpiException {
-            if (getName().equals(expName)) {
+            if (getName().equals(expName))
                 isJobCheckPntCalled = true;
-            }
-            else {
+            else
                 isWrongJobCheckPntCalled = true;
-            }
 
             return super.loadCheckpoint(key);
         }
@@ -248,9 +240,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public GridComputeJobResultPolicy result(GridComputeJobResult res,
             List<GridComputeJobResult> received) throws GridException {
-            if (res.getException() != null) {
+            if (res.getException() != null)
                 return GridComputeJobResultPolicy.FAILOVER;
-            }
 
             return super.result(res, received);
         }
@@ -285,9 +276,8 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
             assert argument(0) != null;
 
             // Should always fail on task originating node and work on another one.
-            if (locId.equals(argument(0))) {
+            if (locId.equals(argument(0)))
                 throw new GridException("Expected exception to failover job.");
-            }
 
             // Use checkpoint on job side. This will happen on remote node.
             jobSes.loadCheckpoint("test");

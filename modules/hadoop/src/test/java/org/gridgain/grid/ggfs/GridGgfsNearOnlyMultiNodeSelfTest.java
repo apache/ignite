@@ -38,7 +38,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -74,7 +74,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         ggfsCfg.setMetaCacheName("partitioned");
         ggfsCfg.setName("ggfs");
 
-        ggfsCfg.setIpcEndpointConfiguration(GridHadoopTestUtils.jsonToMap(
+        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(
             "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
