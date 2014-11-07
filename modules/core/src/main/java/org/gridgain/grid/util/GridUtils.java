@@ -23,6 +23,7 @@ import org.gridgain.grid.portables.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -1142,6 +1143,29 @@ public abstract class GridUtils {
 
             for (int i = 0; i < len; i++)
                 arr[i] = in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        Class<?>[] arr = null;
+
+        if (len > 0) {
+            arr = new Class<?>[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (Class<?>)in.readObject();
         }
 
         return arr;
@@ -7751,6 +7775,8 @@ public abstract class GridUtils {
     public static String nodeIdLogFileName(UUID nodeId, String fileName) {
         assert nodeId != null;
         assert fileName != null;
+
+        fileName = GridFilenameUtils.separatorsToSystem(fileName);
 
         int dot = fileName.lastIndexOf('.');
 
