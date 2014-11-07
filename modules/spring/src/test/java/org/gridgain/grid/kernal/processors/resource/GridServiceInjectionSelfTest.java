@@ -74,7 +74,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
      * @throws Exception If failed.
      */
     public void testClosureFieldProxy() throws Exception {
-        grid(0).forRemotes().compute().call(new GridCallable<Object>() {
+        grid(0).compute(grid(0).cluster().forRemotes()).call(new GridCallable<Object>() {
             @GridServiceResource(serviceName = SERVICE_NAME2, proxyInterface = DummyService.class)
             private DummyService svc;
 

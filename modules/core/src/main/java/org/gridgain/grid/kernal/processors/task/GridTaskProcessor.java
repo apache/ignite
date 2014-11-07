@@ -618,7 +618,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <R> Map<GridUuid, GridComputeTaskFuture<R>> taskFutures() {
-        Map<GridUuid, GridComputeTaskFuture<R>> res = new HashMap<>();
+        Map<GridUuid, GridComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
             GridComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
