@@ -1160,8 +1160,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
-        A.ensure(cfg.getDataCenterId() >= 0, "cfg.getDataCenterId() >= 0");
-        A.ensure(cfg.getDataCenterId() < MAX_DATA_CENTERS, "cfg.getDataCenterId() <= 31");
 
         if (!F.isEmpty(cfg.getPluginConfigurations())) {
             for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
@@ -1385,9 +1383,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getClientConnectionConfiguration() != null)
             add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
-
-        // Add data center ID.
-        add(attrs, ATTR_DATA_CENTER_ID, cfg.getDataCenterId());
 
         try {
             GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();

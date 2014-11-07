@@ -78,7 +78,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
     @Override public void start0() throws GridException {
         txSerEnabled = cctx.config().isTxSerializableEnabled();
 
-        dataCenterId = cctx.kernalContext().config().getDataCenterId();
+        dataCenterId = cctx.dataCenterId();
 
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 

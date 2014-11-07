@@ -683,7 +683,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         else if (drCtx.isUseNew()) {
                                             txEntry.ttl(drCtx.ttl());
 
-                                            if (drCtx.newEntry().dataCenterId() != cctx.gridConfig().getDataCenterId())
+                                            if (drCtx.newEntry().dataCenterId() != cctx.dataCenterId())
                                                 txEntry.drExpireTime(drCtx.expireTime());
                                             else
                                                 txEntry.drExpireTime(-1L);

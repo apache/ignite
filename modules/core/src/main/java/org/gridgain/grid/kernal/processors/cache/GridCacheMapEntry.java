@@ -1719,8 +1719,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     // Explicit DR expire time will be passed to remote node only in that case.
                     if (!drRes.explicitTtl() && !drRes.isMerge()) {
-                        if (drRes.isUseNew() && newEntry.dataCenterId() != cctx.gridConfig().getDataCenterId() ||
-                            drRes.isUseOld() && oldEntry.dataCenterId() != cctx.gridConfig().getDataCenterId())
+                        if (drRes.isUseNew() && newEntry.dataCenterId() != cctx.dataCenterId() ||
+                            drRes.isUseOld() && oldEntry.dataCenterId() != cctx.dataCenterId())
                             newDrExpireTime = drRes.expireTime();
                     }
                 }
@@ -2052,29 +2052,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException In case of exception.
      */
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
-        throws GridException{
+        throws GridException {
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal()) {
-            GridDrSenderCacheConfiguration drSndCfg = cctx.config().getDrSenderConfiguration();
-
-            GridDrSenderCacheEntryFilter<K, V> drFilter = drSndCfg != null ?
-                (GridDrSenderCacheEntryFilter<K, V>)drSndCfg.getEntryFilter() : null;
-
             GridDrRawEntry<K, V> entry = new GridDrRawEntry<>(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(),
                 ver.drVersion());
 
-            boolean apply = drFilter == null;
-
-            if (!apply) {
-                // Unmarshall entry and pass it to filter.
-                entry.unmarshal(cctx.marshaller());
-
-                apply = drFilter.accept(entry);
-            }
-
-            if (apply)
-                cctx.dr().replicate(entry, drType);
-            else
-                cctx.cache().metrics0().onSenderCacheEntryFiltered();
+            cctx.dr().replicate(entry, drType);
         }
     }
 

@@ -400,60 +400,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
                 "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
 
-        boolean mongoCache = false; // CU.isMongoCache(c, cc.getName());
-
-        // Validate DR send configuration.
-        GridDrSenderCacheConfiguration drSndCfg = cc.getDrSenderConfiguration();
-
-        if (drSndCfg != null) {
-            if (ggfsCache)
-                throw new GridException("GGFS cache cannot be data center replication sender cache: " + cc.getName());
-
-            if (mongoCache)
-                throw new GridException("Mongo cache cannot be data center replication sender cache: " + cc.getName());
-
-            assertParameter(drSndCfg.getMode() != null, "cfg.getDrSenderConfiguration().getMode() != null");
-
-            if (cc.getCacheMode() == LOCAL)
-                throw new GridException("Data center replication is not supported for LOCAL cache");
-
-            assertParameter(drSndCfg.getBatchSendSize() > 0, "cfg.getDrSenderConfiguration().getBatchSendSize() > 0");
-
-            if (drSndCfg.getBatchSendFrequency() < 0)
-                drSndCfg.setBatchSendFrequency(0);
-
-            assertParameter(drSndCfg.getMaxBatches() > 0, "cfg.getDrSenderConfiguration().getMaxBatches() > 0");
-
-            assertParameter(drSndCfg.getSenderHubLoadBalancingMode() != null,
-                "cfg.getDrSendConfiguration().getSenderHubLoadBalancingMode() != null");
-
-            assertParameter(drSndCfg.getStateTransferThreadsCount() > 0,
-                "cfg.getDrSenderConfiguration().getStateTransferThreadsCount() > 0");
-
-            assertParameter(drSndCfg.getStateTransferThrottle() >= 0,
-                "cfg.getDrSenderConfiguration().getStateTransferThrottle >= 0");
-        }
-
-        // Validate DR receive configuration.
-        GridDrReceiverCacheConfiguration drRcvCfg = cc.getDrReceiverConfiguration();
-
-        if (drRcvCfg != null) {
-            if (ggfsCache)
-                throw new GridException("GGFS cache cannot be data center replication receiver cache: " +
-                    cc.getName());
-
-            if (mongoCache)
-                throw new GridException("Mongo cache cannot be data center replication receiver cache: " +
-                    cc.getName());
-
-            GridDrReceiverCacheConflictResolverMode rslvrMode = drRcvCfg.getConflictResolverMode();
-
-            assertParameter(rslvrMode != null, "cfg.getDrReceiverConfiguration().getConflictResolverPolicy() != null");
-
-            if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
-                throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
-        }
-
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
@@ -1030,8 +976,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Map<String, Boolean> attrPortable = new HashMap<>();
 
-        Collection<String> replicationCaches = new ArrayList<>();
-
         Map<String, String> interceptors = new HashMap<>();
 
         int i = 0;
@@ -1041,9 +985,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
 
-            if (cfg.getDrSenderConfiguration() != null)
-                replicationCaches.add(cfg.getName());
-
             if (cfg.getInterceptor() != null)
                 interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
@@ -1051,8 +992,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         attrs.put(ATTR_CACHE, attrVals);
 
         attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
-
-        attrs.put(ATTR_REPLICATION_CACHES, replicationCaches);
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
@@ -1389,47 +1328,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "Partitioned cache affinity hash ID resolver class",
                                 locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
                                 true);
-                        }
-
-                        // Validate DR send configuration.
-                        GridCacheDrSendAttributes locSndAttrs = locAttr.drSendAttributes();
-
-                        GridCacheDrSendAttributes rmtSndAttrs = rmtAttr.drSendAttributes();
-
-                        if (locSndAttrs != null && rmtSndAttrs != null) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "replicationMode",
-                                "Replication mode", locSndAttrs.mode(), rmtSndAttrs.mode(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "entryFilterClassName",
-                                "Class name for replication cache entry filter", locSndAttrs.entryFilterClassName(),
-                                rmtSndAttrs.entryFilterClassName(), true);
-                        }
-                        else if (!(locSndAttrs == null && rmtSndAttrs == null)) {
-                            UUID nullAttrNode = locSndAttrs == null ? ctx.discovery().localNode().id() : rmt.id();
-
-                            throw new GridException("Replication sender cache should be enabled for all nodes or " +
-                                "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
-                        }
-
-                        // Validate DR receive configuration.
-                        GridCacheDrReceiveAttributes locRcvAttrs = locAttr.drReceiveAttributes();
-
-                        GridCacheDrReceiveAttributes rmtRcvAttrs = rmtAttr.drReceiveAttributes();
-
-                        if (locRcvAttrs != null && rmtRcvAttrs != null) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "conflictResolverPolicy",
-                                "Policy for conflict resolver", locRcvAttrs.conflictResolverMode(),
-                                rmtRcvAttrs.conflictResolverMode(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "conflictResolverClassName",
-                                "Class name for conflict resolver", locRcvAttrs.conflictResolverClassName(),
-                                rmtRcvAttrs.conflictResolverClassName(), true);
-                        }
-                        else if (!(locRcvAttrs == null && rmtRcvAttrs == null)) {
-                            UUID nullAttrNode = locRcvAttrs == null ? ctx.discovery().localNode().id() : rmt.id();
-
-                            throw new GridException("DR receiver cache should be enabled for all nodes or " +
-                                "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
                         }
 
                         if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&

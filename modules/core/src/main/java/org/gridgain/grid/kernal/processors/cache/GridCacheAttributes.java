@@ -169,12 +169,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Transaction Manager lookup class name. */
     private String tmLookupClsName;
 
-    /** DR receive attributes. */
-    private GridCacheDrReceiveAttributes drRcvAttrs;
-
-    /** DR send attributes. */
-    private GridCacheDrSendAttributes drSndAttrs;
-
     /**
      * @param cfg Cache configuration.
      */
@@ -189,13 +183,6 @@ public class GridCacheAttributes implements Externalizable {
         dgcFreq = cfg.getDgcFrequency();
         dgcRmvLocks = cfg.isDgcRemoveLocks();
         dgcSuspectLockTimeout  = cfg.getDgcSuspectLockTimeout();
-
-        drRcvAttrs = cfg.getDrReceiverConfiguration() != null ?
-            new GridCacheDrReceiveAttributes(cfg.getDrReceiverConfiguration()) : null;
-
-        drSndAttrs = cfg.getDrSenderConfiguration() != null ?
-            new GridCacheDrSendAttributes(cfg.getDrSenderConfiguration()) : null;
-
         evictMaxOverflowRatio = cfg.getEvictMaxOverflowRatio();
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
@@ -597,20 +584,6 @@ public class GridCacheAttributes implements Externalizable {
         return indexingSpiName;
     }
 
-    /**
-     * @return DR receive attributes.
-     */
-    @Nullable public GridCacheDrReceiveAttributes drReceiveAttributes() {
-        return drRcvAttrs;
-    }
-
-    /**
-     * @return DR send attributes.
-     */
-    @Nullable public GridCacheDrSendAttributes drSendAttributes() {
-        return drSndAttrs;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum0(out, atomicityMode);
@@ -661,9 +634,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeString(out, nearEvictPlcClsName);
         U.writeString(out, storeClsName);
         U.writeString(out, tmLookupClsName);
-
-        out.writeObject(drRcvAttrs);
-        out.writeObject(drSndAttrs);
     }
 
     /** {@inheritDoc} */
@@ -716,9 +686,6 @@ public class GridCacheAttributes implements Externalizable {
         nearEvictPlcClsName = U.readString(in);
         storeClsName = U.readString(in);
         tmLookupClsName = U.readString(in);
-
-        drRcvAttrs = (GridCacheDrReceiveAttributes)in.readObject();
-        drSndAttrs = (GridCacheDrSendAttributes)in.readObject();
     }
 
     /**

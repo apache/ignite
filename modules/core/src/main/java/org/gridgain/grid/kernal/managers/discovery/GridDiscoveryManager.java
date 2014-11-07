@@ -617,8 +617,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
-        Byte locDataCenterId = locNode.attribute(ATTR_DATA_CENTER_ID);
-
         boolean warned = false;
 
         for (GridNode n : nodes) {
@@ -640,12 +638,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             // Daemon nodes are allowed to have any deployment they need.
             // Skip data center ID check for daemon nodes.
             if (!isLocDaemon && !n.isDaemon()) {
-                Byte rmtDataCenterId = n.attribute(ATTR_DATA_CENTER_ID);
-
-                if (!F.eq(locDataCenterId, rmtDataCenterId))
-                    throw new GridException("Remote node has data center ID different from local " +
-                        "[locDataCenterId=" + locDataCenterId + ", rmtDataCenterId=" + rmtDataCenterId + ']');
-
                 Object rmtMode = n.attribute(ATTR_DEPLOYMENT_MODE);
 
                 if (!locMode.equals(rmtMode))

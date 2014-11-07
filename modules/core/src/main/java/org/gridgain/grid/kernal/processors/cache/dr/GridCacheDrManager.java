@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.dr;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -21,12 +22,39 @@ import java.util.*;
  */
 public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     /**
+     * @return Data center ID.
+     */
+    public byte dataCenterId();
+
+    /**
+     * Check whether DR conflict resolution is required.
+     *
+     * @param oldVer Old version.
+     * @param newVer New version.
+     * @return {@code True} in case DR is required.
+     */
+    public boolean needResolve(GridCacheVersion oldVer, GridCacheVersion newVer);
+
+    /**
+     * Resolves DR conflict.
+     *
+     * @param key Key.
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @return Conflict resolution result.
+     * @throws GridException In case of exception.
+     */
+    public GridDrReceiverConflictContextImpl<K, V> resolveConflict(K key, GridDrEntry<K, V> oldEntry,
+        GridDrEntry<K, V> newEntry) throws GridException;
+
+    /**
      * Perform replication.
      *
      * @param entry Replication entry.
      * @param drType Replication type.
+     * @throws GridException If failed.
      */
-    public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType);
+    public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType)throws GridException;
 
     /**
      * Process partitions "before exchange" event.
@@ -36,6 +64,11 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @throws GridException If failed.
      */
     public void beforeExchange(long topVer, boolean left) throws GridException;
+
+    /**
+     * @return {@code True} is DR is enabled.
+     */
+    public boolean enabled();
 
     /**
      * In case some partition is evicted, we remove entries of this partition from backup queue.

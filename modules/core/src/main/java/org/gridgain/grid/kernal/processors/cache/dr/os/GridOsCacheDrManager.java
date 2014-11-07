@@ -10,11 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache.dr.os;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -22,6 +22,11 @@ import java.util.*;
  * No-op implementation for {@link GridCacheDrManager}.
  */
 public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
+    /** {@inheritDoc} */
+    @Override public boolean enabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(GridCacheContext<K, V> cctx) throws GridException {
         // No-op.
@@ -48,8 +53,25 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public byte dataCenterId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDrReceiverConflictContextImpl<K, V> resolveConflict(K key,
+        GridDrEntry<K, V> oldEntry,
+        GridDrEntry<K, V> newEntry) {
+        return null;
     }
 
     /** {@inheritDoc} */

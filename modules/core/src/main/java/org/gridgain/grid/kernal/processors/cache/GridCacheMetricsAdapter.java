@@ -261,7 +261,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param entriesCnt Number of entries in batch.
      */
     public void onSenderCacheBatchAcknowledged(int entriesCnt) {
-        drSndMetrics.onBatchAcked(entriesCnt);
+        if (drSndMetrics != null) // TODO 9341
+            drSndMetrics.onBatchAcked(entriesCnt);
 
         if (delegate != null)
             delegate.onSenderCacheBatchAcknowledged(entriesCnt);
@@ -273,7 +274,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param entriesCnt Number of entries in batch.
      */
     public void onSenderCacheBatchFailed(int entriesCnt) {
-        drSndMetrics.onBatchFailed(entriesCnt);
+        if (drSndMetrics != null) // TODO 9341
+            drSndMetrics.onBatchFailed(entriesCnt);
 
         if (delegate != null)
             delegate.onSenderCacheBatchFailed(entriesCnt);
@@ -285,7 +287,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param entriesCnt Number of sent entries.
      */
     public void onSenderCacheBatchSent(int entriesCnt) {
-        drSndMetrics.onBatchSent(entriesCnt);
+        if (drSndMetrics != null)  // TODO 9341
+            drSndMetrics.onBatchSent(entriesCnt);
 
         if (delegate != null)
             delegate.onSenderCacheBatchSent(entriesCnt);
@@ -295,7 +298,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Callback for filtered entries on sender cache side.
      */
     public void onSenderCacheEntryFiltered() {
-        drSndMetrics.onEntryFiltered();
+        if (drSndMetrics != null) // TODO 9341
+            drSndMetrics.onEntryFiltered();
 
         if (delegate != null)
             delegate.onSenderCacheEntryFiltered();
@@ -308,7 +312,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param errMsg Error message.
      */
     public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason, @Nullable String errMsg) {
-        drSndMetrics.onPauseStateChanged(pauseReason, errMsg);
+        if (drSndMetrics != null) // TODO 9341
+            drSndMetrics.onPauseStateChanged(pauseReason, errMsg);
 
         if (delegate != null)
             delegate.onPauseStateChanged(pauseReason, errMsg);
@@ -322,7 +327,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param usedMerge Merge conflict status flag.
      */
     public void onReceiveCacheConflictResolved(boolean usedNew, boolean usedOld, boolean usedMerge) {
-        drRcvMetrics.onReceiveCacheConflictResolved(usedNew, usedOld, usedMerge);
+        if (drRcvMetrics != null)
+            drRcvMetrics.onReceiveCacheConflictResolved(usedNew, usedOld, usedMerge);
 
         if (delegate != null)
             delegate.onReceiveCacheConflictResolved(usedNew, usedOld, usedMerge);
