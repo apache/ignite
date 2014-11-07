@@ -1163,6 +1163,9 @@ public class GridGainEx {
         /** REST executor service shutdown flag. */
         private boolean restSvcShutdown;
 
+        /** Utility cache executor service. */
+        private ExecutorService utilityCacheExecSvc;
+
         /** Grid state. */
         private volatile GridGainState state = STOPPED;
 
@@ -1570,6 +1573,13 @@ public class GridGainEx {
                 clientCfg.setRestExecutorService(restExecSvc);
             }
 
+            utilityCacheExecSvc = new GridThreadPoolExecutor(
+                "utility-" + cfg.getGridName(),
+                DFLT_SYSTEM_CORE_THREAD_CNT,
+                DFLT_SYSTEM_MAX_THREAD_CNT,
+                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
             execSvcShutdown = cfg.getExecutorServiceShutdown();
             sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
@@ -1823,9 +1833,9 @@ public class GridGainEx {
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                copies = new GridCacheConfiguration[cacheCfgs.length + (hasHadoop ? 1 : 0) + 1];
+                copies = new GridCacheConfiguration[cacheCfgs.length + (hasHadoop ? 2 : 1)];
 
-                int cloneIdx = 0;
+                int cloneIdx = 1;
 
                 if (hasHadoop)
                     copies[cloneIdx++] = CU.hadoopSystemCache();
@@ -1835,15 +1845,15 @@ public class GridGainEx {
             }
             else if (hasHadoop) {
                 // Populate system caches
-                copies = new GridCacheConfiguration[(hasHadoop ? 1 : 0) + 1];
+                copies = new GridCacheConfiguration[hasHadoop ? 2 : 1];
 
-                copies[0] = CU.hadoopSystemCache();
+                copies[1] = CU.hadoopSystemCache();
             }
             else
                 copies = new GridCacheConfiguration[1];
 
             // Always add utility cache.
-            copies[copies.length - 1] = utilitySystemCache();
+            copies[0] = utilitySystemCache();
 
             myCfg.setCacheConfiguration(copies);
 
@@ -1886,7 +1896,7 @@ public class GridGainEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, new CA() {
+                grid0.start(myCfg, utilityCacheExecSvc, new CA() {
                     @Override public void apply() {
                         startLatch.countDown();
                     }
@@ -2163,6 +2173,10 @@ public class GridGainEx {
 
                 restExecSvc = null;
             }
+
+            U.shutdownNow(getClass(), utilityCacheExecSvc, log);
+
+            utilityCacheExecSvc = null;
         }
 
         /**

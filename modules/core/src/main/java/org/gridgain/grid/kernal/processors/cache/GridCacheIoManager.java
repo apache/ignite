@@ -136,7 +136,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         String cacheName = cctx.name();
 
-        plc = CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
+        plc = CU.isUtilityCache(cacheName) ? UTILITY_CACHE_POOL : SYSTEM_POOL;
 
         depEnabled = cctx.gridDeploy().enabled();
 

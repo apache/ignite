@@ -668,11 +668,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrSystemCache() {
-        return cache.isDrSystemCache();
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException {
         return cache.getAll(keys, deserializePortables(), entryFilter(false));
     }

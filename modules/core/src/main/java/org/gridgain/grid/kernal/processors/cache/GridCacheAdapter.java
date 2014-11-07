@@ -137,9 +137,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @SuppressWarnings("UnusedDeclaration")
     private boolean mongoMetaCache;
 
-    /** Whether this cache is DR system cache. */
-    private boolean drSysCache;
-
     /** Current GGFS data cache size. */
     private LongAdder ggfsDataCacheSize;
 
@@ -229,8 +226,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 }
             }
         }
-
-        drSysCache = CU.isDrSystemCache(configuration().getName());
 
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
@@ -4024,11 +4019,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean isMongoMetaCache() {
         return mongoMetaCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDrSystemCache() {
-        return drSysCache;
     }
 
     /** {@inheritDoc} */

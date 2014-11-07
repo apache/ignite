@@ -367,13 +367,6 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     public boolean isMongoMetaCache();
 
     /**
-     * Checks whether this cache is DR system cache.
-     *
-     * @return {@code True} if this cache is DR system cache.
-     */
-    public boolean isDrSystemCache();
-
-    /**
      * Starts full state transfer.
      *
      * @param dataCenterIds  Data center IDs for which full state transfer was requested.

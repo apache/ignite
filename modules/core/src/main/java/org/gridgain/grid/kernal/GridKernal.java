@@ -544,11 +544,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * @param cfg Grid configuration to use.
+     * @param utilityCachePool Utility cache pool.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(GridConfiguration cfg, GridAbsClosure errHnd)
+    public void start(final GridConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -606,8 +607,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         throw new IgniteException("Plugin is null.");
 
                     pluginProviders.add(provider);
-
-                    cfg = provider.processConfiguration(cfg, pluginCfg);
                 }
                 catch (InstantiationException | IllegalAccessException e) {
                     throw new IgniteException("Failed to create plugin provider instance.", e);
@@ -687,7 +686,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(log, this, cfg, gw, pluginProviders, ENT);
+            GridKernalContextImpl ctx =
+                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, pluginProviders, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -880,14 +880,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             updateNtfTimer = new Timer("gridgain-update-notifier-timer");
 
-            final ExecutorService execSvc = cfg.getExecutorService();
-
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
                 @Override public void safeRun() throws InterruptedException {
                     verChecker.topologySize(nodes().size());
 
-                    verChecker.checkForNewVersion(execSvc, log);
+                    verChecker.checkForNewVersion(cfg.getExecutorService(), log);
 
                     // Just wait for 10 secs.
                     Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
@@ -907,8 +905,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
-            final ExecutorService execSvc = cfg.getExecutorService();
-
             starveTimer = new Timer("gridgain-starvation-checker");
 
             starveTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -916,7 +912,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 private long lastCompletedCnt;
 
                 @Override protected void safeRun() {
-                    ExecutorService e = execSvc;
+                    ExecutorService e = cfg.getExecutorService();
 
                     if (!(e instanceof ThreadPoolExecutor))
                         return;
@@ -983,8 +979,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
-            final GridConfiguration cfg0 = cfg;
-
             metricsLogTimer = new Timer("gridgain-metrics-logger");
 
             metricsLogTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -1025,7 +1019,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         int pubPoolIdleThreads = 0;
                         int pubPoolQSize = 0;
 
-                        ExecutorService pubExec = cfg0.getExecutorService();
+                        ExecutorService pubExec = cfg.getExecutorService();
 
                         if (pubExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
@@ -1041,7 +1035,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         int sysPoolIdleThreads = 0;
                         int sysPoolQSize = 0;
 
-                        ExecutorService sysExec = cfg0.getSystemExecutorService();
+                        ExecutorService sysExec = cfg.getSystemExecutorService();
 
                         if (sysExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;

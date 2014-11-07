@@ -31,8 +31,8 @@ public enum GridIoPolicy {
     /** Affinity fetch pool. */
     AFFINITY_POOL,
 
-    /** DR execution pool. */
-    DR_POOL;
+    /** Utility cache execution pool. */
+    UTILITY_CACHE_POOL;
 
     /** Enum values. */
     private static final GridIoPolicy[] VALS = values();

@@ -262,6 +262,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private GridEx grid;
 
     /** */
+    private ExecutorService utilityCachePool;
+
+    /** */
     private GridProduct product;
 
     /** */
@@ -282,9 +285,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** Enterprise release flag. */
     private boolean ent;
 
-    /** */
-    private ExecutorService drPool;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -299,6 +299,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
+     * @param utilityCachePool Utility cache pool.
      * @param pluginProviders Plugin providers.
      * @param ent Release enterprise flag.
      */
@@ -307,6 +308,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         GridEx grid,
         GridConfiguration cfg,
         GridKernalGateway gw,
+        ExecutorService utilityCachePool,
         Collection<PluginProvider> pluginProviders,
         boolean ent) {
         assert grid != null;
@@ -317,6 +319,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.cfg = cfg;
         this.gw = gw;
         this.ent = ent;
+        this.utilityCachePool = utilityCachePool;
 
         try {
             spring = SPRING.create(false);
@@ -332,9 +335,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
                 throw new IgniteException("Duplicated plugin name: " + provider.name());
 
             plugins.put(provider.name(), provider);
-
-            if (drPool == null)
-                drPool = provider.createMessageProcessPool(GridIoPolicy.DR_POOL);
         }
     }
 
@@ -678,8 +678,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService drPool() {
-        return drPool;
+    @Override public ExecutorService utilityCachePool() {
+        return utilityCachePool;
     }
 
     /** {@inheritDoc} */

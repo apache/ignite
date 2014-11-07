@@ -35,14 +35,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String version();
 
     /**
-     * @param cfg Configuration.
-     * @param pluginCfg Plugin configuration.
-     *
-     * @return Configuration.
-     */
-    public GridConfiguration processConfiguration(GridConfiguration cfg, C pluginCfg);
-
-    /**
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
@@ -52,12 +44,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(Class<T> cls);
-
-    /**
-     * @param type Pool type.
-     * @return Executor service.
-     */
-    @Nullable public ExecutorService createMessageProcessPool(Object type);
 
     /**
      * Starts grid component.
