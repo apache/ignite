@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -200,8 +202,11 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             info(">>> Waiting for preload futures...");
 
+            GridCachePartitionExchangeManager<Object, Object> exchMgr
+                = ((GridKernal)g1).context().cache().context().exchange();
+
             // Wait for exchanges to complete.
-            for (GridFuture<?> fut : ((GridDhtPreloader<Integer, String>)dht.preloader()).exchangeFutures())
+            for (GridFuture<?> fut : exchMgr.exchangeFutures())
                 fut.get();
 
             GridCacheAffinity<Integer> aff = affinity(c1);

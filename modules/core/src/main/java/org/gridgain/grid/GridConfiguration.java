@@ -393,7 +393,7 @@ public class GridConfiguration {
     private GridCacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private GridTransactionsConfiguration txCfg;
+    private GridTransactionsConfiguration txCfg = new GridTransactionsConfiguration();
 
     /** Configuration for .Net nodes. */
     private GridDotNetConfiguration dotNetCfg;
@@ -1187,7 +1187,6 @@ public class GridConfiguration {
      * <ul>
      *     <li>Core pool size - number of processors available in system</li>
      *     <li>Max pool size - number of processors available in system</li>
-     *     <li>Queue capacity - {@link #DFLT_GGFS_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for GGFS outgoing message sending.

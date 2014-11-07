@@ -50,11 +50,12 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy<>(1000));
         cc.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());

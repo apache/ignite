@@ -1253,6 +1253,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridDeploymentMode locDepMode = ctx.config().getDeploymentMode();
         GridDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
+        // TODO GG-9141 Check tx configuration consistency.
+
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
                 if (F.eq(rmtAttr.cacheName(), locAttr.cacheName())) {
@@ -1302,9 +1304,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Atomic sequence reserve size", locAttr.sequenceReserveSize(),
                             rmtAttr.sequenceReserveSize(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "batchUpdateOnCommit",
-                            "Batch update on commit", locAttr.txBatchUpdate(), rmtAttr.txBatchUpdate(), false);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                             "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
@@ -1318,18 +1317,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
                             "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxConcurrency",
-                            "Default transaction concurrency", locAttr.defaultConcurrency(),
-                            rmtAttr.defaultConcurrency(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxIsolation",
-                            "Default transaction isolation", locAttr.defaultIsolation(), rmtAttr.defaultIsolation(),
-                            false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTxTimeout",
-                            "Default transaction timeout", locAttr.defaultTxTimeout(), rmtAttr.defaultTxTimeout(),
-                            false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcFrequency",
                             "Distributed garbage collector frequency", locAttr.dgcFrequency(), rmtAttr.dgcFrequency(),
@@ -1384,10 +1371,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
                             "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "txSerializableEnabled",
-                            "Transaction serializable enabled", locAttr.txSerializableEnabled(),
-                            rmtAttr.txSerializableEnabled(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);

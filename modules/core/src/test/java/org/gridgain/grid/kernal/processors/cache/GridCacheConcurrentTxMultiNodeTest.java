@@ -86,6 +86,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
+
         if (cacheOn) {
             GridCacheConfiguration cc = defaultCacheConfiguration();
 
@@ -95,14 +98,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
-            cc.setDefaultTxConcurrency(PESSIMISTIC);
-            cc.setDefaultTxIsolation(REPEATABLE_READ);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setAtomicSequenceReserveSize(100000);
             cc.setPreloadMode(NONE);
-
-//            cc.setDgcFrequency(50000);
-//            cc.setDgcSuspectLockTimeout(20000);
 
             c.setCacheConfiguration(cc);
         }

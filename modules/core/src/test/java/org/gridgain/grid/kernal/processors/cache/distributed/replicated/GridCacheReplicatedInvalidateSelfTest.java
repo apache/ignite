@@ -59,6 +59,8 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
@@ -71,7 +73,6 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         cc.setPreloadMode(NONE);
         cc.setCacheMode(REPLICATED);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         c.setCacheConfiguration(cc);

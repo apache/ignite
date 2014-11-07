@@ -236,6 +236,8 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
             }
         });
 
+        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+
         return cfg;
     }
 
@@ -243,7 +245,6 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setDefaultTxConcurrency(OPTIMISTIC);
         cfg.setStore(null);
 
         return cfg;

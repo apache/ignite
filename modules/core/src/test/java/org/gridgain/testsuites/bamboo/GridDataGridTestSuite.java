@@ -295,9 +295,6 @@ public class GridDataGridTestSuite extends TestSuite {
         // Cache metrics.
         suite.addTest(GridCacheMetricsSelfTestSuite.suite());
 
-        // DGC.
-        suite.addTest(GridCacheDgcSelfTestSuite.suite());
-
         // Eviction.
         suite.addTest(GridCacheEvictionSelfTestSuite.suite());
 

@@ -138,6 +138,8 @@ public class VisorCacheConfig implements Serializable {
      * @return Data transfer object for cache configuration properties.
      */
     public static VisorCacheConfig from(GridCacheConfiguration ccfg) {
+        // TODO gg-9141 Update Visor.
+
         VisorCacheConfig cfg = new VisorCacheConfig();
 
         cfg.name(ccfg.getName());
@@ -152,17 +154,17 @@ public class VisorCacheConfig implements Serializable {
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());
         cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
-        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
+//        cfg.batchUpdateOnCommit(ccfg.isBatchUpdateOnCommit());
         cfg.invalidate(ccfg.isInvalidate());
         cfg.startSize(ccfg.getStartSize());
         cfg.cloner(compactClass(ccfg.getCloner()));
         cfg.transactionManagerLookupClassName(ccfg.getTransactionManagerLookupClassName());
-        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
+//        cfg.txSerializableEnabled(ccfg.isTxSerializableEnabled());
         cfg.offsetHeapMaxMemory(ccfg.getOffHeapMaxMemory());
         cfg.maxQueryIteratorCount(ccfg.getMaximumQueryIteratorCount());
         cfg.maxConcurrentAsyncOperations(ccfg.getMaxConcurrentAsyncOperations());
-        cfg.pessimisticTxLoggerSize(ccfg.getPessimisticTxLogSize());
-        cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
+//        cfg.pessimisticTxLoggerSize(ccfg.getPessimisticTxLogSize());
+//        cfg.pessimisticTxLoggerLinger(ccfg.getPessimisticTxLogLinger());
         cfg.memoryMode(ccfg.getMemoryMode());
         cfg.indexingSpiName(ccfg.getIndexingSpiName());
         cfg.interceptor(compactClass(ccfg.getInterceptor()));

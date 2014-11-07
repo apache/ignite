@@ -54,6 +54,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
@@ -63,7 +65,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setTxSerializableEnabled(true);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
         cc.setNearEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_CACHE_SIZE));

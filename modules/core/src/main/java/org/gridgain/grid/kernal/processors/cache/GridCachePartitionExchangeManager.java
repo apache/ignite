@@ -62,7 +62,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     @GridToStringInclude
-    private final ExchangeWorker exchWorker;
+    private ExchangeWorker exchWorker;
 
     /**
      * Partition map futures.
@@ -136,15 +136,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     };
 
-    public GridCachePartitionExchangeManager() {
-        exchWorker = new ExchangeWorker();
-    }
-
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         super.start0();
 
         locExchFut = new GridFutureAdapter<>(cctx.kernalContext());
+
+        exchWorker = new ExchangeWorker();
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 

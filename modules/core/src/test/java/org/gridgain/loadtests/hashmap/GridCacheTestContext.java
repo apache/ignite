@@ -27,23 +27,26 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     /**
      */
     @SuppressWarnings("NullableProblems")
-    public GridCacheTestContext() {
+    public GridCacheTestContext(GridTestKernalContext ctx) {
         super(
-            new GridTestKernalContext(new GridTestLog4jLogger()),
+            ctx,
+            new GridCacheSharedContext<>(
+                ctx,
+                new GridCacheTxManager<K, V>(),
+                new GridCacheVersionManager<K, V>(),
+                new GridCacheMvccManager<K, V>(),
+                new GridCacheDeploymentManager<K, V>(),
+                new GridCachePartitionExchangeManager<K, V>(),
+                new GridCacheIoManager<K, V>()
+            ),
             defaultCacheConfiguration(),
-            new GridCacheMvccManager<K, V>(),
-            new GridCacheVersionManager<K, V>(),
             new GridCacheEventManager<K, V>(),
             new GridCacheSwapManager<K, V>(false),
             new GridCacheStoreManager<K, V>(null),
-            new GridCacheDeploymentManager<K, V>(),
             new GridCacheEvictionManager<K, V>(),
-            new GridCacheIoManager<K, V>(),
             new GridCacheLocalQueryManager<K, V>(),
             new GridCacheContinuousQueryManager<K, V>(),
-            new GridCacheDgcManager<K, V>(),
             new GridCacheAffinityManager<K, V>(),
-            new GridCacheTxManager<K, V>(),
             new GridCacheDataStructuresManager<K, V>(),
             new GridCacheTtlManager<K, V>(),
             new GridOsCacheDrManager<K, V>(),

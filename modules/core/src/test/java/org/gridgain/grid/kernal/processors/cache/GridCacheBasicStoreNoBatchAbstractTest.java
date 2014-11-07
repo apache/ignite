@@ -66,7 +66,6 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         cc.setStore(store);
 
-        cc.setBatchUpdateOnCommit(false);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(atomicityMode());
 

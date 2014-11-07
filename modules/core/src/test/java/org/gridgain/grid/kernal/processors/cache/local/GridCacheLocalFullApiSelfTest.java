@@ -30,11 +30,19 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     }
 
     /** {@inheritDoc} */
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration c = super.getConfiguration(gridName);
+
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return c;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setSwapEnabled(true);
-        cfg.setTxSerializableEnabled(true);
 
         return cfg;
     }

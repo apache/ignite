@@ -271,6 +271,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataCenterId = ctx.config().getDataCenterId();
 
         cacheName = cacheCfg.getName();
+
+        if (cacheName != null) {
+            int hash = cacheName.hashCode();
+
+            if (hash == 0)
+                hash = 1;
+
+            cacheId = hash;
+        }
+        else
+            cacheId = 1;
     }
 
     /**
@@ -578,7 +589,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Local node ID.
      */
     public UUID localNodeId() {
-        return discovery().localNode().id();
+        return ctx.localNodeId();
     }
 
     /**

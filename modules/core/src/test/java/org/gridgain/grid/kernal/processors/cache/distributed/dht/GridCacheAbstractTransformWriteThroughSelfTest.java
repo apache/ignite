@@ -96,7 +96,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setStore(store);
-        cacheCfg.setBatchUpdateOnCommit(batchUpdate());
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 

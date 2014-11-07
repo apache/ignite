@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
@@ -21,12 +22,19 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAb
     /** */
     private static final int GRID_CNT = 2;
 
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration c = super.getConfiguration(gridName);
+
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return c;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(REPLICATED);
-        cfg.setTxSerializableEnabled(true);
 
         return cfg;
     }

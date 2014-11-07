@@ -10,7 +10,9 @@
 package org.gridgain.loadtests.hashmap;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
+import org.gridgain.testframework.junits.logger.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -52,7 +54,8 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
 
         int i = 0;
 
-        GridCacheTestContext<Integer, Integer> ctx = new GridCacheTestContext<>();
+        GridCacheTestContext<Integer, Integer> ctx = new GridCacheTestContext<>(
+            new GridTestKernalContext(new GridTestLog4jLogger()));
 
         while (true) {
             Integer key = i++;

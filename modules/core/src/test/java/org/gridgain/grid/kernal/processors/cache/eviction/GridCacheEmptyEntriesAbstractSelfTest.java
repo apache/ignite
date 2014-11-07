@@ -52,6 +52,12 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
+        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+
+        txCfg.setDefaultTxConcurrency(txConcurrency);
+        txCfg.setDefaultTxIsolation(txIsolation);
+        txCfg.setTxSerializableEnabled(true);
+
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
@@ -66,15 +72,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setNearEvictionPolicy(nearPlc);
         cc.setEvictSynchronizedKeyBufferSize(1);
 
-        cc.setDefaultTxConcurrency(txConcurrency);
-        cc.setDefaultTxIsolation(txIsolation);
-
         cc.setEvictNearSynchronized(true);
         cc.setEvictSynchronized(true);
 
         cc.setStore(testStore);
-
-        cc.setTxSerializableEnabled(true);
 
         c.setCacheConfiguration(cc);
 

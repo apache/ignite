@@ -52,21 +52,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Maximum eviction overflow ratio. */
     private float evictMaxOverflowRatio;
 
-    /** Transaction isolation. */
-    private GridCacheTxIsolation dfltIsolation;
-
-    /** Transaction concurrency. */
-    private GridCacheTxConcurrency dfltConcurrency;
-
-    /** Default transaction serializable flag. */
-    private boolean txSerEnabled;
-
-    /** Flag to enable transactional batch update. */
-    private boolean txBatchUpdate;
-
-    /** Default transaction timeout. */
-    private long dfltTxTimeout;
-
     /** Default query timeout. */
     private long dfltQryTimeout;
 
@@ -181,11 +166,8 @@ public class GridCacheAttributes implements Externalizable {
     public GridCacheAttributes(GridCacheConfiguration cfg) {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
-        dfltConcurrency = cfg.getDefaultTxConcurrency();
-        dfltIsolation = cfg.getDefaultTxIsolation();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
         dfltQryTimeout = cfg.getDefaultQueryTimeout();
-        dfltTxTimeout = cfg.getDefaultTxTimeout();
         dgcFreq = cfg.getDgcFrequency();
         dgcRmvLocks = cfg.isDgcRemoveLocks();
         dgcSuspectLockTimeout  = cfg.getDgcSuspectLockTimeout();
@@ -210,8 +192,6 @@ public class GridCacheAttributes implements Externalizable {
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
-        txBatchUpdate  = cfg.isBatchUpdateOnCommit();
-        txSerEnabled = cfg.isTxSerializableEnabled();
         writeBehindBatchSize = cfg.getWriteBehindBatchSize();
         writeBehindEnabled = cfg.isWriteBehindEnabled();
         writeBehindFlushFreq  = cfg.getWriteBehindFlushFrequency();
@@ -437,45 +417,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Transaction isolation.
-     */
-    public GridCacheTxIsolation defaultIsolation() {
-        return dfltIsolation;
-    }
-
-    /**
-     * @return Transaction concurrency.
-     */
-    public GridCacheTxConcurrency defaultConcurrency() {
-        return dfltConcurrency;
-    }
-
-    /**
      * @return Partitioned cache mode.
      */
     public GridCacheDistributionMode partitionedTaxonomy() {
         return partDistro;
-    }
-
-    /**
-     * @return Default transaction serializable flag.
-     */
-    public boolean txSerializableEnabled() {
-        return txSerEnabled;
-    }
-
-    /**
-     * @return Flag to enable transactional batch update.
-     */
-    public boolean txBatchUpdate() {
-        return txBatchUpdate;
-    }
-
-    /**
-     * @return Default transaction timeout.
-     */
-    public long defaultTxTimeout() {
-        return dfltTxTimeout;
     }
 
     /**
@@ -615,11 +560,8 @@ public class GridCacheAttributes implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum0(out, atomicityMode);
         U.writeEnum0(out, cacheMode);
-        U.writeEnum0(out, dfltConcurrency);
-        U.writeEnum0(out, dfltIsolation);
         out.writeLong(dfltLockTimeout);
         out.writeLong(dfltQryTimeout);
-        out.writeLong(dfltTxTimeout);
         out.writeLong(dgcFreq);
         out.writeBoolean(dgcRmvLocks);
         out.writeLong(dgcSuspectLockTimeout);
@@ -637,8 +579,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
-        out.writeBoolean(txBatchUpdate);
-        out.writeBoolean(txSerEnabled);
         out.writeInt(writeBehindBatchSize);
         out.writeBoolean(writeBehindEnabled);
         out.writeLong(writeBehindFlushFreq);
@@ -670,11 +610,8 @@ public class GridCacheAttributes implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         atomicityMode = GridCacheAtomicityMode.fromOrdinal(U.readEnumOrdinal0(in));
         cacheMode = GridCacheMode.fromOrdinal(U.readEnumOrdinal0(in));
-        dfltConcurrency = GridCacheTxConcurrency.fromOrdinal(U.readEnumOrdinal0(in));
-        dfltIsolation = GridCacheTxIsolation.fromOrdinal(U.readEnumOrdinal0(in));
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
-        dfltTxTimeout = in.readLong();
         dgcFreq = in.readLong();
         dgcRmvLocks = in.readBoolean();
         dgcSuspectLockTimeout = in.readLong();
@@ -692,8 +629,6 @@ public class GridCacheAttributes implements Externalizable {
         storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
-        txBatchUpdate = in.readBoolean();
-        txSerEnabled = in.readBoolean();
         writeBehindBatchSize = in.readInt();
         writeBehindEnabled = in.readBoolean();
         writeBehindFlushFreq = in.readLong();

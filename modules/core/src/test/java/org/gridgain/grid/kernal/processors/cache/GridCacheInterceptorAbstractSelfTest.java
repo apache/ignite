@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -59,6 +59,14 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(0, interceptor.invokeCnt.get());
     }
 
+    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+        GridConfiguration c = super.getConfiguration(gridName);
+
+        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+
+        return c;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration  ccfg = super.cacheConfiguration(gridName);
@@ -72,8 +80,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             ccfg.setAtomicWriteOrderMode(writeOrderMode());
         }
-        else
-            ccfg.setTxSerializableEnabled(true);
 
         if (!storeEnabled())
             ccfg.setStore(null);

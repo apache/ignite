@@ -416,6 +416,8 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             }
         });
 
+        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+
         return cfg;
     }
 
@@ -424,7 +426,6 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setStore(null);
-        cfg.setDefaultTxConcurrency(PESSIMISTIC);
         cfg.setDgcFrequency(0);
 
         return cfg;
