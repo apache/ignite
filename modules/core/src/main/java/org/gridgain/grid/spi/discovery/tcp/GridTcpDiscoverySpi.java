@@ -4135,8 +4135,17 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), null);
 
                         if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
-                            // TODO kick the node out.
-                            System.out.println("!!!!!!!!!!!!!!!");
+                            // Node has not pass authentication.
+                            LT.warn(log, null,
+                                "Authentication failed [nodeId=" + node.id() +
+                                    ", addrs=" + U.addressesAsString(node) + ']',
+                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                    U.addressesAsString(node) + ']');
+
+                            // Always output in debug.
+                            if (log.isDebugEnabled())
+                                log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                    U.addressesAsString(node));
                         }
                         else
                             // Node will not be kicked out.
