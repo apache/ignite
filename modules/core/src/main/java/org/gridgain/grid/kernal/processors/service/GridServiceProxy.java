@@ -57,8 +57,8 @@ class GridServiceProxy<T> implements Serializable {
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
      */
-    @SuppressWarnings("unchecked") GridServiceProxy(GridProjection prj, String name, Class<T> svc, boolean sticky,
-        GridKernalContext ctx) {
+    @SuppressWarnings("unchecked") GridServiceProxy(GridProjection prj, String name, Class<? super T> svc,
+        boolean sticky, GridKernalContext ctx) {
         this.prj = prj;
         this.ctx = ctx;
         hasLocNode = hasLocalNode(prj);
@@ -134,7 +134,7 @@ class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             BALANCE,
-                            new ServiceProxyCallable(mtd.getName(), name, args),
+                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false
                         ).get();
@@ -166,7 +166,6 @@ class GridServiceProxy<T> implements Serializable {
                     throw new GridRuntimeException(e);
                 }
             }
-
         }
 
         /**
@@ -254,12 +253,15 @@ class GridServiceProxy<T> implements Serializable {
             else {
                 List<GridNode> nodeList = new ArrayList<>(nodes.size());
 
-                for (GridNode n : nodeList) {
+                for (GridNode n : nodes) {
                     Integer cnt = snapshot.get(n.id());
 
                     if (cnt != null && cnt > 0)
                         nodeList.add(n);
                 }
+
+                if (nodeList.isEmpty())
+                    return null;
 
                 int idx = ThreadLocalRandom8.current().nextInt(nodeList.size());
 
@@ -296,6 +298,9 @@ class GridServiceProxy<T> implements Serializable {
         /** Service name. */
         private String svcName;
 
+        /** Argument types. */
+        private Class[] argTypes;
+
         /** Args. */
         private Object[] args;
 
@@ -313,11 +318,13 @@ class GridServiceProxy<T> implements Serializable {
         /**
          * @param mtdName Service method to invoke.
          * @param svcName Service name.
+         * @param argTypes Argument types.
          * @param args Arguments for invocation.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Object[] args) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class[] argTypes, Object[] args) {
             this.mtdName = mtdName;
             this.svcName = svcName;
+            this.argTypes = argTypes;
             this.args = args;
         }
 
@@ -328,12 +335,12 @@ class GridServiceProxy<T> implements Serializable {
             if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);
 
-            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, args);
+            GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);
 
             Method mtd = svcCtx.method(key);
 
             if (mtd == null)
-                throw new GridServiceMethodNotFoundException(svcName, mtdName, key.argTypes());
+                throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             return mtd.invoke(svcCtx.service(), args);
         }
@@ -342,6 +349,7 @@ class GridServiceProxy<T> implements Serializable {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, svcName);
             U.writeString(out, mtdName);
+            U.writeArray(out, argTypes);
             U.writeArray(out, args);
         }
 
@@ -349,6 +357,7 @@ class GridServiceProxy<T> implements Serializable {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             svcName = U.readString(in);
             mtdName = U.readString(in);
+            argTypes = U.readClassArray(in);
             args = U.readArray(in);
         }
 
