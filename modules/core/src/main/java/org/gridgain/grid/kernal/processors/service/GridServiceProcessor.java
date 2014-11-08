@@ -321,6 +321,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 GridServiceDeploymentFuture old;
 
+                U.debug(log, "depFuts before deploy: " + depFuts);
+
                 if ((old = depFuts.putIfAbsent(cfg.getName(), fut)) != null) {
                     if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
                         fut.onDone(new GridException("Failed to deploy service (service already exists with " +
@@ -400,11 +402,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             catch (GridTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
+
+                U.debug(log, "Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (GridException e) {
                 if (e.hasCause(GridTopologyException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
+
+                    U.debug(log, "Topology changed while deploying service (will retry): " + e.getMessage());
 
                     continue;
                 }
