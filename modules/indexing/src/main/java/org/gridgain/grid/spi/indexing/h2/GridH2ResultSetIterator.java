@@ -101,6 +101,10 @@ abstract class GridH2ResultSetIterator<T> implements GridSpiCloseableIterator<T>
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
+        if (data == null)
+            // Nothing to close.
+            return;
+
         try {
             U.closeQuiet(data.getStatement());
         }
