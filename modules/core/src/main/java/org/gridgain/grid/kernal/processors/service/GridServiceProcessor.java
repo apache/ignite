@@ -315,86 +315,65 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         validate(cfg);
 
+        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(ctx, cfg);
+
+        GridServiceDeploymentFuture old = depFuts.putIfAbsent(cfg.getName(), fut);
+
+        if (old != null) {
+            if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
+                fut.onDone(new GridException("Failed to deploy service (service already exists with " +
+                    "different configuration) [deployed=" + old.configuration() + ", new=" + cfg + ']'));
+
+                return fut;
+            }
+
+            return old;
+        }
+
         while (true) {
             try {
-                GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(ctx, cfg);
+                GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
 
-                GridServiceDeploymentFuture old;
+                if (ctx.deploy().enabled())
+                    ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
 
-                U.debug(log, "depFuts before deploy: " + depFuts);
+                try {
+                    GridServiceDeployment dep = (GridServiceDeployment)cache.putIfAbsent(key,
+                        new GridServiceDeployment(ctx.localNodeId(), cfg));
 
-                if ((old = depFuts.putIfAbsent(cfg.getName(), fut)) != null) {
-                    if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
-                        fut.onDone(new GridException("Failed to deploy service (service already exists with " +
-                            "different configuration) [deployed=" + old.configuration() + ", new=" + cfg + ']'));
+                    if (dep != null) {
+                        if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
+                            // Remove future from local map.
+                            depFuts.remove(cfg.getName(), fut);
 
-                        return fut;
-                    }
-
-                    U.debug(log, "Will return existing future for deploy [name=" + cfg.getName() +
-                        ", old=" + old + ", futsEq=" + (old == fut) + ']');
-
-                    fut = old;
-                }
-                else {
-                    U.debug(log, "Put future to depFuts map [name=" + cfg.getName() + ", fut=" + fut + ']');
-
-                    GridServiceDeploymentKey key = new GridServiceDeploymentKey(cfg.getName());
-
-                    if (ctx.deploy().enabled())
-                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(true);
-
-                    try {
-                        GridServiceDeployment dep = (GridServiceDeployment)cache.putIfAbsent(key,
-                            new GridServiceDeployment(ctx.localNodeId(), cfg));
-
-                        if (dep != null) {
-                            U.debug(log, "Deployment key already exists in cache [locNodeId=" + ctx.localNodeId() +
-                                ", key=" + key + ']');
-
-                            if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
-                                // Remove future from local map.
-                                depFuts.remove(cfg.getName(), fut);
-
-                                fut.onDone(new GridException("Failed to deploy service (service already exists with " +
-                                    "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
-                            }
-                            else {
-                                U.debug(log, "Configurations are equal, will try to complete local future " +
-                                    "[locNodeId=" + ctx.localNodeId() + ", key=" + key + ']');
-
-                                for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
-                                    if (e.getKey() instanceof GridServiceAssignmentsKey) {
-                                        GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
-
-                                        U.debug(log, "Checking assignments [locNodeId=" + ctx.localNodeId() +
-                                            ", key=" + key + ", assigns=" + assigns + ']');
-
-                                        if (assigns.name().equals(cfg.getName())) {
-                                            // Remove future from local map.
-                                            depFuts.remove(cfg.getName(), fut);
-
-                                            fut.onDone();
-
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (!dep.configuration().equalsIgnoreNodeFilter(cfg))
-                                    U.warn(log, "Service already deployed with different configuration (will ignore) " +
-                                        "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
-                            }
+                            fut.onDone(new GridException("Failed to deploy service (service already exists with " +
+                                "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            U.debug(log, "Successfully put deployment key to system cache " +
-                                "[locNodeId=" + ctx.localNodeId() + ", key=" + key + ']');
+                            for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
+                                if (e.getKey() instanceof GridServiceAssignmentsKey) {
+                                    GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+
+                                    if (assigns.name().equals(cfg.getName())) {
+                                        // Remove future from local map.
+                                        depFuts.remove(cfg.getName(), fut);
+
+                                        fut.onDone();
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!dep.configuration().equalsIgnoreNodeFilter(cfg))
+                                U.warn(log, "Service already deployed with different configuration (will ignore) " +
+                                    "[deployed=" + dep.configuration() + ", new=" + cfg + ']');
                         }
                     }
-                    finally {
-                        if (ctx.deploy().enabled())
-                            ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
-                    }
+                }
+                finally {
+                    if (ctx.deploy().enabled())
+                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().deploy().ignoreOwnership(false);
                 }
 
                 return fut;
@@ -402,15 +381,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             catch (GridTopologyException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
-
-                U.debug(log, "Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (GridException e) {
                 if (e.hasCause(GridTopologyException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
-
-                    U.debug(log, "Topology changed while deploying service (will retry): " + e.getMessage());
 
                     continue;
                 }
