@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -28,6 +29,7 @@ import org.springframework.util.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -409,10 +411,12 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             assertEquals(1, futs.size());
 
-            GridCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter =
-                U.field(F.first(futs.values()).get(), "iter");
+            GridSpiCloseableIterator<GridIndexingKeyValueRow<Integer, Integer>> iter =
+                U.field(((GridFuture)F.first(futs.values()).get()).get(), "iter");
 
-            assertFalse(iter.isClosed());
+            ResultSet rs = U.field(iter, "data");
+
+            assertFalse(rs.isClosed());
 
             final UUID nodeId = g.localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
@@ -431,7 +435,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             latch.await();
 
             assertEquals(0, map.size());
-            assertTrue(iter.isClosed());
+            assertTrue(rs.isClosed());
         }
         finally {
             // Ensure that additional node is stopped.
