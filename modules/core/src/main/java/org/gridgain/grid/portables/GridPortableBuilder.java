@@ -73,7 +73,7 @@ public interface GridPortableBuilder {
      * Copy all fields from passed portable object. If typeId is not initialized it will be copy too.
      * @param obj Portable object.
      */
-    public void copyFrom(GridPortableObject obj);
+    public GridPortableBuilder copyFrom(GridPortableObject obj);
 
     /**
      * Returns the value of the specified field.
