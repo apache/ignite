@@ -86,16 +86,6 @@ public interface GridPortableBuilder {
     public <F> F field(String fldName);
 
     /**
-     * Sets field value. Type of field will be determinated by value.
-     * Note: This method can be called for builder created by existing portable object only!!! For new portable objects
-     * you have to specify type of field explicitly.
-     *
-     * @param fldName Field name.
-     * @param val Field value.
-     */
-    public void field(String fldName, @Nullable Object val);
-
-    /**
      * Adds {@code byte} field.
      *
      * @param fieldName Field name.
