@@ -247,6 +247,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
      */
     private static class TestObject implements GridPortableMarshalAware, Serializable {
         /** */
