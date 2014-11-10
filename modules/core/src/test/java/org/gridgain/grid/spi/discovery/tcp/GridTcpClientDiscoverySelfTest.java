@@ -12,6 +12,8 @@ package org.gridgain.grid.spi.discovery.tcp;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
@@ -66,6 +68,9 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static CountDownLatch clientFailedLatch;
+
+    /** */
+    private static CountDownLatch msgLatch;
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
@@ -123,6 +128,59 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         stopAllServers(true);
 
         assert G.allGrids().isEmpty();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromServer() throws Exception {
+        testDataExchange("server-0");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromClient() throws Exception {
+        testDataExchange("client-0");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testDataExchange(String masterName) throws Exception {
+        startServerNodes(2);
+        startClientNodes(2);
+
+        checkNodes(2, 2);
+
+        GridMessaging msg = grid(masterName).message();
+
+        UUID id = null;
+
+        try {
+            id = msg.remoteListen(null, new MessageListener()).get();
+
+            msgLatch = new CountDownLatch(4);
+
+            msg.send(null, "Message 1");
+
+            await(msgLatch);
+
+            startServerNodes(1);
+            startClientNodes(1);
+
+            checkNodes(3, 3);
+
+            msgLatch = new CountDownLatch(6);
+
+            msg.send(null, "Message 2");
+
+            await(msgLatch);
+        }
+        finally {
+            if (id != null)
+                msg.stopRemoteListen(id);
+        }
     }
 
     /**
@@ -545,6 +603,22 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     private void await(CountDownLatch latch) throws InterruptedException {
-        assertTrue(latch.await(5000, MILLISECONDS));
+        assertTrue("Latch count: " + latch.getCount(), latch.await(5000, MILLISECONDS));
+    }
+
+    /**
+     */
+    private static class MessageListener implements GridBiPredicate<UUID, Object> {
+        @GridLocalNodeIdResource
+        private UUID nodeId;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(UUID uuid, Object msg) {
+            X.println(">>> Received [locNodeId=" + nodeId + ", msg=" + msg + ']');
+
+            msgLatch.countDown();
+
+            return true;
+        }
     }
 }

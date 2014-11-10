@@ -3762,7 +3762,13 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     lastMsg = msg;
                 }
 
-                if (!msg.client() && leftNode.equals(next) && sock != null) {
+                if (msg.client()) {
+                    ClientMessageWorker wrk = clientMsgWorkers.remove(leavingNodeId);
+
+                    if (wrk != null)
+                        wrk.addMessage(msg);
+                }
+                else if (leftNode.equals(next) && sock != null) {
                     try {
                         writeToSocket(sock, msg);
 

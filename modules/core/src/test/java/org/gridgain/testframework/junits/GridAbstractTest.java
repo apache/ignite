@@ -772,6 +772,16 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Gets grid for given name.
+     *
+     * @param name Name.
+     * @return Grid instance.
+     */
+    protected GridEx grid(String name) {
+        return (GridEx)G.grid(name);
+    }
+
+    /**
      * Gets grid for given index.
      *
      * @param idx Index.

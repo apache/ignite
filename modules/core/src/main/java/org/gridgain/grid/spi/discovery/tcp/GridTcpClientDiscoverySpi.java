@@ -53,7 +53,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     private volatile HeartbeatSender hbSender;
 
     /** Disconnect handler. */
-    private DisconnectHandler disconnectHnd;
+    private volatile DisconnectHandler disconnectHnd;
 
     /** Join error. */
     private GridSpiException joinErr;
@@ -62,7 +62,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
     private CountDownLatch joinLatch;
 
     /** Left latch. */
-    private CountDownLatch leaveLatch;
+    private volatile CountDownLatch leaveLatch;
 
     /** Disconnect check interval. */
     private long disconnectCheckInt = DFLT_DISCONNECT_CHECK_INT;
@@ -780,7 +780,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Received node left message for local node: " + msg);
 
-                leaveLatch.countDown();
+                CountDownLatch leaveLatch0 = leaveLatch;
+
+                assert leaveLatch0 != null;
+
+                leaveLatch0.countDown();
             }
             else {
                 GridTcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
