@@ -19,8 +19,10 @@ public class GridGgfsConcurrentModificationException extends GridGgfsException {
 
     /**
      * Creates new exception.
+     *
+     * @param path Affected path.
      */
-    public GridGgfsConcurrentModificationException() {
-        super("File system structure was concurrently modified.", null);
+    public GridGgfsConcurrentModificationException(GridGgfsPath path) {
+        super("File system entry has been modified concurrently: " + path, null);
     }
 }

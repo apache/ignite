@@ -38,12 +38,14 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         final GridCacheStoreBalancingWrapper<Integer, Integer> w =
             new GridCacheStoreBalancingWrapper<>(new VerifyStore(range));
 
-        GridLoadTestUtils.runMultithreadedInLoop(new GridCallable<Object>() {
-            @Override public Object call() throws Exception {
+        final AtomicBoolean finish = new AtomicBoolean();
+
+        GridFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new GridCallable<Void>() {
+            @Override public Void call() throws Exception {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    while (!Thread.currentThread().isInterrupted()) {
+                    while (!finish.get()) {
                         int cnt = rnd.nextInt(GridCacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD) + 1;
 
                         if (cnt == 1) {
@@ -83,7 +85,16 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 10, 30_000);
+        }, 10, "test");
+
+        try {
+            Thread.sleep(30_000);
+        }
+        finally {
+            finish.set(true);
+        }
+
+        fut.get();
 
         if (err.get() != null)
             throw err.get();
@@ -91,6 +102,9 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         info("Total: " + cycles.get());
     }
 
+    /**
+     *
+     */
     private static class VerifyStore implements GridCacheStore<Integer, Integer> {
         /** */
         private Lock[] locks;
@@ -117,9 +131,8 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                     locks[key].unlock();
                 }
             }
-            else {
+            else
                 fail("Failed to acquire lock for key: " + key);
-            }
 
             return null;
         }
@@ -144,9 +157,8 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                         locks[key].unlock();
                     }
                 }
-                else {
+                else
                     fail("Failed to acquire lock for key: " + key);
-                }
             }
         }
 
