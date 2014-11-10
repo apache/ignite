@@ -2451,7 +2451,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private LinkedHashSet<InetSocketAddress> getNodeAddresses(GridTcpDiscoveryNode node, boolean sameHost) {
         ArrayList<InetSocketAddress> addrs = new ArrayList<>(node.socketAddresses());
 
-        Collections.sort(addrs, inetAddressesComparator(sameHost));
+        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(addrs);
 
@@ -4951,32 +4951,6 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
         }
-    }
-
-    /**
-     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
-     * loopback addresses first, last otherwise.
-     *
-     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
-     * @return Comparator.
-     */
-    private static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost) {
-        return new Comparator<InetSocketAddress>() {
-            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
-                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
-
-                boolean addr2Loopback = addr2.getAddress().isLoopbackAddress();
-
-                // No need to reorder.
-                if (addr1Loopback == addr2Loopback)
-                    return 0;
-
-                if (sameHost)
-                    return addr1Loopback ? -1 : 1;
-                else
-                    return addr1Loopback ? 1 : -1;
-            }
-        };
     }
 
     /**
