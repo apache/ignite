@@ -138,9 +138,11 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
             try {
                 delegate.loadAll(tx, needLoad, new CI2<K, V>() {
                     @Override public void apply(K k, V v) {
-                        loaded.put(k, v);
+                        if (v != null) {
+                            loaded.put(k, v);
 
-                        c.apply(k, v);
+                            c.apply(k, v);
+                        }
                     }
                 });
 
