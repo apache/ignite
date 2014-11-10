@@ -1,0 +1,12 @@
+.autotools
+.cproject
+.project
+config.h
+Makefile
+/autom4te.cache
+/.settings/
+.libs/
+*.la
+config.status
+libtool
+stamp-h1
