@@ -70,7 +70,7 @@ public interface GridPortableBuilder {
     public GridPortableBuilder hashCode(int hashCode);
 
     /**
-     * Copy all fields from passed portable object. If typeId is not initialized it will be copy too.
+     * Copy all fields from passed portable object. If typeId is not initialized it will be copied too.
      * @param obj Portable object.
      */
     public GridPortableBuilder copyFrom(GridPortableObject obj);
