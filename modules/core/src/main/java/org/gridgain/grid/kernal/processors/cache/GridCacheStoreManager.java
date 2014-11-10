@@ -28,6 +28,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final GridCacheStore<K, Object> store;
 
     /** */
+    private final GridCacheStoreBalancingWrapper<K, Object> singleThreadGate;
+
+    /** */
     private final boolean locStore;
 
     /**
@@ -36,6 +39,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     @SuppressWarnings("unchecked")
     public GridCacheStoreManager(@Nullable GridCacheStore<K, Object> store) {
         this.store = store;
+        singleThreadGate = store == null ? null : new GridCacheStoreBalancingWrapper<>(store);
 
         if (store instanceof GridCacheWriteBehindStore)
             store = ((GridCacheWriteBehindStore)store).store();
@@ -112,7 +116,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             V val = null;
 
             try {
-                val = convert(store.load(tx, key));
+                val = convert(singleThreadGate.load(tx, key));
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -164,7 +168,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
 
                 try {
-                    store.loadAll(tx, keys, new CI2<K, Object>() {
+                    singleThreadGate.loadAll(tx, keys, new CI2<K, Object>() {
                         @Override public void apply(K k, Object v) {
                             vis.apply(k, convert(v));
                         }
