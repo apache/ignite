@@ -9,15 +9,14 @@
 
 package org.gridgain.grid.kernal.visor.gui.tasks;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
-import org.gridgain.grid.lang.GridBiTuple;
-import org.gridgain.grid.util.GridUtils;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.S;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
-import java.net.InetAddress;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -68,8 +67,15 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
                     String hostName = hostIt.next();
 
-                    if (F.isEmpty(hostName) && InetAddress.getByName(ip).isLoopbackAddress())
-                        res.put(ip, "localhost");
+                    if (hostName == null || hostName.trim().isEmpty()) {
+                        try {
+                            if (InetAddress.getByName(ip).isLoopbackAddress())
+                                res.put(ip, "localhost");
+                        }
+                        catch (Exception ignore) {
+                            //no-op
+                        }
+                    }
                     else if (!hostName.equals(ip))
                         res.put(ip, hostName);
                 }
