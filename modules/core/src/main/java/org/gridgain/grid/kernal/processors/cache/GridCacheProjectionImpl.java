@@ -1240,31 +1240,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
-        return cache.drStateTransfer(dataCenterIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
-        return cache.drListStateTransfers();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drPause() {
-        cache.drPause();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drResume() {
-        cache.drResume();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDrStatus drPauseState() {
-        return cache.drPauseState();
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cctx);
 

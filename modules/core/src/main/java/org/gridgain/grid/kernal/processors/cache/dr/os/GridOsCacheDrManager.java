@@ -11,12 +11,9 @@ package org.gridgain.grid.kernal.processors.cache.dr.os;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-
-import java.util.*;
 
 /**
  * No-op implementation for {@link GridCacheDrManager}.
@@ -85,52 +82,17 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void pause() throws GridException {
+    @Override public void onReceiveCacheEntriesReceived(int entriesCnt) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void resume() throws GridException {
+    @Override public void resetMetrics() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDrStatus drPauseState() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int queuedKeysCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int backupQueueSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int batchWaitingSendCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int batchWaitingAcknowledgeCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int senderHubsCount() {
-        return 0;
+    @Override public boolean receiveEnabled() {
+        return false;
     }
 }

@@ -10,9 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.cache.receiver.*;
-import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -59,12 +56,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** Number of transaction rollbacks. */
     private volatile int txRollbacks;
 
-    /** DR send data node metrics. */
-    private GridDrSenderCacheMetricsAdapter drSndMetrics;
-
-    /** DR receive data node metrics. */
-    private GridDrReceiverCacheMetricsAdapter drRcvMetrics;
-
     /** Cache metrics. */
     @GridToStringExclude
     private transient GridCacheMetricsAdapter delegate;
@@ -74,20 +65,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      */
     public GridCacheMetricsAdapter() {
         delegate = null;
-    }
-
-    /**
-     * @param isDrSndCache True if data center replication configured for sending on that node.
-     * @param isDrRcvCache True if data center replication configured for receiving on that node.
-     */
-    public GridCacheMetricsAdapter(boolean isDrSndCache, boolean isDrRcvCache) {
-        this();
-
-        if (isDrSndCache)
-            drSndMetrics = new GridDrSenderCacheMetricsAdapter();
-
-        if (isDrRcvCache)
-            drRcvMetrics = new GridDrReceiverCacheMetricsAdapter();
     }
 
     /**
@@ -105,8 +82,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = m.misses();
         txCommits = m.txCommits();
         txRollbacks = m.txRollbacks();
-        drSndMetrics = ((GridCacheMetricsAdapter)m).drSndMetrics;
-        drRcvMetrics = ((GridCacheMetricsAdapter)m).drRcvMetrics;
     }
 
     /**
@@ -171,36 +146,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         return txRollbacks;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridDrSenderCacheMetrics drSendMetrics() {
-        if (drSndMetrics == null)
-            throw new IllegalStateException("Data center replication is not configured.");
-
-        return drSndMetrics;
-    }
-
-    /**
-     * @return DR sender cache metrics adapter.
-     */
-    @Nullable GridDrSenderCacheMetricsAdapter drSendMetrics0() {
-        return drSndMetrics;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
-        if (drRcvMetrics == null)
-            throw new IllegalStateException("Data center replication is not configured.");
-
-        return drRcvMetrics;
-    }
-
-    /**
-     * @return DR receiver cache metrics adapter.
-     */
-    @Nullable GridDrReceiverCacheMetricsAdapter drReceiveMetrics0() {
-        return drRcvMetrics;
-    }
-
     /**
      * Cache read callback.
      * @param isHit Hit or miss flag.
@@ -256,98 +201,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /**
-     * Callback for received acknowledgement by sender hub.
-     *
-     * @param entriesCnt Number of entries in batch.
-     */
-    public void onSenderCacheBatchAcknowledged(int entriesCnt) {
-        if (drSndMetrics != null) // TODO 9341
-            drSndMetrics.onBatchAcked(entriesCnt);
-
-        if (delegate != null)
-            delegate.onSenderCacheBatchAcknowledged(entriesCnt);
-    }
-
-    /**
-     * Callback for received batch error by sender hub.
-     *
-     * @param entriesCnt Number of entries in batch.
-     */
-    public void onSenderCacheBatchFailed(int entriesCnt) {
-        if (drSndMetrics != null) // TODO 9341
-            drSndMetrics.onBatchFailed(entriesCnt);
-
-        if (delegate != null)
-            delegate.onSenderCacheBatchFailed(entriesCnt);
-    }
-
-    /**
-     * Callback for sent batch on sender cache side.
-     *
-     * @param entriesCnt Number of sent entries.
-     */
-    public void onSenderCacheBatchSent(int entriesCnt) {
-        if (drSndMetrics != null)  // TODO 9341
-            drSndMetrics.onBatchSent(entriesCnt);
-
-        if (delegate != null)
-            delegate.onSenderCacheBatchSent(entriesCnt);
-    }
-
-    /**
-     * Callback for filtered entries on sender cache side.
-     */
-    public void onSenderCacheEntryFiltered() {
-        if (drSndMetrics != null) // TODO 9341
-            drSndMetrics.onEntryFiltered();
-
-        if (delegate != null)
-            delegate.onSenderCacheEntryFiltered();
-    }
-
-    /**
-     * Callback for replication pause state changed.
-     *
-     * @param pauseReason Pause reason or {@code null} if replication is not paused.
-     * @param errMsg Error message.
-     */
-    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason, @Nullable String errMsg) {
-        if (drSndMetrics != null) // TODO 9341
-            drSndMetrics.onPauseStateChanged(pauseReason, errMsg);
-
-        if (delegate != null)
-            delegate.onPauseStateChanged(pauseReason, errMsg);
-    }
-
-    /**
-     * Callback for conflict resolver on receiver cache side.
-     *
-     * @param usedNew New conflict status flag.
-     * @param usedOld Old conflict status flag.
-     * @param usedMerge Merge conflict status flag.
-     */
-    public void onReceiveCacheConflictResolved(boolean usedNew, boolean usedOld, boolean usedMerge) {
-        if (drRcvMetrics != null)
-            drRcvMetrics.onReceiveCacheConflictResolved(usedNew, usedOld, usedMerge);
-
-        if (delegate != null)
-            delegate.onReceiveCacheConflictResolved(usedNew, usedOld, usedMerge);
-    }
-
-    /**
-     * Callback for received entries from receiver hub.
-     *
-     * @param entriesCnt Number of received entries.
-     */
-    public void onReceiveCacheEntriesReceived(int entriesCnt) {
-        if (drRcvMetrics != null)
-            drRcvMetrics.onReceiveCacheEntriesReceived(entriesCnt);
-
-        if (delegate != null)
-            delegate.onReceiveCacheEntriesReceived(entriesCnt);
-    }
-
-    /**
      * Create a copy of given metrics object.
      *
      * @param m Metrics to copy from.
@@ -374,9 +227,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         out.writeInt(misses);
         out.writeInt(txCommits);
         out.writeInt(txRollbacks);
-
-        out.writeObject(drSndMetrics);
-        out.writeObject(drRcvMetrics);
     }
 
     /** {@inheritDoc} */
@@ -393,9 +243,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = in.readInt();
         txCommits = in.readInt();
         txRollbacks = in.readInt();
-
-        drSndMetrics = (GridDrSenderCacheMetricsAdapter)in.readObject();
-        drRcvMetrics = (GridDrReceiverCacheMetricsAdapter)in.readObject();
     }
 
     /** {@inheritDoc} */

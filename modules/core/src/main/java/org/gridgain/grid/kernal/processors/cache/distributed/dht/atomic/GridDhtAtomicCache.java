@@ -208,15 +208,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
-        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
-
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
 
         if (ctx.dht().near() != null)
             m.delegate(ctx.dht().near().metrics0());
 
         metrics = m;
+
+        ctx.dr().resetMetrics();
     }
 
     /**
@@ -421,7 +420,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) {
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return updateAllAsync0(null, null, drMap, null, false, false, null, 0, null);
     }
@@ -524,7 +523,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) {
-        metrics.onReceiveCacheEntriesReceived(drMap.size());
+        ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return removeAllAsync0(null, drMap, null, false, false, null);
     }
@@ -921,7 +920,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        if (storeEnabled() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null) {
+                        if (storeEnabled() && keys.size() > 1 && ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate, taskName);

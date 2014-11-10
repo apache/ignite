@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.visor.gui.dto;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -56,7 +56,9 @@ public class VisorDrSenderCacheMetrics implements Serializable {
         assert cache != null;
 
         try {
-            GridDrSenderCacheMetrics m = cache.metrics().drSendMetrics();
+            GridDr dr = cache.gridProjection().grid().dr();
+
+            GridDrSenderCacheMetrics m = dr.senderCacheMetrics(cache.name());
 
             VisorDrSenderCacheMetrics metrics = new VisorDrSenderCacheMetrics();
 
@@ -70,7 +72,7 @@ public class VisorDrSenderCacheMetrics implements Serializable {
             metrics.entriesFiltered(m.entriesFiltered());
             metrics.backupQueueSize(m.backupQueueSize());
             metrics.status(m.status());
-            metrics.stateTransfers(((GridCacheProjectionEx)cache).drListStateTransfers());
+            metrics.stateTransfers(dr.senderCacheDrListStateTransfers(cache.name()));
 
             return metrics;
         }

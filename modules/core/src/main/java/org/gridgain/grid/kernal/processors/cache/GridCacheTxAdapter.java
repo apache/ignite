@@ -1187,14 +1187,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     protected GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>> drResolveConflict(
         GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
         GridCacheVersion newVer, GridCacheEntryEx<K, V> old) throws GridException, GridCacheEntryRemovedException {
-        GridDrReceiverCacheConfiguration drRcvCfg = cctx.config().getDrReceiverConfiguration();
-
-        assert drRcvCfg != null;
-
-        GridDrReceiverCacheConflictResolverMode mode = drRcvCfg.getConflictResolverMode();
-
-        assert mode != null;
-
         // Construct old entry info.
         GridDrEntry<K, V> oldEntry = old.drEntry();
 

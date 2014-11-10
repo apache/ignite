@@ -367,38 +367,6 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     public boolean isMongoMetaCache();
 
     /**
-     * Starts full state transfer.
-     *
-     * @param dataCenterIds  Data center IDs for which full state transfer was requested.
-     * @return Future that will be completed when all replication batches are sent.
-     */
-    public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds);
-
-    /**
-     * List currently active state transfers.
-     *
-     * @return Collection of currently active state transfers.
-     */
-    public Collection<GridDrStateTransferDescriptor> drListStateTransfers();
-
-    /**
-     * Pauses data center replication for this cache.
-     */
-    public void drPause();
-
-    /**
-     * Resumes data center replication for this cache.
-     */
-    public void drResume();
-
-    /**
-     * Get DR pause state.
-     *
-     * @return DR pause state.
-     */
-    @Nullable public GridDrStatus drPauseState();
-
-    /**
      * Gets entry set containing internal entries.
      *
      * @param filter Filter.

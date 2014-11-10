@@ -71,6 +71,11 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public boolean enabled();
 
     /**
+     * @return {@code True} if receives DR data.
+     */
+    public boolean receiveEnabled();
+
+    /**
      * In case some partition is evicted, we remove entries of this partition from backup queue.
      *
      * @param part Partition.
@@ -78,64 +83,14 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public void partitionEvicted(int part);
 
     /**
-     * Initiate state transfer.
+     * Callback for received entries from receiver hub.
      *
-     * @param dataCenterIds Target data center IDs.
-     * @return Future that will be completed when all state transfer batches are sent.
+     * @param entriesCnt Number of received entries.
      */
-    public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds);
+    public void onReceiveCacheEntriesReceived(int entriesCnt);
 
     /**
-     * List currently active state transfers.
-     *
-     * @return List of currently active state transfers.
-     * @throws GridException If failed.
+     * Resets metrics for current cache.
      */
-    public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException;
-
-    /**
-     * Pauses data center replication.
-     *
-     * @throws GridException If failed.
-     */
-    public void pause() throws GridException;
-
-    /**
-     * Resumes data center replication.
-     *
-     * @throws GridException If failed.
-     */
-    public void resume() throws GridException;
-
-    /**
-     * Get DR pause state.
-     *
-     * @return DR pause state.
-     */
-    public GridDrStatus drPauseState();
-
-    /**
-     * @return Count of keys enqueued for data center replication.
-     */
-    public int queuedKeysCount();
-
-    /**
-     * @return Size of backup data center replication queue.
-     */
-    public int backupQueueSize();
-
-    /**
-     * @return Count of data center replication batches awaiting to be send.
-     */
-    public int batchWaitingSendCount();
-
-    /**
-     * @return Count of data center replication batches awaiting acknowledge from sender hub.
-     */
-    public int batchWaitingAcknowledgeCount();
-
-    /**
-     * @return Count of available sender hubs.
-     */
-    public int senderHubsCount();
+    public void resetMetrics();
 }

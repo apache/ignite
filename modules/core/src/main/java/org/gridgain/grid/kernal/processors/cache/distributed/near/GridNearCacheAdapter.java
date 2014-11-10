@@ -286,12 +286,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         dht().resetMetrics();
     }
 
-    /** {@inheritDoc} */
-    @Override protected int drBackupQueueSize() {
-        // Delegate to DHT cache which is actually responsible for DR.
-        return dht().context().dr().backupQueueSize();
-    }
-
     /**
      * @param nodeId Sender ID.
      * @param res Response.
@@ -644,31 +638,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
                 return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
-        return dht().drStateTransfer(dataCenterIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
-        return dht().drListStateTransfers();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drPause() {
-        dht().drPause();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drResume() {
-        dht().drResume();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDrStatus drPauseState() {
-        return dht().drPauseState();
     }
 
     /**

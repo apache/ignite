@@ -623,7 +623,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 // Must try to evict near entries before committing from
                                 // transaction manager to make sure locks are held.
                                 if (!evictNearEntry(txEntry, false)) {
-                                    if (near() && cctx.config().getDrReceiverConfiguration() != null) {
+                                    if (near() && cctx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
 
                                         break;

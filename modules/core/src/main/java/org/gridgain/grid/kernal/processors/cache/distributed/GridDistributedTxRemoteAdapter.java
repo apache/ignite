@@ -530,7 +530,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     if (cached == null)
                                         txEntry.cached(cached = cctx.cache().entryEx(txEntry.key()), null);
 
-                                    if (near() && cctx.config().getDrReceiverConfiguration() != null) {
+                                    if (near() && cctx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
 
                                         break;

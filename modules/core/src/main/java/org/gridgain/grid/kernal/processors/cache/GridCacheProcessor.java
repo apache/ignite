@@ -16,9 +16,6 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.dr.cache.receiver.*;
-import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -43,7 +40,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -55,7 +51,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
@@ -440,16 +435,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
-
-        GridDrSenderCacheConfiguration drSndCfg = cfg.getDrSenderConfiguration();
-
-        if (drSndCfg != null)
-            prepare(cfg, drSndCfg.getEntryFilter(), false);
-
-        GridDrReceiverCacheConfiguration drRcvCfg = cfg.getDrReceiverConfiguration();
-
-        if (drRcvCfg != null)
-            prepare(cfg, drRcvCfg.getConflictResolver(), false);
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
