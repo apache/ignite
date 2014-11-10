@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Cache storage convenience adapter. It provides default implementation for bulk operations, such
  * as {@link #loadAll(GridCacheTx, Collection, GridBiInClosure)},
- * {@link #putAll(GridCacheTx, Map)}, abd {@link #removeAll(GridCacheTx, Collection)}
+ * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
  * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
  * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However in many cases
@@ -50,8 +50,12 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
         GridBiInClosure<K, V> c) throws GridException {
         assert keys != null;
 
-        for (K key : keys)
-            c.apply(key, load(tx, key));
+        for (K key : keys) {
+            V v = load(tx, key);
+
+            if (v != null)
+                c.apply(key, v);
+        }
     }
 
     /** {@inheritDoc} */
