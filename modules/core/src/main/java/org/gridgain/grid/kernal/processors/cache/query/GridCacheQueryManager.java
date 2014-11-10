@@ -2975,15 +2975,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable GridSpiCloseableIterator<R> res, @Nullable Throwable err) {
+            assert !isDone();
+
             synchronized (recipients) {
-                if (!super.onDone(res, err))
-                    return false;
-
-                if (recipients.size() > 1)
+                if (recipients.size() > 1) {
                     queue = new CircularQueue<>(128);
-            }
 
-            return true;
+                    for (QueueIterator it : recipients.values())
+                        it.init();
+                }
+
+                return super.onDone(res, err);
+            }
         }
 
         /**
@@ -3031,13 +3034,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             private int pos;
 
             /** */
-            private final Queue<R> next = new ArrayDeque<>(NEXT_SIZE);
+            private Queue<R> next;
 
             /**
              * @param recipient ID of the recipient.
              */
             private QueueIterator(Object recipient) {
                 this.recipient = recipient;
+            }
+
+            /**
+             */
+            public void init() {
+                assert next == null;
+
+                next = new ArrayDeque<>(NEXT_SIZE);
             }
 
             /** {@inheritDoc} */
@@ -3077,16 +3088,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         int off = pos - pruned; // Offset of current iterator relative to queue begin.
 
-                        if (off < queue.size)
-                            res = queue.get(off);
-                        else {
+                        if (off == queue.size()) { // We are leading the race.
                             if (!it.hasNext())
-                                break;
+                                break; // Happy end.
 
                             res = it.next();
 
                             queue.add(res);
                         }
+                        else // Someone fetched result into queue before us.
+                            res = queue.get(off);
 
                         assert res != null;
 
