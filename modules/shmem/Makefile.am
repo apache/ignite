@@ -1,0 +1,1 @@
+SUBDIRS=ggshmem include

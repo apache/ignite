@@ -186,8 +186,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
 
             if (tx == null || commit) {
                 store.loadAll(tx, Arrays.asList("key1", "key2", "key3", "no_such_key"), new CI2<Object, Object>() {
-                    @Override
-                    public void apply(Object o, Object o1) {
+                    @Override public void apply(Object o, Object o1) {
                         if ("key1".equals(o))
                             assertEquals("val1", o1);
 
@@ -198,13 +197,13 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
                             assertEquals("val3", o1);
 
                         if ("no_such_key".equals(o))
-                            assertNull(o1);
+                            fail();
 
                         cntr.incrementAndGet();
                     }
                 });
 
-                assertEquals(4, cntr.get());
+                assertEquals(3, cntr.get());
             }
 
             store.removeAll(tx, Arrays.asList("key2", "key3"));
