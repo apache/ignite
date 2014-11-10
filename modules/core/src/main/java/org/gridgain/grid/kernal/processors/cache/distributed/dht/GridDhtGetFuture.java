@@ -206,7 +206,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         onDone(e);
                     }
 
-                    LinkedHashMap<K, Boolean> mappedKeys = new LinkedHashMap<>(keys.size());
+                    LinkedHashMap<K, Boolean> mappedKeys = U.newLinkedHashMap(keys.size());
 
                     // Assign keys to primary nodes.
                     for (Map.Entry<? extends K, Boolean> key : keys.entrySet()) {

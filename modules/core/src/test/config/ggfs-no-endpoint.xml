@@ -47,6 +47,14 @@
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+
+        <!--
+            For better performance set this property to false in case
+            peer deployment is not used.
+            Default value is false.
+        -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+
         <!--
             Configure optimized marshaller.
         -->

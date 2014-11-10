@@ -1627,7 +1627,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
 
-            Collections.sort(addrs, inetAddressesComparator(sameHost));
+            Collections.sort(addrs, U.inetAddressesComparator(sameHost));
         }
         else
             addrs = new ArrayList<>();
@@ -1882,31 +1882,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         else if (log.isDebugEnabled())
             log.debug("Received communication message without any registered listeners (will ignore, " +
                 "is node stopping?) [senderNodeId=" + sndId + ", msg=" + msg + ']');
-    }
-
-    /**
-     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
-     * loopback addresses first, last otherwise.
-     *
-     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
-     * @return Comparator.
-     */
-    private static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost) {
-        return new Comparator<InetSocketAddress>() {
-            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
-                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
-                boolean addr2Loopback = addr2.getAddress().isLoopbackAddress();
-
-                // No need to reorder.
-                if (addr1Loopback == addr2Loopback)
-                    return 0;
-
-                if (sameHost)
-                    return addr1Loopback ? -1 : 1;
-                else
-                    return addr1Loopback ? 1 : -1;
-            }
-        };
     }
 
     /** {@inheritDoc} */

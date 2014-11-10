@@ -65,13 +65,15 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @param cp Message to copy from.
      */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage<K, V> cp) {
+    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage<K, V> cp, Collection<Integer> parts) {
         updateSeq = cp.updateSeq;
-        parts = cp.parts;
         topic = cp.topic;
         timeout = cp.timeout;
         workerId = cp.workerId;
         topVer = cp.topVer;
+
+        // Create a copy of passed in collection since it can be modified when this message is being sent.
+        this.parts = new HashSet<>(parts);
     }
 
     /**
@@ -299,7 +301,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (parts == null)
-                        parts = new HashSet<>(commState.readSize);
+                        parts = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)

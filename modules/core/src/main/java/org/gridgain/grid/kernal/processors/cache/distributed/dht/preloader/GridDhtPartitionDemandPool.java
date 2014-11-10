@@ -603,7 +603,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     retry = false;
 
                     // Create copy.
-                    d = new GridDhtPartitionDemandMessage<>(d);
+                    d = new GridDhtPartitionDemandMessage<>(d, remaining);
 
                     long timeout = GridDhtPartitionDemandPool.this.timeout.get();
 
@@ -633,7 +633,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 cctx.io().removeOrderedHandler(d.topic());
 
                                 // Must create copy to be able to work with IO manager thread local caches.
-                                d = new GridDhtPartitionDemandMessage<>(d);
+                                d = new GridDhtPartitionDemandMessage<>(d, remaining);
 
                                 // Create new topic.
                                 d.topic(topic(++cntr));
@@ -1018,10 +1018,11 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                     GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
 
-                    if (msg == null)
-                        msg = F.addIfAbsent(assigns, n,
-                            new GridDhtPartitionDemandMessage<K, V>(top.updateSequence(),
-                                exchFut.exchangeId().topologyVersion()));
+                    if (msg == null) {
+                        assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
+                            top.updateSequence(),
+                            exchFut.exchangeId().topologyVersion()));
+                    }
 
                     msg.addPartition(p);
                 }

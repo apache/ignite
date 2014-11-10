@@ -891,7 +891,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         GridCacheAdapter<K, V> cache = cctx.cache();
 
-        Map<K, GridCacheEntryEx<K, V>> cached = new HashMap<>(keys.size());
+        Map<K, GridCacheEntryEx<K, V>> cached = U.newHashMap(keys.size());
 
         // Get all participating entries to avoid deadlock.
         for (K k : keys)

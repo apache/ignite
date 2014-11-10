@@ -415,7 +415,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                        map = new HashMap<>(affNodes.size());
+                        map = U.newHashMap(affNodes.size());
                     }
 
                     if (ver == null)
@@ -507,7 +507,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
-                        map = new HashMap<>(affNodes.size());
+                        map = U.newHashMap(affNodes.size());
                     }
 
                     GridNode primary = ctx.affinity().primary(key, topVer);

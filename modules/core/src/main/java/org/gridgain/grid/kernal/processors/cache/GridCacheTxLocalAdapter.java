@@ -2154,7 +2154,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         }
         else if (cacheCtx.portableEnabled()) {
             if (map != null) {
-                map0 = new HashMap<>(map.size());
+                map0 = U.newHashMap(map.size());
 
                 try {
                     for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
@@ -2172,7 +2172,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 map0 = null;
 
             if (transformMap != null) {
-                transformMap0 = new HashMap<>(transformMap.size());
+                transformMap0 = U.newHashMap(transformMap.size());
 
                 try {
                     for (Map.Entry<? extends K, ? extends GridClosure<V, V>> e : transformMap.entrySet()) {

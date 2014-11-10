@@ -12,7 +12,6 @@ import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -430,18 +429,22 @@ public class GridClientImpl implements GridClient {
                 for (GridClientNodeImpl node : top.nodes()) {
                     Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
+                    List<InetSocketAddress> resolvedEndpoints = new ArrayList<>(endpoints.size());
+
+                    for (InetSocketAddress endpoint : endpoints)
+                        if (!endpoint.isUnresolved())
+                            resolvedEndpoints.add(endpoint);
+
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
                     if (sameHost) {
-                        List<InetSocketAddress> srvs = new ArrayList<>(endpoints);
+                        Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
 
-                        Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
-
-                        connSrvs.addAll(srvs);
+                        connSrvs.addAll(resolvedEndpoints);
                     }
                     else {
-                        for (InetSocketAddress endpoint : endpoints)
+                        for (InetSocketAddress endpoint : resolvedEndpoints)
                             if (!endpoint.getAddress().isLoopbackAddress())
                                 connSrvs.add(endpoint);
                     }

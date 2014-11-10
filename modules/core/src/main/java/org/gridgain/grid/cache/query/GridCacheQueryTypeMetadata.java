@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Cache query type metadata.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryTypeMetadata {
     /** Type name, e.g. class name. */

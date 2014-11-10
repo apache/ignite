@@ -1741,7 +1741,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         assert interceptor != null;
 
-        Map<K, V> res = new HashMap<>(keys.size());
+        Map<K, V> res = U.newHashMap(keys.size());
 
         for (Map.Entry<K, V> e : map.entrySet()) {
             V val = interceptor.onGet(e.getKey(), e.getValue());

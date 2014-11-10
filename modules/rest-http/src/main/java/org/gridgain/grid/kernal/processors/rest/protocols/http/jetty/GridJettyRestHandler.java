@@ -331,7 +331,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                     if (keys.size() < vals.size())
                         throw new GridException("Number of keys must be greater or equals to number of values.");
 
-                    Map<Object, Object> map = new HashMap<>(keys.size());
+                    Map<Object, Object> map = U.newHashMap(keys.size());
 
                     Iterator<Object> keyIt = keys.iterator();
                     Iterator<Object> valIt = vals.iterator();
@@ -565,7 +565,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (F.isEmpty(params))
             return Collections.emptyMap();
 
-        Map<String, Object> map = new HashMap<>(params.size());
+        Map<String, Object> map = U.newHashMap(params.size());
 
         for (Map.Entry<String, String[]> entry : params.entrySet())
             map.put(entry.getKey(), parameter(entry.getValue()));
