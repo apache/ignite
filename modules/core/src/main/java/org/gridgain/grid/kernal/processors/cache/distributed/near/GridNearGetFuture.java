@@ -262,8 +262,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             return;
         }
 
-        Map<GridNode, LinkedHashMap<K, Boolean>> mappings =
-            new HashMap<>(affNodes.size());
+        Map<GridNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(affNodes.size());
 
         Map<K, GridCacheVersion> savedVers = null;
 
@@ -462,7 +461,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     entry = nearEntry;
 
                     if (savedVers == null)
-                        savedVers = new HashMap<>(3);
+                        savedVers = U.newHashMap(3);
 
                     savedVers.put(key, nearEntry == null ? null : nearEntry.dhtVersion());
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import junit.framework.*;
 import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
@@ -44,16 +45,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        assertEquals(name, 1, DummyService.started(name));
-        assertEquals(name, 0, DummyService.cancelled(name));
+        TestCase.assertEquals(name, 1, DummyService.started(name));
+        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            assertEquals(name, 1, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            TestCase.assertEquals(name, 1, DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
             info(">>> Passed checks.");
 
@@ -70,16 +71,14 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     public void testAffinityDeployUpdateTopology() throws Exception {
         Grid g = randomGrid();
 
-        String name = "serviceAffinityUpdateTopology";
-
         final Integer affKey = 1;
 
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        CountDownLatch latch = new CountDownLatch(1);
+        String name = "serviceAffinityUpdateTopology";
 
-        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(latch, affKey),
+        GridFuture<?> fut = g.services().deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
         info("Deployed service: " + name);
@@ -87,8 +86,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         fut.get();
 
         info("Finished waiting for service future: " + name);
-
-        latch.await();
 
         checkCount(name, g.services().deployedServices(), 1);
 
@@ -126,8 +123,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        assertEquals(name, nodeCount(), DummyService.started(name));
-        assertEquals(name, 0, DummyService.cancelled(name));
+        TestCase.assertEquals(name, nodeCount(), DummyService.started(name));
+        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
         int newNodes = 2;
 
@@ -140,8 +137,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         try {
             latch.await();
 
-            assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            TestCase.assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
             checkCount(name, g.services().deployedServices(), nodeCount() + newNodes);
         }

@@ -423,7 +423,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (last == null)
-                        last = new HashSet<>(commState.readSize);
+                        last = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -452,7 +452,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (missed == null)
-                        missed = new HashSet<>(commState.readSize);
+                        missed = U.newHashSet(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)

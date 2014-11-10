@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.indexing;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,20 +27,20 @@ public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingS
 
     /** {@inheritDoc} */
     @Override public <K, V> GridIndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
+        Collection<Object> params, GridIndexingQueryFilter filters) throws GridSpiException {
         throw spiException();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> query(@Nullable String spaceName,
         String qry, Collection<Object> params, GridIndexingTypeDescriptor type,
-        GridIndexingQueryFilter<K, V>... filters) throws GridSpiException {
+        GridIndexingQueryFilter filters) throws GridSpiException {
         throw spiException();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> GridSpiCloseableIterator<GridIndexingKeyValueRow<K, V>> queryText(@Nullable
-        String spaceName, String qry, GridIndexingTypeDescriptor type, GridIndexingQueryFilter<K, V>... filters)
+        String spaceName, String qry, GridIndexingTypeDescriptor type, GridIndexingQueryFilter filters)
         throws GridSpiException {
         throw spiException();
     }

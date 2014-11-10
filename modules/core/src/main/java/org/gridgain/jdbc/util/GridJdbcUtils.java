@@ -12,6 +12,7 @@ package org.gridgain.jdbc.util;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.sql.*;
 import java.util.*;
@@ -92,7 +93,7 @@ public class GridJdbcUtils {
         assert pageSize > 0;
         assert maxRows >= 0;
 
-        Map<String, Object> map = new HashMap<>(7);
+        Map<String, Object> map = U.newHashMap(7);
 
         map.put("confNodeId", nodeId);
         map.put("cache", cacheName);
@@ -120,7 +121,7 @@ public class GridJdbcUtils {
         assert pageSize > 0;
         assert maxRows >= 0;
 
-        Map<String, Object> map = new HashMap<>(4);
+        Map<String, Object> map = U.newHashMap(4);
 
         map.put("nodeId", nodeId);
         map.put("futId", futId);
