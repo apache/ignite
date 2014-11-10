@@ -338,6 +338,13 @@ public interface GridPortableBuilder {
     public <T extends Enum<?>> GridPortableBuilder enumArrayField(String fieldName, T[] val);
 
     /**
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return This.
+     */
+    public GridPortableBuilder portableObjectField(String fieldName, GridPortableObject val);
+
+    /**
      * Builds portable object.
      *
      * @return Portable object.
