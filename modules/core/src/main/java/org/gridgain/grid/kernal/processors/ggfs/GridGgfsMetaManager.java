@@ -2412,22 +2412,21 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 }
 
                 // Ensure that locked IDs still point to expected paths.
-                boolean changed = idToInfo.size() != pathToId.size(); // Not all paths was locked.
+                GridGgfsPath changed = null;
 
-                if (!changed) {
-                    for (Map.Entry<GridGgfsPath, GridUuid> entry : pathToId.entrySet()) {
-                        if (!entry.getValue().equals(fileId(entry.getKey(), true))) {
-                            changed = true;
+                for (Map.Entry<GridGgfsPath, GridUuid> entry : pathToId.entrySet()) {
+                    if (!idToInfo.containsKey(entry.getValue()) ||
+                        !F.eq(entry.getValue(), fileId(entry.getKey(), true))) {
+                        changed = entry.getKey();
 
-                            break;
-                        }
+                        break;
                     }
                 }
 
-                if (changed) {
+                if (changed != null) {
                     finished = true;
 
-                    throw new GridGgfsConcurrentModificationException();
+                    throw new GridGgfsConcurrentModificationException(changed);
                 }
                 else {
                     boolean newParents = false;

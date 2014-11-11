@@ -27,4 +27,12 @@ public interface GridDiscoverySpiNodeAuthenticator {
      *      (invalid credentials should not lead to this exception).
      */
     public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
+
+    /**
+     * Gets global node authentication flag.
+     *
+     * @return {@code True} if all nodes in topology should authenticate joining node, {@code false} if only
+     *      coordinator should do the authentication.
+     */
+    public boolean isGlobalNodeAuthentication();
 }

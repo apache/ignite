@@ -1000,7 +1000,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     meta = null;
 
                 GridCloseableIterator<List<GridIndexingEntity<?>>> it = new GridSpiCloseableIteratorWrapper<>(
-                    res.nextPageIterator(recipient(qryInfo.senderId(), qryInfo.requestId())));
+                    res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId())));
 
                 if (log.isDebugEnabled())
                     log.debug("Received fields iterator [iterHasNext=" + it.hasNext() + ']');
@@ -1166,7 +1166,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
 
-                iter = res.nextPageIterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
+                iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
                 type = res.type();
 
                 GridCacheAdapter<K, V> cache = cctx.cache();
@@ -2924,7 +2924,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private int pruned;
 
         /** Absolute position of each recipient. */
-        private final Map<Object, Integer> recipients = new GridLeanMap<>(1);
+        private final Map<Object, QueueIterator> recipients = new GridLeanMap<>(1);
 
         /**
          * @param recipient ID of the recipient.
@@ -2967,7 +2967,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 assert !recipients.containsKey(recipient) : recipient + " -> " + recipients;
 
-                recipients.put(recipient, 0);
+                recipients.put(recipient, new QueueIterator(recipient));
             }
 
             return true;
@@ -2975,93 +2975,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable GridSpiCloseableIterator<R> res, @Nullable Throwable err) {
-            synchronized (recipients) {
-                if (!super.onDone(res, err))
-                    return false;
+            assert !isDone();
 
-                if (recipients.size() > 1)
+            synchronized (recipients) {
+                if (recipients.size() > 1) {
                     queue = new CircularQueue<>(128);
-            }
 
-            return true;
+                    for (QueueIterator it : recipients.values())
+                        it.init();
+                }
+
+                return super.onDone(res, err);
+            }
         }
 
         /**
-         * Fetches next page into target collection from queue.
          *
-         * @param recipient ID of the recipient.
-         * @param it Iterator.
          */
-        private GridSpiCloseableIterator<R> nextPageFromQueue(final Object recipient,
-            final GridSpiCloseableIterator<R> it) {
-            return new GridSpiCloseableIterator<R>() {
-                /** */
-                private R next;
+        private void pruneQueue() {
+            assert !recipients.isEmpty();
+            assert Thread.holdsLock(recipients);
 
-                @Override public void close() throws GridException {
-                    closeIfNotShared(recipient);
-                }
-
-                @Override public boolean hasNext() {
-                    return next != null || (next = nextFromQueue(recipient, it)) != null;
-                }
-
-                @Override public R next() {
-                    if (next == null)
-                        throw new NoSuchElementException();
-
-                    R res = next;
-
-                    next = null;
-
-                    return res;
-                }
-
-                @Override public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
-        }
-
-        /**
-         * @param recipient ID of the recipient.
-         * @param it Iterator.
-         * @return Next element for the given recipient.
-         */
-        @Nullable private R nextFromQueue(Object recipient, GridSpiCloseableIterator<R> it) {
-            synchronized (recipients) {
-                int pos = recipients.get(recipient);
-
-                R res = null;
-
-                try {
-                    int off = pos - pruned; // Offset is relative to queue begin.
-
-                    if (off < queue.size)
-                        res = queue.get(off);
-                    else if (it.hasNext()) {
-                        res = it.next();
-
-                        queue.add(res);
-                    }
-                }
-                finally {
-                    if (res != null)
-                        pruneQueue(recipient, pos + 1);
-                }
-
-                return res;
-            }
-        }
-
-        /**
-         * @param recipient ID of the recipient.
-         * @param newPos New position of the recipient.
-         */
-        private void pruneQueue(Object recipient, int newPos) {
-            recipients.put(recipient, newPos);
-
-            int minPos = Collections.min(recipients.values());
+            int minPos = Collections.min(recipients.values()).pos;
 
             if (minPos > pruned) {
                 queue.remove(minPos - pruned);
@@ -3071,13 +3006,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
-         * Fetches next page into target collection.
-         *
          * @param recipient ID of the recipient.
          * @throws GridException If failed.
          */
-        public GridSpiCloseableIterator<R> nextPageIterator(Object recipient)
-            throws GridException {
+        public GridSpiCloseableIterator<R> iterator(Object recipient) throws GridException {
             assert recipient != null;
 
             GridSpiCloseableIterator<R> it = get();
@@ -3085,7 +3017,110 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             assert it != null;
 
             synchronized (recipients) {
-                return queue == null ? it : nextPageFromQueue(recipient, it);
+                return queue == null ? it : recipients.get(recipient);
+            }
+        }
+
+        /**
+         *
+         */
+        @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
+        private class QueueIterator implements GridSpiCloseableIterator<R>, Comparable<QueueIterator> {
+            /** */
+            private static final int NEXT_SIZE = 64;
+
+            /** */
+            private final Object recipient;
+
+            /** */
+            private int pos;
+
+            /** */
+            private Queue<R> next;
+
+            /**
+             * @param recipient ID of the recipient.
+             */
+            private QueueIterator(Object recipient) {
+                this.recipient = recipient;
+            }
+
+            /**
+             */
+            public void init() {
+                assert next == null;
+
+                next = new ArrayDeque<>(NEXT_SIZE);
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() throws GridException {
+                closeIfNotShared(recipient);
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
+                return !next.isEmpty() || fillNext();
+            }
+
+            /** {@inheritDoc} */
+            @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException") // It can actually.
+            @Override public R next() {
+                return next.remove();
+            }
+
+            /**
+             * @return {@code true} If elements were fetched into local queue of the iterator.
+             */
+            private boolean fillNext() {
+                assert next.isEmpty();
+
+                GridSpiCloseableIterator<R> it;
+
+                try {
+                    it = get();
+                }
+                catch (GridException e) {
+                    throw new GridRuntimeException(e);
+                }
+
+                synchronized (recipients) {
+                    for (int i = 0; i < NEXT_SIZE; i++) {
+                        R res;
+
+                        int off = pos - pruned; // Offset of current iterator relative to queue begin.
+
+                        if (off == queue.size()) { // We are leading the race.
+                            if (!it.hasNext())
+                                break; // Happy end.
+
+                            res = it.next();
+
+                            queue.add(res);
+                        }
+                        else // Someone fetched result into queue before us.
+                            res = queue.get(off);
+
+                        assert res != null;
+
+                        pos++;
+                        next.add(res);
+                    }
+
+                    pruneQueue();
+                }
+
+                return !next.isEmpty();
+            }
+
+            /** {@inheritDoc} */
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int compareTo(QueueIterator o) {
+                return Integer.compare(pos, o.pos);
             }
         }
     }
