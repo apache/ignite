@@ -216,7 +216,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         }
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -243,13 +243,13 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearEvictedBytes.size()))
@@ -276,7 +276,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (preloadEntriesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(preloadEntriesBytes.size()))
@@ -317,7 +317,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
             return false;
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -327,7 +327,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 if (commState.readSize >= 0) {
                     if (invalidParts == null)
-                        invalidParts = U.newHashSet(commState.readSize);
+                        invalidParts = new HashSet<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -346,7 +346,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -356,7 +356,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -385,7 +385,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

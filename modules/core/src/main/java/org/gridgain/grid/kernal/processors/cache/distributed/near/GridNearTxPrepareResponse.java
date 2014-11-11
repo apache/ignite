@@ -253,19 +253,19 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         }
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 if (!commState.putCacheVersion(dhtVer))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -292,13 +292,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (ownedValsBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(ownedValsBytes.size()))
@@ -325,7 +325,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (pending != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pending.size()))
@@ -366,7 +366,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         switch (commState.idx) {
-            case 9:
+            case 10:
                 GridCacheVersion dhtVer0 = commState.getCacheVersion();
 
                 if (dhtVer0 == CACHE_VER_NOT_READ)
@@ -376,7 +376,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -386,7 +386,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -415,7 +415,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -425,7 +425,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -454,7 +454,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

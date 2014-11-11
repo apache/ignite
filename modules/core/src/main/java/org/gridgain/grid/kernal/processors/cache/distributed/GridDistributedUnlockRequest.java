@@ -140,7 +140,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         }
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -181,7 +181,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         switch (commState.idx) {
-            case 7:
+            case 8:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

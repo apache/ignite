@@ -224,7 +224,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (parts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(parts.size()))
@@ -251,31 +251,31 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putLong(timeout))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putByteArray(topicBytes))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putLong(updateSeq))
                     return false;
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (!commState.putInt(workerId))
                     return false;
 
@@ -295,7 +295,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -305,7 +305,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 if (commState.readSize >= 0) {
                     if (parts == null)
-                        parts = U.newHashSet(commState.readSize);
+                        parts = new HashSet<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -324,7 +324,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -332,7 +332,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -340,7 +340,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 byte[] topicBytes0 = commState.getByteArray();
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
@@ -350,7 +350,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -358,7 +358,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (buf.remaining() < 4)
                     return false;
 

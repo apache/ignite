@@ -166,19 +166,19 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putByteArray(entriesBytes))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putLong(futId))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -198,7 +198,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 byte[] entriesBytes0 = commState.getByteArray();
 
                 if (entriesBytes0 == BYTE_ARR_NOT_READ)
@@ -208,7 +208,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -216,7 +216,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (buf.remaining() < 8)
                     return false;
 

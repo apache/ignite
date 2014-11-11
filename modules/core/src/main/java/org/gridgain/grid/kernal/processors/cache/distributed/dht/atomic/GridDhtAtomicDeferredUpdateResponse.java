@@ -97,7 +97,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (futVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(futVers.size()))
@@ -138,7 +138,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

@@ -155,19 +155,19 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putBoolean(err))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putLong(futId))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (rejectedKeyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(rejectedKeyBytes.size()))
@@ -208,7 +208,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -216,7 +216,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -224,7 +224,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

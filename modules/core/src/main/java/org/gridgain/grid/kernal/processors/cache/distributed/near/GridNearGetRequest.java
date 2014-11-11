@@ -245,7 +245,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (filterBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(filterBytes.length))
@@ -272,13 +272,13 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -316,37 +316,37 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putBoolean(reload))
                     return false;
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 if (!commState.putCacheVersion(ver))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -366,7 +366,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -395,7 +395,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -405,7 +405,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -415,7 +415,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 if (commState.readSize >= 0) {
                     if (keyBytes == null)
-                        keyBytes = U.newLinkedHashMap(commState.readSize);
+                        keyBytes = new LinkedHashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -447,7 +447,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -457,7 +457,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -465,7 +465,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 7:
+            case 8:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -473,7 +473,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 8:
+            case 9:
                 GridCacheVersion ver0 = commState.getCacheVersion();
 
                 if (ver0 == CACHE_VER_NOT_READ)
@@ -483,7 +483,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 9:
+            case 10:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -493,7 +493,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
-            case 10:
+            case 11:
                 if (buf.remaining() < 4)
                     return false;
 

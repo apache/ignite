@@ -208,25 +208,25 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putByteArray(errBytes))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (!commState.putByteArray(failedKeysBytes))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putCacheVersion(futVer))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearEvictedBytes.size()))
@@ -267,7 +267,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 byte[] errBytes0 = commState.getByteArray();
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
@@ -277,7 +277,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 byte[] failedKeysBytes0 = commState.getByteArray();
 
                 if (failedKeysBytes0 == BYTE_ARR_NOT_READ)
@@ -287,7 +287,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 GridCacheVersion futVer0 = commState.getCacheVersion();
 
                 if (futVer0 == CACHE_VER_NOT_READ)
@@ -297,7 +297,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

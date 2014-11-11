@@ -171,19 +171,19 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putByteArray(affAssignmentBytes))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putByteArray(partsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -203,7 +203,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 byte[] affAssignmentBytes0 = commState.getByteArray();
 
                 if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
@@ -213,7 +213,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
@@ -223,7 +223,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
                 commState.idx++;
 
-            case 6:
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 

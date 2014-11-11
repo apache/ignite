@@ -130,7 +130,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         }
 
         switch (commState.idx) {
-            case 8:
+            case 9:
                 if (nearKeyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearKeyBytes.size()))
@@ -171,7 +171,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
             return false;
 
         switch (commState.idx) {
-            case 8:
+            case 9:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

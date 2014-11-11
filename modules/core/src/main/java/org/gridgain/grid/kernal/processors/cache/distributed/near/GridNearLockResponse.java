@@ -207,7 +207,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         }
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (dhtVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(dhtVers.length))
@@ -234,13 +234,13 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 if (!commState.putBooleanArray(filterRes))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (mappedVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(mappedVers.length))
@@ -267,13 +267,13 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (pending != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pending.size()))
@@ -314,7 +314,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             return false;
 
         switch (commState.idx) {
-            case 10:
+            case 11:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -343,7 +343,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 boolean[] filterRes0 = commState.getBooleanArray();
 
                 if (filterRes0 == BOOLEAN_ARR_NOT_READ)
@@ -353,7 +353,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -382,7 +382,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -392,7 +392,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;

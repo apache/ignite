@@ -90,7 +90,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -109,7 +109,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (buf.remaining() < 8)
                     return false;
 

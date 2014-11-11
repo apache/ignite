@@ -59,7 +59,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     private boolean skipPrepare;
 
     /** Cache ID. */
-    private int cacheId;
+    protected int cacheId;
 
     /**
      * Gets next ID for indexed message ID.
@@ -577,6 +577,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         _clone.depInfo = depInfo != null ? (GridDeploymentInfoBean)depInfo.clone() : null;
         _clone.err = err;
         _clone.skipPrepare = skipPrepare;
+        _clone.cacheId = cacheId;
     }
 
     /** {@inheritDoc} */
@@ -593,12 +594,18 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putMessage(depInfo))
+                if (!commState.putInt(cacheId))
                     return false;
 
                 commState.idx++;
 
             case 1:
+                if (!commState.putMessage(depInfo))
+                    return false;
+
+                commState.idx++;
+
+            case 2:
                 if (!commState.putLong(msgId))
                     return false;
 
@@ -616,6 +623,14 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         switch (commState.idx) {
             case 0:
+                if (buf.remaining() < 4)
+                    return false;
+
+                cacheId = commState.getInt();
+
+                commState.idx++;
+
+            case 1:
                 Object depInfo0 = commState.getMessage();
 
                 if (depInfo0 == MSG_NOT_READ)
@@ -625,7 +640,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
                 commState.idx++;
 
-            case 1:
+            case 2:
                 if (buf.remaining() < 8)
                     return false;
 

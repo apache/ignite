@@ -183,13 +183,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         }
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (keyBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(keyBytes.size()))
@@ -216,13 +216,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -242,7 +242,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
             return false;
 
         switch (commState.idx) {
-            case 2:
+            case 3:
                 GridUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -252,7 +252,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -281,7 +281,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -291,7 +291,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
                 commState.idx++;
 
-            case 5:
+            case 6:
                 if (buf.remaining() < 8)
                     return false;
 

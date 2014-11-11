@@ -121,7 +121,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
         }
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 if (!commState.putByteArray(partsBytes))
                     return false;
 
@@ -141,7 +141,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
             return false;
 
         switch (commState.idx) {
-            case 4:
+            case 5:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)

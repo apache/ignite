@@ -175,31 +175,31 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (commState.idx) {
-            case 18:
+            case 19:
                 if (!commState.putBoolean(explicitLock))
                     return false;
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -219,7 +219,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (commState.idx) {
-            case 18:
+            case 19:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -227,7 +227,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 19:
+            case 20:
                 GridUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -237,7 +237,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 20:
+            case 21:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -245,7 +245,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -255,7 +255,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (buf.remaining() < 4)
                     return false;
 
