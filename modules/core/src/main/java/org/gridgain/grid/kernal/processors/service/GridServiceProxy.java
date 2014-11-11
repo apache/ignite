@@ -31,6 +31,9 @@ import static org.gridgain.grid.kernal.GridClosureCallMode.*;
  * Wrapper for making {@link GridService} class proxies.
  */
 class GridServiceProxy<T> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Grid logger. */
     @GridToStringExclude
     private final GridLogger log;

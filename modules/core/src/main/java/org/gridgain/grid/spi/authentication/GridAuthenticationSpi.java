@@ -70,4 +70,15 @@ public interface GridAuthenticationSpi extends GridSpi {
      *      Note that bad credentials should not cause this exception.
      */
     public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws GridSpiException;
+
+    /**
+     * Flag indicating whether node authentication should be run on coordinator only or on all nodes
+     * in current topology.
+     *
+     * @return {@code True} if all nodes in topology should authenticate joining node. In this case security
+     *      permissions will be validated to be the same on all nodes. In case if permissions differ, node will
+     *      not be able to join the topology. If this method returns {@code false}, only coordinator node will
+     *      authenticate joining node.
+     */
+    public boolean isGlobalNodeAuthentication();
 }

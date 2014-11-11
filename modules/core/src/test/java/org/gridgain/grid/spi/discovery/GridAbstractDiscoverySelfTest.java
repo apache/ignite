@@ -390,6 +390,10 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
 
                         return new GridSecurityContext(subj);
                     }
+
+                    @Override public boolean isGlobalNodeAuthentication() {
+                        return false;
+                    }
                 });
 
 

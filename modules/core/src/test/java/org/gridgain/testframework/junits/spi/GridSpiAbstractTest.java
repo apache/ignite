@@ -318,6 +318,10 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
                 return new GridSecurityContext(subj);
             }
+
+            @Override public boolean isGlobalNodeAuthentication() {
+                return false;
+            }
         });
 
         configure(discoSpi);
