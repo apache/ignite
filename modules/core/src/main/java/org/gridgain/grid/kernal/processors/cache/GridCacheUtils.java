@@ -716,7 +716,7 @@ public class GridCacheUtils {
                 oldest = n;
 
         assert oldest != null;
-        assert oldest.order() <= topOrder;
+        assert oldest.order() <= topOrder || topOrder < 0;
 
         return oldest;
     }
@@ -736,7 +736,7 @@ public class GridCacheUtils {
                 oldest = n;
 
         assert oldest != null;
-        assert oldest.order() <= topOrder;
+        assert oldest.order() <= topOrder || topOrder < 0;
 
         return oldest;
     }

@@ -55,11 +55,13 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
      * @param updateSeq Update sequence for this node.
      * @param topVer Topology version.
      */
-    GridDhtPartitionDemandMessage(long updateSeq, long topVer) {
+    GridDhtPartitionDemandMessage(long updateSeq, long topVer, int cacheId) {
         assert updateSeq > 0;
 
         this.updateSeq = updateSeq;
         this.topVer = topVer;
+
+        cacheId(cacheId);
     }
 
     /**
@@ -74,6 +76,8 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
         // Create a copy of passed in collection since it can be modified when this message is being sent.
         this.parts = new HashSet<>(parts);
+
+        cacheId(cp.cacheId());
     }
 
     /**

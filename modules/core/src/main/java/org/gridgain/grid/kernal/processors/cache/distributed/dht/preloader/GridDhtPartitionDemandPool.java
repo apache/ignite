@@ -611,6 +611,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                     if (log.isDebugEnabled())
                         log.debug("Sending demand message [node=" + node.id() + ", demand=" + d + ']');
+                    U.debug(log, "Sending demand message [node=" + node.id() + ", demand=" + d + ']');
 
                     // Send demand message.
                     cctx.io().send(node, d);
@@ -1021,7 +1022,8 @@ public class GridDhtPartitionDemandPool<K, V> {
                     if (msg == null) {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
                             top.updateSequence(),
-                            exchFut.exchangeId().topologyVersion()));
+                            exchFut.exchangeId().topologyVersion(),
+                            cctx.cacheId()));
                     }
 
                     msg.addPartition(p);

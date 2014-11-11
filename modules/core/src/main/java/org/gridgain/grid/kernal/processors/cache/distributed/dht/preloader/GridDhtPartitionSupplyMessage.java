@@ -65,12 +65,14 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
      */
-    GridDhtPartitionSupplyMessage(int workerId, long updateSeq) {
+    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId) {
         assert workerId >= 0;
         assert updateSeq > 0;
 
         this.updateSeq = updateSeq;
         this.workerId = workerId;
+
+        cacheId(cacheId);
     }
 
     /**
