@@ -2148,6 +2148,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private static class QueryResult<K, V> extends CachedResult<GridIndexingKeyValueRow<K, V>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final GridCacheQueryType type;
 
         /**
@@ -2172,6 +2175,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      */
     private static class FieldsResult extends CachedResult<List<GridIndexingEntity<?>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private List<GridIndexingFieldMetadata> meta;
 
