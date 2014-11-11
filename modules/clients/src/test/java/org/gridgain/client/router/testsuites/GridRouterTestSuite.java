@@ -14,9 +14,6 @@ import org.gridgain.client.router.*;
 
 /**
  * Test suite for router tests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRouterTestSuite extends TestSuite {
     /**

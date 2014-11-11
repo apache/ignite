@@ -1156,6 +1156,29 @@ public abstract class GridUtils {
      * @throws IOException If failed.
      * @throws ClassNotFoundException If class not found.
      */
+    @Nullable public static Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        Class<?>[] arr = null;
+
+        if (len > 0) {
+            arr = new Class<?>[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (Class<?>)in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
     @SuppressWarnings("unchecked")
     @Nullable public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
@@ -8872,5 +8895,67 @@ public abstract class GridUtils {
      */
     public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
         return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
+     * loopback addresses first, last otherwise.
+     *
+     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
+     * @return Comparator.
+     */
+    public static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost) {
+        return new Comparator<InetSocketAddress>() {
+            @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
+                if (addr1.isUnresolved() && addr2.isUnresolved())
+                    return 0;
+
+                if (addr1.isUnresolved() || addr2.isUnresolved())
+                    return addr1.isUnresolved() ? 1 : -1;
+
+                boolean addr1Loopback = addr1.getAddress().isLoopbackAddress();
+
+                // No need to reorder.
+                if (addr1Loopback == addr2.getAddress().isLoopbackAddress())
+                    return 0;
+
+                if (sameHost)
+                    return addr1Loopback ? -1 : 1;
+                else
+                    return addr1Loopback ? 1 : -1;
+            }
+        };
+    }
+
+    /**
+     * Finds a method in the class and it parents.
+     *
+     * Method.getMethod() does not return non-public method,
+     * Method.getDeclaratedMethod() does not look at parent classes.
+     *
+     * @param cls The class to search,
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}
+     */
+    @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        while (cls != null) {
+            try {
+                Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+                if (mtd.getReturnType() != void.class) {
+                    mtd.setAccessible(true);
+
+                    return mtd;
+                }
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
     }
 }

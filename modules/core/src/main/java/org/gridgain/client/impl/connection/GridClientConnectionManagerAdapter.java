@@ -312,23 +312,29 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         // Use node's connection, if node is available over rest.
         Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol(), true);
 
-        if (endpoints.isEmpty()) {
+        List<InetSocketAddress> resolvedEndpoints = new ArrayList<>(endpoints.size());
+
+        for (InetSocketAddress endpoint : endpoints)
+            if (!endpoint.isUnresolved())
+                resolvedEndpoints.add(endpoint);
+
+        if (resolvedEndpoints.isEmpty()) {
             throw new GridServerUnreachableException("No available endpoints to connect " +
                 "(is rest enabled for this node?): " + node);
         }
 
-        List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
-
         boolean sameHost = node.attributes().isEmpty() ||
             F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
-        if (sameHost) {
-            srvs.addAll(endpoints);
+        Collection<InetSocketAddress> srvs = new LinkedHashSet<>();
 
-            Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
+        if (sameHost) {
+            Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
+
+            srvs.addAll(resolvedEndpoints);
         }
         else {
-            for (InetSocketAddress endpoint : endpoints)
+            for (InetSocketAddress endpoint : resolvedEndpoints)
                 if (!endpoint.getAddress().isLoopbackAddress())
                     srvs.add(endpoint);
         }

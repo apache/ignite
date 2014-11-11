@@ -30,7 +30,6 @@ public class GridCacheJdbcBlobStoreSelfTest
         super.afterTest();
 
         try (Connection c = DriverManager.getConnection(GridCacheJdbcBlobStore.DFLT_CONN_URL, null, null)) {
-
             try (Statement s = c.createStatement()) {
                 s.executeUpdate("drop table ENTRIES");
             }

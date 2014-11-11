@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
-import org.gridgain.grid.kernal.processors.dr.cache.*;
 
 /**
  * Test suite for cache API.
@@ -106,18 +105,6 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
-
-        // Cache API tests for cache configured as DR target.
-        // Multi node.
-        suite.addTest(new TestSuite(GridDrCachePartitionedNearDisabledMultiNodeFullApiSelfTest.class));
-        suite.addTest(new TestSuite(GridDrCachePartitionedAtomicMultiNodeFullApiSelfTest.class));
-        suite.addTest(new TestSuite(GridDrCachePartitionedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class));
-
-        // Single node.
-        suite.addTest(new TestSuite(GridDrCachePartitionedFullApiSelfTest.class));
-        suite.addTest(new TestSuite(GridDrCachePartitionedNearDisabledFullApiSelfTest.class));
-        suite.addTest(new TestSuite(GridDrCachePartitionedAtomicFullApiSelfTest.class));
-        suite.addTest(new TestSuite(GridDrCachePartitionedAtomicPrimaryWriteOrderFullApiSelfTest.class));
 
         return suite;
     }
