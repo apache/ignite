@@ -15,6 +15,9 @@ import org.gridgain.grid.*;
  * Exception thrown if service is not found.
  */
 public class GridServiceNotFoundException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param name Service name.
      */
