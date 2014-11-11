@@ -235,6 +235,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 throws GridException {
                 return ctx.security().authenticateNode(node, cred);
             }
+
+            @Override public boolean isGlobalNodeAuthentication() {
+                return ctx.security().isGlobalNodeAuthentication();
+            }
         });
 
         assert ctx.config().getSegmentationPolicy() != RECONNECT : ctx.config().getSegmentationPolicy();

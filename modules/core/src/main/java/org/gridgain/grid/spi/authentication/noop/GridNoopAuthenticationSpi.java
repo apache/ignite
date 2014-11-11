@@ -87,6 +87,11 @@ public class GridNoopAuthenticationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isGlobalNodeAuthentication() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws GridSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
