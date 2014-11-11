@@ -3009,11 +3009,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         return asyncOp(new AsyncOp<GridCacheReturn<V>>(key) {
-            @Override
-            public GridFuture<GridCacheReturn<V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+            @Override public GridFuture<GridCacheReturn<V>> op(GridCacheTxLocalAdapter<K, V> tx) {
                 // Register before hiding in the filter.
                 try {
-                    if (ctx.deploymentEnabled()) ctx.deploy().registerClass(oldVal);
+                    if (ctx.deploymentEnabled())
+                        ctx.deploy().registerClass(oldVal);
                 }
                 catch (GridException e) {
                     return new GridFinishedFuture<>(ctx.kernalContext(), e);
@@ -3022,8 +3022,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return tx.putxAsync0(key, newVal, null, -1, ctx.equalsPeekArray(oldVal));
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "replaceAsync [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ']';
             }
         });
@@ -3041,8 +3040,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         validateCacheValue(val);
 
         return syncOp(new SyncOp<Boolean>(true) {
-            @Override
-            public Boolean op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
+            @Override public Boolean op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(val);
@@ -3055,8 +3053,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return tx.removex(key0, null, ctx.vararg(F.<K, V>cacheContainsPeek(val)));
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "remove [key=" + key + ", val=" + val + ']';
             }
         });
