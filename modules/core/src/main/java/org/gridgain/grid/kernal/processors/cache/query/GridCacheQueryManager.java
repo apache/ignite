@@ -2990,9 +2990,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
+         *
          */
         private void pruneQueue() {
             assert !recipients.isEmpty();
+            assert Thread.holdsLock(recipients);
 
             int minPos = Collections.min(recipients.values()).pos;
 
