@@ -19,8 +19,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTest {
     /**

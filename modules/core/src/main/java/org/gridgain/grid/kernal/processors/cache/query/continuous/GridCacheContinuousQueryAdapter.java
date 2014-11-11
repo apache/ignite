@@ -270,7 +270,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
             guard.block();
 
-            GridContinuousHandler hnd = ctx.kernalContext().security().securityEnabled() ?
+            GridContinuousHandler hnd = ctx.kernalContext().security().enabled() ?
                 new GridCacheContinuousQueryHandlerV2<>(ctx.name(), topic, locCb, rmtFilter, prjPred, internal,
                     ctx.kernalContext().job().currentTaskNameHash()) :
                 new GridCacheContinuousQueryHandler<>(ctx.name(), topic, locCb, rmtFilter, prjPred, internal);
