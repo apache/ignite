@@ -14,10 +14,10 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.portables.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -295,6 +295,8 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         if (mode == null)
             mode = SMART;
 
+        boolean keepPortable = ctx.keepPortable();
+
         GridCacheProjectionImpl<K, V> prjPerCall = proxy.gateProjection();
 
         if (prjPerCall != null)
@@ -327,7 +329,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                         if (peek != null) {
                             V v = peek.get();
 
-                            if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                            if (ctx.portableEnabled() && !keepPortable && v instanceof GridPortableObject)
                                 v = ((GridPortableObject)v).deserialize();
 
                             return ctx.cloneOnFlag(v);
