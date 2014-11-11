@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
 /**
- * FIXDOC: Add class description.
+ *
  */
 public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbstractSelfTest {
     /** {@inheritDoc} */
@@ -26,6 +26,7 @@ public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbs
         return GridCacheMode.LOCAL;
     }
 
+    /** {@inheritDoc} */
     @Override public void testFifo() throws Exception {
         super.testFifo();
     }
