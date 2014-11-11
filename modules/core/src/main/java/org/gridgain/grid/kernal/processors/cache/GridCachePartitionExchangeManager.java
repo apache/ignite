@@ -242,7 +242,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void onKernalStop0(boolean cancel) {
+        // Finish all exchange futures.
+        for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
+            f.onDone(new GridInterruptedException("Grid is stopping: " + cctx.gridName()));
+
+        exchFuts = null;
+
         U.cancel(exchWorker);
 
         if (log.isDebugEnabled())
@@ -254,15 +260,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        // Finish all exchange futures.
-        for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
-            f.onDone(new GridInterruptedException("Grid is stopping: " + cctx.gridName()));
-
-        exchFuts = null;
     }
 
     /**
