@@ -53,7 +53,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Unmarshalled object.
      * @throws GridPortableException In case of error.
      */
-    Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
+    public Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
 
     /**
      * Converts temporary offheap object to heap-based.
@@ -62,7 +62,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Heap-based object.
      * @throws GridPortableException In case of error.
      */
-    @Nullable Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
+    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param obj Object to marshal.
@@ -95,14 +95,6 @@ public interface GridPortableProcessor extends GridProcessor {
     public GridPortableBuilder builder();
 
     /**
-     * Creates builder initialized by existing portable object.
-     *
-     * @param portableObj Portable object to edit.
-     * @return Portable builder.
-     */
-    public GridPortableBuilder builder(GridPortableObject portableObj);
-
-    /**
      * @param typeId Type ID.
      * @param newMeta New meta data.
      * @throws GridPortableException In case of error.
@@ -116,7 +108,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param fieldTypeIds Fields map.
      * @throws GridPortableException In case of error.
      */
-    void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+    public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws GridPortableException;
 
     /**

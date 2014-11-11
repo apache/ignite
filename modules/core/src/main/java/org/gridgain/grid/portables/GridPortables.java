@@ -304,14 +304,6 @@ public interface GridPortables {
     public GridPortableBuilder builder();
 
     /**
-     * Creates portable builder initialized by existing portable object.
-     *
-     * @param portableObj Portable object to initialize builder.
-     * @return Portable builder.
-     */
-    public GridPortableBuilder builder(GridPortableObject portableObj);
-
-    /**
      * Gets metadata for provided class.
      *
      * @param cls Class.
