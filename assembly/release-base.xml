@@ -90,5 +90,16 @@
             <directory>assembly/libs</directory>
             <outputDirectory>/libs</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>ipc</directory>
+            <outputDirectory>/ipc</outputDirectory>
+            <includes>
+                <include>shmem/**</include>
+            </includes>
+            <excludes>
+                <exclude>**/*.md</exclude>
+            </excludes>
+        </fileSet>
     </fileSets>
 </component>
