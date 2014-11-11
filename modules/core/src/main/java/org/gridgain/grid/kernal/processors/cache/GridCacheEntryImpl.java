@@ -330,7 +330,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                             if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
                                 v = ((GridPortableObject)v).deserialize();
 
-                            return v;
+                            return ctx.cloneOnFlag(v);
                         }
                         else
                             return null;
