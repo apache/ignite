@@ -342,7 +342,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return This.
      */
-    public GridPortableBuilder portableObjectField(String fieldName, GridPortableObject val);
+    public GridPortableBuilder portableField(String fieldName, GridPortableObject val);
 
     /**
      * Builds portable object.
