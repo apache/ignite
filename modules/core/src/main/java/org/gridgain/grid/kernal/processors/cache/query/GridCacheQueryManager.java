@@ -714,7 +714,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             };
         }
 
-        final GridCacheProjection<K, V> prj = filter != null ? cctx.cache().projection(filter) : cctx.cache();
+        GridCacheProjection<K, V> prj0 = filter != null ? cctx.cache().projection(filter) : cctx.cache();
+
+        if (qry.keepPortable())
+            prj0 = prj0.keepPortable();
+
+        final GridCacheProjection<K, V> prj = prj0;
 
         final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
