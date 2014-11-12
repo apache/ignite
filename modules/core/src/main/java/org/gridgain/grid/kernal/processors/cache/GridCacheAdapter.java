@@ -540,7 +540,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
-    public final GridCacheTxLocalAdapter<K, V> newTx(
+    public GridCacheTxLocalAdapter<K, V> newTx(
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,

@@ -605,24 +605,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit,
-        boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
-        int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock) {
-        return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
-            syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock);
-    }
-
-    /** {@inheritDoc} */
     @Override public void unlockAll(@Nullable Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         dht.unlockAll(keys, filter);

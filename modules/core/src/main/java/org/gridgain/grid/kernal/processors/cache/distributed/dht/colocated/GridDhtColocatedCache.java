@@ -30,7 +30,6 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Colocated cache.
@@ -66,36 +65,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     /** {@inheritDoc} */
     @Override public boolean isColocated() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(
-        boolean implicit,
-        boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
-        int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock
-    ) {
-        assert !isNearEnabled(cacheCfg);
-
-        // Use null as subject ID for transactions if subject per call is not set.
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
-
-        UUID subjId = prj == null ? null : prj.subjectId();
-
-        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
-
-        return new GridDhtColocatedTxLocal<>(implicit, implicitSingle, ctx.shared(), concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, ctx.txKey((K)grpLockKey),
-            partLock, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +113,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @throws GridDhtInvalidPartitionException If {@code allowDetached} is false and node is not primary
      *      for given key.
      */
-    GridDistributedCacheEntry<K, V> entryExx(K key, long topVer, boolean allowDetached) {
+    public GridDistributedCacheEntry<K, V> entryExx(K key, long topVer, boolean allowDetached) {
         return allowDetached && !ctx.affinity().primary(ctx.localNode(), key, topVer) ?
             new GridDhtDetachedCacheEntry<>(ctx, key, key.hashCode(), null, null, 0, 0) : entryExx(key, topVer);
     }
@@ -355,9 +324,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        assert tx == null || tx instanceof GridDhtColocatedTxLocal;
+        assert tx == null || tx instanceof GridNearTxLocal;
 
-        GridDhtColocatedTxLocal<K, V> txx = (GridDhtColocatedTxLocal<K, V>)tx;
+        GridNearTxLocal<K, V> txx = (GridNearTxLocal<K, V>)tx;
 
         GridDhtColocatedLockFuture<K, V> fut = new GridDhtColocatedLockFuture<>(ctx, keys, txx, isRead, retval,
             timeout, filter);
@@ -569,7 +538,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future for transaction.
      */
-    public GridFuture<GridCacheTxEx<K, V>> prepareTxLocally(final GridDhtColocatedTxLocal<K, V> tx,
+    public GridFuture<GridCacheTxEx<K, V>> prepareTxLocally(final GridNearTxLocal<K, V> tx,
         final Collection<GridCacheTxEntry<K, V>> reads, final Collection<GridCacheTxEntry<K, V>> writes,
         final Map<UUID, Collection<UUID>> txNodes, final boolean last, final Collection<UUID> lastBackups) {
         assert tx != null;
@@ -624,7 +593,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     GridFuture<Exception> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
-        @Nullable final GridDhtColocatedTxLocal<K, V> tx,
+        @Nullable final GridNearTxLocal<K, V> tx,
         final long threadId,
         final GridCacheVersion ver,
         final long topVer,
@@ -676,7 +645,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     private GridFuture<Exception> lockAllAsync0(
         GridCacheContext<K, V> cacheCtx,
-        @Nullable final GridDhtColocatedTxLocal<K, V> tx, long threadId,
+        @Nullable final GridNearTxLocal<K, V> tx, long threadId,
         final GridCacheVersion ver, final long topVer, final Collection<K> keys, final boolean txRead,
         final long timeout, @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         int cnt = keys.size();
@@ -771,7 +740,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param tx Transaction to commit.
      * @return Future.
      */
-    GridFuture<GridCacheTx> finishLocal(boolean commit, boolean explicitLock, GridDhtColocatedTxLocal<K, V> tx) {
+    public GridFuture<GridCacheTx> finishLocal(boolean commit, boolean explicitLock, GridNearTxLocal<K, V> tx) {
         try {
             if (commit) {
                 if (!tx.markFinalizing(USER_FINISH)) {
@@ -821,7 +790,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     private void processFinishResponse(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
-        GridDhtColocatedTxFinishFuture<K, V> fut = (GridDhtColocatedTxFinishFuture<K, V>)ctx.mvcc()
+        GridNearTxFinishFuture<K, V> fut = (GridNearTxFinishFuture<K, V>)ctx.mvcc()
             .<GridCacheTx>future(res.xid(), res.futureId());
 
         if (fut == null) {

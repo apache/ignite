@@ -405,23 +405,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
-        @Nullable GridCacheTxKey grpLockKey, boolean partLock) {
-        // Use null as subject ID for transactions if subject per call is not set.
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
-
-        UUID subjId = prj == null ? null : prj.subjectId();
-
-        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
-
-        return new GridNearTxLocal<>(ctx.shared(), implicit, implicitSingle, concurrency, isolation, timeout,
-            invalidate, syncCommit, syncRollback, swapOrOffheapEnabled, storeEnabled, txSize, grpLockKey, partLock,
-            subjId, taskNameHash);
-    }
-
-    /** {@inheritDoc} */
     @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {

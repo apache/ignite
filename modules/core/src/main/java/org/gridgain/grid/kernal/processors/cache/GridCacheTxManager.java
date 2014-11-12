@@ -363,7 +363,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
-    public GridCacheTxLocalAdapter newTx(
+    public GridCacheTxLocalAdapter<K, V> newTx(
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,
@@ -377,7 +377,27 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
+        UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
+        int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
+
+        return new GridNearTxLocal<>(
+            cctx,
+            implicit,
+            implicitSingle,
+            concurrency,
+            isolation,
+            timeout,
+            invalidate,
+            syncCommit,
+            syncRollback,
+            swapOrOffheapEnabled,
+            storeEnabled,
+            txSize,
+            grpLockKey,
+            partLock,
+            subjId,
+            taskNameHash);
     }
 
     /**

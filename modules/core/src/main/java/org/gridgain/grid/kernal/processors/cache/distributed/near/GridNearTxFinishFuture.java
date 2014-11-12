@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -27,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.COMMITTING;
+import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -186,7 +185,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         if (!isDone())
             for (GridFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -207,9 +206,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
 
-            Throwable e = this.err.get();
+            Throwable th = this.err.get();
 
-            if (super.onDone(tx, e != null ? e : err)) {
+            if (super.onDone(tx, th != null ? th : err)) {
                 if (error() instanceof GridCacheTxHeuristicException) {
                     long topVer = this.tx.topologyVersion();
 
@@ -266,9 +265,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Initializes future.
      */
     void finish() {
-        GridCacheContext<K, V> cacheCtx = null; // TODO move finishLocal to tx handler. GG-9141
-
         if (tx.onePhaseCommit()) {
+            GridCacheContext<K, V> cacheCtx = null; // TODO move finishLocal to tx handler. GG-9141
+
             // No need to send messages as transaction was already committed on remote node.
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {

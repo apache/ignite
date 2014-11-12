@@ -70,9 +70,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
 
-
-
-
     /** Timeout object. */
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
@@ -89,7 +86,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
     /** Transaction. */
     @GridToStringExclude
-    private GridDhtColocatedTxLocal<K, V> tx;
+    private GridNearTxLocal<K, V> tx;
 
     /** Topology snapshot to operate on. */
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
@@ -100,13 +97,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
-
-
-
-
-
-
-
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -127,7 +117,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     public GridDhtColocatedLockFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
-        @Nullable GridDhtColocatedTxLocal<K, V> tx,
+        @Nullable GridNearTxLocal<K, V> tx,
         boolean read,
         boolean retval,
         long timeout,
@@ -149,8 +139,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
         futId = GridUuid.randomUuid();
-
-
 
         log = U.logger(ctx, logRef, GridDhtColocatedLockFuture.class);
 
@@ -182,15 +170,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     @Override public GridCacheVersion version() {
         return lockVer;
     }
-
-
-
-
-
-
-
-
-
 
     /**
      * @return Future ID.
@@ -258,16 +237,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         return tx != null && tx.implicit();
     }
 
-
-
-
-
-
-
-
-
-
-    // TODO continue check from this place.
     /**
      * Adds entry to future.
      *
@@ -989,7 +958,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         if (!distributedKeys.isEmpty()) {
             if (tx != null) {
-                tx.addKeyMapping(cctx.localNode(), distributedKeys);
+                for (K key : distributedKeys)
+                    tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
 
                 if (tx.implicit() && !cctx.isStoreEnabled())
                     tx.onePhaseCommit(true);

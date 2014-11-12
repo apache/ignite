@@ -35,7 +35,7 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 /**
  * Replicated user transaction.
  */
-class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
+public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,7 +91,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param grpLockKey Group lock key if this is a group lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
      */
-    GridNearTxLocal(
+    public GridNearTxLocal(
         GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
@@ -212,14 +212,12 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
-        boolean async,
-        final Collection<? extends K> keys,
+        boolean async, final Collection<? extends K> keys,
         boolean deserializePortable,
         final GridBiInClosure<K, V> c
     ) {
-        return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
-            CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
-            .chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
+        if (cacheCtx.isNear()) {
+            return cacheCtx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty(), deserializePortable).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                     try {
                         Map<K, V> map = f.get();
@@ -238,34 +236,32 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                     }
                 }
             });
-    }
+        }
+        else {
+            assert cacheCtx.isColocated();
 
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> loadMissing(
-        GridCacheContext<K, V> cacheCtx,
-        boolean async, final Collection<? extends K> keys,
-        boolean deserializePortable,
-        final GridBiInClosure<K, V> c
-    ) {
-        return cacheCtx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty(), deserializePortable).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
-            @Override public Boolean apply(GridFuture<Map<K, V>> f) {
-                try {
-                    Map<K, V> map = f.get();
+            return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
+                CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
+                .chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
+                    @Override public Boolean apply(GridFuture<Map<K, V>> f) {
+                        try {
+                            Map<K, V> map = f.get();
 
-                    // Must loop through keys, not map entries,
-                    // as map entries may not have all the keys.
-                    for (K key : keys)
-                        c.apply(key, map.get(key));
+                            // Must loop through keys, not map entries,
+                            // as map entries may not have all the keys.
+                            for (K key : keys)
+                                c.apply(key, map.get(key));
 
-                    return true;
-                }
-                catch (Exception e) {
-                    setRollbackOnly();
+                            return true;
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
 
-                    throw new GridClosureException(e);
-                }
-            }
-        });
+                            throw new GridClosureException(e);
+                        }
+                    }
+                });
+        }
     }
 
     /** {@inheritDoc} */
@@ -344,7 +340,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param key Key to add.
      * @param node Node this key mapped to.
      */
-    void addKeyMapping(GridCacheTxKey<K> key, GridNode node) {
+    public void addKeyMapping(GridCacheTxKey<K> key, GridNode node) {
         GridDistributedTxMapping<K, V> m = mappings.get(node.id());
 
         if (m == null)
@@ -369,7 +365,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param n Mapped node.
      * @param mappedKeys Mapped keys.
      */
-    void addKeyMapping(GridNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
+    private void addKeyMapping(GridNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
         GridDistributedTxMapping<K, V> m = mappings.get(n.id());
 
         if (m == null)
@@ -446,7 +442,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param nodeId Node ID to mark with explicit lock.
      * @return {@code True} if mapping was found.
      */
-    boolean markExplicit(UUID nodeId) {
+    public boolean markExplicit(UUID nodeId) {
         GridDistributedTxMapping<K, V> m = mappings.get(nodeId);
 
         if (m != null) {
@@ -470,7 +466,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
-        GridNearTxPrepareFuture<K, V> fut = prepFut.get();
+        GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)prepFut.get();
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -523,7 +519,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /**
      * @return Topology snapshot on which this tx was started.
      */
-    GridDiscoveryTopologySnapshot topologySnapshot() {
+    public GridDiscoveryTopologySnapshot topologySnapshot() {
         return topSnapshot.get();
     }
 
@@ -533,7 +529,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param topSnapshot Topology snapshot.
      * @return {@code True} if topology snapshot was set by this call.
      */
-    boolean topologySnapshot(GridDiscoveryTopologySnapshot topSnapshot) {
+    public boolean topologySnapshot(GridDiscoveryTopologySnapshot topSnapshot) {
         return this.topSnapshot.compareAndSet(null, topSnapshot);
     }
 
@@ -805,7 +801,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         cctx.mvcc().addFuture(fut);
 
-        GridNearTxPrepareFuture<K, V> prepFut = this.prepFut.get();
+        GridFuture<GridCacheTxEx<K, V>> prepFut = this.prepFut.get();
 
         if (prepFut == null || prepFut.isDone()) {
             try {
@@ -939,7 +935,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    GridFuture<GridCacheTx> commitAsyncLocal() {
+    public GridFuture<GridCacheTx> commitAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Committing colocated tx locally: " + this);
 
@@ -1012,7 +1008,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    GridFuture<GridCacheTx> rollbackAsyncLocal() {
+    public GridFuture<GridCacheTx> rollbackAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Rolling back colocated tx locally: " + this);
 
@@ -1054,7 +1050,7 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    GridFuture<GridCacheReturn<V>> lockAllAsync(GridCacheContext<K, V> cacheCtx, final Collection<? extends K> keys,
+    public GridFuture<GridCacheReturn<V>> lockAllAsync(GridCacheContext<K, V> cacheCtx, final Collection<? extends K> keys,
         boolean implicit, boolean read) {
         assert pessimistic();
 
@@ -1093,48 +1089,56 @@ class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key) {
-        GridCacheTxEntry<K, V> txEntry = entry(key);
+        if (cacheCtx.isColocated()) {
+            GridCacheTxEntry<K, V> txEntry = entry(key);
 
-        if (txEntry == null)
-            return cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
+            if (txEntry == null)
+                return cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
 
-        GridCacheEntryEx<K, V> cached = txEntry.cached();
+            GridCacheEntryEx<K, V> cached = txEntry.cached();
 
-        assert cached != null;
+            assert cached != null;
 
-        if (cached.detached())
+            if (cached.detached())
+                return cached;
+
+            if (cached.obsoleteVersion() != null) {
+                cached = cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
+
+                txEntry.cached(cached, txEntry.keyBytes());
+            }
+
             return cached;
-
-        if (cached.obsoleteVersion() != null) {
-            cached = cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
-
-            txEntry.cached(cached, txEntry.keyBytes());
         }
-
-        return cached;
+        else
+            return cacheCtx.cache().entryEx(key.key());
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, long topVer) {
-        GridCacheTxEntry<K, V> txEntry = entry(key);
+        if (cacheCtx.isColocated()) {
+            GridCacheTxEntry<K, V> txEntry = entry(key);
 
-        if (txEntry == null)
-            return cacheCtx.colocated().entryExx(key.key(), topVer, true);
+            if (txEntry == null)
+                return cacheCtx.colocated().entryExx(key.key(), topVer, true);
 
-        GridCacheEntryEx<K, V> cached = txEntry.cached();
+            GridCacheEntryEx<K, V> cached = txEntry.cached();
 
-        assert cached != null;
+            assert cached != null;
 
-        if (cached.detached())
+            if (cached.detached())
+                return cached;
+
+            if (cached.obsoleteVersion() != null) {
+                cached = cacheCtx.colocated().entryExx(key.key(), topVer, true);
+
+                txEntry.cached(cached, txEntry.keyBytes());
+            }
+
             return cached;
-
-        if (cached.obsoleteVersion() != null) {
-            cached = cacheCtx.colocated().entryExx(key.key(), topVer, true);
-
-            txEntry.cached(cached, txEntry.keyBytes());
         }
-
-        return cached;
+        else
+            return cacheCtx.cache().entryEx(key.key(), topVer);
     }
 
     /** {@inheritDoc} */
