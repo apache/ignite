@@ -64,7 +64,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            if (!isAffinityNode(grid(i).configuration().getCacheConfiguration()[0])) {
+            if (!isAffinityNode(cacheConfiguration(grid(i).configuration(), null))) {
                 nearIdx = i;
 
                 break;

@@ -535,4 +535,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected GridEvents events(GridProjection prj) {
         return prj.grid().events(prj);
     }
+
+    /**
+     * @param cfg Configuration.
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
+    protected GridCacheConfiguration cacheConfiguration(GridConfiguration cfg, String cacheName) {
+        for (GridCacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg.getName()))
+                return ccfg;
+        }
+
+        fail("Failed to find cache configuration for cache: " + cacheName);
+
+        return null;
+    }
 }
