@@ -295,8 +295,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         if (mode == null)
             mode = SMART;
 
-        boolean keepPortable = ctx.keepPortable();
-
         GridCacheProjectionImpl<K, V> prjPerCall = proxy.gateProjection();
 
         if (prjPerCall != null)
@@ -328,9 +326,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
                         if (peek != null) {
                             V v = peek.get();
-
-                            if (ctx.portableEnabled() && !keepPortable && v instanceof GridPortableObject)
-                                v = ((GridPortableObject)v).deserialize();
 
                             return ctx.cloneOnFlag(v);
                         }
