@@ -3033,6 +3033,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
         private class QueueIterator implements GridSpiCloseableIterator<R>, Comparable<QueueIterator> {
             /** */
+            private static final long serialVersionUID = 0L;
+
+            /** */
             private static final int NEXT_SIZE = 64;
 
             /** */
