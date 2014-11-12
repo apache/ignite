@@ -324,13 +324,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                     if (entry != null) {
                         GridTuple<V> peek = entry.peek0(false, mode, filter, tx);
 
-                        if (peek != null) {
-                            V v = peek.get();
-
-                            return ctx.cloneOnFlag(v);
-                        }
-                        else
-                            return null;
+                        return peek != null ? ctx.cloneOnFlag(peek.get()) : null;
                     }
                     else
                         return null;

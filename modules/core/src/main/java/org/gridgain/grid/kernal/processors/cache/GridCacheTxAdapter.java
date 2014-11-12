@@ -16,7 +16,6 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.portables.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -1140,9 +1139,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         CU.<K, V>empty());
 
                 try {
-                    if (cctx.portableEnabled() && !cctx.keepPortable() && val instanceof GridPortableObject)
-                        val = ((GridPortableObject)val).deserialize();
-
                     for (GridClosure<V, V> clos : txEntry.transformClosures())
                         val = clos.apply(val);
                 }
