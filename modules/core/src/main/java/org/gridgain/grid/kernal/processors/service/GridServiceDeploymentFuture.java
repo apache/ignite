@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /** */
+    private static final long serialVersionUID = 0L;
+    
+    /** */
     private final GridServiceConfiguration cfg;
 
     /**

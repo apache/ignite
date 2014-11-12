@@ -1909,6 +1909,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     continue;
                 }
 
+                if (cctx.portableEnabled())
+                    key = (K)cctx.marshalToPortable(key);
+
                 GridCacheTxEntry<K, V> txEntry = entry(key);
 
                 // First time access.

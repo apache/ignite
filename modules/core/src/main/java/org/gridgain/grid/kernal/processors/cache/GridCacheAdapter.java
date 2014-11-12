@@ -667,14 +667,25 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        GridCacheEntryEx<K, V> e = peekEx(key);
+        GridCacheEntryEx<K, V> e = null;
 
         try {
+            if (ctx.portableEnabled())
+                key = (K)ctx.marshalToPortable(key);
+
+            e = peekEx(key);
+
             if (e != null) {
                 GridTuple<V> peek = e.peek0(failFast, mode, filter, ctx.tm().localTxx());
 
-                if (peek != null)
-                    return F.t(ctx.cloneOnFlag(peek.get()));
+                if (peek != null) {
+                    V v = peek.get();
+
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                        v = ((GridPortableObject)v).deserialize();
+
+                    return F.t(ctx.cloneOnFlag(v));
+                }
             }
 
             GridCacheTxEx<K, V> tx = ctx.tm().localTx();
@@ -682,8 +693,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (tx != null) {
                 GridTuple<V> peek = tx.peek(failFast, key, filter);
 
-                if (peek != null)
-                    return F.t(ctx.cloneOnFlag(peek.get()));
+                if (peek != null) {
+                    V v = peek.get();
+
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
+                        v = ((GridPortableObject)v).deserialize();
+
+                    return F.t(ctx.cloneOnFlag(v));
+                }
             }
 
             return null;
@@ -1223,13 +1240,16 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     private boolean clear(GridCacheVersion obsoleteVer, K key,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        GridCacheEntryEx<K, V> e = peekEx(key);
-
         try {
+            if (ctx.portableEnabled())
+                key = (K)ctx.marshalToPortable(key);
+
+            GridCacheEntryEx<K, V> e = peekEx(key);
+
             return e != null && e.clear(obsoleteVer, false, filter);
         }
         catch (GridException ex) {
-            U.error(log, "Failed to clear entry: " + e, ex);
+            U.error(log, "Failed to clear entry for key: " + key, ex);
         }
 
         return false;
@@ -1299,6 +1319,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     private boolean evictx(K key, GridCacheVersion ver,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        if (ctx.portableEnabled()) {
+            try {
+                key = (K)ctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
         GridCacheEntryEx<K, V> entry = peekEx(key);
 
         if (entry == null)
@@ -1738,7 +1767,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         // Entry must be passed for one key only.
         assert cached == null || keys.size() == 1;
-        assert cached == null || F.first(keys).equals(cached.key());
+        assert ctx.portableEnabled() || cached == null || F.first(keys).equals(cached.key());
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -2716,9 +2745,20 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKeys(keys);
 
+        Collection<K> pKeys = null;
+
+        if (ctx.portableEnabled()) {
+            pKeys = new ArrayList<>(keys.size());
+
+            for (K key : keys)
+                pKeys.add((K)ctx.marshalToPortable(key));
+        }
+
+        final Collection<K> pKeys0 = pKeys;
+
         syncOp(new SyncInOp(keys.size() == 1) {
             @Override public void inOp(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
-                tx.removeAll(keys, filter);
+                tx.removeAll(pKeys0 != null ? pKeys0 : keys, filter);
             }
 
             @Override public String toString() {
@@ -2940,8 +2980,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         return asyncOp(new AsyncOp<GridCacheReturn<V>>(key) {
-            @Override
-            public GridFuture<GridCacheReturn<V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+            @Override public GridFuture<GridCacheReturn<V>> op(GridCacheTxLocalAdapter<K, V> tx) {
                 // Register before hiding in the filter.
                 try {
                     if (ctx.deploymentEnabled())
@@ -2954,8 +2993,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return tx.putxAsync0(key, newVal, null, -1, ctx.equalsPeekArray(oldVal));
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "replaceAsync [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ']';
             }
         });
@@ -2973,17 +3011,20 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         validateCacheValue(val);
 
         return syncOp(new SyncOp<Boolean>(true) {
-            @Override
-            public Boolean op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
+            @Override public Boolean op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(val);
 
-                return tx.removex(key, null, ctx.vararg(F.<K, V>cacheContainsPeek(val)));
+                K key0 = key;
+
+                if (ctx.portableEnabled())
+                    key0 = (K)ctx.marshalToPortable(key);
+
+                return tx.removex(key0, null, ctx.vararg(F.<K, V>cacheContainsPeek(val)));
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "remove [key=" + key + ", val=" + val + ']';
             }
         });
@@ -3013,7 +3054,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     }
                 }
 
-                return tx.removexAsync(key, null, ctx.vararg(F.<K, V>cacheContainsPeek(val)));
+                K key0 = key;
+
+                if (ctx.portableEnabled()) {
+                    try {
+                        key0 = (K)ctx.marshalToPortable(key);
+                    }
+                    catch (GridPortableException e) {
+                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                    }
+                }
+
+                return tx.removexAsync(key0, null, ctx.vararg(F.<K, V>cacheContainsPeek(val)));
             }
 
             @Override
@@ -3164,12 +3216,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        return txStart(
-            concurrency,
-            isolation,
-            configuration().getDefaultTxTimeout(),
-            0
-        );
+        return txStart(concurrency, isolation, configuration().getDefaultTxTimeout(), 0);
     }
 
     /** {@inheritDoc} */
@@ -4135,6 +4182,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKey(key);
 
+        if (ctx.portableEnabled()) {
+            try {
+                key = (K)ctx.marshalToPortable(key);
+            }
+            catch (GridPortableException e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
         GridCacheEntryEx<K, V> e = peekEx(key);
 
         try {
@@ -4391,6 +4447,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             validateCacheKey(key);
 
         long topVer = ctx.affinity().affinityTopologyVersion();
+
+        if (ctx.portableEnabled())
+            key = (K)ctx.marshalToPortable(key);
 
         while (true) {
             try {

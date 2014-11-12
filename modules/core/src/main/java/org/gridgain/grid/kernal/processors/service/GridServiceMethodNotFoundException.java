@@ -17,6 +17,9 @@ import java.util.*;
  * Exception thrown if service is not found.
  */
 public class GridServiceMethodNotFoundException extends GridRuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param svcName Service name.
      */

@@ -1639,6 +1639,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Keep portable flag.
+     */
+    public boolean keepPortable() {
+        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+
+        return prj != null && prj.isKeepPortable();
+    }
+
+    /**
      * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
      */
     public boolean offheapTiered() {
