@@ -628,8 +628,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Make sure we got proper configuration.
         validateCommon(cfg);
 
-        GridTcpCommunicationMessageFactory.initCommon();
-
         gridName = cfg.getGridName();
 
         this.cfg = cfg;
@@ -795,6 +793,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (!F.isEmpty(pluginProviders))
                 startPlugins(ctx, pluginProviders, cfg, attrs);
+
+            GridTcpCommunicationMessageFactory.initCommon();
 
             // Put version converters to attributes after
             // all components are started.
