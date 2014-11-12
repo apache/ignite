@@ -257,10 +257,14 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
 
-            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+            for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
+                Map.Entry<String, Object> e = i.next();
+
                 if (e.getValue() != null) {
                   if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
                       e.setValue(e.getValue().toString());
+                  else if (e.getValue().getClass().isArray())
+                      i.remove();
                 }
             }
 

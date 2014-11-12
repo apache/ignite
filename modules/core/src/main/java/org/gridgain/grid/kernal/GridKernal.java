@@ -39,7 +39,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
@@ -97,7 +96,6 @@ import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
@@ -598,7 +596,17 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     if (pluginCfg.providerClass() == null)
                         throw new IgniteException("Provider class is null.");
 
-                    PluginProvider provider = pluginCfg.providerClass().newInstance();
+                    PluginProvider provider;
+
+                    try {
+                        Constructor<? extends  PluginProvider> ctr =
+                            pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
+
+                        provider = ctr.newInstance(pluginCfg);
+                    }
+                    catch (NoSuchMethodException ignore) {
+                        provider = pluginCfg.providerClass().newInstance();
+                    }
 
                     if (F.isEmpty(provider.name()))
                         throw new IgniteException("Plugin name can not be empty.");
@@ -608,7 +616,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                     pluginProviders.add(provider);
                 }
-                catch (InstantiationException | IllegalAccessException e) {
+                catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                     throw new IgniteException("Failed to create plugin provider instance.", e);
                 }
             }
@@ -3262,9 +3270,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @return Created component.
      * @throws GridException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls, Collection<PluginProvider> pluginProviders,
-        GridKernalContext ctx)
-        throws GridException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls,
+        Collection<PluginProvider> pluginProviders,
+        GridKernalContext ctx) throws GridException {
         assert cls.isInterface() : cls;
 
         for (PluginProvider pluginProvider : pluginProviders) {
@@ -3274,13 +3282,23 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 return component;
         }
 
+        // TODO 9341: get rid of ent/os after moving ent code to plugin.
         Class<T> implCls = null;
 
         try {
-            implCls = (Class<T>)Class.forName(openSourceClassName(cls));
+            implCls = (Class<T>)Class.forName(enterpriseClassName(cls));
         }
         catch (ClassNotFoundException ignore) {
             // No-op.
+        }
+
+        if (implCls == null) {
+            try {
+                implCls = (Class<T>)Class.forName(openSourceClassName(cls));
+            }
+            catch (ClassNotFoundException ignore) {
+                // No-op.
+            }
         }
 
         if (implCls == null)
@@ -3306,6 +3324,14 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             throw new GridException("Failed to create component [component=" + cls.getName() +
                 ", implementation=" + implCls.getName() + ']', e);
         }
+    }
+
+    /**
+     * @param cls Component interface.
+     * @return Name of component implementation class for enterprise edition.
+     */
+    private static String enterpriseClassName(Class<?> cls) {
+        return cls.getPackage().getName() + ".ent." + cls.getSimpleName().replace("Grid", "GridEnt");
     }
 
     /**
