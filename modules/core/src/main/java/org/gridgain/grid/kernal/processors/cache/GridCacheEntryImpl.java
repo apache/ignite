@@ -13,11 +13,10 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.portables.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -158,18 +157,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable protected GridCacheEntryEx<K, V> peekEx(long topVer) {
-        K key0 = key;
-
-        if (ctx.portableEnabled()) {
-            try {
-                key0 = (K)ctx.marshalToPortable(key);
-            }
-            catch (GridPortableException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
-        return ctx.cache().peekEx(key0);
+        return ctx.cache().peekEx(key);
     }
 
     /**
@@ -181,15 +169,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        if (ctx.portableEnabled() && !ctx.keepPortable() && key instanceof GridPortableObject) {
-            try {
-                return (K)((GridPortableObject)key).deserialize();
-            }
-            catch (GridPortableException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
-
         return key;
     }
 

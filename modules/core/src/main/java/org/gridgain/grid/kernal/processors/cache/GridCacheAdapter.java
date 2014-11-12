@@ -2890,7 +2890,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             @Override
             public GridCacheReturn<V> op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 // Register before hiding in the filter.
-                if (ctx.deploymentEnabled()) ctx.deploy().registerClass(val);
+                if (ctx.deploymentEnabled())
+                    ctx.deploy().registerClass(val);
 
                 return tx.removexAsync0(key, null, ctx.vararg(F.<K, V>cacheContainsPeek(val))).get();
             }
@@ -2956,7 +2957,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             @Override
             public GridCacheReturn<V> op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 // Register before hiding in the filter.
-                if (ctx.deploymentEnabled()) ctx.deploy().registerClass(oldVal);
+                if (ctx.deploymentEnabled())
+                    ctx.deploy().registerClass(oldVal);
 
                 return tx.putxAsync0(key, newVal, null, -1, ctx.equalsPeekArray(oldVal)).get();
             }
@@ -3459,7 +3461,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             final GridCacheVersion ver0 = ctx.versions().nextForLoad();
 
             ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
-                @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver) throws GridException {
+                @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
+                    throws GridPortableException {
                     assert ver == null;
 
                     if (p != null && !p.apply(key, val))
