@@ -667,45 +667,29 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     GridCacheVersion explicitVer = txEntry.drVersion() != null ?
                                         txEntry.drVersion() : writeVersion();
 
-                                    boolean drNeedResolve = cctx.drNeedResolve(cached.version(), explicitVer);
+                                    GridDrResolveResult<V> drRes = cctx.dr().resolveTx(cached,
+                                        txEntry,
+                                        explicitVer,
+                                        op,
+                                        val,
+                                        valBytes,
+                                        txEntry.ttl(),
+                                        txEntry.drExpireTime());
 
-                                    if (drNeedResolve) {
-                                        GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>> drRes =
-                                            drResolveConflict(op, txEntry.key(), val, valBytes, txEntry.ttl(),
-                                            txEntry.drExpireTime(), explicitVer, cached);
+                                    if (drRes != null) {
+                                        op = drRes.op();
+                                        val = drRes.value();
+                                        valBytes = drRes.valueBytes();
 
-                                        assert drRes != null;
-
-                                        GridDrReceiverConflictContextImpl<K, V> drCtx = drRes.get2();
-
-                                        if (drCtx.isUseOld())
-                                            op = NOOP;
-                                        else if (drCtx.isUseNew()) {
-                                            txEntry.ttl(drCtx.ttl());
-
-                                            if (drCtx.newEntry().dataCenterId() != cctx.dataCenterId())
-                                                txEntry.drExpireTime(drCtx.expireTime());
-                                            else
-                                                txEntry.drExpireTime(-1L);
-                                        }
-                                        else {
-                                            assert drCtx.isMerge();
-
-                                            op = drRes.get1();
-                                            val = drCtx.mergeValue();
-                                            valBytes = null;
+                                        if (drRes.isMerge())
                                             explicitVer = writeVersion();
-
-                                            txEntry.ttl(drCtx.ttl());
-                                            txEntry.drExpireTime(-1L);
-                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    if (sndTransformedVals || drNeedResolve) {
-                                        assert sndTransformedVals && cctx.isReplicated() || drNeedResolve;
+                                    if (sndTransformedVals || (drRes != null)) {
+                                        assert sndTransformedVals && cctx.isReplicated() || (drRes != null);
 
                                         txEntry.value(val, true, false);
                                         txEntry.valueBytes(valBytes);

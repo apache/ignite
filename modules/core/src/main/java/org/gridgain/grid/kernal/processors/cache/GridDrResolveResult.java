@@ -7,11 +7,25 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.dr.messages.external;
+package org.gridgain.grid.kernal.processors.cache;
 
 /**
- * Ping request to replica.
+ *
  */
-public class GridDrExternalPingRequest {
-    // No-op.
+public interface GridDrResolveResult<V> {
+    long newTtl();
+
+    long newExpireTime();
+
+    long newDrExpireTime();
+
+    boolean isMerge();
+
+    boolean isUseOld();
+
+    GridCacheOperation op();
+
+    V value();
+
+    byte[] valueBytes();
 }

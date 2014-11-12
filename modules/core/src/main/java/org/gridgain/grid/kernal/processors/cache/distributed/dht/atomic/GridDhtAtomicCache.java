@@ -1377,7 +1377,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
-                        GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
+                        GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
                         long ttl = updRes.newTtl();
                         long drExpireTime = updRes.drExpireTime();
@@ -1412,7 +1412,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                            GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
+                            GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
                             res.nearTtl(updRes.newTtl());
 

@@ -14,6 +14,7 @@ import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -27,34 +28,75 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public byte dataCenterId();
 
     /**
-     * Check whether DR conflict resolution is required.
+     * Handles DR for atomic cache.
      *
-     * @param oldVer Old version.
-     * @param newVer New version.
-     * @return {@code True} in case DR is required.
+     * @param e Cache entry.
+     * @param op Operation.
+     * @param writeObj New value.
+     * @param valBytes New value byte.
+     * @param ttl TTL.
+     * @param drTtl DR TTL.
+     * @param drExpireTime DR expire time
+     * @param drVer DR version.
+     * @return DR result.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public boolean needResolve(GridCacheVersion oldVer, GridCacheVersion newVer);
+    public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
+         GridCacheOperation op,
+         @Nullable Object writeObj,
+         @Nullable byte[] valBytes,
+         long ttl,
+         long drTtl,
+         long drExpireTime,
+         @Nullable GridCacheVersion drVer) throws GridException, GridCacheEntryRemovedException;
 
     /**
-     * Resolves DR conflict.
+     * Handles DR for transactional cache.
+     *
+     * @param e Cache entry.
+     * @param txEntry Transaction entry.
+     * @param newVer Version.
+     * @param op Operation.
+     * @param newVal New value.
+     * @param newValBytes New value bytes.
+     * @param newTtl TTL.
+     * @param newDrExpireTime DR expire time
+     * @return DR result.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
+     */
+    public GridDrResolveResult<V> resolveTx(
+        GridCacheEntryEx<K, V> e,
+        GridCacheTxEntry<K, V> txEntry,
+        GridCacheVersion newVer,
+        GridCacheOperation op,
+        V newVal,
+        byte[] newValBytes,
+        long newTtl,
+        long newDrExpireTime) throws GridException, GridCacheEntryRemovedException;
+
+    /**
+     * Performs replication.
      *
      * @param key Key.
-     * @param oldEntry Old entry.
-     * @param newEntry New entry.
-     * @return Conflict resolution result.
-     * @throws GridException In case of exception.
-     */
-    public GridDrReceiverConflictContextImpl<K, V> resolveConflict(K key, GridDrEntry<K, V> oldEntry,
-        GridDrEntry<K, V> newEntry) throws GridException;
-
-    /**
-     * Perform replication.
-     *
-     * @param entry Replication entry.
+     * @param keyBytes Key bytes.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
+     * @param ver Version.
      * @param drType Replication type.
      * @throws GridException If failed.
      */
-    public void replicate(GridDrRawEntry<K, V> entry, GridDrType drType)throws GridException;
+    public void replicate(K key,
+        @Nullable byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long expireTime,
+        GridCacheVersion ver,
+        GridDrType drType)throws GridException;
 
     /**
      * Process partitions "before exchange" event.

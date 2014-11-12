@@ -1170,49 +1170,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
-     * Resolve DR conflict.
-     *
-     * @param op Initially proposed operation.
-     * @param key Key.
-     * @param newVal New value.
-     * @param newValBytes New value bytes.
-     * @param newTtl New TTL.
-     * @param newDrExpireTime New explicit DR expire time.
-     * @param newVer New version.
-     * @param old Old entry.
-     * @return Tuple with adjusted operation type and conflict context.
-     * @throws GridException In case of eny exception.
-     * @throws GridCacheEntryRemovedException If entry got removed.
-     */
-    protected GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>> drResolveConflict(
-        GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
-        GridCacheVersion newVer, GridCacheEntryEx<K, V> old) throws GridException, GridCacheEntryRemovedException {
-        // Construct old entry info.
-        GridDrEntry<K, V> oldEntry = old.drEntry();
-
-        // Construct new entry info.
-        if (newVal == null && newValBytes != null)
-            newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
-
-        long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
-
-        GridDrEntry<K, V> newEntry = new GridDrPlainEntry<>(key, newVal, newTtl, newExpireTime, newVer);
-
-        GridDrReceiverConflictContextImpl<K, V> ctx = cctx.drResolveConflict(key, oldEntry, newEntry);
-
-        if (ctx.isMerge()) {
-            V resVal = ctx.mergeValue();
-
-            if ((op == CREATE || op == UPDATE) && resVal == null)
-                op = DELETE;
-            else if (op == DELETE && resVal != null)
-                op = old.isNewLocked() ? CREATE : UPDATE;
-        }
-
-        return F.t(op, ctx);
-    }
-
-    /**
      * @param e Transaction entry.
      * @param primaryOnly Flag to include backups into check or not.
      * @return {@code True} if entry is locally mapped as a primary or back up node.

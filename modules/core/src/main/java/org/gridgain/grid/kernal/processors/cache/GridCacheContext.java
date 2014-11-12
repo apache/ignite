@@ -1564,32 +1564,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Check whether DR conflict resolution is required.
-     *
-     * @param oldVer Old version.
-     * @param newVer New version.
-     * @return {@code True} in case DR is required.
-     */
-    public boolean drNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
-        return dr().needResolve(oldVer, newVer);
-    }
-
-    /**
-     * Resolve DR conflict.
-     *
-     * @param key Key.
-     * @param oldEntry Old entry.
-     * @param newEntry New entry.
-     * @return Conflict resolution result.
-     * @throws GridException In case of exception.
-     */
-    public GridDrReceiverConflictContextImpl<K, V> drResolveConflict(K key,
-        GridDrEntry<K, V> oldEntry,
-        GridDrEntry<K, V> newEntry) throws GridException {
-        return dr().resolveConflict(key, oldEntry, newEntry);
-    }
-
-    /**
      * @param entry Entry.
      * @param ver Version.
      */

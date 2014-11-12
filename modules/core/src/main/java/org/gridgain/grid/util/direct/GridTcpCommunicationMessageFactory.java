@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.direct;
 
+import org.gridgain.grid.design.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -24,7 +25,6 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
@@ -32,18 +32,29 @@ import org.gridgain.grid.spi.communication.tcp.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Communication message factory.
  */
 public class GridTcpCommunicationMessageFactory {
     /** Common message producers. */
-    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[82];
+    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "FieldAccessedSynchronizedAndUnsynchronized"})
+    private static GridTcpCommunicationMessageProducer[] COMMON;
 
     /**
      * Custom messages registry. Used for test purposes.
      */
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
+
+    /** */
+    private static Map<Byte, GridTcpCommunicationMessageProducer> producers = new HashMap<>();
+
+    /** */
+    private static final byte FIRST_PLUGIN_MSG = (byte)100;
+
+    /** */
+    private static final AtomicInteger PLUGIN_MSG = new AtomicInteger(FIRST_PLUGIN_MSG);
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
@@ -238,13 +249,6 @@ public class GridTcpCommunicationMessageFactory {
                     case 62:
                         return new GridDataLoadResponse();
 
-                    // TODO: Register from enterprise DR processor.
-                    case 63:
-                        return new GridDrInternalRequest();
-
-                    case 64:
-                        return new GridDrInternalResponse();
-
                     // 65-72 are GGFS messages (see GridGgfsOpProcessor).
 
                     case 73:
@@ -326,12 +330,16 @@ public class GridTcpCommunicationMessageFactory {
      * @param producer Producer.
      * @param types Types applicable for this producer.
      */
-    public static void registerCommon(GridTcpCommunicationMessageProducer producer, int... types) {
-        for (int type : types) {
-            assert type >= 0 && type < COMMON.length : "Commmon type being registered is out of common messages " +
-                "array length: " + type;
+    public static synchronized void registerCommon(GridTcpCommunicationMessageProducer producer, int... types) {
+        if (producers != null) {
+            for (int type : types) {
+                assert type >= 0 && type < FIRST_PLUGIN_MSG : "Commmon type being registered is out of common messages " +
+                    "array length: " + type;
 
-            COMMON[type] = producer;
+                GridTcpCommunicationMessageProducer old = producers.put((byte)type, producer);
+
+                assert old == null : old;
+            }
         }
     }
 
@@ -345,5 +353,41 @@ public class GridTcpCommunicationMessageFactory {
         assert producer != null;
 
         CUSTOM.put(type, producer);
+    }
+
+    /**
+     * @param producer Producer.
+     * @return Message type code.
+     */
+    public static synchronized byte registerPluginProducer(GridTcpCommunicationMessageProducer producer) {
+        assert producers != null : "Producers already initialized";
+
+        int next = PLUGIN_MSG.getAndIncrement();
+
+        if (next > Byte.MAX_VALUE)
+            throw new IgniteException();
+
+        GridTcpCommunicationMessageProducer old = producers.put((byte)next, producer);
+
+        assert old == null : old;
+
+        return (byte)next;
+    }
+
+    /**
+     * Initializes common
+     */
+    public static synchronized void initCommon() {
+        if (COMMON == null) {
+            COMMON = new GridTcpCommunicationMessageProducer[PLUGIN_MSG.intValue() + 1];
+
+            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : producers.entrySet()) {
+                assert e.getKey() >= 0 && e.getKey() < COMMON.length : e.getKey();
+
+                COMMON[e.getKey()] = e.getValue();
+            }
+
+            producers = null;
+        }
     }
 }

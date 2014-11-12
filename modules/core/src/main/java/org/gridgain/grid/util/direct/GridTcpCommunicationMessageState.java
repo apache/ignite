@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
-import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -1071,50 +1070,6 @@ public class GridTcpCommunicationMessageState {
             }
             else
                 return new GridCacheValueBytes();
-        }
-    }
-
-    /**
-     * @param e {@link GridDrInternalRequestEntry}.
-     * @return Whether value was fully written.
-     */
-    public final boolean putDrInternalRequestEntry(@Nullable GridDrInternalRequestEntry e) {
-        byte[] arr = null;
-
-        if (e != null) {
-            arr = new byte[e.dataBytes().length + 9];
-
-            UNSAFE.putByte(arr, BYTE_ARR_OFF, e.dataCenterId());
-            UNSAFE.putInt(arr, BYTE_ARR_OFF + 1, e.entryCount());
-            UNSAFE.putInt(arr, BYTE_ARR_OFF + 5, e.dataLength());
-            UNSAFE.copyMemory(e.dataBytes(), BYTE_ARR_OFF, arr, BYTE_ARR_OFF + 9, e.dataBytes().length);
-        }
-
-        return putByteArray(arr);
-    }
-
-    /**
-     * @return {@link GridDrInternalRequestEntry} or special
-     *      {@link GridTcpCommunicationMessageAdapter#DR_INT_REQ_ENTRY_NOT_READ}
-     *      value if it was not fully read.
-     */
-    public final GridDrInternalRequestEntry getDrInternalRequestEntry() {
-        byte[] arr = getByteArray();
-
-        if (arr == BYTE_ARR_NOT_READ)
-            return DR_INT_REQ_ENTRY_NOT_READ;
-        else if (arr == null)
-            return null;
-        else {
-            byte dataCenterId = UNSAFE.getByte(arr, BYTE_ARR_OFF);
-            int entryCnt = UNSAFE.getInt(arr, BYTE_ARR_OFF + 1);
-            int dataLen = UNSAFE.getInt(arr, BYTE_ARR_OFF + 5);
-
-            byte[] dataBytes = new byte[arr.length - 9];
-
-            UNSAFE.copyMemory(arr, BYTE_ARR_OFF + 9, dataBytes, BYTE_ARR_OFF, dataBytes.length);
-
-            return new GridDrInternalRequestEntry(dataCenterId, entryCnt, dataBytes, dataLen);
         }
     }
 

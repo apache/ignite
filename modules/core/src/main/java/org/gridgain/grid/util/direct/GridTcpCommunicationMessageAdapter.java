@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
-import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
 import org.jetbrains.annotations.*;
@@ -79,9 +78,6 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
 
     /** */
     public static final GridCacheValueBytes VAL_BYTES_NOT_READ = new GridCacheValueBytes();
-
-    /** */
-    public static final GridDrInternalRequestEntry DR_INT_REQ_ENTRY_NOT_READ = new GridDrInternalRequestEntry();
 
     /** */
     @SuppressWarnings("RedundantStringConstructorCall")

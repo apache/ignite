@@ -79,7 +79,7 @@ public class VisorDrReceiverHubInMetrics implements Serializable {
 
         Map<Byte, VisorDrReceiverHubInMetrics> map = new HashMap<>();
 
-        for (byte rmtDrId = 0; rmtDrId < GridDrUtils.MAX_DATA_CENTERS; rmtDrId++) {
+        for (byte rmtDrId = 0; rmtDrId < VisorDr.MAX_DATA_CENTERS; rmtDrId++) {
             try {
                 GridDrReceiverHubInMetrics m = dr.receiverHubAggregatedInMetrics(rmtDrId);
 

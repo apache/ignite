@@ -3802,7 +3802,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     GridNodeValidationResult err = getSpiContext().validateNode(node);
 
                     if (err != null) {
-                        if (!pingNode(err.nodeId())) {
+                        boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
+
+                        if (!ping) {
                             if (log.isDebugEnabled())
                                 log.debug("Conflicting node has already left, need to wait for event. " +
                                     "Will ignore join request for now since it will be recent [req=" + msg +

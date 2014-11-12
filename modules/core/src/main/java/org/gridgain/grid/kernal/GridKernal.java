@@ -72,6 +72,7 @@ import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
@@ -626,6 +627,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Make sure we got proper configuration.
         validateCommon(cfg);
+
+        GridTcpCommunicationMessageFactory.initCommon();
 
         gridName = cfg.getGridName();
 

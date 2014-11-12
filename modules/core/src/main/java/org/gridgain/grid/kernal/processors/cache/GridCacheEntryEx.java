@@ -109,14 +109,6 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public boolean hasValue();
 
     /**
-     * Create DR entry for that cache entry.
-     *
-     * @return DR entry.
-     * @throws GridException If failed.
-     */
-    public GridDrEntry<K, V> drEntry() throws GridException;
-
-    /**
      * @param val New value.
      * @param ttl Time to live.
      * @return Old value.

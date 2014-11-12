@@ -20,6 +20,10 @@ import java.util.*;
  * Data transfer object for {@link GridDr}.
  */
 public class VisorDr implements Serializable {
+    /** Maximum amount of data centers. */
+    // TODO 9341: use GridDrUtils.MAX_DATA_CENTERS.
+    static final int MAX_DATA_CENTERS = 32;
+
     /** */
     private static final long serialVersionUID = 0L;
 
