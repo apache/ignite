@@ -297,11 +297,28 @@ public interface GridPortables {
     public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
 
     /**
-     * Gets portable builder.
+     * Creates new portable builder.
      *
+     * @param typeId Name of the type.
+     * @return Newly portable builder.
+     */
+    public GridPortableBuilder builder(int typeId);
+
+    /**
+     * Creates new portable builder.
+     *
+     * @param clsName Name of the type.
+     * @return Newly portable builder.
+     */
+    public GridPortableBuilder builder(String clsName);
+
+    /**
+     * Creates portable builder initialized by existing portable object.
+     *
+     * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public GridPortableBuilder builder();
+    public GridPortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * Gets metadata for provided class.

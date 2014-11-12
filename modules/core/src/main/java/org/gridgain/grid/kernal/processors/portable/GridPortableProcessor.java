@@ -92,7 +92,20 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @return Builder.
      */
-    public GridPortableBuilder builder();
+    public GridPortableBuilder builder(int typeId);
+
+    /**
+     * @return Builder.
+     */
+    public GridPortableBuilder builder(String clsName);
+
+    /**
+     * Creates builder initialized by existing portable object.
+     *
+     * @param portableObj Portable object to edit.
+     * @return Portable builder.
+     */
+    public GridPortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * @param typeId Type ID.

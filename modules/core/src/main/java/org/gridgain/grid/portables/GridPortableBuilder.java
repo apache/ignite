@@ -56,22 +56,6 @@ import java.util.*;
  */
 public interface GridPortableBuilder {
     /**
-     * Sets type ID.
-     *
-     * @param cls Class.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder typeId(Class<?> cls);
-
-    /**
-     * Sets type ID.
-     *
-     * @param clsName Class name.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder typeId(String clsName);
-
-    /**
      * Sets hash code for the portable object. If not set, GridGain will generate
      * one automatically.
      *

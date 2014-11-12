@@ -59,11 +59,35 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableBuilder builder() {
+    @Override public GridPortableBuilder builder(int typeId) {
         guard();
 
         try {
-            return proc.builder();
+            return proc.builder(typeId);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder(String clsName) {
+        guard();
+
+        try {
+            return proc.builder(clsName);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder(GridPortableObject portableObj) {
+        guard();
+
+        try {
+            return proc.builder(portableObj);
         }
         finally {
             unguard();
