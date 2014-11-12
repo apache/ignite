@@ -13,19 +13,43 @@ package org.gridgain.grid.kernal.processors.cache;
  *
  */
 public interface GridDrResolveResult<V> {
-    long newTtl();
+    /**
+     * @return TTL.
+     */
+    public long newTtl();
 
-    long newExpireTime();
+    /**
+     * @return Expire time.
+     */
+    public long newExpireTime();
 
-    long newDrExpireTime();
+    /**
+     * @return DR expire time.
+     */
+    public long newDrExpireTime();
 
-    boolean isMerge();
+    /**
+     * @return {@code True} in case merge is to be performed.
+     */
+    public boolean isMerge();
 
-    boolean isUseOld();
+    /**
+     * @return {@code True} in case old value should be used.
+     */
+    public boolean isUseOld();
 
-    GridCacheOperation op();
+    /**
+     * @return Cache operation.
+     */
+    public GridCacheOperation operation();
 
-    V value();
+    /**
+     * @return Value.
+     */
+    public V value();
 
-    byte[] valueBytes();
+    /**
+     * @return Value bytes.
+     */
+    public byte[] valueBytes();
 }

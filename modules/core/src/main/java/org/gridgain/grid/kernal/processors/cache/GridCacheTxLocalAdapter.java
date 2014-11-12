@@ -677,7 +677,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         txEntry.drExpireTime());
 
                                     if (drRes != null) {
-                                        op = drRes.op();
+                                        op = drRes.operation();
                                         val = drRes.value();
                                         valBytes = drRes.valueBytes();
 

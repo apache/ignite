@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.extras.*;
@@ -1667,7 +1665,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     newDrExpireTime = drRes.newDrExpireTime();
 
-                    op = drRes.op();
+                    op = drRes.operation();
 
                     writeObj = drRes.value();
 

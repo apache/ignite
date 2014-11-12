@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -572,7 +571,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                             txEntry.drExpireTime());
 
                                         if (drRes != null) {
-                                            op = drRes.op();
+                                            op = drRes.operation();
                                             val = drRes.value();
                                             valBytes = drRes.valueBytes();
 
