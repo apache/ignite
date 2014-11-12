@@ -338,8 +338,17 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
 
-                GridCacheMessage<K, V> req = new GridNearGetRequest<>(futId, fut.futureId(), ver, mappedKeys,
-                    reload, topVer, filters, subjId, taskName == null ? 0 : taskName.hashCode());
+                GridCacheMessage<K, V> req = new GridNearGetRequest<>(
+                    cctx.cacheId(),
+                    futId,
+                    fut.futureId(),
+                    ver,
+                    mappedKeys,
+                    reload,
+                    topVer,
+                    filters,
+                    subjId,
+                    taskName == null ? 0 : taskName.hashCode());
 
                 add(fut); // Append new future.
 

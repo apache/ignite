@@ -508,7 +508,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         fut.listenAsync(new CI1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
-                GridNearGetResponse<K, V> res = new GridNearGetResponse<>(
+                GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
                     req.futureId(), req.miniId(), req.version());
 
                 GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =

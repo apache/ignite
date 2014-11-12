@@ -144,6 +144,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /**
      * Constructor.
      *
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futVer Future version.
      * @param writeVer Write version for cache values.
@@ -154,6 +155,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param subjId Subject ID.
      */
     public GridDhtAtomicUpdateRequest(
+        int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
         GridCacheVersion writeVer,
@@ -164,6 +166,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         UUID subjId,
         int taskNameHash
     ) {
+        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
         this.writeVer = writeVer;

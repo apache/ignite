@@ -58,13 +58,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
      */
-    public GridDhtForceKeysResponse(GridUuid futId, GridUuid miniId) {
+    public GridDhtForceKeysResponse(int cacheId, GridUuid futId, GridUuid miniId) {
         assert futId != null;
         assert miniId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
     }

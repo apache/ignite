@@ -11,7 +11,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.testframework.junits.common.*;
+
+import java.util.*;
 
 /**
  * Simple test for preloading in ATOMIC cache.
@@ -35,9 +38,35 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testEmptyCacheStart() throws Exception {
+    public void testPreloading() throws Exception {
         try {
-            startGrids(3);
+            startGrids(2);
+
+            GridEx grid = grid(0);
+
+            GridCache<Object, Object> cache = grid.cache(null);
+
+            int keyCnt = 100;
+
+            for (int i = 0; i < keyCnt; i++)
+                cache.put(i, i);
+
+            startGrid(2);
+
+            awaitPartitionMapExchange();
+
+            for (int i = 0; i < keyCnt; i++) {
+                for (int g = 0; g < 3; g++) {
+                    GridEx locGrid = grid(g);
+
+                    GridNode node = locGrid.localNode();
+
+                    Collection<GridNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
+
+                    if (affNodes.contains(node))
+                        assertEquals(i, locGrid.cache(null).peek(i));
+                }
+            }
         }
         finally {
             stopAllGrids();

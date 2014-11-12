@@ -108,7 +108,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         top = cctx.dht().topology();
 
-        startFut = new GridFutureAdapter<Object>(cctx.kernalContext());
+        startFut = new GridFutureAdapter<>(cctx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -328,7 +328,10 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         try {
             GridNode loc = cctx.localNode();
 
-            GridDhtForceKeysResponse<K, V> res = new GridDhtForceKeysResponse<>(msg.futureId(), msg.miniId());
+            GridDhtForceKeysResponse<K, V> res = new GridDhtForceKeysResponse<>(
+                cctx.cacheId(),
+                msg.futureId(),
+                msg.miniId());
 
             for (K k : msg.keys()) {
                 int p = cctx.affinity().partition(k);
@@ -414,8 +417,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
 
                 try {
-                    cctx.io().send(node, new GridDhtAffinityAssignmentResponse<K, V>(topVer, assignment),
-                        AFFINITY_POOL);
+                    cctx.io().send(node,
+                        new GridDhtAffinityAssignmentResponse<K, V>(cctx.cacheId(), topVer, assignment), AFFINITY_POOL);
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);

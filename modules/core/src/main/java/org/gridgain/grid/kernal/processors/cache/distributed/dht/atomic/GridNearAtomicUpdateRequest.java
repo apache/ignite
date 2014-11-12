@@ -123,6 +123,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * Constructor.
      *
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futVer Future version.
      * @param fastMap Fast map scheme flag.
@@ -135,6 +136,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @param filter Optional filter for atomic check.
      */
     public GridNearAtomicUpdateRequest(
+        int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
         boolean fastMap,
@@ -149,6 +151,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         @Nullable UUID subjId,
         int taskNameHash
     ) {
+        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
         this.fastMap = fastMap;

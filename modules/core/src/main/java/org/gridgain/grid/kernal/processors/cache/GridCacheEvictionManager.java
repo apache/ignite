@@ -325,7 +325,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 if (log.isDebugEnabled())
                     log.debug("Class got undeployed during eviction: " + req.classError());
 
-                sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(req.futureId(), true));
+                sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(cctx.cacheId(), req.futureId(), true));
 
                 return;
             }
@@ -338,7 +338,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         log.debug("Topology version is different [locTopVer=" + topVer +
                             ", rmtTopVer=" + req.topologyVersion() + ']');
 
-                    sendEvictionResponse(nodeId, new GridCacheEvictionResponse<K, V>(req.futureId(), true));
+                    sendEvictionResponse(nodeId,
+                        new GridCacheEvictionResponse<K, V>(cctx.cacheId(), req.futureId(), true));
 
                     return;
                 }
@@ -388,7 +389,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 nearEntries.add(t);
         }
 
-        GridCacheEvictionResponse<K, V> res = new GridCacheEvictionResponse<>(req.futureId());
+        GridCacheEvictionResponse<K, V> res = new GridCacheEvictionResponse<>(cctx.cacheId(), req.futureId());
 
         GridCacheVersion obsoleteVer = cctx.versions().next();
 
@@ -1645,7 +1646,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         // There are remote participants.
                         for (GridNode node : nodes) {
                             GridCacheEvictionRequest<K, V> req = F.addIfAbsent(reqMap, node.id(),
-                                new GridCacheEvictionRequest<K, V>(id, evictInfos.size(), topVer));
+                                new GridCacheEvictionRequest<K, V>(cctx.cacheId(), id, evictInfos.size(), topVer));
 
                             assert req != null;
 

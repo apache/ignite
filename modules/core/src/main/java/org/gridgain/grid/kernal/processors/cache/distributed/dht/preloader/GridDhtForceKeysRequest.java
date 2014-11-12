@@ -48,16 +48,24 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     private long topVer;
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
      */
-    GridDhtForceKeysRequest(GridUuid futId, GridUuid miniId, Collection<K> keys, long topVer) {
+    GridDhtForceKeysRequest(
+        int cacheId,
+        GridUuid futId,
+        GridUuid miniId,
+        Collection<K> keys,
+        long topVer
+    ) {
         assert futId != null;
         assert miniId != null;
         assert !F.isEmpty(keys);
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.keys = keys;

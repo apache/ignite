@@ -69,11 +69,17 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Sub ID.
      * @param ver Version.
      */
-    public GridNearGetResponse(GridUuid futId, GridUuid miniId, GridCacheVersion ver) {
+    public GridNearGetResponse(
+        int cacheId,
+        GridUuid futId,
+        GridUuid miniId,
+        GridCacheVersion ver
+    ) {
         assert futId != null;
         assert miniId != null;
         assert ver != null;

@@ -50,17 +50,20 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      */
-    GridCacheEvictionResponse(long futId) {
-        this(futId, false);
+    GridCacheEvictionResponse(int cacheId, long futId) {
+        this(cacheId, futId, false);
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param err {@code True} if request processing has finished with error.
      */
-    GridCacheEvictionResponse(long futId, boolean err) {
+    GridCacheEvictionResponse(int cacheId, long futId, boolean err) {
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
     }

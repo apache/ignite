@@ -69,10 +69,9 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
         assert workerId >= 0;
         assert updateSeq > 0;
 
+        this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.workerId = workerId;
-
-        cacheId(cacheId);
     }
 
     /**

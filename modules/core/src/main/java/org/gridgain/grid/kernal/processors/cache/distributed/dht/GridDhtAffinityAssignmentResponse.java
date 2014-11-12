@@ -45,10 +45,12 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment.
      */
-    public GridDhtAffinityAssignmentResponse(long topVer, List<List<GridNode>> affAssignment) {
+    public GridDhtAffinityAssignmentResponse(int cacheId, long topVer, List<List<GridNode>> affAssignment) {
+        this.cacheId = cacheId;
         this.topVer = topVer;
         this.affAssignment = affAssignment;
     }

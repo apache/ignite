@@ -51,15 +51,17 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future id.
      * @param size Size.
      * @param topVer Topology version.
      */
-    GridCacheEvictionRequest(long futId, int size, long topVer) {
+    GridCacheEvictionRequest(int cacheId, long futId, int size, long topVer) {
         assert futId > 0;
         assert size > 0;
         assert topVer > 0;
 
+        this.cacheId = cacheId;
         this.futId = futId;
 
         entries = new ArrayList<>(size);

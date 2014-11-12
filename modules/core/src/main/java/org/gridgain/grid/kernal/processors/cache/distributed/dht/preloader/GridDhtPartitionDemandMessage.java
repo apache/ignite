@@ -58,16 +58,16 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     GridDhtPartitionDemandMessage(long updateSeq, long topVer, int cacheId) {
         assert updateSeq > 0;
 
+        this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;
-
-        cacheId(cacheId);
     }
 
     /**
      * @param cp Message to copy from.
      */
     GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage<K, V> cp, Collection<Integer> parts) {
+        cacheId = cp.cacheId;
         updateSeq = cp.updateSeq;
         topic = cp.topic;
         timeout = cp.timeout;
@@ -76,8 +76,6 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
         // Create a copy of passed in collection since it can be modified when this message is being sent.
         this.parts = new HashSet<>(parts);
-
-        cacheId(cp.cacheId());
     }
 
     /**

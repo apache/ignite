@@ -234,7 +234,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                     MiniFuture fut = new MiniFuture(n, mappedKeys, curTopVer, exc);
 
-                    GridDhtForceKeysRequest<K, V> req = new GridDhtForceKeysRequest<>(futId, fut.miniId(), mappedKeys,
+                    GridDhtForceKeysRequest<K, V> req = new GridDhtForceKeysRequest<>(
+                        cctx.cacheId(),
+                        futId,
+                        fut.miniId(),
+                        mappedKeys,
                         topVer);
 
                     try {

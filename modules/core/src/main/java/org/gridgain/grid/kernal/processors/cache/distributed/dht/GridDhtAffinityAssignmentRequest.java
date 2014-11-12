@@ -33,9 +33,11 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      */
-    public GridDhtAffinityAssignmentRequest(long topVer) {
+    public GridDhtAffinityAssignmentRequest(int cacheId, long topVer) {
+        this.cacheId = cacheId;
         this.topVer = topVer;
     }
 

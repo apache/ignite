@@ -106,10 +106,12 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param nodeId Node ID this reply should be sent to.
      * @param futVer Future version.
      */
-    public GridNearAtomicUpdateResponse(UUID nodeId, GridCacheVersion futVer) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer) {
+        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
     }

@@ -67,9 +67,11 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futVer Future version.
      */
-    public GridDhtAtomicUpdateResponse(GridCacheVersion futVer) {
+    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer) {
+        this.cacheId = cacheId;
         this.futVer = futVer;
     }
 

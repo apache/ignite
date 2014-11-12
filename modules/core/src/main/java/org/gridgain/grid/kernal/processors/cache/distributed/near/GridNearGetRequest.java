@@ -79,6 +79,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Sub ID.
      * @param ver Version.
@@ -87,13 +88,24 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param topVer Topology version.
      * @param filter Filter.
      */
-    public GridNearGetRequest(GridUuid futId, GridUuid miniId, GridCacheVersion ver, LinkedHashMap<K, Boolean> keys,
-        boolean reload, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, int taskNameHash) {
+    public GridNearGetRequest(
+        int cacheId,
+        GridUuid futId,
+        GridUuid miniId,
+        GridCacheVersion ver,
+        LinkedHashMap<K, Boolean> keys,
+        boolean reload,
+        long topVer,
+        GridPredicate<GridCacheEntry<K, V>>[] filter,
+        UUID subjId,
+        int taskNameHash
+    ) {
         assert futId != null;
         assert miniId != null;
         assert ver != null;
         assert keys != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;

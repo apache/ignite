@@ -72,21 +72,25 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param reqId Request id.
      * @param finished Last response or not.
      * @param fields Fields query or not.
      */
-    public GridCacheQueryResponse(long reqId, boolean finished, boolean fields) {
+    public GridCacheQueryResponse(int cacheId, long reqId, boolean finished, boolean fields) {
+        this.cacheId = cacheId;
         this.reqId = reqId;
         this.finished = finished;
         this.fields = fields;
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param reqId Request id.
      * @param err Error.
      */
-    public GridCacheQueryResponse(long reqId, Throwable err) {
+    public GridCacheQueryResponse(int cacheId, long reqId, Throwable err) {
+        this.cacheId = cacheId;
         this.reqId = reqId;
         this.err = err;
         finished = true;

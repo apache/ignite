@@ -123,7 +123,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param id Request to cancel.
      * @param fields Fields query flag.
      */
-    public GridCacheQueryRequest(long id, boolean fields) {
+    public GridCacheQueryRequest(int cacheId, long id, boolean fields) {
+        this.cacheId = cacheId;
         this.id = id;
         this.fields = fields;
 
@@ -133,6 +134,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * Request to load page.
      *
+     * @param cacheId Cache ID.
      * @param id Request ID.
      * @param cacheName Cache name.
      * @param pageSize Page size.
@@ -142,6 +144,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param keepPortable Whether to keep portables.
      */
     public GridCacheQueryRequest(
+        int cacheId,
         long id,
         String cacheName,
         int pageSize,
@@ -150,7 +153,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean all,
         boolean keepPortable,
         UUID subjId,
-        int taskHash) {
+        int taskHash
+    ) {
+        this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
@@ -163,6 +168,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param id Request id.
      * @param cacheName Cache name.
      * @param type Query type.
@@ -179,6 +185,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param incMeta Include meta data or not.
      */
     public GridCacheQueryRequest(
+        int cacheId,
         long id,
         String cacheName,
         GridCacheQueryType type,
@@ -195,11 +202,13 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean incMeta,
         boolean keepPortable,
         UUID subjId,
-        int taskHash) {
+        int taskHash
+    ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET);
         assert clsName != null || fields || type == SCAN || type == SET;
 
+        this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.type = type;

@@ -861,7 +861,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> cached,
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb
     ) {
-        GridNearAtomicUpdateResponse<K, V> res = new GridNearAtomicUpdateResponse<>(nodeId, req.futureVersion());
+        GridNearAtomicUpdateResponse<K, V> res = new GridNearAtomicUpdateResponse<>(ctx.cacheId(), nodeId,
+            req.futureVersion());
 
         List<K> keys = req.keys();
 
@@ -2036,7 +2037,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheVersion ver = req.writeVersion();
 
         // Always send update reply.
-        GridDhtAtomicUpdateResponse<K, V> res = new GridDhtAtomicUpdateResponse<>(req.futureVersion());
+        GridDhtAtomicUpdateResponse<K, V> res = new GridDhtAtomicUpdateResponse<>(ctx.cacheId(), req.futureVersion());
 
         Boolean replicate = ctx.isDrEnabled();
 
@@ -2486,7 +2487,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * Sends deferred notification message and removes this buffer from pending responses map.
          */
         private void finish() {
-            GridDhtAtomicDeferredUpdateResponse<K, V> msg = new GridDhtAtomicDeferredUpdateResponse<>(respVers);
+            GridDhtAtomicDeferredUpdateResponse<K, V> msg = new GridDhtAtomicDeferredUpdateResponse<>(ctx.cacheId(),
+                respVers);
 
             try {
                 ctx.gate().enter();

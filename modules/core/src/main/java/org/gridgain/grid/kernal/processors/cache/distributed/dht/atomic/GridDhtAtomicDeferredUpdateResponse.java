@@ -49,9 +49,10 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
      *
      * @param futVers Future versions.
      */
-    public GridDhtAtomicDeferredUpdateResponse(Collection<GridCacheVersion> futVers) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers) {
         assert !F.isEmpty(futVers);
 
+        this.cacheId = cacheId;
         this.futVers = futVers;
     }
 
