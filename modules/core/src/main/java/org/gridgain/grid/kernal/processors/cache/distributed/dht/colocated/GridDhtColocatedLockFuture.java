@@ -70,6 +70,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
 
+
+
+
     /** Timeout object. */
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
@@ -97,6 +100,13 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
+
+
+
+
+
+
+
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -140,6 +150,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         futId = GridUuid.randomUuid();
 
+
+
         log = U.logger(ctx, logRef, GridDhtColocatedLockFuture.class);
 
         if (timeout > 0) {
@@ -170,6 +182,15 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     @Override public GridCacheVersion version() {
         return lockVer;
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * @return Future ID.
@@ -237,6 +258,16 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         return tx != null && tx.implicit();
     }
 
+
+
+
+
+
+
+
+
+
+    // TODO continue check from this place.
     /**
      * Adds entry to future.
      *

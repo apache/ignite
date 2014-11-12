@@ -54,11 +54,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /** Keys to lock. */
     private Collection<? extends K> keys;
 
-    /** Keys locked so far. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @GridToStringExclude
-    private List<GridDistributedCacheEntry<K, V>> entries;
-
     /** Future ID. */
     private GridUuid futId;
 
@@ -99,14 +94,19 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
         new AtomicReference<>();
 
-    /** Mutex. */
-    private final Object mux = new Object();
-
     /** Map of current values. */
     private Map<K, GridTuple3<GridCacheVersion, V, byte[]>> valMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Keys locked so far. */
+    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+    @GridToStringExclude
+    private List<GridDistributedCacheEntry<K, V>> entries;
 
     /**
      * Empty constructor required by {@link Externalizable}.

@@ -62,6 +62,8 @@ public class GridCacheTxHandler<K, V> {
         assert nearNodeId != null;
         assert req != null;
 
+        // TODO move logic from cacheCtx.colocated().prepareTxLocally
+
         GridNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
@@ -197,6 +199,8 @@ public class GridCacheTxHandler<K, V> {
     @Nullable public GridFuture<GridCacheTx> finish(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
         assert nodeId != null;
         assert req != null;
+
+        // TODO cacheCtx.colocated().finishLocal(commit, m.explicitLock(), tx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");

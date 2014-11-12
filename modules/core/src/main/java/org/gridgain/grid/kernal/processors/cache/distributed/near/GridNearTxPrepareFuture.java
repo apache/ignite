@@ -109,6 +109,21 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
         return tx.xidVersion();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+        if (log.isDebugEnabled())
+            log.debug("Transaction future received owner changed callback: " + entry);
+
+        if (owner != null && tx.hasWriteKey(entry.txKey())) {
+            // This will check for locks.
+            onDone();
+
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * @return Involved nodes.
      */
@@ -125,21 +140,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
-        if (log.isDebugEnabled())
-            log.debug("Transaction future received owner changed callback: " + entry);
-
-        if (owner != null && tx.hasWriteKey(entry.txKey())) {
-            // This will check for locks.
-            onDone();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean trackable() {
         return trackable;
     }
@@ -147,49 +147,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
-    }
-
-    /**
-     * @return {@code True} if all locks are owned.
-     */
-    private boolean checkLocks() {
-        Collection<GridCacheTxEntry<K, V>> checkEntries = tx.groupLock() ?
-            Collections.singletonList(tx.groupLockEntry()) :
-            tx.writeEntries();
-
-        for (GridCacheTxEntry<K, V> txEntry : checkEntries) {
-            while (true) {
-                GridCacheEntryEx<K, V> cached = txEntry.cached();
-
-                try {
-                    GridCacheVersion ver = txEntry.explicitVersion() != null ?
-                        txEntry.explicitVersion() : tx.xidVersion();
-
-                    // If locks haven't been acquired yet, keep waiting.
-                    if (!cached.lockedBy(ver)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Transaction entry is not locked by transaction (will wait) [entry=" + cached +
-                                ", tx=" + tx + ']');
-
-                        return false;
-                    }
-
-                    break; // While.
-                }
-                // Possible if entry cached within transaction is obsolete.
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
-
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
-                }
-            }
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("All locks are acquired for near prepare future: " + this);
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -237,6 +194,49 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
 
             onComplete();
         }
+    }
+
+    /**
+     * @return {@code True} if all locks are owned.
+     */
+    private boolean checkLocks() {
+        Collection<GridCacheTxEntry<K, V>> checkEntries = tx.groupLock() ?
+            Collections.singletonList(tx.groupLockEntry()) :
+            tx.writeEntries();
+
+        for (GridCacheTxEntry<K, V> txEntry : checkEntries) {
+            while (true) {
+                GridCacheEntryEx<K, V> cached = txEntry.cached();
+
+                try {
+                    GridCacheVersion ver = txEntry.explicitVersion() != null ?
+                        txEntry.explicitVersion() : tx.xidVersion();
+
+                    // If locks haven't been acquired yet, keep waiting.
+                    if (!cached.lockedBy(ver)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Transaction entry is not locked by transaction (will wait) [entry=" + cached +
+                                ", tx=" + tx + ']');
+
+                        return false;
+                    }
+
+                    break; // While.
+                }
+                // Possible if entry cached within transaction is obsolete.
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
+
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                }
+            }
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("All locks are acquired for near prepare future: " + this);
+
+        return true;
     }
 
     /**
@@ -327,8 +327,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
      * @param writes Write entries.
      * @throws GridException If transaction is group-lock and some key was mapped to to the local node.
      */
-    private void prepare(Iterable<GridCacheTxEntry<K, V>> reads, Iterable<GridCacheTxEntry<K, V>> writes)
-        throws GridException {
+    private void prepare(
+        Iterable<GridCacheTxEntry<K, V>> reads,
+        Iterable<GridCacheTxEntry<K, V>> writes
+    ) throws GridException {
+        assert tx.optimistic();
+
         GridDiscoveryTopologySnapshot snapshot = tx.topologySnapshot();
 
         assert snapshot != null;
@@ -424,6 +428,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
             tx.taskNameHash());
 
         for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
+//  TODO correct assert
+//            assert txEntry.cached().detached() : "Expected detached entry while preparign transaction " +
+//                "[locNodeId=" + cctx.localNodeId() +
+//                ", txEntry=" + txEntry + ']';
+
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.key(), null);
         }
@@ -480,6 +489,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
             ));
         }
         else {
+            assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +
+                ", nodeId=" + n.id() + ']';
+
             MiniFuture fut = new MiniFuture(m, mappings);
 
             req.miniId(fut.futureId());
@@ -524,6 +536,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
         if (tx.groupLock() && !primary.isLocal())
             throw new GridException("Failed to prepare group lock transaction (local node is not primary for " +
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
+
+        // Must re-initialize cached entry while holding topology lock.
+        entry.cached(cacheCtx.colocated().entryExx(entry.key().key(), topVer, true), entry.keyBytes());
 
         if (cur == null || !cur.node().id().equals(primary.id()))
             cur = new GridDistributedTxMapping<>(primary);

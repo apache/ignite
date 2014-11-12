@@ -348,6 +348,39 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     }
 
     /**
+     * @param implicit {@code True} if transaction is implicit.
+     * @param implicitSingle Implicit-with-single-key flag.
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param timeout transaction timeout.
+     * @param invalidate Invalidation flag.
+     * @param syncCommit Synchronous commit flag.
+     * @param syncRollback Synchronous rollback flag.
+     * @param swapOrOffheapEnabled If {@code true} then swap storage will be used.
+     * @param storeEnabled if {@code true} then read/write through will be used.
+     * @param txSize Expected transaction size.
+     * @param grpLockKey Group lock key if this is a group-lock transaction.
+     * @param partLock {@code True} if partition is locked.
+     * @return New transaction.
+     */
+    public GridCacheTxLocalAdapter newTx(
+        boolean implicit,
+        boolean implicitSingle,
+        GridCacheTxConcurrency concurrency,
+        GridCacheTxIsolation isolation,
+        long timeout,
+        boolean invalidate,
+        boolean syncCommit,
+        boolean syncRollback,
+        boolean swapOrOffheapEnabled,
+        boolean storeEnabled,
+        int txSize,
+        @Nullable GridCacheTxKey grpLockKey,
+        boolean partLock) {
+
+    }
+
+    /**
      * @param tx Created transaction.
      * @return Started transaction.
      */

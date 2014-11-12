@@ -540,7 +540,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
-    public abstract GridCacheTxLocalAdapter<K, V> newTx(
+    public final GridCacheTxLocalAdapter<K, V> newTx(
         boolean implicit,
         boolean implicitSingle,
         GridCacheTxConcurrency concurrency,
@@ -553,7 +553,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock);
+        boolean partLock) {
+        // TODO GG-9141 move this method.
+        return ctx.tm().newTx(
+            implicit,
+            implicitSingle,
+            concurrency,
+            isolation,
+            timeout,
+            invalidate,
+            syncCommit,
+            syncRollback,
+            swapOrOffheapEnabled,
+            storeEnabled,
+            txSize,
+            grpLockKey,
+            partLock);
+    }
 
     /**
      * Creates transaction with all defaults.
