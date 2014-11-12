@@ -17,15 +17,9 @@ import java.util.*;
  * Portable object builder. Provides ability to build portable objects dynamically
  * without having class definitions.
  * <p>
- * Note that type ID is required in order to build portable object. Usually it is
- * enough to provide a simple class name via {@link #typeId(String)} method and
- * GridGain will generate the type ID automatically. Here is an example of how a
- * portable object can be built dynamically:
+ * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder();
- *
- * builder.typeId("MyObject");
- *
+ * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
  * builder.stringField("fieldA", "A");
  * build.intField("fieldB", "B");
  *
@@ -33,11 +27,11 @@ import java.util.*;
  * </pre>
  *
  * <p>
- * Also builder can be initialized by fields from another portable object.
+ * Also builder can be initialized by existing portable object. This allow to change some fields without modification
+ * ather fields.
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder();
- * builder.copyFrom(person);
- * builder.stringField("name", "Ivan");
+ * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
+ * builder.stringField("name", "John");
  * person = builder.build();
  * </pre>
  * </p>
@@ -65,10 +59,10 @@ public interface GridPortableBuilder {
     public GridPortableBuilder hashCode(int hashCode);
 
     /**
-     * Copy all fields from passed portable object. If typeId is not initialized it will be copied too.
+     * Copy all fields from passed portable object.
      * @param obj Portable object.
      */
-    public GridPortableBuilder copyFrom(GridPortableObject obj);
+    public GridPortableBuilder copyFields(GridPortableObject obj);
 
     /**
      * Returns the value of the specified field.

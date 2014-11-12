@@ -299,7 +299,7 @@ public interface GridPortables {
     /**
      * Creates new portable builder.
      *
-     * @param typeId Name of the type.
+     * @param typeId ID of the type.
      * @return Newly portable builder.
      */
     public GridPortableBuilder builder(int typeId);
