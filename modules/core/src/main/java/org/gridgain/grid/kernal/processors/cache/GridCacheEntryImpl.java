@@ -308,12 +308,10 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
                     else
                         return null;
                 }
-                catch (GridCacheEntryRemovedException ignore) {
+                catch (GridCacheEntryRemovedException ignored) {
                     reset();
                 }
-                catch (GridCacheFilterFailedException e) {
-                    e.printStackTrace();
-
+                catch (GridCacheFilterFailedException ignored) {
                     assert false;
 
                     return null;
