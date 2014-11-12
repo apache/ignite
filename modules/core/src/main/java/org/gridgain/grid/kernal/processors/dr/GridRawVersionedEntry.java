@@ -10,19 +10,17 @@
 package org.gridgain.grid.kernal.processors.dr;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
- * Data center entry implementation containing plain and raw keys and values.
+ *
  */
-public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>, Externalizable {
+public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,7 +48,7 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
     /**
      * {@code Externalizable) support.
      */
-    public GridDrRawEntry() {
+    public GridRawVersionedEntry() {
         // No-op.
     }
 
@@ -65,8 +63,13 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
      * @param ttl TTL.
      * @param ver Version.
      */
-    public GridDrRawEntry(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        long ttl, long expireTime, GridCacheVersion ver) {
+    public GridRawVersionedEntry(K key,
+        @Nullable byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long expireTime,
+        GridCacheVersion ver) {
         this.key = key;
         this.keyBytes = keyBytes;
         this.val = val;
@@ -113,51 +116,12 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public byte dataCenterId() {
-        return ver.dataCenterId();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int topologyVersion() {
-        return ver.topologyVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long order() {
-        return ver.order();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long globalTime() {
-        return ver.globalTime();
-    }
-
-    /**
-     * @return Version.
-     */
-    public GridCacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 
-    /**
-     * Note that this method can be called only after entry is marshalled.
-     *
-     * @return Approximate size of this entry serialized.
-     */
-    public int size() {
-        assert keyBytes != null : "Entry is being improperly processed.";
-
-        return 4 + 4 + keyBytes.length + (valBytes != null ? valBytes.length : 0);
-    }
-
-    /**
-     * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
-     * its restored key/value are needed.
-     *
-     * @param marsh Marshaller.
-     * @throws GridException If failed.
-     */
-    public void unmarshal(GridMarshaller marsh) throws GridException {
+    /** {@inheritDoc} */
+    @Override public void unmarshal(GridMarshaller marsh) throws GridException {
         unmarshalKey(marsh);
 
         if (valBytes != null && val == null)
@@ -171,18 +135,13 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
      * @param marsh Marshaller.
      * @throws GridException If failed.
      */
-    public void unmarshalKey(GridMarshaller marsh) throws GridException {
+    private void unmarshalKey(GridMarshaller marsh) throws GridException {
         if (key == null)
             key = marsh.unmarshal(keyBytes, null);
     }
 
-    /**
-     * Perform internal marshal of this entry before it will be serialized.
-     *
-     * @param marsh Marshaller.
-     * @throws GridException If failed.
-     */
-    public void marshal(GridMarshaller marsh) throws GridException {
+    /** {@inheritDoc} */
+    @Override public void marshal(GridMarshaller marsh) throws GridException {
         if (keyBytes == null)
             keyBytes = marsh.marshal(key);
 
@@ -221,12 +180,6 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDrRawEntry.class, this, "keyBytesLen", keyBytes != null ? keyBytes.length : "n/a",
-            "valBytesLen", valBytes != null ? valBytes.length : "n/a");
-    }
-
-    /** {@inheritDoc} */
     @Override public K getKey() {
         return key();
     }
@@ -239,5 +192,11 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>,
     /** {@inheritDoc} */
     @Override public V setValue(V val) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRawVersionedEntry.class, this, "keyBytesLen", keyBytes != null ? keyBytes.length : "n/a",
+            "valBytesLen", valBytes != null ? valBytes.length : "n/a");
     }
 }

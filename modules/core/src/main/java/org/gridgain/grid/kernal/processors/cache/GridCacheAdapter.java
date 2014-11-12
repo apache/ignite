@@ -3391,7 +3391,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             val = (V)ctx.marshalToPortable(val);
                         }
 
-                        GridDrRawEntry<K, V> e = new GridDrRawEntry<>(key, null, val, null, ttl, 0, ver);
+                        GridRawVersionedEntry<K, V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
 
