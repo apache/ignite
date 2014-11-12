@@ -4129,27 +4129,40 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                     try {
                         GridSecurityCredentials cred = unmarshalCredentials(node);
 
-                        GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
-
-                        GridSecurityContext coordSubj = gridMarsh.unmarshal(
-                            node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), null);
-
-                        if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
-                            // Node has not pass authentication.
-                            LT.warn(log, null,
-                                "Authentication failed [nodeId=" + node.id() +
-                                    ", addrs=" + U.addressesAsString(node) + ']',
-                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                    U.addressesAsString(node) + ']');
-
-                            // Always output in debug.
+                        if (cred == null) {
                             if (log.isDebugEnabled())
-                                log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                                    U.addressesAsString(node));
-                        }
-                        else
-                            // Node will not be kicked out.
+                                log.debug(
+                                    "Skipping global authentication for node (security credentials not found, " +
+                                        "probably, due to coordinator has older version) " +
+                                        "[nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) +
+                                        ", coord=" + ring.coordinator() + ']');
+
                             authFailed = false;
+                        }
+                        else {
+                            GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+                            GridSecurityContext coordSubj = gridMarsh.unmarshal(
+                                node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
+
+                            if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication failed [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                        U.addressesAsString(node) + ']');
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                        U.addressesAsString(node));
+                            }
+                            else
+                                // Node will not be kicked out.
+                                authFailed = false;
+                        }
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
