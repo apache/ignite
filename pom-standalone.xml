@@ -853,11 +853,20 @@
                                      encoding="UTF-8">
                                     <zipfileset dir="target/release-package"
                                                 prefix="gridgain-${gridgain.edition}-os-${gridgain.version}"
-                                                includes="**/*.sh"
-                                                filemode="755"/>
+                                                filemode="755">
+                                        <include name="**/*.sh"/>
+                                        <include name="**/configure"/>
+                                        <include name="**/install-sh"/>
+                                        <include name="**/compile"/>
+                                        <include name="**/missing"/>
+                                    </zipfileset>
                                     <zipfileset dir="target/release-package"
                                                 prefix="gridgain-${gridgain.edition}-os-${gridgain.version}">
                                         <exclude name="**/*.sh"/>
+                                        <exclude name="**/configure"/>
+                                        <exclude name="**/install-sh"/>
+                                        <exclude name="**/compile"/>
+                                        <exclude name="**/missing"/>
                                     </zipfileset>
                                 </zip>
                             </target>

@@ -1140,7 +1140,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Task name or {@code null} if security is disabled.
      */
     public String currentTaskName() {
-        if (!ctx.security().securityEnabled())
+        if (!ctx.security().enabled())
             return null;
 
         GridComputeTaskSession ses = currentSess.get();

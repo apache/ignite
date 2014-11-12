@@ -36,11 +36,6 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     private static final GridSecurityPermissionSet ALLOW_ALL = new GridAllowAllPermissionSet();
 
     /** {@inheritDoc} */
-    @Override public boolean securityEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred)
         throws GridException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE, node.id());
@@ -50,6 +45,11 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
         s.permissions(ALLOW_ALL);
 
         return new GridSecurityContext(s);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGlobalNodeAuthentication() {
+        return false;
     }
 
     /** {@inheritDoc} */

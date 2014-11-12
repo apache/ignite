@@ -22,13 +22,6 @@ import java.util.*;
  */
 public interface GridSecurityManager extends GridManager {
     /**
-     * Checks if security check is enabled.
-     *
-     * @return {@code True} if authentication check is enabled.
-     */
-    public boolean securityEnabled();
-
-    /**
      * Authenticates grid node with it's attributes via underlying {@link GridAuthenticationSpi}s.
      *
      * @param node Node id to authenticate.
@@ -37,6 +30,13 @@ public interface GridSecurityManager extends GridManager {
      * @throws GridException If error occurred.
      */
     public GridSecurityContext authenticateNode(GridNode node, GridSecurityCredentials cred) throws GridException;
+
+    /**
+     * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.
+     *
+     * @return {@code True} if all nodes should run authentication process, {@code false} otherwise.
+     */
+    public boolean isGlobalNodeAuthentication();
 
     /**
      * Authenticates subject via underlying {@link GridAuthenticationSpi}s.
