@@ -90,13 +90,13 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /** */
     private byte[] siblingsBytes;
 
-    /** @deprecated need to remove and use only {@link #createTime0}. */
-    @Deprecated
-    private long createTime;
-
     /** Transient since needs to hold local creation time. */
     @GridDirectTransient
     private long createTime0 = U.currentTimeMillis();
+
+    /** @deprecated need to remove and use only {@link #createTime0}. */
+    @Deprecated
+    private long createTime = createTime0;
 
     /** */
     private GridUuid clsLdrId;
