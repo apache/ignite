@@ -20,6 +20,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -218,7 +219,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
      *
      * @return SPI context.
      */
-    protected GridSpiContext getSpiContext() {
+    public GridSpiContext getSpiContext() {
         return spiCtx;
     }
 
@@ -719,6 +720,11 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
             @Nullable ClassLoader ldr) throws GridException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridTcpMessageFactory messageFactory() {
             return null;
         }
     }

@@ -1175,7 +1175,11 @@ public class GridTcpCommunicationMessageState {
                 if (!buf.hasRemaining())
                     return MSG_NOT_READ;
 
-                msg = GridTcpCommunicationMessageFactory.create(getByte());
+                GridTcpMessageFactory factory = msgReader.messageFactory();
+
+                byte type = getByte();
+
+                msg = factory != null ? factory.create(type) : GridTcpCommunicationMessageFactory.create(type);
 
                 msgTypeDone = true;
             }
@@ -1499,8 +1503,8 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @return Byte array or special
-     *      {@link GridTcpCommunicationMessageAdapter#BYTE_ARR_NOT_READ}
+     * @param len Array length.
+     * @return Byte array or special {@link GridTcpCommunicationMessageAdapter#BYTE_ARR_NOT_READ}
      *      value if it was not fully read.
      */
     public final byte[] getByteArrayClient(int len) {

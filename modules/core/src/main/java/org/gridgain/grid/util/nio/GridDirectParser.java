@@ -10,6 +10,7 @@
 package org.gridgain.grid.util.nio;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
@@ -27,20 +28,31 @@ public class GridDirectParser implements GridNioParser {
     /** Message reader. */
     private final GridNioMessageReader msgReader;
 
+    /** */
+    private GridSpiAdapter spi;
+
+    /** */
+    private GridTcpMessageFactory msgFactory;
+
     /**
      * @param msgReader Message reader.
+     * @param spi Spi.
      */
-    public GridDirectParser(GridNioMessageReader msgReader) {
+    public GridDirectParser(GridNioMessageReader msgReader, GridSpiAdapter spi) {
         this.msgReader = msgReader;
+        this.spi = spi;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException {
+        if (msgFactory == null)
+            msgFactory = spi.getSpiContext().messageFactory();
+
         GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
         UUID nodeId = ses.meta(GridNioServer.DIFF_VER_NODE_ID_META_KEY);
 
         if (msg == null && buf.hasRemaining())
-            msg = GridTcpCommunicationMessageFactory.create(buf.get());
+            msg = msgFactory.create(buf.get());
 
         boolean finished = false;
 

@@ -794,7 +794,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (!F.isEmpty(pluginProviders))
                 startPlugins(ctx, pluginProviders, cfg, attrs);
 
-            GridTcpCommunicationMessageFactory.initCommon();
+            ctx.createMessageFactory();
 
             // Put version converters to attributes after
             // all components are started.

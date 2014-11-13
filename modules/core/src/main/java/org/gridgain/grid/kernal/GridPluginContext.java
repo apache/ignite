@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.direct.*;
 
 import java.util.*;
 
@@ -73,5 +74,10 @@ public class GridPluginContext implements PluginContext {
     /** {@inheritDoc} */
     @Override public void deregisterPorts(Class<?> cls) {
         ctx.ports().deregisterPorts(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
+        return ctx.registerMessageProducer(producer);
     }
 }

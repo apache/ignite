@@ -56,6 +56,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -284,6 +285,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** Enterprise release flag. */
     private boolean ent;
+
+    /** */
+    private GridTcpMessageFactory msgFactory;
+
+    /** */
+    private int pluginMsg = GridTcpCommunicationMessageFactory.MAX_COMMON_TYPE;
+
+    /** */
+    private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
 
     /**
      * No-arg constructor is required by externalization.
@@ -795,6 +805,65 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             return (T)new GridOsCacheDrManager();
 
         throw new IgniteException("Unsupported component type: " + cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTcpMessageFactory messageFactory() {
+        assert msgFactory != null;
+
+        return msgFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
+        int nextMsg = ++pluginMsg;
+
+        if (nextMsg > Byte.MAX_VALUE)
+            throw new IgniteException();
+
+        if (pluginMsgs == null)
+            pluginMsgs = new HashMap<>();
+
+        pluginMsgs.put((byte)nextMsg, producer);
+
+        return (byte)nextMsg;
+    }
+
+    /**
+     * Creates message factory.
+     */
+    void createMessageFactory() {
+        final GridTcpCommunicationMessageProducer[] common = GridTcpCommunicationMessageFactory.commonProducers();
+
+        final GridTcpCommunicationMessageProducer[] producers;
+
+        if (pluginMsgs != null) {
+            producers = Arrays.copyOf(common, pluginMsg + 1);
+
+            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : pluginMsgs.entrySet()) {
+                assert producers[e.getKey()] == null : e.getKey();
+
+                producers[e.getKey()] = e.getValue();
+            }
+
+            pluginMsgs = null;
+        }
+        else
+            producers = common;
+
+        msgFactory = new GridTcpMessageFactory() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                if (type < 0 || type >= producers.length)
+                    return GridTcpCommunicationMessageFactory.create(type);
+
+                GridTcpCommunicationMessageProducer producer = producers[type];
+
+                if (producer != null)
+                    return producer.create(type);
+                else
+                    throw new IllegalStateException("Common message type producer is not registered: " + type);
+            }
+        };
     }
 
     /** {@inheritDoc} */

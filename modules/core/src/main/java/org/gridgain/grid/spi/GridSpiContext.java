@@ -17,6 +17,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -387,4 +388,9 @@ public interface GridSpiContext {
      */
     @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
         @Nullable ClassLoader ldr) throws GridException;
+
+    /**
+     * @return Message factory.
+     */
+    public GridTcpMessageFactory messageFactory();
 }

@@ -52,6 +52,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.util.*;
@@ -487,4 +488,15 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Created component.
      */
     public <T> T createComponent(Class<T> cls);
+
+    /**
+     * @return Message factory.
+     */
+    public GridTcpMessageFactory messageFactory();
+
+    /**
+     * @param producer Message producer.
+     * @return Message type code.
+     */
+    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 }

@@ -10,11 +10,10 @@
 package org.gridgain.grid.design.plugin;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.design.*;
-import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.direct.*;
 
 import java.io.*;
 import java.util.*;
@@ -84,4 +83,10 @@ public interface PluginContext {
      * @param cls Class.
      */
     public void deregisterPorts(Class<?> cls);
+
+    /**
+     * @param producer Message producer.
+     * @return Message type code.
+     */
+    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 }

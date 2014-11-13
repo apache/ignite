@@ -491,6 +491,10 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return e != null ? (V)e.value() : null;
                     }
 
+                    @Override public GridTcpMessageFactory messageFactory() {
+                        return ctx.messageFactory();
+                    }
+
                     /**
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.

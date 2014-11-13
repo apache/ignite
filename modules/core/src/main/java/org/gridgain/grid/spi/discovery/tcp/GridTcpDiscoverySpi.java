@@ -1202,7 +1202,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSpiContext getSpiContext() {
+    @Override public GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() > 0) {
             if (log.isDebugEnabled())
                 log.debug("Waiting for context initialization.");

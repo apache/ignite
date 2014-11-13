@@ -536,7 +536,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSpiContext getSpiContext() {
+    @Override public GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {
                 U.await(ctxInitLatch);

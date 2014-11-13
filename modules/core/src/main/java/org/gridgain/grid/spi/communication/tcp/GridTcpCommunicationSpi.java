@@ -492,6 +492,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Message reader. */
     private final GridNioMessageReader msgReader = new GridNioMessageReader() {
+        /** */
+        private GridTcpMessageFactory msgFactory;
+
         @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
             assert msg != null;
             assert buf != null;
@@ -504,6 +507,13 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                 finished = getSpiContext().readDelta(nodeId, msg.getClass(), buf);
 
             return finished;
+        }
+
+        @Nullable @Override public GridTcpMessageFactory messageFactory() {
+            if (msgFactory == null)
+                msgFactory = getSpiContext().messageFactory();
+
+            return msgFactory;
         }
     };
 
@@ -1179,7 +1189,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSpiContext getSpiContext() {
+    @Override public GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() > 0) {
             if (log.isDebugEnabled())
                 log.debug("Waiting for context initialization.");
@@ -1230,7 +1240,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                         .directMode(true)
                         .metricsListener(metricsLsnr)
                         .messageWriter(msgWriter)
-                        .filters(new GridNioCodecFilter(new GridDirectParser(msgReader), log, true),
+                        .filters(new GridNioCodecFilter(new GridDirectParser(msgReader, this), log, true),
                             new GridConnectionBytesVerifyFilter(log))
                         .build();
 
@@ -1972,7 +1982,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                     endpoint,
                     msgWriter,
                     srvLsnr,
-                    new GridNioCodecFilter(new GridDirectParser(msgReader), log, true),
+                    new GridNioCodecFilter(new GridDirectParser(msgReader, GridTcpCommunicationSpi.this), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

@@ -26,4 +26,9 @@ public interface GridNioMessageReader {
      * @return Whether message was fully read.
      */
     public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf);
+
+    /**
+     * @return Optional message factory.
+     */
+    @Nullable public GridTcpMessageFactory messageFactory();
 }

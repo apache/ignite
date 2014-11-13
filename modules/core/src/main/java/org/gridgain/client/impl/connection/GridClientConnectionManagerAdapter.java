@@ -132,11 +132,16 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
+     * @param marshId Marshaller ID.
      * @throws GridClientException In case of error.
      */
     @SuppressWarnings("unchecked")
-    protected GridClientConnectionManagerAdapter(UUID clientId, SSLContext sslCtx, GridClientConfiguration cfg,
-        Collection<InetSocketAddress> routers, GridClientTopology top, @Nullable Byte marshId)
+    protected GridClientConnectionManagerAdapter(UUID clientId,
+        SSLContext sslCtx,
+        GridClientConfiguration cfg,
+        Collection<InetSocketAddress> routers,
+        GridClientTopology top,
+        @Nullable Byte marshId)
         throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
@@ -177,6 +182,10 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                         msg.messageReader(this, nodeId);
 
                         return msg.readFrom(buf);
+                    }
+
+                    @Nullable @Override public GridTcpMessageFactory messageFactory() {
+                        return null;
                     }
                 };
 
