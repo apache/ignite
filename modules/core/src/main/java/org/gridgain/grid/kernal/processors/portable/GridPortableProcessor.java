@@ -53,7 +53,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Unmarshalled object.
      * @throws GridPortableException In case of error.
      */
-    Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
+    public Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
 
     /**
      * Converts temporary offheap object to heap-based.
@@ -62,7 +62,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Heap-based object.
      * @throws GridPortableException In case of error.
      */
-    @Nullable Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
+    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
 
     /**
      * @param obj Object to marshal.
@@ -92,7 +92,12 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @return Builder.
      */
-    public GridPortableBuilder builder();
+    public GridPortableBuilder builder(int typeId);
+
+    /**
+     * @return Builder.
+     */
+    public GridPortableBuilder builder(String clsName);
 
     /**
      * Creates builder initialized by existing portable object.
@@ -116,7 +121,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param fieldTypeIds Fields map.
      * @throws GridPortableException In case of error.
      */
-    void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+    public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws GridPortableException;
 
     /**
