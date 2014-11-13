@@ -1678,7 +1678,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     drVer = null;
             }
 
-            if (drRes != null) { // Perform version check only in case there will be no explicit conflict resolution.
+            if (drRes == null) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
                     if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
                         if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.isStoreEnabled() && primary) {
