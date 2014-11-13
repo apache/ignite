@@ -684,6 +684,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             if (cand != null && !cand.reentry()) {
                                 if (req == null) {
                                     req = new GridNearLockRequest<>(
+                                        cctx.cacheId(),
                                         topVer,
                                         cctx.nodeId(),
                                         threadId,

@@ -376,7 +376,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse<>(req.version(), req.futureId(), req.miniId(), cnt);
+            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
 
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
@@ -398,7 +398,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse<>(req.version(), req.futureId(), req.miniId(),
+            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
                 new GridCacheTxRollbackException(err, e));
 
             fail = true;
@@ -408,7 +408,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse<>(req.version(), req.futureId(), req.miniId(), new GridException(err, e));
+            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), new GridException(err, e));
 
             fail = true;
         }
@@ -964,7 +964,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         try {
             // Send reply back to originating near node.
-            GridNearLockResponse<K, V> res = new GridNearLockResponse<>(
+            GridNearLockResponse<K, V> res = new GridNearLockResponse<>(ctx.cacheId(),
                 req.version(), req.futureId(), req.miniId(), tx != null && tx.onePhaseCommit(), entries.size(), err);
 
             if (err == null) {
@@ -1075,7 +1075,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, "Failed to get value for lock reply message for node [node=" +
                 U.toShortString(nearNode) + ", req=" + req + ']', e);
 
-            return new GridNearLockResponse<>(req.version(), req.futureId(), req.miniId(), false, entries.size(), e);
+            return new GridNearLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), false,
+                entries.size(), e);
         }
     }
 

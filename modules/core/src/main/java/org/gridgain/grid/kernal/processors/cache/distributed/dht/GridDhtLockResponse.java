@@ -68,8 +68,8 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param cnt Key count.
      */
-    public GridDhtLockResponse(GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, int cnt) {
-        super(lockVer, futId, cnt);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, int cnt) {
+        super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
 
@@ -82,8 +82,8 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
      * @param miniId Mini future ID.
      * @param err Error.
      */
-    public GridDhtLockResponse(GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, Throwable err) {
-        super(lockVer, futId, err);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, GridUuid miniId, Throwable err) {
+        super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
 

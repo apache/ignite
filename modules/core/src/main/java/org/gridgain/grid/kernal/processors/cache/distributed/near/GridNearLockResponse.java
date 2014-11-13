@@ -64,6 +64,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
      * @param err Error.
      */
     public GridNearLockResponse(
+        int cacheId,
         GridCacheVersion lockVer,
         GridUuid futId,
         GridUuid miniId,
@@ -71,7 +72,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         int cnt,
         Throwable err
     ) {
-        super(lockVer, futId, cnt, err);
+        super(cacheId, lockVer, futId, cnt, err);
 
         assert miniId != null;
 

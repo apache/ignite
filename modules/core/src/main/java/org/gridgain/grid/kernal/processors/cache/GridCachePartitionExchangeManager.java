@@ -64,6 +64,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringInclude
     private ExchangeWorker exchWorker;
 
+    /** */
+    private volatile GridDhtPartitionsExchangeFuture<K, V> lastCompletedFuture;
+
     /**
      * Partition map futures.
      * This set also contains already completed exchange futures to address race conditions when coordinator
@@ -260,6 +263,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
+    }
+
+    /**
+     * Gets topology version of last completed partition exchange.
+     *
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return lastCompletedFuture.exchangeId().topologyVersion();
     }
 
     /**
@@ -496,7 +508,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-        assert exchFut.isDone();
+        lastCompletedFuture = exchFut;
 
         for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts.values()) {
             if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)

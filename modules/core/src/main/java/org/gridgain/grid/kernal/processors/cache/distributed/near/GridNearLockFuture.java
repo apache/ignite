@@ -826,6 +826,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 if (!cand.reentry()) {
                                     if (req == null) {
                                         req = new GridNearLockRequest<>(
+                                            cctx.cacheId(),
                                             topVer,
                                             cctx.nodeId(),
                                             threadId,
@@ -945,18 +946,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
 
-            GridFuture<GridNearLockResponse<K, V>> fut;
-
-            if (CU.DHT_ENABLED)
-                fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
-            else {
-                // Create dummy values for testing.
-                GridNearLockResponse<K, V> res = new GridNearLockResponse<>(lockVer, futId, null, false, 1, null);
-
-                res.addValueBytes(null, null, true, lockVer, lockVer, cctx);
-
-                fut = new GridFinishedFuture<>(ctx, res);
-            }
+            GridFuture<GridNearLockResponse<K, V>> fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(

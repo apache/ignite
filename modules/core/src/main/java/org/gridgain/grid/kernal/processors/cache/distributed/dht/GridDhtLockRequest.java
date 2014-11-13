@@ -98,6 +98,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      * @param partLock {@code True} if partition lock.
      */
     public GridDhtLockRequest(
+        int cacheId,
         UUID nodeId,
         GridCacheVersion nearXidVer,
         long threadId,
@@ -118,7 +119,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
+        super(cacheId, nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
 
         this.topVer = topVer;

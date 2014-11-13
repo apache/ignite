@@ -603,6 +603,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 cacheCtx.affinity().cleanUpCache(res - 10);
         }
 
+        cctx.exchange().onExchangeDone(this);
+
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this + ']');
@@ -619,8 +621,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
-
-            cctx.exchange().onExchangeDone(this);
 
             return true;
         }

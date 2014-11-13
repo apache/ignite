@@ -103,6 +103,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param partLock If partition is locked.
      */
     public GridNearLockRequest(
+        int cacheId,
         long topVer,
         UUID nodeId,
         long threadId,
@@ -124,8 +125,22 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(nodeId, lockVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout, keyCnt,
-            txSize, grpLockKey, partLock);
+        super(
+            cacheId,
+            nodeId,
+            lockVer,
+            threadId,
+            futId,
+            lockVer,
+            isInTx,
+            isRead,
+            isolation,
+            isInvalidate,
+            timeout,
+            keyCnt,
+            txSize,
+            grpLockKey,
+            partLock);
 
         assert topVer > 0;
 
@@ -155,7 +170,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /**
-     * @return Task name hash.
+     * @return Task name hash.q
      */
     public int taskNameHash() {
         return taskNameHash;

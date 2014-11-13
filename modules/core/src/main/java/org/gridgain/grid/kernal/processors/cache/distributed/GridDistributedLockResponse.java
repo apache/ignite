@@ -60,11 +60,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param cnt Key count.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, int cnt) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt) {
         super(lockVer, cnt);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
 
         vals = new ArrayList<>(cnt);
@@ -76,11 +77,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param futId Future ID.
      * @param err Error.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, Throwable err) {
         super(lockVer, 0);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
     }
@@ -91,11 +93,12 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
      * @param cnt Count.
      * @param err Error.
      */
-    public GridDistributedLockResponse(GridCacheVersion lockVer, GridUuid futId, int cnt, Throwable err) {
+    public GridDistributedLockResponse(int cacheId, GridCacheVersion lockVer, GridUuid futId, int cnt, Throwable err) {
         super(lockVer, cnt);
 
         assert futId != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
 

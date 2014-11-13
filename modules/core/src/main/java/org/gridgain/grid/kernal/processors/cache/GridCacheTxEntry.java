@@ -706,12 +706,12 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @throws GridException If un-marshalling failed.
      */
     public void unmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
-        this.ctx = ctx.cacheContext(key.cacheId());
-
         if (depEnabled) {
             // Don't unmarshal more than once by checking key for null.
             if (key == null)
                 key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
+
+            this.ctx = ctx.cacheContext(key.cacheId());
 
             // Unmarshal transform closure anyway if it exists.
             if (transformClosBytes != null && transformClosCol == null)
@@ -724,6 +724,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                     filters = CU.empty();
             }
         }
+        else
+            this.ctx = ctx.cacheContext(key.cacheId());
 
         val.unmarshal(this.ctx, clsLdr, depEnabled);
     }

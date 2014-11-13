@@ -121,6 +121,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      *      locked.
      */
     public GridDistributedLockRequest(
+        int cacheId,
         UUID nodeId,
         @Nullable GridCacheVersion nearXidVer,
         long threadId,
@@ -142,6 +143,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         assert futId != null;
         assert !isInTx || isolation != null;
 
+        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.nearXidVer = nearXidVer;
         this.threadId = threadId;

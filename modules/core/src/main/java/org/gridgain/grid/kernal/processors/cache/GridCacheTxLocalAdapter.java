@@ -966,7 +966,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 GridCacheStoreManager<K, V> store = store();
 
-                if (store.configured() && isBatchUpdate()) {
+                if (store != null && isBatchUpdate()) {
                     if (!internal() || groupLock())
                         store.txEnd(this, false);
                 }

@@ -805,6 +805,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     MiniFuture fut = new MiniFuture(n, dhtMapping, nearMapping);
 
                     GridDhtLockRequest<K, V> req = new GridDhtLockRequest<>(
+                        cctx.cacheId(),
                         nearNodeId,
                         inTx() ? tx.nearXidVersion() : null,
                         threadId,
@@ -880,6 +881,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     MiniFuture fut = new MiniFuture(n, null, nearMapping);
 
                     GridDhtLockRequest<K, V> req = new GridDhtLockRequest<>(
+                        cctx.cacheId(),
                         nearNodeId,
                         inTx() ? tx.nearXidVersion() : null,
                         threadId,

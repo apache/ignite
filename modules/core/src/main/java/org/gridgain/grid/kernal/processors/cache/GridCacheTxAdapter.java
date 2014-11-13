@@ -423,7 +423,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         long res = topVer.get();
 
         if (res == -1)
-            throw new GridRuntimeException("Topology version is undefined for transaction: " + this);
+            return cctx.exchange().topologyVersion();
 
         return res;
     }
