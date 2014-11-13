@@ -48,6 +48,11 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isGlobalNodeAuthentication() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridSecurityContext authenticate(GridAuthenticationContext authCtx) throws GridException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
