@@ -20,6 +20,9 @@ import java.util.*;
  * @version @java.version
  */
 public class PluginValidationException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Offending node ID. */
     private UUID nodeId;
 

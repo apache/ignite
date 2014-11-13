@@ -20,6 +20,9 @@ import javax.cache.*;
  * @version @java.version
  */
 public final class QueryAffinityPredicate<K, V> extends QueryPredicate<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Predicate. */
     private QueryPredicate<K, V> p;
 

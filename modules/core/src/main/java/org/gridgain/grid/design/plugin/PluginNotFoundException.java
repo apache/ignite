@@ -18,6 +18,9 @@ import org.gridgain.grid.design.*;
  * @version @java.version
  */
 public class PluginNotFoundException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Plugin name. */
     private String name;
 
