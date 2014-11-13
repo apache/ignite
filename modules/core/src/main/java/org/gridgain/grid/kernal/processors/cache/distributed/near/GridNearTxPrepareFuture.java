@@ -35,7 +35,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 /**
  *
  */
-public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepareFuture<K, V> {
+public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
+    implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -243,7 +244,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
      * @param nodeId Sender.
      * @param res Result.
      */
-    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTxEx<K, V>> fut : pending()) {
                 if (isMini(fut)) {

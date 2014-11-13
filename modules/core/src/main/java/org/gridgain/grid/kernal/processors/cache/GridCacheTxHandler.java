@@ -50,6 +50,54 @@ public class GridCacheTxHandler<K, V> {
         this.ctx = ctx;
 
         log = ctx.logger(GridCacheTxHandler.class);
+
+        ctx.io().addHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processNearTxFinishResponse(nodeId, (GridNearTxFinishResponse<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest<K, V>)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
+                processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse<K, V>)msg);
+            }
+        });
     }
 
     /**
@@ -164,8 +212,7 @@ public class GridCacheTxHandler<K, V> {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
-        // TODO same for dht tx prepare
-        GridAbstractNearPrepareFuture<K, V> fut = (GridAbstractNearPrepareFuture<K, V>)ctx.mvcc()
+        GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)ctx.mvcc()
             .<GridCacheTxEx<K, V>>future(res.version(), res.futureId());
 
         if (fut == null) {
@@ -178,6 +225,64 @@ public class GridCacheTxHandler<K, V> {
         fut.onResult(nodeId, res);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
+        ctx.tm().onFinishedRemote(nodeId, res.threadId());
+
+        GridNearTxFinishFuture<K, V> fut = (GridNearTxFinishFuture<K, V>)ctx.mvcc().<GridCacheTx>future(
+            res.xid(), res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for finish response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
+        GridDhtTxPrepareFuture<K, V> fut = (GridDhtTxPrepareFuture<K, V>)ctx.mvcc().
+            <GridCacheTxEx<K, V>>future(res.version(), res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received response for unknown future (will ignore): " + res);
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processDhtTxFinishResponse(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+        assert nodeId != null;
+        assert res != null;
+
+        GridDhtTxFinishFuture<K, V> fut = (GridDhtTxFinishFuture<K, V>)ctx.mvcc().<GridCacheTx>future(res.xid(),
+            res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received response for unknown future (will ignore): " + res);
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
 
     /**
      * @param nodeId Node ID.

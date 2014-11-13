@@ -61,12 +61,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearTxFinishResponse.class, new CI2<UUID, GridNearTxFinishResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
-                processFinishResponse(nodeId, res);
-            }
-        });
-
         ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearLockResponse<K, V> res) {
                 processLockResponse(nodeId, res);
@@ -367,26 +361,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         }
 
         return tx;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processFinishResponse(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
-        ctx.tm().onFinishedRemote(nodeId, res.threadId());
-
-        GridNearTxFinishFuture<K, V> fut = (GridNearTxFinishFuture<K, V>)ctx.mvcc().<GridCacheTx>future(
-            res.xid(), res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find future for finish response [sender=" + nodeId + ", res=" + res + ']');
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
     }
 
     /**

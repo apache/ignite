@@ -76,18 +76,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtTxPrepareResponse.class, new CI2<UUID, GridDhtTxPrepareResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
-                processDhtTxPrepareResponse(nodeId, res);
-            }
-        });
-
-        ctx.io().addHandler(ctx.cacheId(), GridDhtTxFinishResponse.class, new CI2<UUID, GridDhtTxFinishResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtTxFinishResponse<K, V> req) {
-                processDhtTxFinishResponse(nodeId, req);
-            }
-        });
-
         ctx.io().addHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearLockRequest<K, V> req) {
                 processNearLockRequest(nodeId, req);
@@ -492,24 +480,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /**
      * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
-        GridDhtTxPrepareFuture<K, V> fut = (GridDhtTxPrepareFuture<K, V>)ctx.mvcc().
-            <GridCacheTxEx<K, V>>future(res.version(), res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node ID.
      * @param req Request.
      */
     private void processNearLockRequest(UUID nodeId, GridNearLockRequest<K, V> req) {
@@ -536,27 +506,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Exclude lock timeout exception since it's not a fatal exception.
         f.listenAsync(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class));
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processDhtTxFinishResponse(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
-        assert nodeId != null;
-        assert res != null;
-
-        GridDhtTxFinishFuture<K, V> fut = (GridDhtTxFinishFuture<K, V>)ctx.mvcc().<GridCacheTx>future(res.xid(),
-            res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
     }
 
     /**

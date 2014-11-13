@@ -292,7 +292,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTxEx<K, V>> fut : pending()) {
                 if (isMini(fut)) {

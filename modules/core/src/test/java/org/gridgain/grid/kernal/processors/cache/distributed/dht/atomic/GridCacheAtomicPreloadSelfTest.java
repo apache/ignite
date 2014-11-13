@@ -12,10 +12,15 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.transactions.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
+
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.REPEATABLE_READ;
 
 /**
  * Simple test for preloading in ATOMIC cache.
@@ -57,11 +62,11 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < keys.size(); i++) {
                 Integer key = keys.get(i);
 
+                info(">>>>>>>>>>>>>>>");
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
+                info(">>>>>>>>>>>>>>>");
 
-                try (GridCacheTx tx = txs.txStart(GridCacheTxConcurrency.PESSIMISTIC,
-                    GridCacheTxIsolation.REPEATABLE_READ)) {
-
+                try (GridCacheTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     // Lock.
                     cache.get(key);
 
@@ -69,10 +74,48 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
                     tx.commit();
                 }
+
+                Thread.sleep(500);
+
+                info(">>>>>>>>>>>>>>>");
+                info("Finished checking transaction for key [idx=" + i + ", key=" + key + ']');
+                info(">>>>>>>>>>>>>>>");
+
+                checkTransactions();
+                checkValues(key, key + 1);
             }
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkTransactions() {
+        for (int i = 0; i < 3; i++) {
+            GridCacheTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
+
+            assertEquals("Uncommitted transactions found on node [idx=" + i + ", map=" + tm.idMap + ']',
+                0, tm.idMapSize());
+        }
+    }
+
+    /**
+     * @param key Key to check.
+     * @param val Expected value.
+     */
+    private void checkValues(int key, int val) {
+        for (int i = 0; i < 3; i++) {
+            GridEx grid = grid(i);
+
+            GridNode node = grid.localNode();
+
+            GridCache<Object, Object> cache = grid.cache(null);
+
+            if (cache.affinity().isPrimary(node, key) || cache.affinity().isBackup(node, key))
+                assertEquals(val, cache.peek(key));
         }
     }
 
@@ -95,6 +138,9 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
             base++;
 
         keys.add(base);
+
+        if (true)
+            return keys;
 
         // Primary key.
         while (!aff.isPrimary(node, base))

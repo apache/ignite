@@ -59,7 +59,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private final ConcurrentMap<Long, GridCacheTxEx<K, V>> threadMap = newMap();
 
     /** Per-ID map. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> idMap = newMap();
+    public final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> idMap = newMap();
 
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> nearIdMap = newMap();

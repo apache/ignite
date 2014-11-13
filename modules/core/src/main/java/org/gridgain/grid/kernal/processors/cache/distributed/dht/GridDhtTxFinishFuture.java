@@ -186,7 +186,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
         if (!isDone()) {
             for (GridFuture<GridCacheTx> fut : futures()) {
                 if (isMini(fut)) {
