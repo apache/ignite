@@ -35,6 +35,9 @@ public class GridIpcSharedMemoryNativeLoader {
     /** Lock file path. */
     private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "ggshmem.lock");
 
+    /** Currently held file lock. */
+    private static FileLock lock;
+
     /**
      * @return Operating system name to resolve path to library.
      */
@@ -111,10 +114,9 @@ public class GridIpcSharedMemoryNativeLoader {
             errs.add(e);
         }
 
-        try (
-            RandomAccessFile file = new RandomAccessFile(LOCK_FILE, "rws");
-            FileLock ignored = file.getChannel().lock()
-        ) {
+        lock();
+
+        try {
             if (extractAndLoad(errs, platformSpecificResourcePath()))
                 return;
 
@@ -129,8 +131,47 @@ public class GridIpcSharedMemoryNativeLoader {
 
             throw new GridException("Failed to load native IPC library: " + errs);
         }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * Obtain lock on file to prevent concurrent extracts.
+     *
+     * @throws GridException If failed.
+     */
+    private static void lock() throws GridException {
+        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+
+        try {
+            lock = new RandomAccessFile(LOCK_FILE, "rws").getChannel().lock();
+        }
         catch (IOException e) {
             throw new GridException("Failed to obtain file lock: " + LOCK_FILE, e);
+        }
+    }
+
+    /**
+     * Release lock on file.
+     *
+     * @throws GridException If failed.
+     */
+    private static void unlock() throws GridException {
+        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+
+        if (lock != null) {
+            try {
+                lock.release();
+
+                lock = null;
+            }
+            catch (IOException ignore) {
+                // No-op.
+            }
+            finally {
+                lock = null;
+            }
         }
     }
 
