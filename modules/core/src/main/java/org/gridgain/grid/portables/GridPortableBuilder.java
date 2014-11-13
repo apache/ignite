@@ -47,6 +47,9 @@ import java.util.*;
  *
  * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
  * </pre>
+ * @see GridPortables#builder(int)
+ * @see GridPortables#builder(String)
+ * @see GridPortables#builder(GridPortableObject)
  */
 public interface GridPortableBuilder {
     /**

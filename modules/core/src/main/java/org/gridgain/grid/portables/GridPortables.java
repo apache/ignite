@@ -307,10 +307,10 @@ public interface GridPortables {
     /**
      * Creates new portable builder.
      *
-     * @param clsName Name of the type.
+     * @param typeName Type name.
      * @return Newly portable builder.
      */
-    public GridPortableBuilder builder(String clsName);
+    public GridPortableBuilder builder(String typeName);
 
     /**
      * Creates portable builder initialized by existing portable object.

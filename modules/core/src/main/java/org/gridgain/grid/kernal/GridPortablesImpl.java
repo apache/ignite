@@ -71,11 +71,11 @@ public class GridPortablesImpl implements GridPortables {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableBuilder builder(String clsName) {
+    @Override public GridPortableBuilder builder(String typeName) {
         guard();
 
         try {
-            return proc.builder(clsName);
+            return proc.builder(typeName);
         }
         finally {
             unguard();
