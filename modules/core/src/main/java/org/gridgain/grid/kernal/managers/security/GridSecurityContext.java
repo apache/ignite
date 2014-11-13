@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.security.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -147,7 +148,7 @@ public class GridSecurityContext implements Externalizable {
         boolean ret = sysPermissions.contains(perm);
 
         if (!ret && (perm == GridSecurityPermission.EVENTS_ENABLE || perm == GridSecurityPermission.EVENTS_DISABLE))
-            ret |= sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
+            ret = sysPermissions.contains(GridSecurityPermission.ADMIN_VIEW);
 
         return ret;
     }
@@ -230,5 +231,10 @@ public class GridSecurityContext implements Externalizable {
         subj = (GridSecuritySubject)in.readObject();
 
         initRules();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSecurityContext.class, this);
     }
 }
