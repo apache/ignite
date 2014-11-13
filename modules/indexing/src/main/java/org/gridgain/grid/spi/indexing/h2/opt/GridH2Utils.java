@@ -19,33 +19,20 @@ import java.util.*;
  */
 @SuppressWarnings({"JavaAbbreviationUsage", "GridBracket"})
 public class GridH2Utils {
-
     /** Copy/pasted from org.h2.util.DateTimeUtils */
     private static final int SHIFT_YEAR = 9;
 
     /** Copy/pasted from org.h2.util.DateTimeUtils */
     private static final int SHIFT_MONTH = 5;
 
-    /** Copy/pasted from org.h2.util.DateTimeUtils */
-    private static final int zoneOffset;
-
     /** Static calendar. */
-    private static final Calendar staticCalendar;
+    private static final Calendar staticCalendar = Calendar.getInstance();
 
     /** */
     private static final ThreadLocal<Calendar> localCalendar = new ThreadLocal<>();
 
     /**
-     * Static initializer.
-     */
-    static {
-        staticCalendar = Calendar.getInstance();
-
-        zoneOffset = staticCalendar.get(Calendar.ZONE_OFFSET);
-    }
-
-    /**
-     * @return Calendar.
+     * @return The instance of calendar for local thread.
      */
     public static Calendar getLocalCalendar() {
         Calendar res = localCalendar.get();
@@ -64,8 +51,8 @@ public class GridH2Utils {
      *
      * Copy/pasted from org.h2.value.ValueTimestamp#get(java.sql.Timestamp)
      *
-     * @param timestamp the timestamp
-     * @return the value
+     * @param timestamp The timestamp.
+     * @return The value.
      */
     public static ValueTimestamp toValueTimestamp(Timestamp timestamp) {
         long ms = timestamp.getTime();
@@ -86,16 +73,17 @@ public class GridH2Utils {
     /**
      * Calculate the nanoseconds since midnight from a given calendar.
      *
-     * Copy/pasted from org.h2.util.DateTimeUtils#nanosFromCalendar(java.util.Calendar)
+     * Copy/pasted from org.h2.util.DateTimeUtils#nanosFromCalendar(java.util.Calendar).
      *
-     * @param cal the calendar
-     * @return the nanoseconds
+     * @param cal The calendar.
+     * @return Nanoseconds.
      */
     private static long nanosFromCalendar(Calendar cal) {
         int h = cal.get(Calendar.HOUR_OF_DAY);
         int m = cal.get(Calendar.MINUTE);
         int s = cal.get(Calendar.SECOND);
         int millis = cal.get(Calendar.MILLISECOND);
+
         return ((((((h * 60L) + m) * 60) + s) * 1000) + millis) * 1000000;
     }
 
@@ -104,14 +92,16 @@ public class GridH2Utils {
      *
      * Copy/pasted from org.h2.util.DateTimeUtils#dateValueFromCalendar(java.util.Calendar)
      *
-     * @param cal the calendar
-     * @return the date value
+     * @param cal The calendar.
+     * @return The date value.
      */
     private static long dateValueFromCalendar(Calendar cal) {
         int year, month, day;
+
         year = getYear(cal);
         month = cal.get(Calendar.MONTH) + 1;
         day = cal.get(Calendar.DAY_OF_MONTH);
+
         return ((long) year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day;
     }
 
@@ -120,14 +110,16 @@ public class GridH2Utils {
      *
      * Copy/pasted from org.h2.util.DateTimeUtils#getYear(java.util.Calendar)
      *
-     * @param calendar the calendar
-     * @return the year
+     * @param calendar The calendar.
+     * @return The year.
      */
     private static int getYear(Calendar calendar) {
         int year = calendar.get(Calendar.YEAR);
+
         if (calendar.get(Calendar.ERA) == GregorianCalendar.BC) {
             year = 1 - year;
         }
+
         return year;
     }
 }
