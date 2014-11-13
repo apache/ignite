@@ -449,8 +449,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             cctx.dht().dhtPreloader().refreshPartitions();
         }
-        else
-        if (log.isDebugEnabled())
+        else if (log.isDebugEnabled())
             log.debug("Partitions were not refreshed [last=" + last + ", now=" + now + ", delta=" + (now - last) +
                 ", timeout=" + timeout + ", lastRefresh=" + lastRefresh + ']');
     }
