@@ -476,7 +476,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                             ", tx=" + this + ']');
 
                     // Replace the entry.
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), entry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), entry.keyBytes());
                 }
             }
         }

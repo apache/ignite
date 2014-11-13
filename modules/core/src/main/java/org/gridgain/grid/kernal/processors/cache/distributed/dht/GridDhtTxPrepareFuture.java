@@ -226,7 +226,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
@@ -338,7 +338,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
@@ -423,7 +423,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         // Interceptor on near node needs old values to execute callbacks.
         if (!F.isEmpty(writes)) {
             for (GridCacheTxEntry<K, V> e : writes) {
-                GridCacheTxEntry<K, V> txEntry = tx.entry(e.key());
+                GridCacheTxEntry<K, V> txEntry = tx.entry(e.txKey());
 
                 while (true) {
                     try {
@@ -445,7 +445,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         else
                             val0 = entry.rawGet();
 
-                        res.addOwnedValue(txEntry.key(), dhtVer, val0, valBytes0);
+                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
 
                         break;
                     }
@@ -483,7 +483,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         else
                             val0 = entry.rawGet();
 
-                        res.addOwnedValue(txEntry.key(), dhtVer, val0, valBytes0);
+                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
                     }
 
                     break;
@@ -577,12 +577,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             // Assign keys to primary nodes.
             if (!F.isEmpty(reads)) {
                 for (GridCacheTxEntry<K, V> read : reads)
-                    hasRemoteNodes |= map(tx.entry(read.key()), futDhtMap, futNearMap);
+                    hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
             }
 
             if (!F.isEmpty(writes)) {
                 for (GridCacheTxEntry<K, V> write : writes)
-                    hasRemoteNodes |= map(tx.entry(write.key()), futDhtMap, futNearMap);
+                    hasRemoteNodes |= map(tx.entry(write.txKey()), futDhtMap, futNearMap);
             }
 
             if (isDone())
@@ -635,7 +635,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             "[added=" + added + ", entry=" + entry + ']';
 
                         if (added.ownerVersion() != null)
-                            req.owned(entry.key(), added.ownerVersion());
+                            req.owned(entry.txKey(), added.ownerVersion());
 
                         req.invalidateNearEntry(idx, cached.readerId(n.id()) != null);
 
@@ -660,7 +660,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             assert added.dhtLocal();
 
                             if (added.ownerVersion() != null)
-                                req.owned(entry.key(), added.ownerVersion());
+                                req.owned(entry.txKey(), added.ownerVersion());
 
                             break;
                         }
@@ -715,7 +715,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                 "[added=" + added + ", entry=" + entry + ']';
 
                             if (added != null && added.ownerVersion() != null)
-                                req.owned(entry.key(), added.ownerVersion());
+                                req.owned(entry.txKey(), added.ownerVersion());
 
                             break;
                         }
@@ -789,7 +789,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 break;
             }
             catch (GridCacheEntryRemovedException ignore) {
-                cached = cacheCtx.dht().entryExx(entry.key().key());
+                cached = cacheCtx.dht().entryExx(entry.key());
 
                 entry.cached(cached, cached.keyBytes());
             }
@@ -958,7 +958,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     nearMapping.evictReaders(res.nearEvicted());
 
                     for (GridCacheTxEntry<K, V> entry : nearMapping.entries()) {
-                        if (res.nearEvicted().contains(entry.key())) {
+                        if (res.nearEvicted().contains(entry.txKey())) {
                             while (true) {
                                 try {
                                     GridDhtCacheEntry<K, V> cached = (GridDhtCacheEntry<K, V>)entry.cached();
@@ -968,7 +968,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                     break;
                                 }
                                 catch (GridCacheEntryRemovedException ignore) {
-                                    GridCacheEntryEx<K, V> e = entry.context().cache().peekEx(entry.key().key());
+                                    GridCacheEntryEx<K, V> e = entry.context().cache().peekEx(entry.key());
 
                                     if (e == null)
                                         break;

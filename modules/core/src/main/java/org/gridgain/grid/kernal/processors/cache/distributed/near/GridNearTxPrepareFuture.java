@@ -228,7 +228,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
@@ -434,7 +434,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
 //                ", txEntry=" + txEntry + ']';
 
             if (txEntry.op() == TRANSFORM)
-                req.addDhtVersion(txEntry.key(), null);
+                req.addDhtVersion(txEntry.txKey(), null);
         }
 
         // If this is the primary node for the keys.
@@ -519,7 +519,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
         GridDistributedTxMapping<K, V> cur) throws GridException {
         GridCacheContext<K, V> cacheCtx = entry.context();
 
-        List<GridNode> nodes = cacheCtx.affinity().nodes(entry.key().key(), topVer);
+        List<GridNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -538,7 +538,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
-        entry.cached(cacheCtx.colocated().entryExx(entry.key().key(), topVer, true), entry.keyBytes());
+        entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
 
         if (cur == null || !cur.node().id().equals(primary.id()))
             cur = new GridDistributedTxMapping<>(primary);
@@ -556,7 +556,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridAbstractNearPrepare
                 break;
             }
             catch (GridCacheEntryRemovedException ignore) {
-                entry.cached(cacheCtx.near().entryEx(entry.key().key()), entry.keyBytes());
+                entry.cached(cacheCtx.near().entryEx(entry.key()), entry.keyBytes());
             }
         }
 

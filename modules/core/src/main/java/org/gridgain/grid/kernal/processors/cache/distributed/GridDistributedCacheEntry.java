@@ -774,7 +774,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
                 tx.timeout(),
                 true,
                 tx.implicitSingle(),
-                tx.ownedVersion(key)
+                tx.ownedVersion(txKey())
             );
 
             return true;

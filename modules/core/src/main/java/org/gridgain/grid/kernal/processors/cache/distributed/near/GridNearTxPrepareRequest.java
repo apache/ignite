@@ -190,7 +190,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
         for (GridCacheTxEntry<K, V> e : c)
-            cp.add(e.cleanCopy(ctx.cacheContext(e.key().cacheId())));
+            cp.add(e.cleanCopy(ctx.cacheContext(e.cacheId())));
 
         return cp;
     }

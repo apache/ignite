@@ -598,7 +598,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(K key) {
+    @Override public GridCacheVersion ownedVersion(GridCacheTxKey<K> key) {
         return null;
     }
 

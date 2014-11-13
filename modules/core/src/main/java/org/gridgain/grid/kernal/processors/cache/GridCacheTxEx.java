@@ -109,7 +109,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @param key Key to get version for.
      * @return Owned version, if any.
      */
-    @Nullable public GridCacheVersion ownedVersion(K key);
+    @Nullable public GridCacheVersion ownedVersion(GridCacheTxKey<K> key);
 
     /**
      * Gets ID of additional node involved. For example, in DHT case, other node is

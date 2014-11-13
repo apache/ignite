@@ -251,14 +251,14 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheContext<K, V> cacheCtx = entry.context();
 
         try {
-            GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(entry.key().key(), topologyVersion());
+            GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
 
-            checkInternal(entry.key());
+            checkInternal(entry.txKey());
 
             // Initialize cache entry.
             entry.cached(cached, entry.keyBytes());
 
-            writeMap.put(entry.key(), entry);
+            writeMap.put(entry.txKey(), entry);
 
             addExplicit(entry);
         }

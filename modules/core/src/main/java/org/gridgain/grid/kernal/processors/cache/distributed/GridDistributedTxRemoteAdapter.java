@@ -255,7 +255,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                     log.debug("Replacing obsolete entry in remote transaction [entry=" + entry + ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
             }
         }
     }
@@ -330,24 +330,24 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @return {@code True} if value was set.
      */
     @Override public boolean setWriteValue(GridCacheTxEntry<K, V> e) {
-        checkInternal(e.key());
+        checkInternal(e.txKey());
 
-        GridCacheTxEntry<K, V> entry = writeMap.get(e.key());
+        GridCacheTxEntry<K, V> entry = writeMap.get(e.txKey());
 
         if (entry == null) {
-            GridCacheTxEntry<K, V> rmv = readMap.remove(e.key());
+            GridCacheTxEntry<K, V> rmv = readMap.remove(e.txKey());
 
             if (rmv != null) {
                 e.cached(rmv.cached(), rmv.keyBytes());
 
-                writeMap.put(e.key(), e);
+                writeMap.put(e.txKey(), e);
             }
             // If lock is explicit.
             else {
-                e.cached(e.context().cache().entryEx(e.key().key()), null);
+                e.cached(e.context().cache().entryEx(e.key()), null);
 
                 // explicit lock.
-                writeMap.put(e.key(), e);
+                writeMap.put(e.txKey(), e);
             }
         }
         else {
@@ -468,7 +468,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
                     }
                 }
             }
@@ -496,7 +496,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     GridCacheEntryEx<K, V> cached = txEntry.cached();
 
                                     if (cached == null)
-                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key().key()), null);
+                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()), null);
 
                                     if (near() && cacheCtx.config().getDrReceiverConfiguration() != null) {
                                         cached.markObsolete(xidVer);
@@ -506,8 +506,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     GridNearCacheEntry<K, V> nearCached = null;
 
-                                    if (updateNearCache(cacheCtx, txEntry.key().key(), topVer))
-                                        nearCached = cacheCtx.dht().near().peekExx(txEntry.key().key());
+                                    if (updateNearCache(cacheCtx, txEntry.key(), topVer))
+                                        nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
@@ -534,7 +534,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                         if (drNeedResolve) {
                                             GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>>
-                                                drRes = drResolveConflict(op, txEntry.key().key(), val, valBytes,
+                                                drRes = drResolveConflict(op, txEntry.key(), val, valBytes,
                                                 txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
 
                                             assert drRes != null;
@@ -671,7 +671,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         log.debug("Attempting to commit a removed entry (will retry): " + txEntry);
 
                                     // Renew cached entry.
-                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
                                 }
                             }
                         }

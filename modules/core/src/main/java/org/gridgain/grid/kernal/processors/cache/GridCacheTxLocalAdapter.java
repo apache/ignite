@@ -453,7 +453,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             GridCacheContext<K, V> cacheCtx = e.context();
 
                             GridCacheOperation op = res.get1();
-                            K key = e.key().key();
+                            K key = e.key();
                             V val = res.get2();
                             GridCacheVersion ver = writeVersion();
 
@@ -622,8 +622,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     boolean metrics = true;
 
-                                    if (updateNearCache(cacheCtx, txEntry.key().key(), topVer))
-                                        nearCached = cacheCtx.dht().near().peekEx(txEntry.key().key());
+                                    if (updateNearCache(cacheCtx, txEntry.key(), topVer))
+                                        nearCached = cacheCtx.dht().near().peekEx(txEntry.key());
                                     else if (near() && txEntry.locallyMapped())
                                         metrics = false;
 
@@ -657,7 +657,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     if (drNeedResolve) {
                                         GridBiTuple<GridCacheOperation, GridDrReceiverConflictContextImpl<K, V>> drRes =
-                                            drResolveConflict(op, txEntry.key().key(), val, valBytes, txEntry.ttl(),
+                                            drResolveConflict(op, txEntry.key(), val, valBytes, txEntry.ttl(),
                                             txEntry.drExpireTime(), explicitVer, cached);
 
                                         assert drRes != null;
@@ -809,7 +809,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 if (log.isDebugEnabled())
                                     log.debug("Got removed entry during transaction commit (will retry): " + txEntry);
 
-                                txEntry.cached(entryEx(cacheCtx, txEntry.key()), txEntry.keyBytes());
+                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey()), txEntry.keyBytes());
                             }
                         }
                     }
@@ -1102,7 +1102,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     txEntry.readValue(e.<V>value());
                             }
                             catch (GridCacheEntryRemovedException ignored) {
-                                txEntry.cached(entryEx(cacheCtx, txEntry.key(), topVer), txEntry.keyBytes());
+                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer), txEntry.keyBytes());
                             }
                         }
                     }
@@ -2098,7 +2098,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in putAllAsync method (will retry): " + cached);
 
-                    txEntry.cached(entryEx(cacheCtx, txEntry.key()), txEntry.keyBytes());
+                    txEntry.cached(entryEx(cacheCtx, txEntry.txKey()), txEntry.keyBytes());
                 }
             }
         }
@@ -2744,7 +2744,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (log.isDebugEnabled())
                     log.debug("Got removed entry in transaction newEntry method (will retry): " + entry);
 
-                entry = entryEx(entry.context(), txEntry.key(), topologyVersion());
+                entry = entryEx(entry.context(), txEntry.txKey(), topologyVersion());
 
                 txEntry.cached(entry, txEntry.keyBytes());
             }

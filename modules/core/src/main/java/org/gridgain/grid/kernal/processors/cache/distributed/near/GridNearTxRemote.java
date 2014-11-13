@@ -176,7 +176,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(K key) {
+    @Override public GridCacheVersion ownedVersion(GridCacheTxKey<K> key) {
         return owned == null ? null : owned.get(key);
     }
 
@@ -285,12 +285,12 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @return {@code True} if entry was enlisted.
      */
     private boolean addEntry(GridCacheTxEntry<K, V> entry) throws GridException {
-        checkInternal(entry.key());
+        checkInternal(entry.txKey());
 
-        GridNearCacheEntry<K, V> cached = entry.context().near().peekExx(entry.key().key());
+        GridNearCacheEntry<K, V> cached = entry.context().near().peekExx(entry.key());
 
         if (cached == null) {
-            evicted.add(entry.key());
+            evicted.add(entry.txKey());
 
             if (entry.keyBytes() != null)
                 evictedBytes.add(entry.keyBytes());
@@ -302,7 +302,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
             try {
                 if (cached.peek(GLOBAL, CU.<K, V>empty()) == null && cached.evictInternal(false, xidVer, null)) {
-                    evicted.add(entry.key());
+                    evicted.add(entry.txKey());
 
                     if (entry.keyBytes() != null)
                         evictedBytes.add(entry.keyBytes());
@@ -313,7 +313,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     // Initialize cache entry.
                     entry.cached(cached, entry.keyBytes());
 
-                    writeMap.put(entry.key(), entry);
+                    writeMap.put(entry.txKey(), entry);
 
                     addExplicit(entry);
 
@@ -321,7 +321,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
-                evicted.add(entry.key());
+                evicted.add(entry.txKey());
 
                 if (entry.keyBytes() != null)
                     evictedBytes.add(entry.keyBytes());

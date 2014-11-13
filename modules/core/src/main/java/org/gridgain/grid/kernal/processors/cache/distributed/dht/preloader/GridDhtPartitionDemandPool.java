@@ -42,7 +42,7 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * Thread pool for requesting partitions from other nodes
  * and populating local cache.
  */
-@SuppressWarnings( {"NonConstantFieldWithUpperCaseName"})
+@SuppressWarnings("NonConstantFieldWithUpperCaseName")
 public class GridDhtPartitionDemandPool<K, V> {
     /** Dummy message to wake up a blocking queue if a node leaves. */
     private final SupplyMessage<K, V> DUMMY_TOP = new SupplyMessage<>();
@@ -611,7 +611,6 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                     if (log.isDebugEnabled())
                         log.debug("Sending demand message [node=" + node.id() + ", demand=" + d + ']');
-                    U.debug(log, "Sending demand message [node=" + node.id() + ", demand=" + d + ']');
 
                     // Send demand message.
                     cctx.io().send(node, d);

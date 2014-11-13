@@ -901,7 +901,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             GridCacheContext<K, V> cacheCtx = entry.context();
 
             if (cached == null)
-                cached = cacheCtx.cache().peekEx(entry.key().key());
+                cached = cacheCtx.cache().peekEx(entry.key());
 
             if (cached.detached())
                 continue;
@@ -911,7 +911,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     cacheCtx.cache().removeEntry(cached);
 
                 if (tx.dht() && isNearEnabled(cacheCtx)) {
-                    GridNearCacheEntry<K, V> e = cacheCtx.dht().near().peekExx(entry.key().key());
+                    GridNearCacheEntry<K, V> e = cacheCtx.dht().near().peekExx(entry.key());
 
                     if (e != null && e.markObsoleteIfEmpty(tx.xidVersion()))
                         cacheCtx.dht().near().removeEntry(e);
@@ -1364,7 +1364,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         int lastCacheId = 0;
 
         for (GridCacheTxEntry<K, V> txEntry : tx.allEntries()) {
-            int cacheId = txEntry.key().cacheId();
+            int cacheId = txEntry.cacheId();
 
             if (lastCtx == null || lastCacheId != cacheId) {
                 lastCtx = cctx.cacheContext(cacheId);
@@ -1518,7 +1518,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                     try {
                         // Renew cache entry.
-                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key().key()), txEntry1.keyBytes());
+                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key()), txEntry1.keyBytes());
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert tx.dht() : "Received invalid partition for non DHT transaction [tx=" +
@@ -1612,7 +1612,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                         log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
 
                     // Renew cache entry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key().key()), txEntry.keyBytes());
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()), txEntry.keyBytes());
                 }
             }
         }
@@ -1897,18 +1897,18 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             if (commitInfo != null) {
                 for (GridCacheTxEntry<K, V> entry : commitInfo.recoveryWrites()) {
-                    GridCacheTxEntry<K, V> write = tx.writeMap().get(entry.key());
+                    GridCacheTxEntry<K, V> write = tx.writeMap().get(entry.txKey());
 
                     if (write != null) {
                         GridCacheEntryEx<K, V> cached = entry.cached();
 
                         if (cached == null || cached.detached()) {
-                            cached = write.context().cache().entryEx(entry.key().key(), tx.topologyVersion());
+                            cached = write.context().cache().entryEx(entry.key(), tx.topologyVersion());
 
                             entry.cached(cached, cached.keyBytes());
                         }
 
-                        tx.writeMap().put(entry.key(), entry);
+                        tx.writeMap().put(entry.txKey(), entry);
 
                         continue;
                     }
@@ -1916,10 +1916,10 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     ((GridCacheTxAdapter<K, V>)tx).recoveryWrites(commitInfo.recoveryWrites());
 
                     // If write was not found, check read.
-                    GridCacheTxEntry<K, V> read = tx.readMap().remove(entry.key());
+                    GridCacheTxEntry<K, V> read = tx.readMap().remove(entry.txKey());
 
                     if (read != null)
-                        tx.writeMap().put(entry.key(), entry);
+                        tx.writeMap().put(entry.txKey(), entry);
                 }
 
                 tx.commitAsync().listenAsync(new CommitListener(tx));

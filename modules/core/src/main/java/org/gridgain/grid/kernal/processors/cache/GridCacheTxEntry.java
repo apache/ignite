@@ -44,10 +44,16 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** Cache key. */
     @GridToStringInclude
-    private GridCacheTxKey<K> key;
+    private K key;
 
     /** Key bytes. */
     private byte[] keyBytes;
+
+    /** Cache ID. */
+    private int cacheId;
+
+    /** Transient tx key. */
+    private GridCacheTxKey<K> txKey;
 
     /** Cache value. */
     @GridToStringInclude
@@ -156,8 +162,10 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         this.drExpireTime = drExpireTime;
         this.drVer = drVer;
 
-        key = entry.txKey();
+        key = entry.key();
         keyBytes = entry.keyBytes();
+
+        cacheId = entry.context().cacheId();
 
         depEnabled = ctx.gridDeploy().enabled();
     }
@@ -194,8 +202,10 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         if (transformClos != null)
             addTransformClosure(transformClos);
 
-        key = entry.txKey();
+        key = entry.key();
         keyBytes = entry.keyBytes();
+
+        cacheId = entry.context().cacheId();
 
         depEnabled = ctx.gridDeploy().enabled();
     }
@@ -367,8 +377,25 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @return Entry key.
      */
-    public GridCacheTxKey<K> key() {
+    public K key() {
         return key;
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Tx key.
+     */
+    public GridCacheTxKey<K> txKey() {
+        if (txKey == null)
+            txKey = new GridCacheTxKey<>(key, cacheId);
+
+        return txKey;
     }
 
     /**
@@ -430,7 +457,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry = ctx.cache().entryEx(key.key());
+                    entry = ctx.cache().entryEx(key);
                 }
             }
         }
@@ -706,12 +733,12 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @throws GridException If un-marshalling failed.
      */
     public void unmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
+        this.ctx = ctx.cacheContext(cacheId);
+
         if (depEnabled) {
             // Don't unmarshal more than once by checking key for null.
             if (key == null)
                 key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
-
-            this.ctx = ctx.cacheContext(key.cacheId());
 
             // Unmarshal transform closure anyway if it exists.
             if (transformClosBytes != null && transformClosCol == null)
@@ -724,8 +751,6 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
                     filters = CU.empty();
             }
         }
-        else
-            this.ctx = ctx.cacheContext(key.cacheId());
 
         val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
@@ -744,6 +769,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             U.writeCollection(out, transformClosCol);
             U.writeArray(out, filters);
         }
+
+        out.writeInt(cacheId);
 
         val.writeTo(out);
 
@@ -766,10 +793,12 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             filterBytes = U.readByteArray(in);
         }
         else {
-            key = (GridCacheTxKey<K>)in.readObject();
+            key = (K)in.readObject();
             transformClosCol = U.readCollection(in);
             filters = U.readEntryFilterArray(in);
         }
+
+        cacheId = in.readInt();
 
         val.readFrom(in);
 

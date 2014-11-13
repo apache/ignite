@@ -105,9 +105,6 @@ public class GridCacheTxHandler<K, V> {
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
-                req.isInvalidate(),
-                req.syncCommit(),
-                req.syncRollback(),
                 false,
                 req.txSize(),
                 req.groupLockKey(),
@@ -260,9 +257,6 @@ public class GridCacheTxHandler<K, V> {
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
-                            req.isInvalidate(),
-                            req.commit() && req.replyRequired(),
-                            !req.commit() && req.replyRequired(),
                             req.explicitLock(),
                             req.txSize(),
                             req.groupLockKey(),
@@ -652,14 +646,14 @@ public class GridCacheTxHandler<K, V> {
                     tx.addWrite(entry, ctx.deploy().globalLoader());
 
                     if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
-                        invalidateNearEntry(cacheCtx, entry.key().key(), req.version());
+                        invalidateNearEntry(cacheCtx, entry.key(), req.version());
 
                     try {
                         if (req.needPreloadKey(idx)) {
                             GridCacheEntryEx<K, V> cached = entry.cached();
 
                             if (cached == null)
-                                cached = cacheCtx.cache().entryEx(entry.key().key(), req.topologyVersion());
+                                cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
                             GridCacheEntryInfo<K, V> info = cached.info();
 
@@ -670,7 +664,7 @@ public class GridCacheTxHandler<K, V> {
                     catch (GridDhtInvalidPartitionException e) {
                         tx.addInvalidPartition(cacheCtx, e.partition());
 
-                        tx.clearEntry(entry.key());
+                        tx.clearEntry(entry.txKey());
                     }
 
                     idx++;
@@ -806,13 +800,13 @@ public class GridCacheTxHandler<K, V> {
                                 "[key=" + txEntry.key() + ", part=" + part + ", locPart=" + locPart + ']');
 
                         if (tx != null)
-                            tx.clearEntry(txEntry.key());
+                            tx.clearEntry(txEntry.txKey());
 
                         break;
                     }
 
                     try {
-                        entry = (GridDistributedCacheEntry<K, V>)cacheCtx.cache().entryEx(txEntry.key().key(),
+                        entry = (GridDistributedCacheEntry<K, V>)cacheCtx.cache().entryEx(txEntry.key(),
                             req.topologyVersion());
 
                         if (tx == null) {
@@ -843,14 +837,14 @@ public class GridCacheTxHandler<K, V> {
                                     "(transaction has been completed): " + req.version());
                         }
 
-                        tx.addWrite(cacheCtx, txEntry.op(), txEntry.key(), txEntry.keyBytes(), txEntry.value(),
+                        tx.addWrite(cacheCtx, txEntry.op(), txEntry.txKey(), txEntry.keyBytes(), txEntry.value(),
                             txEntry.valueBytes(), txEntry.transformClosures(), txEntry.drVersion());
 
                         if (!marked) {
                             if (tx.markFinalizing(USER_FINISH))
                                 marked = true;
                             else {
-                                tx.clearEntry(txEntry.key());
+                                tx.clearEntry(txEntry.txKey());
 
                                 return null;
                             }
@@ -893,7 +887,7 @@ public class GridCacheTxHandler<K, V> {
                     if (log.isDebugEnabled())
                         log.debug("Received entry removed exception (will retry on renewed entry): " + entry);
 
-                    tx.clearEntry(txEntry.key());
+                    tx.clearEntry(txEntry.txKey());
 
                     if (log.isDebugEnabled())
                         log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +
@@ -905,7 +899,7 @@ public class GridCacheTxHandler<K, V> {
                             req + ", txEntry=" + txEntry + ']');
 
                     if (tx != null)
-                        tx.clearEntry(txEntry.key());
+                        tx.clearEntry(txEntry.txKey());
 
                     break;
                 }
@@ -947,7 +941,7 @@ public class GridCacheTxHandler<K, V> {
 
                 while (true) {
                     try {
-                        entry = cacheCtx.dht().near().peekExx(txEntry.key().key());
+                        entry = cacheCtx.dht().near().peekExx(txEntry.key());
 
                         if (entry != null) {
                             entry.keyBytes(txEntry.keyBytes());
@@ -994,7 +988,7 @@ public class GridCacheTxHandler<K, V> {
                                 marked = tx.markFinalizing(USER_FINISH);
 
                             if (marked)
-                                tx.addEntry(cacheCtx, txEntry.key(), txEntry.keyBytes(), txEntry.op(), txEntry.value(),
+                                tx.addEntry(cacheCtx, txEntry.txKey(), txEntry.keyBytes(), txEntry.op(), txEntry.value(),
                                     txEntry.valueBytes(), txEntry.drVersion());
                             else
                                 return null;
@@ -1003,7 +997,7 @@ public class GridCacheTxHandler<K, V> {
                                 tx.markGroupLock();
 
                                 if (!txEntry.groupLockEntry())
-                                    tx.groupLockKey(txEntry.key());
+                                    tx.groupLockKey(txEntry.txKey());
                             }
 
                             // Add remote candidate before reordering.
@@ -1042,7 +1036,7 @@ public class GridCacheTxHandler<K, V> {
                             log.debug("Received entry removed exception (will retry on renewed entry): " + entry);
 
                         if (tx != null) {
-                            tx.clearEntry(txEntry.key());
+                            tx.clearEntry(txEntry.txKey());
 
                             if (log.isDebugEnabled())
                                 log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +

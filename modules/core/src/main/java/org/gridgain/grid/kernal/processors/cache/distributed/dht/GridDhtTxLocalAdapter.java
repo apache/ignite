@@ -214,7 +214,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 assert e.cached() != null;
 
                 if (e.cached() == null || e.cached().obsolete()) {
-                    GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key().key());
+                    GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key());
 
                     e.cached(cached, cached.keyBytes());
                 }
@@ -239,7 +239,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key().key());
+                        GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key());
 
                         e.cached(cached, cached.keyBytes());
                     }
@@ -407,14 +407,14 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
         e.unmarshal(cctx, cctx.deploy().globalLoader());
 
-        checkInternal(e.key());
+        checkInternal(e.txKey());
 
         state = state();
 
         assert state == ACTIVE || (state == PREPARING && optimistic()): "Invalid tx state for adding entry: " + e;
 
         try {
-            GridCacheTxEntry<K, V> entry = txMap.get(e.key());
+            GridCacheTxEntry<K, V> entry = txMap.get(e.txKey());
 
             if (entry != null) {
                 entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
@@ -429,7 +429,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 entry = e.cleanCopy(e.context());
 
                 while (true) {
-                    GridDhtCacheEntry<K, V> cached = e.context().dht().entryExx(entry.key().key(), topologyVersion());
+                    GridDhtCacheEntry<K, V> cached = e.context().dht().entryExx(entry.key(), topologyVersion());
 
                     try {
                         // Set key bytes to avoid serializing in future.
@@ -456,13 +456,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     entry.explicitVersion(dhtVer);
                 }
 
-                txMap.put(entry.key(), entry);
+                txMap.put(entry.txKey(), entry);
 
                 if (log.isDebugEnabled())
                     log.debug("Added entry to transaction: " + entry);
             }
 
-            return addReader(msgId, e.context().dht().entryExx(entry.key().key()), entry, topologyVersion());
+            return addReader(msgId, e.context().dht().entryExx(entry.key()), entry, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(e.context(), ex.partition());
