@@ -59,22 +59,6 @@ public interface GridPortableBuilder {
     public GridPortableBuilder hashCode(int hashCode);
 
     /**
-     * Copy all fields from passed portable object.
-     * @param obj Portable object.
-     */
-    public GridPortableBuilder copyFields(GridPortableObject obj);
-
-    /**
-     * Returns the value of the specified field.
-     * If the value is another portable object instance of {@code GridPortableBuilder} will be returned.
-     * Arrays and collections returned from this method are modifiable.
-     *
-     * @param fldName Field name.
-     * @return Value of the field.
-     */
-    public <F> F field(String fldName);
-
-    /**
      * Adds {@code byte} field.
      *
      * @param fieldName Field name.
