@@ -353,11 +353,6 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout transaction timeout.
-     * @param invalidate Invalidation flag.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
-     * @param swapOrOffheapEnabled If {@code true} then swap storage will be used.
-     * @param storeEnabled if {@code true} then read/write through will be used.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if partition is locked.
@@ -369,11 +364,6 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
@@ -381,23 +371,20 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        return new GridNearTxLocal<>(
+        GridNearTxLocal<K, V> tx = new GridNearTxLocal<>(
             cctx,
             implicit,
             implicitSingle,
             concurrency,
             isolation,
             timeout,
-            invalidate,
-            syncCommit,
-            syncRollback,
-            swapOrOffheapEnabled,
-            storeEnabled,
             txSize,
             grpLockKey,
             partLock,
             subjId,
             taskNameHash);
+
+        return onCreated(tx);
     }
 
     /**

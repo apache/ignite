@@ -110,9 +110,20 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         UUID subjId,
         int taskNameHash
     ) {
-        super(cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer), implicit, implicitSingle, cctx,
-            concurrency, isolation, timeout, invalidate, syncCommit, syncRollback, explicitLock, txSize, grpLockKey,
-            partLock, subjId, taskNameHash);
+        super(
+            cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
+            implicit,
+            implicitSingle,
+            cctx,
+            concurrency,
+            isolation,
+            timeout,
+            explicitLock,
+            txSize,
+            grpLockKey,
+            partLock,
+            subjId,
+            taskNameHash);
 
         assert cctx != null;
         assert nearNodeId != null;
@@ -193,7 +204,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @Override protected boolean isBatchUpdate() {
         // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return (store().writeToStoreFromDht() || onePhaseCommit()) && super.isBatchUpdate();
+        return super.isBatchUpdate() && (store().writeToStoreFromDht() || onePhaseCommit());
     }
 
     /** {@inheritDoc} */

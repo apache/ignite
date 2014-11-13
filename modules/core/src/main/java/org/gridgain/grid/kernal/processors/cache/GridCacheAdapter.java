@@ -525,83 +525,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
-     * @param implicit {@code True} if transaction is implicit.
-     * @param implicitSingle Implicit-with-single-key flag.
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout transaction timeout.
-     * @param invalidate Invalidation flag.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
-     * @param swapOrOffheapEnabled If {@code true} then swap storage will be used.
-     * @param storeEnabled if {@code true} then read/write through will be used.
-     * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if partition is locked.
-     * @return New transaction.
-     */
-    public GridCacheTxLocalAdapter<K, V> newTx(
-        boolean implicit,
-        boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
-        int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock) {
-        // TODO GG-9141 move this method.
-        return ctx.tm().newTx(
-            implicit,
-            implicitSingle,
-            concurrency,
-            isolation,
-            timeout,
-            invalidate,
-            syncCommit,
-            syncRollback,
-            swapOrOffheapEnabled,
-            storeEnabled,
-            txSize,
-            grpLockKey,
-            partLock);
-    }
-
-    /**
-     * Creates transaction with all defaults.
-     *
-     * @param implicit Implicit flag.
-     * @param implicitSingle Implicit-with-one-key flag.
-     * @return New transaction.
-     */
-    private GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle) {
-        GridTransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
-
-        GridCacheTxConcurrency concurrency = implicit ? PESSIMISTIC : cfg.getDefaultTxConcurrency();
-        GridCacheTxIsolation isolation = implicit ? READ_COMMITTED : cfg.getDefaultTxIsolation();
-
-        return newTx(
-            implicit,
-            implicitSingle,
-            concurrency,
-            isolation,
-            cfg.getDefaultTxTimeout(),
-            ctx.isInvalidate(),
-            ctx.syncCommit(),
-            ctx.syncRollback(),
-            ctx.isSwapOrOffheapEnabled(),
-            ctx.isStoreEnabled(),
-            0,
-            /** group lock key */null,
-            false /** partition lock. */
-        );
-    }
-
-    /**
      * Post constructor initialization for subclasses.
      */
     protected void init() {
@@ -3135,9 +3058,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheTx tx() {
-        GridCacheTx tx = ctx.tm().threadLocalTx();
+        GridCacheTxAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        return tx == null ? null : new GridCacheTxProxyImpl<>(tx, this, ctx.gate());
+        return tx == null ? null : new GridCacheTxProxyImpl<>(tx, ctx.shared());
     }
 
     /** {@inheritDoc} */
@@ -3249,34 +3172,27 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        GridCacheTx tx = ctx.tm().userTx();
+        GridCacheTxEx<K, V> tx = (GridCacheTxEx<K, V>)ctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
                 "(current thread already has a transaction): " + tx);
 
-        tx = ctx.tm().onCreated(
-            newTx(
-                false,
-                false,
-                concurrency,
-                isolation,
-                timeout,
-                ctx.hasFlag(INVALIDATE),
-                ctx.syncCommit(),
-                ctx.syncRollback(),
-                ctx.isSwapOrOffheapEnabled(),
-                ctx.isStoreEnabled(),
-                txSize,
-                /** group lock keys */null,
-                /** partition lock */false
-            )
+        tx = ctx.tm().newTx(
+            false,
+            false,
+            concurrency,
+            isolation,
+            timeout,
+            txSize,
+            /** group lock keys */null,
+            /** partition lock */false
         );
 
         assert tx != null;
 
         // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx, this, ctx.gate());
+        return new GridCacheTxProxyImpl<>(tx, ctx.shared());
     }
 
     /** {@inheritDoc} */
@@ -3317,22 +3233,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             throw new IllegalStateException("Failed to start new transaction " +
                 "(current thread already has a transaction): " + tx);
 
-        GridCacheTxLocalEx<K, V> tx0 = ctx.tm().onCreated(
-            newTx(
-                false,
-                false,
-                concurrency,
-                isolation,
-                timeout,
-                ctx.hasFlag(INVALIDATE),
-                ctx.syncCommit(),
-                ctx.syncRollback(),
-                ctx.isSwapOrOffheapEnabled(),
-                ctx.isStoreEnabled(),
-                txSize,
-                grpLockKey,
-                partLock
-            )
+        GridCacheTxLocalEx<K, V> tx0 = ctx.tm().newTx(
+            false,
+            false,
+            concurrency,
+            isolation,
+            timeout,
+            txSize,
+            grpLockKey,
+            partLock
         );
 
         assert tx0 != null;
@@ -3349,7 +3258,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx0, this, ctx.gate());
+        return new GridCacheTxProxyImpl<>(tx0, ctx.shared());
     }
 
     /** {@inheritDoc} */
@@ -3797,7 +3706,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit()) {
-            tx = ctx.tm().onCreated(newTx(true, op.single()));
+            GridTransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
+
+            tx = ctx.tm().newTx(
+                true, op.single(),
+                tCfg.getDefaultTxConcurrency(),
+                tCfg.getDefaultTxIsolation(),
+                tCfg.getDefaultTxTimeout(),
+                0,
+                /** group lock keys */null,
+                /** partition lock */false
+            );
 
             assert tx != null;
 
@@ -3857,7 +3776,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit())
-            tx = ctx.tm().onCreated(newTx(true, op.single()));
+            tx = ctx.tm().newTx(
+                true,
+                op.single(),
+                PESSIMISTIC,
+                READ_COMMITTED,
+                ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
+                0,
+                null,
+                false);
 
         return asyncOp(tx, op);
     }

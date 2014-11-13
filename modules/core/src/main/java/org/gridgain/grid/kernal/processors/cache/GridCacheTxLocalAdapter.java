@@ -97,9 +97,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and lock is acquired for whole partition.
@@ -112,17 +109,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, /*local*/true, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, grpLockKey, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, /*local*/true, concurrency, isolation, timeout, txSize,
+            grpLockKey, subjId, taskNameHash);
 
         assert !partLock || grpLockKey != null;
 
@@ -422,7 +416,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return Store manager.
      */
     protected GridCacheStoreManager<K, V> store() {
-        return null; // TODO GG-9141 select store for transaction.
+        return null; // TODO GG-9141 select store for transaction. && store.confugured()
     }
 
     /**
@@ -437,7 +431,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws GridException {
         GridCacheStoreManager<K, V> store = store();
 
-        if (store.configured() && storeEnabled && (!internal() || groupLock())) {
+        if (store != null && (!internal() || groupLock())) {
             try {
                 // Implicit transactions are always updated at the end.
                 if (isBatchUpdate()) {
@@ -865,10 +859,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             }
         }
         else {
-            // TODO GG-9141 use all stores?
             GridCacheStoreManager<K, V> store = store();
 
-            if (store.configured() && storeEnabled && (!internal() || groupLock())) {
+            if (store != null && (!internal() || groupLock())) {
                 try {
                     store.txEnd(this, true);
                 }
@@ -1488,7 +1481,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             F.first(txEntry.transformClosures()) : null;
 
                                     V val = cached.innerGet(GridCacheTxLocalAdapter.this,
-                                        swapOrOffheapEnabled,
+                                        cacheCtx.isSwapOrOffheapEnabled(),
                                         /*read-through*/false,
                                         /*fail-fast*/true,
                                         /*unmarshal*/true,
@@ -2786,7 +2779,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return {@code True} if updates should be batched up.
      */
     protected boolean isBatchUpdate() {
-        return storeEnabled && (implicit() || store().configured());
+        GridCacheStoreManager<K, V> store = store();
+
+        return store != null;
     }
 
     /** {@inheritDoc} */

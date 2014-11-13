@@ -117,12 +117,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Invalidation flag for system invalidations (not user-based ones). */
     private boolean sysInvalidate;
 
-    /** */
-    protected boolean swapOrOffheapEnabled;
-
-    /** */
-    protected boolean storeEnabled;
-
     /** Internal flag. */
     protected boolean internal;
 
@@ -208,9 +202,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapOrOffheapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
      */
@@ -223,9 +214,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
@@ -242,9 +230,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
-        this.invalidate = invalidate;
-        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
-        this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
@@ -268,9 +253,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapOrOffheapEnabled Swap enabled flag.
-     * @param storeEnabled Store enabled (read/write through) flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is group-lock transaction.
      */
@@ -283,9 +265,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
@@ -299,9 +278,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
-        this.invalidate = invalidate;
-        this.swapOrOffheapEnabled = swapOrOffheapEnabled;
-        this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;

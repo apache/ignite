@@ -17,8 +17,6 @@ import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
-
 /**
  * Implementation of {@link GridCacheJtaManagerAdapter}.
  */
@@ -62,28 +60,18 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                         GridCacheTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
-                            // Start with default concurrency and isolation.
-                            GridCacheConfiguration cfg = cctx.config();
-
                             GridTransactionsConfiguration tCfg = cctx.kernalContext().config()
                                 .getTransactionsConfiguration();
 
-                            tx = cctx.tm().onCreated(
-                                cctx.cache().newTx(
-                                    false,
-                                    false,
-                                    tCfg.getDefaultTxConcurrency(),
-                                    tCfg.getDefaultTxIsolation(),
-                                    tCfg.getDefaultTxTimeout(),
-                                    cfg.isInvalidate() || cctx.hasFlag(INVALIDATE),
-                                    cctx.syncCommit(),
-                                    cctx.syncRollback(),
-                                    cctx.isSwapOrOffheapEnabled(),
-                                    cctx.isStoreEnabled(),
-                                    0,
-                                    /** group lock keys */null,
-                                    /** partition lock */false
-                                )
+                            tx = cctx.tm().newTx(
+                                false,
+                                false,
+                                tCfg.getDefaultTxConcurrency(),
+                                tCfg.getDefaultTxIsolation(),
+                                tCfg.getDefaultTxTimeout(),
+                                0,
+                                /** group lock keys */null,
+                                /** partition lock */false
                             );
                         }
 

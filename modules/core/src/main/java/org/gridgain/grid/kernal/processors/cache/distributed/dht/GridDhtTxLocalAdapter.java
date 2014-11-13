@@ -80,54 +80,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
      * @param explicitLock Explicit lock flag.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock If this is a group-lock transaction and the whole partition should be locked.
-     */
-    GridDhtTxLocalAdapter(
-        GridCacheVersion xidVer,
-        boolean implicit,
-        boolean implicitSingle,
-        GridCacheSharedContext<K, V> cctx,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean explicitLock,
-        int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock,
-        @Nullable UUID subjId,
-        int taskNameHash
-    ) {
-        this(xidVer, implicit, implicitSingle, cctx, concurrency, isolation, timeout, invalidate,
-            syncCommit, syncRollback, explicitLock, false, false, //TODO GG-9141 cctx.isStoreEnabled() && cctx.writeToStoreFromDht(),
-            txSize, grpLockKey, partLock, subjId, taskNameHash);
-    }
-
-    /**
-     * @param xidVer Transaction version.
-     * @param implicit Implicit flag.
-     * @param implicitSingle Implicit-with-single-key flag.
-     * @param cctx Cache context.
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
-     * @param explicitLock Explicit lock flag.
-     * @param swapEnabled Swap enabled.
-     * @param storeEnabled Store enabled flag.
-     * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if this is a group lock transaction and whole partition is locked.
      */
     protected GridDhtTxLocalAdapter(
         GridCacheVersion xidVer,
@@ -137,25 +93,18 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
         boolean explicitLock,
-        boolean swapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, swapEnabled,
-            storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, txSize, grpLockKey, partLock,
+            subjId, taskNameHash);
 
         assert cctx != null;
 
-        this.syncCommit = syncCommit;
-        this.syncRollback = syncRollback;
         this.explicitLock = explicitLock;
 
         threadId = Thread.currentThread().getId();

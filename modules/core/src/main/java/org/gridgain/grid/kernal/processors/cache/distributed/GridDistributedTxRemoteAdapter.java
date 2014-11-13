@@ -97,10 +97,22 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, xidVer, ctx.versions().last(), Thread.currentThread().getId(), concurrency, isolation,
-            timeout, invalidate, false, false, txSize, grpLockKey, subjId, taskNameHash);
+        super(
+            ctx,
+            nodeId,
+            xidVer,
+            ctx.versions().last(),
+            Thread.currentThread().getId(),
+            concurrency,
+            isolation,
+            timeout,
+            txSize,
+            grpLockKey,
+            subjId,
+            taskNameHash);
 
         this.rmtThreadId = rmtThreadId;
+        this.invalidate = invalidate;
 
         commitVersion(commitVer);
 

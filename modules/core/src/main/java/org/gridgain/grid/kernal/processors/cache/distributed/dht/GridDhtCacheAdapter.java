@@ -539,16 +539,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapOrOffheapEnabled, boolean storeEnabled, int txSize,
-        @Nullable GridCacheTxKey grpLockKey, boolean partLock) {
-        assert false;
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert false;

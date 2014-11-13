@@ -34,6 +34,7 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.transactions.*;
@@ -94,6 +95,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Cache MBeans. */
     private final Collection<ObjectName> cacheMBeans = new LinkedList<>();
+
+    /** Transaction interface implementation. */
+    private GridTransactionsImpl transactions;
 
     /**
      * @param ctx Kernal context.
@@ -1034,6 +1038,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
         }
 
+        transactions = new GridTransactionsImpl(sharedCtx);
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
     }
@@ -1954,7 +1960,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Transactions interface implementation.
      */
     public GridTransactions transactions() {
-        return null; // TODO GG-9141 return transactions impl.
+        return transactions;
     }
 
     /**

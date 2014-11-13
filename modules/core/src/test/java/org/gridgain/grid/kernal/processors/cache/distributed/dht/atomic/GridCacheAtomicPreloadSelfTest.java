@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.transactions.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -27,7 +28,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(GridCacheAtomicityMode.ATOMIC);
+        cacheCfg.setAtomicityMode(GridCacheAtomicityMode.TRANSACTIONAL);
         cacheCfg.setBackups(1);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -40,32 +41,21 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      */
     public void testPreloading() throws Exception {
         try {
-            startGrids(2);
+            startGrids(3);
 
-            GridEx grid = grid(0);
+            GridTransactions txs = grid(0).transactions();
 
-            GridCache<Object, Object> cache = grid.cache(null);
+            assert txs != null;
 
-            int keyCnt = 100;
+            try (GridCacheTx tx = txs.txStart(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.REPEATABLE_READ)) {
+                GridCache<Object, Object> cache = grid(0).cache(null);
 
-            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, i);
+                // Lock.
+                cache.get(0);
 
-            startGrid(2);
+                cache.put(0, 1);
 
-            awaitPartitionMapExchange();
-
-            for (int i = 0; i < keyCnt; i++) {
-                for (int g = 0; g < 3; g++) {
-                    GridEx locGrid = grid(g);
-
-                    GridNode node = locGrid.localNode();
-
-                    Collection<GridNode> affNodes = cache.affinity().mapKeyToPrimaryAndBackups(i);
-
-                    if (affNodes.contains(node))
-                        assertEquals(i, locGrid.cache(null).peek(i));
-                }
+                tx.commit();
             }
         }
         finally {

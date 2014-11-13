@@ -256,26 +256,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(
-        boolean implicit,
-        boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
-        long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapOrOffheapEnabled,
-        boolean storeEnabled,
-        int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
-        boolean partLock
-    ) {
-        throw new UnsupportedOperationException("Transactions are not supported for " +
-            "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)");
-    }
-
-    /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,

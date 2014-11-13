@@ -395,6 +395,43 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Nulling references to potentially leak-prone objects.
+     */
+    public void cleanup() {
+        mvccMgr = null;
+
+        mgrs.clear();
+    }
+
+    /**
+     * @param tx Transaction to close.
+     * @throws GridException If failed.
+     */
+    public void endTx(GridCacheTxEx<K, V> tx) throws GridException {
+        // TODO GG-9141 sync with all caches.
+        tx.close();
+    }
+
+    /**
+     * @param tx Transaction to commit.
+     * @return Commit future.
+     */
+    public GridFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
+        // TODO GG-9141 sync with all caches.
+        return tx.commitAsync();
+    }
+
+    /**
+     * @param tx Transaction to rollback.
+     * @throws GridException If failed.
+     */
+    public void rollbackTx(GridCacheTxEx<K, V> tx) throws GridException {
+        // TODO GG-9141 sync with all caches.
+
+        tx.rollback();
+    }
+
+    /**
      * @param mgr Manager to add.
      * @return Added manager.
      */
@@ -403,14 +440,5 @@ public class GridCacheSharedContext<K, V> {
             mgrs.add(mgr);
 
         return mgr;
-    }
-
-    /**
-     * Nulling references to potentially leak-prone objects.
-     */
-    public void cleanup() {
-        mvccMgr = null;
-
-        mgrs.clear();
     }
 }

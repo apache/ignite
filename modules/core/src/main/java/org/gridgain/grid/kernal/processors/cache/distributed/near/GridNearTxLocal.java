@@ -62,12 +62,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** Entries to lock on next step of prepare stage. */
     private Collection<GridCacheTxEntry<K, V>> optimisticLockEntries = Collections.emptyList();
 
-    /** */
-    private boolean syncCommit;
-
-    /** */
-    private boolean syncRollback;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -82,11 +76,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
-     * @param swapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is a group lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
@@ -98,11 +87,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean syncCommit,
-        boolean syncRollback,
-        boolean swapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
@@ -117,12 +101,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             concurrency,
             isolation,
             timeout,
-            invalidate,
-            syncCommit,
-            syncRollback,
             /*TODO explicit lock???*/false,
-            swapEnabled,
-            storeEnabled, // TODO GG-9141 storeEnabled && !ctx.writeToStoreFromDht(),
             txSize,
             grpLockKey,
             partLock,
@@ -130,9 +109,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             taskNameHash);
 
         assert ctx != null;
-
-        this.syncCommit = syncCommit;
-        this.syncRollback = syncRollback;
     }
 
     /** {@inheritDoc} */
@@ -452,16 +428,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncRollback() {
-        return syncRollback;
     }
 
     /** {@inheritDoc} */

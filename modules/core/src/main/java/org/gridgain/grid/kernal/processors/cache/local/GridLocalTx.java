@@ -47,9 +47,6 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidation policy.
-     * @param swapEnabled Whether to use swap storage.
-     * @param storeEnabled Whether to use read/write through.
      */
     GridLocalTx(
         GridCacheSharedContext<K, V> ctx,
@@ -58,15 +55,12 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
-        boolean invalidate,
-        boolean swapEnabled,
-        boolean storeEnabled,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, invalidate,
-            swapEnabled, storeEnabled, txSize, null, false, subjId, taskNameHash);
+        super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, txSize, null,
+            false, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
