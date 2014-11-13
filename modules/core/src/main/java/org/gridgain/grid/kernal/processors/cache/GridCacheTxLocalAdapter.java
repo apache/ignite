@@ -1792,8 +1792,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     continue;
                 }
 
-                if (cctx.portableEnabled())
-                    key = (K)cctx.marshalToPortable(key);
+                if (cacheCtx.portableEnabled())
+                    key = (K)cacheCtx.marshalToPortable(key);
 
                 GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
                 
