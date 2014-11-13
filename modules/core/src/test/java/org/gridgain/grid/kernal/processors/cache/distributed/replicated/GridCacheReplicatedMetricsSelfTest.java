@@ -43,14 +43,4 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAb
     @Override protected int gridCount() {
         return GRID_CNT;
     }
-
-    /** {@inheritDoc} */
-    @Override protected int expectedReadsPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int expectedMissesPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
-    }
 }

@@ -42,6 +42,9 @@ public class OptimizedClassNamesGenerator {
     /** */
     private Collection<String> clsNames;
 
+    /** Collection of classes without serialVersionUID. */
+    private Collection<Class> clsWithoutSerialVersionUID;
+
     /** */
     private int urlPrefixLen;
 
@@ -57,6 +60,8 @@ public class OptimizedClassNamesGenerator {
         assert prev != null;
 
         clsNames = new HashSet<>();
+
+        clsWithoutSerialVersionUID = new ArrayList<>();
 
         URL[] urls = ((URLClassLoader)OptimizedClassNamesGenerator.class.getClassLoader()).getURLs();
 
@@ -75,6 +80,17 @@ public class OptimizedClassNamesGenerator {
 
                 processFile(f);
             }
+        }
+
+        if (clsWithoutSerialVersionUID.size() > 0) {
+            StringBuilder sb = new StringBuilder("No serialVersionUID field in class(es): ");
+
+            for (Class cls : clsWithoutSerialVersionUID)
+                sb.append(cls.getName()).append(", ");
+
+            sb.setLength(sb.length() - ", ".length());
+
+            throw new RuntimeException(sb.toString());
         }
 
         Collection<String> prevCls = previousVersionClasses(prev);
@@ -204,7 +220,7 @@ public class OptimizedClassNamesGenerator {
                 throw new RuntimeException("serialVersionUID field is not final in class: " + cls.getName());
         }
         catch (NoSuchFieldException ignored) {
-            System.out.println(">>> No serialVersionUID field in class: " + cls.getName());
+            clsWithoutSerialVersionUID.add(cls);
         }
     }
 
