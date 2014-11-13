@@ -28,7 +28,7 @@ import java.util.*;
  *
  * <p>
  * Also builder can be initialized by existing portable object. This allow to change some fields without modification
- * anther fields.
+ * another fields.
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
  * builder.stringField("name", "John");
