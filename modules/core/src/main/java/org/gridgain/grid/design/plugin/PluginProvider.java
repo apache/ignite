@@ -11,11 +11,9 @@ package org.gridgain.grid.design.plugin;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.design.*;
-import org.gridgain.grid.kernal.managers.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Pluggable ignite component.
