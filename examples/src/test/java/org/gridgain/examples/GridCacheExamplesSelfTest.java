@@ -13,8 +13,6 @@ import org.gridgain.examples.datagrid.starschema.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.examples.datagrid.*;
 import org.gridgain.examples.datagrid.datastructures.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**
