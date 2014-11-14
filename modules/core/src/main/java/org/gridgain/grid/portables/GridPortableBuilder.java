@@ -17,53 +17,41 @@ import java.util.*;
  * Portable object builder. Provides ability to build portable objects dynamically
  * without having class definitions.
  * <p>
- * Note that type ID is required in order to build portable object. Usually it is
- * enough to provide a simple class name via {@link #typeId(String)} method and
- * GridGain will generate the type ID automatically. Here is an example of how a
- * portable object can be built dynamically:
+ * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder();
- *
- * builder.typeId("MyObject");
- *
+ * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
  * builder.stringField("fieldA", "A");
  * build.intField("fieldB", "B");
  *
  * GridPortableObject portableObj = builder.build();
  * </pre>
- * Also {@code GridPortableBuilder} can wrap existing portable object to make a copy of this object with some changes.
+ *
  * <p>
- * Usage:
+ * Also builder can be initialized by existing portable object. This allow to change some fields without modification
+ * another fields.
  * <pre name=code class=java>
- * GridPortableBuilder builder = portableObj.createBuilder();
- *
- * String firstName = builder.field("firstName");
- * String lastName = builder.field("firstName");
- * builder.fieldValue("fullName", firstName + " " + lastName)
- *
- * portableObj = builder.build();
+ * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
+ * builder.stringField("name", "John");
+ * person = builder.build();
  * </pre>
+ * </p>
  *
- * <p>
- * This class is not thread-safe.
+ * For the cases when class definition is present
+ * in the class path, it is also possible to populate a standard POJO and then
+ * convert it to portable format, like so:
+ * <pre name=code class=java>
+ * MyObject obj = new MyObject();
+ *
+ * obj.setFieldA("A");
+ * obj.setFieldB(123);
+ *
+ * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * </pre>
+ * @see GridPortables#builder(int)
+ * @see GridPortables#builder(String)
+ * @see GridPortables#builder(GridPortableObject)
  */
 public interface GridPortableBuilder {
-    /**
-     * Sets type ID.
-     *
-     * @param cls Class.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder typeId(Class<?> cls);
-
-    /**
-     * Sets type ID.
-     *
-     * @param clsName Class name.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder typeId(String clsName);
-
     /**
      * Sets hash code for the portable object. If not set, GridGain will generate
      * one automatically.
@@ -72,26 +60,6 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder hashCode(int hashCode);
-
-    /**
-     * Returns the value of the specified field.
-     * If the value is another portable object instance of {@code GridPortableBuilder} will be returned.
-     * Arrays and collections returned from this method are modifiable.
-     *
-     * @param fldName Field name.
-     * @return Value of the field.
-     */
-    public <F> F field(String fldName);
-
-    /**
-     * Sets field value. Type of field will be determinated by value.
-     * Note: This method can be called for builder created by existing portable object only!!! For new portable objects
-     * you have to specify type of field explicitly.
-     *
-     * @param fldName Field name.
-     * @param val Field value.
-     */
-    public void field(String fldName, @Nullable Object val);
 
     /**
      * Adds {@code byte} field.
@@ -344,6 +312,13 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public <T extends Enum<?>> GridPortableBuilder enumArrayField(String fieldName, T[] val);
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder portableField(String fieldName, GridPortableObject val);
 
     /**
      * Builds portable object.
