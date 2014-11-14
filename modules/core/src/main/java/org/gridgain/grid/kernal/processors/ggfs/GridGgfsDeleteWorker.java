@@ -74,8 +74,6 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
     GridGgfsDeleteWorker(GridGgfsContext ggfsCtx) {
         super("ggfs-delete-worker%" + ggfsCtx.ggfs().name() + "%" + ggfsCtx.kernalContext().localNodeId() + "%");
 
-        assert ggfsCtx != null;
-
         this.ggfsCtx = ggfsCtx;
 
         meta = ggfsCtx.meta();
