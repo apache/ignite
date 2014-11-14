@@ -508,7 +508,11 @@ public class GridSpiTestContext implements GridSpiContext {
 
     /** {@inheritDoc} */
     @Override public GridTcpMessageFactory messageFactory() {
-        return null;
+        return new GridTcpMessageFactory() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                return GridTcpCommunicationMessageFactory.create(type);
+            }
+        };
     }
 
     /**
