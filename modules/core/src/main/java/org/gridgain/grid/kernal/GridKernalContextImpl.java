@@ -257,9 +257,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
-    private Map<String, PluginProvider> plugins = new HashMap<>();
-
-    /** */
     private GridEx grid;
 
     /** */
@@ -295,6 +292,9 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
 
+    /** */
+    private IgnitePluginManager pluginManager;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -310,7 +310,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param utilityCachePool Utility cache pool.
-     * @param pluginProviders Plugin providers.
      * @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -319,7 +318,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         GridConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
-        Collection<PluginProvider> pluginProviders,
         boolean ent) {
         assert grid != null;
         assert cfg != null;
@@ -340,12 +338,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
                     "META-INF/gridgain.xml.");
         }
 
-        for (PluginProvider provider : pluginProviders) {
-            if (plugins.containsKey(provider.name()))
-                throw new IgniteException("Duplicated plugin name: " + provider.name());
-
-            plugins.put(provider.name(), provider);
-        }
+        pluginManager = new IgnitePluginManager(this, cfg.getPluginConfigurations());
     }
 
     /** {@inheritDoc} */
@@ -451,7 +444,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
             interopProc = (GridInteropProcessor)comp;
-         else
+        else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         comps.add(comp);
@@ -784,7 +777,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
-        PluginProvider plugin = plugins.get(name);
+        PluginProvider plugin = pluginManager.pluginProvider(name);
 
         if (plugin == null)
             throw new PluginNotFoundException(name);
@@ -794,12 +787,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
-        for (PluginProvider plugin : plugins.values()) {
-            T comp = (T)plugin.createComponent(cls);
+        T res = pluginManager.createComponent(cls);
 
-            if (comp != null)
-                return comp;
-        }
+        if (res != null)
+            return res;
 
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
@@ -864,6 +855,13 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
                     throw new IllegalStateException("Common message type producer is not registered: " + type);
             }
         };
+    }
+
+    /**
+     * @return Plugin manager.
+     */
+    @Override public IgnitePluginManager pluginManager() {
+        return pluginManager;
     }
 
     /** {@inheritDoc} */

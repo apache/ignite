@@ -499,4 +499,9 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Message type code.
      */
     public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
+
+    /**
+     * @return Plugin manager.
+     */
+    public IgnitePluginManager pluginManager();
 }

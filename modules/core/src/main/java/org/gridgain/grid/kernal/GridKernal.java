@@ -587,44 +587,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         assert cfg != null;
 
-        Collection<PluginProvider> pluginProviders;
-
-        if (!F.isEmpty(cfg.getPluginConfigurations())) {
-            pluginProviders = new ArrayList<>(cfg.getPluginConfigurations().size());
-
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                try {
-                    if (pluginCfg.providerClass() == null)
-                        throw new IgniteException("Provider class is null.");
-
-                    PluginProvider provider;
-
-                    try {
-                        Constructor<? extends  PluginProvider> ctr =
-                            pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
-
-                        provider = ctr.newInstance(pluginCfg);
-                    }
-                    catch (NoSuchMethodException ignore) {
-                        provider = pluginCfg.providerClass().newInstance();
-                    }
-
-                    if (F.isEmpty(provider.name()))
-                        throw new IgniteException("Plugin name can not be empty.");
-
-                    if (provider.plugin() == null)
-                        throw new IgniteException("Plugin is null.");
-
-                    pluginProviders.add(provider);
-                }
-                catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new IgniteException("Failed to create plugin provider instance.", e);
-                }
-            }
-        }
-        else
-            pluginProviders = Collections.emptyList();
-
         // Make sure we got proper configuration.
         validateCommon(cfg);
 
@@ -696,7 +658,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Spin out SPIs & managers.
         try {
             GridKernalContextImpl ctx =
-                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, pluginProviders, ENT);
+                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -727,7 +689,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, pluginProviders, ctx);
+            GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
 
             addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
 
@@ -753,8 +715,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, createComponent(GridSecurityManager.class, pluginProviders, ctx), attrs);
-            startManager(ctx, createComponent(GridSecureSessionManager.class, pluginProviders, ctx), attrs);
+            startManager(ctx, createComponent(GridSecurityManager.class, ctx), attrs);
+            startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
             startManager(ctx, new GridCheckpointManager(ctx), attrs);
 
@@ -771,16 +733,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridLicenseProcessor.class, pluginProviders, ctx), attrs);
+            startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridSegmentationProcessor.class, pluginProviders, ctx), attrs);
+            startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridCacheProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-            startProcessor(ctx, createComponent(GridPortableProcessor.class, pluginProviders, ctx), attrs);
-            startProcessor(ctx, createComponent(GridInteropProcessor.class, pluginProviders, ctx), attrs);
+            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
+            startProcessor(ctx, createComponent(GridInteropProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -791,8 +753,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
 
-            if (!F.isEmpty(pluginProviders))
-                startPlugins(ctx, pluginProviders, cfg, attrs);
+            // Start plugins.
+            for (PluginProvider provider : ctx.pluginManager().allProviders()) {
+                ctx.add(new GridPluginComponent(provider));
+
+                provider.start(ctx.pluginManager().pluginContextForProvider(provider), attrs);
+            }
 
             ctx.createMessageFactory();
 
@@ -1619,31 +1585,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         catch (GridException e) {
             throw new GridException("Failed to start processor: " + proc, e);
-        }
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param providers Plugin providers.
-     * @param cfg Configuration.
-     * @param attrs Attributes.
-     */
-    @SuppressWarnings("unchecked")
-    private void startPlugins(GridKernalContextImpl ctx, Collection<PluginProvider> providers, GridConfiguration cfg,
-        Map<String, Object> attrs) {
-        Iterator<PluginProvider> providerIter = providers.iterator();
-        Iterator<? extends PluginConfiguration> cfgIter = cfg.getPluginConfigurations().iterator();
-
-        while (providerIter.hasNext()) {
-            assert cfgIter.hasNext();
-
-            PluginProvider provider = providerIter.next();
-
-            GridPluginComponent comp = new GridPluginComponent(provider);
-
-            ctx.add(comp);
-
-            provider.start(new GridPluginContext(ctx, cfgIter.next()), attrs);
         }
     }
 
@@ -3268,22 +3209,17 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * Creates optional component.
      *
      * @param cls Component interface.
-     * @param pluginProviders Plugin providers.
      * @param ctx Kernal context.
      * @return Created component.
      * @throws GridException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls,
-        Collection<PluginProvider> pluginProviders,
-        GridKernalContext ctx) throws GridException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws GridException {
         assert cls.isInterface() : cls;
 
-        for (PluginProvider pluginProvider : pluginProviders) {
-            T component = (T)pluginProvider.createComponent(cls);
+        T comp = ctx.pluginManager().createComponent(cls);
 
-            if (component != null)
-                return component;
-        }
+        if (comp != null)
+            return comp;
 
         // TODO 9341: get rid of ent/os after moving ent code to plugin.
         Class<T> implCls = null;
