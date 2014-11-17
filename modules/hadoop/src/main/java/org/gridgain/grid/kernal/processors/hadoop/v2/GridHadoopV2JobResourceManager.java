@@ -35,6 +35,9 @@ public class GridHadoopV2JobResourceManager {
     /** Hadoop job context. */
     private final JobContextImpl ctx;
 
+    /** Properties are sent to tasks. */
+    private Map<String, String> props;
+
     /** Logger. */
     private final GridLogger log;
 

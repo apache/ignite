@@ -28,7 +28,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
-import java.io.File;
+import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -66,6 +66,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
     /** Local node ID */
     private UUID locNodeId;
+
+    /** Serialized JobConf. */
+    private byte[] jobConfData;
 
     /**
      * @param jobId Job ID.
@@ -192,9 +195,19 @@ public class GridHadoopV2Job implements GridHadoopJob {
             }
 
             Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class,
-                GridHadoopJobId.class, UUID.class);
+                GridHadoopJobId.class, UUID.class, DataInput.class);
 
-            GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId);
+            if (jobConfData == null) {
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+                jobConf.write(new DataOutputStream(buf));
+
+                jobConfData = buf.toByteArray();
+            }
+
+
+            GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
+                new DataInputStream(new ByteArrayInputStream(jobConfData)));
 
             fut.onDone(res);
 
