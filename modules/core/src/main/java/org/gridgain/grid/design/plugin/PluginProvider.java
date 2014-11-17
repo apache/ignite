@@ -44,6 +44,13 @@ public interface PluginProvider<C extends PluginConfiguration> {
     @Nullable public <T> T createComponent(Class<T> cls);
 
     /**
+     * Register extensions.
+     * @param ctx Plugin context.
+     * @param registry Extension registry.
+     */
+    public void initExtensions(PluginContext ctx, IgniteExtensionRegistry registry);
+
+    /**
      * Starts grid component.
      *
      * @param ctx Plugin context.

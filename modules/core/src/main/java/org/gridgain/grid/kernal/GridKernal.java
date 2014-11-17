@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
-import org.gridgain.grid.design.*;
 import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.events.*;
@@ -55,7 +54,6 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
@@ -72,7 +70,6 @@ import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
@@ -689,13 +686,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            GridVersionProcessor verProc = createComponent(GridVersionProcessor.class, ctx);
-
             addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
 
-            // Start version converter processor before all other
-            // components so they can register converters.
-            startProcessor(ctx, verProc, attrs);
+            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg.getPluginConfigurations()), attrs);
 
             // Off-heap processor has no dependencies.
             startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
@@ -754,17 +747,13 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
 
             // Start plugins.
-            for (PluginProvider provider : ctx.pluginManager().allProviders()) {
+            for (PluginProvider provider : ctx.plugins().allProviders()) {
                 ctx.add(new GridPluginComponent(provider));
 
-                provider.start(ctx.pluginManager().pluginContextForProvider(provider), attrs);
+                provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
 
             ctx.createMessageFactory();
-
-            // Put version converters to attributes after
-            // all components are started.
-            verProc.addConvertersToAttributes(attrs);
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx);
@@ -3216,7 +3205,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws GridException {
         assert cls.isInterface() : cls;
 
-        T comp = ctx.pluginManager().createComponent(cls);
+        T comp = ctx.plugins().createComponent(cls);
 
         if (comp != null)
             return comp;

@@ -29,7 +29,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -49,7 +48,6 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.direct.*;
@@ -315,13 +313,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public ExecutorService utilityCachePool();
 
     /**
-     * Gets version converter processor.
-     *
-     * @return Version converter processor.
-     */
-    public GridVersionProcessor versionConverter();
-
-    /**
      * Gets portable processor.
      *
      * @return Portable processor.
@@ -334,6 +325,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Interop processor.
      */
     public GridInteropProcessor interop();
+
+    /**
+     * @return Plugin processor.
+     */
+    public IgnitePluginProcessor plugins();
 
     /**
      * Gets deployment manager.
@@ -482,6 +478,12 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
 
     /**
+     * @param extensionItf Extension interface class.
+     * @return Returns implementation for provided extension from all plugins.
+     */
+    public <T> T[] extensions(Class<T> extensionItf);
+
+    /**
      * Creates optional component.
      *
      * @param cls Component class.
@@ -499,9 +501,4 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Message type code.
      */
     public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
-
-    /**
-     * @return Plugin manager.
-     */
-    public IgnitePluginManager pluginManager();
 }

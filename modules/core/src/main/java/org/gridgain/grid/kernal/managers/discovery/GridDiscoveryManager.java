@@ -387,8 +387,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         // Start discovery worker.
         new GridThread(discoWrk).start();
 
-        ctx.versionConverter().onStart(discoCache().remoteNodes());
-        ctx.versionConverter().onStart(discoCache().daemonNodes());
+        for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+            listener.onStart(discoCache().remoteNodes());
+            listener.onStart(discoCache().daemonNodes());
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -1371,7 +1373,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                         U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                     }
 
-                    ctx.versionConverter().onNodeJoined(node);
+                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                        listener.onNodeJoined(node);
+                    }
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {
@@ -1394,7 +1398,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    ctx.versionConverter().onNodeLeft(node);
+                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                        listener.onNodeLeft(node);
+                    }
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {
@@ -1417,7 +1423,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    ctx.versionConverter().onNodeLeft(node);
+                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                        listener.onNodeLeft(node);
+                    }
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {

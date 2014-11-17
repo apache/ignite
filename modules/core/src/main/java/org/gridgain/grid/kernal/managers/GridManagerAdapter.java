@@ -461,11 +461,21 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     }
 
                     @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        return ctx.versionConverter().writeDelta(nodeId, msgCls, buf);
+                        for (IgniteMessagePatcher patcher : ctx.extensions(IgniteMessagePatcher.class)) {
+                            if (!patcher.onMessageSend(nodeId, msgCls, buf))
+                                return false;
+                        }
+
+                        return true;
                     }
 
                     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        return ctx.versionConverter().readDelta(nodeId, msgCls, buf);
+                        for (IgniteMessagePatcher patcher : ctx.extensions(IgniteMessagePatcher.class)) {
+                            if (!patcher.onMessageCome(nodeId, msgCls, buf))
+                                return false;
+                        }
+
+                        return true;
                     }
 
                     @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.design.*;
 import org.gridgain.grid.design.plugin.*;
-import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -23,6 +22,7 @@ import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -30,30 +30,28 @@ import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.dr.os.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.interop.*;
-import org.gridgain.grid.kernal.processors.portable.*;
-import org.gridgain.grid.kernal.processors.service.*;
-import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
+import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.direct.*;
@@ -238,7 +236,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridVersionProcessor verProc;
+    private IgnitePluginProcessor pluginProc;
 
     /** */
     @GridToStringExclude
@@ -292,9 +290,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
 
-    /** */
-    private IgnitePluginManager pluginManager;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -337,8 +332,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/gridgain.xml.");
         }
-
-        pluginManager = new IgnitePluginManager(this, cfg.getPluginConfigurations());
     }
 
     /** {@inheritDoc} */
@@ -436,14 +429,14 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof GridVersionProcessor)
-            verProc = (GridVersionProcessor)comp;
         else if (comp instanceof GridHadoopProcessorAdapter)
             hadoopProc = (GridHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
             interopProc = (GridInteropProcessor)comp;
+        else if (comp instanceof IgnitePluginProcessor)
+            pluginProc = (IgnitePluginProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -686,11 +679,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridVersionProcessor versionConverter() {
-        return verProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridPortableProcessor portable() {
         return portableProc;
     }
@@ -777,7 +765,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
-        PluginProvider plugin = pluginManager.pluginProvider(name);
+        PluginProvider plugin = pluginProc.pluginProvider(name);
 
         if (plugin == null)
             throw new PluginNotFoundException(name);
@@ -787,7 +775,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
-        T res = pluginManager.createComponent(cls);
+        T res = pluginProc.createComponent(cls);
 
         if (res != null)
             return res;
@@ -857,11 +845,16 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         };
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T[] extensions(Class<T> extensionItf) {
+        return pluginProc.extensions(extensionItf);
+    }
+
     /**
      * @return Plugin manager.
      */
-    @Override public IgnitePluginManager pluginManager() {
-        return pluginManager;
+    @Override public IgnitePluginProcessor plugins() {
+        return pluginProc;
     }
 
     /** {@inheritDoc} */
