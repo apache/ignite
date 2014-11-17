@@ -387,7 +387,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         // Start discovery worker.
         new GridThread(discoWrk).start();
 
-        for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+        for (GridDiscoveryManagerListener listener : ctx.plugins().extensions(GridDiscoveryManagerListener.class)) {
             listener.onStart(discoCache().remoteNodes());
             listener.onStart(discoCache().daemonNodes());
         }
@@ -1373,7 +1373,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                         U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                     }
 
-                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                    for (GridDiscoveryManagerListener listener : ctx.plugins()
+                        .extensions(GridDiscoveryManagerListener.class)) {
                         listener.onNodeJoined(node);
                     }
 
@@ -1398,7 +1399,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                    for (GridDiscoveryManagerListener listener : ctx.plugins()
+                        .extensions(GridDiscoveryManagerListener.class)) {
                         listener.onNodeLeft(node);
                     }
 
@@ -1423,7 +1425,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (GridDiscoveryManagerListener listener : ctx.extensions(GridDiscoveryManagerListener.class)) {
+                    for (GridDiscoveryManagerListener listener : ctx.plugins().extensions(GridDiscoveryManagerListener.class)) {
                         listener.onNodeLeft(node);
                     }
 

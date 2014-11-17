@@ -845,11 +845,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         };
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T[] extensions(Class<T> extensionItf) {
-        return pluginProc.extensions(extensionItf);
-    }
-
     /**
      * @return Plugin manager.
      */

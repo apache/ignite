@@ -461,7 +461,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     }
 
                     @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        for (IgniteMessagePatcher patcher : ctx.extensions(IgniteMessagePatcher.class)) {
+                        for (IgniteMessagePatcher patcher : ctx.plugins().extensions(IgniteMessagePatcher.class)) {
                             if (!patcher.onMessageSend(nodeId, msgCls, buf))
                                 return false;
                         }
@@ -470,7 +470,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                     }
 
                     @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        for (IgniteMessagePatcher patcher : ctx.extensions(IgniteMessagePatcher.class)) {
+                        for (IgniteMessagePatcher patcher : ctx.plugins().extensions(IgniteMessagePatcher.class)) {
                             if (!patcher.onMessageCome(nodeId, msgCls, buf))
                                 return false;
                         }

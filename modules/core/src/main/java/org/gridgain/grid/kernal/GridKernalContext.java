@@ -478,12 +478,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
 
     /**
-     * @param extensionItf Extension interface class.
-     * @return Returns implementation for provided extension from all plugins.
-     */
-    public <T> T[] extensions(Class<T> extensionItf);
-
-    /**
      * Creates optional component.
      *
      * @param cls Component class.
