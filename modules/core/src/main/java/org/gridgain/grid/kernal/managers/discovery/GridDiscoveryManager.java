@@ -251,9 +251,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 if (snapshots != null)
                     topHist = snapshots;
 
-                if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)
+                if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
                         c.updateAlives(node);
+                }
+
+                if (type == EVT_NODE_JOINED) {
+                    for (GridDiscoveryManagerListener listener : ctx.plugins()
+                        .extensions(GridDiscoveryManagerListener.class)) {
+                        listener.beforeNodeJoined(node);
+                    }
+                }
 
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
@@ -265,31 +273,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     discoCache.set(cache);
                 }
 
-                if (type == EVT_NODE_JOINED) {
-                    // If this is a local join event, just save it and do not notify listeners.
-                    if (node.id().equals(locNode.id())) {
-                        GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
+                // If this is a local join event, just save it and do not notify listeners.
+                if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
+                    GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
 
-                        discoEvt.node(ctx.discovery().localNode());
-                        discoEvt.eventNode(node);
-                        discoEvt.type(EVT_NODE_JOINED);
+                    discoEvt.node(ctx.discovery().localNode());
+                    discoEvt.eventNode(node);
+                    discoEvt.type(EVT_NODE_JOINED);
 
-                        discoEvt.topologySnapshot(topVer, new ArrayList<>(
-                            F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
-                                @Override public GridNode apply(GridNode e) {
-                                    return e;
-                                }
-                            }, daemonFilter)));
+                    discoEvt.topologySnapshot(topVer, new ArrayList<>(
+                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                            @Override public GridNode apply(GridNode e) {
+                                return e;
+                            }
+                        }, daemonFilter)));
 
-                        locJoinEvt.onDone(discoEvt);
+                    locJoinEvt.onDone(discoEvt);
 
-                        return;
-                    }
-
-                    for (GridDiscoveryManagerListener listener : ctx.plugins()
-                        .extensions(GridDiscoveryManagerListener.class)) {
-                        listener.beforeNodeJoined(node);
-                    }
+                    return;
                 }
 
                 if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT ||
