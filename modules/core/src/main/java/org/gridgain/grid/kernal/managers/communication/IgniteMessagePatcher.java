@@ -9,13 +9,15 @@
 
 package org.gridgain.grid.kernal.managers.communication;
 
+import org.gridgain.grid.design.plugin.*;
+
 import java.nio.*;
 import java.util.*;
 
 /**
  * Allow to patch message before sending or after reading.
  */
-public interface IgniteMessagePatcher {
+public interface IgniteMessagePatcher extends IgniteExtension {
     /**
      * Writes delta for provided node and message type.
      *

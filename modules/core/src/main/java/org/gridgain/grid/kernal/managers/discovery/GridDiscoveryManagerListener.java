@@ -10,13 +10,14 @@
 package org.gridgain.grid.kernal.managers.discovery;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.plugin.*;
 
 import java.util.*;
 
 /**
  * Plugin extension that allow to listen messages from discovery manager.
  */
-public interface GridDiscoveryManagerListener {
+public interface GridDiscoveryManagerListener extends IgniteExtension {
     /**
      * Handles node start.
      *
