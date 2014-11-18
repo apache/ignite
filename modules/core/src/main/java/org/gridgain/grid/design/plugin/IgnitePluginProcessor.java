@@ -40,56 +40,55 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     public IgnitePluginProcessor(GridKernalContext ctx, @Nullable Collection<? extends PluginConfiguration> cfgs) {
         super(ctx);
 
-        if (cfgs == null)
-            return;
-
         ExtensionRegistry registry = new ExtensionRegistry();
 
-        for (PluginConfiguration pluginCfg : cfgs) {
-            GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg);
+        if (cfgs != null) {
+            for (PluginConfiguration pluginCfg : cfgs) {
+                GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg);
 
-            PluginProvider provider;
-
-            try {
-                if (pluginCfg.providerClass() == null)
-                    throw new IgniteException("Provider class is null.");
+                PluginProvider provider;
 
                 try {
-                    Constructor<? extends  PluginProvider> ctr =
-                        pluginCfg.providerClass().getConstructor(pluginCfg.getClass(), PluginContext.class);
+                    if (pluginCfg.providerClass() == null)
+                        throw new IgniteException("Provider class is null.");
 
-                    provider = ctr.newInstance(pluginCfg, pluginCtx);
-                }
-                catch (NoSuchMethodException ignore) {
                     try {
                         Constructor<? extends  PluginProvider> ctr =
-                            pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
+                            pluginCfg.providerClass().getConstructor(pluginCfg.getClass(), PluginContext.class);
 
-                        provider = ctr.newInstance(pluginCfg);
+                        provider = ctr.newInstance(pluginCfg, pluginCtx);
                     }
-                    catch (NoSuchMethodException ignored) {
-                        provider = pluginCfg.providerClass().newInstance();
+                    catch (NoSuchMethodException ignore) {
+                        try {
+                            Constructor<? extends  PluginProvider> ctr =
+                                pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
+
+                            provider = ctr.newInstance(pluginCfg);
+                        }
+                        catch (NoSuchMethodException ignored) {
+                            provider = pluginCfg.providerClass().newInstance();
+                        }
                     }
                 }
+                catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw new IgniteException("Failed to create plugin provider instance.", e);
+                }
+
+                if (F.isEmpty(provider.name()))
+                    throw new IgniteException("Plugin name can not be empty.");
+
+                if (provider.plugin() == null)
+                    throw new IgniteException("Plugin is null.");
+
+                if (plugins.containsKey(provider.name()))
+                    throw new IgniteException("Duplicated plugin name: " + provider.name());
+
+                plugins.put(provider.name(), provider);
+
+                pluginCtxMap.put(provider, pluginCtx);
+
+                provider.initExtensions(pluginCtx, registry);
             }
-            catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new IgniteException("Failed to create plugin provider instance.", e);
-            }
-
-            if (F.isEmpty(provider.name()))
-                throw new IgniteException("Plugin name can not be empty.");
-
-            if (provider.plugin() == null)
-                throw new IgniteException("Plugin is null.");
-
-            if (plugins.containsKey(provider.name()))
-                throw new IgniteException("Duplicated plugin name: " + provider.name());
-
-            plugins.put(provider.name(), provider);
-
-            pluginCtxMap.put(provider, pluginCtx);
-
-            provider.initExtensions(pluginCtx, registry);
         }
 
         extensions = registry.createExtensionMap();
