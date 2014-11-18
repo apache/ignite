@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.discovery;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.design.plugin.extensions.discovery.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;

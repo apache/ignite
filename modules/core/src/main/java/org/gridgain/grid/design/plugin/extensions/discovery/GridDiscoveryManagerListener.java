@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.managers.discovery;
+package org.gridgain.grid.design.plugin.extensions.discovery;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.design.plugin.*;

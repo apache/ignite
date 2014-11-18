@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.managers.communication;
+package org.gridgain.grid.design.plugin.extensions.communication;
 
 import org.gridgain.grid.design.plugin.*;
 
