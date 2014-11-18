@@ -10,11 +10,11 @@
 package org.gridgain.grid.design.plugin;
 
 /**
- * Context that allow to register extensions.
+ * Context that allows to register extensions.
  */
 public interface IgniteExtensionRegistry {
     /**
-     * Register extension provided by plugin.
+     * Registers extension provided by plugin.
      *
      * @param extensionItf Extension interface.
      * @param extensionImpl Extension implementation.

@@ -15,7 +15,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Allow to patch message before sending or after reading.
+ * Allows to patch message before sending or after reading.
  */
 public interface IgniteMessagePatcher extends IgniteExtension {
     /**
