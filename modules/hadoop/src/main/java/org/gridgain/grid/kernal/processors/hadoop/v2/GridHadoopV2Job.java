@@ -205,7 +205,6 @@ public class GridHadoopV2Job implements GridHadoopJob {
                 jobConfData = buf.toByteArray();
             }
 
-
             GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
                 new DataInputStream(new ByteArrayInputStream(jobConfData)));
 
