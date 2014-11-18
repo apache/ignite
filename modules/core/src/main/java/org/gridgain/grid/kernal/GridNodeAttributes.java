@@ -116,9 +116,6 @@ public final class GridNodeAttributes {
     /** Time server port attribute name. */
     public static final String ATTR_TIME_SERVER_PORT = ATTR_PREFIX + ".time.port";
 
-    /** Version converters attribute name. */
-    public static final String ATTR_VER_CONVERTERS = ATTR_PREFIX + ".ver.converters";
-
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
 
