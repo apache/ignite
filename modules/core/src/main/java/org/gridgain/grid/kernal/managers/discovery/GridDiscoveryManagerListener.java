@@ -29,7 +29,7 @@ public interface GridDiscoveryManagerListener {
      *
      * @param node Joined node.
      */
-    public void onNodeJoined(GridNode node);
+    public void beforeNodeJoined(GridNode node);
 
     /**
      * Handles node left event.

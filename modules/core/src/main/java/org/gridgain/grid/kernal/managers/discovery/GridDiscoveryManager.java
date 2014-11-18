@@ -265,24 +265,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     discoCache.set(cache);
                 }
 
-                // If this is a local join event, just save it and do not notify listeners.
-                if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
-                    GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
+                if (type == EVT_NODE_JOINED) {
+                    // If this is a local join event, just save it and do not notify listeners.
+                    if (node.id().equals(locNode.id())) {
+                        GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
 
-                    discoEvt.node(ctx.discovery().localNode());
-                    discoEvt.eventNode(node);
-                    discoEvt.type(EVT_NODE_JOINED);
+                        discoEvt.node(ctx.discovery().localNode());
+                        discoEvt.eventNode(node);
+                        discoEvt.type(EVT_NODE_JOINED);
 
-                    discoEvt.topologySnapshot(topVer, new ArrayList<>(
-                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
-                            @Override public GridNode apply(GridNode e) {
-                                return e;
-                            }
-                        }, daemonFilter)));
+                        discoEvt.topologySnapshot(topVer, new ArrayList<>(
+                            F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                                @Override public GridNode apply(GridNode e) {
+                                    return e;
+                                }
+                            }, daemonFilter)));
 
-                    locJoinEvt.onDone(discoEvt);
+                        locJoinEvt.onDone(discoEvt);
 
-                    return;
+                        return;
+                    }
+
+                    for (GridDiscoveryManagerListener listener : ctx.plugins()
+                        .extensions(GridDiscoveryManagerListener.class)) {
+                        listener.beforeNodeJoined(node);
+                    }
                 }
 
                 if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT ||
@@ -384,13 +391,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         topVer.setIfGreater(locNode.order());
 
-        // Start discovery worker.
-        new GridThread(discoWrk).start();
-
         for (GridDiscoveryManagerListener listener : ctx.plugins().extensions(GridDiscoveryManagerListener.class)) {
             listener.onStart(discoCache().remoteNodes());
             listener.onStart(discoCache().daemonNodes());
         }
+
+        // Start discovery worker.
+        new GridThread(discoWrk).start();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -1371,11 +1378,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     }
                     catch (GridException e) {
                         U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
-                    }
-
-                    for (GridDiscoveryManagerListener listener : ctx.plugins()
-                        .extensions(GridDiscoveryManagerListener.class)) {
-                        listener.onNodeJoined(node);
                     }
 
                     if (!isDaemon) {
