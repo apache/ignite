@@ -152,21 +152,6 @@ public interface GridEventType {
     public static final int EVT_NODE_SEGMENTED = 14;
 
     /**
-     * Built-in event type: local node reconnected.
-     * <br>
-     * Generated when node reconnects to grid topology after being disconnected from.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
-     *
-     * @see GridDiscoveryEvent
-     * @deprecated This event has no effect in current version of GridGain and
-     *      will be removed in the next major release.
-     */
-    @Deprecated
-    public static final int EVT_NODE_RECONNECTED = 15;
-
-    /**
      * Built-in event type: task started.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for

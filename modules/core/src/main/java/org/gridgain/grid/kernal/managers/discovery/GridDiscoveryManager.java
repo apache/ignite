@@ -242,8 +242,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
         });
 
-        assert ctx.config().getSegmentationPolicy() != RECONNECT : ctx.config().getSegmentationPolicy();
-
         getSpi().setListener(new GridDiscoverySpiListener() {
             @Override public void onDiscovery(int type, long topVer, GridNode node, Collection<GridNode> topSnapshot,
                 Map<Long, Collection<GridNode>> snapshots) {
@@ -292,8 +290,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     return;
                 }
 
-                if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT ||
-                    type == EVT_NODE_RECONNECTED)) {
+                if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)) {
                     boolean set = GridDiscoveryManager.this.topVer.setIfGreater(topVer);
 
                     assert set : "Topology version has not been updated [this.topVer=" +
@@ -1303,9 +1300,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 else if (type == EVT_NODE_SEGMENTED)
                     evt.message("Node segmented: " + node);
 
-                else if (type == EVT_NODE_RECONNECTED)
-                    evt.message("Node reconnected: " + node);
-
                 else
                     assert false;
 
@@ -1471,33 +1465,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     break;
                 }
 
-                case EVT_NODE_RECONNECTED: {
-                    assert !discoOrdered || topVer == node.order() : "Invalid topology version [topVer=" + topVer +
-                        ", node=" + node + ']';
-
-                    assert F.eqNodes(locNode, node);
-
-                    // Do not ignore EVT_NODE_SEGMENTED events any more.
-                    nodeSegFired = false;
-
-                    // Allow background segment check.
-                    lastSegChkRes.set(true);
-
-                    if (!isLocDaemon) {
-                        if (log.isInfoEnabled())
-                            log.info("Local node RECONNECTED: " + node);
-
-                        if (log.isQuiet())
-                            U.quiet(false, "Local node RECONNECTED [" + quietNode(node) + ']');
-
-                        ackTopology(topVer, true);
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Local node RECONNECTED: " + node);
-
-                    break;
-                }
-
                 // Don't log metric update to avoid flooding the log.
                 case EVT_NODE_METRICS_UPDATED:
                     break;
@@ -1519,11 +1486,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             GridSegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
 
             switch (segPlc) {
-                case RECONNECT:
-                    assert false;
-
-                    break;
-
                 case RESTART_JVM:
                     try {
                         getSpi().disconnect();

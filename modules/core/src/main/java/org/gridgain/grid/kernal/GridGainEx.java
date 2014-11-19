@@ -1757,13 +1757,6 @@ public class GridGainEx {
             // Validate segmentation configuration.
             GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
-            if (segPlc == RECONNECT) {
-                U.warn(log, "RECONNECT segmentation policy is not supported anymore and " +
-                    "will be removed in the next major release (will automatically switch to NOOP)");
-
-                segPlc = NOOP;
-            }
-
             // 1. Warn on potential configuration problem: grid is not configured to wait
             // for correct segment after segmentation happens.
             if (!F.isEmpty(cfg.getSegmentationResolvers()) && segPlc == RESTART_JVM && !cfg.isWaitForSegmentOnStart()) {
