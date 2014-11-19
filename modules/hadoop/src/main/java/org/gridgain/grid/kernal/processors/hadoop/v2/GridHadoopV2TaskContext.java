@@ -86,7 +86,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
      * @param jobConfDataInput DataInput for read JobConf.
      */
     public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopJobId jobId,
-        @Nullable UUID locNodeId, @Nullable DataInput jobConfDataInput) throws GridException {
+        @Nullable UUID locNodeId, DataInput jobConfDataInput) throws GridException {
         super(taskInfo, job);
         this.locNodeId = locNodeId;
 
@@ -96,13 +96,12 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         try {
             JobConf jobConf = new JobConf();
 
-            if (jobConfDataInput != null)
-                try {
-                    jobConf.readFields(jobConfDataInput);
-                }
-                catch (IOException e) {
-                    throw new GridException(e);
-                }
+            try {
+                jobConf.readFields(jobConfDataInput);
+            }
+            catch (IOException e) {
+                throw new GridException(e);
+            }
 
             // For map-reduce jobs prefer local writes.
             jobConf.setBooleanIfUnset(PARAM_GGFS_PREFER_LOCAL_WRITES, true);

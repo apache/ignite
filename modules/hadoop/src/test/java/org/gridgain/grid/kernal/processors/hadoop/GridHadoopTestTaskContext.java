@@ -10,10 +10,12 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -170,7 +172,33 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
      * @param gridJob Grid Hadoop job.
      */
     public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob gridJob) throws GridException {
-        super(taskInfo, gridJob, gridJob.id(), null, null);
+        super(taskInfo, gridJob, gridJob.id(), null, jobConfDataInput(gridJob));
+    }
+
+    /**
+     * Creates DataInput to read JobConf.
+     *
+     * @param job Job.
+     * @return DataInput with JobConf.
+     * @throws GridException If failed.
+     */
+    private static DataInput jobConfDataInput(GridHadoopJob job) throws GridException {
+        JobConf jobConf = new JobConf();
+
+        for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo) job.info()).properties().entrySet())
+            jobConf.set(e.getKey(), e.getValue());
+
+
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        try {
+            jobConf.write(new DataOutputStream(buf));
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
+
+        return new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
     }
 
     /** {@inheritDoc} */
