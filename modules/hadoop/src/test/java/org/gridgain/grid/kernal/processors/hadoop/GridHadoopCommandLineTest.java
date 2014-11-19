@@ -291,9 +291,8 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         String line;
 
-        while ((line = in.readLine()) != null) {
+        while ((line = in.readLine()) != null)
             res.add(line);
-        }
 
         Collections.sort(res);
 
