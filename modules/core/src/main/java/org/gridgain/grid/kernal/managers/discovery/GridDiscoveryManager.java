@@ -258,10 +258,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 }
 
                 if (type == EVT_NODE_JOINED) {
-                    for (DiscoveryCallback listener : ctx.plugins()
-                        .extensions(DiscoveryCallback.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
                         listener.beforeNodeJoined(node);
-                    }
                 }
 
                 // Put topology snapshot into discovery history.
@@ -1403,10 +1401,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (DiscoveryCallback listener : ctx.plugins()
-                        .extensions(DiscoveryCallback.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
                         listener.onNodeLeft(node);
-                    }
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {
@@ -1429,9 +1425,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
                         listener.onNodeLeft(node);
-                    }
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {
