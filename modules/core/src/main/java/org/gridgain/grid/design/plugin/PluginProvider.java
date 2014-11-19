@@ -38,7 +38,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
-     * TODO 9447: remove.
+     * TODO remove.
      *
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
