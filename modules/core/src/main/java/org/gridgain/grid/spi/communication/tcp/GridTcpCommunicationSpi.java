@@ -528,7 +528,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             boolean finished = msg.writeTo(buf);
 
             if (finished && nodeId != null)
-                finished = getSpiContext().writeDelta(nodeId, msg.getClass(), buf);
+                finished = getSpiContext().writeDelta(nodeId, msg, buf);
 
             return finished;
         }

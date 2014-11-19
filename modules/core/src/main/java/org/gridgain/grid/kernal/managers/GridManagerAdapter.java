@@ -461,9 +461,9 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return null;
                     }
 
-                    @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
+                    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
                         for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
-                            if (!patcher.onSend(nodeId, msgCls, buf))
+                            if (!patcher.onSend(nodeId, msg, buf))
                                 return false;
                         }
 
