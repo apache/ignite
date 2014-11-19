@@ -689,7 +689,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             addHelper(ctx, GGFS_HELPER.create(F.isEmpty(cfg.getGgfsConfiguration())));
 
-            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg.getPluginConfigurations()), attrs);
+            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
             // Off-heap processor has no dependencies.
             startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);

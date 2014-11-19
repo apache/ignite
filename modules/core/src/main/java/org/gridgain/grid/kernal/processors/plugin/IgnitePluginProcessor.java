@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.plugin;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.design.*;
 import org.gridgain.grid.design.plugin.*;
 import org.gridgain.grid.kernal.*;
@@ -35,17 +36,17 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /**
      *
      * @param ctx Kernal context.
-     * @param cfgs Plugin configuration list.
+     * @param cfg Ignite configuration.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, @Nullable Collection<? extends PluginConfiguration> cfgs) {
+    public IgnitePluginProcessor(GridKernalContext ctx, GridConfiguration cfg) {
         super(ctx);
 
         ExtensionRegistry registry = new ExtensionRegistry();
 
-        if (cfgs != null) {
-            for (PluginConfiguration pluginCfg : cfgs) {
-                GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg);
+        if (cfg.getPluginConfigurations() != null) {
+            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
+                GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg, cfg);
 
                 PluginProvider provider;
 
@@ -55,9 +56,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
                     try {
                         Constructor<? extends  PluginProvider> ctr =
-                            pluginCfg.providerClass().getConstructor(pluginCfg.getClass(), PluginContext.class);
+                            pluginCfg.providerClass().getConstructor(PluginContext.class);
 
-                        provider = ctr.newInstance(pluginCfg, pluginCtx);
+                        provider = ctr.newInstance(pluginCtx);
                     }
                     catch (NoSuchMethodException ignore) {
                         try {
