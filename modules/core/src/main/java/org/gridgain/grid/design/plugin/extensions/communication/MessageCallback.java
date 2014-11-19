@@ -17,24 +17,28 @@ import java.util.*;
 /**
  * Allows to patch message before sending or after reading.
  */
-public interface IgniteMessagePatcher extends IgniteExtension {
+public interface MessageCallback extends IgniteExtension {
     /**
      * Writes delta for provided node and message type.
+     *
+     * // TODO 9447: pass message instance.
      *
      * @param nodeId Node ID.
      * @param msgCls Message type.
      * @param buf Buffer to write to.
      * @return Whether delta was fully written.
      */
-    public boolean onMessageSend(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+    public boolean onSend(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
 
     /**
      * Reads delta for provided node and message type.
+     *
+     * // TODO 9447: pass message instance if possible.
      *
      * @param nodeId Node ID.
      * @param msgCls Message type.
      * @param buf Buffer to read from.
      * @return Whether delta was fully read.
      */
-    public boolean onMessageCome(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+    public boolean onReceive(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
 }

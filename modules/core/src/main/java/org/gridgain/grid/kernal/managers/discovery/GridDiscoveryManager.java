@@ -258,8 +258,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 }
 
                 if (type == EVT_NODE_JOINED) {
-                    for (GridDiscoveryListener listener : ctx.plugins()
-                        .extensions(GridDiscoveryListener.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins()
+                        .extensions(DiscoveryCallback.class)) {
                         listener.beforeNodeJoined(node);
                     }
                 }
@@ -393,7 +393,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         topVer.setIfGreater(locNode.order());
 
-        for (GridDiscoveryListener listener : ctx.plugins().extensions(GridDiscoveryListener.class)) {
+        for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class)) {
             listener.onStart(discoCache().remoteNodes());
             listener.onStart(discoCache().daemonNodes());
         }
@@ -1403,8 +1403,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (GridDiscoveryListener listener : ctx.plugins()
-                        .extensions(GridDiscoveryListener.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins()
+                        .extensions(DiscoveryCallback.class)) {
                         listener.onNodeLeft(node);
                     }
 
@@ -1429,7 +1429,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (GridDiscoveryListener listener : ctx.plugins().extensions(GridDiscoveryListener.class)) {
+                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class)) {
                         listener.onNodeLeft(node);
                     }
 

@@ -16,8 +16,10 @@ import java.util.*;
 
 /**
  * Plugin extension that allows to listen messages from discovery.
+ *
+ * TODO 9447: redesign.
  */
-public interface GridDiscoveryListener extends IgniteExtension {
+public interface DiscoveryCallback extends IgniteExtension {
     /**
      * Handles node start.
      *
