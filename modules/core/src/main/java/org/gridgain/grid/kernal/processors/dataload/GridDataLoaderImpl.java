@@ -47,7 +47,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** */
-    public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.5");
+    public static final GridProductVersion COMPACT_MAP_ENTRIES_SINCE = GridProductVersion.fromString("6.5.6");
 
     /** Cache updater. */
     private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
