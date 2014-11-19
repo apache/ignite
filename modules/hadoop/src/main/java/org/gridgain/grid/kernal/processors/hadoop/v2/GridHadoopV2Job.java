@@ -68,7 +68,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     private UUID locNodeId;
 
     /** Serialized JobConf. */
-    private byte[] jobConfData;
+    private volatile byte[] jobConfData;
 
     /**
      * @param jobId Job ID.
@@ -131,7 +131,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
             Path jobDir = new Path(jobDirPath);
 
             try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf)) {
-                JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf, jobDir);
+                JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf,
+                    jobDir);
 
                 if (F.isEmpty(metaInfos))
                     throw new GridException("No input splits found.");
@@ -197,13 +198,16 @@ public class GridHadoopV2Job implements GridHadoopJob {
             Constructor<?> ctr = cls.getConstructor(GridHadoopTaskInfo.class, GridHadoopJob.class,
                 GridHadoopJobId.class, UUID.class, DataInput.class);
 
-            if (jobConfData == null) {
-                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            if (jobConfData == null)
+                synchronized(jobConf) {
+                    if (jobConfData == null) {
+                        ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-                jobConf.write(new DataOutputStream(buf));
+                        jobConf.write(new DataOutputStream(buf));
 
-                jobConfData = buf.toByteArray();
-            }
+                        jobConfData = buf.toByteArray();
+                    }
+                }
 
             GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
                 new DataInputStream(new ByteArrayInputStream(jobConfData)));

@@ -71,21 +71,21 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
             Collections.swap(wordsArr, i, j);
         }
 
-        //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(path);
+        //Writing file
+        try (PrintWriter writer = new PrintWriter(path)) {
+            int j = 0;
 
-        int j = 0;
+            while (j < wordsArr.size()) {
+                int i = 5 + (int)(Math.random() * 5);
 
-        while (j < wordsArr.size()) {
-            int i = 5 + (int)(Math.random() * 5);
+                List<String> subList = wordsArr.subList(j, Math.min(j + i, wordsArr.size()));
+                j += i;
 
-            List<String> subList = wordsArr.subList(j, Math.min(j + i, wordsArr.size()));
-            j += i;
+                writer.println(Joiner.on(' ').join(subList));
+            }
 
-            testInputFileWriter.println(Joiner.on(' ').join(subList));
+            writer.flush();
         }
-
-        testInputFileWriter.close();
     }
 
     /**
@@ -94,14 +94,13 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
      * @throws FileNotFoundException If failed.
      */
     private void generateHiveTestFiles() throws FileNotFoundException {
-        Random random = new Random();
-
         try (PrintWriter writerA = new PrintWriter(new File(testWorkDir, "data-a"));
              PrintWriter writerB = new PrintWriter(new File(testWorkDir, "data-b"))) {
             char sep = '\t';
 
             int idB = 0;
             int idA = 0;
+            int v = 1000;
 
             for (int i = 0; i < 1000; i++) {
                 writerA.print(idA++);
@@ -110,11 +109,11 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
                 writerB.print(idB++);
                 writerB.print(sep);
-                writerB.println(random.nextInt(1000));
+                writerB.println(v += 2);
 
                 writerB.print(idB++);
                 writerB.print(sep);
-                writerB.println(random.nextInt(1000));
+                writerB.println(v += 2);
             }
 
             writerA.flush();
@@ -152,7 +151,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
         U.copy(U.resolveGridGainPath("docs/core-site.gridgain.xml"), new File(testWorkDir, "core-site.xml"), false);
         U.copy(U.resolveGridGainPath("docs/mapred-site.gridgain.xml"), new File(testWorkDir, "mapred-site.xml"), false);
 
-        generateTestFile(new File(testWorkDir, "test-data"), "key1", 100, "key2", 200);
+        generateTestFile(new File(testWorkDir, "test-data"), "red", 100, "green", 200, "blue", 150, "yellow", 50);
 
         generateHiveTestFiles();
     }
@@ -205,18 +204,14 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private int watchProcess(Process proc) throws Exception {
-        int res = proc.waitFor();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
-        InputStream in = proc.getInputStream();
+        String line;
 
-        byte[] buf = new byte[in.available()];
+        while ((line = reader.readLine()) != null)
+            log().info(line);
 
-        in.read(buf);
-
-        for (String l : new String(buf).split("\n"))
-            log().info(l);
-
-        return res;
+        return proc.waitFor();
     }
 
     /**
@@ -289,6 +284,46 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
         assertEquals(0, executeHadoopCmd("jar", examplesJar.getAbsolutePath(), "wordcount", "/input", "/output"));
 
         assertTrue(ggfs.exists(new GridGgfsPath("/output")));
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(ggfs.open(new GridGgfsPath("/output/part-r-00000"))));
+
+        List<String> res = new ArrayList<>();
+
+        String line;
+
+        while ((line = in.readLine()) != null) {
+            res.add(line);
+        }
+
+        Collections.sort(res);
+
+        assertEquals("[blue\t150, green\t200, red\t100, yellow\t50]", res.toString());
+    }
+
+    /**
+     * Runs query check result.
+     *
+     * @param expRes Expected result.
+     * @param qry Query.
+     * @throws Exception If failed.
+     */
+    private void checkQuery(String expRes, String qry) throws Exception {
+        assertEquals(0, executeHiveQuery("drop table if exists result"));
+
+        assertEquals(0, executeHiveQuery(
+            "create table result " +
+            "row format delimited fields terminated by ' ' " +
+            "stored as textfile " +
+            "location '/result' as " + qry
+        ));
+
+        GridGgfsInputStreamAdapter in = ggfs.open(new GridGgfsPath("/result/000000_0"));
+
+        byte[] buf = new byte[(int) in.length()];
+
+        in.read(buf);
+
+        assertEquals(expRes, new String(buf));
     }
 
     /**
@@ -319,12 +354,40 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertEquals(0, executeHadoopCmd("fs", "-put", new File(testWorkDir, "data-b").getAbsolutePath(), "/table-b"));
 
-        assertEquals(0, executeHiveQuery("select * from table_a limit 10"));
+        checkQuery(
+            "0 0\n" +
+            "1 2\n" +
+            "2 4\n" +
+            "3 6\n" +
+            "4 8\n" +
+            "5 10\n" +
+            "6 12\n" +
+            "7 14\n" +
+            "8 16\n" +
+            "9 18\n",
+            "select * from table_a order by id_a limit 10"
+        );
 
-        assertEquals(0, executeHiveQuery("select count(id_b) from table_b"));
+        checkQuery("2000\n", "select count(id_b) from table_b");
 
-        assertEquals(0, executeHiveQuery("select * from table_a a inner join table_b b on a.id_b = b.id_b limit 10"));
+        checkQuery(
+            "250 500 2002\n" +
+            "251 502 2006\n" +
+            "252 504 2010\n" +
+            "253 506 2014\n" +
+            "254 508 2018\n" +
+            "255 510 2022\n" +
+            "256 512 2026\n" +
+            "257 514 2030\n" +
+            "258 516 2034\n" +
+            "259 518 2038\n",
+            "select a.id_a, a.id_b, b.rndv" +
+            " from table_a a" +
+            " inner join table_b b on a.id_b = b.id_b" +
+            " where b.rndv > 2000" +
+            " order by a.id_a limit 10"
+        );
 
-        assertEquals(0, executeHiveQuery("select count(b.id_b) from table_a a inner join table_b b on a.id_b = b.id_b"));
+        checkQuery("1000\n", "select count(b.id_b) from table_a a inner join table_b b on a.id_b = b.id_b");
     }
 }

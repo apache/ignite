@@ -35,9 +35,6 @@ public class GridHadoopV2JobResourceManager {
     /** Hadoop job context. */
     private final JobContextImpl ctx;
 
-    /** Properties are sent to tasks. */
-    private Map<String, String> props;
-
     /** Logger. */
     private final GridLogger log;
 
@@ -111,7 +108,7 @@ public class GridHadoopV2JobResourceManager {
 
                     if (!fs.exists(stagingDir))
                         throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
-                                stagingDir);
+                            stagingDir);
 
                     if (!FileUtil.copy(fs, stagingDir, jobLocDir, false, cfg))
                         throw new GridException("Failed to copy job submission directory contents to local file system " +
