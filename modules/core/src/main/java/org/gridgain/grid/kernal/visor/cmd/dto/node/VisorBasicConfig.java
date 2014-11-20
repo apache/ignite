@@ -19,7 +19,7 @@ import java.util.*;
 
 import static java.lang.System.*;
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node basic configuration properties.

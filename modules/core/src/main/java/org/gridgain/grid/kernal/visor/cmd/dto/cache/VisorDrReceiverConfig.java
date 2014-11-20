@@ -14,7 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Data transfer object for DR receiver cache configuration properties.

@@ -30,7 +30,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridProductImpl.ENT;
-import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 import static org.gridgain.grid.kernal.visor.gui.dto.VisorComputeMonitoringHolder.*;
 
 /**

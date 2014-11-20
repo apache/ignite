@@ -21,7 +21,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Get list files matching filter.

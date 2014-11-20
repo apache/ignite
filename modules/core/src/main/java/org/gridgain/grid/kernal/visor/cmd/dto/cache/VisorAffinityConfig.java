@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Data transfer object for affinity configuration properties.

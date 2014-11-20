@@ -18,7 +18,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Data transfer object for node SPIs configuration properties.

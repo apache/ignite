@@ -26,7 +26,7 @@ import java.net.*;
 import java.nio.charset.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Search text matching in logs

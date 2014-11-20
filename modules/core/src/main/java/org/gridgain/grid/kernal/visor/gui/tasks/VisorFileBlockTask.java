@@ -20,7 +20,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 
-import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task to read file block.

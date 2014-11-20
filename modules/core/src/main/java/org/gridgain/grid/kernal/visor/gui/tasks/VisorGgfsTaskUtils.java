@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.gui.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.kernal.visor.cmd.*;
+import org.gridgain.grid.kernal.visor.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

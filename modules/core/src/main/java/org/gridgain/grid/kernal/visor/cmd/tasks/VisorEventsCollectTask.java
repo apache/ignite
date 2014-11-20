@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.event.*;
+import org.gridgain.grid.kernal.visor.util.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task for reset specified streamer.

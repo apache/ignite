@@ -17,7 +17,7 @@ import java.io.*;
 
 import static java.lang.System.*;
 import static org.gridgain.grid.GridSystemProperties.*;
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Create data transfer object for node REST configuration properties.

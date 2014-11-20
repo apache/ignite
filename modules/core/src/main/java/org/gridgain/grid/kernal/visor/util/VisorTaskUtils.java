@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.gui;
+package org.gridgain.grid.kernal.visor.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.kernal.visor.cmd.*;
 import org.gridgain.grid.kernal.visor.cmd.dto.event.*;
 import org.gridgain.grid.kernal.visor.gui.dto.*;
 import org.gridgain.grid.kernal.visor.gui.tasks.*;
@@ -27,13 +26,16 @@ import java.nio.charset.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static java.lang.System.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
  */
-@SuppressWarnings("ExtendsUtilityClass")
-public class VisorTaskUtilsEnt extends VisorTaskUtils {
+public class VisorTaskUtils {
+    /** Default substitute for {@code null} names. */
+    private static final String DFLT_EMPTY_NAME = "<default>";
+
     /** Throttle count for lost events. */
     private static final int EVENTS_LOST_THROTTLE = 10;
 
@@ -90,6 +92,175 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
             return Long.compare(f2.lastModified(), f1.lastModified());
         }
     };
+
+    /**
+     * @param name Grid-style nullable name.
+     * @return Name with {@code null} replaced to &lt;default&gt;.
+     */
+    public static String escapeName(@Nullable String name) {
+        return name == null ? DFLT_EMPTY_NAME : name;
+    }
+
+    /**
+     * @param a First name.
+     * @param b Second name.
+     * @return {@code true} if both names equals.
+     */
+    public static boolean safeEquals(@Nullable String a, @Nullable String b) {
+        return (a != null && b != null) ? a.equals(b) : (a == null && b == null);
+    }
+
+    /**
+     * Concat arrays in one.
+     *
+     * @param arrays Arrays.
+     * @return Summary array.
+     */
+    public static int[] concat(int[] ... arrays) {
+        assert arrays != null;
+        assert arrays.length > 1;
+
+        int length = 0;
+
+        for (int[] a : arrays)
+            length += a.length;
+
+        int[] r = Arrays.copyOf(arrays[0], length);
+
+        for (int i = 1, shift = 0; i < arrays.length; i++) {
+            shift += arrays[i - 1].length;
+            System.arraycopy(arrays[i], 0, r, shift, arrays[i].length);
+        }
+
+        return r;
+    }
+
+    /**
+     * Returns compact class host.
+     *
+     * @param obj Object to compact.
+     * @return String.
+     */
+    @Nullable public static Object compactObject(Object obj) {
+        if (obj == null)
+            return null;
+
+        if (obj instanceof Enum)
+            return obj.toString();
+
+        if (obj instanceof String || obj instanceof Boolean || obj instanceof Number)
+            return obj;
+
+        if (obj instanceof Collection) {
+            Collection col = (Collection)obj;
+
+            Object[] res = new Object[col.size()];
+
+            int i = 0;
+
+            for (Object elm : col) {
+                res[i++] = compactObject(elm);
+            }
+
+            return res;
+        }
+
+        if (obj.getClass().isArray()) {
+            Class<?> arrType = obj.getClass().getComponentType();
+
+            if (arrType.isPrimitive()) {
+                if (obj instanceof boolean[])
+                    return Arrays.toString((boolean[])obj);
+                if (obj instanceof byte[])
+                    return Arrays.toString((byte[])obj);
+                if (obj instanceof short[])
+                    return Arrays.toString((short[])obj);
+                if (obj instanceof int[])
+                    return Arrays.toString((int[])obj);
+                if (obj instanceof long[])
+                    return Arrays.toString((long[])obj);
+                if (obj instanceof float[])
+                    return Arrays.toString((float[])obj);
+                if (obj instanceof double[])
+                    return Arrays.toString((double[])obj);
+            }
+
+            Object[] arr = (Object[])obj;
+
+            int iMax = arr.length - 1;
+
+            StringBuilder sb = new StringBuilder("[");
+
+            for (int i = 0; i <= iMax; i++) {
+                sb.append(compactObject(arr[i]));
+
+                if (i != iMax)
+                    sb.append(", ");
+            }
+
+            sb.append("]");
+
+            return sb.toString();
+        }
+
+        return U.compact(obj.getClass().getName());
+    }
+
+    @Nullable public static String compactClass(Object obj) {
+        if (obj == null)
+            return null;
+
+        return U.compact(obj.getClass().getName());
+    }
+
+    /**
+     * Joins array elements to string.
+     *
+     * @param arr Array.
+     * @return String.
+     */
+    @Nullable public static String compactArray(Object[] arr) {
+        if (arr == null || arr.length == 0)
+            return null;
+
+        String sep = ", ";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (Object s: arr)
+            sb.append(s).append(sep);
+
+        if (sb.length() > 0)
+            sb.setLength(sb.length() - sep.length());
+
+        return U.compact(sb.toString());
+    }
+
+    /**
+     * Returns boolean value from system property or provided function.
+     *
+     * @param propName System property name.
+     * @param dflt Function that returns {@code Integer}.
+     * @return {@code Integer} value
+     */
+    public static Integer intValue(String propName, Integer dflt) {
+        String sysProp = getProperty(propName);
+
+        return (sysProp != null && !sysProp.isEmpty()) ? Integer.getInteger(sysProp) : dflt;
+    }
+
+    /**
+     * Returns boolean value from system property or provided function.
+     *
+     * @param propName System property host.
+     * @param dflt Function that returns {@code Boolean}.
+     * @return {@code Boolean} value
+     */
+    public static boolean boolValue(String propName, boolean dflt) {
+        String sysProp = getProperty(propName);
+
+        return (sysProp != null && !sysProp.isEmpty()) ? Boolean.getBoolean(sysProp) : dflt;
+    }
 
     /**
      * Helper function to get value from map.
@@ -207,13 +378,13 @@ public class VisorTaskUtilsEnt extends VisorTaskUtils {
                 GridTaskEvent te = (GridTaskEvent)e;
 
                 res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
-                        te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
+                    te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
             }
             else if (e instanceof GridJobEvent) {
                 GridJobEvent je = (GridJobEvent)e;
 
                 res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
-                        je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
+                    je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
             }
             else if (e instanceof GridDeploymentEvent) {
                 GridDeploymentEvent de = (GridDeploymentEvent)e;

@@ -26,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.cmd.VisorTaskUtils.escapeName;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.escapeName;
 import static org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryUtils.*;
 
 /**

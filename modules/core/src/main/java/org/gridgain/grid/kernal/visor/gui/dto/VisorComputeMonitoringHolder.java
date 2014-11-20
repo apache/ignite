@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.gui.VisorTaskUtilsEnt.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Holder class to store information in node local map between data collector task executions.
