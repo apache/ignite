@@ -431,7 +431,7 @@
                                 <link>http://hadoop.apache.org/docs/current/api/</link>
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.grid.portables</excludePackageNames>
+                            <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.grid.portables</excludePackageNames>
                             <groups>
                                 <group>
                                     <title>Common Grid APIs</title>
