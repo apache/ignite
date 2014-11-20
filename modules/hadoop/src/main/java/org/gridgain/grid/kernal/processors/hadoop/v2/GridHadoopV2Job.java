@@ -20,6 +20,7 @@ import org.apache.hadoop.mapreduce.split.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.GridHadoopCountersImpl;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.gridgain.grid.logger.*;
@@ -211,6 +212,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
             GridHadoopTaskContext res = (GridHadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
                 new DataInputStream(new ByteArrayInputStream(jobConfData)));
+
+            res.counters(new GridHadoopCountersImpl());
 
             fut.onDone(res);
 

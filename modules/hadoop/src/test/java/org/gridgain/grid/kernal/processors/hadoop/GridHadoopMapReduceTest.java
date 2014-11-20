@@ -18,7 +18,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -78,12 +80,15 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            GridFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
-                createJobInfo(job.getConfiguration()));
+            GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
+
+            GridFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
             fut.get();
 
-            assertEquals("Use new mapper = " + useNewMapper + ", combiner = " + useNewCombiner + "reducer = " +
+            checkJobStatistics(jobId);
+
+            assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
                 "blue\t200000\n" +
                 "green\t150000\n" +
@@ -91,6 +96,71 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 "yellow\t70000\n",
                 readAndSortFile(PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000")
             );
+        }
+    }
+
+    /**
+     * Simple test job statistics.
+     *
+     * @param jobId Job id.
+     * @throws GridException
+     */
+    private void checkJobStatistics(GridHadoopJobId jobId) throws GridException {
+        GridHadoopCounters counters = grid(0).hadoop().counters(jobId);
+
+        GridHadoopCounter<GridHadoopJobStatistics> statCntr = counters.counter(GridHadoopStatCounter.GROUP_NAME,
+            GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+
+        Map<String, SortedMap<Integer,Long>> tasks = new TreeMap<>();
+
+        Map<String, Integer> phaseOrders = new HashMap<>();
+        phaseOrders.put("submit", 0);
+        phaseOrders.put("prepare", 1);
+        phaseOrders.put("start", 2);
+        phaseOrders.put("run", 3);
+        phaseOrders.put("Crun", 4);
+        phaseOrders.put("finish", 5);
+
+
+        String prevTaskId = null;
+        for (T2<String, Long> evt : statCntr.value().evts()) {
+            //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
+            String[] parsedEvt = evt.get1().split(" ");
+
+            String taskId;
+            String taskPhase;
+
+            if ("JOB".equals(parsedEvt[0])) {
+                taskId = parsedEvt[0];
+                taskPhase = parsedEvt[1];
+            }
+            else {
+                taskId = ("COMBINE".equals(parsedEvt[0]) ? "M" : parsedEvt[0].substring(0, 1)) + parsedEvt[1];
+                taskPhase = ("COMBINE".equals(parsedEvt[0]) ? "C" : "") + parsedEvt[2];
+            }
+
+            if (!taskId.equals(prevTaskId))
+                tasks.put(taskId, new TreeMap<Integer,Long>());
+
+            Integer pos = phaseOrders.get(taskPhase);
+
+            assertNotNull("Invalid phase " + taskPhase, pos);
+
+            tasks.get(taskId).put(pos, evt.get2());
+
+            prevTaskId = taskId;
+        }
+
+        for (Map.Entry<String ,SortedMap<Integer,Long>> task : tasks.entrySet()) {
+            Map<Integer, Long> order = task.getValue();
+
+            long prev = 0;
+
+            for (Map.Entry<Integer, Long> phase : order.entrySet()) {
+                assertTrue("Phase order of " + task.getKey() + " is invalid", phase.getValue() >= prev);
+
+                prev = phase.getValue();
+            }
         }
     }
 }

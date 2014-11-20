@@ -13,6 +13,7 @@ import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 
 /**
  * Hadoop reporter implementation for v1 API.
@@ -41,8 +42,8 @@ public class GridHadoopV1Reporter implements Reporter {
     }
 
     /** {@inheritDoc} */
-    @Override public Counters.Counter getCounter(String group, String name) {
-        return new GridHadoopV1Counter(ctx.counter(group, name));
+    @Override public Counters.Counter getCounter(String grp, String name) {
+        return new GridHadoopV1Counter(ctx.counter(grp, name, GridHadoopLongCounter.class));
     }
 
     /** {@inheritDoc} */
@@ -51,8 +52,8 @@ public class GridHadoopV1Reporter implements Reporter {
     }
 
     /** {@inheritDoc} */
-    @Override public void incrCounter(String group, String counter, long amount) {
-        getCounter(group, counter).increment(amount);
+    @Override public void incrCounter(String grp, String cntr, long amount) {
+        getCounter(grp, cntr).increment(amount);
     }
 
     /** {@inheritDoc} */

@@ -91,8 +91,8 @@ public abstract class GridHadoopTaskContext {
      * @param name Counter name.
      * @return Counter.
      */
-    public GridHadoopCounter counter(String grp, String name) {
-        return counters.counter(grp, name, true);
+    public GridHadoopCounter<Long> counter(String grp, String name, Class<? extends GridHadoopCounter> cls) {
+        return counters.counter(grp, name, cls);
     }
 
     /**
@@ -100,8 +100,8 @@ public abstract class GridHadoopTaskContext {
      *
      * @return Unmodifiable collection of counters.
      */
-    public Collection<GridHadoopCounter> counters() {
-        return counters.all();
+    public GridHadoopCounters counters() {
+        return counters;
     }
 
     /**

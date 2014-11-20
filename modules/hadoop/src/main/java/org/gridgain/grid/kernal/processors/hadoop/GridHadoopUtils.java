@@ -26,6 +26,15 @@ import java.util.*;
  * Hadoop utility methods.
  */
 public class GridHadoopUtils {
+    /** */
+    public static final String REQ_NEW_JOBID_TS_PROPERTY = "gridgain.job.requestNewIdTs";
+
+    /** */
+    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "gridgain.job.responseNewIdTs";
+
+    /** */
+    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "gridgain.job.submissionStartTs";
+
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 

@@ -23,14 +23,14 @@ import static org.apache.hadoop.mapreduce.util.CountersStrings.*;
  */
 public class GridHadoopV1Counter extends Counters.Counter {
     /** Delegate. */
-    private final GridHadoopCounter cntr;
+    private final GridHadoopCounter<Long> cntr;
 
     /**
      * Creates new instance.
      *
      * @param cntr Delegate counter.
      */
-    public GridHadoopV1Counter(GridHadoopCounter cntr) {
+    public GridHadoopV1Counter(GridHadoopCounter<Long> cntr) {
         this.cntr = cntr;
     }
 
@@ -61,7 +61,7 @@ public class GridHadoopV1Counter extends Counters.Counter {
 
     /** {@inheritDoc} */
     @Override public void increment(long incr) {
-        cntr.increment(incr);
+        cntr.append(incr);
     }
 
     /** {@inheritDoc} */

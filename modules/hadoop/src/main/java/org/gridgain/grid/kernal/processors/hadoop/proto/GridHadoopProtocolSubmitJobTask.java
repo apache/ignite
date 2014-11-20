@@ -41,10 +41,8 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
 
         GridHadoopJobStatus res = hadoop.status(jobId);
 
-        if (res == null) { // Submission failed.
-            res = new GridHadoopJobStatus(jobId, info.jobName(), info.user(), 0, 0, 0, 0,
-                PHASE_CANCELLING, true, 1);
-        }
+        if (res == null) // Submission failed.
+            res = new GridHadoopJobStatus(jobId, info.jobName(), info.user(), 0, 0, 0, 0, PHASE_CANCELLING, true, 1);
 
         return res;
     }

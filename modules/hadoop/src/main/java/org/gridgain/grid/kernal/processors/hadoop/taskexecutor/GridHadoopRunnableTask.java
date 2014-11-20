@@ -13,11 +13,12 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
+import java.util.UUID;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
@@ -54,26 +55,27 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /** */
     private volatile GridHadoopTaskContext ctx;
 
-    /** */
-    GridHadoopJobStatistics stats;
-
     /** Set if task is to cancelling. */
     private volatile boolean cancelled;
+
+    /** Task part of the job statistics. */
+    private GridHadoopJobStatistics stats;
 
     /**
      * @param log Log.
      * @param job Job.
-     * @param stats Statistics.
      * @param mem Memory.
      * @param info Task info.
+     * @param nodeId Node id.
      */
-    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridHadoopJobStatistics stats,
-        GridUnsafeMemory mem, GridHadoopTaskInfo info) {
+    protected GridHadoopRunnableTask(GridLogger log, GridHadoopJob job, GridUnsafeMemory mem, GridHadoopTaskInfo info,
+        UUID nodeId) {
         this.log = log.getLogger(GridHadoopRunnableTask.class);
         this.job = job;
-        this.stats = stats;
         this.mem = mem;
         this.info = info;
+
+        stats = new GridHadoopJobStatistics(nodeId);
     }
 
     /**
@@ -94,7 +96,8 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     @Override public Void call() throws GridException {
         execStartTs = U.currentTimeMillis();
 
-        final GridHadoopCounters counters = new GridHadoopCountersImpl();
+        stats.onTaskSubmit(info, submitTs);
+        stats.onTaskPrepare(info, execStartTs);
 
         Throwable err = null;
 
@@ -103,17 +106,15 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
         try {
             ctx = job.getTaskContext(info);
 
-            ctx.counters(counters);
-
             ctx.prepareTaskEnvironment();
 
-            runTask(ctx);
+            runTask();
 
             if (info.type() == MAP && job.info().hasCombiner()) {
                 ctx.taskInfo(new GridHadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
 
                 try {
-                    runTask(ctx);
+                    runTask();
                 }
                 finally {
                     ctx.taskInfo(info);
@@ -132,7 +133,12 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
         finally {
             execEndTs = U.currentTimeMillis();
 
-            stats.onTaskEnd(info);
+            stats.onTaskFinish(info, execEndTs);
+
+            GridHadoopCounters counters = ctx.counters();
+
+            counters.counter(GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
+                GridHadoopStatCounter.class).append(stats);
 
             onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
 
@@ -147,10 +153,9 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     }
 
     /**
-     * @param ctx Task info.
      * @throws GridException If failed.
      */
-    private void runTask(GridHadoopTaskContext ctx) throws GridException {
+    private void runTask() throws GridException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -160,7 +165,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             ctx.input(in);
             ctx.output(out);
 
-            stats.onTaskStart(ctx.taskInfo());
+            stats.onTaskRun(ctx.taskInfo(), U.currentTimeMillis());
 
             ctx.run();
         }

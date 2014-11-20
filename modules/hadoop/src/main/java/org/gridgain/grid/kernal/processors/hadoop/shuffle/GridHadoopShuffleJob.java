@@ -42,9 +42,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     private final GridHadoopJob job;
 
     /** */
-    private final GridHadoopJobStatistics stats;
-
-    /** */
     private final GridUnsafeMemory mem;
 
     /** */
@@ -88,17 +85,15 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
      * @param job Job.
-     * @param stats Statistics.
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
      * @throws GridException If error.
      */
-    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job, GridHadoopJobStatistics stats,
-        GridUnsafeMemory mem, int totalReducerCnt, int[] locReducers) throws GridException {
+    public GridHadoopShuffleJob(T locReduceAddr, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
+        int totalReducerCnt, int[] locReducers) throws GridException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
-        this.stats = stats;
         this.mem = mem;
         this.log = log.getLogger(GridHadoopShuffleJob.class);
 
@@ -188,8 +183,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
                 return maps.get(idx);
             }
-
-            stats.onShuffleStart(idx); // New map created.
         }
 
         return map;
@@ -386,8 +379,6 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     // Clean up the future from map only if there was no exception.
                     // Otherwise flush() should fail.
                     sentMsgs.remove(msgId);
-
-                    stats.onShuffleEnd(idx);
                 }
                 catch (GridException e) {
                     log.error("Failed to send message.", e);
