@@ -83,7 +83,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     public static final int REST_TCP_PORT_BASE = 12345;
 
     static {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("os/modules/clients").getAbsolutePath());
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
     }
 
     /** Client instance for each test. */

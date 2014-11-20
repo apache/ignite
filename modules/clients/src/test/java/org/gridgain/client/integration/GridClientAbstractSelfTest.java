@@ -68,7 +68,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     private static final Map<String, HashMapStore> cacheStores = new HashMap<>();
 
     /** Path to test log. */
-    private static final String TEST_LOG_PATH = "os/modules/core/src/test/resources/log/gridgain.log.tst";
+    private static final String TEST_LOG_PATH = "modules/core/src/test/resources/log/gridgain.log.tst";
 
     /** */
     public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j-test.xml";
@@ -189,7 +189,8 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         clientCfg.setRestTcpPort(BINARY_PORT);
 
         clientCfg.setRestAccessibleFolders(
-            U.getGridGainHome() + "/work/log", U.getGridGainHome() + "/os/modules/core/src/test/resources/log");
+            U.getGridGainHome() + "/work/log",
+            U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
 
         if (useSsl()) {
             clientCfg.setRestTcpSslEnabled(true);

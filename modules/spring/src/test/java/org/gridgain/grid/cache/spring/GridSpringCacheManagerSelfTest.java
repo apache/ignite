@@ -14,9 +14,12 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
+
+import java.io.*;
 
 /**
  * Spring cache test.
@@ -67,7 +70,12 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        BeanFactory factory = new ClassPathXmlApplicationContext("org/gridgain/grid/cache/spring/spring-caching.xml");
+        File cfg = U.resolveGridGainPath(
+            "modules/spring/src/test/java/org/gridgain/grid/cache/spring/spring-caching.xml");
+
+        assertNotNull(cfg);
+
+        BeanFactory factory = new FileSystemXmlApplicationContext(cfg.getPath());
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
 
