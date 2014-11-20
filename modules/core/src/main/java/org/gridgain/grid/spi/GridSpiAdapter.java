@@ -698,7 +698,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean 
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
+        @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
             return false;
         }
 

@@ -38,10 +38,19 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
+     * TODO remove.
+     *
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(Class<T> cls);
+
+    /**
+     * Register extensions.
+     * @param ctx Plugin context.
+     * @param registry Extension registry.
+     */
+    public void initExtensions(PluginContext ctx, IgniteExtensionRegistry registry);
 
     /**
      * Starts grid component.

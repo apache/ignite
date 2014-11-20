@@ -29,7 +29,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -38,6 +37,7 @@ import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
+import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -49,7 +49,6 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.direct.*;
@@ -315,13 +314,6 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public ExecutorService utilityCachePool();
 
     /**
-     * Gets version converter processor.
-     *
-     * @return Version converter processor.
-     */
-    public GridVersionProcessor versionConverter();
-
-    /**
      * Gets portable processor.
      *
      * @return Portable processor.
@@ -334,6 +326,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Interop processor.
      */
     public GridInteropProcessor interop();
+
+    /**
+     * @return Plugin processor.
+     */
+    public IgnitePluginProcessor plugins();
 
     /**
      * Gets deployment manager.

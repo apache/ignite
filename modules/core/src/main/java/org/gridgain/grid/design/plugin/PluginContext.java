@@ -15,7 +15,6 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.direct.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -25,7 +24,12 @@ public interface PluginContext {
     /**
      * @return Plugin configuration.
      */
-    public PluginConfiguration configuration();
+    public <C extends PluginConfiguration> C configuration();
+
+    /**
+     * @return Ignite configuration.
+     */
+    public GridConfiguration igniteConfiguration();
 
     /**
      * @return Grid.

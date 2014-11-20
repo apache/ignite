@@ -30,7 +30,7 @@
     <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
+            <artifactId>gridgain-core-ent</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
     </dependencies>

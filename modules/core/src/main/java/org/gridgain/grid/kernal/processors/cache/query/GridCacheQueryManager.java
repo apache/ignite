@@ -20,7 +20,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
@@ -37,7 +36,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
-import java.nio.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -46,7 +44,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
-import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * Query and index manager.
@@ -2207,83 +2204,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         public void metaData(List<GridIndexingFieldMetadata> meta) {
             this.meta = meta;
-        }
-    }
-
-    /**
-     * 6.1.9 -> 6.2.0 converter for {@link GridCacheQueryRequest}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridCacheQueryRequestPortablesConverter620 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            return commState.putBoolean(false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            if (buf.remaining() < 1)
-                return false;
-
-            commState.getBoolean();
-
-            return true;
-        }
-    }
-
-    /**
-     * 6.2.0 -> 6.2.1 converter for {@link GridCacheQueryRequest}.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridCacheQueryRequestEventsConverter621 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putUuid(null))
-                        return false;
-
-                    commState.idx++;
-
-                case 3:
-                    if (!commState.putInt(0))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    UUID subjId0 = commState.getUuid();
-
-                    if (subjId0 == UUID_NOT_READ)
-                        return false;
-
-                    commState.idx++;
-
-                case 1:
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.getInt();
-
-                    commState.idx++;
-            }
-
-            return true;
         }
     }
 

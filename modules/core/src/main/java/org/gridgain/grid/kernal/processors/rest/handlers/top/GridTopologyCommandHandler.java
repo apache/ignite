@@ -253,12 +253,17 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
-            attrs.remove(ATTR_VER_CONVERTERS);
             attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
 
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
+
+                if (!e.getKey().startsWith("org.gridgain.") && System.getProperty(e.getKey()) == null) {
+                    i.remove();
+
+                    continue;
+                }
 
                 if (e.getValue() != null) {
                   if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)

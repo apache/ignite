@@ -30,7 +30,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             new GridConfiguration(),
             new GridKernalGatewayImpl(null),
             null,
-            Collections.<PluginProvider>emptyList(),
             false);
     }
 

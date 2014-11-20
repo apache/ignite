@@ -17,10 +17,8 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -29,14 +27,12 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
-import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * DHT cache adapter.
@@ -773,217 +769,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
          */
         private long topologyVersion() {
             return topVer;
-        }
-    }
-
-
-    /**
-     * GridDhtAtomicUpdateRequest converter for version 6.1.2
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridSubjectIdAddedMessageConverter616 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (!commState.putUuid(GridTcpCommunicationMessageAdapter.UUID_NOT_READ))
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    UUID subjId0 = commState.getUuid();
-
-                    if (subjId0 == GridTcpCommunicationMessageAdapter.UUID_NOT_READ)
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridDhtAtomicUpdateRequest converter for version 6.1.2
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class GridTaskNameHashAddedMessageConverter621 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (!commState.putInt(0))
-                        return false;
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0: {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.getInt();
-
-                    commState.idx++;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridDht{Prepare|Lock}Request message converter.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class PreloadKeysAddedMessageConverter650 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putBitSet(null))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    BitSet preloadKeys0 = commState.getBitSet();
-
-                    if (preloadKeys0 == BIT_SET_NOT_READ)
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridDht{Prepare|Lock}Response message converter.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class PreloadEntriesAddedMessageConverter650 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putInt(-1))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (commState.readSize == -1) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        commState.readSize = commState.getInt();
-                    }
-
-                    if (commState.readSize >= 0) {
-                        for (int i = commState.readItems; i < commState.readSize; i++) {
-                            byte[] _val = commState.getByteArray();
-
-                            if (_val == BYTE_ARR_NOT_READ)
-                                return false;
-
-                            commState.readItems++;
-                        }
-                    }
-
-                    commState.readSize = -1;
-                    commState.readItems = 0;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-    }
-
-    /**
-     * GridCachePessimisticCheckCommittedTxRequest message converter.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class BooleanFlagAddedMessageConverter650 extends GridVersionConverter {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (!commState.putBoolean(false))
-                        return false;
-
-                    commState.idx++;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
-            commState.setBuffer(buf);
-
-            switch (commState.idx) {
-                case 0:
-                    if (buf.remaining() < 1)
-                        return false;
-
-                    commState.getBoolean();
-
-                    commState.idx++;
-            }
-
-            return true;
         }
     }
 }
