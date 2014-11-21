@@ -36,6 +36,20 @@ import java.util.*;
  * </pre>
  * </p>
  *
+ * If you need to modify nested portable object you can get builder for nested object using
+ * {@link GridPortableBuilder#field(String)}, changes made on nested builder will be taken on build parent object,
+ * for example:
+ *
+ * <pre name=code class=java>
+ * GridPortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
+ * GridPortableBuilder addressBuilder = personBuilder.field("addr");
+ * addressBuilder.field("houseNumber", 15)
+ *
+ * personPortableObj = personBuilder.build();
+ *
+ * assert 15 == personPortableObj.<Person>deserialize().getAddr().getHouseNumber();
+ * </pre>
+ *
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
  * convert it to portable format, like so:
@@ -52,6 +66,29 @@ import java.util.*;
  * @see GridPortables#builder(GridPortableObject)
  */
 public interface GridPortableBuilder {
+    /**
+     * Returns the value assigned to specified field.
+     * If the value is a portable object instance of {@code GridPortableBuilder} will be returned, you can modify nested
+     * builder.
+     * Collections and maps returned from this method are modifiable.
+     *
+     * @param name Field name.
+     * @return Value assigned to the field.
+     */
+    public <F> F field(String name);
+
+    /**
+     * Sets value to the field.
+     *
+     * Note: This method may be used for fields that already present in the metadata, if you need to add a new field you
+     * have to use methods like {@code stringField(String, String)}, {@code intField(String, String)} to specify field
+     * type explicitly.
+     *
+     * @param name Field name.
+     * @param val Field value.
+     */
+    public void field(String name, @Nullable Object val);
+
     /**
      * Sets hash code for the portable object. If not set, GridGain will generate
      * one automatically.
