@@ -10,20 +10,22 @@
 package org.gridgain.grid.kernal.visor.tasks;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.cache.GridCache;
+import org.gridgain.grid.cache.query.GridCacheQueryFuture;
+import org.gridgain.grid.kernal.GridKernal;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.processors.timeout.*;
+import org.gridgain.grid.kernal.processors.task.GridInternal;
+import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
 import org.gridgain.grid.kernal.visor.dto.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.indexing.*;
+import org.gridgain.grid.lang.GridBiTuple;
+import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.*;
+
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.escapeName;
 
 /**
  * Task for execute SCAN or SQL query and get first page of results.
@@ -180,14 +182,23 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                 GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
+                if (c == null)
+                    return new GridBiTuple<>(new GridException("Cache not found: " + escapeName(arg.cacheName())), null);
+
                 if (scan) {
                     GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
                         .projection(g.forNodeIds(arg.proj()))
                         .execute();
 
+                    long start = U.currentTimeMillis();
+
                     GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
                         VisorQueryUtils.fetchScanQueryRows(fut, null, arg.pageSize());
+
+                    long fetchDuration = U.currentTimeMillis() - start;
+
+                    long duration = fut.duration() + fetchDuration; // Scan duration + fetch duration.
 
                     Map.Entry<Object, Object> next = rows.get2();
 
@@ -197,7 +208,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                     scheduleResultSetHolderRemoval(qryId);
 
                     return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
-                        VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null));
+                        VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
                     GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)c.queries())
@@ -222,7 +233,13 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                             names[i] = new VisorFieldsQueryColumn(col.typeName(), col.fieldName());
                         }
 
+                        long start = U.currentTimeMillis();
+
                         GridBiTuple<List<Object[]>, List<?>> rows = VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+
+                        long fetchDuration = U.currentTimeMillis() - start;
+
+                        long duration = fut.duration() + fetchDuration; // Query duration + fetch duration.
 
                         g.<String, VisorFutureResultSetHolder>nodeLocalMap().put(qryId,
                             new VisorFutureResultSetHolder<>(fut, rows.get2(), false));
@@ -230,7 +247,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         scheduleResultSetHolderRemoval(qryId);
 
                         return new GridBiTuple<>(null, new VisorQueryResultEx(g.localNode().id(), qryId,
-                            names, rows.get1(), rows.get2() != null));
+                            names, rows.get1(), rows.get2() != null, duration));
                     }
                 }
             }

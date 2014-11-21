@@ -54,6 +54,8 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
 
         /** Collect data from SQL query */
         private VisorQueryResult nextSqlPage(GridBiTuple<String, Integer> arg) throws GridException {
+            long start = U.currentTimeMillis();
+
             GridNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
@@ -70,11 +72,13 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
             else
                 storage.remove(arg.get1());
 
-            return new VisorQueryResult(nextRows.get1(), hasMore);
+            return new VisorQueryResult(nextRows.get1(), hasMore, U.currentTimeMillis() - start);
         }
 
         /** Collect data from SCAN query */
         private VisorQueryResult nextScanPage(GridBiTuple<String, Integer> arg) throws GridException {
+            long start = U.currentTimeMillis();
+
             GridNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
@@ -92,7 +96,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<GridBiTuple<String,
             else
                 storage.remove(arg.get1());
 
-            return new VisorQueryResult(rows.get1(), hasMore);
+            return new VisorQueryResult(rows.get1(), hasMore, U.currentTimeMillis() - start);
         }
 
         /** {@inheritDoc} */

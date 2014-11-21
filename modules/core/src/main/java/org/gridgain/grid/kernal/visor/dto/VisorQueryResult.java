@@ -27,15 +27,20 @@ public class VisorQueryResult implements Serializable {
     /** Whether query has more rows to fetch. */
     private final Boolean hasMore;
 
+    /** Query duration */
+    private final long duration;
+
     /**
      * Create task result with given parameters
      *
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
+     * @param duration Query duration.
      */
-    public VisorQueryResult(List<Object[]> rows, Boolean hasMore) {
+    public VisorQueryResult(List<Object[]> rows, Boolean hasMore, long duration) {
         this.rows = rows;
         this.hasMore = hasMore;
+        this.duration = duration;
     }
 
     /**
@@ -50,6 +55,13 @@ public class VisorQueryResult implements Serializable {
      */
     public Boolean hasMore() {
         return hasMore;
+    }
+
+    /**
+     * @return Duration of next page fetching.
+     */
+    public long duration() {
+        return duration;
     }
 
     /** {@inheritDoc} */

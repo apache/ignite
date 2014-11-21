@@ -35,15 +35,17 @@ public class VisorQueryResultEx extends VisorQueryResult {
      * @param colNames Columns types and names.
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
+     * @param duration Query duration.
      */
     public VisorQueryResultEx(
         UUID resNodeId,
         String qryId,
         VisorFieldsQueryColumn[] colNames,
         List<Object[]> rows,
-        Boolean hasMore
+        Boolean hasMore,
+        long duration
     ) {
-        super(rows, hasMore);
+        super(rows, hasMore, duration);
 
         this.resNodeId = resNodeId;
         this.qryId = qryId;
