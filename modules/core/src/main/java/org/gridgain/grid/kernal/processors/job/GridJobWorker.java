@@ -834,7 +834,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert !internal;
 
         if (evts == null)
-            evts = new LinkedList<>();
+            evts = new ArrayList<>();
 
         evts.add(F.t(evt, msg));
 

@@ -44,7 +44,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
      * @return Expected number of inner reads.
      */
-    protected abstract int expectedReadsPerPut(boolean isPrimary);
+    protected int expectedReadsPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
 
     /**
      * Gets number of missed per "put" operation.
@@ -52,7 +54,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
      * @return Expected number of misses.
      */
-    protected abstract int expectedMissesPerPut(boolean isPrimary);
+    protected int expectedMissesPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

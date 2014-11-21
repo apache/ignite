@@ -2016,7 +2016,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         }
 
         if (next != null)
-            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.order()));
+            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
     }
 
     /**
@@ -2153,6 +2153,24 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             return "N/A";
 
         return t.isAlive() ? "alive" : "dead";
+    }
+
+    /**
+     * Checks if two given {@link GridSecurityPermissionSet} objects contain the same permissions.
+     * Each permission belongs to one of three groups : cache, task or system.
+     *
+     * @param locPerms The first set of permissions.
+     * @param rmtPerms The second set of permissions.
+     * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
+     */
+    private boolean permissionsEqual(GridSecurityPermissionSet locPerms, GridSecurityPermissionSet rmtPerms) {
+        boolean dfltAllowMatch = !(locPerms.defaultAllowAll() ^ rmtPerms.defaultAllowAll());
+
+        boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
+            F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
+            F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
+
+        return dfltAllowMatch && bothHaveSamePerms;
     }
 
     /** {@inheritDoc} */
@@ -3343,7 +3361,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          * Processes node added message.
          *
          * @param msg Node added message.
+         * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring,
+         *      if new node auth fails due to config inconsistency. So, we need to finish add
+         *      and only then initiate failure.
          */
+        @Deprecated
         private void processNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
@@ -3392,6 +3414,67 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     node.metricsStore(metricsStore);
 
                     node.logger(log);
+                }
+
+                if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
+                    boolean authFailed = true;
+
+                    try {
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
+
+                        if (cred == null) {
+                            if (log.isDebugEnabled())
+                                log.debug(
+                                    "Skipping global authentication for node (security credentials not found, " +
+                                        "probably, due to coordinator has older version) " +
+                                        "[nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) +
+                                        ", coord=" + ring.coordinator() + ']');
+
+                            authFailed = false;
+                        }
+                        else {
+                            GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+
+                            GridSecurityContext coordSubj = gridMarsh.unmarshal(
+                                node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
+
+                            if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication failed [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                        U.addressesAsString(node) + ']');
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                        U.addressesAsString(node));
+                            }
+                            else
+                                // Node will not be kicked out.
+                                authFailed = false;
+                        }
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+                    }
+                    finally {
+                        if (authFailed) {
+                            try {
+                                trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                            }
+                            catch (GridSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send unauthenticated message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']');
+                            }
+
+                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
+                                node.internalOrder()));
+                        }
+                    }
                 }
 
                 if (msg.client())

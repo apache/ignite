@@ -33,6 +33,7 @@ import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.net.*;
+import java.nio.file.attribute.*;
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1339,5 +1340,44 @@ public final class GridTestUtils {
 
             return true;
         }
+    }
+
+    /**
+     * Converts integer permission mode into set of {@link PosixFilePermission}.
+     *
+     * @param mode File mode.
+     * @return Set of {@link PosixFilePermission}.
+     */
+    public static Set<PosixFilePermission> modeToPermissionSet(int mode) {
+        Set<PosixFilePermission> res = EnumSet.noneOf(PosixFilePermission.class);
+
+        if ((mode & 0400) > 0)
+            res.add(PosixFilePermission.OWNER_READ);
+
+        if ((mode & 0200) > 0)
+            res.add(PosixFilePermission.OWNER_WRITE);
+
+        if ((mode & 0100) > 0)
+            res.add(PosixFilePermission.OWNER_EXECUTE);
+
+        if ((mode & 040) > 0)
+            res.add(PosixFilePermission.GROUP_READ);
+
+        if ((mode & 020) > 0)
+            res.add(PosixFilePermission.GROUP_WRITE);
+
+        if ((mode & 010) > 0)
+            res.add(PosixFilePermission.GROUP_EXECUTE);
+
+        if ((mode & 04) > 0)
+            res.add(PosixFilePermission.OTHERS_READ);
+
+        if ((mode & 02) > 0)
+            res.add(PosixFilePermission.OTHERS_WRITE);
+
+        if ((mode & 01) > 0)
+            res.add(PosixFilePermission.OTHERS_EXECUTE);
+
+        return res;
     }
 }
