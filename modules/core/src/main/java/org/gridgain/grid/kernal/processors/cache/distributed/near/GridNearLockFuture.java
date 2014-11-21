@@ -843,8 +843,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             isolation(),
                                             isInvalidate(),
                                             timeout,
-                                            syncCommit(),
-                                            syncRollback(),
                                             mappedKeys.size(),
                                             inTx() ? tx.size() : mappedKeys.size(),
                                             inTx() ? tx.groupLockKey() : null,

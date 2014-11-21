@@ -413,6 +413,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
         assert state == ACTIVE || (state == PREPARING && optimistic()): "Invalid tx state for adding entry: " + e;
 
+        GridCacheContext<K, V> cacheCtx = e.context();
+
+        GridDhtCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+
         try {
             GridCacheTxEntry<K, V> entry = txMap.get(e.txKey());
 
@@ -426,10 +430,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 entry.drExpireTime(e.drExpireTime());
             }
             else {
-                entry = e.cleanCopy(e.context());
+                entry = e.cleanCopy(cacheCtx);
 
                 while (true) {
-                    GridDhtCacheEntry<K, V> cached = e.context().dht().entryExx(entry.key(), topologyVersion());
+                    GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(entry.key(), topologyVersion());
 
                     try {
                         // Set key bytes to avoid serializing in future.
@@ -462,10 +466,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     log.debug("Added entry to transaction: " + entry);
             }
 
-            return addReader(msgId, e.context().dht().entryExx(entry.key()), entry, topologyVersion());
+            return addReader(msgId, dhtCache.entryExx(entry.key()), entry, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
-            addInvalidPartition(e.context(), ex.partition());
+            addInvalidPartition(cacheCtx, ex.partition());
 
             return new GridFinishedFuture<>(cctx.kernalContext(), true);
         }
@@ -516,6 +520,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
             long topVer = topologyVersion();
 
+            GridDhtCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+
             // Enlist locks into transaction.
             for (GridCacheEntryEx<K, V> entry : entries) {
                 K key = entry.key();
@@ -524,7 +530,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
                 // First time access.
                 if (txEntry == null) {
-                    GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key, topVer);
+                    GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(key, topVer);
 
                     cached.unswap(!read, read);
 
@@ -602,7 +608,9 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);
 
-        GridFuture<Boolean> fut = cacheCtx.dhtTx().lockAllAsyncInternal(passedKeys,
+        GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+
+        GridFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(

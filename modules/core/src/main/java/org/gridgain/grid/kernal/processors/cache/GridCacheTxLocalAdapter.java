@@ -1749,7 +1749,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         assert cached == null || keys.size() == 1;
         assert cached == null || F.first(keys).equals(cached.key());
 
-        addActiveCache(cacheCtx);
+        try {
+            addActiveCache(cacheCtx);
+        }
+        catch (GridException e) {
+            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+        }
 
         Set<K> skipped = null;
 
@@ -2615,7 +2620,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         return true;
     }
 
-    private void addActiveCache(GridCacheContext<K, V> cacheCtx) {
+    /**
+     * Adds cache to the list of active caches in transaction.
+     *
+     * @param cacheCtx Cache context to add.
+     * @throws GridException If caches already enlisted in this transaction are not compatible with given
+     *      cache (e.g. they have different stores).
+     */
+    private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws GridException {
         // If this is a first cache to work on, capture cache settings.
         if (activeCacheIds.isEmpty() ||
             !activeCacheIds.contains(cacheCtx.cacheId()) && cctx.txCompatible(activeCacheIds, cacheCtx))

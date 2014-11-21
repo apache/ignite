@@ -701,8 +701,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
-                                        syncCommit(),
-                                        syncRollback(),
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() ? tx.groupLockKey() : null,

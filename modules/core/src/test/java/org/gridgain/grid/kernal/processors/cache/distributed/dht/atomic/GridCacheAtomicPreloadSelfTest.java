@@ -19,13 +19,18 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.REPEATABLE_READ;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Simple test for preloading in ATOMIC cache.
  */
 public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
+    /** */
+    private boolean nearEnabled;
+
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
@@ -34,7 +39,8 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(GridCacheAtomicityMode.TRANSACTIONAL);
-        cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cacheCfg.setBackups(1);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -45,8 +51,24 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPreloading() throws Exception {
+    public void testSimpleTxsNear() throws Exception {
+        checkSimpleTxs(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleTxsColocated() throws Exception {
+        checkSimpleTxs(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkSimpleTxs(boolean nearEnabled) throws Exception {
         try {
+            this.nearEnabled = nearEnabled;
+
             startGrids(3);
 
             awaitPartitionMapExchange();
@@ -138,19 +160,16 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
         int base = 0;
 
 //        // Near key.
-//        while (aff.isPrimary(node, base) || aff.isBackup(node, base))
-//            base++;
-//
-//        keys.add(base);
-
-        // Primary key.
-        while (!aff.isPrimary(node, base))
+        while (aff.isPrimary(node, base) || aff.isBackup(node, base))
             base++;
 
         keys.add(base);
 
-        if (true)
-            return keys;
+//        Primary key.
+        while (!aff.isPrimary(node, base))
+            base++;
+
+        keys.add(base);
 
         // Backup key.
         while (!aff.isBackup(node, base))

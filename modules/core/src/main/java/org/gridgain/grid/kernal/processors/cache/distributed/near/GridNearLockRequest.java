@@ -44,12 +44,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectTransient
     private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
-    /** Synchronous commit flag. */
-    private boolean syncCommit;
-
-    /** Synchronous rollback flag. */
-    private boolean syncRollback;
-
     /** Implicit flag. */
     private boolean implicitTx;
 
@@ -95,8 +89,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
      * @param timeout Lock timeout.
-     * @param syncCommit Synchronous commit flag.
-     * @param syncRollback Synchronous rollback flag.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
@@ -116,8 +108,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         GridCacheTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
-        boolean syncCommit,
-        boolean syncRollback,
         int keyCnt,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
@@ -147,8 +137,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.topVer = topVer;
         this.implicitTx = implicitTx;
         this.implicitSingleTx = implicitSingleTx;
-        this.syncCommit = syncCommit;
-        this.syncRollback = syncRollback;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
@@ -219,20 +207,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     public void filter(GridPredicate<GridCacheEntry<K, V>>[] filter, GridCacheContext<K, V> ctx)
         throws GridException {
         this.filter = filter;
-    }
-
-    /**
-     * @return Synchronous commit flag.
-     */
-    public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /**
-     * @return Synchronous rollback flag.
-     */
-    public boolean syncRollback() {
-        return syncRollback;
     }
 
     /**
@@ -335,8 +309,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.miniId = miniId;
         _clone.filterBytes = filterBytes;
         _clone.filter = filter;
-        _clone.syncCommit = syncCommit;
-        _clone.syncRollback = syncRollback;
         _clone.implicitTx = implicitTx;
         _clone.implicitSingleTx = implicitSingleTx;
         _clone.onePhaseCommit = onePhaseCommit;
@@ -441,36 +413,24 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 30:
-                if (!commState.putBoolean(syncCommit))
-                    return false;
-
-                commState.idx++;
-
-            case 31:
-                if (!commState.putBoolean(syncRollback))
-                    return false;
-
-                commState.idx++;
-
-            case 32:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 33:
+            case 31:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 34:
+            case 32:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
 
-            case 35:
+            case 33:
                 if (!commState.putBoolean(hasTransforms))
                     return false;
 
@@ -583,22 +543,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 30:
-                if (buf.remaining() < 1)
-                    return false;
-
-                syncCommit = commState.getBoolean();
-
-                commState.idx++;
-
-            case 31:
-                if (buf.remaining() < 1)
-                    return false;
-
-                syncRollback = commState.getBoolean();
-
-                commState.idx++;
-
-            case 32:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -606,7 +550,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 33:
+            case 31:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -616,7 +560,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 34:
+            case 32:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -624,7 +568,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 35:
+            case 33:
                 if (buf.remaining() < 1)
                     return false;
 
