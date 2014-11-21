@@ -7,39 +7,40 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.streamer;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
- * Task for reset metrics for specified streamer.
+ * Task for reset specified streamer.
  */
 @GridInternal
-public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void> {
+public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorStreamerMetricsResetJob job(String arg) {
-        return new VisorStreamerMetricsResetJob(arg);
+    @Override protected VisorStreamerResetJob job(String arg) {
+        return new VisorStreamerResetJob(arg);
     }
 
     /**
-     * Job that reset streamer metrics.
+     * Job that reset streamer.
      */
-    private static class VisorStreamerMetricsResetJob extends VisorJob<String, Void> {
+    private static class VisorStreamerResetJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Streamer name.
          */
-        private VisorStreamerMetricsResetJob(String arg) {
+        private VisorStreamerResetJob(String arg) {
             super(arg);
         }
 
@@ -48,19 +49,19 @@ public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void
             try {
                 GridStreamer streamer = g.streamer(streamerName);
 
-                streamer.resetMetrics();
+                streamer.reset();
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to reset metrics for streamer: " + escapeName(streamerName) +
-                    " on node: " + g.localNode().id(), iae);
+                throw new GridException("Failed to reset streamer: " + escapeName(streamerName)
+                    + " on node: " + g.localNode().id(), iae);
             }
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorStreamerMetricsResetJob.class, this);
+            return S.toString(VisorStreamerResetJob.class, this);
         }
     }
 }

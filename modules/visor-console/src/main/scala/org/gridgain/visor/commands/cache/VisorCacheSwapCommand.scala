@@ -10,7 +10,7 @@
  */
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.tasks.VisorCachesSwapBackupsTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCachesSwapBackupsTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils
 
 import java.util.{Collections, HashSet => JavaHashSet}

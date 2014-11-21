@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.GridCache;
@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
 import org.gridgain.grid.kernal.visor.dto.query.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;

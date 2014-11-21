@@ -10,7 +10,7 @@
  */
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.tasks.VisorCachesClearTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCachesClearTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils
 
 import java.util.Collections

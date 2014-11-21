@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.tasks.VisorCachesCompactTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCachesCompactTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils
 
 import java.util.{Collections, HashSet => JavaHashSet}

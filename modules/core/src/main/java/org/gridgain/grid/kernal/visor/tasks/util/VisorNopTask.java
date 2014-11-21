@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
