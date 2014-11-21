@@ -76,7 +76,12 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableBuilder builder() {
+    @Override public GridPortableBuilder builder(int typeId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPortableBuilder builder(String clsName) {
         return null;
     }
 
