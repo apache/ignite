@@ -348,6 +348,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @throws GridTopologyException If receiver left.
      */
     public void send(GridNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
+        assert !node.isLocal();
+
         onSend(msg, node.id());
 
         if (log.isDebugEnabled())

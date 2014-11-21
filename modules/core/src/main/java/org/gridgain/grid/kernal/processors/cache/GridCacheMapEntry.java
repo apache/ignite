@@ -318,7 +318,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     keyBytes = kb;
 
                 // If value didn't change.
-                if (!isOffHeapValuesOnly() && valBytes == null && val == v)
+                if (!isOffHeapValuesOnly() && valBytes == null && val == v && cctx.config().isStoreValueBytes())
                     valBytes = vb.isPlain() ? null : vb.get();
             }
         }

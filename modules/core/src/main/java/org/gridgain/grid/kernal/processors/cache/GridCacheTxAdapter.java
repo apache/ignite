@@ -1221,7 +1221,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheTxEntry<K, V> e, boolean primaryOnly) {
-        if (!near())
+        GridCacheContext<K, V> cacheCtx = e.context();
+
+        if (!cacheCtx.isNear())
             return false;
 
         // Try to take either entry-recorded primary node ID,
@@ -1230,8 +1232,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         if (nodeId != null && nodeId.equals(cctx.localNodeId()))
             return true;
-
-        GridCacheContext<K, V> cacheCtx = e.context();
 
         GridCacheEntryEx<K, V> cached = e.cached();
 

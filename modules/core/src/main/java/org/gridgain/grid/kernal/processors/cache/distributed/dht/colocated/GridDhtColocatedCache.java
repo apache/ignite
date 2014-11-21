@@ -729,37 +729,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /**
-     * @param commit Commit flag (rollback if {@code false}).
-     * @param explicitLock Explicit lock flag.
-     * @param tx Transaction to commit.
-     * @return Future.
-     */
-    public GridFuture<GridCacheTx> finishLocal(boolean commit, boolean explicitLock, GridNearTxLocal<K, V> tx) {
-        try {
-            if (commit) {
-                if (!tx.markFinalizing(USER_FINISH)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
-
-                    return null;
-                }
-
-                return tx.commitAsyncLocal();
-            }
-            else
-                return tx.rollbackAsyncLocal();
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
-
-            if (tx != null)
-                return tx.rollbackAsync();
-
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
-        }
-    }
-
-    /**
      * @param nodeId Sender ID.
      * @param res Response.
      */

@@ -342,13 +342,16 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert topVer > 0;
 
-        // TODO GG-9141 check all involved caches.
-//        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-//            onDone(new GridTopologyException("Failed to map keys for near-only cache (all " +
-//                "partition nodes left the grid)."));
-//
-//            return;
-//        }
+        for (int cacheId : tx.activeCacheIds()) {
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+            if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
+                onDone(new GridTopologyException("Failed to map keys for cache (all " +
+                    "partition nodes left the grid): " + cacheCtx.name()));
+
+                return;
+            }
+        }
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -430,7 +433,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
 //  TODO correct assert
-//            assert txEntry.cached().detached() : "Expected detached entry while preparign transaction " +
+//            assert txEntry.cached().detached() : "Expected detached entry while preparing transaction " +
 //                "[locNodeId=" + cctx.localNodeId() +
 //                ", txEntry=" + txEntry + ']';
 

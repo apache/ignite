@@ -290,7 +290,7 @@ public class GridCacheTxHandler<K, V> {
      * @return Future.
      */
     @Nullable public GridFuture<GridCacheTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
-        return finish(nodeId, req);
+        return finish(nodeId, null, req);
     }
 
     /**
@@ -298,15 +298,50 @@ public class GridCacheTxHandler<K, V> {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public GridFuture<GridCacheTx> finish(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
+    @Nullable public GridFuture<GridCacheTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+        GridNearTxFinishRequest<K, V> req) {
+        assert locTx == null || locTx.nearLocallyMapped() || locTx.colocatedLocallyMapped();
         assert nodeId != null;
         assert req != null;
-
-        // TODO cacheCtx.colocated().finishLocal(commit, m.explicitLock(), tx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
 
+        GridFuture<GridCacheTx> colocatedFinishFut = null;
+
+        if (locTx != null && locTx.colocatedLocallyMapped())
+            colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
+
+        GridFuture<GridCacheTx> nearFinishFut = null;
+
+        if (locTx == null || locTx.nearLocallyMapped())
+            nearFinishFut = finishDhtLocal(nodeId, locTx, req);
+
+        if (colocatedFinishFut != null && nearFinishFut != null) {
+            GridCompoundFuture<GridCacheTx, GridCacheTx> res = new GridCompoundFuture<>(ctx.kernalContext());
+
+            res.add(colocatedFinishFut);
+            res.add(nearFinishFut);
+
+            res.markInitialized();
+
+            return res;
+        }
+
+        if (colocatedFinishFut != null)
+            return colocatedFinishFut;
+
+        return nearFinishFut;
+    }
+
+    /**
+     * @param nodeId Node ID initiated commit.
+     * @param locTx Optional local transaction.
+     * @param req Finish request.
+     * @return Finish future.
+     */
+    private GridFuture<GridCacheTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+        GridNearTxFinishRequest<K, V> req) {
         GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
         GridDhtTxLocal<K, V> tx = null;
@@ -319,6 +354,8 @@ public class GridCacheTxHandler<K, V> {
             tx = ctx.tm().tx(dhtVer);
 
         if (tx == null && !req.explicitLock()) {
+            assert locTx == null : "DHT local tx should never be lost for near local tx: " + locTx;
+
             U.warn(log, "Received finish request for completed transaction (the message may be too late " +
                 "and transaction could have been DGCed by now) [commit=" + req.commit() +
                 ", xid=" + req.version() + ']');
@@ -433,6 +470,36 @@ public class GridCacheTxHandler<K, V> {
 
                 return rollbackFut;
             }
+
+            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+        }
+    }
+
+    /**
+     * @param commit Commit flag (rollback if {@code false}).
+     * @param tx Transaction to commit.
+     * @return Future.
+     */
+    public GridFuture<GridCacheTx> finishColocatedLocal(boolean commit, GridNearTxLocal<K, V> tx) {
+        try {
+            if (commit) {
+                if (!tx.markFinalizing(USER_FINISH)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
+
+                    return null;
+                }
+
+                return tx.commitAsyncLocal();
+            }
+            else
+                return tx.rollbackAsyncLocal();
+        }
+        catch (Throwable e) {
+            U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
+
+            if (tx != null)
+                return tx.rollbackAsync();
 
             return new GridFinishedFuture<>(ctx.kernalContext(), e);
         }

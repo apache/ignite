@@ -62,6 +62,12 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** Entries to lock on next step of prepare stage. */
     private Collection<GridCacheTxEntry<K, V>> optimisticLockEntries = Collections.emptyList();
 
+    /** True if transaction contains near cache entries mapped to local node. */
+    private boolean nearLocallyMapped;
+
+    /** True if transaction contains colocated cache entries mapped to local node. */
+    private boolean colocatedLocallyMapped;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -165,6 +171,34 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture<K, V> fut) {
         prepFut.compareAndSet(fut, null);
+    }
+
+    /**
+     * @return {@code True} if transaction contains at least one near cache key mapped to the local node.
+     */
+    public boolean nearLocallyMapped() {
+        return nearLocallyMapped;
+    }
+
+    /**
+     * @param nearLocallyMapped {@code True} if transaction contains near key mapped to the local node.
+     */
+    public void nearLocallyMapped(boolean nearLocallyMapped) {
+        this.nearLocallyMapped = nearLocallyMapped;
+    }
+
+    /**
+     * @return {@code True} if transaction contains colocated key mapped to the local node.
+     */
+    public boolean colocatedLocallyMapped() {
+        return colocatedLocallyMapped;
+    }
+
+    /**
+     * @param colocatedLocallyMapped {@code True} if transaction contains colocated key mapped to the local node.
+     */
+    public void colocatedLocallyMapped(boolean colocatedLocallyMapped) {
+        this.colocatedLocallyMapped = colocatedLocallyMapped;
     }
 
     /** {@inheritDoc} */
@@ -634,7 +668,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * Waits for topology exchange future to be ready and then prepares user transaction.
      */
     private void prepareOnTopology() {
-        GridCacheContext<K, V> cacheCtx = null; // TODO GG-9141 introduce common read lock.
+        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(activeCacheIds));
 
         cacheCtx.topology().readLock();
 

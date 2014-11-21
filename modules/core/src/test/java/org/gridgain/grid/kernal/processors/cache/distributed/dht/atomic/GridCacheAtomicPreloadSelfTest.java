@@ -114,8 +114,12 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Object> cache = grid.cache(null);
 
-            if (cache.affinity().isPrimary(node, key) || cache.affinity().isBackup(node, key))
-                assertEquals(val, cache.peek(key));
+            boolean primary = cache.affinity().isPrimary(node, key);
+            boolean backup = cache.affinity().isBackup(node, key);
+
+            if (primary || backup)
+                assertEquals("Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +
+                    ", backup=" + backup + ", key=" + key + ']', val, cache.peek(key));
         }
     }
 
@@ -133,20 +137,20 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
         int base = 0;
 
-        // Near key.
-        while (aff.isPrimary(node, base) || aff.isBackup(node, base))
-            base++;
-
-        keys.add(base);
-
-        if (true)
-            return keys;
+//        // Near key.
+//        while (aff.isPrimary(node, base) || aff.isBackup(node, base))
+//            base++;
+//
+//        keys.add(base);
 
         // Primary key.
         while (!aff.isPrimary(node, base))
             base++;
 
         keys.add(base);
+
+        if (true)
+            return keys;
 
         // Backup key.
         while (!aff.isBackup(node, base))

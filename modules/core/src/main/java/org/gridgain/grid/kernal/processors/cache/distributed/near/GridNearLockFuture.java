@@ -732,8 +732,12 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 GridNearLockMapping<K, V> updated = map(key, map, topVer);
 
                 // If new mapping was created, add to collection.
-                if (updated != map)
+                if (updated != map) {
                     mappings.add(updated);
+
+                    if (tx != null && updated.node().isLocal())
+                        tx.nearLocallyMapped(true);
+                }
 
                 map = updated;
             }

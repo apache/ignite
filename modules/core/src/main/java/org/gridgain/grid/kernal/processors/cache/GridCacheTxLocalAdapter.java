@@ -166,6 +166,15 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         return false;
     }
 
+    /**
+     * Gets collection of active cache IDs for this transaction.
+     *
+     * @return Collection of active cache IDs.
+     */
+    public Collection<Integer> activeCacheIds() {
+        return activeCacheIds;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isStarted() {
         return txMap != null;
@@ -609,7 +618,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 // Must try to evict near entries before committing from
                                 // transaction manager to make sure locks are held.
                                 if (!evictNearEntry(txEntry, false)) {
-                                    if (near() && cacheCtx.config().getDrReceiverConfiguration() != null) {
+                                    if (cacheCtx.isNear() && cacheCtx.config().getDrReceiverConfiguration() != null) {
                                         cached.markObsolete(xidVer);
 
                                         break;
@@ -624,7 +633,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     if (updateNearCache(cacheCtx, txEntry.key(), topVer))
                                         nearCached = cacheCtx.dht().near().peekEx(txEntry.key());
-                                    else if (near() && txEntry.locallyMapped())
+                                    else if (cacheCtx.isNear() && txEntry.locallyMapped())
                                         metrics = false;
 
                                     boolean evt = !isNearLocallyMapped(txEntry, false);
@@ -632,7 +641,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     // For near local transactions we must record DHT version
                                     // in order to keep near entries on backup nodes until
                                     // backup remote transaction completes.
-                                    if (near())
+                                    if (cacheCtx.isNear())
                                         ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
 
                                     if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))

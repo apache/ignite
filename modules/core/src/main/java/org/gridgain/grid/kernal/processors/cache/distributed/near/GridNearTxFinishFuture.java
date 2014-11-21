@@ -266,13 +266,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     void finish() {
         if (tx.onePhaseCommit()) {
-            GridCacheContext<K, V> cacheCtx = null; // TODO move finishLocal to tx handler. GG-9141
-
             // No need to send messages as transaction was already committed on remote node.
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {
                 if (m.node().isLocal()) {
-                    GridFuture<GridCacheTx> fut = cacheCtx.colocated().finishLocal(commit, m.explicitLock(), tx);
+                    GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
                     // Add new future.
                     if (fut != null)
@@ -356,7 +354,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (n.isLocal()) {
             req.miniId(GridUuid.randomUuid());
 
-            GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), req);
+            GridFuture<GridCacheTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
             // Add new future.
             if (fut != null)
