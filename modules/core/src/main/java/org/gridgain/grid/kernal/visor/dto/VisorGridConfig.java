@@ -29,8 +29,8 @@ public class VisorGridConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** License. */
-    private VisorLicense license;
+//    /** License. */
+//    private VisorLicense license;
 
     /** Basic. */
     private VisorBasicConfig basic;
@@ -99,7 +99,7 @@ public class VisorGridConfig implements Serializable {
 
         VisorGridConfig cfg = new VisorGridConfig();
 
-        cfg.license(VisorLicense.from(g));
+//        cfg.license(VisorLicense.from(g));
         cfg.basic(VisorBasicConfig.from(g, c));
         cfg.metrics(VisorMetricsConfig.from(c));
         cfg.spis(VisorSpisConfig.from(c));
@@ -123,19 +123,19 @@ public class VisorGridConfig implements Serializable {
         return cfg;
     }
 
-    /**
-     * @return License.
-     */
-    @Nullable public VisorLicense license() {
-        return license;
-    }
-
-    /**
-     * @param license New license.
-     */
-    public void license(@Nullable VisorLicense license) {
-        this.license = license;
-    }
+//    /**
+//     * @return License.
+//     */
+//    @Nullable public VisorLicense license() {
+//        return license;
+//    }
+//
+//    /**
+//     * @param license New license.
+//     */
+//    public void license(@Nullable VisorLicense license) {
+//        this.license = license;
+//    }
 
     /**
      * @return Basic.

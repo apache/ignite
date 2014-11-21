@@ -27,7 +27,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.visor.dto.VisorComputeMonitoringHolder.*;
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
@@ -87,8 +86,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
                     if (jobData.eventsEx != null)
                         data.eventsEx.put(nid, jobData.eventsEx);
 
-                    if (jobData.license != null)
-                        data.licenses.put(nid, jobData.license);
+//                    if (jobData.license != null)
+//                        data.licenses.put(nid, jobData.license);
 
                     if (jobData.licenseEx != null)
                         data.licensesEx.put(nid, jobData.licenseEx);
@@ -114,8 +113,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
                     if (jobData.ggfssEx != null)
                         data.ggfssEx.put(nid, jobData.ggfssEx);
 
-                    if (jobData.dr != null)
-                        data.drs.put(nid, jobData.dr);
+//                    if (jobData.dr != null)
+//                        data.drs.put(nid, jobData.dr);
 
                     if (jobData.drEx != null)
                         data.drsEx.put(nid, jobData.drEx);
@@ -154,14 +153,6 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Visor unique key to get lost events throttle counter from node local storage. */
         private final String evtThrottleCntrKey;
 
-        /**
-         * Whether cache sampling enabled in Visor preferences.
-         * This parameter was not supported anymore and will be ignored.
-         * Should be removed on next-breaking-compatibility release.
-         */
-        @Deprecated
-        private final boolean samplingEnabled;
-
         /** cache sample size. */
         private final int sample;
 
@@ -171,15 +162,13 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
          * @param taskMonitoringEnabled Required task monitoring state.
          * @param evtOrderKey Event order key, unique for Visor instance.
          * @param evtThrottleCntrKey Event throttle counter key, unique for Visor instance.
-         * @param samplingEnabled Whether to perform cache sampling.
          * @param sample How many entries use in sampling.
          */
         public VisorDataCollectorTaskArg(boolean taskMonitoringEnabled, String evtOrderKey,
-            String evtThrottleCntrKey, boolean samplingEnabled, int sample) {
+            String evtThrottleCntrKey, int sample) {
             this.taskMonitoringEnabled = taskMonitoringEnabled;
             this.evtOrderKey = evtOrderKey;
             this.evtThrottleCntrKey = evtThrottleCntrKey;
-            this.samplingEnabled = samplingEnabled;
             this.sample = sample;
         }
     }
@@ -212,8 +201,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Exceptions caught during collecting events from nodes. */
         private final Map<UUID, Throwable> eventsEx = new HashMap<>();
 
-        /** All licenses collected from nodes. */
-        private final Map<UUID, VisorLicense> licenses = new HashMap<>();
+//        /** All licenses collected from nodes. */
+//        private final Map<UUID, VisorLicense> licenses = new HashMap<>();
 
         /** Exceptions caught during collecting licenses from nodes. */
         private final Map<UUID, Throwable> licensesEx = new HashMap<>();
@@ -239,8 +228,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Exceptions caught during collecting streamers from nodes. */
         private final Map<UUID, Throwable> streamersEx = new HashMap<>();
 
-        /** All DR collected from nodes. */
-        private final Map<UUID, VisorDr> drs = new HashMap<>();
+//        /** All DR collected from nodes. */
+//        private final Map<UUID, VisorDr> drs = new HashMap<>();
 
         /** Exceptions caught during collecting DRs from nodes. */
         private final Map<UUID, Throwable> drsEx = new HashMap<>();
@@ -262,7 +251,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
                 taskMonitoringEnabled.isEmpty() &&
                 events.isEmpty() &&
                 eventsEx.isEmpty() &&
-                licenses.isEmpty() &&
+//                licenses.isEmpty() &&
                 licensesEx.isEmpty() &&
                 caches.isEmpty() &&
                 cachesEx.isEmpty() &&
@@ -271,7 +260,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
                 ggfssEx.isEmpty() &&
                 streamers.isEmpty() &&
                 streamersEx.isEmpty() &&
-                drs.isEmpty() &&
+//                drs.isEmpty() &&
                 drsEx.isEmpty();
             // TODO: gg-mongo mongos.isEmpty() &&
             // TODO: gg-mongo mongosEx.isEmpty() &&
@@ -319,12 +308,12 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
             return eventsEx;
         }
 
-        /**
-         * @return All licenses collected from nodes.
-         */
-        public Map<UUID, VisorLicense> licenses() {
-            return licenses;
-        }
+//        /**
+//         * @return All licenses collected from nodes.
+//         */
+//        public Map<UUID, VisorLicense> licenses() {
+//            return licenses;
+//        }
 
         /**
          * @return Exceptions caught during collecting licenses from nodes.
@@ -382,12 +371,12 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
             return streamersEx;
         }
 
-        /**
-         * @return All DR collected from nodes.
-         */
-        public Map<UUID, VisorDr> drs() {
-            return drs;
-        }
+//        /**
+//         * @return All DR collected from nodes.
+//         */
+//        public Map<UUID, VisorDr> drs() {
+//            return drs;
+//        }
 
         /**
          * @return Exceptions caught during collecting DRs from nodes.
@@ -419,8 +408,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Exception while collecting node events.*/
         private Throwable eventsEx;
 
-        /** Node license.*/
-        private VisorLicense license;
+//        /** Node license.*/
+//        private VisorLicense license;
         /** Exception while collecting node license.*/
         private Throwable licenseEx;
 
@@ -441,8 +430,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
         /** Exception while collecting node streamers.*/
         private Throwable streamersEx;
 
-        /** Node DR. */
-        private VisorDr dr;
+//        /** Node DR. */
+//        private VisorDr dr;
         /** Exception while collecting node DR.*/
         private Throwable drEx;
 
@@ -506,24 +495,24 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
             }
         }
 
-        /** Collect license. */
-        private void license(VisorDataCollectorJobResult res) {
-            if (ENT)
-                try {
-                    // If license could not be retrieved, try to let it load for 5 time.
-                    for (int i = 0; i < 5; i++) {
-                        res.license = VisorLicense.from(g);
-
-                        if (res.license != null)
-                            break;
-
-                        U.sleep(1000);
-                    }
-                }
-                catch(Throwable licenseEx) {
-                    res.licenseEx = licenseEx;
-                }
-        }
+//        /** Collect license. */
+//        private void license(VisorDataCollectorJobResult res) {
+//            if (ENT)
+//                try {
+//                    // If license could not be retrieved, try to let it load for 5 time.
+//                    for (int i = 0; i < 5; i++) {
+//                        res.license = VisorLicense.from(g);
+//
+//                        if (res.license != null)
+//                            break;
+//
+//                        U.sleep(1000);
+//                    }
+//                }
+//                catch(Throwable licenseEx) {
+//                    res.licenseEx = licenseEx;
+//                }
+//        }
 
         /** Collect caches. */
         private void caches(VisorDataCollectorJobResult res, VisorDataCollectorTaskArg arg) {
@@ -576,17 +565,17 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
             }
         }
 
-        /** Collect DR. */
-        private void dr(VisorDataCollectorJobResult res) {
-            if (ENT) // Collect DR only for Enterprise edition.
-                try {
-                    if (g.dr() != null)
-                        res.dr = VisorDr.from(g);
-                }
-                catch(Throwable drEx) {
-                    res.drEx = drEx;
-                }
-        }
+//        /** Collect DR. */
+//        private void dr(VisorDataCollectorJobResult res) {
+//            if (ENT) // Collect DR only for Enterprise edition.
+//                try {
+//                    if (g.dr() != null)
+//                        res.dr = VisorDr.from(g);
+//                }
+//                catch(Throwable drEx) {
+//                    res.drEx = drEx;
+//                }
+//        }
 
         // TODO: gg-mongo private void mongo(VisorDataCollectorJobResult res) {
         //            try {
@@ -609,7 +598,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
             events(res, arg);
 
-            license(res);
+//            license(res);
 
             caches(res, arg);
 
@@ -617,7 +606,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
             streamers(res);
 
-            dr(res);
+//            dr(res);
 
             // TODO: gg-mongo mongo(res);
 
