@@ -18,7 +18,6 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.dto.*;
 import org.gridgain.grid.kernal.visor.dto.event.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -41,16 +40,17 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
-        @Nullable GridBiTuple<Set<UUID>, VisorDataCollectorTaskArg> arg) throws GridException {
+        @Nullable VisorTaskArgument<VisorDataCollectorTaskArg> arg) throws GridException {
         assert arg != null;
-        assert arg.get1() != null;
 
         taskArg = arg.get2();
 
-        Map<GridComputeJob, GridNode> map = new HashMap<>();
+        Collection<GridNode> nodes = g.nodes();
+
+        Map<GridComputeJob, GridNode> map = U.newHashMap(nodes.size());
 
         // Collect data from ALL nodes.
-        for (GridNode node : g.nodes())
+        for (GridNode node : nodes)
             map.put(job(taskArg), node);
 
         return map;
@@ -89,8 +89,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 //                    if (jobData.license != null)
 //                        data.licenses.put(nid, jobData.license);
 
-                    if (jobData.licenseEx != null)
-                        data.licensesEx.put(nid, jobData.licenseEx);
+//                    if (jobData.licenseEx != null)
+//                        data.licensesEx.put(nid, jobData.licenseEx);
 
                     if (!jobData.caches.isEmpty())
                         data.caches.put(nid, jobData.caches);
@@ -116,8 +116,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 //                    if (jobData.dr != null)
 //                        data.drs.put(nid, jobData.dr);
 
-                    if (jobData.drEx != null)
-                        data.drsEx.put(nid, jobData.drEx);
+//                    if (jobData.drEx != null)
+//                        data.drsEx.put(nid, jobData.drEx);
 
                     // TODO: gg-mongo if (jobData.mongo != null)
                     //      data.mongos.put(nid, jobData.mongo);
@@ -410,8 +410,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
 //        /** Node license.*/
 //        private VisorLicense license;
-        /** Exception while collecting node license.*/
-        private Throwable licenseEx;
+//        /** Exception while collecting node license.*/
+//        private Throwable licenseEx;
 
         /** Node caches. */
         private final Collection<VisorCache> caches = new ArrayList<>();
@@ -432,8 +432,8 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
 
 //        /** Node DR. */
 //        private VisorDr dr;
-        /** Exception while collecting node DR.*/
-        private Throwable drEx;
+//        /** Exception while collecting node DR.*/
+//        private Throwable drEx;
 
         /** Node Mongo. */
         // TODO: gg-mongo private VisorMongo mongo;

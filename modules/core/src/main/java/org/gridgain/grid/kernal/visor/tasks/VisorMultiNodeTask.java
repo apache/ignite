@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.visor.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
@@ -25,7 +24,7 @@ import java.util.*;
  * @param <A> Task argument type.
  * @param <R> Task result type.
  */
-public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<GridBiTuple<Set<UUID>, A>, R> {
+public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<VisorTaskArgument<A>, R> {
     @GridInstanceResource
     protected GridEx g;
 
@@ -40,12 +39,11 @@ public abstract class VisorMultiNodeTask<A, R, J> implements GridComputeTask<Gri
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
-        @Nullable GridBiTuple<Set<UUID>, A> arg) throws GridException {
+        @Nullable VisorTaskArgument<A> arg) throws GridException {
         assert arg != null;
-        assert arg.get1() != null;
 
-        Set<UUID> nodeIds = arg.get1();
-        taskArg = arg.get2();
+        Collection<UUID> nodeIds = arg.nodes();
+        taskArg = arg.argument();
 
         Map<GridComputeJob, GridNode> map = new GridLeanMap<>(nodeIds.size());
 
