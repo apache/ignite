@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -20,7 +20,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
-import static org.gridgain.grid.kernal.visor.dto.VisorComputeMonitoringHolder.*;
+import static org.gridgain.grid.kernal.visor.dto.compute.VisorComputeMonitoringHolder.*;
 
 /**
  * Task to run gc on nodes.

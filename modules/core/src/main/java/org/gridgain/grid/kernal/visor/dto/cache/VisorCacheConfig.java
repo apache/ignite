@@ -127,12 +127,6 @@ public class VisorCacheConfig implements Serializable {
     /** Write behind config */
     private VisorWriteBehindConfig writeBehind;
 
-//    /** Data center replication send configuration. * */
-//    private VisorDrSenderConfig drSendConfig;
-//
-//    /** Data center replication receive configuration. */
-//    private VisorDrReceiverConfig drReceiveConfig;
-
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
@@ -174,12 +168,6 @@ public class VisorCacheConfig implements Serializable {
         cfg.dgcConfig(VisorDgcConfig.from(ccfg));
         cfg.storeConfig(VisorStoreConfig.from(ccfg));
         cfg.VisorWriteBehindConfig(VisorWriteBehindConfig.from(ccfg));
-
-//        if (ccfg.getDrReceiverConfiguration() != null)
-//            cfg.drReceiveConfig(VisorDrReceiverConfig.from(ccfg.getDrReceiverConfiguration()));
-//
-//        if (ccfg.getDrSenderConfiguration() != null)
-//            cfg.drSendConfig(VisorDrSenderConfig.from(ccfg.getDrSenderConfiguration()));
 
         return cfg;
     }
@@ -676,34 +664,6 @@ public class VisorCacheConfig implements Serializable {
     public void VisorWriteBehindConfig(VisorWriteBehindConfig writeBehind) {
         this.writeBehind = writeBehind;
     }
-
-//    /**
-//     * @return Data center replication send configuration. *
-//     */
-//    @Nullable public VisorDrSenderConfig drSendConfig() {
-//        return drSendConfig;
-//    }
-//
-//    /**
-//     * @param drSndCfg New data center replication send configuration. *
-//     */
-//    public void drSendConfig(@Nullable VisorDrSenderConfig drSndCfg) {
-//        drSendConfig = drSndCfg;
-//    }
-//
-//    /**
-//     * @return Data center replication receive configuration.
-//     */
-//    @Nullable public VisorDrReceiverConfig drReceiveConfig() {
-//        return drReceiveConfig;
-//    }
-//
-//    /**
-//     * @param drRcvCfg New data center replication receive configuration.
-//     */
-//    public void drReceiveConfig(@Nullable VisorDrReceiverConfig drRcvCfg) {
-//        drReceiveConfig = drRcvCfg;
-//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

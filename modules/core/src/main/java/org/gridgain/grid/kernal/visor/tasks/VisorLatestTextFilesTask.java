@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.visor.tasks;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.log.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

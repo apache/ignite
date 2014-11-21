@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.GridKernal;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.query.*;
 import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.spi.indexing.GridIndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -225,12 +225,12 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         return new GridBiTuple<Exception, VisorQueryResultEx>(
                             new SQLException("Fail to execute query. No metadata available."), null);
                     else {
-                        VisorFieldsQueryColumn[] names = new VisorFieldsQueryColumn[meta.size()];
+                        VisorQueryField[] names = new VisorQueryField[meta.size()];
 
                         for (int i = 0; i < meta.size(); i++) {
                             GridIndexingFieldMetadata col = meta.get(i);
 
-                            names[i] = new VisorFieldsQueryColumn(col.typeName(), col.fieldName());
+                            names[i] = new VisorQueryField(col.typeName(), col.fieldName());
                         }
 
                         long start = U.currentTimeMillis();

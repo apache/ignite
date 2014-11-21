@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.visor.tasks;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

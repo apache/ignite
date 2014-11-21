@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.visor.tasks;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 
@@ -33,9 +33,9 @@ public class VisorQueryUtils {
     public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
 
     /** Columns for SCAN queries. */
-    public static final VisorFieldsQueryColumn[] SCAN_COL_NAMES = new VisorFieldsQueryColumn[] {
-        new VisorFieldsQueryColumn("", "Key Class"), new VisorFieldsQueryColumn("", "Key"),
-        new VisorFieldsQueryColumn("", "Value Class"), new VisorFieldsQueryColumn("", "Value")
+    public static final VisorQueryField[] SCAN_COL_NAMES = new VisorQueryField[] {
+        new VisorQueryField("", "Key Class"), new VisorQueryField("", "Key"),
+        new VisorQueryField("", "Value Class"), new VisorQueryField("", "Value")
     };
 
     /**

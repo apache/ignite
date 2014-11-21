@@ -16,8 +16,11 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.cache.*;
+import org.gridgain.grid.kernal.visor.dto.compute.*;
 import org.gridgain.grid.kernal.visor.dto.event.*;
+import org.gridgain.grid.kernal.visor.dto.ggfs.*;
+import org.gridgain.grid.kernal.visor.dto.streamer.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -26,7 +29,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.dto.VisorComputeMonitoringHolder.*;
+import static org.gridgain.grid.kernal.visor.dto.compute.VisorComputeMonitoringHolder.*;
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
