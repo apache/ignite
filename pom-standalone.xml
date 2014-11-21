@@ -245,7 +245,7 @@
                                 </group>
                                 <group>
                                     <title>Compute Grid APIs</title>
-                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify:org.gridgain.grid.compute.gridify.aop:org.gridgain.grid.compute.gridify.aop.aspectj:org.gridgain.grid.compute.gridify.aop.spring</packages>
                                 </group>
                                 <group>
                                     <title>Data Grid APIs</title>
@@ -447,7 +447,7 @@
                                 </group>
                                 <group>
                                     <title>Compute Grid APIs</title>
-                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                    <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify:org.gridgain.grid.compute.gridify.aop:org.gridgain.grid.compute.gridify.aop.aspectj:org.gridgain.grid.compute.gridify.aop.spring</packages>
                                 </group>
                                 <group>
                                     <title>Data Grid APIs</title>
