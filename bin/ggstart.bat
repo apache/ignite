@@ -46,7 +46,7 @@ goto error_finish
 :: Check GRIDGAIN_HOME.
 :checkGridGainHome1
 if defined GRIDGAIN_HOME goto checkGridGainHome2
-    pushd "%~dp0"/../.. &:: Will be replaced by pushd "%~dp0"/..
+    pushd "%~dp0"/..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -75,7 +75,7 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME=%GRIDGAIN_HOME%\os\bin &:: Will be replaced by SCRIPTS_HOME=${GRIDGAIN_HOME}\bin in release.
+set SCRIPTS_HOME=%GRIDGAIN_HOME%\bin
 
 :: Remove trailing spaces
 for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%

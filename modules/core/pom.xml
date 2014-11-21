@@ -142,10 +142,6 @@
 
         <testResources>
             <testResource>
-                <directory>src/test/config/aop/aspectj</directory>
-            </testResource>
-
-            <testResource>
                 <directory>src/test/java</directory>
                 <excludes>
                     <exclude>**/*.java</exclude>
