@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.config
 
-import org.gridgain.grid.kernal.visor.tasks.VisorConfigCollectorTask
+import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeConfigCollectorTask
 
 import java.lang.System._
 
@@ -202,7 +202,7 @@ class VisorConfigurationCommand {
             val cfg = try
                 grid.compute(grid.forNode(node))
                     .withNoFailover()
-                    .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
+                    .execute(classOf[VisorNodeConfigCollectorTask], emptyTaskArgument(node.id()))
             catch {
                 case e: GridException =>
                     scold(e.getMessage)

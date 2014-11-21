@@ -24,10 +24,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Task that cache metrics from all nodes.
+ * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCacheCollectMetricsTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
+public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<GridBiTuple<Boolean, String>,
     Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics2>> {
     /** */
     private static final long serialVersionUID = 0L;

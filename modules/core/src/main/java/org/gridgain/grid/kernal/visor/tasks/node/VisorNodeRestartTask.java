@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks.util;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
@@ -19,17 +19,12 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Stops nodes.
+ * Restarts nodes.
  */
 @GridInternal
-public class VisorNodesStopTask extends VisorMultiNodeTask<Void, Void, Void> {
+public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override protected VisorNodesStopJob job(Void arg) {
-        return new VisorNodesStopJob(arg);
-    }
 
     /** {@inheritDoc} */
     @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
@@ -37,16 +32,16 @@ public class VisorNodesStopTask extends VisorMultiNodeTask<Void, Void, Void> {
     }
 
     /**
-     * Job that stop node.
+     * Job that restart node.
      */
-    private static class VisorNodesStopJob extends VisorJob<Void, Void> {
+    private static class VisorNodesRestartJob extends VisorJob<Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Formal job argument.
          */
-        private VisorNodesStopJob(Void arg) {
+        private VisorNodesRestartJob(Void arg) {
             super(arg);
         }
 
@@ -54,16 +49,21 @@ public class VisorNodesStopTask extends VisorMultiNodeTask<Void, Void, Void> {
         @Override protected Void run(Void arg) throws GridException {
             new Thread(new Runnable() {
                 @Override public void run() {
-                    GridGain.kill(true);
+                    GridGain.restart(true);
                 }
-            }, "grid-stopper").start();
+            }, "grid-restarter").start();
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorNodesStopJob.class, this);
+            return S.toString(VisorNodesRestartJob.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VisorNodesRestartJob job(Void arg) {
+        return new VisorNodesRestartJob(arg);
     }
 }

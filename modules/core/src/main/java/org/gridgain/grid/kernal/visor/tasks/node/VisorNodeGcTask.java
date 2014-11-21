@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks.util;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -24,7 +24,7 @@ import java.util.*;
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
+public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, GridBiTuple<Long, Long>>,
     GridBiTuple<Long, Long>> {
     /** */
     private static final long serialVersionUID = 0L;

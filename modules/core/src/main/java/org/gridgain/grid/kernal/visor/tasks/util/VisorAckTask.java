@@ -19,12 +19,17 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Restarts nodes.
+ * Ack task to run on node.
  */
 @GridInternal
-public class VisorNodesRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
+public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override protected VisorAckJob job(String arg) {
+        return new VisorAckJob(arg);
+    }
 
     /** {@inheritDoc} */
     @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
@@ -32,38 +37,31 @@ public class VisorNodesRestartTask extends VisorMultiNodeTask<Void, Void, Void> 
     }
 
     /**
-     * Job that restart node.
+     * Ack job to run on node.
      */
-    private static class VisorNodesRestartJob extends VisorJob<Void, Void> {
+    private static class VisorAckJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Formal job argument.
+         * Create job with given argument.
+         *
+         * @param arg Message to ack in node console.
          */
-        private VisorNodesRestartJob(Void arg) {
+        private VisorAckJob(String arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws GridException {
-            new Thread(new Runnable() {
-                @Override public void run() {
-                    GridGain.restart(true);
-                }
-            }, "grid-restarter").start();
+        @Override protected Void run(String arg) throws GridException {
+            System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorNodesRestartJob.class, this);
+            return S.toString(VisorAckJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorNodesRestartJob job(Void arg) {
-        return new VisorNodesRestartJob(arg);
     }
 }

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks.util;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
@@ -23,7 +23,7 @@ import java.util.*;
  * Ping other node.
  */
 @GridInternal
-public class VisorPingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean, Long, Long>> {
+public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean, Long, Long>> {
     /** */
     private static final long serialVersionUID = 0L;
 

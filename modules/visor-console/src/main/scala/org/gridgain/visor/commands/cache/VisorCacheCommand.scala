@@ -14,8 +14,8 @@ package org.gridgain.visor.commands.cache
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.dto.cache.{VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfig}
 import org.gridgain.grid.kernal.visor.dto.node.VisorGridConfig
-import org.gridgain.grid.kernal.visor.tasks.VisorConfigCollectorTask
-import org.gridgain.grid.kernal.visor.tasks.cache.VisorCacheCollectMetricsTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCacheMetricsCollectorTask
+import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeConfigCollectorTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
 
@@ -470,7 +470,7 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            grid.compute(prj).execute(classOf[VisorCacheCollectMetricsTask], toTaskArgument(nids,
+            grid.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
                 new GridBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
@@ -487,7 +487,7 @@ class VisorCacheCommand {
     private def config(node: GridNode): VisorGridConfig = {
         try
             grid.compute(grid.forNode(node)).withNoFailover()
-                .execute(classOf[VisorConfigCollectorTask], emptyTaskArgument(node.id()))
+                .execute(classOf[VisorNodeConfigCollectorTask], emptyTaskArgument(node.id()))
         catch {
             case e: GridException =>
                 scold(e.getMessage)

@@ -22,7 +22,7 @@ import java.util.*;
  * Task that compacts caches.
  */
 @GridInternal
-public class VisorCachesCompactTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
     /** */
     private static final long serialVersionUID = 0L;
 

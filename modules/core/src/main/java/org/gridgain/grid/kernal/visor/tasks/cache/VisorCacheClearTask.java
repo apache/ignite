@@ -22,7 +22,7 @@ import java.util.*;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorCachesClearTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
+public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<String, GridBiTuple<Integer, Integer>>> {
     /** */
     private static final long serialVersionUID = 0L;
 

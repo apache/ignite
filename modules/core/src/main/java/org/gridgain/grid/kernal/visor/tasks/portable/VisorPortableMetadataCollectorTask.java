@@ -23,7 +23,7 @@ import java.util.*;
  * Task that collects portables metadata.
  */
 @GridInternal
-public class VisorPortableCollectMetadataTask extends VisorOneNodeTask<Long, GridBiTuple<Long, Collection<VisorPortableMetadata>>> {
+public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, GridBiTuple<Long, Collection<VisorPortableMetadata>>> {
     /** */
     private static final long serialVersionUID = 0L;
 

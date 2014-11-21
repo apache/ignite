@@ -23,7 +23,7 @@ import java.util.*;
  * Task to loads caches.
  */
 @GridInternal
-public class VisorCachesLoadTask extends
+public class VisorCacheLoadTask extends
     VisorOneNodeTask<GridTuple3<Set<String>, Long, Object[]>, Map<String, Integer>> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -7,27 +7,28 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Ack task to run on node.
+ * Stops nodes.
  */
 @GridInternal
-public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
+public class VisorNodeStopTask extends VisorMultiNodeTask<Void, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorAckJob job(String arg) {
-        return new VisorAckJob(arg);
+    @Override protected VisorNodesStopJob job(Void arg) {
+        return new VisorNodesStopJob(arg);
     }
 
     /** {@inheritDoc} */
@@ -36,31 +37,33 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     }
 
     /**
-     * Ack job to run on node.
+     * Job that stop node.
      */
-    private static class VisorAckJob extends VisorJob<String, Void> {
+    private static class VisorNodesStopJob extends VisorJob<Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with given argument.
-         *
-         * @param arg Message to ack in node console.
+         * @param arg Formal job argument.
          */
-        private VisorAckJob(String arg) {
+        private VisorNodesStopJob(Void arg) {
             super(arg);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String arg) throws GridException {
-            System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
+        @Override protected Void run(Void arg) throws GridException {
+            new Thread(new Runnable() {
+                @Override public void run() {
+                    GridGain.kill(true);
+                }
+            }, "grid-stopper").start();
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorAckJob.class, this);
+            return S.toString(VisorNodesStopJob.class, this);
         }
     }
 }

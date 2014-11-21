@@ -7,17 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.dto.node.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Grid configuration data collect task.
  */
 @GridInternal
-public class VisorConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
+public class VisorNodeConfigCollectorTask extends VisorOneNodeTask<Void, VisorGridConfig> {
     /** */
     private static final long serialVersionUID = 0L;
 

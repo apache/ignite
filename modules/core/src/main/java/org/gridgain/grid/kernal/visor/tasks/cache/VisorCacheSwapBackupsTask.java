@@ -22,7 +22,7 @@ import java.util.*;
  * Task for swapping backup cache entries.
  */
 @GridInternal
-public class VisorCachesSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
+public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map<String,
     GridBiTuple<Integer, Integer>>> {
     /** */
     private static final long serialVersionUID = 0L;

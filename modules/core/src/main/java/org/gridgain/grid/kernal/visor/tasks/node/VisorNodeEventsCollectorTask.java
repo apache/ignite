@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.dto.event.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.kernal.visor.util.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -29,7 +30,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
-public class VisorEventsCollectTask extends VisorMultiNodeTask<VisorEventsCollectTask.VisorEventsCollectArgs,
+public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEventsCollectorTask.VisorEventsCollectArgs,
     Iterable<? extends VisorGridEvent>, Collection<? extends VisorGridEvent>> {
     /** */
     private static final long serialVersionUID = 0L;

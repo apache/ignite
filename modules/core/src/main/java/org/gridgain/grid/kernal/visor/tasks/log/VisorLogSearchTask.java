@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.log;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.dto.log.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;

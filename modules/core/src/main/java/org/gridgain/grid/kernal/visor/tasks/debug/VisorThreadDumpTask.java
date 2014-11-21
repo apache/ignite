@@ -7,11 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.debug;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.dto.debug.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -21,7 +22,7 @@ import java.lang.management.*;
  * Creates thread dump.
  */
 @GridInternal
-public class VisorDumpThreadTask extends VisorOneNodeTask<Void, GridBiTuple<VisorThreadInfo[], long[]>> {
+public class VisorThreadDumpTask extends VisorOneNodeTask<Void, GridBiTuple<VisorThreadInfo[], long[]>> {
     /** */
     private static final long serialVersionUID = 0L;
 

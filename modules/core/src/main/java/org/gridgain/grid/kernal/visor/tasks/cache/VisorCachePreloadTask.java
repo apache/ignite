@@ -21,7 +21,7 @@ import java.util.*;
  * Pre-loads caches. Made callable just to conform common pattern.
  */
 @GridInternal
-public class VisorCachesPreloadTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 

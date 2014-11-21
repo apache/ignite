@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.node;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -21,6 +21,7 @@ import org.gridgain.grid.kernal.visor.dto.compute.*;
 import org.gridgain.grid.kernal.visor.dto.event.*;
 import org.gridgain.grid.kernal.visor.dto.ggfs.*;
 import org.gridgain.grid.kernal.visor.dto.streamer.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -36,8 +37,8 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  * Collects current Grid state mostly topology and metrics.
  */
 @GridInternal
-public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollectorTask.VisorDataCollectorTaskArg,
-        VisorDataCollectorTask.VisorDataCollectorTaskResult, VisorDataCollectorTask.VisorDataCollectorJobResult> {
+public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeDataCollectorTask.VisorDataCollectorTaskArg,
+        VisorNodeDataCollectorTask.VisorDataCollectorTaskResult, VisorNodeDataCollectorTask.VisorDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -140,7 +141,7 @@ public class VisorDataCollectorTask extends VisorMultiNodeTask<VisorDataCollecto
     }
 
     /**
-     * Arguments for {@link VisorDataCollectorTask}
+     * Arguments for {@link VisorNodeDataCollectorTask}
      */
     @SuppressWarnings("PublicInnerClass")
     public static class VisorDataCollectorTaskArg implements Serializable {
