@@ -11,10 +11,11 @@
 
 package org.gridgain.visor.commands.config
 
+import org.gridgain.grid.kernal.visor.tasks.VisorConfigCollectorTask
+
 import java.lang.System._
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorConfigCollectorTask
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._

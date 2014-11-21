@@ -11,20 +11,22 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.dto.cache.VisorCacheConfig
+import org.gridgain.grid.kernal.visor.dto.{VisorCacheAggregatedMetrics, VisorCacheMetrics2, VisorGridConfig}
+import org.gridgain.grid.kernal.visor.tasks.{VisorCacheCollectMetricsTask, VisorConfigCollectorTask}
+import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.util.typedef._
+
+import org.jetbrains.annotations._
+
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.dto.{VisorGridConfig, VisorCacheAggregatedMetrics, VisorCacheMetrics}
-import org.gridgain.grid.kernal.visor.cmd.dto.cache.VisorCacheConfig
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorConfigCollectorTask, VisorCacheCollectMetricsTask}
-import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.grid.util.typedef._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
-import org.jetbrains.annotations._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -512,7 +514,7 @@ class VisorCacheCommand {
      * @param reverse Whether to reverse sorting or not.
      * @return Sorted data.
      */
-    private def sortData(data: Iterable[VisorCacheMetrics], arg: String, reverse: Boolean): List[VisorCacheMetrics] = {
+    private def sortData(data: Iterable[VisorCacheMetrics2], arg: String, reverse: Boolean): List[VisorCacheMetrics2] = {
         assert(data != null)
         assert(arg != null)
 

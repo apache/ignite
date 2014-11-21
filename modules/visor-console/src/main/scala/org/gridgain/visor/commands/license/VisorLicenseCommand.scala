@@ -11,13 +11,14 @@
 
 package org.gridgain.visor.commands.license
 
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.visor.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
+import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.util.{GridUtils => U}
+
 import java.io._
 import java.util.UUID
 
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorLicenseCollectTask, VisorLicenseUpdateTask}
-import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._

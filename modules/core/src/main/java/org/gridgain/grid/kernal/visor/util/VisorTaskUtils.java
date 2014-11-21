@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.visor.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.kernal.visor.cmd.dto.event.*;
-import org.gridgain.grid.kernal.visor.gui.dto.*;
-import org.gridgain.grid.kernal.visor.gui.tasks.*;
+import org.gridgain.grid.kernal.visor.dto.*;
+import org.gridgain.grid.kernal.visor.dto.event.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

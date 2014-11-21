@@ -12,10 +12,11 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.GridNode
-import org.gridgain.grid.kernal.visor.cmd.dto.VisorQueryResult
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask.VisorQueryArg
-import org.gridgain.grid.kernal.visor.cmd.tasks.{VisorQueryNextPageTask, VisorQueryTask}
+import org.gridgain.grid.kernal.visor.dto.VisorQueryResult
+import org.gridgain.grid.kernal.visor.tasks.VisorQueryTask.VisorQueryArg
+import org.gridgain.grid.kernal.visor.tasks.{VisorQueryNextPageTask, VisorQueryTask}
 import org.gridgain.grid.lang.GridBiTuple
+
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 

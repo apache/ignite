@@ -11,6 +11,8 @@
 
 package org.gridgain.visor
 
+import org.gridgain.grid.kernal.visor.tasks.VisorEventsCollectTask
+
 import java.io._
 import java.net._
 import java.text._
@@ -23,8 +25,7 @@ import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.gridgain.grid.lang.{GridBiTuple, GridPredicate}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi

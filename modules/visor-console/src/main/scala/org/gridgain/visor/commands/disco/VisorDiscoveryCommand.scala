@@ -13,9 +13,9 @@ package org.gridgain.visor.commands.disco
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.cmd.dto.event.VisorGridDiscoveryEvent
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.kernal.visor.dto.event.VisorGridDiscoveryEvent
+import org.gridgain.grid.kernal.visor.tasks.VisorEventsCollectTask
+import VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.lang.{GridFunc => F}
 

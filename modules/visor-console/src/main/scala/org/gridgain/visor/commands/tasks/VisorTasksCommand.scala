@@ -11,15 +11,16 @@
 
 package org.gridgain.visor.commands.tasks
 
-import java.util.UUID
-
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.cmd.dto.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask
-import org.gridgain.grid.kernal.visor.cmd.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
+import org.gridgain.grid.kernal.visor.dto.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.gridgain.grid.kernal.visor.tasks.VisorEventsCollectTask
+import org.gridgain.grid.kernal.visor.tasks.VisorEventsCollectTask.VisorEventsCollectArgs
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
+
+import java.util.UUID
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
