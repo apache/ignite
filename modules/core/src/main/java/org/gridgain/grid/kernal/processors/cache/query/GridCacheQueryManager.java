@@ -51,12 +51,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
-    public static final GridProductVersion QUERY_PORTABLES_SINCE = GridProductVersion.fromString("6.2.0");
-
-    /** */
-    public static final GridProductVersion QUERY_EVENTS_SINCE = GridProductVersion.fromString("6.2.1");
-
-    /** */
     protected GridIndexingManager idxMgr;
 
     /** Indexing SPI name. */
