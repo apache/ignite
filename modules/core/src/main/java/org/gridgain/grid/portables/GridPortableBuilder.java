@@ -318,7 +318,7 @@ public interface GridPortableBuilder {
      * @param val Value.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder portableField(String fieldName, GridPortableObject val);
+    public GridPortableBuilder portableObjectField(String fieldName, GridPortableObject val);
 
     /**
      * Removes field from portable object.
