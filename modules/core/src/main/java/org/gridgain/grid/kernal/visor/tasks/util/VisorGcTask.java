@@ -7,12 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.tasks;
+package org.gridgain.grid.kernal.visor.tasks.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

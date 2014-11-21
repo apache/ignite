@@ -12,19 +12,13 @@
 package org.gridgain.visor.commands.license
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.tasks._
-import org.gridgain.grid.lang.GridBiTuple
-import org.gridgain.grid.util.{GridUtils => U}
 
 import java.io._
-import java.util.UUID
 
 import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
 
-import scala.collection.JavaConversions._
-import scala.io.Source
 import scala.language.implicitConversions
 
 /**
@@ -190,11 +184,11 @@ class VisorLicenseCommand {
             try {
                 val nodes = grid.nodes()
 
-                nodes.foreach(n => {
-                    grid.compute(grid.forNode(n)).withNoFailover().
-                        execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
-                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString)))
-                })
+//                nodes.foreach(n => {
+//                    grid.compute(grid.forNode(n)).withNoFailover().
+//                        execute(classOf[VisorLicenseUpdateTask], toTaskArgument(n.id,
+//                        new GridBiTuple(UUID.fromString(licId), Source.fromFile(licPath).mkString)))
+//                })
 
                 println("All licenses have been updated.")
 
@@ -256,5 +250,5 @@ object VisorLicenseCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromLicense2Visor(vs: VisorTag) = cmd
+    implicit def fromLicense2Visor(vs: VisorTag): VisorLicenseCommand = cmd
 }
