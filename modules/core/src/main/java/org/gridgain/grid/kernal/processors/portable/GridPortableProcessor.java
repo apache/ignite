@@ -22,9 +22,6 @@ import java.util.*;
  * Portable processor.
  */
 public interface GridPortableProcessor extends GridProcessor {
-    /** */
-    public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.2.0");
-
     /**
      * @param typeName Type name.
      * @return Type ID.

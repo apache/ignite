@@ -51,9 +51,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
-    /** Version where FORCE_TRANSFORM_BACKUP flag was introduced. */
-    public static final GridProductVersion FORCE_TRANSFORM_BACKUP_SINCE = GridProductVersion.fromString("6.1.2");
-
     /** */
     private static final long serialVersionUID = 0L;
 
