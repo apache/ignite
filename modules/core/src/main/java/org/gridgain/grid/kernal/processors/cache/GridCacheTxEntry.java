@@ -269,6 +269,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         GridCacheTxEntry<K, V> cp = new GridCacheTxEntry<>();
 
         cp.key = key;
+        cp.cacheId = cacheId;
         cp.ctx = ctx;
 
         cp.val = new TxEntryValueHolder<>();

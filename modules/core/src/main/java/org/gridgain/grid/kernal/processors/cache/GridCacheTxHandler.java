@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -40,7 +41,7 @@ public class GridCacheTxHandler<K, V> {
 
     public GridFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
-        return prepareTx(nearNodeId, req);
+        return prepareTx(nearNodeId, null, req);
     }
 
     /**
@@ -102,16 +103,98 @@ public class GridCacheTxHandler<K, V> {
 
     /**
      * @param nearNodeId Near node ID that initiated transaction.
+     * @param locTx Optional local transaction.
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public GridFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId,
+    public GridFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
         assert nearNodeId != null;
         assert req != null;
 
-        // TODO move logic from cacheCtx.colocated().prepareTxLocally
+        GridFuture<GridCacheTxEx<K, V>> colocatedPrepFut = null;
 
+        if (locTx != null && locTx.colocatedLocallyMapped())
+            colocatedPrepFut = prepareColocatedTx(locTx, req);
+
+        GridFuture<GridCacheTxEx<K, V>> nearPrepareFut = null;
+
+        if (locTx == null || locTx.nearLocallyMapped())
+            nearPrepareFut = prepareNearTx(nearNodeId, req);
+
+        if (colocatedPrepFut != null && nearPrepareFut != null) {
+            GridCompoundFuture<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>> res =
+                new GridCompoundFuture<>(ctx.kernalContext());
+
+            res.add(colocatedPrepFut);
+            res.add(nearPrepareFut);
+
+            res.markInitialized();
+
+            return res;
+        }
+
+        if (colocatedPrepFut != null)
+            return colocatedPrepFut;
+
+        return nearPrepareFut;
+    }
+
+    /**
+     * Prepares local colocated tx.
+     *
+     * @param locTx Local transaction.
+     * @param req Near prepare request.
+     * @return Prepare future.
+     */
+    private GridFuture<GridCacheTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
+        final GridNearTxPrepareRequest<K, V> req) {
+
+        GridFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+
+        return new GridEmbeddedFuture<>(
+            ctx.kernalContext(),
+            fut,
+            new C2<Object, Exception, GridFuture<GridCacheTxEx<K, V>>>() {
+                @Override public GridFuture<GridCacheTxEx<K, V>> apply(Object o, Exception ex) {
+                    if (ex != null)
+                        throw new GridClosureException(ex);
+
+                    GridFuture<GridCacheTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
+                        locTx.transactionNodes(), req.last(), req.lastBackups());
+
+                    if (locTx.isRollbackOnly())
+                        locTx.rollbackAsync();
+
+                    return fut;
+                }
+            },
+            new C2<GridCacheTxEx<K, V>, Exception, GridCacheTxEx<K, V>>() {
+                @Nullable @Override public GridCacheTxEx<K, V> apply(GridCacheTxEx<K, V> tx, Exception e) {
+                    if (e != null) {
+                        // tx can be null of exception occurred.
+                        if (tx != null)
+                            tx.setRollbackOnly(); // Just in case.
+
+                        if (!(e instanceof GridCacheTxOptimisticException))
+                            U.error(log, "Failed to prepare DHT transaction: " + tx, e);
+                    }
+
+                    return tx;
+                }
+            }
+        );
+    }
+
+    /**
+     * Prepares near transaction.
+     *
+     * @param nearNodeId Near node ID that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future.
+     */
+    private GridFuture<GridCacheTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
+        final GridNearTxPrepareRequest<K, V> req) {
         GridNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {

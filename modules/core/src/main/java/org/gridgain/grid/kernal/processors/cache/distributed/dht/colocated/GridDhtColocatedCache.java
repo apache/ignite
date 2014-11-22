@@ -29,7 +29,6 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 
 /**
  * Colocated cache.
@@ -521,57 +520,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         catch (GridException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
-    }
-
-    /**
-     * @param tx Started colocated transaction to prepare.
-     * @param reads Read collection.
-     * @param writes Write collection.
-     * @param txNodes Transaction nodes mapping.
-     * @param last {@code True} if this is last prepare operation.
-     * @param lastBackups IDs of backup nodes receiving last prepare request.
-     * @return Future for transaction.
-     */
-    public GridFuture<GridCacheTxEx<K, V>> prepareTxLocally(final GridNearTxLocal<K, V> tx,
-        final Collection<GridCacheTxEntry<K, V>> reads, final Collection<GridCacheTxEntry<K, V>> writes,
-        final Map<UUID, Collection<UUID>> txNodes, final boolean last, final Collection<UUID> lastBackups) {
-        assert tx != null;
-
-        GridFuture<Object> fut = ctx.preloader().request(
-            F.viewReadOnly(F.concat(false, reads, writes), CU.<K, V>tx2key()), tx.topologyVersion());
-
-        return new GridEmbeddedFuture<>(
-            ctx.kernalContext(),
-            fut,
-            new C2<Object, Exception, GridFuture<GridCacheTxEx<K, V>>>() {
-                @Override public GridFuture<GridCacheTxEx<K, V>> apply(Object o, Exception ex) {
-                    if (ex != null)
-                        throw new GridClosureException(ex);
-
-                    GridFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsyncLocal(reads, writes, txNodes, last,
-                        lastBackups);
-
-                    if (tx.isRollbackOnly())
-                        tx.rollbackAsync();
-
-                    return fut;
-                }
-            },
-            new C2<GridCacheTxEx<K, V>, Exception, GridCacheTxEx<K, V>>() {
-                @Nullable @Override public GridCacheTxEx<K, V> apply(GridCacheTxEx<K, V> tx, Exception e) {
-                    if (e != null) {
-                        // tx can be null of exception occurred.
-                        if (tx != null)
-                            tx.setRollbackOnly(); // Just in case.
-
-                        if (!(e instanceof GridCacheTxOptimisticException))
-                            U.error(log, "Failed to prepare DHT transaction: " + tx, e);
-                    }
-
-                    return tx;
-                }
-            }
-        );
     }
 
     /**

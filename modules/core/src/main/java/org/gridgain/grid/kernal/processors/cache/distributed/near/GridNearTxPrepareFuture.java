@@ -206,6 +206,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.writeEntries();
 
         for (GridCacheTxEntry<K, V> txEntry : checkEntries) {
+            // Wait for near locks only.
+            if (!txEntry.context().isNear())
+                continue;
+
             while (true) {
                 GridCacheEntryEx<K, V> cached = txEntry.cached();
 
@@ -367,6 +371,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             if (cur != updated) {
                 mappings.offer(updated);
 
+                if (updated.node().isLocal()) {
+                    if (read.context().isNear())
+                        tx.nearLocallyMapped(true);
+                    else if (read.context().isColocated())
+                        tx.colocatedLocallyMapped(true);
+                }
+
                 cur = updated;
             }
         }
@@ -376,6 +387,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
             if (cur != updated) {
                 mappings.offer(updated);
+
+                if (updated.node().isLocal()) {
+                    if (write.context().isNear())
+                        tx.nearLocallyMapped(true);
+                    else if (write.context().isColocated())
+                        tx.colocatedLocallyMapped(true);
+                }
 
                 cur = updated;
             }
@@ -432,11 +450,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.taskNameHash());
 
         for (GridCacheTxEntry<K, V> txEntry : m.writes()) {
-//  TODO correct assert
-//            assert txEntry.cached().detached() : "Expected detached entry while preparing transaction " +
-//                "[locNodeId=" + cctx.localNodeId() +
-//                ", txEntry=" + txEntry + ']';
-
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.txKey(), null);
         }
@@ -444,14 +457,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         // If this is the primary node for the keys.
         if (n.isLocal()) {
             // Make sure not to provide Near entries to DHT cache.
-            req.cloneEntries(cctx);
+            req.cloneEntries();
 
             req.miniId(GridUuid.randomUuid());
 
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            GridFuture<GridCacheTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), req);
+            GridFuture<GridCacheTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
@@ -542,7 +555,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
-        entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
+        if (cacheCtx.isNear())
+            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
+        else
+            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
 
         if (cur == null || !cur.node().id().equals(primary.id()))
             cur = new GridDistributedTxMapping<>(primary);
@@ -551,16 +567,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         entry.nodeId(primary.id());
 
-        while (true) {
-            try {
-                GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
+        if (cacheCtx.isNear()) {
+            while (true) {
+                try {
+                    GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
 
-                cached.dhtNodeId(tx.xidVersion(), primary.id());
+                    cached.dhtNodeId(tx.xidVersion(), primary.id());
 
-                break;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                entry.cached(cacheCtx.near().entryEx(entry.key()), entry.keyBytes());
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    entry.cached(cacheCtx.near().entryEx(entry.key()), entry.keyBytes());
+                }
             }
         }
 
@@ -687,14 +705,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         assert txEntry != null;
 
+                        GridCacheContext<K, V> cacheCtx = txEntry.context();
+
                         while (true) {
                             try {
-                                GridNearCacheEntry<K, V> nearEntry = (GridNearCacheEntry<K, V>)txEntry.cached();
+                                if (cacheCtx.isNear()) {
+                                    GridNearCacheEntry<K, V> nearEntry = (GridNearCacheEntry<K, V>)txEntry.cached();
 
-                                GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
+                                    GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
 
-                                nearEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion(),
-                                    tup.get1(), m.node().id());
+                                    nearEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion(),
+                                        tup.get1(), m.node().id());
+                                }
 
                                 break;
                             }

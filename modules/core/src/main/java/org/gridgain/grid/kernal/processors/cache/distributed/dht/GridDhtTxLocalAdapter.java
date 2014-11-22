@@ -48,12 +48,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     private AtomicBoolean mapped = new AtomicBoolean();
 
     /** */
-    private boolean syncCommit;
-
-    /** */
-    private boolean syncRollback;
-
-    /** */
     private long dhtThreadId;
 
     /** */
@@ -181,16 +175,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      */
     long dhtThreadId() {
         return dhtThreadId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncRollback() {
-        return syncRollback;
     }
 
     /**

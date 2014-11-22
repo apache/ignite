@@ -84,6 +84,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
         assert miniId != null;
         assert ver != null;
 
+        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;

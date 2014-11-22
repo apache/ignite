@@ -170,27 +170,32 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /**
-     * @param ctx Cache context.
+     *
      */
-    void cloneEntries(GridCacheSharedContext<K, V> ctx) {
-        reads(cloneEntries(ctx, reads()));
-        writes(cloneEntries(ctx, writes()));
+    void cloneEntries() {
+        reads(cloneEntries(reads()));
+        writes(cloneEntries(writes()));
     }
 
     /**
-     * @param ctx Cache context.
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<GridCacheTxEntry<K, V>> cloneEntries(GridCacheSharedContext<K, V> ctx,
-        Collection<GridCacheTxEntry<K, V>> c) {
+    private Collection<GridCacheTxEntry<K, V>> cloneEntries(Collection<GridCacheTxEntry<K, V>> c) {
         if (F.isEmpty(c))
             return c;
 
         Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
-        for (GridCacheTxEntry<K, V> e : c)
-            cp.add(e.cleanCopy(ctx.cacheContext(e.cacheId())));
+        for (GridCacheTxEntry<K, V> e : c) {
+            GridCacheContext<K, V> cacheCtx = e.context();
+
+            // Clone only if it is a near cache.
+            if (cacheCtx.isNear())
+                cp.add(e.cleanCopy(cacheCtx));
+            else
+                cp.add(e);
+        }
 
         return cp;
     }

@@ -51,21 +51,35 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleTxsNear() throws Exception {
-        checkSimpleTxs(true);
+    public void testPessimisticSimpleTxsNear() throws Exception {
+        checkSimpleTxs(true, PESSIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleTxsColocated() throws Exception {
-        checkSimpleTxs(false);
+    public void testPessimisticSimpleTxsColocated() throws Exception {
+        checkSimpleTxs(false, PESSIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkSimpleTxs(boolean nearEnabled) throws Exception {
+    public void testOptimisticSimpleTxsColocated() throws Exception {
+        checkSimpleTxs(false, OPTIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticSimpleTxsNear() throws Exception {
+        checkSimpleTxs(false, OPTIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkSimpleTxs(boolean nearEnabled, GridCacheTxConcurrency concurrency) throws Exception {
         try {
             this.nearEnabled = nearEnabled;
 
@@ -88,16 +102,24 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
                 info(">>>>>>>>>>>>>>>");
 
-                try (GridCacheTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    // Lock.
-                    cache.get(key);
+                try (GridCacheTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                    try {
+                        // Lock if pessimistic, read if optimistic.
+                        cache.get(key);
 
-                    cache.put(key, key + 1);
+                        cache.put(key, key + 1);
 
-                    tx.commit();
+                        tx.commit();
+                    }
+                    catch (Exception e) {
+                        // Print exception in case if
+                        e.printStackTrace();
+
+                        throw e;
+                    }
                 }
 
-                Thread.sleep(500);
+//                Thread.sleep(500);
 
                 info(">>>>>>>>>>>>>>>");
                 info("Finished checking transaction for key [idx=" + i + ", key=" + key + ']');

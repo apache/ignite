@@ -9,16 +9,25 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import java.io.*;
+
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class GridCacheTxKey<K> {
+public class GridCacheTxKey<K> implements Externalizable {
     /** Key. */
     private K key;
 
     /** Cache ID. */
     private int cacheId;
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public GridCacheTxKey() {
+        // No-op.
+    }
 
     /**
      * @param key User key.
@@ -63,5 +72,17 @@ public class GridCacheTxKey<K> {
         res = 31 * res + cacheId;
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(cacheId);
+        out.writeObject(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cacheId = in.readInt();
+        key = (K)in.readObject();
     }
 }
