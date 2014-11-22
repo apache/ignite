@@ -673,7 +673,9 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
         private void processNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg) {
             GridTcpDiscoveryNode node = msg.node();
 
-            if (locNodeId.equals(node.id())) {
+            UUID newNodeId = node.id();
+
+            if (locNodeId.equals(newNodeId)) {
                 if (joinLatch.getCount() > 0) {
                     Collection<GridTcpDiscoveryNode> top = msg.topology();
 
@@ -708,9 +710,31 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                         "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
-                boolean topChanged = rmtNodes.putIfAbsent(node.id(), node) == null;
+                boolean topChanged = rmtNodes.putIfAbsent(newNodeId, node) == null;
 
                 if (topChanged) {
+                    if (log.isDebugEnabled())
+                        log.debug("Added new node to topology: " + node);
+
+                    Socket sock0 = sock;
+
+                    if (sock0 != null) {
+                        try {
+                            writeToSocket(sock0, new GridTcpDiscoveryNodeAddedClientResponse(locNodeId, msg.id(),
+                                exchange.collect(newNodeId)));
+                        }
+                        catch (IOException | GridException e) {
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to send node added response [sock=" + sock0 + ']', e);
+
+                            U.closeQuiet(sock0);
+
+                            sock = null;
+
+                            interrupt();
+                        }
+                    }
+
                     List<Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
