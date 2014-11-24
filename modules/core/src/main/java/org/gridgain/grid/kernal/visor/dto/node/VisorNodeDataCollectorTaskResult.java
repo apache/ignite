@@ -15,8 +15,6 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    public static final VisorNodeDataCollectorTaskResult EMPTY = new VisorNodeDataCollectorTaskResult();
-
     /** Unhandled exceptions from nodes. */
     private final Map<UUID, Throwable> unhandledEx = new HashMap<>();
 
