@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Data transfer object for DGC configuration properties.
  */
-public class VisorDgcConfig implements Serializable {
+public class VisorCacheDgcConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,8 +34,8 @@ public class VisorDgcConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for DGC configuration properties.
      */
-    public static VisorDgcConfig from(GridCacheConfiguration ccfg) {
-        VisorDgcConfig cfg = new VisorDgcConfig();
+    public static VisorCacheDgcConfig from(GridCacheConfiguration ccfg) {
+        VisorCacheDgcConfig cfg = new VisorCacheDgcConfig();
 
         cfg.frequency(ccfg.getDgcFrequency());
         cfg.removedLocks(ccfg.isDgcRemoveLocks());
@@ -88,6 +88,6 @@ public class VisorDgcConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorDgcConfig.class, this);
+        return S.toString(VisorCacheDgcConfig.class, this);
     }
 }

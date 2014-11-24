@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Data transfer object for default cache configuration properties.
  */
-public class VisorDefaultConfig implements Serializable {
+public class VisorCacheDefaultConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,8 +43,8 @@ public class VisorDefaultConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for default cache configuration properties.
      */
-    public static VisorDefaultConfig from(GridCacheConfiguration ccfg) {
-        VisorDefaultConfig cfg = new VisorDefaultConfig();
+    public static VisorCacheDefaultConfig from(GridCacheConfiguration ccfg) {
+        VisorCacheDefaultConfig cfg = new VisorCacheDefaultConfig();
 
         cfg.txIsolation(ccfg.getDefaultTxIsolation());
         cfg.txConcurrency(ccfg.getDefaultTxConcurrency());
@@ -142,6 +142,6 @@ public class VisorDefaultConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorDefaultConfig.class, this);
+        return S.toString(VisorCacheDefaultConfig.class, this);
     }
 }

@@ -24,7 +24,7 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 /**
  * Data transfer object for eviction configuration properties.
  */
-public class VisorEvictionConfig implements Serializable {
+public class VisorCacheEvictionConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,8 +59,8 @@ public class VisorEvictionConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for eviction configuration properties.
      */
-    public static VisorEvictionConfig from(GridCacheConfiguration ccfg) {
-        VisorEvictionConfig cfg = new VisorEvictionConfig();
+    public static VisorCacheEvictionConfig from(GridCacheConfiguration ccfg) {
+        VisorCacheEvictionConfig cfg = new VisorCacheEvictionConfig();
 
         Integer policyMaxSize = null;
 
@@ -214,6 +214,6 @@ public class VisorEvictionConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorEvictionConfig.class, this);
+        return S.toString(VisorCacheEvictionConfig.class, this);
     }
 }

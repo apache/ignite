@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * Data transfer object for write-behind cache configuration properties.
  */
-public class VisorWriteBehindConfig implements Serializable {
+public class VisorCacheWriteBehindConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,8 +40,8 @@ public class VisorWriteBehindConfig implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for write-behind cache configuration properties.
      */
-    public static VisorWriteBehindConfig from(GridCacheConfiguration ccfg) {
-        VisorWriteBehindConfig cfg = new VisorWriteBehindConfig();
+    public static VisorCacheWriteBehindConfig from(GridCacheConfiguration ccfg) {
+        VisorCacheWriteBehindConfig cfg = new VisorCacheWriteBehindConfig();
 
         cfg.enabled(ccfg.isWriteBehindEnabled());
         cfg.batchSize(ccfg.getWriteBehindBatchSize());
@@ -124,6 +124,6 @@ public class VisorWriteBehindConfig implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorWriteBehindConfig.class, this);
+        return S.toString(VisorCacheWriteBehindConfig.class, this);
     }
 }

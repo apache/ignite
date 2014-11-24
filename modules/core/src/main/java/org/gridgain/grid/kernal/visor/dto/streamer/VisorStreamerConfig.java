@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.visor.dto.node;
+package org.gridgain.grid.kernal.visor.dto.streamer;
 
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.visor.dto.node;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.visor.dto.cache.*;
+import org.gridgain.grid.kernal.visor.dto.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
