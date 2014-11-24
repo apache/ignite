@@ -70,12 +70,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        File cfg = U.resolveGridGainPath(
-            "modules/spring/src/test/java/org/gridgain/grid/cache/spring/spring-caching.xml");
-
-        assertNotNull(cfg);
-
-        BeanFactory factory = new FileSystemXmlApplicationContext(cfg.getPath());
+        BeanFactory factory = new ClassPathXmlApplicationContext("org/gridgain/grid/cache/spring/spring-caching.xml");
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
 

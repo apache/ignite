@@ -28,7 +28,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache.FORCE_TRANSFORM_BACKUP_SINCE;
 
 /**
  * DHT atomic cache backup update future.
@@ -220,13 +219,11 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             UUID nodeId = node.id();
 
             if (!nodeId.equals(ctx.localNodeId())) {
-                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
-
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
                     updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                        forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                        forceTransformBackups, this.updateReq.subjectId(),
                         this.updateReq.taskNameHash());
 
                     mappings.put(nodeId, updateReq);
@@ -263,10 +260,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 if (node == null)
                     continue;
 
-                boolean supportsForceTransformBackup = node.version().compareTo(FORCE_TRANSFORM_BACKUP_SINCE) >= 0;
-
                 updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl,
-                    forceTransformBackups && supportsForceTransformBackup, this.updateReq.subjectId(),
+                    forceTransformBackups, this.updateReq.subjectId(),
                     this.updateReq.taskNameHash());
 
                 mappings.put(nodeId, updateReq);

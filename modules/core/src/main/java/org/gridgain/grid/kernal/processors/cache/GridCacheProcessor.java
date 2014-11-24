@@ -900,12 +900,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
-        GridNodeValidationResult ret = validateHashIdResolvers(node);
-
-        if (ret != null)
-            return ret;
-
-        return validateAtomicNearCacheSupport(node);
+        return validateHashIdResolvers(node);
     }
 
     /**
@@ -940,45 +935,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             topNode.id() + ']';
 
                         return new GridNodeValidationResult(topNode.id(), errMsg, sndMsg);
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param node Joining node.
-     * @return Validation result or {@code null} in case of success.
-     */
-    @Nullable private GridNodeValidationResult validateAtomicNearCacheSupport(GridNode node) {
-        if (node.version().compareTo(GridNearAtomicCache.SINCE_VER) >= 0)
-            return null;
-
-        GridCacheAttributes[] joinAttrs = U.cacheAttributes(node);
-
-        if (F.isEmpty(joinAttrs))
-            return null;
-
-        for (GridNode topNode : ctx.discovery().allNodes()) {
-            GridCacheAttributes[] attrs = U.cacheAttributes(topNode);
-
-            if (F.isEmpty(attrs))
-                continue;
-
-            for (GridCacheAttributes joinAttr : joinAttrs) {
-                for (GridCacheAttributes attr : attrs) {
-                    if (F.eq(joinAttr.cacheName(), attr.cacheName())) {
-                        if (attr.atomicityMode() == ATOMIC && attr.nearCacheEnabled()) {
-                            String errMsg = "Failed to add node to topology because topology has nodes with " +
-                                "ATOMIC cache with near cache enabled and joining node does not support " +
-                                "such configuration [cacheName=" + attr.cacheName() +
-                                ", existingNodeId=" + topNode.id() +
-                                ", existingNodeVer=" + topNode.version() + ']';
-
-                            return new GridNodeValidationResult(topNode.id(), errMsg, errMsg);
-                        }
                     }
                 }
             }
@@ -1197,22 +1153,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
                                 true);
                         }
-
-                        if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
-                            rmt.version().compareTo(GridNearAtomicCache.SINCE_VER) < 0)
-                            throw new GridException("Cannot use ATOMIC cache with near cache enabled because " +
-                                "grid contains nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
-                                ", rmtVer=" + rmt.version() +
-                                ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
-                                ", locVer=" + ctx.product().version() + ']');
-
-                        if (locPortableEnabled != null && locPortableEnabled &&
-                            rmt.version().compareTo(GridPortableProcessor.SINCE_VER) < 0)
-                            throw new GridException("Cannot use cache with portables enabled because grid contains " +
-                                "nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
-                                ", rmtVer=" + rmt.version() +
-                                ", supportedSince=" + GridPortableProcessor.SINCE_VER +
-                                ", locVer=" + ctx.product().version() + ']');
                     }
                 }
 
