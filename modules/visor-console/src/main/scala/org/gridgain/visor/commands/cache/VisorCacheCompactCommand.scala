@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.tasks.VisorCachesCompactTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCacheCompactTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils
 
 import java.util.{Collections, HashSet => JavaHashSet}
@@ -118,7 +118,7 @@ class VisorCacheCompactCommand {
             val r = grid.compute(grid.forNode(node))
                 .withName("visor-ccompact-task")
                 .withNoFailover()
-                .execute(classOf[VisorCachesCompactTask], toTaskArgument(node.id(), cacheSet))
+                .execute(classOf[VisorCacheCompactTask], toTaskArgument(node.id(), cacheSet))
                 .get(cacheName)
 
             t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())

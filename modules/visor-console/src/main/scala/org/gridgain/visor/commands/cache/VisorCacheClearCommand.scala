@@ -10,7 +10,7 @@
  */
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.tasks.VisorCachesClearTask
+import org.gridgain.grid.kernal.visor.tasks.cache.VisorCacheClearTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils
 
 import java.util.Collections
@@ -117,7 +117,7 @@ class VisorCacheClearCommand {
             val res = grid.compute(grid.forNode(node))
                 .withName("visor-cclear-task")
                 .withNoFailover()
-                .execute(classOf[VisorCachesClearTask], toTaskArgument(node.id(), cacheSet))
+                .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheSet))
                 .get(cacheName)
 
             t += (nodeId8(node.id()), res.get1() - res.get2(), res.get1(), res.get2())

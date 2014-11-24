@@ -11,7 +11,8 @@
 
 package org.gridgain.visor
 
-import org.gridgain.grid.kernal.visor.tasks.{VisorTaskArgument, VisorEventsCollectTask}
+import org.gridgain.grid.kernal.visor.tasks.VisorTaskArgument
+import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeEventsCollectorTask
 
 import java.io._
 import java.net._
@@ -25,7 +26,7 @@ import org.gridgain.grid.events._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import VisorEventsCollectTask.VisorEventsCollectArgs
+import VisorNodeEventsCollectorTask.VisorEventsCollectArgs
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
@@ -2413,14 +2414,14 @@ object visor extends VisorTag {
                     try {
                         // Discovery events collected only locally.
                         val loc = g.compute(g.forLocal()).withName("visor-log-collector").withNoFailover().
-                            execute(classOf[VisorEventsCollectTask], toTaskArgument(g.localNode().id(),
+                            execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(g.localNode().id(),
                             VisorEventsCollectArgs.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
 
                         val evts = if (!rmtLogDisabled) {
                             val prj = g.forRemotes()
 
                             loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
-                                execute(classOf[VisorEventsCollectTask], toTaskArgument(prj.nodes().map(_.id()),
+                                execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes().map(_.id()),
                                     VisorEventsCollectArgs.createLogArg(key, LOG_EVTS))).toSeq
                         }
                         else
