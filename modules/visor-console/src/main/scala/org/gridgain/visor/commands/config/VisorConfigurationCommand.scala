@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.config
 
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeConfigCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeConfigCollectorTask
 
 import java.lang.System._
 

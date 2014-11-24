@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.ack
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.tasks.util.VisorAckTask
+import org.gridgain.grid.kernal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
 

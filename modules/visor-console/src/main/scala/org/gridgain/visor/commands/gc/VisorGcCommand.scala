@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeGcTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
 
 import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}

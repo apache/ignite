@@ -12,10 +12,8 @@
 package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.dto.cache.{VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfig}
-import org.gridgain.grid.kernal.visor.dto.node.VisorGridConfig
-import org.gridgain.grid.kernal.visor.tasks.cache.VisorCacheMetricsCollectorTask
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeConfigCollectorTask
+import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfig}
+import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigCollectorTask, VisorGridConfig}
 import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.util.typedef._
 

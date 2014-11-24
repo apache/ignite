@@ -11,8 +11,8 @@
 
 package org.gridgain.visor
 
-import org.gridgain.grid.kernal.visor.tasks.VisorTaskArgument
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.VisorTaskArgument
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 
 import java.io._
 import java.net._

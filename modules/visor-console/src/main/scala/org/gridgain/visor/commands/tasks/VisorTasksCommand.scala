@@ -13,10 +13,9 @@ package org.gridgain.visor.commands.tasks
 
 import org.gridgain.grid._
 import org.gridgain.grid.events.GridEventType._
-import org.gridgain.grid.kernal.visor.dto.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeEventsCollectorTask
-import VisorNodeEventsCollectorTask.VisorEventsCollectArgs
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorEventsCollectArgs
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 

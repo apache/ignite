@@ -11,8 +11,8 @@
 
 package org.gridgain.visor.commands.events
 
-import org.gridgain.grid.kernal.visor.dto.event.VisorGridEvent
-import org.gridgain.grid.kernal.visor.tasks.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.event.VisorGridEvent
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 
 import java.util.UUID
 
