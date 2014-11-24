@@ -17,12 +17,13 @@ import org.gridgain.grid.kernal.visor.tasks.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
-
 import java.io.*;
 import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.*;
+
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task that parse hadoop profiler logs.
@@ -149,7 +150,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         /** {@inheritDoc} */
         @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws GridException {
             try {
-                Path logsDir = VisorGgfsTaskUtils.resolveGgfsProfilerLogsDir(g.ggfs(arg));
+                Path logsDir = resolveGgfsProfilerLogsDir(g.ggfs(arg));
 
                 if (logsDir != null)
                     return parse(logsDir, arg);

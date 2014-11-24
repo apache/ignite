@@ -39,7 +39,6 @@ public class VisorQueryUtils {
     };
 
     /**
-     *
      * @param o - Object.
      * @return String representation of object class.
      */
@@ -72,7 +71,6 @@ public class VisorQueryUtils {
     }
 
     /**
-     *
      * @param arr Object array.
      * @param maxSz Maximum string size.
      * @return Fixed size string.
@@ -116,8 +114,8 @@ public class VisorQueryUtils {
      * @return Fetched rows and last processed element.
      */
     public static GridBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
-        GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize
-    ) throws GridException {
+        GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
+        throws GridException {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;

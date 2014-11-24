@@ -19,6 +19,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.nio.file.*;
 
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
+
 /**
  * Remove all GGFS profiler logs.
  */
@@ -51,7 +53,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, GridBiT
             try {
                 GridGgfs ggfs = g.ggfs(arg);
 
-                Path logsDir = VisorGgfsTaskUtils.resolveGgfsProfilerLogsDir(ggfs);
+                Path logsDir = resolveGgfsProfilerLogsDir(ggfs);
 
                 if (logsDir != null) {
                     PathMatcher matcher = FileSystems.getDefault().getPathMatcher(
