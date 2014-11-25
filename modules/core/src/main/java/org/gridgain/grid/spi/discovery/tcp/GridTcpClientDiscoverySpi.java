@@ -487,7 +487,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                 while (!isInterrupted()) {
                     U.sleep(hbFreq);
 
-                    sockRdr.addMessage(new GridTcpDiscoveryHeartbeatMessage(locNodeId));
+                    GridTcpDiscoveryHeartbeatMessage msg = new GridTcpDiscoveryHeartbeatMessage(locNodeId);
+
+                    msg.client(true);
+
+                    sockRdr.addMessage(msg);
                 }
             }
             catch (GridInterruptedException ignored) {
@@ -720,8 +724,13 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
                     if (sock0 != null) {
                         try {
-                            writeToSocket(sock0, new GridTcpDiscoveryNodeAddedClientResponse(locNodeId, msg.id(),
-                                exchange.collect(newNodeId)));
+                            GridTcpDiscoveryNodeAddedClientResponse res =
+                                new GridTcpDiscoveryNodeAddedClientResponse(locNodeId, msg.id(),
+                                    exchange.collect(newNodeId));
+
+                            res.client(true);
+
+                            writeToSocket(sock0, res);
                         }
                         catch (IOException | GridException e) {
                             if (log.isDebugEnabled())
@@ -869,6 +878,8 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     Socket sock0 = sock;
 
                     if (sock0 != null) {
+                        msg.setMetrics(locNodeId, metricsProvider.getMetrics());
+
                         try {
                             writeToSocket(sock0, msg);
 
@@ -898,7 +909,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
                     for (Map.Entry<UUID, GridNodeMetrics> e : msg.metrics().entrySet()) {
                         UUID nodeId = e.getKey();
 
-                        GridTcpDiscoveryNode node = rmtNodes.get(nodeId);
+                        GridTcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
 
                         if (node != null) {
                             node.setMetrics(e.getValue());

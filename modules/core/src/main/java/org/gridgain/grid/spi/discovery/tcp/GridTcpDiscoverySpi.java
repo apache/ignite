@@ -2211,6 +2211,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 GridTcpDiscoveryHeartbeatMessage msg = new GridTcpDiscoveryHeartbeatMessage(locNodeId);
 
+                msg.verify(locNodeId);
+
                 msgWorker.addMessage(msg);
 
                 Thread.sleep(hbFreq);
@@ -4291,7 +4293,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, metricsProvider.getMetrics());
 
-                    msg.addClientNodeIds(clientMsgWorkers.keySet());
+                    for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet())
+                        msg.setClientMetrics(locNodeId, e.getKey(), e.getValue().metrics());
                 }
                 else
                     // Message is on its second ring.
@@ -4679,7 +4682,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                                 writeToSocket(sock, RES_OK);
                             }
                             else if (log.isDebugEnabled())
-                                log.debug("Discarding routed message since client has already left: " + msg);
+                                log.debug("Discarding routed message because client has already left: " + msg);
 
                             continue;
                         }
@@ -5072,7 +5075,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      */
     private class ClientMessageWorker extends MessageWorkerAdapter {
-        /** */
+        /** Node ID. */
         private final UUID nodeId;
 
         /** Socket. */
@@ -5081,8 +5084,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** Lock. */
         private final Lock lock = new ReentrantLock();
 
-        /** */
+        /** Node added callbacks. */
         private Map<GridUuid, CI1<GridTcpDiscoveryNodeAddedClientResponse>> nodeAddedCbs = new HashMap<>();
+
+        /** Current client metrics. */
+        private volatile GridNodeMetrics metrics;
 
         /**
          * @param sock Socket.
@@ -5095,6 +5101,11 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             this.nodeId = nodeId;
         }
 
+        /**
+         * @param msg Message.
+         * @param cb Response callback.
+         * @return Whether message was added.
+         */
         boolean addNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg,
             CI1<GridTcpDiscoveryNodeAddedClientResponse> cb) {
             assert msg != null;
@@ -5132,6 +5143,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             return added;
         }
 
+        /**
+         * @param res Node added message response.
+         */
         void onNodeAddedResponse(GridTcpDiscoveryNodeAddedClientResponse res) {
             CI1<GridTcpDiscoveryNodeAddedClientResponse> cb = null;
 
@@ -5149,6 +5163,30 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 cb.apply(res);
             else if (log.isDebugEnabled())
                 log.debug("Discarding node added response because there is no callback: " + res);
+        }
+
+        /**
+         * @return Current client metrics.
+         */
+        GridNodeMetrics metrics() {
+            return metrics;
+        }
+
+        /** {@inheritDoc} */
+        @Override void addMessage(GridTcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof GridTcpDiscoveryHeartbeatMessage) {
+                GridTcpDiscoveryHeartbeatMessage hbMsg = (GridTcpDiscoveryHeartbeatMessage)msg;
+
+                if (hbMsg.creatorNodeId().equals(nodeId)) {
+                    metrics = hbMsg.metrics().get(nodeId);
+
+                    hbMsg.removeMetrics(nodeId);
+
+                    assert !hbMsg.hasMetrics();
+                }
+            }
+
+            super.addMessage(msg);
         }
 
         /** {@inheritDoc} */

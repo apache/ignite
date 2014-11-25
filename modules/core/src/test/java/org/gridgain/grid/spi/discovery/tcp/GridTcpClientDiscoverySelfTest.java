@@ -19,6 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.net.*;
@@ -128,59 +129,6 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         stopAllServers(true);
 
         assert G.allGrids().isEmpty();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDataExchangeFromServer() throws Exception {
-        testDataExchange("server-0");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDataExchangeFromClient() throws Exception {
-        testDataExchange("client-0");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void testDataExchange(String masterName) throws Exception {
-        startServerNodes(2);
-        startClientNodes(2);
-
-        checkNodes(2, 2);
-
-        GridMessaging msg = grid(masterName).message();
-
-        UUID id = null;
-
-        try {
-            id = msg.remoteListen(null, new MessageListener()).get();
-
-            msgLatch = new CountDownLatch(4);
-
-            msg.send(null, "Message 1");
-
-            await(msgLatch);
-
-            startServerNodes(1);
-            startClientNodes(1);
-
-            checkNodes(3, 3);
-
-            msgLatch = new CountDownLatch(6);
-
-            msg.send(null, "Message 2");
-
-            await(msgLatch);
-        }
-        finally {
-            if (id != null)
-                msg.stopRemoteListen(id);
-        }
     }
 
     /**
@@ -402,6 +350,119 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         await(srvFailedLatch);
 
         checkNodes(1, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetrics() throws Exception {
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        attachListeners(3, 3);
+
+        assertTrue(checkMetrics(3, 3, 0));
+
+        G.grid("client-0").compute().broadcast(F.noop()).get();
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return checkMetrics(3, 3, 1);
+            }
+        }, 10000));
+
+        checkMetrics(3, 3, 1);
+
+        G.grid("server-0").compute().broadcast(F.noop()).get();
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return checkMetrics(3, 3, 2);
+            }
+        }, 10000));
+    }
+
+    /**
+     * @param srvCnt Number of Number of server nodes.
+     * @param clientCnt Number of client nodes.
+     * @param execJobsCnt Expected number of executed jobs.
+     * @return Whether metrics are correct.
+     */
+    private boolean checkMetrics(int srvCnt, int clientCnt, int execJobsCnt) {
+        for (int i = 0; i < srvCnt; i++) {
+            Grid g = G.grid("server-" + i);
+
+            for (GridNode n : g.nodes()) {
+                if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
+                    return false;
+            }
+        }
+
+        for (int i = 0; i < clientCnt; i++) {
+            Grid g = G.grid("client-" + i);
+
+            for (GridNode n : g.nodes()) {
+                if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromServer() throws Exception {
+        testDataExchange("server-0");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromClient() throws Exception {
+        testDataExchange("client-0");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testDataExchange(String masterName) throws Exception {
+        startServerNodes(2);
+        startClientNodes(2);
+
+        checkNodes(2, 2);
+
+        GridMessaging msg = grid(masterName).message();
+
+        UUID id = null;
+
+        try {
+            id = msg.remoteListen(null, new MessageListener()).get();
+
+            msgLatch = new CountDownLatch(4);
+
+            msg.send(null, "Message 1");
+
+            await(msgLatch);
+
+            startServerNodes(1);
+            startClientNodes(1);
+
+            checkNodes(3, 3);
+
+            msgLatch = new CountDownLatch(6);
+
+            msg.send(null, "Message 2");
+
+            await(msgLatch);
+        }
+        finally {
+            if (id != null)
+                msg.stopRemoteListen(id);
+        }
     }
 
     /**

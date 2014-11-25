@@ -11,12 +11,15 @@ package org.gridgain.grid.spi.discovery.tcp.messages;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
 
 /**
  * Heartbeat message.
@@ -41,7 +44,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
     /** Map to store nodes metrics. */
     @GridToStringExclude
-    private Map<UUID, byte[]> metrics;
+    private Map<UUID, T2<byte[], Map<UUID, byte[]>>> metrics;
 
     /** Client node IDs. */
     private Collection<UUID> clientNodeIds;
@@ -74,21 +77,35 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     public void setMetrics(UUID nodeId, GridNodeMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
+        assert !this.metrics.containsKey(nodeId);
 
-        byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
-
-        GridDiscoveryMetricsHelper.serialize(buf, 0, metrics);
-
-        this.metrics.put(nodeId, buf);
+        this.metrics.put(nodeId, new T2<byte[], Map<UUID, byte[]>>(serializeMetrics(metrics), null));
     }
 
     /**
-     * @param clientNodeIds Client node IDs.
+     * Sets metrics for a client node.
+     *
+     * @param nodeId Server node ID.
+     * @param clientNodeId Client node ID.
+     * @param metrics Node metrics.
      */
-    public void addClientNodeIds(Collection<UUID> clientNodeIds) {
-        assert clientNodeIds != null;
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, @Nullable GridNodeMetrics metrics) {
+        assert nodeId != null;
+        assert clientNodeId != null;
+        assert this.metrics.containsKey(nodeId);
 
-        this.clientNodeIds.addAll(clientNodeIds);
+        if (metrics != null) {
+            T2<byte[], Map<UUID, byte[]>> t = this.metrics.get(nodeId);
+
+            Map<UUID, byte[]> map = t.get2();
+
+            if (map == null)
+                t.set2(map = new HashMap<>());
+
+            map.put(clientNodeId, serializeMetrics(metrics));
+        }
+
+        clientNodeIds.add(clientNodeId);
     }
 
     /**
@@ -108,11 +125,61 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      * @return Metrics map.
      */
     public Map<UUID, GridNodeMetrics> metrics() {
-        return F.viewReadOnly(metrics, new C1<byte[], GridNodeMetrics>() {
-            @Override public GridNodeMetrics apply(byte[] metricsBytes) {
-                return GridDiscoveryMetricsHelper.deserialize(metricsBytes, 0);
+        final Iterator<Map.Entry<UUID, T2<byte[], Map<UUID, byte[]>>>> it = metrics.entrySet().iterator();
+
+        return new AbstractMap<UUID, GridNodeMetrics>() {
+            @Override public Set<Entry<UUID, GridNodeMetrics>> entrySet() {
+                return new AbstractSet<Entry<UUID, GridNodeMetrics>>() {
+                    @Override public Iterator<Entry<UUID, GridNodeMetrics>> iterator() {
+                        return new Iterator<Entry<UUID, GridNodeMetrics>>() {
+                            private Entry<UUID, T2<byte[], Map<UUID, byte[]>>> cur = it.hasNext() ? it.next() : null;
+
+                            private Iterator<Entry<UUID, byte[]>> clientsIt;
+
+                            @Override public boolean hasNext() {
+                                return clientsIt == null ? cur != null : clientsIt.hasNext() || it.hasNext();
+                            }
+
+                            @Override public Entry<UUID, GridNodeMetrics> next() {
+                                if (clientsIt == null) {
+                                    if (cur == null)
+                                        throw new NoSuchElementException();
+
+                                    Map<UUID, byte[]> map = cur.getValue().get2();
+
+                                    clientsIt = map != null ? map.entrySet().iterator() :
+                                        Collections.<Entry<UUID, byte[]>>emptyIterator();
+
+                                    return new T2<>(cur.getKey(), deserialize(cur.getValue().get1(), 0));
+                                }
+                                else {
+                                    if (clientsIt.hasNext()) {
+                                        Entry<UUID, byte[]> nextClient = clientsIt.next();
+
+                                        return new T2<>(nextClient.getKey(), deserialize(nextClient.getValue(), 0));
+                                    }
+                                    else {
+                                        clientsIt = null;
+
+                                        cur = it.hasNext() ? it.next() : null;
+
+                                        return next();
+                                    }
+                                }
+                            }
+
+                            @Override public void remove() {
+                                throw new UnsupportedOperationException();
+                            }
+                        };
+                    }
+
+                    @Override public int size() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
             }
-        });
+        };
     }
 
     /**
@@ -154,10 +221,10 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         out.writeInt(metrics.size());
 
         if (!metrics.isEmpty()) {
-            for (Map.Entry<UUID, byte[]> e : metrics.entrySet()) {
+            for (Map.Entry<UUID, T2<byte[], Map<UUID, byte[]>>> e : metrics.entrySet()) {
                 U.writeUuid(out, e.getKey());
-
-                U.writeByteArray(out, e.getValue());
+                U.writeByteArray(out, e.getValue().get1());
+                U.writeMap(out, e.getValue().get2());
             }
         }
 
@@ -173,7 +240,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         metrics = new HashMap<>(metricsSize + 1, 1.0f);
 
         for (int i = 0; i < metricsSize; i++)
-            metrics.put(U.readUuid(in), U.readByteArray(in));
+            metrics.put(U.readUuid(in), new T2<>(U.readByteArray(in), U.<UUID, byte[]>readMap(in)));
 
         clientNodeIds = U.readCollection(in);
     }
@@ -181,5 +248,19 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
+    }
+
+    /**
+     * @param metrics Metrics.
+     * @return Serialized metrics.
+     */
+    private byte[] serializeMetrics(GridNodeMetrics metrics) {
+        assert metrics != null;
+
+        byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+
+        serialize(buf, 0, metrics);
+
+        return buf;
     }
 }
