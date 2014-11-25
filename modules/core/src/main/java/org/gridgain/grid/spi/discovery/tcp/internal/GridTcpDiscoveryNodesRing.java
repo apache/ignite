@@ -69,20 +69,14 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of all nodes.
      */
     public Collection<GridTcpDiscoveryNode> allNodes() {
-        List<GridTcpDiscoveryNode> nodes;
-
         rwLock.readLock().lock();
 
         try {
-            nodes = new ArrayList<>(nodesMap.values());
+            return Collections.unmodifiableCollection(new ArrayList<>(nodes));
         }
         finally {
             rwLock.readLock().unlock();
         }
-
-        Collections.sort(nodes);
-
-        return Collections.unmodifiableCollection(nodes);
     }
 
     /**
@@ -91,20 +85,34 @@ public class GridTcpDiscoveryNodesRing {
      * @return Collection of remote nodes in grid.
      */
     public Collection<GridTcpDiscoveryNode> remoteNodes() {
-        List<GridTcpDiscoveryNode> nodes;
-
         rwLock.readLock().lock();
 
         try {
-            nodes = new ArrayList<>(F.view(nodesMap.values(), F.<GridTcpDiscoveryNode>remoteNodes(locNode.id())));
+            return Collections.unmodifiableCollection(new ArrayList<>(F.view(nodes,
+                F.<GridTcpDiscoveryNode>remoteNodes(locNode.id()))));
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @return Client nodes.
+     */
+    public Collection<GridTcpDiscoveryNode> clientNodes() {
+        rwLock.readLock().lock();
+
+        try {
+            return new ArrayList<>(F.view(nodes, new P1<GridTcpDiscoveryNode>() {
+                @Override public boolean apply(GridTcpDiscoveryNode node) {
+                    return node.isClient();
+                }
+            }));
         }
         finally {
             rwLock.readLock().unlock();
         }
 
-        Collections.sort(nodes);
-
-        return Collections.unmodifiableCollection(nodes);
     }
 
     /**
@@ -116,7 +124,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return nodesMap.size() > 1;
+            return nodes.size() > 1;
         }
         finally {
             rwLock.readLock().unlock();
@@ -140,20 +148,18 @@ public class GridTcpDiscoveryNodesRing {
             if (nodesMap.containsKey(node.id()))
                 return false;
 
-            node.lastUpdateTime(U.currentTimeMillis());
+            assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
+                "[ring=" + this + ", node=" + node + ']';
 
             nodesMap.put(node.id(), node);
 
-            if (!node.isClient()) {
-                assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
-                    "[ring=" + this + ", node=" + node + ']';
+            nodes = new TreeSet<>(nodes);
 
-                nodes = new TreeSet<>(nodes);
+            node.lastUpdateTime(U.currentTimeMillis());
 
-                nodes.add(node);
+            nodes.add(node);
 
-                nodeOrder = node.internalOrder();
-            }
+            nodeOrder = node.internalOrder();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -206,22 +212,19 @@ public class GridTcpDiscoveryNodesRing {
                 if (nodesMap.containsKey(node.id()))
                     continue;
 
-                node.lastUpdateTime(U.currentTimeMillis());
-
                 nodesMap.put(node.id(), node);
 
-                if (!node.isClient()) {
-                    if (firstAdd) {
-                        this.nodes = new TreeSet<>(this.nodes);
+                if (firstAdd) {
+                    this.nodes = new TreeSet<>(this.nodes);
 
-                        firstAdd = false;
-                    }
-
-                    this.nodes.add(node);
+                    firstAdd = false;
                 }
+
+                node.lastUpdateTime(U.currentTimeMillis());
+
+                this.nodes.add(node);
             }
 
-            // TODO: GG-9174 - What if topology has clients?
             nodeOrder = topVer;
         }
         finally {
@@ -263,7 +266,7 @@ public class GridTcpDiscoveryNodesRing {
         try {
             GridTcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
-            if (rmv != null && !rmv.isClient()) {
+            if (rmv != null) {
                 nodes = new TreeSet<>(nodes);
 
                 nodes.remove(rmv);
@@ -296,18 +299,15 @@ public class GridTcpDiscoveryNodesRing {
                 GridTcpDiscoveryNode rmv = nodesMap.remove(id);
 
                 if (rmv != null) {
-                    if (!rmv.isClient()) {
-                        if (firstRmv) {
-                            nodes = new TreeSet<>(nodes);
+                    if (firstRmv) {
+                        nodes = new TreeSet<>(nodes);
 
-                            firstRmv = false;
-                        }
+                        res = new ArrayList<>(nodeIds.size());
 
-                        nodes.remove(rmv);
+                        firstRmv = false;
                     }
 
-                    if (res == null)
-                        res = new ArrayList<>(nodeIds.size());
+                    nodes.remove(rmv);
 
                     res.add(rmv);
                 }
@@ -380,8 +380,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes :
-                F.view(nodes, F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (F.isEmpty(filtered))
                 return null;
@@ -428,8 +427,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes :
-                F.view(nodes, F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
@@ -483,8 +481,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = F.isEmpty(excluded) ? nodes.descendingSet() :
-                F.view(nodes.descendingSet(), F.notContains(excluded));
+            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
@@ -582,6 +579,22 @@ public class GridTcpDiscoveryNodesRing {
         finally {
             rwLock.writeLock().unlock();
         }
+    }
+
+    /**
+     * Gets server nodes from topology.
+     *
+     * @param excluded Nodes to exclude from the search (optional).
+     * @return Collection of server nodes.
+     */
+    private Collection<GridTcpDiscoveryNode> serverNodes(@Nullable final Collection<GridTcpDiscoveryNode> excluded) {
+        final boolean excludedEmpty = F.isEmpty(excluded);
+
+        return F.view(nodes, new P1<GridTcpDiscoveryNode>() {
+            @Override public boolean apply(GridTcpDiscoveryNode node) {
+                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+            }
+        });
     }
 
     /** {@inheritDoc} */

@@ -160,13 +160,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
-    /** Predicate to filter client nodes. */
-    private static final GridPredicate<GridTcpDiscoveryNode> CLIENT_NODES = new P1<GridTcpDiscoveryNode>() {
-        @Override public boolean apply(GridTcpDiscoveryNode node) {
-            return node.isClient();
-        }
-    };
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -2276,7 +2269,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         ring.allNodes(),
                         new C1<GridTcpDiscoveryNode, Collection<InetSocketAddress>>() {
                             @Override public Collection<InetSocketAddress> apply(GridTcpDiscoveryNode node) {
-                                return getNodeAddresses(node);
+                                return !node.isClient() ? getNodeAddresses(node) :
+                                    Collections.<InetSocketAddress>emptyList();
                             }
                         }
                     )
@@ -4118,7 +4112,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 Collection<UUID> clientNodeIds = msg.clientNodeIds();
 
-                for (GridTcpDiscoveryNode clientNode : F.view(ring.allNodes(), CLIENT_NODES)) {
+                for (GridTcpDiscoveryNode clientNode : ring.clientNodes()) {
                     if (clientNode.order() > 0) {
                         if (clientNodeIds.contains(clientNode.id()))
                             clientNode.aliveCheck(maxMissedHbs);
