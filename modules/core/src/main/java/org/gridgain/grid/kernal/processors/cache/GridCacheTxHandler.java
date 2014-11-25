@@ -112,32 +112,24 @@ public class GridCacheTxHandler<K, V> {
         assert nearNodeId != null;
         assert req != null;
 
-        GridFuture<GridCacheTxEx<K, V>> colocatedPrepFut = null;
+        try {
+            if (locTx != null) {
+                if (req.near()) {
+                    locTx.optimisticLockEntries(req.writes());
 
-        if (locTx != null && locTx.colocatedLocallyMapped())
-            colocatedPrepFut = prepareColocatedTx(locTx, req);
+                    locTx.userPrepare();
 
-        GridFuture<GridCacheTxEx<K, V>> nearPrepareFut = null;
-
-        if (locTx == null || locTx.nearLocallyMapped())
-            nearPrepareFut = prepareNearTx(nearNodeId, req);
-
-        if (colocatedPrepFut != null && nearPrepareFut != null) {
-            GridCompoundFuture<GridCacheTxEx<K, V>, GridCacheTxEx<K, V>> res =
-                new GridCompoundFuture<>(ctx.kernalContext());
-
-            res.add(colocatedPrepFut);
-            res.add(nearPrepareFut);
-
-            res.markInitialized();
-
-            return res;
+                    return prepareNearTx(nearNodeId, req);
+                }
+                else
+                    return prepareColocatedTx(locTx, req);
+            }
+            else
+                return prepareNearTx(nearNodeId, req);
         }
-
-        if (colocatedPrepFut != null)
-            return colocatedPrepFut;
-
-        return nearPrepareFut;
+        catch (GridException e) {
+            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+        }
     }
 
     /**

@@ -1495,8 +1495,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 try {
                     GridCacheEntryEx<K, V> entry1 = txEntry1.cached();
 
-                    assert !entry1.detached() : "Expected non-detached entry [locNodeId=" + cctx.localNodeId() +
-                        ", entry=" + entry1 + ']';
+                    assert !entry1.detached() : "Expected non-detached entry for near transaction " +
+                        "[locNodeId=" + cctx.localNodeId() + ", entry=" + entry1 + ']';
 
                     if (!entry1.tmLock(tx, timeout)) {
                         // Unlock locks locked so far.

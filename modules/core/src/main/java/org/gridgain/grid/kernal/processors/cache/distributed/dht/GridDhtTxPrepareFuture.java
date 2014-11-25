@@ -318,8 +318,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        Collection<GridCacheTxEntry<K, V>> checkEntries = tx.groupLock() ?
-            Collections.singletonList(tx.groupLockEntry()) : tx.writeEntries();
+        Iterable<GridCacheTxEntry<K, V>> checkEntries = tx.groupLock() ?
+            Collections.singletonList(tx.groupLockEntry()) : writes;
 
         for (GridCacheTxEntry<K, V> txEntry : checkEntries) {
             while (true) {

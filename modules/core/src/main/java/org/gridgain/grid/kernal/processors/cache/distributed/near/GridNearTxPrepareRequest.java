@@ -41,6 +41,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /** Synchronous rollback flag. */
     private boolean syncRollback;
 
+    /** Near mapping flag. */
+    private boolean near;
+
     /** Topology version. */
     private long topVer;
 
@@ -76,15 +79,28 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param syncCommit Synchronous commit.
      * @param syncRollback Synchronous rollback.
+     * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
-    public GridNearTxPrepareRequest(GridUuid futId, long topVer, GridCacheTxEx<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> reads, Collection<GridCacheTxEntry<K, V>> writes, GridCacheTxKey grpLockKey,
-        boolean partLock, boolean syncCommit, boolean syncRollback,
-        Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups, @Nullable UUID subjId,
-        int taskNameHash) {
+    public GridNearTxPrepareRequest(
+        GridUuid futId,
+        long topVer,
+        GridCacheTxEx<K, V> tx,
+        Collection<GridCacheTxEntry<K, V>> reads,
+        Collection<GridCacheTxEntry<K, V>> writes,
+        GridCacheTxKey grpLockKey,
+        boolean partLock,
+        boolean syncCommit,
+        boolean syncRollback,
+        boolean near,
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean last,
+        Collection<UUID> lastBackups,
+        @Nullable UUID subjId,
+        int taskNameHash
+    ) {
         super(tx, reads, writes, grpLockKey, partLock, txNodes);
 
         assert futId != null;
@@ -93,6 +109,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         this.topVer = topVer;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
+        this.near = near;
         this.last = last;
         this.lastBackups = lastBackups;
         this.subjId = subjId;
@@ -111,6 +128,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return {@code True} if mapping is for near-enabled caches.
+     */
+    public boolean near() {
+        return near;
     }
 
     /**
@@ -304,18 +328,24 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 27:
-                if (!commState.putLong(topVer))
+                if (!commState.putBoolean(near))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putUuid(subjId))
+                if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
             case 29:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 30:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
@@ -409,6 +439,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 27:
+                if (buf.remaining() < 1)
+                    return false;
+
+                near = commState.getBoolean();
+
+                commState.idx++;
+
+            case 28:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -416,7 +454,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -426,7 +464,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 29:
+            case 30:
                 if (buf.remaining() < 4)
                     return false;
 

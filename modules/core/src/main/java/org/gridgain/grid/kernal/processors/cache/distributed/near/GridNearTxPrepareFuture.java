@@ -115,7 +115,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (owner != null && tx.hasWriteKey(entry.txKey())) {
+        if (entry.context().isNear() && owner != null && tx.hasWriteKey(entry.txKey())) {
             // This will check for locks.
             onDone();
 
@@ -310,9 +310,98 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /**
+     * Waits for topology exchange future to be ready and then prepares user transaction.
+     */
+    public void prepare() {
+        GridDhtTopologyFuture topFut = topologyReadLock();
+
+        try {
+            if (topFut.isDone()) {
+                try {
+                    if (!tx.state(PREPARING)) {
+                        if (tx.setRollbackOnly()) {
+                            if (tx.timedOut())
+                                onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
+                                    "was rolled back: " + this));
+                            else
+                                onError(null, null, new GridException("Invalid transaction state for prepare " +
+                                    "[state=" + tx.state() + ", tx=" + this + ']'));
+                        }
+                        else
+                            onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for " +
+                                "prepare [state=" + tx.state() + ", tx=" + this + ']'));
+
+                        return;
+                    }
+
+                    GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
+
+                    tx.topologyVersion(snapshot.topologyVersion());
+                    tx.topologySnapshot(snapshot);
+
+                    // Make sure to add future before calling prepare.
+                    cctx.mvcc().addFuture(this);
+
+                    prepare0();
+                }
+                catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
+                    onError(cctx.localNodeId(), null, e);
+                }
+                catch (GridException e) {
+                    tx.setRollbackOnly();
+
+                    String msg = "Failed to prepare transaction (will attempt rollback): " + this;
+
+                    U.error(log, msg, e);
+
+                    tx.rollbackAsync();
+
+                    onError(null, null, new GridCacheTxRollbackException(msg, e));
+                }
+            }
+            else {
+                topFut.syncNotify(false);
+
+                topFut.listenAsync(new CI1<GridFuture<Long>>() {
+                    @Override public void apply(GridFuture<Long> t) {
+                        prepare();
+                    }
+                });
+            }
+        }
+        finally {
+            topologyReadUnlock();
+        }
+    }
+
+    /**
+     * Acquires topology read lock.
+     *
+     * @return Topology ready future.
+     */
+    private GridDhtTopologyFuture topologyReadLock() {
+        if (tx.activeCacheIds().isEmpty())
+            return cctx.exchange().lastTopologyFuture();
+
+        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(tx.activeCacheIds()));
+
+        cacheCtx.topology().readLock();
+
+        return cacheCtx.topology().topologyVersionFuture();
+    }
+
+    /**
+     * Releases topology read lock.
+     */
+    private void topologyReadUnlock() {
+        if (!tx.activeCacheIds().isEmpty())
+            cctx.cacheContext(F.first(tx.activeCacheIds())).topology().readUnlock();
+    }
+
+    /**
      * Initializes future.
      */
-    void prepare() {
+    private void prepare0() {
         assert tx.optimistic();
 
         try {
@@ -443,6 +532,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.partitionLock(),
             tx.syncCommit(),
             tx.syncRollback(),
+            m.near(),
             txMapping.transactionNodes(),
             m.last(),
             m.lastBackups(),
@@ -560,8 +650,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         else
             entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
 
-        if (cur == null || !cur.node().id().equals(primary.id()))
+        if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
             cur = new GridDistributedTxMapping<>(primary);
+
+            // Initialize near flag right away.
+            cur.near(cacheCtx.isNear());
+        }
 
         cur.add(entry);
 

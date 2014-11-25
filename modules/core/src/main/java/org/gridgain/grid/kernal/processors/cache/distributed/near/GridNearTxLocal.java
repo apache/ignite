@@ -219,6 +219,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         return optimisticLockEntries;
     }
 
+    /**
+     * @param optimisticLockEntries Optimistic lock entries.
+     */
+    public void optimisticLockEntries(Collection<GridCacheTxEntry<K, V>> optimisticLockEntries) {
+        this.optimisticLockEntries = optimisticLockEntries;
+    }
+
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
@@ -663,108 +670,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 pessimisticFut.onError(e);
             }
         }
-        else
+        else {
             // In optimistic mode we must wait for topology map update.
-            prepareOnTopology();
+            GridNearTxPrepareFuture<K, V> pf = (GridNearTxPrepareFuture<K, V>)prepFut.get();
+
+            pf.prepare();
+        }
 
         return fut;
-    }
-
-    /**
-     * Waits for topology exchange future to be ready and then prepares user transaction.
-     */
-    private void prepareOnTopology() {
-        GridDhtTopologyFuture topFut = topologyReadLock();
-
-        try {
-            if (topFut.isDone()) {
-                GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)prepFut.get();
-
-                assert fut != null : "Missing near tx prepare future in prepareOnTopology()";
-
-                try {
-                    if (!state(PREPARING)) {
-                        if (setRollbackOnly()) {
-                            if (timedOut())
-                                fut.onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
-                                    "was rolled back: " + this));
-                            else
-                                fut.onError(null, null, new GridException("Invalid transaction state for prepare " +
-                                    "[state=" + state() + ", tx=" + this + ']'));
-                        }
-                        else
-                            fut.onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for " +
-                                "prepare [state=" + state() + ", tx=" + this + ']'));
-
-                        return;
-                    }
-
-                    GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
-
-                    topologyVersion(snapshot.topologyVersion());
-                    topologySnapshot(snapshot);
-
-                    optimisticLockEntries = writeEntries();
-
-                    userPrepare();
-
-                    // Make sure to add future before calling prepare.
-                    cctx.mvcc().addFuture(fut);
-
-                    fut.prepare();
-                }
-                catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
-                    fut.onError(cctx.localNodeId(), null, e);
-                }
-                catch (GridException e) {
-                    setRollbackOnly();
-
-                    String msg = "Failed to prepare transaction (will attempt rollback): " + this;
-
-                    U.error(log, msg, e);
-
-                    rollbackAsync();
-
-                    fut.onError(null, null, new GridCacheTxRollbackException(msg, e));
-                }
-            }
-            else {
-                topFut.syncNotify(false);
-
-                topFut.listenAsync(new CI1<GridFuture<Long>>() {
-                    @Override public void apply(GridFuture<Long> t) {
-                        prepareOnTopology();
-                    }
-                });
-            }
-        }
-        finally {
-            topologyReadUnlock();
-        }
-    }
-
-    /**
-     * Acquires topology read lock.
-     *
-     * @return Topology ready future.
-     */
-    private GridDhtTopologyFuture topologyReadLock() {
-        if (activeCacheIds.isEmpty())
-            return cctx.exchange().lastTopologyFuture();
-
-        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(activeCacheIds));
-
-        cacheCtx.topology().readLock();
-
-        return cacheCtx.topology().topologyVersionFuture();
-    }
-
-    /**
-     * Releases topology read lock.
-     */
-    private void topologyReadUnlock() {
-        if (!activeCacheIds.isEmpty())
-            cctx.cacheContext(F.first(activeCacheIds)).topology().readUnlock();
     }
 
     /** {@inheritDoc} */
