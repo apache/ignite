@@ -77,9 +77,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect caches. */
     private void caches(VisorNodeDataCollectorJobResult res, VisorNodeDataCollectorTaskArg arg) {
         try {
-            for (GridCache cache : g.cachesx()) {
+            for (GridCache cache : g.cachesx())
                 res.caches().add(VisorCache.from(g, cache, arg.sample()));
-            }
         }
         catch (Throwable cachesEx) {
             res.cachesEx(cachesEx);
@@ -115,9 +114,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             GridStreamerConfiguration[] cfgs = g.configuration().getStreamerConfiguration();
 
             if (cfgs != null) {
-                for (GridStreamerConfiguration cfg : cfgs) {
+                for (GridStreamerConfiguration cfg : cfgs)
                     res.streamers().add(VisorStreamer.from(g.streamer(cfg.getName())));
-                }
             }
         }
         catch (Throwable streamersEx) {
