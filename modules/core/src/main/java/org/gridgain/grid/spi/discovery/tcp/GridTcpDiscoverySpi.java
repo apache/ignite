@@ -1173,11 +1173,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void reconnect() throws GridSpiException {
-        throw new UnsupportedOperationException("Reconnect is not supported in current version of GridGain.");
-    }
-
-    /** {@inheritDoc} */
     @Override public void setAuthenticator(GridDiscoverySpiNodeAuthenticator nodeAuth) {
         this.nodeAuth = nodeAuth;
     }
@@ -4107,9 +4102,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             if (locNodeId.equals(msg.creatorNodeId()) && !msg.hasMetrics(locNodeId) && msg.senderNodeId() != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding heartbeat message that has made two passes: " + msg);
-
                 Collection<UUID> clientNodeIds = msg.clientNodeIds();
 
                 for (GridTcpDiscoveryNode clientNode : ring.clientNodes()) {
@@ -4128,6 +4120,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         }
                     }
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Discarding heartbeat message that has made two passes: " + msg);
 
                 return;
             }

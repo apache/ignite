@@ -208,16 +208,11 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
-        return false; // TODO: implement.
+        return true; // TODO: GG-9174
     }
 
     /** {@inheritDoc} */
     @Override public void disconnect() throws GridSpiException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reconnect() throws GridSpiException {
         throw new UnsupportedOperationException();
     }
 
