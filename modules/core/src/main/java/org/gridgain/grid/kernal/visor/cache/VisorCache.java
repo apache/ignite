@@ -78,12 +78,6 @@ public class VisorCache implements Serializable {
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
-//    /** Metrics for data sent during data center replication. */
-//    private VisorDrSenderCacheMetrics drSndMetrics;
-//
-//    /** Metrics for data received during data center replication. */
-//    private VisorDrReceiverCacheMetrics drRcvMetrics;
-
     /** Cache partitions states. */
     private GridDhtPartitionMap partsMap;
 
@@ -248,25 +242,9 @@ public class VisorCache implements Serializable {
         c.primaryPartitions(Collections.<GridPair<Integer>>emptyList());
         c.backupPartitions(Collections.<GridPair<Integer>>emptyList());
         c.metrics(metrics);
-//        c.drSendMetrics(drSndMetrics);
-//        c.drReceiveMetrics(drRcvMetrics);
 
         return c;
     }
-
-//    /**
-//     * @return {@code true} if replication paused.
-//     */
-//    public boolean drSendMetricsPaused() {
-//        if (drSndMetrics != null) {
-//            GridDrStatus status = drSndMetrics.status();
-//
-//            if (status != null)
-//                return status.paused();
-//        }
-//
-//        return false;
-//    }
 
     /**
      * @return Cache name.
@@ -477,34 +455,6 @@ public class VisorCache implements Serializable {
     public void metrics(VisorCacheMetrics metrics) {
         this.metrics = metrics;
     }
-
-//    /**
-//     * @return Metrics for data sent during data center replication.
-//     */
-//    public VisorDrSenderCacheMetrics drSendMetrics() {
-//        return drSndMetrics;
-//    }
-//
-//    /**
-//     * @param drSndMetrics New metrics for data sent during data center replication.
-//     */
-//    public void drSendMetrics(VisorDrSenderCacheMetrics drSndMetrics) {
-//        this.drSndMetrics = drSndMetrics;
-//    }
-//
-//    /**
-//     * @return Metrics for data received during data center replication.
-//     */
-//    public VisorDrReceiverCacheMetrics drReceiveMetrics() {
-//        return drRcvMetrics;
-//    }
-//
-//    /**
-//     * @param drRcvMetrics New metrics for data received during data center replication.
-//     */
-//    public void drReceiveMetrics(VisorDrReceiverCacheMetrics drRcvMetrics) {
-//        this.drRcvMetrics = drRcvMetrics;
-//    }
 
     /**
      * @return Cache partitions states.

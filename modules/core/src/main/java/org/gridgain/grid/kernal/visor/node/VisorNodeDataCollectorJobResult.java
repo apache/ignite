@@ -51,18 +51,30 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node streamers. */
     private Throwable streamersEx;
 
+    /**
+     * @return Grid name.
+     */
     public String gridName() {
         return gridName;
     }
 
+    /**
+     * @param gridName New grid name value.
+     */
     public void gridName(String gridName) {
         this.gridName = gridName;
     }
 
+    /**
+     * @return Current topology version.
+     */
     public long topologyVersion() {
         return topologyVersion;
     }
 
+    /**
+     * @param topologyVersion New topology version value.
+     */
     public void topologyVersion(long topologyVersion) {
         this.topologyVersion = topologyVersion;
     }

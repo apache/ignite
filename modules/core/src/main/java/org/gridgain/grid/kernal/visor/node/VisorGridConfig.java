@@ -28,9 +28,6 @@ public class VisorGridConfig implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-//    /** License. */
-//    private VisorLicense license;
-
     /** Basic. */
     private VisorBasicConfig basic;
 
@@ -75,12 +72,6 @@ public class VisorGridConfig implements Serializable {
     /** Streamers. */
     private Iterable<VisorStreamerConfig> streamers;
 
-//    /** Sender hub configuration */
-//    private VisorDrSenderHubConfig drSenderHub;
-//
-//    /** Receiver hub configuration */
-//    private VisorDrReceiverHubConfig drReceiverHub;
-
     /** Environment. */
     private Map<String, String> env;
 
@@ -89,52 +80,33 @@ public class VisorGridConfig implements Serializable {
 
     /**
      * @param g Grid.
-     * @return Data transfer object for node configuration data.
+     * @return Fill data transfer object with node configuration data.
      */
-    public static VisorGridConfig from(GridEx g) {
+    public VisorGridConfig fill(GridEx g) {
         assert g != null;
 
         GridConfiguration c = g.configuration();
 
-        VisorGridConfig cfg = new VisorGridConfig();
+        basic(VisorBasicConfig.from(g, c));
+        metrics(VisorMetricsConfig.from(c));
+        spis(VisorSpisConfig.from(c));
+        p2p(VisorPeerToPeerConfig.from(c));
+        email(VisorEmailConfig.from(c));
+        lifecycle(VisorLifecycleConfig.from(c));
+        executeService(VisorExecutorServiceConfig.from(c));
+        segmentation(VisorSegmentationConfig.from(c));
+        includeProperties(compactArray(c.getIncludeProperties()));
+        includeEventTypes(c.getIncludeEventTypes());
+        rest(VisorRestConfig.from(c));
+        userAttributes(c.getUserAttributes());
+        caches(VisorCacheConfig.list(c.getCacheConfiguration()));
+        ggfss(VisorGgfsConfig.list(c.getGgfsConfiguration()));
+        streamers(VisorStreamerConfig.list(c.getStreamerConfiguration()));
+        env(new HashMap<>(getenv()));
+        systemProperties(getProperties());
 
-//        cfg.license(VisorLicense.from(g));
-        cfg.basic(VisorBasicConfig.from(g, c));
-        cfg.metrics(VisorMetricsConfig.from(c));
-        cfg.spis(VisorSpisConfig.from(c));
-        cfg.p2p(VisorPeerToPeerConfig.from(c));
-        cfg.email(VisorEmailConfig.from(c));
-        cfg.lifecycle(VisorLifecycleConfig.from(c));
-        cfg.executeService(VisorExecutorServiceConfig.from(c));
-        cfg.segmentation(VisorSegmentationConfig.from(c));
-        cfg.includeProperties(compactArray(c.getIncludeProperties()));
-        cfg.includeEventTypes(c.getIncludeEventTypes());
-        cfg.rest(VisorRestConfig.from(c));
-        cfg.userAttributes(c.getUserAttributes());
-        cfg.caches(VisorCacheConfig.list(c.getCacheConfiguration()));
-        cfg.ggfss(VisorGgfsConfig.list(c.getGgfsConfiguration()));
-        cfg.streamers(VisorStreamerConfig.list(c.getStreamerConfiguration()));
-//        cfg.drSenderHub(VisorDrSenderHubConfig.from(c.getDrSenderHubConfiguration()));
-//        cfg.drReceiverHub(VisorDrReceiverHubConfig.from(c.getDrReceiverHubConfiguration()));
-        cfg.env(new HashMap<>(getenv()));
-        cfg.systemProperties(getProperties());
-
-        return cfg;
+        return this;
     }
-
-//    /**
-//     * @return License.
-//     */
-//    @Nullable public VisorLicense license() {
-//        return license;
-//    }
-//
-//    /**
-//     * @param license New license.
-//     */
-//    public void license(@Nullable VisorLicense license) {
-//        this.license = license;
-//    }
 
     /**
      * @return Basic.
@@ -345,34 +317,6 @@ public class VisorGridConfig implements Serializable {
     public void streamers(Iterable<VisorStreamerConfig> streamers) {
         this.streamers = streamers;
     }
-
-//    /**
-//     * @return Sender hub configuration
-//     */
-//    @Nullable public VisorDrSenderHubConfig drSenderHub() {
-//        return drSenderHub;
-//    }
-//
-//    /**
-//     * @param drSndHub New sender hub configuration
-//     */
-//    public void drSenderHub(@Nullable VisorDrSenderHubConfig drSndHub) {
-//        drSenderHub = drSndHub;
-//    }
-//
-//    /**
-//     * @return Receiver hub configuration
-//     */
-//    @Nullable public VisorDrReceiverHubConfig drReceiverHub() {
-//        return drReceiverHub;
-//    }
-//
-//    /**
-//     * @param drReceiverHub New receiver hub configuration
-//     */
-//    public void drReceiverHub(@Nullable VisorDrReceiverHubConfig drReceiverHub) {
-//        this.drReceiverHub = drReceiverHub;
-//    }
 
     /**
      * @return Environment.
