@@ -20,7 +20,6 @@ import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -45,9 +44,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     private GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private GridTcpDiscoveryVmMetricsStore metricsStore = new GridTcpDiscoveryVmMetricsStore();
-
-    /** */
     private Map<String, GridTcpDiscoverySpi> discoMap = new HashMap<>();
 
     /** */
@@ -58,8 +54,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public GridTcpDiscoverySelfTest() throws Exception {
         super(false);
-
-        metricsStore.setMetricsExpireTime(2000);
     }
 
     /** {@inheritDoc} */
@@ -86,7 +80,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         spi.setMaxMissedHeartbeats(3);
 
-        spi.setStoresCleanFrequency(5000);
+        spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
 
@@ -132,10 +126,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (U.isMacOs())
                 spi.setLocalAddress(F.first(U.allLocalIps()));
         }
-
-        if (gridName.contains("MetricsStore"))
-            // SPI wants to use metrics store.
-            spi.setMetricsStore(metricsStore);
 
         return cfg;
     }
@@ -582,138 +572,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testMetricsStore() throws Exception {
-        try {
-            final CountDownLatch latch1 = new CountDownLatch(1);
-
-            final Grid g1 = startGrid("MetricsStore-1");
-
-            GridPredicate<GridEvent> lsnr1 = new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    info(evt.message());
-
-                    latch1.countDown();
-
-                    return true;
-                }
-            };
-
-            g1.events().localListen(lsnr1, EVT_NODE_METRICS_UPDATED);
-
-            assert latch1.await(10, SECONDS);
-
-            g1.events().stopLocalListen(lsnr1);
-
-            final CountDownLatch latch1_1 = new CountDownLatch(1);
-            final CountDownLatch latch1_2 = new CountDownLatch(1);
-            final CountDownLatch latch2_1 = new CountDownLatch(1);
-            final CountDownLatch latch2_2 = new CountDownLatch(1);
-
-            final Grid g2 = startGrid("MetricsStore-2");
-
-            g2.events().localListen(new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    info(evt.message());
-
-                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
-
-                    if (id.equals(g1.localNode().id()))
-                        latch2_1.countDown();
-                    else if (id.equals(g2.localNode().id()))
-                        latch2_2.countDown();
-                    else
-                        assert false : "Event fired for unknown node.";
-
-                    return true;
-                }
-            }, EVT_NODE_METRICS_UPDATED);
-
-            g1.events().localListen(new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    info(evt.message());
-
-                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
-
-                    if (id.equals(g1.localNode().id()))
-                        latch1_1.countDown();
-                    else if (id.equals(g2.localNode().id()))
-                        latch1_2.countDown();
-                    else
-                        assert false : "Event fired for unknown node.";
-
-                    return true;
-                }
-            }, EVT_NODE_METRICS_UPDATED);
-
-            assert latch1_1.await(10, SECONDS);
-            assert latch1_2.await(10, SECONDS);
-            assert latch2_1.await(10, SECONDS);
-            assert latch2_2.await(10, SECONDS);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testOrdinaryNodeFailureMetricsStore() throws Exception {
-        try {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            Grid g1 = startGrid("MetricsStore-1");
-
-            g1.events().localListen(new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    latch.countDown();
-
-                    return true;
-                }
-            }, EVT_NODE_FAILED);
-
-            Grid g2 = startGrid("MetricsStore-2");
-
-            discoMap.get(g2.name()).simulateNodeFailure();
-
-            assert latch.await(10, SECONDS);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testCoordinatorNodeFailureMetricsStore() throws Exception {
-        try {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            Grid g1 = startGrid("MetricsStore-1");
-
-            Grid g2 = startGrid("MetricsStore-2");
-
-            g2.events().localListen(new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    latch.countDown();
-
-                    return true;
-                }
-            }, EVT_NODE_FAILED);
-
-            discoMap.get(g1.name()).simulateNodeFailure();
-
-            assert latch.await(20, SECONDS);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
     public void testFailBeforeNodeAddedSent() throws Exception {
         try {
             Grid g1 = startGrid(1);
@@ -787,7 +645,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Grid g1 = startGrid(1);
 
-            long timeout = (long)(discoMap.get(g1.name()).getStoresCleanFrequency() * 1.5);
+            long timeout = (long)(discoMap.get(g1.name()).getIpFinderCleanFrequency() * 1.5);
 
             Thread.sleep(timeout);
 
@@ -802,34 +660,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             Thread.sleep(timeout);
 
             assert ipFinder.getRegisteredAddresses().size() == 1 : "ipFinder=" + ipFinder.getRegisteredAddresses();
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testMetricsStoreCleaning() throws Exception {
-        try {
-            metricsStore.updateLocalMetrics(UUID.randomUUID(), new GridDiscoveryMetricsAdapter());
-            metricsStore.updateLocalMetrics(UUID.randomUUID(), new GridDiscoveryMetricsAdapter());
-            metricsStore.updateLocalMetrics(UUID.randomUUID(), new GridDiscoveryMetricsAdapter());
-
-            Grid g1 = startGrid("MetricsStore-1");
-
-            long timeout = (long)(discoMap.get(g1.name()).getStoresCleanFrequency() * 1.5);
-
-            Thread.sleep(timeout);
-
-            assert metricsStore.allNodeIds().isEmpty();
-
-            startGrid("MetricsStore-2");
-
-            Thread.sleep(discoMap.get(g1.name()).getHeartbeatFrequency() * 2);
-
-            assert metricsStore.allNodeIds().size() == 2;
         }
         finally {
             stopAllGrids();

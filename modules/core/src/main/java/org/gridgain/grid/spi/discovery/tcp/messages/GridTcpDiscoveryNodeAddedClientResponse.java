@@ -19,6 +19,9 @@ import java.util.*;
  * Response from client for {@link GridTcpDiscoveryNodeAddedMessage}.
  */
 public class GridTcpDiscoveryNodeAddedClientResponse extends GridTcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node added message ID. */
     private GridUuid nodeAddedMsgId;
 

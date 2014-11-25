@@ -25,7 +25,7 @@ import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
  * Heartbeat message.
  * <p>
  * It is sent by coordinator node across the ring once a configured period.
- * In case if topology does not use metrics store, message makes two passes.
+ * Message makes two passes:
  * <ol>
  *      <li>During first pass, all nodes add their metrics to the message and
  *          update local metrics with metrics currently present in the message.</li>
@@ -34,9 +34,6 @@ import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
  * </ol>
  * When message reaches coordinator second time it is discarded (it finishes the
  * second pass).
- * <p>
- * If topology uses metrics store then message makes only one pass and metrics map
- * is always empty. Nodes exchange their metrics using metrics store.
  */
 public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
     /** */

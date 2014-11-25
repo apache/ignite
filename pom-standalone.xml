@@ -301,7 +301,7 @@
                                 </group>
                                 <group>
                                     <title>SPI: Discovery</title>
-                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
+                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm</packages>
                                 </group>
                                 <group>
                                     <title>SPI: Failover</title>
@@ -503,7 +503,7 @@
                                 </group>
                                 <group>
                                     <title>SPI: Discovery</title>
-                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm:org.gridgain.grid.spi.discovery.tcp.metricsstore:org.gridgain.grid.spi.discovery.tcp.metricsstore.s3:org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc:org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs:org.gridgain.grid.spi.discovery.tcp.metricsstore.vm</packages>
+                                    <packages>org.gridgain.grid.spi.discovery:org.gridgain.grid.spi.discovery.tcp:org.gridgain.grid.spi.discovery.tcp.ipfinder:org.gridgain.grid.spi.discovery.tcp.ipfinder.s3:org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc:org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs:org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast:org.gridgain.grid.spi.discovery.tcp.ipfinder.vm</packages>
                                 </group>
                                 <group>
                                     <title>SPI: Failover</title>

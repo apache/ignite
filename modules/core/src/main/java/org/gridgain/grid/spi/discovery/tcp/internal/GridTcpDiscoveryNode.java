@@ -12,16 +12,13 @@ package org.gridgain.grid.spi.discovery.tcp.internal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -85,14 +82,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     @GridToStringExclude
     private GridDiscoveryMetricsProvider metricsProvider;
 
-    /** Metrics store (transient). */
-    @GridToStringExclude
-    private GridTcpDiscoveryMetricsStore metricsStore;
-
-    /** Grid logger (transient). */
-    @GridToStringExclude
-    private GridLogger log;
-
     /** Visible flag (transient). */
     @GridToStringExclude
     private boolean visible;
@@ -153,26 +142,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
-    /**
-     * Sets metrics store.
-     *
-     * @param metricsStore Metrics store.
-     */
-    public void metricsStore(GridTcpDiscoveryMetricsStore metricsStore) {
-        assert metricsStore != null;
-
-        this.metricsStore = metricsStore;
-    }
-
-    /**
-     * Sets log.
-     *
-     * @param log Grid logger.
-     */
-    public void logger(GridLogger log) {
-        this.log = log;
-    }
-
     /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
@@ -225,16 +194,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Gr
     @Override public GridNodeMetrics metrics() {
         if (metricsProvider != null)
             metrics = metricsProvider.getMetrics();
-        else if (metricsStore != null)
-            try {
-                GridNodeMetrics metrics = metricsStore.metrics(Collections.singletonList(id)).get(id);
-
-                if (metrics != null)
-                    this.metrics = metrics;
-            }
-            catch (GridSpiException e) {
-                LT.error(log, e, "Failed to get metrics from metrics store for node: " + this);
-            }
 
         return metrics;
     }

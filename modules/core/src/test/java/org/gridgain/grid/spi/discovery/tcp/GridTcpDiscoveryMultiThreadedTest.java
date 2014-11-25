@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -50,19 +49,11 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private GridTcpDiscoveryVmMetricsStore metricsStore = new GridTcpDiscoveryVmMetricsStore();
-
-    /** */
-    private boolean useMetricsStore;
-
     /**
      * @throws Exception If fails.
      */
     public GridTcpDiscoveryMultiThreadedTest() throws Exception {
         super(false);
-
-        metricsStore.setMetricsExpireTime(2000);
     }
 
     /** {@inheritDoc} */
@@ -81,9 +72,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
             GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
             spi.setIpFinder(ipFinder);
-
-            if (useMetricsStore)
-                spi.setMetricsStore(metricsStore);
 
             cfg.setDiscoverySpi(spi);
         }
@@ -115,15 +103,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreaded() throws Exception {
-        execute();
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testMetricsStoreMultiThreaded() throws Exception {
-        useMetricsStore = true;
-
         execute();
     }
 
@@ -213,6 +192,6 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         done.set(true);
 
         fut1.get();
-//        fut2.get();
+        fut2.get();
     }
 }

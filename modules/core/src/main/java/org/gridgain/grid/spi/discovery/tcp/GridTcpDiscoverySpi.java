@@ -27,10 +27,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
-import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -82,14 +78,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * </li>
  * </ul>
  * <ul>
- * <li>Metrics store (see {@link #setMetricsStore(GridTcpDiscoveryMetricsStore)})</li>
- * See the following metrics store implementations for details on configuration:
- * <ul>
- * <li>{@link GridTcpDiscoverySharedFsMetricsStore}</li>
- * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.GridTcpDiscoveryS3MetricsStore}</li>
- * <li>{@link GridTcpDiscoveryJdbcMetricsStore}</li>
- * <li>{@link GridTcpDiscoveryVmMetricsStore}</li>
- * </ul>
  * </li>
  * <li>Local address (see {@link #setLocalAddress(String)})</li>
  * <li>Local port to bind to (see {@link #setLocalPort(int)})</li>
@@ -105,7 +93,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * <li>Maximum message acknowledgement timeout (see {@link #setMaxAckTimeout(long)})</li>
  * <li>Join timeout (see {@link #setJoinTimeout(long)})</li>
  * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
- * <li>IP finder and Metrics Store clean frequency (see {@link #setStoresCleanFrequency(long)})</li>
+ * <li>IP finder clean frequency (see {@link #setIpFinderCleanFrequency(long)})</li>
  * <li>Statistics print frequency (see {@link #setStatisticsPrintFrequency(long)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
@@ -163,8 +151,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
     public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
 
-    /** Default stores (IP finder clean and metrics store) frequency in milliseconds (value is <tt>60,000ms</tt>). */
-    public static final long DFLT_STORES_CLEAN_FREQ = 60 * 1000;
+    /** Default IP finder clean frequency in milliseconds (value is <tt>60,000ms</tt>). */
+    public static final long DFLT_IP_FINDER_CLEAN_FREQ = 60 * 1000;
 
     /** Default statistics print frequency in milliseconds (value is <tt>0ms</tt>). */
     public static final long DFLT_STATS_PRINT_FREQ = 0;
@@ -205,9 +193,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Max heartbeats count node can miss without initiating status check. */
     private int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
 
-    /** Stores clean frequency. */
+    /** IP finder clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private long storesCleanFreq = DFLT_STORES_CLEAN_FREQ;
+    private long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
 
     /** Reconnect attempts count. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -216,10 +204,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** Grid marshaller. */
     @GridMarshallerResource
     private GridMarshaller gridMarsh;
-
-    /** Metrics store. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private GridTcpDiscoveryMetricsStore metricsStore;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -249,13 +233,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private CheckStatusSender chkStatusSnd;
 
-    /** Metrics update notifier. */
+    /** IP finder cleaner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private MetricsUpdateNotifier metricsUpdateNtf;
-
-    /** Stores cleaner. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private StoresCleaner storesCleaner;
+    private IpFinderCleaner ipFinderCleaner;
 
     /** Statistics printer thread. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -468,20 +448,20 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public long getStoresCleanFrequency() {
-        return storesCleanFreq;
+    @Override public long getIpFinderCleanFrequency() {
+        return ipFinderCleanFreq;
     }
 
     /**
-     * Sets stores (IP finder and metrics store) clean frequency in milliseconds.
+     * Sets IP finder clean frequency in milliseconds.
      * <p>
-     * If not provided, default value is {@link #DFLT_STORES_CLEAN_FREQ}
+     * If not provided, default value is {@link #DFLT_IP_FINDER_CLEAN_FREQ}
      *
-     * @param storesCleanFreq Stores clean frequency.
+     * @param ipFinderCleanFreq IP finder clean frequency.
      */
     @GridSpiConfiguration(optional = true)
-    public void setStoresCleanFrequency(long storesCleanFreq) {
-        this.storesCleanFreq = storesCleanFreq;
+    public void setIpFinderCleanFrequency(long ipFinderCleanFreq) {
+        this.ipFinderCleanFreq = ipFinderCleanFreq;
     }
 
     /**
@@ -512,11 +492,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** {@inheritDoc} */
     @Override public String getIpFinderFormatted() {
         return ipFinder.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public String getMetricsStoreFormatted() {
-        return metricsStore != null ? metricsStore.toString() : null;
     }
 
     /** {@inheritDoc} */
@@ -591,20 +566,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         return crd != null ? crd.id() : null;
     }
 
-    /**
-     * Sets metrics store.
-     * <p>
-     * If provided, SPI does not send metrics across the ring and uses metrics
-     * store to exchange metrics. It is recommended to provide metrics store when
-     * working with large topologies.
-     *
-     * @param metricsStore Metrics store.
-     */
-    @GridSpiConfiguration(optional = true)
-    public void setMetricsStore(GridTcpDiscoveryMetricsStore metricsStore) {
-        this.metricsStore = metricsStore;
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public GridNode getNode(UUID nodeId) {
         assert nodeId != null;
@@ -635,9 +596,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /** {@inheritDoc} */
     @Override public Collection<Object> injectables() {
         Collection<Object> res = new LinkedList<>();
-
-        if (metricsStore != null)
-            res.add(metricsStore);
 
         if (ipFinder != null)
             res.add(ipFinder);
@@ -760,14 +718,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         chkStatusSnd = new CheckStatusSender();
         chkStatusSnd.start();
 
-        if (metricsStore != null) {
-            metricsUpdateNtf = new MetricsUpdateNotifier();
-            metricsUpdateNtf.start();
-        }
-
-        if (ipFinder.isShared() || metricsStore != null) {
-            storesCleaner = new StoresCleaner();
-            storesCleaner.start();
+        if (ipFinder.isShared()) {
+            ipFinderCleaner = new IpFinderCleaner();
+            ipFinderCleaner.start();
         }
 
         if (log.isDebugEnabled() && !restart)
@@ -815,7 +768,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         startStopwatch();
 
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(storesCleanFreq > 0, "ipFinderCleanFreq > 0");
+        assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
         assertParameter(locPortRange >= 0, "localPortRange >= 0");
         assertParameter(locPort + locPortRange <= 0xffff, "locPort + locPortRange <= 0xffff");
@@ -847,10 +800,9 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             log.debug(configInfo("maxAckTimeout", maxAckTimeout));
             log.debug(configInfo("reconnectCount", reconCnt));
             log.debug(configInfo("ipFinder", ipFinder));
-            log.debug(configInfo("ipFinderCleanFreq", storesCleanFreq));
+            log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
             log.debug(configInfo("heartbeatFreq", hbFreq));
             log.debug(configInfo("maxMissedHeartbeats", maxMissedHbs));
-            log.debug(configInfo("metricsStore", metricsStore));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
         }
 
@@ -879,9 +831,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         ctxInitLatch.countDown();
 
         spiCtx.registerPort(tcpSrvr.port, TCP);
-
-        if (metricsStore != null)
-            metricsStore.onSpiContextInitialized(spiCtx);
     }
 
     /** {@inheritDoc} */
@@ -985,11 +934,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         U.interrupt(chkStatusSnd);
         U.join(chkStatusSnd, log);
 
-        U.interrupt(storesCleaner);
-        U.join(storesCleaner, log);
-
-        U.interrupt(metricsUpdateNtf);
-        U.join(metricsUpdateNtf, log);
+        U.interrupt(ipFinderCleaner);
+        U.join(ipFinderCleaner, log);
 
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
@@ -1069,9 +1015,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             ctxInitLatch.countDown();
 
         getSpiContext().deregisterPorts();
-
-        if (metricsStore != null)
-            metricsStore.onSpiContextDestroyed();
     }
 
     /**
@@ -1976,11 +1919,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         U.interrupt(chkStatusSnd);
         U.join(chkStatusSnd, log);
 
-        U.interrupt(storesCleaner);
-        U.join(storesCleaner, log);
-
-        U.interrupt(metricsUpdateNtf);
-        U.join(metricsUpdateNtf, log);
+        U.interrupt(ipFinderCleaner);
+        U.join(ipFinderCleaner, log);
 
         Collection<SocketReader> tmp;
 
@@ -2076,9 +2016,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             b.append("    Message worker: ").append(threadStatus(msgWorker)).append(U.nl());
             b.append("    Check status sender: ").append(threadStatus(chkStatusSnd)).append(U.nl());
             b.append("    HB sender: ").append(threadStatus(hbsSnd)).append(U.nl());
-            b.append("    Metrics update notifier: ").append(threadStatus(metricsUpdateNtf)).append(U.nl());
             b.append("    Socket timeout worker: ").append(threadStatus(sockTimeoutWorker)).append(U.nl());
-            b.append("    Stores cleaner: ").append(threadStatus(storesCleaner)).append(U.nl());
+            b.append("    IP finder cleaner: ").append(threadStatus(ipFinderCleaner)).append(U.nl());
             b.append("    Stats printer: ").append(threadStatus(statsPrinter)).append(U.nl());
 
             b.append(U.nl());
@@ -2284,19 +2223,18 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * Thread that cleans SPI stores (IP finder and metrics store) and keeps them in
-     * the correct state, unregistering addresses and metrics of the nodes that has
-     * left the topology.
+     * Thread that cleans IP finder and keeps it in the correct state, unregistering
+     * addresses of the nodes that has left the topology.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
      * if and only if {@link GridTcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
-    private class StoresCleaner extends GridSpiThread {
+    private class IpFinderCleaner extends GridSpiThread {
         /**
          * Constructor.
          */
-        private StoresCleaner() {
-            super(gridName, "tcp-disco-stores-cleaner", log);
+        private IpFinderCleaner() {
+            super(gridName, "tcp-disco-ip-finder-cleaner", log);
 
             setPriority(threadPri);
         }
@@ -2305,26 +2243,23 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         @SuppressWarnings("BusyWait")
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Stores cleaner has been started.");
+                log.debug("IP finder cleaner has been started.");
 
             while (!isInterrupted()) {
-                Thread.sleep(storesCleanFreq);
+                Thread.sleep(ipFinderCleanFreq);
 
                 if (!isLocalNodeCoordinator())
                     continue;
 
                 if (spiStateCopy() != CONNECTED) {
                     if (log.isDebugEnabled())
-                        log.debug("Stopping stores cleaner (SPI is not connected to topology).");
+                        log.debug("Stopping IP finder cleaner (SPI is not connected to topology).");
 
                     return;
                 }
 
                 if (ipFinder.isShared())
                     cleanIpFinder();
-
-                if (metricsStore != null)
-                    cleanMetricsStore();
             }
         }
 
@@ -2407,24 +2342,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 LT.error(log, e, "Failed to clean IP finder up.");
             }
         }
-
-        /**
-         * Cleans metrics store.
-         */
-        private void cleanMetricsStore() {
-            assert metricsStore != null;
-
-            try {
-                Collection<UUID> ids = F.view(metricsStore.allNodeIds(), F.notContains(
-                    F.viewReadOnly(ring.allNodes(), F.node2id())));
-
-                if (!ids.isEmpty())
-                    metricsStore.removeMetrics(ids);
-            }
-            catch (GridSpiException e) {
-                LT.error(log, e, "Failed to clean metrics store up.");
-            }
-        }
     }
 
     /**
@@ -2490,8 +2407,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     else if (log.isDebugEnabled())
                         log.debug("Received heartbeat message from unknown client node: " + msg);
                 }
-                else if (metricsStore != null)
-                    processHeartbeatMessageMetricsStore((GridTcpDiscoveryHeartbeatMessage)msg);
                 else
                     processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
             }
@@ -3451,12 +3366,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     return;
                 }
 
-                if (metricsStore != null) {
-                    node.metricsStore(metricsStore);
-
-                    node.logger(log);
-                }
-
                 if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
                     boolean authFailed = true;
 
@@ -3552,12 +3461,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             gridStartTime = msg.gridStartTime();
 
                             for (GridTcpDiscoveryNode n : top) {
-                                if (metricsStore != null) {
-                                    n.metricsStore(metricsStore);
-
-                                    n.logger(log);
-                                }
-
                                 // Make all preceding nodes and local node visible.
                                 n.visible(true);
                             }
@@ -3771,15 +3674,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         }
                     }
 
-                    if (metricsStore != null && !ring.hasRemoteNodes()) {
-                        try {
-                            metricsStore.removeMetrics(Collections.singletonList(locNodeId));
-                        }
-                        catch (GridSpiException e) {
-                            U.error(log, "Failed to remove local node metrics from metrics store.", e);
-                        }
-                    }
-
                     synchronized (mux) {
                         if (spiState == STOPPING) {
                             spiState = LEFT;
@@ -3853,16 +3747,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         catch (GridSpiException ignored) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister left node address: " + leftNode);
-                        }
-                    }
-
-                    if (metricsStore != null) {
-                        try {
-                            metricsStore.removeMetrics(Collections.singletonList(leftNode.id()));
-                        }
-                        catch (GridSpiException ignored) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to remove left node metrics from store: " + leftNode.id());
                         }
                     }
 
@@ -4035,19 +3919,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                         catch (GridSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister failed node address [node=" + node +
-                                    ", err=" + e.getMessage() + ']');
-                        }
-                    }
-
-                    if (metricsStore != null) {
-                        Collection<UUID> ids = Collections.singletonList(node.id());
-
-                        try {
-                            metricsStore.removeMetrics(ids);
-                        }
-                        catch (GridSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to remove failed node metrics from store [node=" + node +
                                     ", err=" + e.getMessage() + ']');
                         }
                     }
@@ -4307,71 +4178,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
                 notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
             }
-        }
-
-        /**
-         * Processes heartbeat message when working with metrics store.
-         *
-         * @param msg Heartbeat message.
-         */
-        private void processHeartbeatMessageMetricsStore(GridTcpDiscoveryHeartbeatMessage msg) {
-            assert msg != null;
-            assert metricsStore != null;
-
-            assert !msg.hasMetrics();
-
-            if (ring.node(msg.creatorNodeId()) == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding heartbeat message issued by unknown node [msg=" + msg +
-                        ", ring=" + ring + ']');
-
-                return;
-            }
-
-            if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding heartbeat message issued by non-coordinator node: " + msg);
-
-                return;
-            }
-
-            if (!isLocalNodeCoordinator() && locNodeId.equals(msg.creatorNodeId())) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding heartbeat message issued by local node (node is no more coordinator): " +
-                        msg);
-
-                return;
-            }
-
-            if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding heartbeat message that has made full ring pass: " + msg);
-
-                return;
-            }
-
-            long tstamp = U.currentTimeMillis();
-
-            try {
-                if (spiStateCopy() == CONNECTED) {
-                    // Cache metrics in node.
-                    GridNodeMetrics metrics = locNode.metrics();
-
-                    if (ring.hasRemoteNodes())
-                        // Send metrics to store only if there are remote nodes.
-                        metricsStore.updateLocalMetrics(locNodeId, metrics);
-
-                    locNode.lastUpdateTime(tstamp);
-
-                    notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
-                }
-            }
-            catch (GridSpiException e) {
-                U.error(log, "Failed to update local node metrics in metrics store.", e);
-            }
-
-            if (ring.hasRemoteNodes())
-                sendMessageAcrossRing(msg);
         }
 
         /**
@@ -4995,49 +4801,6 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Socket reader [id=" + getId() + ", name=" + getName() + ", nodeId=" + nodeId + ']';
-        }
-    }
-
-    /**
-     * Metrics update notifier.
-     */
-    private class MetricsUpdateNotifier extends GridSpiThread {
-        /** Constructor. */
-        MetricsUpdateNotifier() {
-            super(gridName, "tcp-disco-metrics-update-notifier", log);
-
-            assert metricsStore != null;
-
-            setPriority(threadPri);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("BusyWait")
-        @Override protected void body() throws InterruptedException {
-            if (log.isDebugEnabled())
-                log.debug("Metrics update notifier has been started.");
-
-            while (!isInterrupted()) {
-                Thread.sleep(metricsStore.getMetricsExpireTime());
-
-                if (spiStateCopy() != CONNECTED) {
-                    if (log.isDebugEnabled())
-                        log.debug("Stopping metrics update notifier (SPI is not connected to topology).");
-
-                    return;
-                }
-
-                long tstamp = U.currentTimeMillis();
-
-                // Event is fired for all nodes in the topology since all alive nodes should update their metrics
-                // on time. If it is not so, most probably, nodes have failed and failure will be detected by common
-                // failure detection logic.
-                for (GridTcpDiscoveryNode node : ring.remoteNodes()) {
-                    node.lastUpdateTime(tstamp);
-
-                    notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
-                }
-            }
         }
     }
 
