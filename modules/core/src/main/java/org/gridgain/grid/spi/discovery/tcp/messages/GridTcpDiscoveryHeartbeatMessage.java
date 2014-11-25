@@ -207,13 +207,6 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         return clientNodeIds;
     }
 
-    /**
-     * Clears client node IDs collection.
-     */
-    public void clearClientNodeIds() {
-        clientNodeIds.clear();
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
