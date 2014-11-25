@@ -356,9 +356,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
 
+            GridCacheTxState state = state();
+
             setRollbackOnly();
 
-            throw new GridException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']');
+            throw new GridException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -450,7 +452,15 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return Store manager.
      */
     protected GridCacheStoreManager<K, V> store() {
-        return null; // TODO GG-9141 select store for transaction. && store.confugured()
+        if (!activeCacheIds.isEmpty()) {
+            int cacheId = F.first(activeCacheIds);
+
+            GridCacheStoreManager<K, V> store = cctx.cacheContext(cacheId).store();
+
+            return store.configured() ? store : null;
+        }
+
+        return null;
     }
 
     /**
@@ -2076,7 +2086,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         retval = true;
 
                     if (retval) {
-                        if (!near()) {
+                        if (!cacheCtx.isNear()) {
                             try {
                                 if (!hasPrevVal)
                                     v = cached.innerGet(this,

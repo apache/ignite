@@ -758,9 +758,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         GridCacheContext<K, V> cacheCtx = entry.context();
 
+        GridDhtCacheAdapter<K, V> dht = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+
         while (true) {
             try {
-                Collection<GridNode> dhtNodes = cacheCtx.dht().topology().nodes(cached.partition(), tx.topologyVersion());
+                Collection<GridNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -789,7 +791,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 break;
             }
             catch (GridCacheEntryRemovedException ignore) {
-                cached = cacheCtx.dht().entryExx(entry.key());
+                cached = dht.entryExx(entry.key());
 
                 entry.cached(cached, cached.keyBytes());
             }

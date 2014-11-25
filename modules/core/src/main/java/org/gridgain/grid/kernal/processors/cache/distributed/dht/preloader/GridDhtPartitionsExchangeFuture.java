@@ -412,9 +412,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
-                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                     // Update before waiting for locks.
-                    cacheCtx.topology().updateTopologyVersion(exchId, this);
+                    if (!cacheCtx.isLocal())
+                        cacheCtx.topology().updateTopologyVersion(exchId, this);
+                }
 
                 // Grab all alive remote nodes with order of equal or less than last joined node.
                 rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx, exchId.topologyVersion()));
@@ -432,6 +434,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 }
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                    if (cacheCtx.isLocal())
+                        continue;
+
                     // Must initialize topology after we get discovery event.
                     initTopology(cacheCtx);
 
@@ -599,8 +604,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /** {@inheritDoc} */
     @Override public boolean onDone(Long res, Throwable err) {
         if (err == null) {
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-                cacheCtx.affinity().cleanUpCache(res - 10);
+            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal())
+                    cacheCtx.affinity().cleanUpCache(res - 10);
+            }
         }
 
         cctx.exchange().onExchangeDone(this);

@@ -466,7 +466,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
-        GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)prepFut.get();
+        GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> fut = (GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>>)prepFut
+            .get();
 
         return fut != null && fut.onOwnerChanged(entry, owner);
     }
@@ -493,6 +494,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         for (GridCacheTxEntry<K, V> txEntry : entries) {
             while (true) {
                 GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
+
+                GridCacheContext<K, V> cacheCtx = entry.context();
+
+                if (!cacheCtx.isNear())
+                    break;
 
                 try {
                     // Handle explicit locks.
@@ -668,13 +674,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * Waits for topology exchange future to be ready and then prepares user transaction.
      */
     private void prepareOnTopology() {
-        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(activeCacheIds));
-
-        cacheCtx.topology().readLock();
+        GridDhtTopologyFuture topFut = topologyReadLock();
 
         try {
-            GridDhtTopologyFuture topFut = cacheCtx.topology().topologyVersionFuture();
-
             if (topFut.isDone()) {
                 GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)prepFut.get();
 
@@ -701,6 +703,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                     topologyVersion(snapshot.topologyVersion());
                     topologySnapshot(snapshot);
+
+                    optimisticLockEntries = writeEntries();
 
                     userPrepare();
 
@@ -735,8 +739,32 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         finally {
-            cacheCtx.topology().readUnlock();
+            topologyReadUnlock();
         }
+    }
+
+    /**
+     * Acquires topology read lock.
+     *
+     * @return Topology ready future.
+     */
+    private GridDhtTopologyFuture topologyReadLock() {
+        if (activeCacheIds.isEmpty())
+            return cctx.exchange().lastTopologyFuture();
+
+        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(activeCacheIds));
+
+        cacheCtx.topology().readLock();
+
+        return cacheCtx.topology().topologyVersionFuture();
+    }
+
+    /**
+     * Releases topology read lock.
+     */
+    private void topologyReadUnlock() {
+        if (!activeCacheIds.isEmpty())
+            cctx.cacheContext(F.first(activeCacheIds)).topology().readUnlock();
     }
 
     /** {@inheritDoc} */

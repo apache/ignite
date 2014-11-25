@@ -275,6 +275,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @return Last completed topology future.
+     */
+    public GridDhtTopologyFuture lastTopologyFuture() {
+        return lastCompletedFuture;
+    }
+
+    /**
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
@@ -432,8 +439,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws GridException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-            m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal())
+                m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -741,6 +750,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // invoke topology callback more than once for the
                             // same event.
                             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                                if (cacheCtx.isLocal())
+                                    continue;
+
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.

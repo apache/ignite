@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dr.cache.receiver.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -1266,6 +1267,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         if (isNearLocallyMapped(e, primaryOnly)) {
             GridCacheEntryEx<K, V> cached = e.cached();
+
+            assert cached instanceof GridNearCacheEntry : "Invalid cache entry: " + e;
 
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + cached + ", tx=" + this + ']');

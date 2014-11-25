@@ -59,7 +59,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private final ConcurrentMap<Long, GridCacheTxEx<K, V>> threadMap = newMap();
 
     /** Per-ID map. */
-    public final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> idMap = newMap();
+    private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> idMap = newMap();
 
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> nearIdMap = newMap();
@@ -910,11 +910,13 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
                     cacheCtx.cache().removeEntry(cached);
 
-                if (tx.dht() && isNearEnabled(cacheCtx)) {
-                    GridNearCacheEntry<K, V> e = cacheCtx.dht().near().peekExx(entry.key());
+                if (!tx.near() && isNearEnabled(cacheCtx)) {
+                    GridNearCacheAdapter<K, V> near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+
+                    GridNearCacheEntry<K, V> e = near.peekExx(entry.key());
 
                     if (e != null && e.markObsoleteIfEmpty(tx.xidVersion()))
-                        cacheCtx.dht().near().removeEntry(e);
+                        near.removeEntry(e);
                 }
             }
             catch (GridException e) {

@@ -190,6 +190,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         for (GridCacheTxEntry<K, V> e : c) {
             GridCacheContext<K, V> cacheCtx = e.context();
 
+            if (cacheCtx.isNear())
+                cacheCtx = cacheCtx.nearTx().dht().context();
+
             // Clone only if it is a near cache.
             if (cacheCtx.isNear())
                 cp.add(e.cleanCopy(cacheCtx));

@@ -414,7 +414,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 entry.drExpireTime(e.drExpireTime());
             }
             else {
-                entry = e.cleanCopy(cacheCtx);
+                entry = e.cleanCopy(dhtCache.context());
 
                 while (true) {
                     GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(entry.key(), topologyVersion());
