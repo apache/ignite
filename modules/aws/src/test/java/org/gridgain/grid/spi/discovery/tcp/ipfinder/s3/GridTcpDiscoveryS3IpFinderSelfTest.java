@@ -13,6 +13,7 @@ import com.amazonaws.auth.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
+import org.gridgain.testsuites.bamboo.*;
 
 import java.net.*;
 import java.util.*;
@@ -35,10 +36,12 @@ public class GridTcpDiscoveryS3IpFinderSelfTest
     @Override protected GridTcpDiscoveryS3IpFinder ipFinder() throws Exception {
         GridTcpDiscoveryS3IpFinder finder = new GridTcpDiscoveryS3IpFinder();
 
+        injectLogger(finder);
+
         assert finder.isShared() : "Ip finder should be shared by default.";
 
-        finder.setAwsCredentials(new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key")));
+        finder.setAwsCredentials(new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
+            GridS3TestSuite.getSecretKey()));
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
         finder.setBucketName("ip-finder-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);

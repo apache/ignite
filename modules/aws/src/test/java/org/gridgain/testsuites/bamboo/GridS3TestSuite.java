@@ -40,4 +40,26 @@ public class GridS3TestSuite extends TestSuite {
 
         return suite;
     }
+
+    /**
+     * @return Access key.
+     */
+    public static String getAccessKey() {
+        String key = System.getenv("test.amazon.access.key");
+
+        assert key != null : "Environment variable 'test.amazon.access.key' is not set";
+
+        return key;
+    }
+
+    /**
+     * @return Access key.
+     */
+    public static String getSecretKey() {
+        String key = System.getenv("test.amazon.secret.key");
+
+        assert key != null : "Environment variable 'test.amazon.secret.key' is not set";
+
+        return key;
+    }
 }

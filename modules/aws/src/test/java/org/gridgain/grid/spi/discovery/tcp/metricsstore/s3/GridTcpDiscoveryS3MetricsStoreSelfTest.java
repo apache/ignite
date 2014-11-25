@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.discovery.tcp.metricsstore.s3;
 import com.amazonaws.auth.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.testframework.config.*;
+import org.gridgain.testsuites.bamboo.*;
 
 import java.net.*;
 
@@ -38,8 +39,8 @@ public class GridTcpDiscoveryS3MetricsStoreSelfTest extends
     @Override protected GridTcpDiscoveryS3MetricsStore metricsStore() throws Exception {
         GridTcpDiscoveryS3MetricsStore store = new GridTcpDiscoveryS3MetricsStore();
 
-        store.setAwsCredentials(new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key")));
+        store.setAwsCredentials(new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
+            GridS3TestSuite.getSecretKey()));
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
         store.setBucketName("metrics-store-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);

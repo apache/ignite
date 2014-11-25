@@ -21,6 +21,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
+import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Grid S3 checkpoint SPI self test.
@@ -35,8 +36,8 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
 
     /** {@inheritDoc} */
     @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key"));
+        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
+            GridS3TestSuite.getSecretKey());
 
         spi.setAwsCredentials(cred);
 
@@ -49,8 +50,8 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
      * @throws Exception If error.
      */
     @Override protected void afterSpiStopped() throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key"));
+        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
+            GridS3TestSuite.getSecretKey());
 
         AmazonS3 s3 = new AmazonS3Client(cred);
 

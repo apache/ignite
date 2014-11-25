@@ -13,6 +13,7 @@ import com.amazonaws.auth.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.session.*;
 import org.gridgain.testframework.config.*;
+import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Grid session checkpoint self test using {@link GridS3CheckpointSpi}.
@@ -26,8 +27,8 @@ public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstra
 
         GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
 
-        AWSCredentials cred = new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key"));
+        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
+            GridS3TestSuite.getSecretKey());
 
         spi.setAwsCredentials(cred);
 
