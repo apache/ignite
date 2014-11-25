@@ -17,6 +17,8 @@ import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
+
 /**
  * Task to get cache SQL metadata.
  */
@@ -54,7 +56,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
                 return F.first(queries.sqlMetadata());
             }
 
-            throw new GridException("Cache not found: " + cacheName);
+            throw new GridException("Cache not found: " + escapeName(cacheName));
         }
 
         /** {@inheritDoc} */

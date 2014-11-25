@@ -25,7 +25,7 @@ import java.io.*;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.escapeName;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task for execute SCAN or SQL query and get first page of results.
