@@ -74,7 +74,7 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
-                        <phase>package</phase>
+                        <phase>compile</phase>
                         <configuration>
                             <target>
                                 <taskdef name="gar"

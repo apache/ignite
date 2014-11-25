@@ -101,7 +101,7 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
-                        <phase>package</phase>
+                        <phase>compile</phase>
                         <configuration>
                             <target>
                                 <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar"
