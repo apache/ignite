@@ -141,7 +141,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             GridCacheTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
 
-            assertEquals("Uncommitted transactions found on node [idx=" + i + ", map=" + tm.idMap + ']',
+            assertEquals("Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']',
                 0, tm.idMapSize());
         }
     }

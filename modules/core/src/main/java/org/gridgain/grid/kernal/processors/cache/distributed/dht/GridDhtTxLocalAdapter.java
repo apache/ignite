@@ -193,11 +193,14 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             Map<GridNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
 
             for (GridCacheTxEntry<K, V> e : allEntries()) {
-                GridCacheContext<K, V> cacheCtx = e.context();
-
                 assert e.cached() != null;
 
-                if (e.cached() == null || e.cached().obsolete()) {
+                GridCacheContext<K, V> cacheCtx = e.cached().context();
+
+                if (cacheCtx.isNear())
+                    continue;
+
+                if (e.cached().obsolete()) {
                     GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key());
 
                     e.cached(cached, cached.keyBytes());

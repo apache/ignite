@@ -43,10 +43,11 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param dhtCnt Key count.
      */
-    public GridDhtUnlockRequest(int dhtCnt) {
-        super(dhtCnt);
+    public GridDhtUnlockRequest(int cacheId, int dhtCnt) {
+        super(cacheId, dhtCnt);
     }
 
     /**

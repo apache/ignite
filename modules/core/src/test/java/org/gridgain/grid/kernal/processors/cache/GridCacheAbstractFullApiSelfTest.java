@@ -1639,76 +1639,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Test affinity resolution performance.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testAffinityPerformance() throws Exception {
-        GridCache<String, Integer> cache = cache();
-
-        long start = System.currentTimeMillis();
-
-        long ops;
-
-        for (ops = 0; ops < 20 * 1000 * 1000; ops++) {
-            cache.affinity().mapKeyToPrimaryAndBackups(Long.toString(ops));
-
-            if (ops % 1000 == 0 && Thread.interrupted()) {
-                Thread.currentThread().interrupt();
-
-                break;
-            }
-        }
-
-        long opsPerMs = ops / (System.currentTimeMillis() - start);
-
-        info("Operations per ms [opsPerMs=" + opsPerMs + ']');
-
-        assertTrue("Expect more then 1000 operations per ms [opsPerMs=" + opsPerMs + ']', opsPerMs > 1000);
-    }
-
-    /**
-     * Test affinity resolution performance.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testAffinityPerformanceMultithreaded() throws Exception {
-        final GridCache<String, Integer> cache = cache();
-
-        final int total = 20 * 1000 * 1000;
-        final int threads = 20;
-        final int size = total / threads;
-
-        final AtomicLong ops = new AtomicLong(0);
-        final CountDownLatch latch = new CountDownLatch(1);
-        final CountDownLatch done = new CountDownLatch(threads);
-
-        multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
-
-                for (long start = ops.getAndAdd(size), op = start; op < start + size; op++)
-                    cache.affinity().mapKeyToPrimaryAndBackups(Long.toString(op));
-
-                done.countDown();
-
-                return null;
-            }
-        }, threads);
-
-        long start = System.currentTimeMillis();
-
-        latch.countDown(); // Start affinity calculations.
-        done.await(); // Wait until affinity calculations finishes.
-
-        long opsPerMs = ops.get() / (System.currentTimeMillis() - start);
-
-        info("Operations per ms [opsPerMs=" + opsPerMs + ']');
-
-        assertTrue("Expect more then 1000 operations per ms [opsPerMs=" + opsPerMs + ']', opsPerMs > 800);
-    }
-
-    /**
      * @throws Exception In case of error.
      */
     public void testPutAllFiltered() throws Exception {
@@ -3616,6 +3546,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert !cache().isLocked(key2);
 
             cache().unlockAll(F.asList(key1, key2));
+
+            for (int i = 0; i < gridCount(); i++) {
+                assertFalse("Key1 is locked [i=" + i + ']', cache(i).isLocked(key1));
+                assertFalse("Key2 is locked [i=" + i + ']', cache(i).isLocked(key2));
+            }
         }
     }
 

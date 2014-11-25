@@ -43,10 +43,13 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param keyCnt Key count.
      */
-    public GridDistributedUnlockRequest(int keyCnt) {
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
         super(keyCnt);
+
+        this.cacheId = cacheId;
     }
 
     /**
