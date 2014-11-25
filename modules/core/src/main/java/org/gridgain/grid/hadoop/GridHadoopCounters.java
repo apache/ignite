@@ -23,14 +23,14 @@ public interface GridHadoopCounters {
      * @param cls Class for new instance creation if it's needed.
      * @return The counter that was found or added or {@code null} if create is false.
      */
-    <T> GridHadoopCounter<T> counter(String grp, String name, Class<? extends GridHadoopCounter> cls);
+    <T extends GridHadoopCounter> T counter(String grp, String name, Class<? extends GridHadoopCounter> cls);
 
     /**
      * Returns all existing counters.
      *
      * @return Collection of counters.
      */
-    Collection<GridHadoopCounter<?>> all();
+    Collection<GridHadoopCounter> all();
 
     /**
      * Merges all counters from another store with existing counters.

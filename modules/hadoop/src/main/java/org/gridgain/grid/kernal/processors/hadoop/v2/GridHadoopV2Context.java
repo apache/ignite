@@ -164,7 +164,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
 
     /** {@inheritDoc} */
     @Override public Counter getCounter(String grpName, String cntrName) {
-        return new GridHadoopV2Counter(ctx.counter(grpName, cntrName, GridHadoopLongCounter.class));
+        return new GridHadoopV2Counter((GridHadoopLongCounter)ctx.counter(grpName, cntrName, GridHadoopLongCounter.class));
     }
 
     /** {@inheritDoc} */

@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
-import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 
 import java.io.*;
 
@@ -19,14 +19,14 @@ import java.io.*;
  */
 public class GridHadoopV2Counter implements Counter {
     /** Delegate. */
-    private final GridHadoopCounter<Long> cntr;
+    private final GridHadoopLongCounter cntr;
 
     /**
      * Creates new instance with given delegate.
      *
      * @param cntr Internal counter.
      */
-    public GridHadoopV2Counter(GridHadoopCounter<Long> cntr) {
+    public GridHadoopV2Counter(GridHadoopLongCounter cntr) {
         assert cntr != null : "counter must be non-null";
 
         this.cntr = cntr;
@@ -59,7 +59,7 @@ public class GridHadoopV2Counter implements Counter {
 
     /** {@inheritDoc} */
     @Override public void increment(long incr) {
-        cntr.append(incr);
+        cntr.increment(incr);
     }
 
     /** {@inheritDoc} */

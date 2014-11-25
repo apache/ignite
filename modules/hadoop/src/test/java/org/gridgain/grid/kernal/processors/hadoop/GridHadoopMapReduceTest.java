@@ -108,7 +108,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     private void checkJobStatistics(GridHadoopJobId jobId) throws GridException {
         GridHadoopCounters counters = grid(0).hadoop().counters(jobId);
 
-        GridHadoopCounter<GridHadoopJobStatistics> statCntr = counters.counter(GridHadoopStatCounter.GROUP_NAME,
+        GridHadoopStatCounter statCntr = counters.counter(GridHadoopStatCounter.GROUP_NAME,
             GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
 
         Map<String, SortedMap<Integer,Long>> tasks = new TreeMap<>();
@@ -123,7 +123,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
 
         String prevTaskId = null;
-        for (T2<String, Long> evt : statCntr.value().evts()) {
+        for (T2<String, Long> evt : statCntr.evts()) {
             //We expect string pattern: COMBINE 1 run 7fa86a14-5a08-40e3-a7cb-98109b52a706
             String[] parsedEvt = evt.get1().split(" ");
 

@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.counters.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -23,10 +24,7 @@ import java.util.*;
  */
 public class GridHadoopClientCounters extends Counters {
     /** */
-    private final GridHadoopCounters cntrs;
-
-    /** */
-    private final Collection<GridHadoopLongCounter> userCounters = new ArrayList<>();
+    private final Map<T2<String,String>,GridHadoopLongCounter> cntrs = new HashMap<>();
 
     /**
      * Creates new instance based on given counters.
@@ -34,11 +32,9 @@ public class GridHadoopClientCounters extends Counters {
      * @param cntrs Counters to adapt.
      */
     public GridHadoopClientCounters(GridHadoopCounters cntrs) {
-        this.cntrs = cntrs;
-
-        for (GridHadoopCounter<?> cntr : cntrs.all())
+        for (GridHadoopCounter cntr : cntrs.all())
             if (cntr instanceof GridHadoopLongCounter)
-                userCounters.add((GridHadoopLongCounter)cntr);
+                this.cntrs.put(new T2<>(cntr.group(), cntr.name()), (GridHadoopLongCounter) cntr);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +66,7 @@ public class GridHadoopClientCounters extends Counters {
     @Override public synchronized Iterable<String> getGroupNames() {
         Collection<String> res = new HashSet<>();
 
-        for (GridHadoopCounter counter : userCounters)
+        for (GridHadoopCounter counter : cntrs.values())
             res.add(counter.group());
 
         return res;
@@ -105,7 +101,7 @@ public class GridHadoopClientCounters extends Counters {
 
     /** {@inheritDoc} */
     @Override public synchronized int countCounters() {
-        return userCounters.size();
+        return cntrs.size();
     }
 
     /** {@inheritDoc} */
@@ -132,12 +128,12 @@ public class GridHadoopClientCounters extends Counters {
         if (!(genericRight instanceof GridHadoopClientCounters))
             return false;
 
-        return userCounters.equals(((GridHadoopClientCounters) genericRight).userCounters);
+        return cntrs.equals(((GridHadoopClientCounters) genericRight).cntrs);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return userCounters.hashCode();
+        return cntrs.hashCode();
     }
 
     /** {@inheritDoc} */
@@ -164,7 +160,7 @@ public class GridHadoopClientCounters extends Counters {
     public int groupSize(String grpName) {
         int res = 0;
 
-        for (GridHadoopCounter counter : userCounters) {
+        for (GridHadoopCounter counter : cntrs.values()) {
             if (grpName.equals(counter.group()))
                 res++;
         }
@@ -181,7 +177,7 @@ public class GridHadoopClientCounters extends Counters {
     public Iterator<Counter> iterateGroup(String grpName) {
         Collection<Counter> grpCounters = new ArrayList<>();
 
-        for (GridHadoopLongCounter counter : userCounters) {
+        for (GridHadoopLongCounter counter : cntrs.values()) {
             if (grpName.equals(counter.group()))
                 grpCounters.add(new GridHadoopV2Counter(counter));
         }
@@ -198,7 +194,7 @@ public class GridHadoopClientCounters extends Counters {
      * @return The counter that was found or added or {@code null} if create is false.
      */
     public Counter findCounter(String grpName, String cntrName, boolean create) {
-        final GridHadoopCounter<Long> internalCntr = cntrs.counter(grpName, cntrName, GridHadoopLongCounter.class);
+        final GridHadoopLongCounter internalCntr = cntrs.get(new T2<>(grpName, cntrName));
 
         return internalCntr == null ? null : new GridHadoopV2Counter(internalCntr);
     }

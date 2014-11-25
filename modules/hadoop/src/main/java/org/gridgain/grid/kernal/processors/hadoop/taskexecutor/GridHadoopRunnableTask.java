@@ -18,7 +18,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
@@ -59,7 +59,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     private volatile boolean cancelled;
 
     /** Task part of the job statistics. */
-    private GridHadoopJobStatistics stats;
+    private GridHadoopStatCounter stats;
 
     /**
      * @param log Log.
@@ -75,7 +75,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
         this.mem = mem;
         this.info = info;
 
-        stats = new GridHadoopJobStatistics(nodeId);
+        stats = new GridHadoopStatCounter(nodeId);
     }
 
     /**
@@ -138,7 +138,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
             GridHadoopCounters counters = ctx.counters();
 
             counters.counter(GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
-                GridHadoopStatCounter.class).append(stats);
+                GridHadoopStatCounter.class).merge(stats);
 
             onTaskFinished(new GridHadoopTaskStatus(state, err, counters));
 

@@ -9,12 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.counter;
 
+import org.gridgain.grid.hadoop.*;
 import java.io.*;
 
 /**
  * Standard hadoop counter to use via original Hadoop API in Hadoop jobs.
  */
-public class GridHadoopLongCounter extends GridHadoopCounterAdapter<Long> {
+public class GridHadoopLongCounter extends GridHadoopCounterAdapter {
+    private long val;
+
     /**
      * Default constructor required by {@link Externalizable}.
      */
@@ -30,22 +33,56 @@ public class GridHadoopLongCounter extends GridHadoopCounterAdapter<Long> {
      */
     public GridHadoopLongCounter(String grp, String name) {
         super(grp, name);
-
-        value(0L);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void append(Long val) {
-        value(value() + val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeValue(ObjectOutput out) throws IOException {
-        out.writeLong(value());
+        out.writeLong(val);
     }
 
     /** {@inheritDoc} */
     @Override protected void readValue(ObjectInput in) throws IOException {
-        value(in.readLong());
+        val = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void merge(GridHadoopCounter cntr) {
+        val += ((GridHadoopLongCounter)cntr).val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopCounter copy() {
+        GridHadoopLongCounter cp = new GridHadoopLongCounter(group(), name());
+
+        cp.val = val;
+
+        return cp;
+    }
+
+    /**
+     * Gets current value of this counter.
+     *
+     * @return Current value.
+     */
+    public long value() {
+        return val;
+    }
+
+    /**
+     * Sets current value by the given value.
+     *
+     * @param val Value to set.
+     */
+    public void value(long val) {
+        this.val = val;
+    }
+
+    /**
+     * Increment this counter by the given value.
+     *
+     * @param i Value to increase this counter by.
+     */
+    public void increment(long i) {
+        val += i;
     }
 }

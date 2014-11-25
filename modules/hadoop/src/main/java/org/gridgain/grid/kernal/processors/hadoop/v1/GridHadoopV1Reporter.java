@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.v1;
 
-import org.apache.hadoop.mapred.Counters;
-import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
@@ -43,7 +41,7 @@ public class GridHadoopV1Reporter implements Reporter {
 
     /** {@inheritDoc} */
     @Override public Counters.Counter getCounter(String grp, String name) {
-        return new GridHadoopV1Counter(ctx.counter(grp, name, GridHadoopLongCounter.class));
+        return new GridHadoopV1Counter((GridHadoopLongCounter)ctx.counter(grp, name, GridHadoopLongCounter.class));
     }
 
     /** {@inheritDoc} */

@@ -12,7 +12,7 @@ package org.gridgain.grid.hadoop;
 /**
  * Hadoop counter.
  */
-public interface GridHadoopCounter<T> {
+public interface GridHadoopCounter {
     /**
      * Gets name.
      *
@@ -28,23 +28,16 @@ public interface GridHadoopCounter<T> {
     public String group();
 
     /**
-     * Gets current value of this counter.
+     * Merge the given counter to this counter.
      *
-     * @return Current value.
+     * @param cntr Counter to merge into this counter.
      */
-    public T value();
+    public void merge(GridHadoopCounter cntr);
 
     /**
-     * Set this counter by the given value.
+     * Creates the copy of this counter.
      *
-     * @param val Value to set.
+     * @return Copy of this counter.
      */
-    public void value(T val);
-
-    /**
-     * Append the given value to this counter.
-     *
-     * @param val Value to append/increase this counter by.
-     */
-    public void append(T val);
+    public GridHadoopCounter copy();
 }

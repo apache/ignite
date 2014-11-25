@@ -18,7 +18,7 @@ import java.io.*;
 /**
  * Default Hadoop counter implementation.
  */
-public abstract class GridHadoopCounterAdapter<T> implements GridHadoopCounter<T>, Externalizable {
+public abstract class GridHadoopCounterAdapter implements GridHadoopCounter, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -27,9 +27,6 @@ public abstract class GridHadoopCounterAdapter<T> implements GridHadoopCounter<T
 
     /** Counter name. */
     private String name;
-
-    /** Counter current value. */
-    private T val;
 
     /**
      * Default constructor required by {@link Externalizable}.
@@ -52,17 +49,6 @@ public abstract class GridHadoopCounterAdapter<T> implements GridHadoopCounter<T
         this.name = name;
     }
 
-    /**
-     * Copy constructor.
-     *
-     * @param cntr Counter to copy.
-     */
-    protected GridHadoopCounterAdapter(GridHadoopCounter cntr) {
-        this(cntr.group(), cntr.name());
-
-        value((T)cntr.value());
-    }
-
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
@@ -71,16 +57,6 @@ public abstract class GridHadoopCounterAdapter<T> implements GridHadoopCounter<T
     /** {@inheritDoc} */
     @Override @Nullable public String group() {
         return grp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public T value() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void value(T val) {
-        this.val = val;
     }
 
     /** {@inheritDoc} */
@@ -121,12 +97,25 @@ public abstract class GridHadoopCounterAdapter<T> implements GridHadoopCounter<T
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopCounterAdapter.class, this);
     }
 
+    /**
+     * Writes value of this counter to output.
+     *
+     * @param out Output.
+     * @throws IOException If failed.
+     */
     protected abstract void writeValue(ObjectOutput out) throws IOException;
 
+    /**
+     * Read value of this counter from input.
+     *
+     * @param in Input.
+     * @throws IOException If failed.
+     */
     protected abstract void readValue(ObjectInput in) throws IOException;
 
 }

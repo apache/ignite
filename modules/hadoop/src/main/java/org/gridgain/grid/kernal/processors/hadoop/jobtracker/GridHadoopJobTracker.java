@@ -201,7 +201,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         try {
-            GridHadoopJobStatistics stats = new GridHadoopJobStatistics(ctx.localNodeId());
+            GridHadoopStatCounter stats = new GridHadoopStatCounter(ctx.localNodeId());
 
             stats.clientSubmissionEvents(info);
             stats.onJobPrepare(U.currentTimeMillis());
@@ -231,8 +231,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             stats.onJobStart(U.currentTimeMillis());
 
-            meta.counters().counter(GridHadoopStatCounter.GROUP_NAME, GridHadoopStatCounter.COUNTER_NAME,
-                GridHadoopStatCounter.class).value(stats);
+            GridHadoopStatCounter cntr = meta.counters().counter(GridHadoopStatCounter.GROUP_NAME,
+                    GridHadoopStatCounter.COUNTER_NAME, GridHadoopStatCounter.class);
+
+            cntr.merge(stats);
 
             if (jobMetaCache().putIfAbsent(jobId, meta) != null)
                 throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
@@ -1290,7 +1292,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(GridHadoopJobMetadata meta, GridHadoopJobMetadata cp) {
-            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
+            Map<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
             for (GridHadoopInputSplit s : splits)
                 splitsCp.remove(s);
@@ -1462,7 +1464,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingReducers(rdcCp);
 
-            HashMap<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
+            Map<GridHadoopInputSplit, Integer> splitsCp = new HashMap<>(cp.pendingSplits());
 
             if (splits != null) {
                 for (GridHadoopInputSplit s : splits)
@@ -1507,63 +1509,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             cntrs.merge(counters);
 
             cp.counters(cntrs);
-        }
-    }
-
-    /**
-     * Job statistics cache key.
-     */
-    private static class StatId implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 3564457418556193461L;
-
-        /** */
-        private GridHadoopJobId jobId;
-
-        /**
-         *
-         */
-        public StatId() {
-            // No-op.
-        }
-
-        /**
-         * @param jobId Job ID.
-         */
-        public StatId(GridHadoopJobId jobId) {
-            assert jobId != null;
-
-            this.jobId = jobId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            StatId statId = (StatId)o;
-
-            return jobId.equals(statId.jobId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return jobId.hashCode() + 100500;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            jobId.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            jobId = new GridHadoopJobId();
-
-            jobId.readExternal(in);
         }
     }
 
