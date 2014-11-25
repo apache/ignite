@@ -167,6 +167,12 @@
                                     <include name="**/index.js"/>
                                 </replace>
 
+                                <replaceregexp byline="true" flags="im" encoding="UTF-8">
+                                    <regexp pattern='(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)'/>
+                                    <substitution expression="\1\2\3"/>
+                                    <fileset dir="target/site/scaladocs"/>
+                                </replaceregexp>
+
                                 <zip destfile="target/gridgain-scalar-${gridgain.version}-javadoc.jar"
                                      basedir="target/site/scaladocs"
                                      encoding="UTF-8"/>
