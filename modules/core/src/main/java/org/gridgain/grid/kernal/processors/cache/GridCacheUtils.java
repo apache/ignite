@@ -1446,7 +1446,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
     }
 
     /**
