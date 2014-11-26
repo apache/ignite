@@ -96,6 +96,14 @@ public interface GridPortableBuilder {
     public GridPortableBuilder setField(String name, @Nullable GridPortableBuilder builder);
 
     /**
+     * Removes field from portable object.
+     *
+     * @param fieldName Field name.
+     * @return {@code this} instance for chaining.
+     */
+    public GridPortableBuilder removeField(String fieldName);
+
+    /**
      * Sets hash code for the portable object. If not set, GridGain will generate
      * one automatically.
      *
@@ -103,14 +111,6 @@ public interface GridPortableBuilder {
      * @return {@code this} instance for chaining.
      */
     public GridPortableBuilder hashCode(int hashCode);
-
-    /**
-     * Removes field from portable object.
-     *
-     * @param fieldName Field name.
-     * @return {@code this} instance for chaining.
-     */
-    public GridPortableBuilder removeField(String fieldName);
 
     /**
      * Builds portable object.
