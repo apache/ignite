@@ -10,8 +10,11 @@ public class VisorNodeConfigCollectorJob extends VisorJob<Void, VisorGridConfig>
     /** */
     private static final long serialVersionUID = 0L;
 
-    private VisorNodeConfigCollectorJob() {
-        super(null);
+    /**
+     * @param arg Formal job argument.
+     */
+    public VisorNodeConfigCollectorJob(Void arg) {
+        super(arg);
     }
 
     /** {@inheritDoc} */
