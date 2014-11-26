@@ -1087,7 +1087,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid job made out of closure.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private GridComputeJob job(final Runnable r) {
+    private static GridComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
         if (r instanceof GridComputeJobMasterLeaveAware) {
