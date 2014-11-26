@@ -242,7 +242,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             // Handle implicit locks for pessimistic transactions.
                             if (req.inTx()) {
-                                tx = ctx.tm().tx(req.version());
+                                tx = ctx.tm().nearTx(req.version());
 
                                 if (tx == null) {
                                     tx = new GridNearTxRemote<>(
@@ -265,17 +265,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                     if (req.groupLock())
                                         tx.groupLockKey(txKey);
-
-                                    if (tx.empty()) {
-                                        if (evicted == null)
-                                            evicted = new LinkedList<>();
-
-                                        evicted.add(new T2<>(txKey, bytes));
-
-                                        tx = null;
-
-                                        break; // While.
-                                    }
 
                                     tx = ctx.tm().onCreated(tx);
 

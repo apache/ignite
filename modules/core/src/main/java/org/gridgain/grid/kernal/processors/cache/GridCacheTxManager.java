@@ -260,7 +260,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             GridCacheTxEx<K, V> stuck = null;
 
-            for (GridCacheTxEx<K, V> tx : idMap.values())
+            for (GridCacheTxEx<K, V> tx : txs())
                 if (tx.startVersion().isLess(minStartVer)) {
                     minStartVer = tx.startVersion();
                     dur = U.currentTimeMillis() - tx.startTime();
@@ -392,6 +392,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Started transaction.
      */
     @Nullable public <T extends GridCacheTxEx<K, V>> T onCreated(T tx) {
+        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+
         // Start clean.
         txContextReset();
 
@@ -404,7 +406,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         GridCacheTxEx<K, V> t;
 
-        if ((t = idMap.putIfAbsent(tx.xidVersion(), tx)) == null) {
+        if ((t = txIdMap.putIfAbsent(tx.xidVersion(), tx)) == null) {
             // Add both, explicit and implicit transactions.
             // Do not add remote and dht local transactions as remote node may have the same thread ID
             // and overwrite local transaction.
@@ -509,7 +511,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     }
                 });
 
-        for (GridCacheTxEx<K, V> tx : idMap.values()) {
+        for (GridCacheTxEx<K, V> tx : txs()) {
             // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
             // values pending to be overwritten by prepared transaction.
 
@@ -1164,7 +1166,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 committedVers.firstx() + ", lastVer=" + committedVers.lastx() + ", tx=" + tx.xid() + ']');
         }
 
-        if (idMap.remove(tx.xidVersion(), tx)) {
+        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Must process completed entries before unlocking!
             processCompletedEntries(tx);
 
@@ -1260,7 +1264,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         // 1. Record transaction version to avoid duplicates.
         addRolledbackTx(tx);
 
-        if (idMap.remove(tx.xidVersion(), tx)) {
+        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Unlock write resources.
             unlockMultiple(tx, tx.writeEntries());
 
@@ -1316,7 +1322,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (log.isDebugEnabled())
             log.debug("Uncommiting from TM: " + tx);
 
-        if (idMap.remove(tx.xidVersion(), tx)) {
+        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 1. Unlock write resources.
             unlockMultiple(tx, tx.writeEntries());
 
@@ -1352,6 +1360,16 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
         else if (log.isDebugEnabled())
             log.debug("Did not uncommit from TM (was already committed or rolled back): " + tx);
+    }
+
+    /**
+     * Gets transaction ID map depending on transaction type.
+     *
+     * @param tx Transaction.
+     * @return Transaction map.
+     */
+    private ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> transactionMap(GridCacheTxEx<K, V> tx) {
+        return (tx.near() && !tx.local()) ? nearIdMap : idMap;
     }
 
     /**
@@ -1698,7 +1716,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return All transactions.
      */
     public Collection<GridCacheTxEx<K, V>> txs() {
-        return idMap.values();
+        return F.concat(false, idMap.values(), nearIdMap.values());
     }
 
     /**
@@ -1725,9 +1743,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public boolean txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         Collection<GridCacheVersion> processedVers = null;
 
-        for (Map.Entry<GridCacheVersion, GridCacheTxEx<K, V>> e : idMap.entrySet()) {
-            GridCacheTxEx<K, V> tx = e.getValue();
-
+        for (GridCacheTxEx<K, V> tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 GridCacheTxState state = tx.state();
 
@@ -1969,7 +1985,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (GridCacheTxEx<K, V> tx : idMap.values()) {
+                for (GridCacheTxEx<K, V> tx : txs()) {
                     if ((tx.near() && !tx.local()) || (tx.storeUsed() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, false, RECOVERY_FINISH);
